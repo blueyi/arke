@@ -45,7 +45,8 @@ class ArkeEnv:
 
     def get_semantic_ir(self) -> dict:
         """Tool: get_semantic_ir — return the computation definition."""
-        return json.loads(self.semantic.to_json())
+        result: dict = json.loads(self.semantic.to_json())
+        return result
 
     def get_hw_profile(self) -> dict:
         """Tool: get_hw_profile — return hardware parameters."""
@@ -57,16 +58,18 @@ class ArkeEnv:
 
     def analyze_compute(self) -> dict:
         """Tool: analyze_compute — analyze computation characteristics."""
-        analysis = {
+        nodes_list: list[dict] = []
+        fusions_list: list[dict] = []
+        analysis: dict = {
             "kernel": self.semantic.graph_id,
-            "nodes": [],
-            "fusion_opportunities": [],
+            "nodes": nodes_list,
+            "fusion_opportunities": fusions_list,
         }
 
         for node in self.semantic.nodes:
             op_def = OP_CATALOG.get(node.op)
             category = op_def.category if op_def else "unknown"
-            analysis["nodes"].append({
+            nodes_list.append({
                 "id": node.id,
                 "op": node.op,
                 "category": category,
@@ -74,7 +77,7 @@ class ArkeEnv:
             })
 
         for fg in self.semantic.fusion_groups:
-            analysis["fusion_opportunities"].append({
+            fusions_list.append({
                 "nodes": fg.nodes,
                 "type": fg.fusion_type,
             })
@@ -172,5 +175,6 @@ class ArkeEnv:
         filename = target_map.get(target, target)
         path = Path(__file__).parent.parent / "ir" / "targets" / f"{filename}.json"
         if path.exists():
-            return json.loads(path.read_text())
+            result: dict = json.loads(path.read_text())
+            return result
         return {"name": target, "error": f"Profile not found: {path}"}
