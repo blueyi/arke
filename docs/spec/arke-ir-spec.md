@@ -312,6 +312,7 @@ are monotonically increasing.
 ```json
 {
   "step": 1,
+  "level": 1,
   "kind": "tile",
   "params": {
     "loop": "i",
@@ -334,6 +335,7 @@ are monotonically increasing.
 | Field | Type | Required | Description |
 |:------|:-----|:--------:|:------------|
 | `step` | int | ✅ | 1-indexed, monotonically increasing |
+| `level` | int | ❌ | Decision abstraction level (default: 1, see §3.6) |
 | `kind` | string | ✅ | Decision type (see §3.3) |
 | `params` | dict | ✅ | Decision-specific parameters |
 | `rationale` | Rationale | ❌ | Natural language explanation (strongly encouraged) |
@@ -379,6 +381,29 @@ and available for human review, LLM learning, and audit trails.
 4. **Append-only**: New decisions append to the end (rollback pops from end)
 5. **HW constraints respected**: Resource estimates stay within `constraints` limits
 6. **No redundant transforms**: Same loop not tiled twice, same nodes not fused twice
+
+### 3.6 Decision Levels (Extensibility)
+
+Decisions have an abstraction level that maps to the compilation stage:
+
+```
+Level 1: Strategy (Phase 1)     — WHAT to optimize
+  tile, fuse, parallel, place, reorder, algorithm
+  LLM decides, compiler handles loop generation + codegen
+
+Level 2: Loop (Phase 2, future) — HOW to structure loops
+  vectorize, unroll, pipeline, prefetch, access_pattern
+  LLM decides loop-level details, compiler handles HW mapping
+
+Level 3: Hardware (Phase 3, future) — HOW to map to hardware
+  register_hint, barrier, schedule_hint, bank_conflict_avoid
+  LLM decides hardware-level details, LLVM handles final codegen
+```
+
+Phase 1 only implements Level 1. Higher levels are forward-compatible:
+- Old tools ignore `level` field (default: 1)
+- New tools can produce/consume Level 2-3 decisions
+- `list_legal_actions()` filters by supported levels
 
 ---
 

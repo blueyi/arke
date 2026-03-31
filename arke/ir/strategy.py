@@ -29,11 +29,13 @@ class Decision:
     """A single optimization decision.
 
     Kinds: tile | reorder | fuse | parallel | place | vectorize | unroll | algorithm
+    Levels: 1=strategy (Phase 1), 2=loop (Phase 2), 3=hardware (Phase 3)
     """
     kind: str
     params: dict
     rationale: Rationale | None = None
     step: int = 0  # Auto-assigned by StrategyIR
+    level: int = 1  # Decision abstraction level (1=strategy, 2=loop, 3=hardware)
 
 
 @dataclass

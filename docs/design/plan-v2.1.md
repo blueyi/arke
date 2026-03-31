@@ -630,7 +630,10 @@ print("✅ GPU + Triton 环境验证通过")
 | **G3** | W4 末 | LLM 可行性 | LLM tool-use 50 步 → matmul ≥ 50% cuBLAS + softmax 正确 | LLM 不具备 GPU 优化推理能力 → pivot |
 | **G4** | W6 末 | 对比优势 | Arke 正确率和性能 ≥ 直写 Triton | **不成立 → kill 或 pivot 为验证框架** |
 | **G5** | W8 末 | 整模型端到端收益 | GPT-2 Small 推理性能 Arke ≥ torch.compile | **单算子优势无法转化为整模型收益 → 分析瓶颈** |
-| G6 | Phase 2 | 多硬件可迁移 | 同一 LLM session 优化 Ascend + 抽象层不大改 | 跨硬件假设不成立 |
+| G6 | Phase 2 | MLIR 路径可行 | Arke MLIR Dialect → LLVM → PTX，性能 ≥ Triton 路径 | MLIR 路径性能不够 → 继续用 Triton |
+| G7 | Phase 2 | 多硬件可迁移 | 同一 LLM session 优化 Ascend + 抽象层不大改 | 跨硬件假设不成立 |
+| G8 | Phase 3 | LLVM 直接路径可行 | Arke → LLVM IR → PTX 正确且性能 ≥ MLIR 路径 | LLVM 直接路径不如 MLIR，保留 MLIR 层 |
+| G9 | Phase 3 | AI-Native 编译优势 | LLM Level 1-3 全层决策 > 传统 pass pipeline | AI-Native 的增量价值不够 |
 
 ### Gate 4 的决策矩阵
 
@@ -765,22 +768,225 @@ arke/
 
 ---
 
-## 十二、多硬件后端策略
+## 十二、编译栈演进路线图
 
-> **v2.1.2 修正**：详见 [`patch-v2.1.2.md`](deprecated/patch-v2.1.2.md) 和 [`multi-backend-design.md`](deprecated/multi-backend-design.md)（已归档）。
+> **v2.1.4 新增**：基于 [compiler-stack-analysis.md](compiler-stack-analysis.md) 的分析
+> 长期目标：Arke 直接对接 LLVM IR，重构编译栈，让编译器真正 AI-Native
 
-核心策略变更：
-- **Ascend 后端通过 triton-ascend 对接**（Triton 代码 → triton-ascend → NPU），不再走 AscendC
-- **Phase 1 纯 NVIDIA**——所有 Ascend 开发延后到 Phase 2
-- **Triton codegen 是双硬件通用的**——同一份 Triton 代码可在 GPU 和 NPU 上运行
-- 更深度的 Ascend 优化（Phase 3）通过 AscendNPU IR (MLIR) 实现
+### 12.1 分阶段路径
 
-三层 Ascend 路径（渐进式）：
 ```
-Phase 2: Triton → triton-ascend → NPU        （复用 Triton codegen，零额外开发）
-Phase 3: Arke → AscendNPU IR HFusion → NPU   （利用 MLIR 自动调度）
-Phase 4: Arke → AscendNPU IR HIVM → NPU      （极致优化，精确控制 NPU 指令）
+Phase 1 (8周 MVP):    Arke IR → Triton Python → GPU
+Phase 2 (MVP后 3-6月): Arke IR → MLIR Dialect → 多硬件
+Phase 3 (长期):        Arke IR → LLVM IR → 全硬件 (重构编译栈)
 ```
+
+#### Phase 1：Triton 路径（当前，验证核心假设）
+
+```
+Arke Lang (.ak) / LLM tool-use
+        ↓
+ Semantic IR + Strategy IR (JSON)
+        ↓
+ Triton Python codegen (模板/LLM 生成)
+        ↓
+ Triton 编译栈: TTIR → TTGIR → LLVM → PTX → CUBIN
+```
+
+**目的**：验证 H1-H2 假设（LLM 通过结构化协议优化 kernel 是否有价值）
+**限制**：受 Triton 表达力约束，无法控制底层优化
+**退出条件**：Gate 4 通过（Arke 比直写 Triton 更好）
+
+#### Phase 2：MLIR 路径（摆脱 Triton 依赖）
+
+```
+Arke Lang (.ak) / LLM tool-use
+        ↓
+ Semantic IR + Strategy IR (JSON)
+        ↓
+ Arke MLIR Dialect (自定义)         ← 新增
+   ├─ arke.kernel → linalg ops
+   ├─ arke.strategy → transform dialect ops
+   └─ arke.rationale → MLIR attribute
+        ↓
+ MLIR lowering pipeline (复用 MLIR 基础设施)
+   linalg → SCF/affine → GPU dialect → 硬件特定 dialect
+        ↓
+   ├─ NVVM dialect → PTX → CUBIN        (NVIDIA)
+   ├─ ROCm dialect → GCN ISA            (AMD)
+   └─ AscendNPU IR → NPU binary         (Ascend)
+```
+
+**目的**：获得完整编译控制力 + 天然多硬件支持
+**关键工作**：
+- 定义 Arke MLIR Dialect（arke.kernel, arke.strategy, arke.rationale）
+- Strategy IR decisions → MLIR transform dialect ops 的翻译
+- 复用 MLIR GPU lowering pipeline（不重写）
+- Ascend 通过 AscendNPU IR MLIR 接入（不再依赖 triton-ascend）
+
+**退出条件**：Arke MLIR 路径性能 ≥ Triton 路径
+
+#### Phase 3：LLVM IR 直接路径（重构编译栈）
+
+```
+Arke Lang (.ak) / LLM tool-use
+        ↓
+ Semantic IR + Strategy IR (JSON)
+        ↓
+ Arke Lowering Engine (自研)         ← 核心重构
+   ├─ Semantic IR → Loop Nest IR     (循环嵌套生成)
+   ├─ Strategy IR → 调度应用         (tile/fuse/parallel 变换)
+   ├─ Hardware Mapping               (线程映射 + 内存放置)
+   └─ LLM-guided lowering            (LLM 参与每一步 lowering 决策)
+        ↓
+ LLVM IR (直接发射)
+   ├─ NVPTX backend → PTX → CUBIN
+   ├─ AMDGPU backend → GCN ISA
+   ├─ AArch64 backend → CPU 向量化
+   └─ 未来任何 LLVM 后端
+```
+
+**目的**：Arke 成为从算子语义到机器码的完整 AI-Native 编译器
+**与 Phase 2 的关系**：不是替代 MLIR，而是选择性地内化 MLIR 的能力
+  - 对于 MLIR 已经做得很好的部分（LLVM lowering, 后端 codegen）→ 继续复用
+  - 对于需要 AI 介入的部分（loop lowering, 调度决策, 内存优化）→ Arke 自己做
+  - MLIR dialect 系统仍然可以用于与外部生态集成
+
+**关键能力**：
+- Arke 的 lowering 每一步都是 LLM 可以介入的决策点
+- 传统编译器的 pass 变成 LLM 的 tool
+- 编译器从"固定 pass pipeline"变成"AI-guided decision sequence"
+
+### 12.2 当前设计需要什么调整？
+
+> 以下分析 Phase 3（Arke → LLVM IR）对当前 IR 设计的影响
+
+#### 问题：当前 Strategy IR 够不够？
+
+当前 Strategy IR 的 decisions 是**高层决策**：
+
+```json
+{"kind": "tile", "params": {"loop": "i", "factors": [64, 16]}}
+{"kind": "parallel", "params": {"loops": ["i_outer"], "mapping": {"i_outer": "block.x"}}}
+```
+
+要直接生成 LLVM IR，需要的信息远不止这些——还需要：
+
+| 需要的信息 | 当前 Strategy IR 有吗？ | Phase 3 需要 |
+|:-----------|:---:|:---:|
+| Tiling factors | ✅ | ✅ |
+| Fusion decisions | ✅ | ✅ |
+| Memory placement | ✅ | ✅ |
+| 具体循环嵌套结构 | ❌ | ✅ |
+| 内存 access pattern (coalesced? strided?) | ❌ | ✅ |
+| 寄存器分配策略 | ❌ | ✅ |
+| Pipeline/prefetch 决策 | ❌ | ✅ |
+| 具体线程到数据的映射 | ❌ (只有高层 mapping) | ✅ |
+| Barrier/同步点 | ❌ | ✅ |
+
+#### 解决方案：分层 Strategy IR
+
+**不需要现在改。** 但 IR 设计要**预留分层扩展的能力**。
+
+当前 Strategy IR 是 Phase 1 的 "高层策略"。未来增加 "低层策略"：
+
+```
+Strategy IR (分层)
+├─ Level 1: 高层策略 (当前)      ← Phase 1 使用
+│    tile, fuse, place, parallel
+│    （LLM 做决策，编译器补全细节）
+│
+├─ Level 2: 循环策略 (Phase 2)   ← MLIR 路径需要
+│    具体 loop nest 结构
+│    memory access pattern
+│    pipeline stage 划分
+│    vectorization width
+│
+└─ Level 3: 硬件策略 (Phase 3)   ← LLVM IR 路径需要
+│    register allocation hints
+│    barrier placement
+│    instruction scheduling hints
+│    prefetch distances
+```
+
+**设计原则**：高层决策约束低层决策，低层决策可以由编译器自动推导或 LLM 显式指定。
+
+```
+Phase 1: LLM 只做 Level 1 决策，Triton 补全 Level 2-3
+Phase 2: LLM 做 Level 1-2 决策，MLIR 补全 Level 3
+Phase 3: LLM 做 Level 1-2-3 全部决策，LLVM 只做 final codegen
+```
+
+#### 当前需要做的调整
+
+**IR Spec 层面（小改）：**
+
+1. Strategy IR 增加 `level` 字段（默认 1，向后兼容）：
+```json
+{
+  "decisions": [
+    {"step": 1, "level": 1, "kind": "tile", "params": {...}},
+    {"step": 2, "level": 1, "kind": "fuse", "params": {...}}
+  ]
+}
+```
+
+2. Decision kinds 按 level 分组但不限制（Phase 1 只用 Level 1 的，工具验证时 warn）：
+```
+Level 1: tile, fuse, parallel, place, reorder, algorithm
+Level 2: vectorize, unroll, pipeline, prefetch, access_pattern    ← 预留
+Level 3: register_hint, barrier, schedule_hint                    ← 预留
+```
+
+3. Semantic IR 的 `semantics.index_vars` 已经是好的基础——循环嵌套生成只需要这些变量 + tiling 信息
+
+**代码层面（不改）：**
+- Phase 1 实现只处理 Level 1 decisions
+- Level 2-3 的 decision kinds 可以注册但不需要实现
+- ArkeEnv 的 `list_legal_actions()` 只返回有 codegen 支持的 actions
+
+**Semantic IR（不改）：**
+- 当前 Semantic IR 的 `computation` 语义公式 + `index_vars` + `reduction_axes` 足够推导循环嵌套
+- 这和 Halide/TVM 的 "algorithm + schedule" 分离完全一致
+- 从 Semantic IR 生成循环嵌套是确定性的（给定 shape + index_vars → loop bounds）
+- 不需要改 Semantic IR 就能支持 Phase 2-3 的 lowering
+
+### 12.3 Arke 的编译器 AI-Native 化愿景
+
+```
+传统编译器:
+  Source → [固定 Pass 1] → [固定 Pass 2] → ... → [固定 Pass N] → Binary
+  每个 pass 是确定性的算法，人工设计，无法适应新硬件
+
+Arke 愿景:
+  Source → Semantic IR → [LLM Decision 1] → [LLM Decision 2] → ... → LLVM IR → Binary
+  每个 decision 是 LLM 做的选择，有 rationale，可验证，可学习，可跨硬件
+
+  传统 pass 不会消失——它们变成 LLM 的 "tool"：
+    list_legal_actions() 枚举当前状态下的所有合法 pass
+    apply_decision() 应用一个 pass（附带 rationale）
+    verify_correctness() 验证变换正确性
+    compile_and_profile() 测量实际性能
+
+  编译器从 "固定流水线" 变成 "AI 引导的决策搜索"
+```
+
+**这就是 Arke 重构编译栈的含义**：不是重写 LLVM，而是把编译器的每一步 lowering 决策暴露为 LLM 可操作的接口，让 AI 替代人类编译器工程师做调度和优化决策。
+
+LLVM IR 是最终的 "交付界面"——Arke 把所有优化决策都做完后，生成的 LLVM IR 只需要过 LLVM 后端做寄存器分配和指令选择（这些是 LLVM 最擅长的，没必要重做）。
+
+### 12.4 多硬件策略（更新）
+
+> 替代原 v2.1.2 的三层 Ascend 路径
+
+```
+Phase 1: Arke → Triton Python → GPU                    (NVIDIA only)
+Phase 2: Arke → MLIR → GPU/NPU                         (NVIDIA + AMD + Ascend)
+Phase 3: Arke → LLVM IR → NVPTX/AMDGPU/AArch64/...    (全硬件)
+```
+
+每个 Phase 都支持更多硬件，但 Phase 1 只需要 NVIDIA。
+Phase 3 通过 LLVM 后端天然支持所有 LLVM 支持的硬件。
 
 ### LLM API 灵活配置
 
@@ -806,9 +1012,10 @@ Phase 4: Arke → AscendNPU IR HIVM → NPU      （极致优化，精确控制 
 
 ---
 
-*计划版本：v2.1.3 | 创建日期：2026-03-31*
+*计划版本：v2.1.4 | 创建日期：2026-03-31 | 更新日期：2026-04-01*
 *核心修正：LLM 协议优先，验证前置，语法后置，必须有评估*
 *v2.1.1 补充：多硬件后端抽象，优先 NVIDIA + Ascend A3*
 *v2.1.2 补充：LLM API 灵活配置*
 *v2.1.3 补充：借鉴 Claude Code 的 Agent Runtime 工程模式（Stream 1b 融入 S1）*
 *v2.1.3 补充：README 任务追踪 + 详细设计任务拆解更新*
+*v2.1.4 补充：编译栈演进路线图（Phase 1→2→3），Strategy IR 分层设计，LLVM IR 直接路径分析*
