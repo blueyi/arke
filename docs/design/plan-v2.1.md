@@ -756,23 +756,29 @@ arke/
 
 ## 十二、多硬件后端策略
 
-详见 [`multi-backend-design.md`](multi-backend-design.md)。
+> **v2.1.2 修正**：详见 [`patch-v2.1.2.md`](patch-v2.1.2.md) 和 [`multi-backend-design.md`](multi-backend-design.md)。
 
-核心原则：
-- **Strategy IR 使用 Arke 抽象词汇**（fast_memory, parallel_outer, matrix_unit），不绑定任何硬件
-- **后端可插拔**：每种硬件一套 codegen + compiler + profiler，通过 `ArkeBackend` 接口统一
-- **Phase 1 优先 NVIDIA**（有硬件），**Ascend 做架构 + 模板 + stub**（无硬件但架构不欠债）
-- **LLM 不需要感知硬件差异**——差异通过 `get_hw_profile()` 和 `list_legal_actions()` 自然体现
+核心策略变更：
+- **Ascend 后端通过 triton-ascend 对接**（Triton 代码 → triton-ascend → NPU），不再走 AscendC
+- **Phase 1 纯 NVIDIA**——所有 Ascend 开发延后到 Phase 2
+- **Triton codegen 是双硬件通用的**——同一份 Triton 代码可在 GPU 和 NPU 上运行
+- 更深度的 Ascend 优化（Phase 3）通过 AscendNPU IR (MLIR) 实现
 
-Phase 1 新增任务（已整合到 Week 1）：
-- 统一 HW Profile Schema + 两个硬件的 profile
-- Backend 抽象基类 + 后端注册表
-- Strategy IR 统一词汇表
+三层 Ascend 路径（渐进式）：
+```
+Phase 2: Triton → triton-ascend → NPU        （复用 Triton codegen，零额外开发）
+Phase 3: Arke → AscendNPU IR HFusion → NPU   （利用 MLIR 自动调度）
+Phase 4: Arke → AscendNPU IR HIVM → NPU      （极致优化，精确控制 NPU 指令）
+```
 
-Phase 2（MVP 之后）：
-- 获取 Ascend A3 硬件环境
-- AscendC 完整 codegen + compile + profile
-- 跨硬件评估实验
+### LLM API 灵活配置
+
+详见 [`patch-v2.1.2.md`](patch-v2.1.2.md)。
+
+- LLM Provider 抽象层：OpenAI-compatible（覆盖 GPT/Qwen/DeepSeek/本地）+ Anthropic
+- YAML 配置文件：`arke.config.yaml`
+- Fallback 链 + Token 追踪 + 重试机制
+- CLI 支持 `--llm <provider>` 切换
 
 ---
 

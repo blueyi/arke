@@ -666,6 +666,10 @@ parallel(batch→outer.x, head→outer.y)
 
 ## 八、Codegen 模板的多后端设计
 
+> ⚠️ **v2.1.2 修正**：Ascend 后端不再通过 AscendC 对接，改用 triton-ascend（Triton 代码直接跑在 Ascend 上）。
+> 更深度的 Ascend 优化通过 AscendNPU IR (MLIR) 实现。
+> 详见 [`patch-v2.1.2.md`](patch-v2.1.2.md)。
+
 ### 8.1 模板目录结构
 
 ```
