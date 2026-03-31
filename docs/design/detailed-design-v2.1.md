@@ -513,7 +513,7 @@ class PerformanceProfiler:
 
 ## 四、Codegen 详细设计
 
-> 多硬件后端的完整架构设计见 [`multi-backend-design.md`](multi-backend-design.md)。
+> 多硬件后端的完整架构设计见 [`multi-backend-design.md`](deprecated/multi-backend-design.md)（已归档）。
 > 以下仅描述 Phase 1 NVIDIA 路径的实现细节。
 
 ### 4.0 多后端架构
@@ -910,7 +910,7 @@ class BenchmarkTask:
 
 ## 九、Agent 运行时架构（借鉴 Claude Code）
 
-> 详细迁移分析见 [`cc-inspired-update.md`](cc-inspired-update.md)
+> 详细迁移分析见 [`cc-inspired-update.md`](deprecated/cc-inspired-update.md)（已归档）
 
 ### 9.1 AsyncGenerator 优化循环
 
@@ -1018,5 +1018,5 @@ Layer 3 (Loop): LLM 搜索不收敛 → fallback strategy 兜底 → 对比取�
 *详细设计版本：v2.1.2 | 创建日期：2026-03-31*
 *v2.1.2 新增：Agent 运行时架构（AsyncGenerator + 声明式 Tool + Compact + 容错）*
 *总计约 68 个开发任务，预估 ~260 工时，8 周 MVP*
-*多硬件后端设计见 multi-backend-design.md*
-*Claude Code 迁移详细分析见 cc-inspired-update.md*
+*多硬件后端设计见 deprecated/multi-backend-design.md（已归档）*
+*Claude Code 迁移详细分析见 deprecated/cc-inspired-update.md（已归档）*

@@ -60,7 +60,7 @@ Stream 1b 说明（借鉴 Claude Code 51万行源码验证过的模式）：
   - W2: 声明式 Tool 接口 (ToolMeta) + 大结果 delta 压缩
   - W3: 工具并发分区编排器 + 分段 Prompt Cache + Ground Truth State
   - W4: AsyncGenerator 优化循环 + Context Compact + 三层容错
-  详见 cc-inspired-update.md
+  详见 deprecated/cc-inspired-update.md（已归档，核心内容已合并到 detailed-design-v2.1.md §9）
 ```
 
 ---
@@ -767,7 +767,7 @@ arke/
 
 ## 十二、多硬件后端策略
 
-> **v2.1.2 修正**：详见 [`patch-v2.1.2.md`](patch-v2.1.2.md) 和 [`multi-backend-design.md`](multi-backend-design.md)。
+> **v2.1.2 修正**：详见 [`patch-v2.1.2.md`](deprecated/patch-v2.1.2.md) 和 [`multi-backend-design.md`](deprecated/multi-backend-design.md)（已归档）。
 
 核心策略变更：
 - **Ascend 后端通过 triton-ascend 对接**（Triton 代码 → triton-ascend → NPU），不再走 AscendC
@@ -784,7 +784,7 @@ Phase 4: Arke → AscendNPU IR HIVM → NPU      （极致优化，精确控制 
 
 ### LLM API 灵活配置
 
-详见 [`patch-v2.1.2.md`](patch-v2.1.2.md)。
+详见 [`patch-v2.1.2.md`](deprecated/patch-v2.1.2.md)（已归档）。
 
 - LLM Provider 抽象层：OpenAI-compatible（覆盖 GPT/Qwen/DeepSeek/本地）+ Anthropic
 - YAML 配置文件：`arke.config.yaml`
@@ -793,7 +793,7 @@ Phase 4: Arke → AscendNPU IR HIVM → NPU      （极致优化，精确控制 
 
 ### 借鉴 Claude Code 的工程模式
 
-详见 [`cc-inspired-update.md`](cc-inspired-update.md)。
+详见 [`cc-inspired-update.md`](deprecated/cc-inspired-update.md)（已归档，核心内容已合并到 detailed-design-v2.1.md §9）。
 
 基于 Claude Code 51万行源码分析，迁移 7 个经过大规模验证的工程模式：
 - **AsyncGenerator 优化循环** — 统一 CLI/API/Jupyter 消费接口

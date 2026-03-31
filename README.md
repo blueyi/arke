@@ -308,12 +308,26 @@ arke/
 
 | Document | Description |
 |----------|-------------|
-| [plan-v2.1.md](docs/design/plan-v2.1.md) | Execution plan (week-by-week schedule) |
-| [detailed-design-v2.1.md](docs/design/detailed-design-v2.1.md) | Detailed design (tool schemas, IR spec, validation, codegen) |
-| [e2e-flow.md](docs/design/e2e-flow.md) | End-to-end flow walkthrough |
-| [cc-inspired-update.md](docs/design/cc-inspired-update.md) | Claude Code engineering patterns migration |
-| [multi-backend-design.md](docs/design/multi-backend-design.md) | Multi-hardware backend architecture |
-| [design-review.md](docs/design/design-review.md) | Design review and risk analysis |
+| [plan-v2.1.md](docs/design/plan-v2.1.md) | 执行计划 — 8 周 MVP 路线图，4 条并行 Stream，Gate 里程碑 |
+| [detailed-design-v2.1.md](docs/design/detailed-design-v2.1.md) | 详细设计 — Tool Schema、IR 规范、验证系统、Codegen、Agent 运行时 |
+| [e2e-flow.md](docs/design/e2e-flow.md) | 端到端流程 — 从用户输入到 GPU 执行的完整路径 walkthrough |
+| [design-review.md](docs/design/design-review.md) | 设计审视 — 假设验证框架、风险矩阵、Gate 决策标准 |
+| [naming-system.md](docs/design/naming-system.md) | 命名体系 — 全局术语规范、CLI/IR/Tool/目录命名规则 |
+
+<details>
+<summary>Archived documents (docs/design/deprecated/)</summary>
+
+| Document | Status | Superseded by |
+|----------|--------|---------------|
+| cc-inspired-update.md | 已合并 | detailed-design-v2.1.md §9 (Agent 运行时架构) |
+| multi-backend-design.md | 已合并 | plan-v2.1.md §12 + detailed-design-v2.1.md |
+| patch-v2.1.2.md | 已合并 | plan-v2.1.md (LLM API) + detailed-design-v2.1.md |
+| op-taxonomy.md | 参考存档 | 算子分类研究，供实现时参考 |
+| license-comparison.md | 决策完成 | 已选定 Apache 2.0 |
+| e2e-design-v1.md / v2.md | 早期版本 | e2e-flow.md |
+| overview.md / plan.md | 早期版本 | plan-v2.1.md |
+
+</details>
 
 ## License
 
