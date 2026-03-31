@@ -1,8 +1,22 @@
 # Arke
 
-> AI-First Operator Description Language & Compiler Toolchain
+> **Let LLMs write the kernels. Let compilers check the math.**
+>
+> **让大模型写算子，让编译器验算术。**
 
-**Arke** (*/ˈɑːrki/*) is an AI-native domain-specific language for describing and optimizing tensor operators. Named after the Greek messenger goddess who bridges Olympus and the mortal world, Arke connects AI intelligence with hardware compute.
+---
+
+**Arke** (*/ˈɑːrki/*) is an AI-native language and compiler toolchain for describing and optimizing GPU/NPU tensor operators — where LLM agents make optimization decisions and deterministic compilers verify every step.
+
+## About the Name
+
+**Arke** (Ἄρκη) — the twin sister of Iris in Greek mythology. Both were messenger goddesses of the rainbow, but while Iris served the Olympians, Arke chose the Titans.
+
+In our context:
+- **Iris** represents the established path — traditional compilers with hand-written optimization rules
+- **Arke** represents the new path — AI-driven optimization where LLMs bridge the gap between human intent and hardware reality
+
+Just as the mythological Arke was swift-footed (Zeus later gave her iridescent wings to Thetis as a wedding gift), the system is designed for rapid, iterative optimization cycles. And like a messenger between two worlds, Arke translates between **what to compute** (semantic intent) and **how to compute it** (hardware-specific strategy).
 
 ## Vision
 
