@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arke-lang.github.io/schemas/strategy.schema.json",
+  "title": "Arke Strategy IR",
+  "description": "Layer 2 of Arke IR — describes HOW to optimize. See docs/spec/arke-ir-spec.md §3.",
+  "type": "object",
+  "required": ["version", "kernel_id", "target_hw", "decisions", "constraints"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Spec version (semver)."
+    },
+    "kernel_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "References Semantic IR's kernel_id."
+    },
+    "target_hw": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Hardware target (e.g. nvidia_ampere)."
+    },
+    "decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Decision" },
+      "description": "Ordered optimization decisions."
+    },
+    "constraints": {
+      "$ref": "#/$defs/HardwareConstraints",
+      "description": "Hardware resource limits."
+    },
+    "compile_results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/CompileResult" },
+      "description": "Results from compile_and_profile calls.",
+      "default": []
+    }
+  },
+  "$defs": {
+    "Rationale": {
+      "type": "object",
+      "description": "Natural language explanation for an optimization decision.",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Explanation text."
+        },
+        "lang": {
+          "type": "string",
+          "default": "en",
+          "description": "Language code (BCP-47)."
+        }
+      }
+    },
+    "ValidationSnapshot": {
+      "type": "object",
+      "description": "V0 validation result at time of decision application.",
+      "additionalProperties": true,
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "Whether validation passed."
+        },
+        "resource_delta": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Resource usage changes from this decision."
+        }
+      }
+    },
+    "Decision": {
+      "type": "object",
+      "description": "A single optimization decision.",
+      "required": ["step", "kind", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-indexed, monotonically increasing step number."
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Decision abstraction level (1=strategy, 2=loop, 3=hardware)."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["tile", "reorder", "fuse", "parallel", "place", "vectorize", "unroll", "algorithm"],
+          "description": "Decision type."
+        },
+        "params": {
+          "type": "object",
+          "description": "Decision-specific parameters."
+        },
+        "rationale": {
+          "oneOf": [
+            { "$ref": "#/$defs/Rationale" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Natural language explanation (strongly encouraged)."
+        },
+        "validation": {
+          "oneOf": [
+            { "$ref": "#/$defs/ValidationSnapshot" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "V0 result at time of application."
+        },
+        "timestamp": {
+          "type": ["string", "null"],
+          "description": "ISO-8601 timestamp.",
+          "default": null
+        }
+      }
+    },
+    "HardwareConstraints": {
+      "type": "object",
+      "description": "Hardware resource constraints.",
+      "additionalProperties": false,
+      "properties": {
+        "shared_memory_limit": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Shared memory limit in bytes."
+        },
+        "register_limit": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Max registers per thread."
+        },
+        "max_threads_per_block": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Max threads per block."
+        },
+        "warp_size": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 32,
+          "description": "Warp/wavefront size."
+        }
+      }
+    },
+    "CompileResult": {
+      "type": "object",
+      "description": "Result from a compile_and_profile call.",
+      "required": ["attempt"],
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Attempt number."
+        },
+        "correctness": {
+          "type": ["object", "null"],
+          "description": "Correctness check results.",
+          "default": null
+        },
+        "performance": {
+          "type": ["object", "null"],
+          "description": "Performance profiling results.",
+          "default": null
+        }
+      }
+    }
+  }
+}

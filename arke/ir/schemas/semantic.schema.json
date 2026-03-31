@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arke-lang.github.io/schemas/semantic.schema.json",
+  "title": "Arke Semantic IR",
+  "description": "Layer 1 of Arke IR — describes WHAT to compute. See docs/spec/arke-ir-spec.md §2.",
+  "type": "object",
+  "required": ["version", "kernel_id", "params", "return_type", "nodes", "edges", "return_node"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Spec version (semver)."
+    },
+    "kernel_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this computation."
+    },
+    "params": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Param" },
+      "description": "Input tensor parameters (ordered)."
+    },
+    "return_type": {
+      "$ref": "#/$defs/TensorDesc",
+      "description": "Output tensor description."
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Node" },
+      "description": "Computation nodes (operators)."
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Edge" },
+      "description": "Data flow edges."
+    },
+    "return_node": {
+      "type": "string",
+      "description": "Node ID whose output is the kernel result."
+    },
+    "fusion_groups": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/FusionGroup" },
+      "description": "Pre-analyzed fusion opportunities.",
+      "default": []
+    }
+  },
+  "$defs": {
+    "dtype": {
+      "type": "string",
+      "enum": ["f16", "f32", "f64", "bf16", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "bool", "index"],
+      "description": "Scalar data type."
+    },
+    "layout": {
+      "type": "string",
+      "enum": ["row_major", "col_major"],
+      "description": "Tensor memory layout.",
+      "default": "row_major"
+    },
+    "TensorDesc": {
+      "type": "object",
+      "description": "Description of a tensor (shape, dtype, optional layout).",
+      "required": ["shape", "dtype"],
+      "additionalProperties": false,
+      "properties": {
+        "shape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "minItems": 1,
+          "description": "Tensor dimensions (static, positive integers)."
+        },
+        "dtype": { "$ref": "#/$defs/dtype" },
+        "layout": { "$ref": "#/$defs/layout" }
+      }
+    },
+    "Param": {
+      "type": "object",
+      "description": "A kernel input parameter.",
+      "required": ["name", "shape", "dtype"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Parameter name (unique within kernel)."
+        },
+        "shape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "minItems": 1,
+          "description": "Tensor dimensions."
+        },
+        "dtype": { "$ref": "#/$defs/dtype" },
+        "layout": { "$ref": "#/$defs/layout" }
+      }
+    },
+    "ParamRef": {
+      "type": "object",
+      "description": "Reference to a kernel parameter.",
+      "required": ["ref", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string", "const": "param" },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "NodeRef": {
+      "type": "object",
+      "description": "Reference to a previous node's output.",
+      "required": ["ref", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string", "const": "node" },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "InputRef": {
+      "oneOf": [
+        { "$ref": "#/$defs/ParamRef" },
+        { "$ref": "#/$defs/NodeRef" }
+      ],
+      "description": "Input reference — either a parameter ref or a node ref."
+    },
+    "Semantics": {
+      "type": "object",
+      "description": "Mathematical semantics of an operator.",
+      "required": ["computation"],
+      "additionalProperties": false,
+      "properties": {
+        "computation": {
+          "type": "string",
+          "description": "Human-readable math formula."
+        },
+        "index_vars": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Loop variables."
+        },
+        "reduction_axes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Axes reduced over."
+        },
+        "properties": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Algebraic properties (e.g. associative, elementwise)."
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "description": "A computation node (operator application).",
+      "required": ["id", "op", "inputs", "output", "semantics"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique node identifier."
+        },
+        "op": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Operator name."
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/InputRef" },
+          "description": "Named inputs — each is an InputRef."
+        },
+        "output": {
+          "$ref": "#/$defs/TensorDesc",
+          "description": "Output tensor description."
+        },
+        "semantics": {
+          "$ref": "#/$defs/Semantics",
+          "description": "Mathematical semantics."
+        }
+      }
+    },
+    "Edge": {
+      "type": "object",
+      "description": "Data flow edge between nodes.",
+      "required": ["from_node", "to_node", "tensor_name"],
+      "additionalProperties": false,
+      "properties": {
+        "from_node": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Source node ID."
+        },
+        "to_node": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Destination node ID."
+        },
+        "tensor_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name for the intermediate tensor."
+        },
+        "lifetime": {
+          "type": "string",
+          "enum": ["local", "persistent"],
+          "default": "local",
+          "description": "Tensor lifetime."
+        }
+      }
+    },
+    "FusionGroup": {
+      "type": "object",
+      "description": "A group of nodes that can be fused.",
+      "required": ["id", "nodes", "fusion_type"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Fusion group identifier."
+        },
+        "nodes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "description": "Node IDs in this fusion group."
+        },
+        "fusion_type": {
+          "type": "string",
+          "enum": ["epilogue", "prologue", "horizontal", "vertical"],
+          "description": "Fusion strategy type."
+        },
+        "reason": {
+          "type": "string",
+          "default": "",
+          "description": "Why this fusion is beneficial."
+        }
+      }
+    }
+  }
+}
