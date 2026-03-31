@@ -100,13 +100,13 @@ def test_env_checkpoint_restore():
     """Test checkpoint and restore."""
     env = _make_matmul_env()
     env.apply_decision("tile", {"loop": "i", "factors": [64]}, "a")
-    cp = env.checkpoint("before_fuse")
-    assert cp["checkpoint_id"] == "before_fuse"
+    cp = env.checkpoint("before_tile_j")
+    assert cp["checkpoint_id"] == "before_tile_j"
 
-    env.apply_decision("fuse", {"ops": ["matmul", "relu"], "type": "epilogue"}, "b")
+    env.apply_decision("tile", {"loop": "j", "factors": [128]}, "b")
     assert env.strategy.decision_count == 2
 
-    result = env.restore("before_fuse")
+    result = env.restore("before_tile_j")
     assert result["success"] is True
     assert env.strategy.decision_count == 1
 
