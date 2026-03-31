@@ -1,11 +1,17 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Basic tests for Arke IR data structures."""
+"""Tests for Arke IR data structures."""
 
 from arke.ir.semantic import SemanticGraph, Node, TensorDesc, Semantics, Edge, FusionGroup
-from arke.ir.schedule import ScheduleTree
+from arke.ir.strategy import StrategyIR, Decision, Rationale
+from arke.ir.builder import KernelBuilder
+from arke.ir.ops.catalog import OP_CATALOG, get_op, list_ops, is_fusable_epilogue
 
+
+# ============================================================
+# Semantic IR Tests
+# ============================================================
 
 def test_semantic_graph_creation():
     """Test creating a basic semantic graph."""
@@ -62,7 +68,7 @@ def test_semantic_graph_creation():
 
 
 def test_semantic_graph_serialization():
-    """Test JSON serialization round-trip."""
+    """Test JSON serialization."""
     graph = SemanticGraph(graph_id="test_serialize")
     graph.add_node(Node(
         id="relu_0",
@@ -77,37 +83,138 @@ def test_semantic_graph_serialization():
     assert '"relu_0"' in json_str
 
 
-def test_schedule_tree_creation():
-    """Test creating a schedule tree with decisions."""
-    schedule = ScheduleTree(
-        target_graph="test_matmul_relu",
-        target_hw="nvidia_ampere",
-    )
+# ============================================================
+# Strategy IR Tests (renamed from ScheduleTree)
+# ============================================================
 
-    schedule.tile("i", [64, 16], rationale="L2 cache line = 64, warp size = 16")
-    schedule.tile("j", [128, 8], rationale="maximize memory coalescing")
-    schedule.reorder(
+def test_strategy_ir_creation():
+    """Test creating a strategy IR with decisions."""
+    strategy = StrategyIR(kernel_id="test_matmul_relu", target_hw="nvidia_ampere")
+
+    strategy.tile("i", [64, 16], rationale="L2 cache line = 64, warp size = 16")
+    strategy.tile("j", [128, 8], rationale="maximize memory coalescing")
+    strategy.reorder(
         ["i_outer", "j_outer", "k_outer", "i_inner", "j_inner", "k_inner"],
         rationale="outer parallel, inner reuse",
     )
-    schedule.fuse(["matmul", "relu"], "epilogue", rationale="avoid extra global write")
-    schedule.parallel(
+    strategy.fuse(["matmul", "relu"], "epilogue", rationale="avoid extra global write")
+    strategy.parallel(
         ["i_outer", "j_outer"],
         {"i_outer": "blockIdx.y", "j_outer": "blockIdx.x"},
     )
-    schedule.place("A_tile", "shared", rationale="broadcast along j")
+    strategy.place("A_tile", "shared", rationale="broadcast along j")
 
-    assert len(schedule.decisions) == 6
-    assert schedule.decisions[0].kind == "tile"
-    assert schedule.decisions[0].rationale.text == "L2 cache line = 64, warp size = 16"
-    assert schedule.decisions[3].kind == "fuse"
+    assert strategy.decision_count == 6
+    assert strategy.decisions[0].kind == "tile"
+    assert strategy.decisions[0].step == 1
+    assert strategy.decisions[0].rationale.text == "L2 cache line = 64, warp size = 16"
+    assert strategy.decisions[3].kind == "fuse"
 
 
-def test_schedule_tree_serialization():
-    """Test schedule tree JSON serialization."""
-    schedule = ScheduleTree(target_graph="test", target_hw="nvidia_ampere")
-    schedule.tile("i", [64], rationale="test rationale")
+def test_strategy_ir_rollback():
+    """Test rollback removes decisions from the end."""
+    strategy = StrategyIR(kernel_id="test", target_hw="nvidia_ampere")
+    strategy.tile("i", [64])
+    strategy.tile("j", [128])
+    strategy.fuse(["a", "b"])
 
-    json_str = schedule.to_json()
+    assert strategy.decision_count == 3
+    removed = strategy.pop_decisions(2)
+    assert len(removed) == 2
+    assert strategy.decision_count == 1
+    assert strategy.decisions[0].kind == "tile"
+
+
+def test_strategy_ir_serialization():
+    """Test Strategy IR JSON round-trip."""
+    strategy = StrategyIR(kernel_id="test", target_hw="nvidia_ampere")
+    strategy.tile("i", [64], rationale="test rationale")
+    strategy.fuse(["a", "b"], rationale="fuse reason")
+
+    json_str = strategy.to_json()
     assert '"kind": "tile"' in json_str
     assert '"test rationale"' in json_str
+
+    # Round-trip
+    restored = StrategyIR.from_json(json_str)
+    assert restored.decision_count == 2
+    assert restored.decisions[0].kind == "tile"
+    assert restored.decisions[0].rationale.text == "test rationale"
+    assert restored.kernel_id == "test"
+
+
+def test_strategy_ir_summary():
+    """Test human-readable summary."""
+    strategy = StrategyIR(kernel_id="matmul", target_hw="ampere")
+    strategy.tile("i", [64], rationale="cache")
+    summary = strategy.summary()
+    assert "matmul" in summary
+    assert "tile" in summary
+    assert "cache" in summary
+
+
+# ============================================================
+# Op Catalog Tests
+# ============================================================
+
+def test_op_catalog_completeness():
+    """P0 catalog should have 10 operators."""
+    assert len(OP_CATALOG) == 10
+
+
+def test_op_catalog_lookup():
+    """Test operator lookup."""
+    matmul = get_op("matmul")
+    assert matmul.category == "compute"
+    assert "associative" in matmul.properties
+    assert matmul.numpy_ref == "np.matmul(A, B)"
+
+
+def test_op_catalog_filter():
+    """Test filtering by category."""
+    elementwise = list_ops("elementwise")
+    assert len(elementwise) == 4  # relu, gelu, add, mul
+    assert all(op.category == "elementwise" for op in elementwise)
+
+
+def test_fusable_epilogue():
+    """Test epilogue fusion detection."""
+    assert is_fusable_epilogue("relu") is True
+    assert is_fusable_epilogue("add") is True
+    assert is_fusable_epilogue("softmax") is False
+    assert is_fusable_epilogue("matmul") is False
+
+
+# ============================================================
+# Builder Tests
+# ============================================================
+
+def test_kernel_builder_basic():
+    """Test building a simple matmul + relu kernel."""
+    b = KernelBuilder("fused_matmul_relu")
+    b.param("A", [1024, 512], "f16")
+    b.param("B", [512, 2048], "f16")
+    m = b.op("matmul", A="A", B="B")
+    r = b.op("relu", X=m)
+    b.returns(r, [1024, 2048], "f16")
+    ir = b.build()
+
+    assert ir.graph_id == "fused_matmul_relu"
+    assert len(ir.nodes) == 2
+    assert ir.nodes[0].op == "matmul"
+    assert ir.nodes[1].op == "relu"
+    assert len(ir.edges) == 1  # matmul → relu
+    assert len(ir.fusion_groups) == 1  # auto-detected epilogue
+
+
+def test_kernel_builder_single_op():
+    """Test building a single-op kernel."""
+    b = KernelBuilder("simple_relu")
+    b.param("X", [1024], "f32")
+    r = b.op("relu", X="X")
+    b.returns(r, [1024], "f32")
+    ir = b.build()
+
+    assert len(ir.nodes) == 1
+    assert len(ir.edges) == 0
+    assert len(ir.fusion_groups) == 0

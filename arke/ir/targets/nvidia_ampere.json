@@ -1,0 +1,28 @@
+{
+  "name": "nvidia_ampere",
+  "display_name": "NVIDIA Ampere (RTX 3060 Laptop)",
+  "compute_capability": "8.6",
+  "compute_units": 30,
+  "matrix_unit": {
+    "name": "tensor_core",
+    "shapes": [[16, 8, 16]],
+    "dtypes": ["f16", "bf16", "tf32"]
+  },
+  "memory_hierarchy": [
+    {"name": "register", "size_per_cu": 65536, "latency_cycles": 1},
+    {"name": "shared",   "size_per_cu": 49152, "bandwidth_gbps": 19000, "latency_cycles": 20},
+    {"name": "l2_cache", "size_total": 3145728, "bandwidth_gbps": 2000},
+    {"name": "global",   "bandwidth_gbps": 336, "latency_cycles": 500}
+  ],
+  "constraints": {
+    "max_threads_per_block": 1024,
+    "max_shared_memory_per_block": 49152,
+    "max_registers_per_thread": 255,
+    "warp_size": 32
+  },
+  "peak_tflops": {
+    "f16": 21.7,
+    "f32": 10.9,
+    "tf32": 21.7
+  }
+}
