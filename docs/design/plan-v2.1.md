@@ -782,8 +782,22 @@ Phase 4: Arke → AscendNPU IR HIVM → NPU      （极致优化，精确控制 
 - Fallback 链 + Token 追踪 + 重试机制
 - CLI 支持 `--llm <provider>` 切换
 
+### 借鉴 Claude Code 的工程模式
+
+详见 [`cc-inspired-update.md`](cc-inspired-update.md)。
+
+基于 Claude Code 51万行源码分析，迁移 7 个经过大规模验证的工程模式：
+- **AsyncGenerator 优化循环** — 统一 CLI/API/Jupyter 消费接口
+- **声明式 Tool 接口** — 工具自描述并发/安全/成本属性
+- **工具并发分区** — analyze + get_hw_profile 并发；apply_decision 串行
+- **分段 Prompt Cache** — 4 段独立缓存，50步优化节省 ~80% token
+- **Context Compact** — 预测式 + 反应式双保险，跨 compact 保持 ground truth
+- **大结果 delta 压缩** — legal_actions 只给 top 10 + 总数
+- **三层容错** — 工具级 rollback + API 级 fallback + 循环级 fallback strategy
+
 ---
 
 *计划版本：v2.1.1 | 创建日期：2026-03-31*
 *核心修正：LLM 协议优先，验证前置，语法后置，必须有评估*
 *v2.1.1 补充：多硬件后端抽象，优先 NVIDIA + Ascend A3*
+*v2.1.3 补充：借鉴 Claude Code 的工程设计模式*
