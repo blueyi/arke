@@ -620,7 +620,8 @@ print("✅ GPU + Triton 环境验证通过")
 | **G2** | W3 末 | 端到端通路 | 手动 strategy → codegen → ≥ 70% cuBLAS | **Arke 的下限不行，LLM 部分全是空中楼阁** |
 | **G3** | W4 末 | LLM 可行性 | LLM tool-use 50 步 → matmul ≥ 50% cuBLAS + softmax 正确 | LLM 不具备 GPU 优化推理能力 → pivot |
 | **G4** | W6 末 | 对比优势 | Arke 正确率和性能 ≥ 直写 Triton | **不成立 → kill 或 pivot 为验证框架** |
-| G5 | Phase 2 | 多硬件可迁移 | 同一 LLM session 优化 Ascend + 抽象层不大改 | 跨硬件假设不成立 |
+| **G5** | W8 末 | 整模型端到端收益 | GPT-2 Small 推理性能 Arke ≥ torch.compile | **单算子优势无法转化为整模型收益 → 分析瓶颈** |
+| G6 | Phase 2 | 多硬件可迁移 | 同一 LLM session 优化 Ascend + 抽象层不大改 | 跨硬件假设不成立 |
 
 ### Gate 4 的决策矩阵
 
@@ -645,6 +646,7 @@ print("✅ GPU + Triton 环境验证通过")
 | 6 | **Parser 可用** | .ak → IR → codegen → 执行 |
 | 7 | **轨迹可导出** | 优化过程的完整 (state, action, reward) 轨迹 |
 | 8 | **Fallback 可用** | LLM 搜索不如 fallback 时自动降级 |
+| 9 | **整模型端到端** | GPT-2 Small 推理中替换 Arke kernel，端到端性能 ≥ torch.compile |
 
 ---
 

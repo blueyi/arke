@@ -260,7 +260,105 @@ LLM 做了 20 步决策后的 strategy，编译出来的 kernel：
 | Arke 正确率低 + 性能差 | ❌ 核心假设不成立 | **Kill** 或根本性 pivot |
 | Arke ≈ 直写 Triton | ⚠️ 没有优势 | 审视 Arke 的增量价值（可解释性？可迁移性？） |
 
-### Gate 5：多硬件验证（Phase 2，有 Ascend 硬件后）
+### Gate 5：整模型端到端验证（Week 7-8）🔴🔴 最终验证
+
+> 单算子 benchmark 可能给出虚假信心。算子快了 20% 不代表模型快了 20%——
+> 框架集成开销、内存 layout 转换、kernel launch latency 都会吃掉收益。
+> **必须在一个最小化的真实模型上验证端到端收益。**
+
+| 验证项 | 标准 | 失败应对 |
+|--------|------|----------|
+| **选定验证模型** | 一个最小但有代表性的模型（见下文） | - |
+| **Arke kernel 可替换原生算子** | PyTorch custom op 接口可用 | 修 integration layer |
+| **整模型推理正确** | 模型输出与 baseline 数值一致（容差内） | 修 kernel / 修接口 |
+| **整模型端到端有性能收益** | 吞吐量或延迟相比 baseline 有可测量提升 | 如果无收益 → 分析瓶颈 |
+| **无回退** | 不出现 Arke kernel 导致模型变慢的情况 | 分析 kernel launch 和内存开销 |
+
+#### 验证模型选择原则
+
+```
+选择标准：
+1. 小到能在 RTX 3060 (6GB) 上跑推理
+2. 包含 Arke 优化的目标算子（matmul, softmax, attention）
+3. 足够有代表性——不能是 toy model
+4. 有公认的 baseline 性能数据
+```
+
+**候选模型（按优先级排序）**：
+
+| 模型 | 参数量 | 关键算子 | 为什么选 |
+|------|--------|---------|---------|
+| GPT-2 Small (124M) | 124M | matmul + softmax + layernorm + GELU | 最经典的 transformer 验证模型，小到 3060 能跑 |
+| BERT-base (110M) | 110M | matmul + softmax + layernorm | encoder-only，推理更简单 |
+| ViT-B/16 (86M) | 86M | matmul + softmax + patch embedding | CV 方向，验证通用性 |
+| Llama-2 7B (量化) | 7B→~3.5GB | matmul + RoPE + RMSNorm + attention | 真实 LLM，但需要 int4 量化才能放进 6GB |
+
+**推荐**：GPT-2 Small 作为主验证模型。理由：
+1. 124M 参数，FP16 只需 ~250MB 显存，RTX 3060 轻松
+2. 12 层 transformer，每层含 matmul + softmax + layernorm + GELU——覆盖 Arke Phase 1 的所有目标算子
+3. HuggingFace 上有标准实现，baseline 性能容易获取
+4. 社区关注度高，结果有说服力
+
+#### 端到端验证流程
+
+```
+Step 1: Baseline 测量
+  标准 PyTorch GPT-2 Small 推理性能（tokens/sec）
+  - torch.compile 优化版
+  - 原生 eager 版
+  记录：throughput, latency_p50, latency_p99, memory_peak
+
+Step 2: 识别热点算子
+  Profile GPT-2 推理，找出耗时 Top-5 算子
+  通常：linear (matmul) > attention (softmax+matmul) > layernorm > GELU
+  确定 Arke 优化哪些算子
+
+Step 3: Arke 算子替换
+  用 PyTorch custom op (torch.library) 将 Arke 优化后的 kernel 注入模型
+  逐个替换，每替换一个测一次：
+    替换 matmul → 测性能
+    替换 matmul + softmax → 测性能
+    替换 matmul + softmax + fused_attention → 测性能
+
+Step 4: 正确性验证
+  - 逐算子：Arke kernel 输出 vs PyTorch 原生输出，allclose(atol, rtol)
+  - 整模型：GPT-2 生成文本质量不降（perplexity 对比）
+
+Step 5: 性能对比
+  | 配置 | tokens/sec | vs baseline |
+  |------|-----------|-------------|
+  | PyTorch eager | xxx | 1.0x |
+  | torch.compile | xxx | y.yx |
+  | Arke (matmul only) | xxx | z.zx |
+  | Arke (all ops) | xxx | w.wx |
+```
+
+#### 什么算"端到端有收益"？
+
+```
+最低标准（必须达到）：
+  Arke 优化后的 GPT-2 推理不比 torch.compile 慢
+
+有意义的收益：
+  Arke 优化后 ≥ 5% 的端到端 throughput 提升
+
+优秀：
+  Arke 优化后 ≥ 15% 的端到端 throughput 提升
+```
+
+**关键：如果单算子快了 30% 但整模型只快了 2%，需要分析为什么——可能是 kernel launch overhead、内存拷贝、或者该算子本身在模型中占比不高。这种分析本身就是有价值的输出。**
+
+#### 整模型验证失败的可能原因与应对
+
+| 原因 | 症状 | 应对 |
+|------|------|------|
+| Kernel launch overhead | 单算子快但整模型慢 | kernel 合并、减少 launch 次数 |
+| 内存 layout 转换 | 输入输出需要 contiguous/transpose | 优化 memory layout 策略 |
+| 框架集成开销 | custom op 调用成本 > 算子加速 | 优化 Python↔CUDA 边界 |
+| 算子在模型中占比低 | matmul 只占 40% 耗时，快 30% 只有 12% 整体提升 | 扩大优化算子覆盖 |
+| 优化的 shape 不匹配 | benchmark 用 [1024,512]，实际模型用 [768,768] | 针对模型实际 shape 优化 |
+
+### Gate 6：多硬件验证（Phase 2，有 Ascend 硬件后）
 
 | 验证项 | 标准 | 失败应对 |
 |--------|------|----------|
@@ -358,10 +456,11 @@ Week 5-6: Gate 4 (对比优势)                ← 生死判断
   "Arke 比直写 Triton 更好吗？"
   新增 Group D: Arke 暴力搜索 baseline
 
-Week 7-8: 收尾 + 报告
-  完整评估 + 结论 + Phase 2 方向决策
+Week 7-8: Gate 5 (整模型端到端)            ← 最终验证
+  "单算子优势能转化为整模型收益吗？"
+  GPT-2 Small 端到端推理性能对比
 
-Phase 2: Gate 5 (多硬件)
+Phase 2: Gate 6 (多硬件)
   "Arke 的抽象能跨硬件吗？"
 ```
 

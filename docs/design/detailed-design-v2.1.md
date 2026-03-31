@@ -850,16 +850,20 @@ class BenchmarkTask:
 | W7-03 | CLI 完善（parse/inspect/optimize/codegen） | S3 | P1 | W5-04,W6-01 | 4h |
 | W7-04 | IR 可视化（inspect --visual） | S3 | P2 | W7-03 | 3h |
 | W7-05 | 整体集成测试 + bug 修复 | ALL | P0 | ALL | 4h |
+| W7-06 | GPT-2 Small baseline 测量（eager + torch.compile） | S4 | P0 | W1-01 | 3h |
+| W7-07 | PyTorch custom op 集成层（torch.library 注册 Arke kernel） | S2 | P0 | W6-01 | 4h |
 
 ### Week 8 任务
 
 | ID | 任务 | Stream | 优先级 | 依赖 | 工时 |
 |----|------|:------:|:------:|:----:|:----:|
-| W8-01 | 完整评估报告 | S4 | P0 | W7-02 | 4h |
-| W8-02 | 文档完善（agent-protocol/, ir-spec/） | ALL | P1 | ALL | 4h |
-| W8-03 | README 更新 + Quick Start 指南 | ALL | P0 | W6-01 | 2h |
-| W8-04 | 代码清理 + ruff/mypy 通过 | ALL | P1 | ALL | 3h |
-| W8-05 | 测试覆盖率 ≥ 60% | TEST | P1 | ALL | 4h |
+| W8-01 | GPT-2 Small 端到端验证（逐算子替换 + 整模型性能对比） | S4 | P0 | W7-06,W7-07 | 6h |
+| W8-02 | 完整评估报告（含算子对比 + 整模型端到端结果） | S4 | P0 | W8-01,W7-02 | 4h |
+| W8-03 | 文档完善（agent-protocol/, ir-spec/） | ALL | P1 | ALL | 4h |
+| W8-04 | README 更新 + Quick Start 指南 | ALL | P0 | W6-01 | 2h |
+| W8-05 | 代码清理 + ruff/mypy 通过 | ALL | P1 | ALL | 3h |
+| W8-06 | 测试覆盖率 ≥ 60% | TEST | P1 | ALL | 4h |
+| W8-07 | **MVP v0.1.0 Tag** 🎉 | ALL | P0 | ALL | 1h | | 4h |
 | W8-06 | **MVP v0.1.0 Tag** 🎉 | ALL | P0 | ALL | 1h |
 
 ---
@@ -874,7 +878,8 @@ class BenchmarkTask:
 | **M4: LLM 循环可用** | W4 末 | LLM 通过 tool-use 完成 matmul 优化端到端 |
 | **M5: Parser 可用** | W5 末 | .ak 文件 → IR → codegen → 执行 |
 | **M6: 评估完成** | W7 末 | Arke vs 直写 Triton 有定量对比数据 |
-| **M7: MVP v0.1.0** | W8 末 | 全部 7 条成功标准达成 |
+| **M7: 整模型验证** | W8 中 | GPT-2 Small 端到端推理 Arke kernel 替换 + 性能对比 |
+| **M8: MVP v0.1.0** | W8 末 | 全部 9 条成功标准达成 |
 
 ---
 
