@@ -9,7 +9,7 @@
 
 Arke Language is a domain-specific language for describing tensor operator computations
 and optimization strategies. It separates **what to compute** (kernel) from
-**how to optimize** (schedule/strategy).
+**how to optimize** (strategy).
 
 ```arke
 kernel fused_matmul_relu(
