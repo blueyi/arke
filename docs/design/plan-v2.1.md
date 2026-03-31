@@ -43,6 +43,9 @@ Week 1-2       Week 3-4       Week 5-6       Week 7-8
 │ Stream 1: LLM Agent Protocol（核心）                    │
 │ [Tool Schema] → [ArkeEnv] → [LLM 联调] → [闭环优化]    │
 ├────────────────────────────────────────────────────────┤
+│ Stream 1b: Agent Runtime（CC-inspired, W2-4 融入 S1）   │
+│   [ToolMeta] → [Orchestrator] → [Compact+Resilience]   │
+├────────────────────────────────────────────────────────┤
 │ Stream 2: IR + 验证 + Codegen（基础）                   │
 │ [IR Schema] → [验证MVP] → [Triton CG] → [端到端]       │
 ├────────────────────────────────────────────────────────┤
@@ -52,6 +55,12 @@ Week 1-2       Week 3-4       Week 5-6       Week 7-8
 │ Stream 4: 评估框架（贯穿）                               │
 │              [任务定义] → [Baseline] → [对比实验]        │
 └────────────────────────────────────────────────────────┘
+
+Stream 1b 说明（借鉴 Claude Code 51万行源码验证过的模式）：
+  - W2: 声明式 Tool 接口 (ToolMeta) + 大结果 delta 压缩
+  - W3: 工具并发分区编排器 + 分段 Prompt Cache + Ground Truth State
+  - W4: AsyncGenerator 优化循环 + Context Compact + 三层容错
+  详见 cc-inspired-update.md
 ```
 
 ---
@@ -797,7 +806,9 @@ Phase 4: Arke → AscendNPU IR HIVM → NPU      （极致优化，精确控制 
 
 ---
 
-*计划版本：v2.1.1 | 创建日期：2026-03-31*
+*计划版本：v2.1.3 | 创建日期：2026-03-31*
 *核心修正：LLM 协议优先，验证前置，语法后置，必须有评估*
 *v2.1.1 补充：多硬件后端抽象，优先 NVIDIA + Ascend A3*
-*v2.1.3 补充：借鉴 Claude Code 的工程设计模式*
+*v2.1.2 补充：LLM API 灵活配置*
+*v2.1.3 补充：借鉴 Claude Code 的 Agent Runtime 工程模式（Stream 1b 融入 S1）*
+*v2.1.3 补充：README 任务追踪 + 详细设计任务拆解更新*
