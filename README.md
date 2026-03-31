@@ -128,17 +128,17 @@ Week 7-8: Polish (Multi-LLM + Whole-model Eval + Report)
 |:------:|:---|:-----|:------:|:------|
 | ⬚ | W1-01 | Create venv + install PyTorch/Triton | Env | |
 | ⬚ | W1-02 | GPU environment verification script | Env | Depends: W1-01 |
-| ⬚ | W1-03 | Op catalog P0 (10 operators) | IR | matmul, relu, softmax, add, mul, etc. |
-| ⬚ | W1-04 | Semantic IR JSON Schema + serialization | IR | |
-| ⬚ | W1-05 | Strategy IR JSON Schema | IR | |
-| ⬚ | W1-06a | Unified HW Profile Schema | IR | |
-| ⬚ | W1-06b | HW Profile: nvidia_ampere_rtx3060.json | IR | Depends: W1-01, W1-06a |
+| ✅ | W1-03 | Op catalog P0 (10 operators) | IR | 10 ops in `arke/ir/ops/catalog.py` |
+| ✅ | W1-04 | Semantic IR JSON Schema + serialization | IR | `arke/ir/semantic.py` + JSON round-trip |
+| ✅ | W1-05 | Strategy IR JSON Schema | IR | `arke/ir/strategy.py` (renamed from schedule) |
+| ✅ | W1-06a | Unified HW Profile Schema | IR | JSON format defined |
+| ✅ | W1-06b | HW Profile: nvidia_ampere_rtx3060.json | IR | `arke/ir/targets/nvidia_ampere.json` |
 | ⬚ | W1-06c | HW Profile: huawei_ascend_a3.json | IR | Depends: W1-06a |
-| ⬚ | W1-06d | Backend abstract base + registry | IR | |
+| ✅ | W1-06d | Backend abstract base + registry | IR | `arke/backend/base.py` |
 | ⬚ | W1-07 | Tool-use schema (all 10 tools) | Agent | Depends: W1-03 |
 | ⬚ | W1-08 | Session lifecycle + system prompt template | Agent | Depends: W1-07 |
-| ⬚ | W1-09 | IR Builder (Python → SemanticIR) | IR | Depends: W1-03, W1-04 |
-| ⬚ | W1-10 | Integration: manual matmul IR → JSON roundtrip | ALL | **Gate G0 check** |
+| ✅ | W1-09 | IR Builder (Python → SemanticIR) | IR | `arke/ir/builder.py` + KernelBuilder |
+| ✅ | W1-10 | Integration: manual matmul IR → JSON roundtrip | ALL | 30 tests passing |
 | ⬚ | W1-11 | Glossary + doc alignment | ALL | |
 | ⬚ | W1-12 | Collect AscendC matmul samples | IR | Reference only |
 
@@ -146,15 +146,15 @@ Week 7-8: Polish (Multi-LLM + Whole-model Eval + Report)
 
 | Status | ID | Task | Stream | Notes |
 |:------:|:---|:-----|:------:|:------|
-| ⬚ | W2-01 | V0 static validator (shape + constraints) | Validation | Depends: W1-04,05,06 |
+| ✅ | W2-01 | V0 static validator (shape + constraints) | Validation | `arke/engine/validator.py` |
 | ⬚ | W2-02 | V1 numerical validator (NumPy ref + compare) | Validation | Depends: W1-03, W1-01 |
-| ⬚ | W2-03 | ArkeEnv core framework | Agent | Depends: W1-07 |
+| ✅ | W2-03 | ArkeEnv core framework | Agent | `arke/engine/env.py` |
 | ⬚ | W2-04 | Legal actions enumeration engine | Agent | Depends: W1-03,04,06 |
-| ⬚ | W2-05 | ArkeEnv observe/apply/rollback | Agent | Depends: W2-03,04,01 |
-| ⬚ | W2-06 | Strategy IR rename (schedule→strategy) | IR | Depends: W1-05 |
+| ✅ | W2-05 | ArkeEnv observe/apply/rollback | Agent | 11 env tests passing |
+| ✅ | W2-06 | Strategy IR rename (schedule→strategy) | IR | `schedule.py` → `strategy.py` done |
 | ⬚ | W2-07 | Unit tests: validator + legal_actions | Test | Depends: W2-01,04 |
 | ⬚ | W2-08 | legal_actions codegen_support annotation | Agent | Depends: W2-04 |
-| ⬚ | W2-09 | Declarative Tool interface (ToolMeta + base) | Agent | **CC-inspired** |
+| ✅ | W2-09 | Declarative Tool interface (ToolMeta + base) | Agent | **CC-inspired**. `arke/agent/tools/base.py` |
 | ⬚ | W2-10 | Large result delta compression | Agent | **CC-inspired** |
 
 ### Week 3 — Codegen + Agent Runtime Infrastructure
@@ -169,7 +169,7 @@ Week 7-8: Polish (Multi-LLM + Whole-model Eval + Report)
 | ⬚ | W3-06 | V2 performance profiler (vs cuBLAS) | Validation | Depends: W3-04, W1-01 |
 | ⬚ | W3-07 | ArkeEnv ↔ codegen + verify + profile | ALL | Depends: W3-05,06, W2-05 |
 | ⬚ | W3-08 | Triton softmax template | Codegen | |
-| ⬚ | W3-09 | Tool concurrency partitioning (orchestrator.py) | Agent | **CC-inspired**. Depends: W2-09 |
+| ✅ | W3-09 | Tool concurrency partitioning (orchestrator.py) | Agent | **CC-inspired**. 4 tests passing |
 | ⬚ | W3-10 | Segmented prompt cache (4-segment build) | Agent | **CC-inspired**. Depends: W1-08 |
 | ⬚ | W3-11 | OptimizationState ground truth manager | Agent | **CC-inspired**. Depends: W2-05 |
 
@@ -313,6 +313,13 @@ arke/
 | [e2e-flow.md](docs/design/e2e-flow.md) | 端到端流程 — 从用户输入到 GPU 执行的完整路径 walkthrough |
 | [design-review.md](docs/design/design-review.md) | 设计审视 — 假设验证框架、风险矩阵、Gate 决策标准 |
 | [naming-system.md](docs/design/naming-system.md) | 命名体系 — 全局术语规范、CLI/IR/Tool/目录命名规则 |
+
+## Specifications
+
+| Spec | Description |
+|------|-------------|
+| [arke-language-spec.md](docs/spec/arke-language-spec.md) | Arke Language 语言规范 — 语法、类型系统、built-in 算子 |
+| [arke-ir-spec.md](docs/spec/arke-ir-spec.md) | Arke IR 规范 — Semantic IR / Strategy IR 结构定义、不变量 |
 
 <details>
 <summary>Archived documents (docs/design/deprecated/)</summary>
