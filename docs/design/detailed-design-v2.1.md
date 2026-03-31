@@ -678,7 +678,7 @@ class BenchmarkTask:
 | T4 | matmul+relu | [1024,512]@[512,2048] f16 | Triton tuned | ≥70% |
 | T5 | matmul (small) | [256,256]@[256,256] f16 | cuBLAS | ≥50% |
 
-### 5.2 三组对比
+### 5.2 四组对比
 
 **Group A: LLM + Arke（本项目）**
 - LLM 通过 tool-use 优化
@@ -693,6 +693,12 @@ class BenchmarkTask:
 **Group C: LLM Direct CUDA**
 - LLM 直接写 CUDA kernel
 - 同 Group B
+
+**Group D: Arke Zero-LLM（暴力搜索）**
+- Arke 模板 codegen + 枚举所有 legal_actions 组合，取最优
+- 不使用 LLM，纯暴力搜索
+- 用于区分"Arke 框架价值" vs "LLM 智能价值"
+- 如果 D ≈ A → LLM 增量价值不大
 
 ### 5.3 评估指标
 
@@ -768,6 +774,8 @@ class BenchmarkTask:
 | W1-08 | Session 生命周期 + system prompt 模板 | S1 | P0 | W1-07 | 3h |
 | W1-09 | IR Builder（从 Python 快速构建 SemanticIR） | S2 | P1 | W1-03,04 | 3h |
 | W1-10 | 集成验证：手动构造 matmul IR → JSON 往返 | ALL | P0 | W1-04,09 | 2h |
+| W1-11 | 术语统一 glossary + 文档更新 | ALL | P1 | - | 1h |
+| W1-12 | 收集 AscendC 开源 matmul 样例（CANN samples） | S2 | P1 | - | 2h |
 
 ### Week 2 任务
 
@@ -780,6 +788,7 @@ class BenchmarkTask:
 | W2-05 | ArkeEnv observe/apply/rollback 完整实现 | S1 | P0 | W2-03,04,01 | 4h |
 | W2-06 | Strategy IR 重命名 (schedule→strategy) + 关联验证 | S2 | P1 | W1-05 | 2h |
 | W2-07 | 单元测试：validator + legal_actions | TEST | P0 | W2-01,04 | 3h |
+| W2-08 | legal_actions 标注 codegen_support 状态 | S1 | P1 | W2-04 | 1h |
 
 ### Week 3 任务
 
@@ -801,9 +810,10 @@ class BenchmarkTask:
 | W4-01 | LLM Agent Runner（支持 Claude API） | S1 | P0 | W2-05,W3-07 | 4h |
 | W4-02 | matmul agent demo：完整 tool-use 循环 | S1 | P0 | W4-01 | 4h |
 | W4-03 | 错误恢复模块（约束违反/数值错误/性能退化） | S1 | P0 | W4-01 | 3h |
+| W4-03b | Fallback strategy 机制（预定义好策略 + 降级逻辑） | S1 | P0 | W4-02 | 2h |
 | W4-04 | 评估任务定义 T1-T5 | S4 | P1 | - | 2h |
 | W4-05 | cuBLAS/PyTorch baseline 实现 | S4 | P1 | W1-01 | 2h |
-| W4-06 | softmax agent demo | S1 | P1 | W3-08,W4-01 | 3h |
+| W4-06 | softmax agent demo（Gate 3 必须同时验证） | S1 | P0 | W3-08,W4-01 | 3h |
 | W4-07 | 多 LLM 后端支持（Qwen/GPT 适配） | S1 | P2 | W4-01 | 3h |
 
 ### Week 5 任务
@@ -827,6 +837,7 @@ class BenchmarkTask:
 | W6-02 | Group B baseline：LLM 直写 Triton | S4 | P0 | W4-04 | 3h |
 | W6-03 | Group C baseline：LLM 直写 CUDA | S4 | P1 | W4-04 | 3h |
 | W6-04 | 运行 T1-T3 对比实验 | S4 | P0 | W6-01,02 | 4h |
+| W6-04b | Group D: Zero-LLM 暴力搜索 baseline | S4 | P0 | W6-01 | 3h |
 | W6-05 | fused_matmul_relu 完整端到端 | S2 | P0 | W3-02,W6-01 | 3h |
 | W6-06 | 实验数据分析 + 初步结论 | S4 | P1 | W6-04 | 2h |
 

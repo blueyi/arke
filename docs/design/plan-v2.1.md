@@ -607,17 +607,44 @@ print("✅ GPU + Triton 环境验证通过")
 
 ---
 
-## 九、MVP v0.1.0 成功标准
+## 九、假设验证里程碑（Gate）
+
+> 详见 [`design-review.md`](design-review.md)
+
+每个 Gate 不只是"功能交付"，更是"假设验证"。如果假设不成立，必须诚实面对并决定 pivot/kill。
+
+| Gate | 时间 | 验证什么假设 | 通过标准 | 失败意味着什么 |
+|:----:|:----:|-------------|---------|---------------|
+| **G0** | W1 末 | 环境可行性 | Triton matmul 在 RTX 3060 跑通 | 换硬件 |
+| **G1** | W2 末 | IR 表达力 | 已知好的 strategy 能在 Arke 中表达 | IR 设计有根本问题 |
+| **G2** | W3 末 | 端到端通路 | 手动 strategy → codegen → ≥ 70% cuBLAS | **Arke 的下限不行，LLM 部分全是空中楼阁** |
+| **G3** | W4 末 | LLM 可行性 | LLM tool-use 50 步 → matmul ≥ 50% cuBLAS + softmax 正确 | LLM 不具备 GPU 优化推理能力 → pivot |
+| **G4** | W6 末 | 对比优势 | Arke 正确率和性能 ≥ 直写 Triton | **不成立 → kill 或 pivot 为验证框架** |
+| G5 | Phase 2 | 多硬件可迁移 | 同一 LLM session 优化 Ascend + 抽象层不大改 | 跨硬件假设不成立 |
+
+### Gate 4 的决策矩阵
+
+| 实验结果 | 结论 | 下一步 |
+|----------|------|--------|
+| Arke 正确率高 + 性能好 | ✅ 继续 | Phase 2 |
+| Arke 正确率高 + 性能差 | ⚠️ Arke 是验证框架不是优化工具 | Pivot 定位 |
+| Arke ≈ 直写 Triton | ⚠️ 无优势 | 审视增量价值 |
+| 两者都差 | ❌ | Kill 或根本 pivot |
+
+---
+
+## 十、MVP v0.1.0 成功标准
 
 | # | 标准 | 验收方式 |
 |---|------|----------|
 | 1 | **LLM 端到端可用** | LLM 通过 tool-use 优化 matmul → GPU 执行 → 正确结果 |
 | 2 | **验证系统可用** | 静态 + 数值 + 性能 三层验证正常工作 |
 | 3 | **性能达标** | LLM 优化后 matmul ≥ 70% cuBLAS |
-| 4 | **有对比数据** | Arke vs 直写 Triton 的定量对比 |
-| 5 | **Parser 可用** | .ak → IR → codegen → 执行 |
-| 6 | **轨迹可导出** | 优化过程的完整 (state, action, reward) 轨迹 |
-| 7 | **多算子** | matmul + softmax + fused_matmul_relu 至少三个可跑 |
+| 4 | **有对比数据** | Arke vs 直写 Triton vs 暴力搜索 的定量对比 |
+| 5 | **多算子验证** | matmul + softmax + fused_matmul_relu 至少三个可跑 |
+| 6 | **Parser 可用** | .ak → IR → codegen → 执行 |
+| 7 | **轨迹可导出** | 优化过程的完整 (state, action, reward) 轨迹 |
+| 8 | **Fallback 可用** | LLM 搜索不如 fallback 时自动降级 |
 
 ---
 
