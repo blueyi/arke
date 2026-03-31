@@ -4,8 +4,17 @@
 """Tests for Arke type system."""
 
 from arke.lang.types import (
-    is_float, is_int, is_valid_scalar, dtype_bits,
-    f16, f32, bf16, i32, u8, SCALAR_TYPES, MEMORY_LEVELS,
+    MEMORY_LEVELS,
+    SCALAR_TYPES,
+    bf16,
+    dtype_bits,
+    f16,
+    f32,
+    i32,
+    is_float,
+    is_int,
+    is_valid_scalar,
+    u8,
 )
 
 

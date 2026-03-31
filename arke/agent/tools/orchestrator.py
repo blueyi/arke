@@ -10,9 +10,9 @@ consecutive concurrent-safe tools batch together; non-safe tools serialize.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator
+from typing import Any
 
-from arke.agent.tools.base import ArkeTool, ToolResult
+from arke.agent.tools.base import ArkeTool
 
 
 @dataclass

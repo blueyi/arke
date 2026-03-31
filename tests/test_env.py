@@ -3,9 +3,8 @@
 
 """Tests for ArkeEnv and V0 validator."""
 
-from arke.ir.builder import KernelBuilder
 from arke.engine.env import ArkeEnv
-from arke.engine.validator import StaticValidator
+from arke.ir.builder import KernelBuilder
 
 
 def _make_matmul_env() -> ArkeEnv:

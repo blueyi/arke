@@ -3,8 +3,8 @@
 
 """Tests for tool orchestrator (concurrency partitioning)."""
 
-from arke.agent.tools.orchestrator import ToolCall, ToolBatch, partition_tool_calls
 from arke.agent.tools.base import ArkeTool, ToolMeta, ToolResult
+from arke.agent.tools.orchestrator import ToolCall, partition_tool_calls
 
 
 class MockTool(ArkeTool):

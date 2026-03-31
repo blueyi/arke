@@ -3,11 +3,10 @@
 
 """Tests for Arke IR data structures."""
 
-from arke.ir.semantic import SemanticGraph, Node, TensorDesc, Semantics, Edge, FusionGroup
-from arke.ir.strategy import StrategyIR, Decision, Rationale
 from arke.ir.builder import KernelBuilder
-from arke.ir.ops.catalog import OP_CATALOG, get_op, list_ops, is_fusable_epilogue
-
+from arke.ir.ops.catalog import OP_CATALOG, get_op, is_fusable_epilogue, list_ops
+from arke.ir.semantic import Edge, FusionGroup, Node, SemanticGraph, Semantics, TensorDesc
+from arke.ir.strategy import StrategyIR
 
 # ============================================================
 # Semantic IR Tests

@@ -6,8 +6,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
-
 
 # ============================================================
 # Type Nodes
@@ -100,7 +98,7 @@ class ScheduleDirective:
     """A single schedule decision (tile, reorder, fuse, etc.)."""
     kind: str  # "tile" | "reorder" | "fuse" | "parallel" | "place"
     params: dict[str, str | int | float | list]
-    rationale: Optional[Rationale] = None
+    rationale: Rationale | None = None
 
 
 @dataclass

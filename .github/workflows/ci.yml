@@ -33,4 +33,4 @@ jobs:
         run: mypy arke/ arkec/ --ignore-missing-imports
 
       - name: Test
-        run: pytest tests/ -v --tb=short --co 2>/dev/null || echo "No tests yet"
+        run: pytest tests/ -v --tb=short

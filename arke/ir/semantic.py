@@ -11,8 +11,7 @@ and data flow information.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 
 
 @dataclass
@@ -84,7 +83,7 @@ class SemanticGraph:
         """Add a fusion group."""
         self.fusion_groups.append(group)
 
-    def get_node(self, node_id: str) -> Optional[Node]:
+    def get_node(self, node_id: str) -> Node | None:
         """Get a node by ID."""
         for node in self.nodes:
             if node.id == node_id:

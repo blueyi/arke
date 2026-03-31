@@ -14,7 +14,6 @@ Each operator definition includes:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -28,7 +27,7 @@ class OpDefinition:
     index_vars: list[str] = field(default_factory=list)
     reduction_axes: list[str] = field(default_factory=list)
     properties: list[str] = field(default_factory=list)
-    can_fuse_as: Optional[str] = None   # "epilogue" | "prologue" | None
+    can_fuse_as: str | None = None   # "epilogue" | "prologue" | None
     numpy_ref: str = ""                 # "np.matmul(A, B)"
 
 
@@ -183,7 +182,7 @@ def get_op(name: str) -> OpDefinition:
     return OP_CATALOG[name]
 
 
-def list_ops(category: Optional[str] = None) -> list[OpDefinition]:
+def list_ops(category: str | None = None) -> list[OpDefinition]:
     """List all operators, optionally filtered by category."""
     ops = list(OP_CATALOG.values())
     if category:

@@ -14,8 +14,7 @@ See docs/design/naming-system.md for rationale.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 
 
 @dataclass
@@ -33,7 +32,7 @@ class Decision:
     """
     kind: str
     params: dict
-    rationale: Optional[Rationale] = None
+    rationale: Rationale | None = None
     step: int = 0  # Auto-assigned by StrategyIR
 
 
@@ -77,7 +76,7 @@ class StrategyIR:
         return removed
 
     def tile(self, loop: str, factors: list[int],
-             rationale: Optional[str] = None) -> Decision:
+             rationale: str | None = None) -> Decision:
         return self.add_decision(Decision(
             kind="tile",
             params={"loop": loop, "factors": factors},
@@ -85,7 +84,7 @@ class StrategyIR:
         ))
 
     def reorder(self, order: list[str],
-                rationale: Optional[str] = None) -> Decision:
+                rationale: str | None = None) -> Decision:
         return self.add_decision(Decision(
             kind="reorder",
             params={"order": order},
@@ -93,7 +92,7 @@ class StrategyIR:
         ))
 
     def fuse(self, ops: list[str], fusion_type: str = "epilogue",
-             rationale: Optional[str] = None) -> Decision:
+             rationale: str | None = None) -> Decision:
         return self.add_decision(Decision(
             kind="fuse",
             params={"ops": ops, "type": fusion_type},
@@ -101,7 +100,7 @@ class StrategyIR:
         ))
 
     def parallel(self, loops: list[str], mapping: dict[str, str],
-                 rationale: Optional[str] = None) -> Decision:
+                 rationale: str | None = None) -> Decision:
         return self.add_decision(Decision(
             kind="parallel",
             params={"loops": loops, "mapping": mapping},
@@ -109,7 +108,7 @@ class StrategyIR:
         ))
 
     def place(self, tensor: str, memory: str,
-              rationale: Optional[str] = None) -> Decision:
+              rationale: str | None = None) -> Decision:
         return self.add_decision(Decision(
             kind="place",
             params={"tensor": tensor, "memory": memory},

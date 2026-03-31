@@ -8,8 +8,8 @@ Fluent API for constructing SemanticGraph from Python, without writing raw JSON.
 
 from __future__ import annotations
 
-from arke.ir.semantic import SemanticGraph, Node, TensorDesc, Semantics, Edge, FusionGroup
 from arke.ir.ops.catalog import get_op, is_fusable_epilogue
+from arke.ir.semantic import Edge, FusionGroup, Node, SemanticGraph, Semantics, TensorDesc
 
 
 class KernelBuilder:
