@@ -513,7 +513,24 @@ class PerformanceProfiler:
 
 ## 四、Codegen 详细设计
 
-### 4.1 路径 A：模板翻译
+> 多硬件后端的完整架构设计见 [`multi-backend-design.md`](multi-backend-design.md)。
+> 以下仅描述 Phase 1 NVIDIA 路径的实现细节。
+
+### 4.0 多后端架构
+
+```
+ArkeEnv（硬件无关）
+    ↓ compile_and_profile()
+Backend Registry → 自动选择后端
+    ├── TritonBackend (NVIDIA)    ← Phase 1 完整实现
+    ├── AscendCBackend (Ascend)   ← Phase 1 骨架 + stub
+    └── LLMGenBackend (实验性)    ← Phase 1 实验
+
+每个后端实现统一接口：
+  translate_strategy() → generate_code() → compile() → run() → profile()
+```
+
+### 4.1 路径 A：模板翻译（NVIDIA Triton）
 
 使用 Jinja2 模板，每种 (算子模式, 策略模式) 有一套模板。
 
@@ -742,8 +759,11 @@ class BenchmarkTask:
 | W1-02 | GPU 环境验证脚本 | 环境 | P0 | W1-01 | 1h |
 | W1-03 | 算子目录 P0（10个算子定义） | S2 | P0 | - | 4h |
 | W1-04 | Semantic IR JSON Schema + 完善序列化 | S2 | P0 | - | 3h |
-| W1-05 | Strategy IR JSON Schema | S2 | P0 | - | 2h |
-| W1-06 | HW Profile: nvidia_ampere.json（实测参数） | S2 | P0 | W1-01 | 2h |
+| W1-05 | Strategy IR JSON Schema（Arke 抽象词汇） | S2 | P0 | - | 2h |
+| W1-06a | 统一 HW Profile Schema | S2 | P0 | - | 2h |
+| W1-06b | HW Profile: nvidia_ampere_rtx3060.json（实测参数） | S2 | P0 | W1-01,06a | 1h |
+| W1-06c | HW Profile: huawei_ascend_a3.json | S2 | P0 | W1-06a | 1h |
+| W1-06d | Backend 抽象基类 + 后端注册表 | S2 | P0 | - | 2h |
 | W1-07 | Tool-use Schema 定义（全部 10 个 tool） | S1 | P0 | W1-03 | 4h |
 | W1-08 | Session 生命周期 + system prompt 模板 | S1 | P0 | W1-07 | 3h |
 | W1-09 | IR Builder（从 Python 快速构建 SemanticIR） | S2 | P1 | W1-03,04 | 3h |
@@ -796,6 +816,8 @@ class BenchmarkTask:
 | W5-04 | Lark Parser 实现 | S3 | P1 | W5-03 | 4h |
 | W5-05 | AST → SemanticIR 转换 | S3 | P1 | W5-04,W1-04 | 3h |
 | W5-06 | 解析 examples/*.ak → IR → codegen | S3 | P1 | W5-05,W3-03 | 2h |
+| W5-07 | AscendC matmul 模板（骨架，不编译） | S2 | P1 | W1-06c | 3h |
+| W5-08 | AscendC backend 骨架（compile/profile = stub） | S2 | P1 | W1-06d | 2h |
 
 ### Week 6 任务
 
@@ -860,5 +882,6 @@ class BenchmarkTask:
 
 ---
 
-*详细设计版本：v2.1 | 创建日期：2026-03-31*
-*总计约 55 个开发任务，预估 ~200 工时，8 周 MVP*
+*详细设计版本：v2.1.1 | 创建日期：2026-03-31*
+*总计约 60 个开发任务，预估 ~220 工时，8 周 MVP*
+*多硬件后端设计见 multi-backend-design.md*

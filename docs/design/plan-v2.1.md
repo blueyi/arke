@@ -727,5 +727,28 @@ arke/
 
 ---
 
-*计划版本：v2.1 | 创建日期：2026-03-31*
+## 十二、多硬件后端策略
+
+详见 [`multi-backend-design.md`](multi-backend-design.md)。
+
+核心原则：
+- **Strategy IR 使用 Arke 抽象词汇**（fast_memory, parallel_outer, matrix_unit），不绑定任何硬件
+- **后端可插拔**：每种硬件一套 codegen + compiler + profiler，通过 `ArkeBackend` 接口统一
+- **Phase 1 优先 NVIDIA**（有硬件），**Ascend 做架构 + 模板 + stub**（无硬件但架构不欠债）
+- **LLM 不需要感知硬件差异**——差异通过 `get_hw_profile()` 和 `list_legal_actions()` 自然体现
+
+Phase 1 新增任务（已整合到 Week 1）：
+- 统一 HW Profile Schema + 两个硬件的 profile
+- Backend 抽象基类 + 后端注册表
+- Strategy IR 统一词汇表
+
+Phase 2（MVP 之后）：
+- 获取 Ascend A3 硬件环境
+- AscendC 完整 codegen + compile + profile
+- 跨硬件评估实验
+
+---
+
+*计划版本：v2.1.1 | 创建日期：2026-03-31*
 *核心修正：LLM 协议优先，验证前置，语法后置，必须有评估*
+*v2.1.1 补充：多硬件后端抽象，优先 NVIDIA + Ascend A3*
