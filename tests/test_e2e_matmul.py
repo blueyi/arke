@@ -12,10 +12,21 @@ import ast
 import time
 
 import pytest
-import torch
 
-from arke.backend.compiler import TritonCompiler
-from arke.backend.triton_backend import TritonBackend
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+    torch = None  # type: ignore
+
+try:
+    from arke.backend.compiler import TritonCompiler
+    from arke.backend.triton_backend import TritonBackend
+    HAS_BACKEND = True
+except ImportError:
+    HAS_BACKEND = False
+
 from arke.backend.triton_template_engine import TritonTemplateEngine
 from arke.ir.semantic import (
     Edge,
@@ -30,8 +41,8 @@ from arke.ir.semantic import (
 )
 from arke.ir.strategy import StrategyIR
 
-HAS_CUDA = torch.cuda.is_available()
-skip_no_gpu = pytest.mark.skipif(not HAS_CUDA, reason="No GPU available")
+HAS_CUDA = HAS_TORCH and torch.cuda.is_available()
+skip_no_gpu = pytest.mark.skipif(not HAS_CUDA, reason="No GPU or torch available")
 
 
 # ============================================================
