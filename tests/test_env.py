@@ -22,7 +22,7 @@ def _make_matmul_env() -> ArkeEnv:
 def test_env_creation():
     """Test ArkeEnv initializes correctly."""
     env = _make_matmul_env()
-    assert env.semantic.graph_id == "test_matmul_relu"
+    assert env.semantic.kernel_id == "test_matmul_relu"
     assert env.target_hw == "nvidia_ampere"
     assert env.strategy.decision_count == 0
     assert env.hw_profile.get("name") == "nvidia_ampere"
@@ -32,8 +32,9 @@ def test_env_get_semantic_ir():
     """Test get_semantic_ir returns valid dict."""
     env = _make_matmul_env()
     sir = env.get_semantic_ir()
-    assert sir["graph_id"] == "test_matmul_relu"
+    assert sir["kernel_id"] == "test_matmul_relu"
     assert len(sir["nodes"]) == 2
+    assert len(sir["params"]) == 2
 
 
 def test_env_get_hw_profile():

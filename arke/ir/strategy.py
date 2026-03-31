@@ -52,8 +52,8 @@ class StrategyIR:
     Describes optimization decisions, decoupled from computation semantics.
     """
 
-    version: str = "0.1.0"
-    kernel_id: str = ""          # Reference to SemanticGraph
+    version: str = "0.2.0"
+    kernel_id: str = ""          # Reference to SemanticIR
     target_hw: str = ""          # e.g., "nvidia_ampere", "ascend_a3"
     decisions: list[Decision] = field(default_factory=list)
     constraints: HardwareConstraints = field(default_factory=HardwareConstraints)

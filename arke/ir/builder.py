@@ -3,17 +3,28 @@
 
 """Arke IR — Builder.
 
-Fluent API for constructing SemanticGraph from Python, without writing raw JSON.
+Fluent API for constructing SemanticIR from Python, without writing raw JSON.
 """
 
 from __future__ import annotations
 
 from arke.ir.ops.catalog import get_op, is_fusable_epilogue
-from arke.ir.semantic import Edge, FusionGroup, Node, SemanticGraph, Semantics, TensorDesc
+from arke.ir.semantic import (
+    Edge,
+    FusionGroup,
+    InputRef,
+    Node,
+    NodeRef,
+    Param,
+    ParamRef,
+    SemanticIR,
+    Semantics,
+    TensorDesc,
+)
 
 
 class KernelBuilder:
-    """Fluent builder for constructing a SemanticGraph.
+    """Fluent builder for constructing a SemanticIR.
 
     Example:
         b = KernelBuilder("fused_matmul_relu")
@@ -27,20 +38,20 @@ class KernelBuilder:
 
     def __init__(self, name: str):
         self.name = name
-        self.params: list[dict] = []
-        self.nodes: list[Node] = []
-        self.edges: list[Edge] = []
-        self.return_node: str | None = None
-        self.return_shape: list[int] = []
-        self.return_dtype: str = "f16"
+        self._params: list[Param] = []
+        self._nodes: list[Node] = []
+        self._edges: list[Edge] = []
+        self._return_node: str | None = None
+        self._return_shape: list[int] = []
+        self._return_dtype: str = "f16"
         self._node_count = 0
 
     def param(self, name: str, shape: list[int], dtype: str,
               layout: str = "row_major") -> str:
         """Add an input parameter. Returns the parameter name for reference."""
-        self.params.append({
-            "name": name, "shape": shape, "dtype": dtype, "layout": layout,
-        })
+        self._params.append(Param(
+            name=name, shape=shape, dtype=dtype, layout=layout,
+        ))
         return name
 
     def op(self, op_name: str, **inputs: str) -> str:
@@ -54,28 +65,20 @@ class KernelBuilder:
         op_def = get_op(op_name)
 
         # Build input dict: resolve parameter refs vs node refs
-        resolved_inputs: dict = {}
+        resolved_inputs: dict[str, InputRef] = {}
+        param_names = {p.name for p in self._params}
         for key, ref in inputs.items():
-            if any(p["name"] == ref for p in self.params):
-                resolved_inputs[key] = TensorDesc(
-                    shape=next(p["shape"] for p in self.params if p["name"] == ref),
-                    dtype=next(p["dtype"] for p in self.params if p["name"] == ref),
-                )
+            if ref in param_names:
+                resolved_inputs[key] = ParamRef(name=ref)
             else:
-                resolved_inputs[key] = f"@{ref}"
+                resolved_inputs[key] = NodeRef(id=ref)
                 # Add edge from referenced node
-                self.edges.append(Edge(
+                self._edges.append(Edge(
                     from_node=ref, to_node=node_id, tensor_name=f"{ref}_out",
                 ))
 
-        # Infer output shape (simplified — real impl needs shape inference)
-        # For now: copy from first input or use last param shape
-        if self.params:
-            out_shape = self.params[0]["shape"]
-            out_dtype = self.params[0]["dtype"]
-        else:
-            out_shape = [1]
-            out_dtype = "f32"
+        # Infer output shape (simplified — real impl needs proper shape inference)
+        out_shape, out_dtype = self._infer_output(op_name, resolved_inputs)
 
         node = Node(
             id=node_id,
@@ -89,40 +92,64 @@ class KernelBuilder:
                 properties=list(op_def.properties),
             ),
         )
-        self.nodes.append(node)
+        self._nodes.append(node)
         return node_id
 
     def returns(self, node_id: str, shape: list[int], dtype: str) -> None:
         """Set the return node and output shape."""
-        self.return_node = node_id
-        self.return_shape = shape
-        self.return_dtype = dtype
+        self._return_node = node_id
+        self._return_shape = shape
+        self._return_dtype = dtype
         # Update the output node's shape
-        for n in self.nodes:
+        for n in self._nodes:
             if n.id == node_id:
                 n.output = TensorDesc(shape=shape, dtype=dtype)
 
-    def build(self) -> SemanticGraph:
-        """Build and return the SemanticGraph."""
-        graph = SemanticGraph(graph_id=self.name)
+    def build(self) -> SemanticIR:
+        """Build and return the SemanticIR."""
+        ir = SemanticIR(
+            kernel_id=self.name,
+            params=list(self._params),
+            return_type=TensorDesc(
+                shape=self._return_shape,
+                dtype=self._return_dtype,
+            ) if self._return_shape else None,
+            return_node=self._return_node or "",
+        )
 
-        for node in self.nodes:
-            graph.add_node(node)
-        for edge in self.edges:
-            graph.add_edge(edge)
+        for node in self._nodes:
+            ir.add_node(node)
+        for edge in self._edges:
+            ir.add_edge(edge)
 
         # Auto-detect fusion groups
-        self._detect_fusion_groups(graph)
+        self._detect_fusion_groups(ir)
 
-        return graph
+        return ir
 
-    def _detect_fusion_groups(self, graph: SemanticGraph) -> None:
+    def _infer_output(self, op_name: str,
+                      inputs: dict[str, InputRef]) -> tuple[list[int], str]:
+        """Simplified output shape inference."""
+        # Find the shape from the first input
+        for ref in inputs.values():
+            if isinstance(ref, ParamRef):
+                p = next((p for p in self._params if p.name == ref.name), None)
+                if p:
+                    return list(p.shape), p.dtype
+            elif isinstance(ref, NodeRef):
+                n = next((n for n in self._nodes if n.id == ref.id), None)
+                if n:
+                    return list(n.output.shape), n.output.dtype
+        return [1], "f32"
+
+    def _detect_fusion_groups(self, ir: SemanticIR) -> None:
         """Auto-detect epilogue fusion opportunities."""
-        for edge in graph.edges:
-            to_node = graph.get_node(edge.to_node)
+        for edge in ir.edges:
+            to_node = ir.get_node(edge.to_node)
             if to_node and is_fusable_epilogue(to_node.op):
-                graph.add_fusion_group(FusionGroup(
+                ir.add_fusion_group(FusionGroup(
                     id=f"fg_{edge.from_node}_{edge.to_node}",
                     nodes=[edge.from_node, edge.to_node],
                     fusion_type="epilogue",
+                    reason=f"{to_node.op} is elementwise; can fuse into epilogue",
                 ))

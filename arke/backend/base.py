@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
-from arke.ir.semantic import SemanticGraph
+from arke.ir.semantic import SemanticIR
 from arke.ir.strategy import StrategyIR
 
 
@@ -44,7 +44,7 @@ class ArkeBackend(ABC):
     name: str
 
     @abstractmethod
-    def translate(self, semantic: SemanticGraph, strategy: StrategyIR) -> str:
+    def translate(self, semantic: SemanticIR, strategy: StrategyIR) -> str:
         """Generate target source code from IR."""
         ...
 

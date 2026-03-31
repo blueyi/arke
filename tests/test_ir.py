@@ -5,23 +5,29 @@
 
 from arke.ir.builder import KernelBuilder
 from arke.ir.ops.catalog import OP_CATALOG, get_op, is_fusable_epilogue, list_ops
-from arke.ir.semantic import Edge, FusionGroup, Node, SemanticGraph, Semantics, TensorDesc
+from arke.ir.semantic import (
+    Edge, FusionGroup, Node, NodeRef, Param, ParamRef,
+    SemanticIR, Semantics, TensorDesc,
+)
 from arke.ir.strategy import StrategyIR
 
 # ============================================================
 # Semantic IR Tests
 # ============================================================
 
-def test_semantic_graph_creation():
-    """Test creating a basic semantic graph."""
-    graph = SemanticGraph(graph_id="test_matmul_relu")
+def test_semantic_ir_creation():
+    """Test creating a basic semantic IR."""
+    ir = SemanticIR(kernel_id="test_matmul_relu")
+    ir.add_param(Param(name="A", shape=[1024, 512], dtype="f16"))
+    ir.add_param(Param(name="B", shape=[512, 2048], dtype="f16", layout="col_major"))
+    ir.return_type = TensorDesc(shape=[1024, 2048], dtype="f16")
 
     matmul_node = Node(
         id="matmul_0",
         op="matmul",
         inputs={
-            "A": TensorDesc(shape=[1024, 512], dtype="f16"),
-            "B": TensorDesc(shape=[512, 2048], dtype="f16", layout="col_major"),
+            "A": ParamRef(name="A"),
+            "B": ParamRef(name="B"),
         },
         output=TensorDesc(shape=[1024, 2048], dtype="f16"),
         semantics=Semantics(
@@ -31,59 +37,103 @@ def test_semantic_graph_creation():
             properties=["associative", "distributive"],
         ),
     )
-    graph.add_node(matmul_node)
+    ir.add_node(matmul_node)
 
     relu_node = Node(
         id="relu_0",
         op="relu",
-        inputs={"X": "@matmul_0.output"},
+        inputs={"X": NodeRef(id="matmul_0")},
         output=TensorDesc(shape=[1024, 2048], dtype="f16"),
         semantics=Semantics(
             computation="Y[i,j] = max(X[i,j], 0)",
             properties=["elementwise", "monotonic"],
         ),
     )
-    graph.add_node(relu_node)
+    ir.add_node(relu_node)
 
-    graph.add_edge(Edge(
+    ir.add_edge(Edge(
         from_node="matmul_0",
         to_node="relu_0",
         tensor_name="intermediate",
         lifetime="local",
     ))
 
-    graph.add_fusion_group(FusionGroup(
+    ir.add_fusion_group(FusionGroup(
         id="fg_0",
         nodes=["matmul_0", "relu_0"],
         fusion_type="epilogue",
     ))
 
-    assert len(graph.nodes) == 2
-    assert len(graph.edges) == 1
-    assert len(graph.fusion_groups) == 1
-    assert graph.get_node("matmul_0") is not None
-    assert graph.get_node("relu_0") is not None
-    assert graph.get_node("nonexistent") is None
+    ir.return_node = "relu_0"
+
+    assert len(ir.nodes) == 2
+    assert len(ir.edges) == 1
+    assert len(ir.fusion_groups) == 1
+    assert len(ir.params) == 2
+    assert ir.get_node("matmul_0") is not None
+    assert ir.get_node("relu_0") is not None
+    assert ir.get_node("nonexistent") is None
+    assert ir.get_param("A") is not None
+    assert ir.return_node == "relu_0"
 
 
-def test_semantic_graph_serialization():
-    """Test JSON serialization."""
-    graph = SemanticGraph(graph_id="test_serialize")
-    graph.add_node(Node(
+def test_semantic_ir_serialization():
+    """Test JSON serialization and round-trip."""
+    ir = SemanticIR(kernel_id="test_serialize")
+    ir.add_param(Param(name="X", shape=[1024], dtype="f32"))
+    ir.return_type = TensorDesc(shape=[1024], dtype="f32")
+    ir.add_node(Node(
         id="relu_0",
         op="relu",
-        inputs={"X": "@input"},
+        inputs={"X": ParamRef(name="X")},
         output=TensorDesc(shape=[1024], dtype="f32"),
         semantics=Semantics(computation="Y = max(X, 0)", properties=["elementwise"]),
     ))
+    ir.return_node = "relu_0"
 
-    json_str = graph.to_json()
-    assert '"graph_id": "test_serialize"' in json_str
+    json_str = ir.to_json()
+    assert '"kernel_id": "test_serialize"' in json_str
     assert '"relu_0"' in json_str
+
+    # Round-trip
+    restored = SemanticIR.from_json(json_str)
+    assert restored.kernel_id == "test_serialize"
+    assert len(restored.nodes) == 1
+    assert restored.nodes[0].op == "relu"
+    assert len(restored.params) == 1
+    assert restored.params[0].name == "X"
+    assert restored.return_node == "relu_0"
+
+
+def test_semantic_ir_input_refs():
+    """Test that input references serialize/deserialize correctly."""
+    ir = SemanticIR(kernel_id="test_refs")
+    ir.add_param(Param(name="A", shape=[4, 4], dtype="f32"))
+    ir.add_node(Node(
+        id="relu_0",
+        op="relu",
+        inputs={"X": ParamRef(name="A")},
+        output=TensorDesc(shape=[4, 4], dtype="f32"),
+        semantics=Semantics(computation="Y = max(X, 0)"),
+    ))
+    ir.add_node(Node(
+        id="relu_1",
+        op="relu",
+        inputs={"X": NodeRef(id="relu_0")},
+        output=TensorDesc(shape=[4, 4], dtype="f32"),
+        semantics=Semantics(computation="Y = max(X, 0)"),
+    ))
+
+    # Serialize and restore
+    restored = SemanticIR.from_json(ir.to_json())
+    assert isinstance(restored.nodes[0].inputs["X"], ParamRef)
+    assert isinstance(restored.nodes[1].inputs["X"], NodeRef)
+    assert restored.nodes[0].inputs["X"].name == "A"
+    assert restored.nodes[1].inputs["X"].id == "relu_0"
 
 
 # ============================================================
-# Strategy IR Tests (renamed from ScheduleTree)
+# Strategy IR Tests
 # ============================================================
 
 def test_strategy_ir_creation():
@@ -198,12 +248,16 @@ def test_kernel_builder_basic():
     b.returns(r, [1024, 2048], "f16")
     ir = b.build()
 
-    assert ir.graph_id == "fused_matmul_relu"
+    assert ir.kernel_id == "fused_matmul_relu"
     assert len(ir.nodes) == 2
     assert ir.nodes[0].op == "matmul"
     assert ir.nodes[1].op == "relu"
     assert len(ir.edges) == 1  # matmul → relu
     assert len(ir.fusion_groups) == 1  # auto-detected epilogue
+    assert len(ir.params) == 2
+    assert ir.return_node == r  # "relu_1" (counter shared across ops)
+    assert ir.return_type is not None
+    assert ir.return_type.shape == [1024, 2048]
 
 
 def test_kernel_builder_single_op():
@@ -217,3 +271,22 @@ def test_kernel_builder_single_op():
     assert len(ir.nodes) == 1
     assert len(ir.edges) == 0
     assert len(ir.fusion_groups) == 0
+    assert ir.return_node == r
+
+
+def test_kernel_builder_json_roundtrip():
+    """Test that builder output survives JSON round-trip."""
+    b = KernelBuilder("roundtrip_test")
+    b.param("A", [4, 4], "f32")
+    r = b.op("relu", X="A")
+    b.returns(r, [4, 4], "f32")
+    ir = b.build()
+
+    json_str = ir.to_json()
+    restored = SemanticIR.from_json(json_str)
+
+    assert restored.kernel_id == "roundtrip_test"
+    assert len(restored.params) == 1
+    assert len(restored.nodes) == 1
+    assert restored.nodes[0].op == "relu"
+    assert isinstance(restored.nodes[0].inputs["X"], ParamRef)

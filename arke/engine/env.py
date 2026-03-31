@@ -14,7 +14,7 @@ from pathlib import Path
 
 from arke.engine.validator import StaticValidator
 from arke.ir.ops.catalog import OP_CATALOG
-from arke.ir.semantic import SemanticGraph
+from arke.ir.semantic import SemanticIR
 from arke.ir.strategy import Decision, Rationale, StrategyIR
 
 
@@ -29,11 +29,11 @@ class ArkeEnv:
     - Validation
     """
 
-    def __init__(self, semantic: SemanticGraph, target_hw: str):
+    def __init__(self, semantic: SemanticIR, target_hw: str):
         self.semantic = semantic
         self.target_hw = target_hw
         self.strategy = StrategyIR(
-            kernel_id=semantic.graph_id,
+            kernel_id=semantic.kernel_id,
             target_hw=target_hw,
         )
         self.hw_profile = self._load_hw_profile(target_hw)
@@ -45,8 +45,7 @@ class ArkeEnv:
 
     def get_semantic_ir(self) -> dict:
         """Tool: get_semantic_ir — return the computation definition."""
-        result: dict = json.loads(self.semantic.to_json())
-        return result
+        return self.semantic.to_dict()
 
     def get_hw_profile(self) -> dict:
         """Tool: get_hw_profile — return hardware parameters."""
@@ -61,7 +60,7 @@ class ArkeEnv:
         nodes_list: list[dict] = []
         fusions_list: list[dict] = []
         analysis: dict = {
-            "kernel": self.semantic.graph_id,
+            "kernel": self.semantic.kernel_id,
             "nodes": nodes_list,
             "fusion_opportunities": fusions_list,
         }
@@ -155,7 +154,7 @@ class ArkeEnv:
     def observe(self) -> dict:
         """Tool: observe — get current state summary (delta-friendly)."""
         return {
-            "kernel_id": self.semantic.graph_id,
+            "kernel_id": self.semantic.kernel_id,
             "target_hw": self.target_hw,
             "decision_count": self.strategy.decision_count,
             "strategy_summary": self.strategy.summary(),

@@ -1,7 +1,11 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke AST — Abstract Syntax Tree node definitions."""
+"""Arke AST — Abstract Syntax Tree node definitions.
+
+Maps to the Arke Language Spec (docs/spec/arke-language-spec.md).
+Terminology: uses 'Strategy' (not 'Schedule') per naming-system.md.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +26,7 @@ class TensorType:
     """Tensor type: Tensor<shape, dtype, layout>."""
     shape: list[int]
     dtype: ScalarType
-    layout: str = "row_major"  # row_major | col_major | tiled | custom
+    layout: str = "row_major"  # row_major | col_major
 
 
 @dataclass(frozen=True)
@@ -83,30 +87,30 @@ class KernelDef:
 
 
 # ============================================================
-# Schedule Nodes
+# Strategy Nodes
 # ============================================================
 
 @dataclass
 class Rationale:
     """@rationale annotation — natural language explanation."""
     text: str
-    lang: str = "en"  # "en" | "zh" | ...
+    lang: str = "en"
 
 
 @dataclass
-class ScheduleDirective:
-    """A single schedule decision (tile, reorder, fuse, etc.)."""
-    kind: str  # "tile" | "reorder" | "fuse" | "parallel" | "place"
+class StrategyDirective:
+    """A single strategy decision (tile, reorder, fuse, etc.)."""
+    kind: str  # "tile" | "reorder" | "fuse" | "parallel" | "place" | "vectorize" | "unroll" | "algorithm"
     params: dict[str, str | int | float | list]
     rationale: Rationale | None = None
 
 
 @dataclass
-class ScheduleDef:
-    """Top-level schedule definition."""
+class StrategyDef:
+    """Top-level strategy definition."""
     kernel_name: str
-    target: str  # e.g., "nvidia_ampere", "ascend_a3"
-    directives: list[ScheduleDirective]
+    target: str  # e.g., "nvidia_ampere"
+    directives: list[StrategyDirective]
 
 
 # ============================================================
@@ -115,6 +119,14 @@ class ScheduleDef:
 
 @dataclass
 class Program:
-    """A complete Arke program (one or more kernels + schedules)."""
+    """A complete Arke program (one or more kernels + strategies)."""
     kernels: list[KernelDef] = field(default_factory=list)
-    schedules: list[ScheduleDef] = field(default_factory=list)
+    strategies: list[StrategyDef] = field(default_factory=list)
+
+
+# ============================================================
+# Backward compatibility aliases (deprecated)
+# ============================================================
+
+ScheduleDirective = StrategyDirective
+ScheduleDef = StrategyDef

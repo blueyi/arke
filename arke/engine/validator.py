@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from arke.ir.semantic import SemanticGraph
+from arke.ir.semantic import SemanticIR
 from arke.ir.strategy import StrategyIR
 
 
@@ -52,7 +52,7 @@ class StaticValidator:
 
     def validate(
         self,
-        semantic: SemanticGraph,
+        semantic: SemanticIR,
         strategy: StrategyIR,
         hw_profile: dict,
     ) -> ValidationResult:
@@ -67,7 +67,7 @@ class StaticValidator:
         )
 
     def _check_tile_legality(
-        self, semantic: SemanticGraph, strategy: StrategyIR
+        self, semantic: SemanticIR, strategy: StrategyIR
     ) -> CheckResult:
         """Check that tile factors are valid."""
         violations = []
