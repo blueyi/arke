@@ -212,15 +212,9 @@ class OptimizationSession:
 
     def _handle_list_legal(self, params: dict) -> dict[str, Any]:
         """Handle list_legal_actions with filtering and limits."""
-        # TODO: Implement real legal action enumeration
         kind = params.get("kind")
         limit = params.get("limit", 10)
-        return {
-            "legal_actions": [],
-            "search_space_size": 0,
-            "filter": kind,
-            "note": "Legal action enumeration not yet implemented",
-        }
+        return self.env.list_legal_actions(kind=kind, limit=limit)
 
     def _budget_exhausted_response(self) -> dict[str, Any]:
         """Response when budget is exhausted."""

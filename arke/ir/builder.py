@@ -21,6 +21,7 @@ from arke.ir.semantic import (
     Semantics,
     TensorDesc,
 )
+from arke.ir.shape_inference import infer_output_dtype, infer_output_shape
 
 
 class KernelBuilder:
@@ -129,18 +130,29 @@ class KernelBuilder:
 
     def _infer_output(self, op_name: str,
                       inputs: dict[str, InputRef]) -> tuple[list[int], str]:
-        """Simplified output shape inference."""
-        # Find the shape from the first input
-        for ref in inputs.values():
+        """Infer output shape and dtype using the shape inference module."""
+        # Resolve shapes and dtypes from inputs
+        input_shapes: dict[str, list[int]] = {}
+        input_dtypes: dict[str, str] = {}
+
+        for key, ref in inputs.items():
             if isinstance(ref, ParamRef):
                 p = next((p for p in self._params if p.name == ref.name), None)
                 if p:
-                    return list(p.shape), p.dtype
+                    input_shapes[key] = list(p.shape)
+                    input_dtypes[key] = p.dtype
             elif isinstance(ref, NodeRef):
                 n = next((n for n in self._nodes if n.id == ref.id), None)
                 if n:
-                    return list(n.output.shape), n.output.dtype
-        return [1], "f32"
+                    input_shapes[key] = list(n.output.shape)
+                    input_dtypes[key] = n.output.dtype
+
+        if not input_shapes:
+            return [1], "f32"
+
+        shape = infer_output_shape(op_name, input_shapes)
+        dtype = infer_output_dtype(op_name, input_dtypes)
+        return shape, dtype
 
     def _detect_fusion_groups(self, ir: SemanticIR) -> None:
         """Auto-detect epilogue fusion opportunities."""

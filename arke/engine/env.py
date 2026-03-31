@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from arke.engine.legal_actions import LegalActionsEngine
 from arke.engine.validator import StaticValidator
 from arke.ir.ops.catalog import OP_CATALOG
 from arke.ir.semantic import SemanticIR
@@ -38,6 +39,7 @@ class ArkeEnv:
         )
         self.hw_profile = self._load_hw_profile(target_hw)
         self.validator = StaticValidator()
+        self.legal_actions_engine = LegalActionsEngine()
         self.checkpoints: dict[str, StrategyIR] = {}
         self._step = 0
 
@@ -79,9 +81,42 @@ class ArkeEnv:
             fusions_list.append({
                 "nodes": fg.nodes,
                 "type": fg.fusion_type,
+                "reason": fg.reason,
             })
 
         return analysis
+
+    def list_legal_actions(
+        self, kind: str | None = None, limit: int = 10
+    ) -> dict:
+        """Tool: list_legal_actions — enumerate legal optimization moves."""
+        result = self.legal_actions_engine.enumerate(
+            self.semantic, self.strategy, self.hw_profile,
+            kind=kind, limit=limit,
+        )
+        return {
+            "legal_actions": [
+                {
+                    "id": a.id,
+                    "kind": a.kind,
+                    "params": a.params,
+                    "estimated_impact": a.estimated_impact,
+                    "codegen_support": a.codegen_support,
+                }
+                for a in result.legal_actions
+            ],
+            "blocked_actions": [
+                {
+                    "id": b.id,
+                    "kind": b.kind,
+                    "params": b.params,
+                    "blocked_reason": b.blocked_reason,
+                }
+                for b in result.blocked_actions
+            ],
+            "search_space_size": result.search_space_size,
+            "hint": result.hint,
+        }
 
     def apply_decision(
         self, kind: str, params: dict, rationale: str
