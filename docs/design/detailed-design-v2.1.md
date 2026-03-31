@@ -789,6 +789,8 @@ class BenchmarkTask:
 | W2-06 | Strategy IR 重命名 (schedule→strategy) + 关联验证 | S2 | P1 | W1-05 | 2h |
 | W2-07 | 单元测试：validator + legal_actions | TEST | P0 | W2-01,04 | 3h |
 | W2-08 | legal_actions 标注 codegen_support 状态 | S1 | P1 | W2-04 | 1h |
+| W2-09 | ArkeTool 声明式接口 (ToolMeta + base class) | S1 | P0 | W1-07 | 3h |
+| W2-10 | 大结果 delta 压缩 (result_management.py) | S1 | P1 | W2-03 | 2h |
 
 ### Week 3 任务
 
@@ -802,6 +804,9 @@ class BenchmarkTask:
 | W3-06 | V2 性能验证器（profiling + vs cuBLAS） | S2 | P0 | W3-04,W1-01 | 3h |
 | W3-07 | ArkeEnv 接入 codegen + verify + profile | S1+S2 | P0 | W3-05,06,W2-05 | 4h |
 | W3-08 | Triton softmax 模板 | S2 | P1 | W3-01 | 3h |
+| W3-09 | 工具并发分区编排器 (orchestrator.py) | S1 | P0 | W2-09 | 3h |
+| W3-10 | 分段 Prompt Cache 构建 (prompts.py 4段) | S1 | P0 | W1-08 | 3h |
+| W3-11 | OptimizationState ground truth 管理 | S1 | P0 | W2-05 | 2h |
 
 ### Week 4 任务
 
@@ -811,6 +816,9 @@ class BenchmarkTask:
 | W4-02 | matmul agent demo：完整 tool-use 循环 | S1 | P0 | W4-01 | 4h |
 | W4-03 | 错误恢复模块（约束违反/数值错误/性能退化） | S1 | P0 | W4-01 | 3h |
 | W4-03b | Fallback strategy 机制（预定义好策略 + 降级逻辑） | S1 | P0 | W4-02 | 2h |
+| W4-08 | Context Compact (预测式 + 反应式) | S1 | P0 | W4-01,W3-11 | 4h |
+| W4-09 | 三层容错 (resilience.py) | S1 | P0 | W4-03,W4-08 | 3h |
+| W4-10 | AsyncGenerator 优化循环 (runner.py) | S1 | P0 | W3-09,W4-08 | 4h |
 | W4-04 | 评估任务定义 T1-T5 | S4 | P1 | - | 2h |
 | W4-05 | cuBLAS/PyTorch baseline 实现 | S4 | P1 | W1-01 | 2h |
 | W4-06 | softmax agent demo（Gate 3 必须同时验证） | S1 | P0 | W3-08,W4-01 | 3h |
@@ -898,6 +906,117 @@ class BenchmarkTask:
 
 ---
 
-*详细设计版本：v2.1.1 | 创建日期：2026-03-31*
-*总计约 60 个开发任务，预估 ~220 工时，8 周 MVP*
+---
+
+## 九、Agent 运行时架构（借鉴 Claude Code）
+
+> 详细迁移分析见 [`cc-inspired-update.md`](cc-inspired-update.md)
+
+### 9.1 AsyncGenerator 优化循环
+
+核心运行时使用 Python AsyncGenerator 模式，统一 CLI / Python API / Jupyter 消费接口：
+
+```python
+# arke/agent/runner.py
+async def optimization_loop(
+    env: ArkeEnv, llm: LLMProvider, config: OptimizationConfig
+) -> AsyncGenerator[OptimizationEvent, None]:
+    """yield 事件流，消费者决定如何渲染"""
+    messages = build_initial_messages(env)
+    budget = OptimizationBudget(config)
+    
+    while not budget.exhausted:
+        response = await llm.chat(messages, tools=env.get_tool_schemas())
+        if not response.tool_calls:
+            break
+        
+        async for event in execute_tools(env, response.tool_calls, budget):
+            yield event
+            messages.append(tool_result_message(event))
+        
+        if should_compact(messages, config.max_context_tokens):
+            messages = await compact_optimization_context(messages, llm, env)
+            yield OptimizationEvent("compact", {})
+        
+        budget.tick()
+```
+
+### 9.2 声明式 Tool 接口
+
+每个 ArkeEnv tool 自描述并发/安全/成本属性，编排器据此自动决策：
+
+```python
+@dataclass
+class ToolMeta:
+    name: str
+    concurrent_safe: bool      # 可与其他工具并发？
+    idempotent: bool           # 幂等？（重试安全）
+    requires_compile: bool     # 需要 GPU 编译？
+    mutates_strategy: bool     # 修改 Strategy IR？
+    budget_type: str           # "decision" | "compile" | "free"
+```
+
+| Tool | concurrent_safe | mutates_strategy | budget_type |
+|------|:---:|:---:|:---:|
+| analyze_compute | ✅ | ❌ | free |
+| get_hw_profile | ✅ | ❌ | free |
+| list_legal_actions | ✅ | ❌ | free |
+| apply_decision | ❌ | ✅ | decision |
+| verify_correctness | ❌ | ❌ | compile |
+| compile_and_profile | ❌ | ❌ | compile |
+| rollback | ❌ | ✅ | free |
+
+### 9.3 工具并发分区
+
+借鉴 Claude Code `toolOrchestration.ts` 的分区算法：
+
+```
+[analyze, get_hw_profile, apply_decision, list_legal_actions]
+→ Batch([analyze, get_hw_profile], concurrent=True)
+→ Batch([apply_decision], concurrent=False)
+→ Batch([list_legal_actions], concurrent=True)
+```
+
+### 9.4 分段 Prompt Cache
+
+System prompt 分 4 段，各自独立缓存策略：
+
+| Segment | 内容 | 缓存粒度 |
+|---------|------|----------|
+| S1 | 优化专家角色 + GPU 知识 | 全局（跨任务共享）|
+| S2 | HW Profile | 硬件级（同 GPU 共享）|
+| S3 | Semantic IR + 自动分析 | 算子级 |
+| S4 | 当前 Strategy + Budget | 不缓存（每步变化）|
+
+### 9.5 Context Compact
+
+两种触发方式互补：
+
+- **预测式**：每步后估算 token，超 80% 阈值主动 compact
+- **反应式**：API 报 `prompt_too_long` → 被动 compact → 重试
+
+Compact 时保留 ground truth：Strategy IR（完整）、决策日志、编译结果。只压缩中间的观察/分析文本。
+
+### 9.6 大结果 Delta 压缩
+
+| Tool | 原始大小 | 压缩策略 | 压缩后 |
+|------|---------|----------|--------|
+| list_legal_actions | ~5KB (47 actions) | top 10 + 总数 + hint | ~1KB |
+| observe(full) | ~3KB (完整 state) | delta only + summary | ~500B |
+| verify_correctness | ~2KB (含 tensor 数据) | pass/fail + max_error | ~200B |
+
+### 9.7 三层容错
+
+```
+Layer 1 (Tool): V0 验证失败 → auto rollback → 给 LLM 错误信息 + 建议
+Layer 2 (API):  Rate limit / timeout → 指数退避 → provider fallback 链
+Layer 3 (Loop): LLM 搜索不收敛 → fallback strategy 兜底 → 对比取优
+```
+
+---
+
+*详细设计版本：v2.1.2 | 创建日期：2026-03-31*
+*v2.1.2 新增：Agent 运行时架构（AsyncGenerator + 声明式 Tool + Compact + 容错）*
+*总计约 68 个开发任务，预估 ~260 工时，8 周 MVP*
 *多硬件后端设计见 multi-backend-design.md*
+*Claude Code 迁移详细分析见 cc-inspired-update.md*
