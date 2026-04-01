@@ -60,6 +60,7 @@ def main():
     summary = result.session_summary
     print(f"\nSession state: {summary['state']}")
     print(f"Budget: {summary['budget']}")
+    print(f"Best performance: {summary.get('best_performance')}")
 
     # Print trajectory
     print("\nTrajectory:")

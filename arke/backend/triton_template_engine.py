@@ -147,7 +147,8 @@ class TritonTemplateEngine:
         fused_ops: set[str] = set()
         for decision in strategy.decisions:
             if decision.kind == "fuse":
-                ops = decision.params.get("ops", [])
+                # LLM may use 'nodes' or 'ops' key
+                ops = decision.params.get("ops", []) or decision.params.get("nodes", [])
                 ftype = decision.params.get("type", "")
                 if ftype == "epilogue":
                     fused_ops.update(ops)

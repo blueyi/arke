@@ -238,38 +238,58 @@ class OptimizationSession:
             return {"success": False, "error": str(e)}
 
     def _handle_compile_and_profile(self, params: dict) -> dict[str, Any]:
-        """Handle compile_and_profile — compile kernel and run GPU benchmarks."""
-        try:
-            from arke.pipeline import CompilePipeline
-            pipeline = CompilePipeline(self.semantic_ir, self.env.strategy, self.target_hw)
-            perf = pipeline.compile_and_profile()
-            return {
-                "success": True,
-                "performance": perf,
-            }
-        except ImportError:
-            # Pipeline module may not have compile_and_profile yet
-            return self._compile_and_profile_fallback(params)
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        """Handle compile_and_profile — compile kernel and run GPU benchmarks.
 
-    def _compile_and_profile_fallback(self, params: dict) -> dict[str, Any]:
-        """Fallback compile_and_profile using backend directly."""
+        Full pipeline: Strategy decisions → Triton codegen → compile → profile.
+        """
         try:
             from arke.backend.triton_backend import TritonBackend
+            import torch
+
             backend = TritonBackend()
-            result = backend.compile_and_run(
-                self.semantic_ir, self.env.strategy
-            )
+
+            # 1. Generate Triton source from current strategy
+            source = backend.translate(self.semantic_ir, self.env.strategy)
+
+            # 2. Compile
+            compiled = backend.compile(source)
+            if not compiled.success:
+                return {
+                    "success": False,
+                    "error": f"Compilation failed: {compiled.error}",
+                    "source_preview": source[:500],
+                }
+
+            # 3. Generate test inputs
+            dtype_map = {"f16": torch.float16, "f32": torch.float32, "bf16": torch.bfloat16}
+            inputs = {}
+            for p in self.semantic_ir.params:
+                t_dtype = dtype_map.get(p.dtype, torch.float16)
+                inputs[p.name] = torch.randn(p.shape, device="cuda", dtype=t_dtype)
+
+            # 4. Profile
+            warmup = params.get("warmup", 5)
+            runs = params.get("runs", 20)
+            prof = backend.profile(compiled, inputs, warmup=warmup, runs=runs)
+
             return {
                 "success": True,
-                "performance": result,
+                "performance": {
+                    "latency_us": round(prof.latency_us, 2),
+                    "tflops": round(prof.tflops, 3),
+                    "roofline_efficiency": round(prof.roofline_efficiency, 3),
+                    "vs_baseline": round(prof.vs_baseline, 3) if prof.vs_baseline else None,
+                },
+                "decisions_applied": self.env.strategy.decision_count,
             }
+
+        except ImportError as e:
+            return {"success": False, "error": f"Backend not available: {e}"}
         except Exception as e:
             return {
                 "success": False,
-                "error": f"Compilation failed: {e}",
-                "hint": "Ensure the current strategy decisions are compatible with the Triton backend.",
+                "error": f"Compile/profile failed: {e}",
+                "hint": "Check that tile sizes are compatible with the kernel shape.",
             }
 
     def _budget_exhausted_response(self) -> dict[str, Any]:

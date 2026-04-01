@@ -122,6 +122,7 @@ class TritonCompiler:
 
         # Compute TFLOPS for matmul (2*M*N*K)
         tflops = 0.0
+        vs_baseline = None
         shapes = [t.shape for t in tensors]
         if len(tensors) == 2 and len(shapes[0]) == 2 and len(shapes[1]) == 2:
             M, K = shapes[0]
@@ -129,9 +130,18 @@ class TritonCompiler:
             flops = 2.0 * M * N * K
             tflops = flops / (avg_ms * 1e-3) / 1e12
 
+            # cuBLAS baseline comparison
+            try:
+                baseline_ms = self._cublas_baseline(tensors[0], tensors[1], warmup, runs)
+                if baseline_ms > 0:
+                    vs_baseline = baseline_ms / avg_ms  # >1 means we're faster
+            except Exception:
+                pass
+
         return ProfileResult(
             latency_us=latency_us,
             tflops=tflops,
+            vs_baseline=vs_baseline,
         )
 
     # ─── Internal helpers ──────────────────────────────────────
@@ -150,6 +160,27 @@ class TritonCompiler:
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
         return module
+
+    @staticmethod
+    def _cublas_baseline(
+        a: torch.Tensor, b: torch.Tensor, warmup: int, runs: int
+    ) -> float:
+        """Run cuBLAS matmul baseline and return average time in ms."""
+        # Warmup
+        for _ in range(warmup):
+            torch.matmul(a, b)
+        torch.cuda.synchronize()
+
+        # Timed runs
+        start_events = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
+        end_events = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
+        for i in range(runs):
+            start_events[i].record()
+            torch.matmul(a, b)
+            end_events[i].record()
+        torch.cuda.synchronize()
+        times_ms = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
+        return sum(times_ms) / len(times_ms)
 
     @staticmethod
     def _find_entry_function(module: Any) -> Any:

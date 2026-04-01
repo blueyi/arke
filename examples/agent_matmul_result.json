@@ -1,12 +1,12 @@
 {
   "model": "api-proxy-claude/claude-sonnet-4-6",
-  "decisions": 5,
-  "tool_calls": 27,
+  "decisions": 4,
+  "tool_calls": 23,
   "tokens": {
-    "in": 216690,
-    "out": 4262
+    "in": 191478,
+    "out": 3908
   },
-  "duration": 367.15,
+  "duration": 263.87,
   "trajectory": [
     {
       "step": 1,
@@ -14,7 +14,7 @@
       "tool": "analyze_compute",
       "params": {},
       "result": {},
-      "timestamp": 1775014755.2941978
+      "timestamp": 1775018764.9925563
     },
     {
       "step": 1,
@@ -61,7 +61,7 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014755.294225
+      "timestamp": 1775018764.9926324
     },
     {
       "step": 2,
@@ -71,7 +71,7 @@
         "target": "nvidia_ampere"
       },
       "result": {},
-      "timestamp": 1775014755.294309
+      "timestamp": 1775018764.993005
     },
     {
       "step": 2,
@@ -140,72 +140,70 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014755.294316
+      "timestamp": 1775018764.9930186
     },
     {
       "step": 3,
-      "type": "action",
-      "tool": "apply_decision",
-      "params": {
-        "kind": "fuse",
-        "params": {
-          "nodes": [
-            "matmul_0",
-            "relu_1"
-          ],
-          "type": "epilogue"
-        },
-        "rationale": "Fuse ReLU into the matmul epilogue. Since ReLU is elementwise, it can be applied directly to each output tile as it's computed in registers \u2014 before writing back to global memory. This eliminates an entire separate kernel launch and a full 1024\u00d72048\u00d74 bytes = 8MB global memory round-trip for reading C back for ReLU. This is the highest-impact single optimization."
-      },
-      "result": {},
-      "timestamp": 1775014765.5358589
-    },
-    {
-      "step": 3,
-      "type": "result",
-      "tool": "apply_decision",
-      "params": {},
-      "result": {
-        "success": true,
-        "step": 1,
-        "validation": {
-          "pass": true,
-          "resource_usage": {
-            "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 1,
-            "estimated_blocks": 1,
-            "register_pressure": "low"
-          }
-        },
-        "decisions_so_far": 1,
-        "budget": {
-          "decisions_used": 1,
-          "decisions_remaining": 49,
-          "compiles_used": 0,
-          "compiles_remaining": 10,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775014765.5359917
-    },
-    {
-      "step": 4,
       "type": "action",
       "tool": "list_legal_actions",
       "params": {
-        "kind": "tile",
         "limit": 20
       },
       "result": {},
-      "timestamp": 1775014768.687993
+      "timestamp": 1775018767.907577
     },
     {
-      "step": 4,
+      "step": 3,
       "type": "result",
       "tool": "list_legal_actions",
       "params": {},
       "result": {
         "legal_actions": [
+          {
+            "id": "place_A_shared",
+            "kind": "place",
+            "params": {
+              "tensor": "A_tile",
+              "memory": "shared"
+            },
+            "estimated_impact": {
+              "memory_level": "shared",
+              "tile_size_bytes": 8192,
+              "reuse_factor": "32x"
+            },
+            "codegen_support": true
+          },
+          {
+            "id": "place_B_shared",
+            "kind": "place",
+            "params": {
+              "tensor": "B_tile",
+              "memory": "shared"
+            },
+            "estimated_impact": {
+              "memory_level": "shared",
+              "tile_size_bytes": 8192,
+              "reuse_factor": "16x"
+            },
+            "codegen_support": true
+          },
+          {
+            "id": "fuse_fg_matmul_0_relu_1",
+            "kind": "fuse",
+            "params": {
+              "nodes": [
+                "matmul_0",
+                "relu_1"
+              ],
+              "type": "epilogue"
+            },
+            "estimated_impact": {
+              "type": "epilogue",
+              "benefit": "eliminates 4MB intermediate write",
+              "eliminates_intermediate": true
+            },
+            "codegen_support": true
+          },
           {
             "id": "tile_i_128_32",
             "kind": "tile",
@@ -477,22 +475,6 @@
               "blocks_in_dim": 16
             },
             "codegen_support": true
-          },
-          {
-            "id": "tile_k_32_8",
-            "kind": "tile",
-            "params": {
-              "loop": "k",
-              "factors": [
-                32,
-                8
-              ]
-            },
-            "estimated_impact": {
-              "shared_memory_delta": "+2KB",
-              "blocks_in_dim": 16
-            },
-            "codegen_support": true
           }
         ],
         "blocked_actions": [
@@ -557,8 +539,54 @@
             "blocked_reason": "Would exceed shared memory limit (131072 > 49152)"
           }
         ],
-        "search_space_size": 18,
-        "hint": "",
+        "search_space_size": 21,
+        "hint": "Start with fusion \u2014 it's usually the highest-impact first move.",
+        "budget": {
+          "decisions_used": 0,
+          "decisions_remaining": 50,
+          "compiles_used": 0,
+          "compiles_remaining": 10,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018767.9076867
+    },
+    {
+      "step": 4,
+      "type": "action",
+      "tool": "apply_decision",
+      "params": {
+        "kind": "fuse",
+        "params": {
+          "nodes": [
+            "matmul_0",
+            "relu_1"
+          ],
+          "type": "epilogue"
+        },
+        "rationale": "Fusing ReLU as an epilogue into the matmul eliminates a 4MB intermediate global memory write (1024\u00d72048\u00d7f16). Since ReLU is purely elementwise and monotonic, it can be applied directly to each output tile as it's computed in registers, before writing to global memory. This is the highest single-impact optimization \u2014 saves both bandwidth and memory traffic."
+      },
+      "result": {},
+      "timestamp": 1775018778.0973756
+    },
+    {
+      "step": 4,
+      "type": "result",
+      "tool": "apply_decision",
+      "params": {},
+      "result": {
+        "success": true,
+        "step": 1,
+        "validation": {
+          "pass": true,
+          "resource_usage": {
+            "shared_memory_bytes": 0,
+            "estimated_threads_per_block": 1,
+            "estimated_blocks": 1,
+            "register_pressure": "low"
+          }
+        },
+        "decisions_so_far": 1,
         "budget": {
           "decisions_used": 1,
           "decisions_remaining": 49,
@@ -567,7 +595,7 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014768.6885931
+      "timestamp": 1775018778.0974631
     },
     {
       "step": 5,
@@ -579,13 +607,13 @@
           "loop": "i",
           "factors": [
             128,
-            16
+            32
           ]
         },
-        "rationale": "Tile the M dimension (rows of A) with block tile 128 and thread tile 16. 128 is a multiple of the tensor core M=16, giving 8 blocks across M=1024. A block tile of 128 maximizes register reuse for the output tile and amortizes shared memory load overhead. Thread tile 16 matches tensor core shape exactly."
+        "rationale": "Tile the M-dimension (rows of A/output) into 128-wide thread blocks with an inner tile of 32. A 128-row outer tile means 8 blocks along M (1024/128=8), giving good SM occupancy across 30 SMs. The inner factor of 32 aligns with the warp size and tensor core M-dimension (16), enabling efficient register-level accumulation. This is the standard GEMM blocking strategy for Ampere."
       },
       "result": {},
-      "timestamp": 1775014778.4142215
+      "timestamp": 1775018809.0315843
     },
     {
       "step": 5,
@@ -599,7 +627,7 @@
           "pass": true,
           "resource_usage": {
             "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 16,
+            "estimated_threads_per_block": 32,
             "estimated_blocks": 8,
             "register_pressure": "low"
           }
@@ -613,7 +641,7 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014778.4143276
+      "timestamp": 1775018809.0316892
     },
     {
       "step": 6,
@@ -624,14 +652,14 @@
         "params": {
           "factors": [
             128,
-            16
+            32
           ],
           "loop": "j"
         },
-        "rationale": "Tile the N dimension (columns of B) with block tile 128 and thread tile 16. 128 is a multiple of tensor core N=8, giving 16 blocks across N=2048. Combined with the i-tiling, we get 8\u00d716=128 thread blocks total \u2014 about 4 waves on 30 SMs, providing good latency hiding. Thread tile 16 aligns with tensor core shape."
+        "rationale": "Tile the N-dimension (columns of B/output) into 128-wide blocks with inner tile of 32. This gives 16 blocks along N (2048/128=16), yielding 8\u00d716=128 total output tiles \u2014 more than enough to fill all 30 SMs. Combined with the i-tiling, each thread block computes a 128\u00d7128 output tile, which is the sweet spot for tensor core utilization on Ampere (multiples of 16\u00d78\u00d716)."
       },
       "result": {},
-      "timestamp": 1775014814.5686746
+      "timestamp": 1775018814.9460616
     },
     {
       "step": 6,
@@ -645,7 +673,7 @@
           "pass": true,
           "resource_usage": {
             "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 256,
+            "estimated_threads_per_block": 1024,
             "estimated_blocks": 128,
             "register_pressure": "low"
           }
@@ -659,7 +687,7 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014814.5688038
+      "timestamp": 1775018814.946111
     },
     {
       "step": 7,
@@ -674,10 +702,10 @@
           ],
           "loop": "k"
         },
-        "rationale": "Tile the K (reduction) dimension with block tile 64 and thread tile 16. K=512 \u2192 8 reduction steps. Tile 64 is a multiple of tensor core K=16, meaning each warp-level MMA covers the inner tile cleanly. This also controls the shared memory footprint: A_tile=128\u00d764 and B_tile=64\u00d7128 in f16 = 2\u00d7(128\u00d764\u00d72) = 32KB, well within the 49152 byte limit."
+        "rationale": "Tile the K reduction dimension into 64-wide steps (8 iterations over 512). Each step loads a 128\u00d764 A-tile (16KB) and a 64\u00d7128 B-tile (16KB) into shared memory = 32KB total, well within the 49152-byte limit. The inner factor of 16 matches the tensor core K-dimension exactly (16 in the [16,8,16] shape), enabling direct tensor core instruction mapping. This controls the ratio of compute to shared memory loads."
       },
       "result": {},
-      "timestamp": 1775014843.3934426
+      "timestamp": 1775018822.5957646
     },
     {
       "step": 7,
@@ -691,7 +719,7 @@
           "pass": true,
           "resource_usage": {
             "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 256,
+            "estimated_threads_per_block": 1024,
             "estimated_blocks": 128,
             "register_pressure": "low"
           }
@@ -705,21 +733,229 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014843.3935761
+      "timestamp": 1775018822.5958815
     },
     {
       "step": 8,
       "type": "action",
-      "tool": "list_legal_actions",
+      "tool": "apply_decision",
       "params": {
         "kind": "place",
-        "limit": 20
+        "params": {
+          "tensor": "A_tile",
+          "memory": "shared"
+        },
+        "rationale": "Place A tiles in shared memory. With a 128\u00d764 tile loaded once per K-step, each element of A is reused 128 times (once per output column in the N-tile). The 32x reuse factor (per analysis) means shared memory eliminates 32\u00d7 the global memory bandwidth pressure. The tile costs 128\u00d764\u00d72 bytes = 16KB shared memory, well within budget."
       },
       "result": {},
-      "timestamp": 1775014851.4658678
+      "timestamp": 1775018831.4541934
     },
     {
       "step": 8,
+      "type": "result",
+      "tool": "apply_decision",
+      "params": {},
+      "result": {
+        "success": true,
+        "step": 5,
+        "validation": {
+          "pass": true,
+          "resource_usage": {
+            "shared_memory_bytes": 32768,
+            "estimated_threads_per_block": 1024,
+            "estimated_blocks": 128,
+            "register_pressure": "medium"
+          }
+        },
+        "decisions_so_far": 5,
+        "budget": {
+          "decisions_used": 5,
+          "decisions_remaining": 45,
+          "compiles_used": 0,
+          "compiles_remaining": 10,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018831.4543617
+    },
+    {
+      "step": 9,
+      "type": "action",
+      "tool": "apply_decision",
+      "params": {
+        "kind": "place",
+        "params": {
+          "memory": "shared",
+          "tensor": "B_tile"
+        },
+        "rationale": "Place B tiles in shared memory. Each 64\u00d7128 B-tile element is reused 128 times (once per output row in the M-tile), providing 16x reuse. The tile costs 64\u00d7128\u00d72 bytes = 16KB. Combined with A_tile, total shared memory is 32KB+16KB = 48KB, just under the 49152-byte hardware limit. Both input matrices are now served from shared memory during the inner loop, eliminating global memory latency from the critical path."
+      },
+      "result": {},
+      "timestamp": 1775018837.1051745
+    },
+    {
+      "step": 9,
+      "type": "result",
+      "tool": "apply_decision",
+      "params": {},
+      "result": {
+        "success": false,
+        "step": 6,
+        "validation": {
+          "pass": false,
+          "violations": [
+            "Shared memory 65536B exceeds limit 49152B (over by 16384B). Consider: reduce tile sizes, place fewer tensors in shared memory, or use smaller dtypes."
+          ]
+        },
+        "auto_rollback": true,
+        "budget": {
+          "decisions_used": 6,
+          "decisions_remaining": 44,
+          "compiles_used": 0,
+          "compiles_remaining": 10,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018837.1052325
+    },
+    {
+      "step": 10,
+      "type": "action",
+      "tool": "rollback",
+      "params": {
+        "steps": 1
+      },
+      "result": {},
+      "timestamp": 1775018841.9954336
+    },
+    {
+      "step": 10,
+      "type": "result",
+      "tool": "rollback",
+      "params": {},
+      "result": {
+        "rolled_back": 1,
+        "decisions_remaining": 4,
+        "budget": {
+          "decisions_used": 6,
+          "decisions_remaining": 44,
+          "compiles_used": 0,
+          "compiles_remaining": 10,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018841.9954603
+    },
+    {
+      "step": 11,
+      "type": "action",
+      "tool": "verify_correctness",
+      "params": {
+        "trials": 3
+      },
+      "result": {},
+      "timestamp": 1775018851.1619961
+    },
+    {
+      "step": 11,
+      "type": "result",
+      "tool": "verify_correctness",
+      "params": {},
+      "result": {
+        "success": true,
+        "passed": true,
+        "trials": 3,
+        "max_absolute_error": 0.0,
+        "max_relative_error": 0.0,
+        "tolerance": {
+          "atol": 0.01,
+          "rtol": 0.01
+        },
+        "errors": [],
+        "budget": {
+          "decisions_used": 6,
+          "decisions_remaining": 44,
+          "compiles_used": 1,
+          "compiles_remaining": 9,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018869.9236581
+    },
+    {
+      "step": 12,
+      "type": "action",
+      "tool": "compile_and_profile",
+      "params": {
+        "warmup": 5,
+        "runs": 20
+      },
+      "result": {},
+      "timestamp": 1775018875.075808
+    },
+    {
+      "step": 12,
+      "type": "result",
+      "tool": "compile_and_profile",
+      "params": {},
+      "result": {
+        "success": true,
+        "performance": {
+          "latency_us": 154.47,
+          "tflops": 13.902,
+          "roofline_efficiency": 0.0,
+          "vs_baseline": 1.061
+        },
+        "decisions_applied": 4,
+        "budget": {
+          "decisions_used": 6,
+          "decisions_remaining": 44,
+          "compiles_used": 2,
+          "compiles_remaining": 8,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018878.025387
+    },
+    {
+      "step": 13,
+      "type": "action",
+      "tool": "checkpoint",
+      "params": {
+        "name": "baseline_106pct_4decisions"
+      },
+      "result": {},
+      "timestamp": 1775018888.6243644
+    },
+    {
+      "step": 13,
+      "type": "result",
+      "tool": "checkpoint",
+      "params": {},
+      "result": {
+        "checkpoint_id": "baseline_106pct_4decisions",
+        "budget": {
+          "decisions_used": 6,
+          "decisions_remaining": 44,
+          "compiles_used": 2,
+          "compiles_remaining": 8,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018888.624965
+    },
+    {
+      "step": 14,
+      "type": "action",
+      "tool": "list_legal_actions",
+      "params": {
+        "limit": 20
+      },
+      "result": {},
+      "timestamp": 1775018892.177515
+    },
+    {
+      "step": 14,
       "type": "result",
       "tool": "list_legal_actions",
       "params": {},
@@ -752,200 +988,6 @@
               "reuse_factor": "16x"
             },
             "codegen_support": true
-          }
-        ],
-        "blocked_actions": [],
-        "search_space_size": 2,
-        "hint": "Loops are tiled. Consider parallelization (map outer loops to GPU blocks).",
-        "budget": {
-          "decisions_used": 4,
-          "decisions_remaining": 46,
-          "compiles_used": 0,
-          "compiles_remaining": 10,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775014851.4659822
-    },
-    {
-      "step": 9,
-      "type": "action",
-      "tool": "apply_decision",
-      "params": {
-        "kind": "place",
-        "params": {
-          "tensor": "A_tile",
-          "memory": "shared"
-        },
-        "rationale": "Place A_tile (128\u00d764 in f16 = 16KB) in shared memory. With a 32\u00d7 reuse factor, each element of A loaded from global memory will be used 32 times across the j-tile (once per j-thread tile). This converts 32 global memory reads into 1 global + 32 fast shared memory reads \u2014 critical for hiding the 336 GB/s global memory bandwidth bottleneck."
-      },
-      "result": {},
-      "timestamp": 1775014859.1697783
-    },
-    {
-      "step": 9,
-      "type": "result",
-      "tool": "apply_decision",
-      "params": {},
-      "result": {
-        "success": true,
-        "step": 5,
-        "validation": {
-          "pass": true,
-          "resource_usage": {
-            "shared_memory_bytes": 32768,
-            "estimated_threads_per_block": 256,
-            "estimated_blocks": 128,
-            "register_pressure": "medium"
-          }
-        },
-        "decisions_so_far": 5,
-        "budget": {
-          "decisions_used": 5,
-          "decisions_remaining": 45,
-          "compiles_used": 0,
-          "compiles_remaining": 10,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775014859.169908
-    },
-    {
-      "step": 10,
-      "type": "action",
-      "tool": "apply_decision",
-      "params": {
-        "kind": "place",
-        "params": {
-          "memory": "shared",
-          "tensor": "B_tile"
-        },
-        "rationale": "Place B_tile (64\u00d7128 in f16 = 16KB) in shared memory. With a 16\u00d7 reuse factor, each B element is reused 16 times across the i-tile. Total shared memory: A_tile(16KB) + B_tile(16KB) = 32KB, comfortably under the 49152 byte limit, leaving room for double-buffering if needed. This ensures both GEMM operands are in fast shared memory during the inner loop."
-      },
-      "result": {},
-      "timestamp": 1775014874.304472
-    },
-    {
-      "step": 10,
-      "type": "result",
-      "tool": "apply_decision",
-      "params": {},
-      "result": {
-        "success": false,
-        "step": 6,
-        "validation": {
-          "pass": false,
-          "violations": [
-            "Shared memory 65536B exceeds limit 49152B (over by 16384B). Consider: reduce tile sizes, place fewer tensors in shared memory, or use smaller dtypes."
-          ]
-        },
-        "auto_rollback": true,
-        "budget": {
-          "decisions_used": 6,
-          "decisions_remaining": 44,
-          "compiles_used": 0,
-          "compiles_remaining": 10,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775014874.3046205
-    },
-    {
-      "step": 11,
-      "type": "action",
-      "tool": "verify_correctness",
-      "params": {
-        "trials": 3
-      },
-      "result": {},
-      "timestamp": 1775014894.5857966
-    },
-    {
-      "step": 11,
-      "type": "result",
-      "tool": "verify_correctness",
-      "params": {},
-      "result": {
-        "success": true,
-        "passed": true,
-        "trials": 3,
-        "max_absolute_error": 0.0,
-        "max_relative_error": 0.0,
-        "tolerance": {
-          "atol": 0.01,
-          "rtol": 0.01
-        },
-        "errors": [],
-        "budget": {
-          "decisions_used": 6,
-          "decisions_remaining": 44,
-          "compiles_used": 1,
-          "compiles_remaining": 9,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775014912.7625942
-    },
-    {
-      "step": 12,
-      "type": "action",
-      "tool": "compile_and_profile",
-      "params": {
-        "warmup": 5,
-        "runs": 20
-      },
-      "result": {},
-      "timestamp": 1775014918.0957518
-    },
-    {
-      "step": 12,
-      "type": "result",
-      "tool": "compile_and_profile",
-      "params": {},
-      "result": {
-        "success": false,
-        "error": "Compilation failed: 'TritonBackend' object has no attribute 'compile_and_run'",
-        "hint": "Ensure the current strategy decisions are compatible with the Triton backend.",
-        "budget": {
-          "decisions_used": 6,
-          "decisions_remaining": 44,
-          "compiles_used": 2,
-          "compiles_remaining": 8,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775014919.5353184
-    },
-    {
-      "step": 13,
-      "type": "action",
-      "tool": "list_legal_actions",
-      "params": {
-        "limit": 20
-      },
-      "result": {},
-      "timestamp": 1775014924.1662142
-    },
-    {
-      "step": 13,
-      "type": "result",
-      "tool": "list_legal_actions",
-      "params": {},
-      "result": {
-        "legal_actions": [
-          {
-            "id": "place_B_shared",
-            "kind": "place",
-            "params": {
-              "tensor": "B_tile",
-              "memory": "shared"
-            },
-            "estimated_impact": {
-              "memory_level": "shared",
-              "tile_size_bytes": 8192,
-              "reuse_factor": "16x"
-            },
-            "codegen_support": true
           },
           {
             "id": "parallel_outer_2d",
@@ -953,11 +995,11 @@
             "params": {
               "loops": [
                 "k_outer",
-                "i_outer"
+                "j_outer"
               ],
               "mapping": {
                 "k_outer": "block.x",
-                "i_outer": "block.y"
+                "j_outer": "block.y"
               }
             },
             "estimated_impact": {
@@ -972,12 +1014,12 @@
             "params": {
               "order": [
                 "k_outer",
-                "i_outer",
                 "j_outer",
+                "i_outer",
                 "k_outer",
                 "k_inner",
-                "i_inner",
                 "j_inner",
+                "i_inner",
                 "k_inner"
               ]
             },
@@ -1025,7 +1067,7 @@
             "blocked_reason": "Nodes ['matmul_0', 'relu_1'] already fused"
           }
         ],
-        "search_space_size": 3,
+        "search_space_size": 4,
         "hint": "Loops are tiled. Consider parallelization (map outer loops to GPU blocks).",
         "budget": {
           "decisions_used": 6,
@@ -1035,31 +1077,31 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014924.166309
+      "timestamp": 1775018892.1776285
     },
     {
-      "step": 14,
+      "step": 15,
       "type": "action",
       "tool": "apply_decision",
       "params": {
         "kind": "parallel",
         "params": {
           "loops": [
-            "i_outer",
+            "k_outer",
             "j_outer"
           ],
           "mapping": {
-            "i_outer": "block.y",
-            "j_outer": "block.x"
+            "k_outer": "block.x",
+            "j_outer": "block.y"
           }
         },
-        "rationale": "Map the outer i and j loops to GPU thread blocks. i_outer (8 blocks) \u2192 block.y, j_outer (16 blocks) \u2192 block.x, giving a 16\u00d78 = 128-block grid across the 30 SMs. This is the essential step for GPU execution \u2014 without it the Triton backend can't emit a valid kernel launch. block.x for j aligns with the convention of fastest-varying dimension on x, improving L2 cache locality for B accesses."
+        "rationale": "Explicitly map the outer loop dimensions to GPU block indices. Assigning j_outer (16 blocks) to block.y and k_outer (8 blocks) to block.x gives a 2D grid that spreads work evenly across all 30 SMs. Explicit block mapping can help the compiler generate better index arithmetic and improve warp scheduling efficiency compared to implicit linearization."
       },
       "result": {},
-      "timestamp": 1775014931.841359
+      "timestamp": 1775018899.4492118
     },
     {
-      "step": 14,
+      "step": 15,
       "type": "result",
       "tool": "apply_decision",
       "params": {},
@@ -1069,13 +1111,13 @@
         "validation": {
           "pass": true,
           "resource_usage": {
-            "shared_memory_bytes": 32768,
-            "estimated_threads_per_block": 256,
+            "shared_memory_bytes": 0,
+            "estimated_threads_per_block": 1024,
             "estimated_blocks": 128,
-            "register_pressure": "medium"
+            "register_pressure": "low"
           }
         },
-        "decisions_so_far": 6,
+        "decisions_so_far": 5,
         "budget": {
           "decisions_used": 7,
           "decisions_remaining": 43,
@@ -1084,20 +1126,18 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014931.8415232
+      "timestamp": 1775018899.4493346
     },
     {
-      "step": 15,
+      "step": 16,
       "type": "action",
       "tool": "verify_correctness",
-      "params": {
-        "trials": 3
-      },
+      "params": {},
       "result": {},
-      "timestamp": 1775014939.0686188
+      "timestamp": 1775018906.9106047
     },
     {
-      "step": 15,
+      "step": 16,
       "type": "result",
       "tool": "verify_correctness",
       "params": {},
@@ -1120,10 +1160,10 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014957.7549841
+      "timestamp": 1775018925.859456
     },
     {
-      "step": 16,
+      "step": 17,
       "type": "action",
       "tool": "compile_and_profile",
       "params": {
@@ -1131,17 +1171,22 @@
         "warmup": 5
       },
       "result": {},
-      "timestamp": 1775014969.7414913
+      "timestamp": 1775018932.7893736
     },
     {
-      "step": 16,
+      "step": 17,
       "type": "result",
       "tool": "compile_and_profile",
       "params": {},
       "result": {
-        "success": false,
-        "error": "Compilation failed: 'TritonBackend' object has no attribute 'compile_and_run'",
-        "hint": "Ensure the current strategy decisions are compatible with the Triton backend.",
+        "success": true,
+        "performance": {
+          "latency_us": 156.01,
+          "tflops": 13.765,
+          "roofline_efficiency": 0.0,
+          "vs_baseline": 1.053
+        },
+        "decisions_applied": 5,
         "budget": {
           "decisions_used": 7,
           "decisions_remaining": 43,
@@ -1150,81 +1195,26 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014969.741565
-    },
-    {
-      "step": 17,
-      "type": "action",
-      "tool": "list_legal_actions",
-      "params": {
-        "kind": "algorithm",
-        "limit": 10
-      },
-      "result": {},
-      "timestamp": 1775014983.97079
-    },
-    {
-      "step": 17,
-      "type": "result",
-      "tool": "list_legal_actions",
-      "params": {},
-      "result": {
-        "legal_actions": [],
-        "blocked_actions": [],
-        "search_space_size": 0,
-        "hint": "",
-        "budget": {
-          "decisions_used": 7,
-          "decisions_remaining": 43,
-          "compiles_used": 4,
-          "compiles_remaining": 6,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775014983.9708586
+      "timestamp": 1775018932.8450005
     },
     {
       "step": 18,
       "type": "action",
-      "tool": "list_legal_actions",
+      "tool": "rollback",
       "params": {
-        "kind": "reorder",
-        "limit": 10
+        "steps": 1
       },
       "result": {},
-      "timestamp": 1775014983.970971
+      "timestamp": 1775018936.5377421
     },
     {
       "step": 18,
       "type": "result",
-      "tool": "list_legal_actions",
+      "tool": "rollback",
       "params": {},
       "result": {
-        "legal_actions": [
-          {
-            "id": "reorder_standard",
-            "kind": "reorder",
-            "params": {
-              "order": [
-                "k_outer",
-                "i_outer",
-                "j_outer",
-                "k_outer",
-                "k_inner",
-                "i_inner",
-                "j_inner",
-                "k_inner"
-              ]
-            },
-            "estimated_impact": {
-              "pattern": "outer_parallel_inner_reuse"
-            },
-            "codegen_support": true
-          }
-        ],
-        "blocked_actions": [],
-        "search_space_size": 1,
-        "hint": "",
+        "rolled_back": 1,
+        "decisions_remaining": 4,
         "budget": {
           "decisions_used": 7,
           "decisions_remaining": 43,
@@ -1233,7 +1223,7 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014983.9710345
+      "timestamp": 1775018936.5377703
     },
     {
       "step": 19,
@@ -1243,18 +1233,20 @@
         "kind": "reorder",
         "params": {
           "order": [
-            "i_outer",
+            "k_outer",
             "j_outer",
+            "i_outer",
             "k_outer",
             "k_inner",
+            "j_inner",
             "i_inner",
-            "j_inner"
+            "k_inner"
           ]
         },
-        "rationale": "Establish the canonical GEMM loop order: parallel block loops (i_outer, j_outer) outermost, then the k_outer reduction sweep, then inner tile loops. This gives the Triton backend a fully specified, unambiguous execution schedule: each thread block iterates over k_outer, loading A_tile and B_tile into shared memory each step, then computes the inner tile. This is the standard pattern the backend needs to emit valid PTX."
+        "rationale": "Reorder loops to put k_outer and j_outer in the outermost positions to maximize spatial locality. By iterating over output columns (j) in the outer loop and rows (i) inside, each thread block sweeps through the K reduction before moving to the next output row-block. This improves cache reuse on B tiles and reduces TLB pressure on large output matrices."
       },
       "result": {},
-      "timestamp": 1775014992.039718
+      "timestamp": 1775018943.797318
     },
     {
       "step": 19,
@@ -1267,13 +1259,13 @@
         "validation": {
           "pass": true,
           "resource_usage": {
-            "shared_memory_bytes": 32768,
-            "estimated_threads_per_block": 256,
+            "shared_memory_bytes": 0,
+            "estimated_threads_per_block": 1024,
             "estimated_blocks": 128,
-            "register_pressure": "medium"
+            "register_pressure": "low"
           }
         },
-        "decisions_so_far": 7,
+        "decisions_so_far": 5,
         "budget": {
           "decisions_used": 8,
           "decisions_remaining": 42,
@@ -1282,10 +1274,44 @@
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014992.0397744
+      "timestamp": 1775018943.797434
     },
     {
       "step": 20,
+      "type": "action",
+      "tool": "verify_correctness",
+      "params": {},
+      "result": {},
+      "timestamp": 1775018947.9077291
+    },
+    {
+      "step": 20,
+      "type": "result",
+      "tool": "verify_correctness",
+      "params": {},
+      "result": {
+        "success": true,
+        "passed": true,
+        "trials": 3,
+        "max_absolute_error": 0.0,
+        "max_relative_error": 0.0,
+        "tolerance": {
+          "atol": 0.01,
+          "rtol": 0.01
+        },
+        "errors": [],
+        "budget": {
+          "decisions_used": 8,
+          "decisions_remaining": 42,
+          "compiles_used": 5,
+          "compiles_remaining": 5,
+          "target_performance": 0.7
+        }
+      },
+      "timestamp": 1775018966.7206507
+    },
+    {
+      "step": 21,
       "type": "action",
       "tool": "compile_and_profile",
       "params": {
@@ -1293,63 +1319,41 @@
         "warmup": 5
       },
       "result": {},
-      "timestamp": 1775014999.7356849
+      "timestamp": 1775018970.2648923
     },
     {
-      "step": 20,
+      "step": 21,
       "type": "result",
       "tool": "compile_and_profile",
       "params": {},
       "result": {
-        "success": false,
-        "error": "Compilation failed: 'TritonBackend' object has no attribute 'compile_and_run'",
-        "hint": "Ensure the current strategy decisions are compatible with the Triton backend.",
+        "success": true,
+        "performance": {
+          "latency_us": 1313.64,
+          "tflops": 1.635,
+          "roofline_efficiency": 0.0,
+          "vs_baseline": 1.085
+        },
+        "decisions_applied": 5,
         "budget": {
           "decisions_used": 8,
           "decisions_remaining": 42,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
+          "compiles_used": 6,
+          "compiles_remaining": 4,
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775014999.7357597
-    },
-    {
-      "step": 21,
-      "type": "action",
-      "tool": "checkpoint",
-      "params": {
-        "name": "pre_rollback_v1"
-      },
-      "result": {},
-      "timestamp": 1775015006.041718
-    },
-    {
-      "step": 21,
-      "type": "result",
-      "tool": "checkpoint",
-      "params": {},
-      "result": {
-        "checkpoint_id": "pre_rollback_v1",
-        "budget": {
-          "decisions_used": 8,
-          "decisions_remaining": 42,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775015006.041878
+      "timestamp": 1775018970.4950316
     },
     {
       "step": 22,
       "type": "action",
       "tool": "rollback",
       "params": {
-        "steps": 7
+        "steps": 1
       },
       "result": {},
-      "timestamp": 1775015014.7408104
+      "timestamp": 1775018976.7597601
     },
     {
       "step": 22,
@@ -1357,267 +1361,75 @@
       "tool": "rollback",
       "params": {},
       "result": {
-        "rolled_back": 7,
-        "decisions_remaining": 0,
+        "rolled_back": 1,
+        "decisions_remaining": 4,
         "budget": {
           "decisions_used": 8,
           "decisions_remaining": 42,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
+          "compiles_used": 6,
+          "compiles_remaining": 4,
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775015014.7408426
+      "timestamp": 1775018976.7597847
     },
     {
       "step": 23,
       "type": "action",
-      "tool": "apply_decision",
+      "tool": "verify_correctness",
       "params": {
-        "kind": "fuse",
-        "params": {
-          "nodes": [
-            "matmul_0",
-            "relu_1"
-          ],
-          "type": "epilogue"
-        },
-        "rationale": "Fuse ReLU into the matmul epilogue to eliminate a separate kernel launch and the 8MB global memory round-trip for reading C back. This is zero-cost correctness-preserving transformation and the highest single-step impact optimization available."
+        "trials": 3
       },
       "result": {},
-      "timestamp": 1775015043.842717
+      "timestamp": 1775018982.7228756
     },
     {
       "step": 23,
       "type": "result",
-      "tool": "apply_decision",
+      "tool": "verify_correctness",
       "params": {},
       "result": {
         "success": true,
-        "step": 9,
-        "validation": {
-          "pass": true,
-          "resource_usage": {
-            "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 1,
-            "estimated_blocks": 1,
-            "register_pressure": "low"
-          }
+        "passed": true,
+        "trials": 3,
+        "max_absolute_error": 0.0,
+        "max_relative_error": 0.0,
+        "tolerance": {
+          "atol": 0.01,
+          "rtol": 0.01
         },
-        "decisions_so_far": 1,
+        "errors": [],
         "budget": {
-          "decisions_used": 9,
-          "decisions_remaining": 41,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
+          "decisions_used": 8,
+          "decisions_remaining": 42,
+          "compiles_used": 7,
+          "compiles_remaining": 3,
           "target_performance": 0.7
         }
       },
-      "timestamp": 1775015043.8428016
-    },
-    {
-      "step": 24,
-      "type": "action",
-      "tool": "apply_decision",
-      "params": {
-        "kind": "tile",
-        "params": {
-          "loop": "i",
-          "factors": [
-            128,
-            16
-          ]
-        },
-        "rationale": "Tile M-dimension: block tile 128 (8 blocks over M=1024), thread tile 16 \u2014 both multiples of tensor core M=16. Large block tile maximizes register accumulator reuse across the K reduction loop."
-      },
-      "result": {},
-      "timestamp": 1775015050.846317
-    },
-    {
-      "step": 24,
-      "type": "result",
-      "tool": "apply_decision",
-      "params": {},
-      "result": {
-        "success": true,
-        "step": 10,
-        "validation": {
-          "pass": true,
-          "resource_usage": {
-            "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 16,
-            "estimated_blocks": 8,
-            "register_pressure": "low"
-          }
-        },
-        "decisions_so_far": 2,
-        "budget": {
-          "decisions_used": 10,
-          "decisions_remaining": 40,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775015050.8463871
-    },
-    {
-      "step": 25,
-      "type": "action",
-      "tool": "apply_decision",
-      "params": {
-        "kind": "tile",
-        "params": {
-          "factors": [
-            128,
-            16
-          ],
-          "loop": "j"
-        },
-        "rationale": "Tile N-dimension: block tile 128 (16 blocks over N=2048), thread tile 16. Combined 8\u00d716=128 blocks \u2192 ~4 waves over 30 SMs for good occupancy. Aligns with tensor core N=8."
-      },
-      "result": {},
-      "timestamp": 1775015058.162509
-    },
-    {
-      "step": 25,
-      "type": "result",
-      "tool": "apply_decision",
-      "params": {},
-      "result": {
-        "success": true,
-        "step": 11,
-        "validation": {
-          "pass": true,
-          "resource_usage": {
-            "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 256,
-            "estimated_blocks": 128,
-            "register_pressure": "low"
-          }
-        },
-        "decisions_so_far": 3,
-        "budget": {
-          "decisions_used": 11,
-          "decisions_remaining": 39,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775015058.1626387
-    },
-    {
-      "step": 26,
-      "type": "action",
-      "tool": "apply_decision",
-      "params": {
-        "kind": "tile",
-        "params": {
-          "factors": [
-            64,
-            16
-          ],
-          "loop": "k"
-        },
-        "rationale": "Tile K-dimension: block tile 64 (8 steps over K=512), thread tile 16 \u2014 multiple of tensor core K=16. Controls shared memory footprint to 32KB for A_tile only, giving room for the B_tile as well if needed later."
-      },
-      "result": {},
-      "timestamp": 1775015064.2676759
-    },
-    {
-      "step": 26,
-      "type": "result",
-      "tool": "apply_decision",
-      "params": {},
-      "result": {
-        "success": true,
-        "step": 12,
-        "validation": {
-          "pass": true,
-          "resource_usage": {
-            "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 256,
-            "estimated_blocks": 128,
-            "register_pressure": "low"
-          }
-        },
-        "decisions_so_far": 4,
-        "budget": {
-          "decisions_used": 12,
-          "decisions_remaining": 38,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775015064.267791
-    },
-    {
-      "step": 27,
-      "type": "action",
-      "tool": "apply_decision",
-      "params": {
-        "kind": "parallel",
-        "params": {
-          "loops": [
-            "i_outer",
-            "j_outer"
-          ],
-          "mapping": {
-            "i_outer": "block.y",
-            "j_outer": "block.x"
-          }
-        },
-        "rationale": "Map outer i/j loops to GPU block grid (block.y=i_outer, block.x=j_outer). This is mandatory for Triton backend codegen \u2014 without an explicit parallel mapping the backend cannot emit a kernel launch. 128 total blocks across 30 SMs gives ~4.3 waves of work."
-      },
-      "result": {},
-      "timestamp": 1775015097.9853182
-    },
-    {
-      "step": 27,
-      "type": "result",
-      "tool": "apply_decision",
-      "params": {},
-      "result": {
-        "success": true,
-        "step": 13,
-        "validation": {
-          "pass": true,
-          "resource_usage": {
-            "shared_memory_bytes": 0,
-            "estimated_threads_per_block": 256,
-            "estimated_blocks": 128,
-            "register_pressure": "low"
-          }
-        },
-        "decisions_so_far": 5,
-        "budget": {
-          "decisions_used": 13,
-          "decisions_remaining": 37,
-          "compiles_used": 5,
-          "compiles_remaining": 5,
-          "target_performance": 0.7
-        }
-      },
-      "timestamp": 1775015097.9853919
+      "timestamp": 1775019001.2945423
     }
   ],
   "session_summary": {
     "kernel_id": "fused_matmul_relu",
     "target_hw": "nvidia_ampere",
-    "state": "optimizing",
-    "decisions": 5,
+    "state": "verifying",
+    "decisions": 4,
     "budget": {
-      "decisions_used": 13,
-      "decisions_remaining": 37,
-      "compiles_used": 5,
-      "compiles_remaining": 5,
+      "decisions_used": 8,
+      "decisions_remaining": 42,
+      "compiles_used": 7,
+      "compiles_remaining": 3,
       "target_performance": 0.7
     },
-    "best_performance": null,
-    "trajectory_steps": 54,
-    "duration_seconds": 367.1
+    "best_performance": {
+      "latency_us": 154.47,
+      "tflops": 13.902,
+      "roofline_efficiency": 0.0,
+      "vs_baseline": 1.061
+    },
+    "trajectory_steps": 46,
+    "duration_seconds": 263.9
   },
   "errors": []
 }

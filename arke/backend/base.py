@@ -28,7 +28,7 @@ class ProfileResult:
     latency_us: float = 0.0
     tflops: float = 0.0
     roofline_efficiency: float = 0.0
-    vs_baseline: dict[str, Any] | None = None
+    vs_baseline: float | None = None  # ratio: >1 means faster than baseline
 
 
 class ArkeBackend(ABC):
