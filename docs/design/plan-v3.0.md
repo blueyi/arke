@@ -41,8 +41,8 @@ Phase 1.3 ✅  LLM agent integration
 Phase 1.4 ✅  LLM closed-loop optimization
 Phase 1.5 ✅  Evaluation framework + comparison
 Phase 1.6 ✅  .ak Parser + CLI
-Phase 1.7 ⬅  Whole-model E2E (next)
-Phase 1.8     MVP release
+Phase 1.7 ⚠️  Whole-model E2E (3/4 criteria pass, perf needs inductor lowering)
+Phase 1.8 ⬅  MVP release (next)
 ```
 
 ---
@@ -261,17 +261,17 @@ Phase 1.8     MVP release
 
 ---
 
-## Phase 1.7: Whole-Model End-to-End ⬜
+## Phase 1.7: Whole-Model End-to-End ⚠️
 
 **Objective:** Replace kernels in a real model with Arke-optimized versions; inference correctness verified, **latency ≤ torch.compile**.
 
 ### Completion Criteria
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
-| 1.7.1 | GPT-2 Small inference correct | Arke kernel output matches PyTorch eager output (same-dtype ref) | ⬜ |
-| 1.7.2 | **Inference latency ≤ torch.compile** | `arke_latency <= torch_compile_latency` on same hardware | ⬜ |
-| 1.7.3 | ≥2 ops replaced | matmul + softmax (or matmul + layernorm) | ⬜ |
-| 1.7.4 | Memory ≤ 6GB | Fits in RTX 3060 Laptop 6GB VRAM | ⬜ |
+| 1.7.1 | GPT-2 Small inference correct | Arke kernel output matches PyTorch eager output (same-dtype ref) | ✅ |
+| 1.7.2 | **Inference latency ≤ torch.compile** | `arke_latency <= torch_compile_latency` on same hardware | ⚠️ |
+| 1.7.3 | ≥2 ops replaced | matmul + softmax (or matmul + layernorm) | ✅ |
+| 1.7.4 | Memory ≤ 6GB | Fits in RTX 3060 Laptop 6GB VRAM | ✅ |
 
 **Gate G5:** GPT-2 Small with Arke kernels — correct AND **latency ≤ torch.compile**
 
