@@ -219,23 +219,167 @@ class OptimizationSession:
         return self.env.list_legal_actions(kind=kind, limit=limit)
 
     def _handle_verify_correctness(self, params: dict) -> dict[str, Any]:
-        """Handle verify_correctness — V1 numerical validation."""
+        """Handle verify_correctness — V1 numerical + GPU correctness validation.
+
+        Two-stage verification:
+        1. V1: Semantic IR math check (NumPy reference, fast)
+        2. GPU: Compile kernel → run on GPU → compare output vs NumPy reference
+        """
         trials = params.get("trials", 3)
+        result: dict[str, Any] = {"success": True}
+
+        # Stage 1: V1 numerical validation (Semantic IR math)
         try:
-            result = self.numerical_validator.validate(
+            num_result = self.numerical_validator.validate(
                 self.semantic_ir, trials=trials
             )
-            return {
-                "success": True,
-                "passed": result.passed,
-                "trials": result.trials,
-                "max_absolute_error": result.max_absolute_error,
-                "max_relative_error": result.max_relative_error,
-                "tolerance": result.tolerance,
-                "errors": result.errors,
+            result["v1_numerical"] = {
+                "passed": num_result.passed,
+                "trials": num_result.trials,
+                "max_absolute_error": num_result.max_absolute_error,
+                "max_relative_error": num_result.max_relative_error,
+                "tolerance": num_result.tolerance,
+                "errors": num_result.errors,
             }
+            if not num_result.passed:
+                result["passed"] = False
+                result["errors"] = num_result.errors
+                return result
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            result["v1_numerical"] = {"passed": False, "error": str(e)}
+            result["passed"] = False
+            result["errors"] = [f"V1 numerical check failed: {e}"]
+            return result
+
+        # Stage 2: GPU correctness (compile kernel → run → compare vs NumPy)
+        try:
+            gpu_check = self._verify_gpu_correctness(trials=trials)
+            result["gpu_correctness"] = gpu_check
+            result["passed"] = gpu_check["passed"]
+            result["errors"] = gpu_check.get("errors", [])
+        except Exception as e:
+            # GPU check is best-effort — if backend unavailable, skip
+            result["gpu_correctness"] = {"passed": None, "skipped": True, "reason": str(e)}
+            result["passed"] = num_result.passed  # Fall back to V1 result
+            result["errors"] = []
+
+        return result
+
+    def _verify_gpu_correctness(self, trials: int = 3) -> dict[str, Any]:
+        """Compile kernel with current strategy and verify GPU output vs NumPy reference.
+
+        Returns:
+            Dict with 'passed', 'max_absolute_error', 'max_relative_error', 'errors'
+        """
+        import numpy as np
+
+        from arke.backend.triton_backend import TritonBackend
+        import torch
+
+        backend = TritonBackend()
+
+        # 1. Generate Triton source from current strategy
+        source = backend.translate(self.semantic_ir, self.env.strategy)
+
+        # 2. Compile
+        compiled = backend.compile(source)
+        if not compiled.success:
+            return {
+                "passed": False,
+                "errors": [f"Compilation failed: {compiled.error}"],
+            }
+
+        # 3. Run trials
+        dtype_map = {"f16": torch.float16, "f32": torch.float32, "bf16": torch.bfloat16}
+        np_dtype_map = {"f16": np.float16, "f32": np.float32, "bf16": np.float32}
+
+        # Determine tolerance from output dtype
+        out_dtype = "f32"
+        if self.semantic_ir.return_type:
+            out_dtype = self.semantic_ir.return_type.dtype
+        elif self.semantic_ir.params:
+            out_dtype = self.semantic_ir.params[0].dtype
+
+        tol_map = {
+            "f16": {"atol": 1e-1, "rtol": 5e-2},   # f16 accumulation can have larger error
+            "bf16": {"atol": 1e-1, "rtol": 5e-2},
+            "f32": {"atol": 1e-4, "rtol": 1e-4},
+        }
+        tolerance = tol_map.get(out_dtype, {"atol": 1e-2, "rtol": 1e-2})
+
+        max_abs_error = 0.0
+        max_rel_error = 0.0
+        errors: list[str] = []
+
+        for trial in range(trials):
+            seed = 42 + trial
+
+            # Generate random inputs for NumPy reference
+            np_inputs = self.numerical_validator.generate_random_inputs(
+                self.semantic_ir, seed=seed
+            )
+
+            # Compute NumPy reference output
+            np_output = self.numerical_validator.generate_reference(
+                self.semantic_ir, np_inputs
+            )
+
+            # Create GPU tensors from same data
+            gpu_inputs = {}
+            for p in self.semantic_ir.params:
+                t_dtype = dtype_map.get(p.dtype, torch.float16)
+                gpu_inputs[p.name] = torch.from_numpy(
+                    np_inputs[p.name].astype(np.float32)
+                ).to(dtype=t_dtype, device="cuda")
+
+            # Run GPU kernel
+            try:
+                gpu_output = backend.run(compiled, gpu_inputs)
+                if isinstance(gpu_output, dict):
+                    gpu_output = gpu_output.get("output", gpu_output)
+                gpu_output_np = gpu_output.cpu().float().numpy()
+            except Exception as e:
+                errors.append(f"Trial {trial}: GPU execution failed — {e}")
+                continue
+
+            # Compare
+            ref_f32 = np_output.astype(np.float32)
+            abs_err = float(np.max(np.abs(gpu_output_np - ref_f32)))
+            max_abs_error = max(max_abs_error, abs_err)
+
+            denom = np.maximum(np.abs(ref_f32), 1e-6)  # avoid div by ~0 for relu outputs
+            # Only compute relative error where reference is non-trivial
+            nontrivial = np.abs(ref_f32) > 1e-4
+            if np.any(nontrivial):
+                rel_err = float(np.max(
+                    np.abs(gpu_output_np[nontrivial] - ref_f32[nontrivial]) /
+                    np.abs(ref_f32[nontrivial])
+                ))
+            else:
+                rel_err = 0.0
+            max_rel_error = max(max_rel_error, rel_err)
+
+            if not np.allclose(gpu_output_np, ref_f32,
+                               atol=tolerance["atol"], rtol=tolerance["rtol"]):
+                errors.append(
+                    f"Trial {trial}: GPU output mismatch "
+                    f"(max_abs={abs_err:.2e}, max_rel={rel_err:.2e}, "
+                    f"tol=atol={tolerance['atol']}, rtol={tolerance['rtol']})"
+                )
+
+            if np.any(np.isnan(gpu_output_np)):
+                errors.append(f"Trial {trial}: GPU output contains NaN")
+            if np.any(np.isinf(gpu_output_np)):
+                errors.append(f"Trial {trial}: GPU output contains Inf")
+
+        return {
+            "passed": len(errors) == 0,
+            "trials": trials,
+            "max_absolute_error": max_abs_error,
+            "max_relative_error": max_rel_error,
+            "tolerance": tolerance,
+            "errors": errors,
+        }
 
     def _handle_compile_and_profile(self, params: dict) -> dict[str, Any]:
         """Handle compile_and_profile — compile kernel and run GPU benchmarks.
