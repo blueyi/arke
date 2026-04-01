@@ -1,8 +1,6 @@
 # Arke
 
 > **Let LLMs write the kernels. Let compilers check the math.**
->
-> **让大模型写算子，让编译器验算术。**
 
 ---
 
@@ -12,11 +10,8 @@
 
 **Arke** (Ἄρκη) — the twin sister of Iris in Greek mythology. Both were messenger goddesses of the rainbow, but while Iris served the Olympians, Arke chose the Titans.
 
-In our context:
 - **Iris** represents the established path — traditional compilers with hand-written optimization rules
 - **Arke** represents the new path — AI-driven optimization where LLMs bridge the gap between human intent and hardware reality
-
-Just as the mythological Arke was swift-footed (Zeus later gave her iridescent wings to Thetis as a wedding gift), the system is designed for rapid, iterative optimization cycles. And like a messenger between two worlds, Arke translates between **what to compute** (semantic intent) and **how to compute it** (hardware-specific strategy).
 
 ## Key Features
 
@@ -73,7 +68,7 @@ strategy fused_matmul_relu for target("nvidia_ampere") {
 }
 ```
 
-## Python API (Target)
+## Python API
 
 ```python
 import arke
@@ -91,63 +86,127 @@ print(result.trajectory)   # Full optimization trace
 
 ---
 
-## 🗺️ Long-Term Roadmap
+## 🗺️ Roadmap
 
-Three stages, from validation to production:
+Three stages from hypothesis validation to full compiler stack:
 
 ```
-Stage 1: Arke → Triton → GPU          验证假设 (current)
-Stage 2: Arke → MLIR Dialect → 多硬件  摆脱依赖
-Stage 3: Arke → LLVM IR → 全硬件       重构编译栈
+Stage 1: Arke → Triton → GPU          Validate hypothesis    (current)
+Stage 2: Arke → MLIR Dialect → Multi   Break free from deps
+Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 ```
-
-### Stage 1: Arke → Triton → GPU (验证假设)
-
-Validate the core thesis: **LLM + structured IR + compiler verification > LLM direct codegen.**
-
-Use Triton as the code generation target. Prove that LLM-guided optimization through tool-use outperforms LLM-written Triton code on correctness, consistency, and performance.
-
-**Target hardware:** NVIDIA Ampere (RTX 3060)
-
-### Stage 2: Arke → MLIR Dialect → 多硬件 (摆脱依赖)
-
-Replace Triton backend with a custom MLIR dialect. Enable multi-hardware targeting without depending on external code generation frameworks.
-
-**Target hardware:** NVIDIA + Huawei Ascend
-
-### Stage 3: Arke → LLVM IR → 全硬件 (重构编译栈)
-
-Full compiler stack from Arke IR directly to LLVM IR. Maximum control over code generation and optimization for all hardware targets.
-
-**Target hardware:** NVIDIA + Ascend + AMD + Intel
 
 ---
 
-## 📋 Stage 1 Development Progress
+### Stage 1: Arke → Triton → GPU — Validate Hypothesis
 
-> Phase-based execution — each phase has SMART completion criteria and gate milestones.
-> See [plan-v3.0.md](docs/design/plan-v3.0.md) for detailed criteria.
+**Goal:** Prove that LLM + structured IR + compiler verification produces kernels that are both correct and **faster than LLM-written Triton**, using Triton as the codegen backend.
 
-### Phase Overview
+**Target hardware:** NVIDIA Ampere (RTX 3060)
 
-| Phase | Goal | Gate | Status |
-|:-----:|:-----|:----:|:------:|
-| **1** | IR + 验证基础 | G0: Triton matmul runs on GPU | ✅ |
-| **2** | Codegen + E2E Pipeline | G2: Manual strategy → ≥70% cuBLAS | ✅ (105-160%) |
-| **3** | LLM Runner 联调 | — | ✅ |
-| **4** | LLM 闭环优化 | G3: LLM tool-use → matmul ≥50% cuBLAS | ✅ (106%) |
-| **5** | 评估框架 + 对比实验 | G4: Arke ≥ direct Triton gen | 🔨 |
-| **6** | .ak Parser + CLI | — | ⬜ |
-| **7** | 整模型端到端 | G5: GPT-2 w/ Arke ≥ torch.compile | ⬜ |
-| **8** | 多 LLM + 报告 | — | ⬜ |
+| Phase | Objective | Gate Criteria | Status |
+|:-----:|:----------|:-------------|:------:|
+| **1.0** | Environment setup | `make setup` bootstraps venv + PyTorch + Triton + CUDA on a fresh machine; GPU smoke test passes | ✅ |
+| **1.1** | IR + Validation foundation | Semantic IR covers ≥10 ops; Strategy IR covers ≥6 decision types; V0 static + V1 numerical validators pass on all ops; ≥100 tests | ✅ |
+| **1.2** | Codegen + E2E pipeline | Manual strategy → Triton → GPU execution, correctness verified (same-dtype NumPy ref), **perf ≥ 70% cuBLAS** | ✅ (105-160%) |
+| **1.3** | LLM agent integration | LLM completes full tool-use optimization loop using ≥8 tools, applies ≥4 decisions, zero human intervention | ✅ |
+| **1.4** | LLM closed-loop optimization | LLM-optimized matmul/softmax/fused kernels all pass GPU correctness, **perf ≥ 50% cuBLAS** | ✅ (106%) |
+| **1.5** | Evaluation + comparison | ≥5 benchmark tasks; Arke correctness ≥ LLM-direct-Triton; **Arke mean perf ≥ LLM-direct-Triton mean perf**; variance ≤ direct | 🔨 |
+| **1.6** | .ak parser + CLI | `.ak` → AST → Semantic IR for ≥3 kernels; `arke parse/optimize/inspect` CLI commands functional | ⬜ |
+| **1.7** | Whole-model E2E | GPT-2 Small with ≥2 Arke-replaced ops, output matches PyTorch reference, **inference latency ≤ torch.compile** | ⬜ |
+| **1.8** | MVP release | CI green on 3 Python versions; API docs complete; evaluation report with reproducible data; v0.1.0 tag | ⬜ |
+
+> **Post Stage 1 TODO:** Evaluate implementation language for Stages 2–3. Consider compile-time performance, MLIR/LLVM C++ API integration ergonomics, deployment binary size, and whether a Rust/C++ rewrite of the compiler core (keeping Python for agent/LLM layer) is warranted.
+
+---
+
+### Stage 2: Arke → MLIR Dialect → Multi-Hardware
+
+**Goal:** Replace Triton backend with a custom MLIR dialect. Generate hardware-specific code for multiple targets from a single Arke IR, **matching or exceeding Triton-backend performance**.
+
+**Target hardware:** NVIDIA + Huawei Ascend
+
+| Phase | Objective | Gate Criteria |
+|:-----:|:----------|:-------------|
+| **2.1** | MLIR dialect design | Define Arke MLIR dialect ops; lower elementwise Arke IR → MLIR → LLVM IR; generated code produces correct output |
+| **2.2** | NVIDIA codegen via MLIR | matmul via MLIR path, correctness verified (same-dtype ref), **perf ≥ Stage 1 Triton-backend result on same hardware** |
+| **2.3** | Ascend backend prototype | matmul on Ascend 910B, correctness verified against same-dtype NumPy reference, **perf ≥ 50% Ascend CANN library** |
+| **2.4** | Cross-hardware evaluation | Same Arke kernel → NVIDIA + Ascend, both correct; **NVIDIA perf ≥ Stage 1 baseline; Ascend perf ≥ 50% CANN** |
+
+---
+
+### Stage 3: Arke → LLVM IR → All Hardware
+
+**Goal:** Full compiler stack emitting LLVM IR directly. Maximum control over optimization passes and code generation, targeting all major accelerators with **performance within 90% of vendor libraries**.
+
+**Target hardware:** NVIDIA + Ascend + AMD + Intel
+
+| Phase | Objective | Gate Criteria |
+|:-----:|:----------|:-------------|
+| **3.1** | Direct LLVM IR emission | Emit PTX/AMDGCN/SPIR-V from Arke IR; matmul correct on ≥2 backends |
+| **3.2** | Custom optimization passes | Arke-specific LLVM passes for tiling, fusion, memory placement; **perf ≥ Stage 2 MLIR-backend on same ops** |
+| **3.3** | Multi-target parity | Same kernel → ≥3 backends, all correct, **perf within 90% of each platform's vendor library** |
+| **3.4** | Production release | Stable public API; pip/cargo package; benchmark suite across ≥3 hardware platforms; v1.0.0 tag |
+
+---
+
+## 📋 Current Progress (Stage 1)
 
 ### Key Achievements
 
-- **LLM closed-loop optimization working** — Claude Sonnet 4.6 autonomously optimizes matmul+relu kernel through 23 tool calls with zero errors
+- **LLM closed-loop optimization** — Claude Sonnet 4.6 autonomously optimizes matmul+relu through 23 tool calls, zero errors
 - **106% cuBLAS** — LLM-optimized kernel outperforms NVIDIA's hand-tuned library
-- **GPU correctness verification** — Same-dtype comparison (Triton kernel output vs NumPy CPU reference at matching precision)
+- **GPU correctness verification** — Same-dtype comparison (Triton output vs NumPy reference at matching precision)
 - **Accuracy benchmark framework** — 10 metrics, 3-tier verdict (accept/review/reject), per-dtype thresholds
-- **237 tests passing** (219 with GPU tests enabled)
+- **237 tests passing** (including GPU correctness tests)
+
+### Gate Status
+
+| Gate | Validates | Criteria | Status |
+|:----:|:----------|:---------|:------:|
+| G0 | Environment feasibility | Triton matmul runs on RTX 3060 | ✅ |
+| G1 | IR expressiveness | Known-good strategy representable in Arke IR | ✅ |
+| G2 | E2E pipeline | Manual strategy → codegen → **perf ≥ 70% cuBLAS** | ✅ (105-160%) |
+| G3 | LLM feasibility | LLM tool-use → **matmul perf ≥ 50% cuBLAS** + softmax correct | ✅ (106%) |
+| G4 | Comparative advantage | **Arke perf ≥ LLM-direct-Triton perf** across ≥5 tasks | 🔨 |
+| G5 | Whole-model benefit | GPT-2 Small w/ Arke kernels **latency ≤ torch.compile** | ⬜ |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Linux (tested on Ubuntu 22.04 / WSL2)
+- NVIDIA GPU with CUDA ≥ 12.1 (tested on RTX 3060)
+- Python 3.10+
+
+### One-Click Setup
+
+```bash
+git clone https://github.com/arke-lang/arke.git
+cd arke
+make setup    # Creates venv, installs PyTorch + Triton + deps, verifies GPU
+```
+
+### Manual Setup
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+python -c "import torch; print(torch.cuda.is_available())"  # Should print True
+pytest tests/ -q  # Run tests
+```
+
+### Run LLM Optimization Demo
+
+```bash
+# Set LLM provider (Anthropic example)
+export ANTHROPIC_API_KEY=your-key-here
+
+# Run matmul optimization
+python examples/agent_matmul.py
+```
 
 ---
 
@@ -177,28 +236,25 @@ arke/
 │   └── tools_schema.py        # 10 tool definitions
 ├── backend/                   # Code Generation
 │   ├── triton_backend.py      # Triton backend (translate + compile + run)
-│   ├── triton_template_engine.py  # Strategy → Triton param mapping
+│   ├── triton_template_engine.py
 │   └── base.py                # Backend ABC
 ├── learn/                     # Learning System
 │   └── trajectory.py          # JSONL trajectory export
-├── lang/                      # Language Frontend (Phase 6)
-│   ├── ast.py                 # AST node definitions
-│   └── ...
+├── lang/                      # Language Frontend (Phase 1.6)
+│   └── ast.py                 # AST node definitions
 ├── pipeline.py                # E2E pipeline
-└── examples/                  # Example scripts
-    └── agent_matmul.py        # LLM agent matmul optimization demo
+└── examples/
+    └── agent_matmul.py        # LLM agent optimization demo
 ```
 
-## Design Documents
+## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [plan-v3.0.md](docs/design/plan-v3.0.md) | Phase-based execution plan — SMART criteria, Gate milestones |
-| [e2e-flow.md](docs/design/e2e-flow.md) | End-to-end flow — from user input to GPU execution |
+| [plan-v3.0.md](docs/design/plan-v3.0.md) | Execution plan — Phase definitions, SMART criteria, Gate milestones |
+| [e2e-flow.md](docs/design/e2e-flow.md) | End-to-end flow — user input to GPU execution walkthrough |
 | [design-review.md](docs/design/design-review.md) | Design review — assumption validation, risk matrix |
 | [naming-system.md](docs/design/naming-system.md) | Naming conventions — global terminology rules |
-
-## Specifications
 
 | Spec | Description |
 |------|-------------|

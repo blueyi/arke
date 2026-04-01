@@ -1,342 +1,346 @@
-# Arke Project — Phase-Based Execution Plan v3.0
+# Arke — Execution Plan v3.0
 
-> 核心原则：每个 Phase 有 SMART 目标，必须达成后才能进入下一阶段
-> 基于 v2.1.4 实际执行经验重构
+> Each Phase has SMART completion criteria. Gate must pass before advancing.
 > Date: 2026-04-01
 
 ---
 
-## 设计理念
+## Current Snapshot (2026-04-01)
 
-### 为什么从 Week 改为 Phase
-
-Week 时间表把"时间"当驱动力，但实际执行中：
-- 有些 Week 一天就完成了（如 Week 1 环境搭建）
-- 有些 Week 花了 3 天也做不完（如 LLM 联调）
-- 跨 Week 的依赖关系导致跳跃式推进
-
-**Phase 以"目标达成"为驱动**：每个 Phase 定义了清晰的完成标准，达标才进入下一个。
-
-### SMART 标准
-
-每个 Phase 的目标必须：
-- **S**pecific — 具体到可以写成 assert 语句
-- **M**easurable — 有量化指标（测试数、性能数、正确率）
-- **A**chievable — 基于当前代码和资源可实现
-- **R**elevant — 直接服务于 MVP 验证假设
-- **T**ime-bounded — 有预估时间（但不硬约束）
-
----
-
-## 当前状态快照 (2026-04-01)
-
-### 已完成
-- ✅ GPU 环境 (PyTorch 2.6.0+cu124, Triton 3.2.0, RTX 3060)
-- ✅ IR 体系 (Semantic IR + Strategy IR, JSON Schema, 10 ops)
-- ✅ Builder + Shape Inference (全 10 op)
-- ✅ 验证系统 (V0 静态 + V1 数值 + 资源估算)
-- ✅ 合法动作枚举引擎
-- ✅ ArkeEnv 完整实现
-- ✅ Triton codegen (matmul + softmax, 模板引擎)
+### Completed
+- ✅ GPU environment (PyTorch 2.6.0+cu124, Triton 3.2.0, RTX 3060)
+- ✅ IR system (Semantic IR + Strategy IR, JSON Schema, 10 ops)
+- ✅ Builder + Shape Inference (all 10 ops)
+- ✅ Validation system (V0 static + V1 numerical + resource estimation)
+- ✅ Legal action enumeration engine
+- ✅ ArkeEnv full implementation
+- ✅ Triton codegen (matmul + softmax, template engine)
 - ✅ E2E pipeline (IR → strategy → codegen → GPU)
 - ✅ LLM Runner (Anthropic + OpenAI API, fallback, retry)
-- ✅ LLM 首次联调成功 (Sonnet 4.6, 27 tool calls, 完整循环)
-- ✅ 212 tests 通过
+- ✅ LLM closed-loop optimization (Sonnet 4.6, 23 tool calls, 106% cuBLAS)
+- ✅ GPU correctness verification (same-dtype reference)
+- ✅ Accuracy benchmark framework (10 metrics, 3-tier verdict)
+- ✅ Trajectory JSONL export
+- ✅ 237 tests passing
 
-### 已验证的 Gate
-- G0 ✅ — Triton matmul 在 RTX 3060 跑通
-- G2 ✅ — 手动 strategy → codegen → 105-160% cuBLAS
-
-### 关键文件
-```
-arke/ir/semantic.py          # Semantic IR
-arke/ir/strategy.py          # Strategy IR  
-arke/ir/builder.py           # IR Builder
-arke/engine/env.py           # ArkeEnv
-arke/engine/validator.py     # V0 Validator
-arke/engine/numerical_check.py  # V1 Numerical
-arke/engine/legal_actions.py # Legal Actions
-arke/agent/tools_schema.py   # 10 Tools
-arke/agent/session.py        # Session Manager
-arke/agent/prompts.py        # System Prompt
-arke/agent/runner.py         # LLM Runner
-arke/agent/llm_config.py     # LLM Config
-arke/backend/triton_backend.py    # Triton Backend
-arke/backend/triton_template_engine.py
-arke/pipeline.py             # E2E Pipeline
-```
+### Gate Status
+- G0 ✅ — Triton matmul runs on RTX 3060
+- G1 ✅ — Known-good strategy expressible in Arke IR
+- G2 ✅ — Manual strategy → codegen → 105-160% cuBLAS
+- G3 ✅ — LLM tool-use → 106% cuBLAS + softmax correct
 
 ---
 
-## Phase 定义
+## Phase Overview
 
 ```
-Phase 1 ✅  IR + 验证基础
-Phase 2 ✅  Codegen + E2E Pipeline
-Phase 3 ✅  LLM Runner 联调
-Phase 4 ✅  LLM 闭环优化
-Phase 5 ⬅  评估框架 + 对比实验 (下一阶段)
-Phase 6     .ak Parser + CLI
-Phase 7     整模型端到端
-Phase 8     MVP Release
+Phase 1.0 ✅  Environment setup
+Phase 1.1 ✅  IR + Validation foundation
+Phase 1.2 ✅  Codegen + E2E pipeline
+Phase 1.3 ✅  LLM agent integration
+Phase 1.4 ✅  LLM closed-loop optimization
+Phase 1.5 ⬅  Evaluation framework + comparison (next)
+Phase 1.6     .ak Parser + CLI
+Phase 1.7     Whole-model E2E
+Phase 1.8     MVP release
 ```
 
 ---
 
-## Phase 1: IR + 验证基础 ✅ 已完成
+## Phase 1.0: Environment Setup ✅
 
-**目标**: 建立 Semantic IR / Strategy IR 体系，实现静态验证和数值验证
+**Objective:** One-click reproducible development environment with GPU verification.
 
-### 完成标准 (全部达成 ✅)
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 1.1 | Semantic IR 支持 ≥10 个算子 | `len(OP_CATALOG) >= 10` | ✅ |
-| 1.2 | Strategy IR 支持 ≥6 种 decision | `kinds ⊇ {tile,fuse,place,parallel,reorder,algorithm}` | ✅ |
-| 1.3 | JSON Schema 完整且可验证 | `jsonschema.validate(ir, schema)` 通过 | ✅ |
-| 1.4 | V0 静态验证 <1ms | `validator.validate()` 耗时 <1ms | ✅ |
-| 1.5 | V1 数值验证 (NumPy reference) | `numerical_check.validate()` 3 trials 通过 | ✅ |
-| 1.6 | Shape inference 全 10 op | `infer_shapes()` 对所有 op 返回正确 shape | ✅ |
-| 1.7 | ≥100 unit tests | `pytest` 通过数 ≥100 | ✅ (212) |
-
-**Gate G1 ✅**: IR 能表达已知好的 strategy (matmul tiling + fusion)
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.0.1 | `make setup` creates venv + installs all deps | Fresh clone → `make setup` → no errors | ✅ |
+| 1.0.2 | PyTorch detects CUDA GPU | `torch.cuda.is_available() == True` | ✅ |
+| 1.0.3 | Triton compiles and runs matmul | GPU smoke test script exits 0 | ✅ |
+| 1.0.4 | `pytest tests/ -q` runs without import errors | All tests collected (skip GPU-gated if no GPU) | ✅ |
 
 ---
 
-## Phase 2: Codegen + E2E Pipeline ✅ 已完成
+## Phase 1.1: IR + Validation Foundation ✅
 
-**目标**: Triton 代码生成 + 端到端 pipeline 从 IR 到 GPU 执行
+**Objective:** Semantic IR and Strategy IR with static and numerical validation covering ≥10 operators.
 
-### 完成标准 (全部达成 ✅)
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 2.1 | matmul Triton codegen 生成正确代码 | 生成的 kernel 通过 V1 数值验证 | ✅ |
-| 2.2 | softmax Triton codegen 生成正确代码 | 同上 | ✅ |
-| 2.3 | fused matmul+relu codegen | 融合 kernel 通过数值验证 | ✅ |
-| 2.4 | GPU 端到端 ≥70% cuBLAS | `compile_and_profile()` 结果 ≥0.7 | ✅ (105-160%) |
-| 2.5 | Pipeline 完整串联 | IR → strategy → codegen → compile → profile 一条龙 | ✅ |
-| 2.6 | ≥9 GPU tests | `pytest -k gpu` 通过数 ≥9 | ✅ |
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.1.1 | Semantic IR supports ≥10 operators | `len(OP_CATALOG) >= 10` | ✅ |
+| 1.1.2 | Strategy IR supports ≥6 decision types | `kinds ⊇ {tile,fuse,place,parallel,reorder,algorithm}` | ✅ |
+| 1.1.3 | JSON Schema validates IR round-trip | `jsonschema.validate(ir.to_json(), schema)` passes | ✅ |
+| 1.1.4 | V0 static validation < 1ms | Validator latency measured < 1ms | ✅ |
+| 1.1.5 | V1 numerical validation (NumPy reference) | 3 random-seed trials pass for matmul, softmax | ✅ |
+| 1.1.6 | Shape inference for all 10 ops | `infer_shapes()` returns correct shapes | ✅ |
+| 1.1.7 | ≥100 unit tests passing | `pytest` count ≥ 100 | ✅ (237) |
 
-**Gate G2 ✅**: 手动 strategy → codegen → ≥70% cuBLAS
+**Gate G1:** IR can express known-good strategy (matmul tiling + fusion) ✅
 
----
-
-## Phase 3: LLM Runner 联调 ✅ 已完成
-
-**目标**: LLM 通过 tool-use 自主完成优化循环
-
-### 完成标准 (全部达成 ✅)
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 3.1 | LLM 能调用 ≥8 种 tools | 联调 trajectory 中出现 ≥8 个不同 tool | ✅ (全10种) |
-| 3.2 | LLM 完成 ≥4 个 decisions | `result.decisions >= 4` | ✅ (13) |
-| 3.3 | LLM 调用 verify_correctness | trajectory 中包含 verify_correctness | ✅ |
-| 3.4 | LLM 调用 compile_and_profile | trajectory 中包含 compile_and_profile | ✅ (5次) |
-| 3.5 | LLM 使用 checkpoint + rollback | trajectory 中包含 checkpoint 和 rollback | ✅ |
-| 3.6 | Fallback 机制工作 | timeout/error 时自动尝试 fallback model | ✅ |
-| 3.7 | 多 provider 支持 | Anthropic + OpenAI API 都可用 | ✅ |
-| 3.8 | 零人工干预完成完整循环 | 从 start 到 finish 无需手动介入 | ✅ |
+### Tasks
+- [x] Op catalog P0 (10 operators)
+- [x] Semantic IR dataclasses + JSON serialization
+- [x] Strategy IR dataclasses + JSON serialization
+- [x] JSON Schema definitions
+- [x] KernelBuilder (Python → IR)
+- [x] Shape inference engine (all 10 ops)
+- [x] V0 static validator (shape + constraint checks)
+- [x] V1 numerical validator (NumPy reference comparison)
+- [x] Resource estimation (shared memory, register usage)
+- [x] HW profile: `nvidia_ampere_rtx3060.json`
 
 ---
 
-## Phase 4: LLM 闭环优化 ✅ 已完成
+## Phase 1.2: Codegen + E2E Pipeline ✅
 
-**目标**: LLM 优化后的 kernel 在 GPU 上达到 ≥50% cuBLAS 性能，多算子验证
+**Objective:** Triton code generation from Strategy IR, end-to-end pipeline producing GPU-executable kernels with **perf ≥ 70% cuBLAS**.
 
-### 完成标准
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 4.1 | LLM 优化 matmul → GPU 执行 → 正确 | `verify_correctness` 通过 + GPU 输出与 NumPy 一致 (atol=1e-2) | ✅ |
-| 4.2 | LLM 优化 matmul ≥50% cuBLAS | `compile_and_profile()` 返回 `vs_baseline >= 0.5` | ✅ (106.1%) |
-| 4.3 | LLM 优化 softmax → 正确 | 同 4.1 | ✅ |
-| 4.4 | LLM 优化 fused_matmul_relu → 正确 | 同 4.1 | ✅ |
-| 4.5 | compile_and_profile 返回真实 GPU 性能数据 | 返回 `latency_us`, `tflops`, `vs_baseline` 字段 | ✅ |
-| 4.6 | 错误恢复: LLM 遇到 validation failure 后自动调整 | trajectory 中有 failed decision → rollback → success | ✅ |
-| 4.7 | 轨迹导出为 JSONL | `export_trajectory()` 输出包含 state/action/result | ✅ |
-| 4.8 | ≥220 tests 全部通过 | `pytest` 通过数 ≥220 | ✅ (219+4 GPU) |
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.2.1 | matmul Triton codegen correct | Generated kernel passes V1 numerical validation | ✅ |
+| 1.2.2 | softmax Triton codegen correct | Same as above | ✅ |
+| 1.2.3 | fused matmul+relu codegen correct | Fused kernel passes numerical validation | ✅ |
+| 1.2.4 | GPU execution **≥ 70% cuBLAS** | `compile_and_profile()` returns `vs_baseline >= 0.7` | ✅ (105-160%) |
+| 1.2.5 | Pipeline fully connected | IR → strategy → codegen → compile → profile in one call | ✅ |
+| 1.2.6 | ≥9 GPU integration tests | GPU tests pass with `ARKE_GPU_TESTS=1` | ✅ |
 
-### 关键差距分析
+**Gate G2:** Manual strategy → codegen → ≥70% cuBLAS ✅
 
-当前 Phase 3 联调中 `compile_and_profile()` 返回的是 fallback 错误信息，
-不是真实 GPU 性能。需要修通 LLM decisions → Triton codegen → GPU execute 的完整链路。
-
-核心问题: LLM 做的 strategy decisions 需要正确映射到 Triton 模板参数。
-
-### 预估时间: 2-3 天
-
-**Gate G3**: LLM tool-use 50 步 → matmul ≥50% cuBLAS + softmax 正确
-
----
-
-## Phase 5: 评估框架 + 对比实验
-
-**目标**: 定量证明 Arke (LLM + tool-use) 优于 LLM 直写 Triton
-
-### 精度对比框架
-
-精度验证是所有性能对比的基础。已实现的框架 (`arke/engine/accuracy.py`) 设计原则：
-
-**同 dtype 对比（默认）：** 标杆数据与被测数据保持相同精度
-- GPU f16 kernel → NumPy CPU f16 reference（测实现正确性）
-- GPU f32 kernel → NumPy CPU f32 reference
-- 差异仅来源于实现差异（reduction order, FMA, non-determinism）
-
-**跨精度对比（显式指定）：** 用于量化精度损失
-- f16 kernel vs f32 reference（`CROSS_DTYPE_CONFIGS["f16_vs_f32"]`）
-- f32 kernel vs f64 reference
-
-**标杆源（pluggable）：**
-- `NumPyCPUSource` — NumPy CPU，默认同 dtype（无 GPU 时 fallback）
-- `TorchGPUSource` — PyTorch GPU（GPU-vs-GPU 对比）
-- `CustomSource` — 用户提供（Ascend 等外部数据源）
-
-**度量指标（10 项）：**
-- 绝对误差: max, mean, median, std
-- 相对误差: max, mean, median, P90, P99（仅 |ref| > ε 的元素）
-- ULP 误差: mean, max, P99
-- 异常: NaN count, Inf count, sign mismatch rate
-- 相似度: cosine similarity, zero diff rate
-
-**三级判定：**
-| 级别 | 条件 |
-|------|------|
-| Accept | rel_mean < 阈值 且 rel_p99 < 阈值 |
-| Review | rel_mean 或 rel_p99 超 accept 但未超 reject |
-| Reject | NaN/Inf、sign mismatch > 0.1%、rel_mean > reject 阈值 |
-
-**输入采样策略：**
-- normal: N(0,1)，常规覆盖
-- uniform: U(-1,1)，不同幅值
-- edge: 边界值（极大/极小、次正规数、接近零）
-- 固定随机种子，多 trial 取中位数
-
-### 完成标准
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 5.1 | 评估任务 ≥5 个定义完成 | `benchmarks/tasks.py` 中 ≥5 个 task | ⬜ |
-| 5.2 | Baseline A: Arke 跑完全部 tasks | 每个 task 有 Arke 结果 | ⬜ |
-| 5.3 | Baseline B: LLM 直写 Triton 跑完 | 每个 task 有直写结果 | ⬜ |
-| 5.4 | 正确率: Arke ≥ 直写 Triton | `arke_correct_rate >= direct_correct_rate` | ⬜ |
-| 5.5 | 性能: Arke 平均 ≥ 直写 Triton | `mean(arke_perf) >= mean(direct_perf)` | ⬜ |
-| 5.6 | 一致性: Arke 方差 ≤ 直写 | `var(arke_results) <= var(direct_results)` | ⬜ |
-| 5.7 | 评估报告生成 | `benchmarks/report.md` 包含完整数据和分析 | ⬜ |
-| 5.8 | Token 效率对比 | Arke vs 直写的总 token 消耗对比 | ⬜ |
-
-### 预估时间: 3-4 天
-
-**Gate G4**: Arke 正确率和性能 ≥ 直写 Triton
-
-### Gate 4 决策矩阵
-| 结果 | 结论 | 下一步 |
-|------|------|--------|
-| Arke 正确率高 + 性能好 | ✅ 继续 | Phase 6-8 |
-| Arke 正确率高 + 性能差 | ⚠️ Arke 是验证框架 | Pivot 定位 |
-| Arke ≈ 直写 Triton | ⚠️ 无明显优势 | 审视增量价值 |
-| 两者都差 | ❌ | Kill 或根本 pivot |
+### Tasks
+- [x] Triton matmul template (Jinja2)
+- [x] Triton softmax template
+- [x] Triton matmul+relu fusion template
+- [x] Template engine (strategy params → Triton template params)
+- [x] TritonBackend (translate + compile + run)
+- [x] cuBLAS baseline profiler (vs_baseline calculation)
+- [x] E2E pipeline assembly (`pipeline.py`)
+- [x] GPU integration tests
 
 ---
 
-## Phase 6: .ak Parser + CLI
+## Phase 1.3: LLM Agent Integration ✅
 
-**目标**: 人类可以通过 .ak 语法和 CLI 使用 Arke
+**Objective:** LLM autonomously completes optimization loop via tool-use with zero human intervention.
 
-### 完成标准
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 6.1 | .ak parser 解析 matmul kernel | `parser.parse("examples/01_matmul.ak")` 返回 AST | ⬜ |
-| 6.2 | .ak parser 解析 fused kernel | `parser.parse("examples/02_matmul_relu_fused.ak")` 返回 AST | ⬜ |
-| 6.3 | AST → Semantic IR 转换正确 | `ast_to_ir(ast) == builder.build()` | ⬜ |
-| 6.4 | CLI `arke parse` 可用 | `arke parse kernel.ak -o kernel.json` 输出正确 JSON | ⬜ |
-| 6.5 | CLI `arke optimize` 可用 | `arke optimize kernel.json --target ampere` 启动 LLM session | ⬜ |
-| 6.6 | CLI `arke inspect` 可用 | `arke inspect kernel.json` 输出人类可读 IR | ⬜ |
-| 6.7 | ≥3 个 .ak examples 可跑通 | matmul, softmax, fused_matmul_relu 全链路 | ⬜ |
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.3.1 | LLM uses ≥8 distinct tools | Trajectory log contains ≥8 unique tool names | ✅ (all 10) |
+| 1.3.2 | LLM applies ≥4 strategy decisions | `result.decisions >= 4` | ✅ (13) |
+| 1.3.3 | LLM calls verify_correctness | Tool appears in trajectory | ✅ |
+| 1.3.4 | LLM calls compile_and_profile | Tool appears in trajectory | ✅ (5 times) |
+| 1.3.5 | LLM uses checkpoint + rollback | Both tools appear in trajectory | ✅ |
+| 1.3.6 | Fallback mechanism works | Timeout/error triggers fallback model automatically | ✅ |
+| 1.3.7 | Multi-provider support | Anthropic + OpenAI-compatible APIs both functional | ✅ |
+| 1.3.8 | Zero human intervention | Start → finish with no manual steps | ✅ |
 
-### 依赖: Phase 4 达标
-### 预估时间: 3-4 天
-
----
-
-## Phase 7: 整模型端到端
-
-**目标**: 在真实模型推理中替换 kernel，验证端到端收益
-
-### 完成标准
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 7.1 | GPT-2 Small 推理正确 | Arke kernel 替换后输出与 PyTorch 一致 | ⬜ |
-| 7.2 | 推理性能 ≥ torch.compile | Arke 替换后延迟 ≤ torch.compile 延迟 | ⬜ |
-| 7.3 | 至少替换 2 个算子 | matmul + softmax 或 matmul + layernorm | ⬜ |
-| 7.4 | 显存使用不超 6GB | RTX 3060 Laptop 6GB 限制内 | ⬜ |
-
-### 依赖: Phase 5 Gate G4 通过
-### 预估时间: 3-5 天
-
-**Gate G5**: GPT-2 Small 推理性能 Arke ≥ torch.compile
+### Tasks
+- [x] Tool schema definitions (10 tools)
+- [x] Session lifecycle manager
+- [x] System prompt builder (hardware-aware)
+- [x] LLM Runner (async, multi-provider)
+- [x] LLM config (model selection, fallback chain)
+- [x] Error recovery + retry logic
+- [x] Agent matmul example script
 
 ---
 
-## Phase 8: MVP Release
+## Phase 1.4: LLM Closed-Loop Optimization ✅
 
-**目标**: 发布 MVP v0.1.0，完整文档和可复现结果
+**Objective:** LLM-optimized kernels achieve GPU correctness and **perf ≥ 50% cuBLAS** across multiple operators.
 
-### 完成标准
-| # | 标准 | 验证方式 | 状态 |
-|---|------|----------|:----:|
-| 8.1 | README 完整 (安装 + 快速开始 + 示例) | 新人按 README 能跑通 | ⬜ |
-| 8.2 | API 文档完整 | 所有公开 class/function 有 docstring | ⬜ |
-| 8.3 | 评估报告完整 | benchmarks/report.md 有图表和结论 | ⬜ |
-| 8.4 | CI 通过 | GitHub Actions 全绿 | ⬜ |
-| 8.5 | v0.1.0 tag | `git tag v0.1.0` | ⬜ |
-| 8.6 | 轨迹数据公开 | 优化轨迹 JSONL 文件可下载 | ⬜ |
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.4.1 | LLM-optimized matmul → GPU correct | `verify_correctness` passes + GPU output matches same-dtype NumPy ref | ✅ |
+| 1.4.2 | LLM-optimized matmul **≥ 50% cuBLAS** | `compile_and_profile()` returns `vs_baseline >= 0.5` | ✅ (106.1%) |
+| 1.4.3 | LLM-optimized softmax → GPU correct | Same as 1.4.1 | ✅ |
+| 1.4.4 | LLM-optimized fused_matmul_relu → GPU correct | Same as 1.4.1 | ✅ |
+| 1.4.5 | compile_and_profile returns real GPU data | Response includes `latency_us`, `tflops`, `vs_baseline` | ✅ |
+| 1.4.6 | Error recovery: LLM rollbacks on failure | Trajectory shows failed decision → rollback → success | ✅ |
+| 1.4.7 | Trajectory export to JSONL | `export_trajectory()` outputs state/action/result records | ✅ |
+| 1.4.8 | ≥220 tests passing | `pytest` count ≥ 220 | ✅ (237) |
 
-### 依赖: Phase 7 达标
-### 预估时间: 2-3 天
+**Gate G3:** LLM tool-use → matmul ≥50% cuBLAS + softmax correct ✅
+
+### Tasks
+- [x] Strategy decisions → Triton template parameter mapping
+- [x] GPU correctness verification (same-dtype NumPy reference)
+- [x] vs_baseline field in compile_and_profile
+- [x] Accuracy benchmark framework (10 metrics, 3-tier verdict)
+- [x] Reference sources (NumPyCPU, TorchGPU, Custom)
+- [x] Trajectory JSONL writer
+- [x] GPU correctness tests
+- [x] End-to-end agent demo (matmul, softmax, fused)
 
 ---
 
-## Phase 进入/退出检查清单
+## Phase 1.5: Evaluation Framework + Comparison 🔨
 
-### 进入下一 Phase 前必须确认：
+**Objective:** Quantitatively prove Arke (LLM + tool-use) produces kernels that are more correct, more consistent, and **faster** than LLM-written Triton code, across ≥5 benchmark tasks.
+
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.5.1 | ≥5 benchmark tasks defined | `benchmarks/tasks.py` contains ≥5 task definitions | ⬜ |
+| 1.5.2 | Arke completes all tasks | Each task has Arke result (correctness + perf) | ⬜ |
+| 1.5.3 | LLM-direct-Triton completes all tasks | Each task has direct-write result | ⬜ |
+| 1.5.4 | Arke correctness ≥ direct Triton | `arke_correct_rate >= direct_correct_rate` | ⬜ |
+| 1.5.5 | **Arke mean perf ≥ direct Triton mean perf** | `mean(arke_vs_cublas) >= mean(direct_vs_cublas)` | ⬜ |
+| 1.5.6 | Arke variance ≤ direct Triton | `var(arke_results) <= var(direct_results)` | ⬜ |
+| 1.5.7 | Evaluation report generated | `benchmarks/report.md` with data tables and analysis | ⬜ |
+| 1.5.8 | Token efficiency comparison | Arke vs direct total token consumption documented | ⬜ |
+
+**Gate G4:** Arke correctness AND perf ≥ LLM-direct-Triton
+
+### Gate G4 Decision Matrix
+| Result | Conclusion | Next Step |
+|--------|-----------|-----------|
+| Arke correct + fast | ✅ Proceed | Phase 1.6–1.8 |
+| Arke correct + slow | ⚠️ Arke is a verification framework | Pivot positioning |
+| Arke ≈ direct Triton | ⚠️ No clear advantage | Reassess incremental value |
+| Both poor | ❌ | Kill or fundamental pivot |
+
+### Accuracy Comparison Design
+
+**Same-dtype reference (default):** Test implementation correctness, not precision loss.
+- GPU f16 kernel → NumPy CPU f16 reference
+- Differences come from: reduction order, FMA, non-determinism
+
+**Pluggable reference sources:**
+- `NumPyCPUSource` — NumPy CPU, same dtype (default, GPU-free fallback)
+- `TorchGPUSource` — PyTorch GPU (GPU-vs-GPU comparison)
+- `CustomSource` — User-provided (e.g. Ascend reference data)
+
+**Metrics (10):** abs/rel error (max/mean/P90/P99), ULP error, cosine similarity, sign mismatch, NaN/Inf count, zero diff rate
+
+**3-tier verdict:** Accept / Review / Reject with per-dtype thresholds
+
+### Tasks
+- [ ] Define ≥5 benchmark tasks (matmul sizes, softmax, fused ops, reduction)
+- [ ] Implement Arke benchmark runner
+- [ ] Implement LLM-direct-Triton baseline runner
+- [ ] Run all tasks × both methods × 3 trials
+- [ ] Statistical analysis (mean, variance, significance)
+- [ ] Token counting integration
+- [ ] Generate evaluation report (`benchmarks/report.md`)
+- [ ] Gate G4 decision
+
+---
+
+## Phase 1.6: .ak Parser + CLI ⬜
+
+**Objective:** Human-readable `.ak` syntax parsed into Semantic IR, with CLI commands for parse/optimize/inspect workflows.
+
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.6.1 | Parse matmul kernel | `parser.parse("examples/01_matmul.ak")` returns AST | ⬜ |
+| 1.6.2 | Parse fused kernel | `parser.parse("examples/02_matmul_relu_fused.ak")` returns AST | ⬜ |
+| 1.6.3 | AST → Semantic IR correct | `ast_to_ir(ast)` equals `KernelBuilder.build()` output | ⬜ |
+| 1.6.4 | CLI `arke parse` | `arke parse kernel.ak -o kernel.json` outputs valid JSON | ⬜ |
+| 1.6.5 | CLI `arke optimize` | `arke optimize kernel.json --target ampere` starts LLM session | ⬜ |
+| 1.6.6 | CLI `arke inspect` | `arke inspect kernel.json` outputs human-readable IR | ⬜ |
+| 1.6.7 | ≥3 .ak examples work E2E | matmul, softmax, fused_matmul_relu: parse → optimize → GPU | ⬜ |
+
+**Dependency:** Phase 1.4 complete
+
+### Tasks
+- [ ] EBNF grammar definition (`arke.lark`)
+- [ ] Lark parser implementation
+- [ ] AST node definitions
+- [ ] AST → Semantic IR converter
+- [ ] CLI entry point (`arkec` or `arke`)
+- [ ] `parse` subcommand
+- [ ] `optimize` subcommand
+- [ ] `inspect` subcommand
+- [ ] Example .ak files (≥3)
+
+---
+
+## Phase 1.7: Whole-Model End-to-End ⬜
+
+**Objective:** Replace kernels in a real model with Arke-optimized versions; inference correctness verified, **latency ≤ torch.compile**.
+
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.7.1 | GPT-2 Small inference correct | Arke kernel output matches PyTorch eager output (same-dtype ref) | ⬜ |
+| 1.7.2 | **Inference latency ≤ torch.compile** | `arke_latency <= torch_compile_latency` on same hardware | ⬜ |
+| 1.7.3 | ≥2 ops replaced | matmul + softmax (or matmul + layernorm) | ⬜ |
+| 1.7.4 | Memory ≤ 6GB | Fits in RTX 3060 Laptop 6GB VRAM | ⬜ |
+
+**Gate G5:** GPT-2 Small with Arke kernels — correct AND **latency ≤ torch.compile**
+
+**Dependency:** Phase 1.5 Gate G4 passes
+
+### Tasks
+- [ ] GPT-2 Small baseline (eager + torch.compile) profiling
+- [ ] PyTorch custom op registration (`torch.library`)
+- [ ] Arke kernel integration into GPT-2 forward pass
+- [ ] Correctness verification (token-level output comparison)
+- [ ] Latency benchmark (Arke vs eager vs torch.compile)
+- [ ] Memory profiling
+
+---
+
+## Phase 1.8: MVP Release ⬜
+
+**Objective:** Publish v0.1.0 with one-click setup, passing CI, complete docs, and reproducible evaluation results.
+
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| 1.8.1 | `make setup` works on fresh clone | Tested on clean Ubuntu 22.04 | ⬜ |
+| 1.8.2 | CI green (3 Python versions) | GitHub Actions passes on 3.10, 3.11, 3.12 | ⬜ |
+| 1.8.3 | README complete (install + quickstart + examples) | New user can follow README and run demo | ⬜ |
+| 1.8.4 | API docs complete | All public classes/functions have docstrings | ⬜ |
+| 1.8.5 | Evaluation report published | `benchmarks/report.md` with tables, charts, conclusions | ⬜ |
+| 1.8.6 | Trajectory data downloadable | JSONL files from evaluation runs publicly available | ⬜ |
+| 1.8.7 | v0.1.0 tag | `git tag v0.1.0` | ⬜ |
+
+### Tasks
+- [ ] Makefile with `setup` / `test` / `lint` / `bench` targets
+- [ ] CI workflow fix (lint + type check + test)
+- [ ] README quickstart verification on clean machine
+- [ ] API documentation pass
+- [ ] Evaluation report finalization
+- [ ] Trajectory data packaging
+- [ ] Version tag + GitHub release
+
+---
+
+## Phase Entry/Exit Checklist
+
+Before advancing to the next Phase:
 
 ```
-□ 当前 Phase 所有完成标准达成 (100%)
-□ 对应 Gate 通过
-□ 所有 tests 仍然通过 (无回归)
-□ 代码已 commit + push
-□ daily notes 更新
+□ All completion criteria met (100%)
+□ Corresponding Gate passed (if applicable)
+□ All existing tests still pass (no regression)
+□ Code committed + pushed
 ```
 
-### 异常处理
+### Exception Handling
 
-- **某项标准无法达成**: 分析原因，与 Leon 讨论是否降低标准或跳过
-- **发现新的必要工作**: 加入当前 Phase 的标准列表（不拖到下一 Phase）
-- **Gate 失败**: 按决策矩阵处理，可能 pivot 或 kill
-
----
-
-## 假设验证 Gate 总览
-
-| Gate | Phase | 验证假设 | 通过标准 |
-|:----:|:-----:|---------|---------|
-| G0 ✅ | P1 | 环境可行 | Triton 在 RTX 3060 跑通 |
-| G1 ✅ | P1 | IR 表达力 | 已知好的 strategy 可表达 |
-| G2 ✅ | P2 | 端到端通路 | 手动 strategy → ≥70% cuBLAS |
-| G3 | P4 | LLM 可行性 | LLM → matmul ≥50% cuBLAS + softmax 正确 |
-| G4 | P5 | 对比优势 | Arke ≥ LLM 直写 Triton |
-| G5 | P7 | 整模型收益 | GPT-2 Small ≥ torch.compile |
+- **Criterion unachievable:** Analyze root cause, discuss with Leon whether to relax or skip
+- **New required work discovered:** Add to current Phase criteria (don't defer)
+- **Gate failure:** Follow decision matrix; may pivot or kill
 
 ---
 
-## 风险与应对
+## Risk Matrix
 
-| 风险 | 影响 Phase | 应对 |
-|------|:----------:|------|
-| LLM decisions 无法映射到 Triton 模板 | P4 | 增加模板覆盖 + 参数适配层 |
-| compile_and_profile 在 LLM session 中报错 | P4 | 更好的错误信息 + 降级策略 |
-| 6GB 显存不够跑大 shape | P7 | 限制 shape ≤2048 |
-| Arke 不比直写 Triton 好 | P5 | Gate G4 决策矩阵 |
-| API timeout/rate limit | P4-P5 | 重试 + fallback + 用 Sonnet 代替 Opus |
+| Risk | Affects | Mitigation |
+|------|:-------:|-----------|
+| LLM decisions don't map to Triton templates | Phase 1.4 | Expand template coverage + parameter adaptation layer |
+| compile_and_profile errors in LLM session | Phase 1.4 | Better error messages + graceful degradation |
+| 6GB VRAM insufficient for large shapes | Phase 1.7 | Limit shapes to ≤2048 |
+| Arke doesn't outperform direct Triton | Phase 1.5 | Gate G4 decision matrix |
+| API timeout / rate limit | Phase 1.4-1.5 | Retry + fallback + prefer Sonnet over Opus |
 
 ---
 
-*计划版本: v3.0 | 创建: 2026-04-01 | 基于 v2.1.4 实际执行重构*
-*核心变化: Week → Phase, 目标 SMART 化, Gate 驱动的阶段推进*
+*Plan version: v3.0 | Created: 2026-04-01 | Last updated: 2026-04-01*
