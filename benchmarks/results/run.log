@@ -1,0 +1,137 @@
+2026-04-02 00:47:01,571 [Arke] matmul_1024 trial 0
+2026-04-02 00:47:01,571 Turn 1/25, decisions: 0
+2026-04-02 00:47:07,652 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:47:07,653   Tool: create_kernel({"computations": [{"id": "matmul_0", "inputs": {"lhs": "A", "rhs": "B"}, "op": "matmul"}], "name": ")
+2026-04-02 00:47:07,654 Turn 2/25, decisions: 0
+2026-04-02 00:47:12,582 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:47:12,582   Tool: analyze_compute({})
+2026-04-02 00:47:12,583   Tool: get_hw_profile({"target": "nvidia_ampere"})
+2026-04-02 00:47:12,583 Turn 3/25, decisions: 0
+2026-04-02 00:47:20,583 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:47:20,585   Tool: list_legal_actions({"limit": 20})
+2026-04-02 00:47:20,585 Turn 4/25, decisions: 0
+2026-04-02 00:47:34,935 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:47:34,936   Tool: checkpoint({"name": "baseline"})
+2026-04-02 00:47:34,936 Turn 5/25, decisions: 0
+2026-04-02 00:48:03,308 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:48:03,309   Tool: apply_decision({"kind": "tile", "params": {"loop": "i", "factors": [128, 32]}, "rationale": "Tile the M dimension w)
+2026-04-02 00:48:03,309 Turn 6/25, decisions: 1
+2026-04-02 00:48:15,542 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:48:15,543   Tool: apply_decision({"kind": "tile", "params": {"factors": [128, 32], "loop": "j"}, "rationale": "Tile the N dimension w)
+2026-04-02 00:48:15,543 Turn 7/25, decisions: 2
+2026-04-02 00:48:23,612 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:48:23,612   Tool: apply_decision({"kind": "tile", "params": {"factors": [32, 16], "loop": "k"}, "rationale": "Tile the K (reduction) )
+2026-04-02 00:48:23,612 Turn 8/25, decisions: 3
+2026-04-02 00:48:32,002 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:48:32,003   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "A_tile"}, "rationale": "Place A tiles in)
+2026-04-02 00:48:32,003   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "B_tile"}, "rationale": "Place B tiles in)
+2026-04-02 00:48:32,003 Turn 9/25, decisions: 4
+2026-04-02 00:48:51,533 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:48:51,534   Tool: list_legal_actions({"kind": "place", "limit": 10})
+2026-04-02 00:48:51,534 Turn 10/25, decisions: 4
+2026-04-02 00:48:57,102 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:48:57,103   Tool: verify_correctness({"trials": 3})
+2026-04-02 00:49:23,865 Turn 11/25, decisions: 4
+2026-04-02 00:49:30,048 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:49:30,049   Tool: compile_and_profile({"runs": 20, "warmup": 5})
+2026-04-02 00:49:30,341 Turn 12/25, decisions: 4
+2026-04-02 00:49:41,767 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:49:41,768   Tool: checkpoint({"name": "after_tiling_A_shared"})
+2026-04-02 00:49:41,768 Turn 13/25, decisions: 4
+2026-04-02 00:49:48,449 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:49:48,450   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "B_tile"}, "rationale": "Place B_tile in )
+2026-04-02 00:49:48,451 Turn 14/25, decisions: 4
+2026-04-02 00:49:54,432 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:49:54,432   Tool: restore({"checkpoint_id": "baseline"})
+2026-04-02 00:49:54,432 Turn 15/25, decisions: 0
+2026-04-02 00:50:23,239 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:50:23,241   Tool: apply_decision({"kind": "tile", "params": {"factors": [64, 32], "loop": "i"}, "rationale": "Reduce M block tile to )
+2026-04-02 00:50:23,241 Turn 16/25, decisions: 1
+2026-04-02 00:50:28,833 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:50:28,834   Tool: apply_decision({"kind": "tile", "params": {"factors": [64, 32], "loop": "j"}, "rationale": "Tile N dimension with b)
+2026-04-02 00:50:28,834 Turn 17/25, decisions: 2
+2026-04-02 00:50:35,176 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:50:35,177   Tool: apply_decision({"kind": "tile", "params": {"factors": [32, 16], "loop": "k"}, "rationale": "K block=32, warp=16. K=)
+2026-04-02 00:50:35,177 Turn 18/25, decisions: 3
+2026-04-02 00:50:42,115 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:50:42,116   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "A_tile"}, "rationale": "Place A_tile (64)
+2026-04-02 00:50:42,116 Turn 19/25, decisions: 4
+2026-04-02 00:51:16,726 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:51:16,726   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "B_tile"}, "rationale": "Place B_tile (32)
+2026-04-02 00:51:16,727 Turn 20/25, decisions: 5
+2026-04-02 00:51:22,198 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:51:22,199   Tool: list_legal_actions({"kind": "parallel", "limit": 10})
+2026-04-02 00:51:22,199   Tool: list_legal_actions({"kind": "vectorize", "limit": 10})
+2026-04-02 00:51:22,199 Turn 21/25, decisions: 5
+2026-04-02 00:51:28,831 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:51:28,831   Tool: apply_decision({"kind": "parallel", "params": {"loops": ["i_outer", "k_outer"], "mapping": {"i_outer": "block.x", ")
+2026-04-02 00:51:28,832 Turn 22/25, decisions: 6
+2026-04-02 00:51:33,952 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:51:33,953   Tool: list_legal_actions({"limit": 20})
+2026-04-02 00:51:33,953 Turn 23/25, decisions: 6
+2026-04-02 00:52:07,556 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:52:07,557   Tool: apply_decision({"kind": "reorder", "params": {"order": ["i_outer", "k_outer", "j_outer", "k_outer", "i_inner", "k_i)
+2026-04-02 00:52:07,558 Turn 24/25, decisions: 7
+2026-04-02 00:52:12,684 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:52:12,685   Tool: list_legal_actions({"kind": "vectorize", "limit": 10})
+2026-04-02 00:52:12,685   Tool: list_legal_actions({"kind": "unroll", "limit": 10})
+2026-04-02 00:52:12,685 Turn 25/25, decisions: 7
+2026-04-02 00:52:24,851 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:52:24,852   Tool: verify_correctness({"trials": 3})
+2026-04-02 00:52:49,322   [Arke] matmul_1024 t0: correct=True, perf=1.249
+2026-04-02 00:52:49,322 [Direct] matmul_1024 trial 0
+2026-04-02 00:53:06,246 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:53:09,786   [Direct] matmul_1024 t0: correct=False, perf=None
+2026-04-02 00:53:09,786 [Arke] matmul_2048 trial 0
+2026-04-02 00:53:09,786 Turn 1/25, decisions: 0
+2026-04-02 00:53:16,658 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:53:16,659   Tool: create_kernel({"computations": [{"id": "matmul_0", "inputs": {"lhs": "A", "rhs": "B"}, "op": "matmul"}], "name": ")
+2026-04-02 00:53:16,659   Tool: get_hw_profile({"target": "nvidia_ampere"})
+2026-04-02 00:53:16,660 Turn 2/25, decisions: 0
+2026-04-02 00:53:20,294 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:53:20,294   Tool: analyze_compute({})
+2026-04-02 00:53:20,294   Tool: list_legal_actions({"limit": 20})
+2026-04-02 00:53:20,294 Turn 3/25, decisions: 0
+2026-04-02 00:54:04,395 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:54:04,397   Tool: apply_decision({"kind": "tile", "params": {"factors": [128, 32], "loop": "i"}, "rationale": "Tile the i (M) dimensi)
+2026-04-02 00:54:04,397 Turn 4/25, decisions: 1
+2026-04-02 00:54:10,041 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:54:10,042   Tool: apply_decision({"kind": "tile", "params": {"factors": [128, 32], "loop": "j"}, "rationale": "Tile the j (N) dimensi)
+2026-04-02 00:54:10,042 Turn 5/25, decisions: 2
+2026-04-02 00:54:18,287 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:54:18,288   Tool: apply_decision({"kind": "tile", "params": {"factors": [32, 16], "loop": "k"}, "rationale": "Tile the k (reduction) )
+2026-04-02 00:54:18,288 Turn 6/25, decisions: 3
+2026-04-02 00:54:26,796 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:54:26,797   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "A_tile"}, "rationale": "Place A's block )
+2026-04-02 00:54:26,797   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "B_tile"}, "rationale": "Place B's block )
+2026-04-02 00:54:26,797 Turn 7/25, decisions: 4
+2026-04-02 00:54:33,897 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:54:33,897   Tool: rollback({"steps": 2})
+2026-04-02 00:54:33,897 Turn 8/25, decisions: 2
+2026-04-02 00:54:37,836 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:54:37,836   Tool: rollback({"steps": 1})
+2026-04-02 00:54:37,836 Turn 9/25, decisions: 1
+2026-04-02 00:54:53,807 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:54:53,808   Tool: list_legal_actions({"kind": "tile", "limit": 10})
+2026-04-02 00:54:53,808 Turn 10/25, decisions: 1
+2026-04-02 00:55:00,438 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:55:00,439   Tool: rollback({"steps": 1})
+2026-04-02 00:55:00,439 Turn 11/25, decisions: 0
+2026-04-02 00:55:11,250 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:55:11,251   Tool: apply_decision({"kind": "tile", "params": {"factors": [64, 16], "loop": "i"}, "rationale": "Tile i with block=64, t)
+2026-04-02 00:55:11,251 Turn 12/25, decisions: 1
+2026-04-02 00:55:17,412 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:55:17,413   Tool: apply_decision({"kind": "tile", "params": {"factors": [64, 16], "loop": "j"}, "rationale": "Tile j with block=64, t)
+2026-04-02 00:55:17,413 Turn 13/25, decisions: 2
+2026-04-02 00:55:24,953 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:55:24,954   Tool: apply_decision({"kind": "tile", "params": {"factors": [32, 16], "loop": "k"}, "rationale": "Tile k with block=32, i)
+2026-04-02 00:55:24,954 Turn 14/25, decisions: 3
+2026-04-02 00:55:32,087 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:55:32,087   Tool: apply_decision({"kind": "place", "params": {"memory": "shared", "tensor": "A_tile"}, "rationale": "Place A's block )
+2026-04-02 00:55:32,088 Turn 15/25, decisions: 4
+2026-04-02 00:55:37,462 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 00:55:37,463   Tool: verify_correctness({"trials": 3})
+2026-04-02 00:59:54,643 Turn 16/25, decisions: 4
+2026-04-02 01:00:00,117 HTTP Request: POST https://yunwu.ai/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 01:00:00,118   Tool: compile_and_profile({"runs": 20, "warmup": 5})
+2026-04-02 01:00:00,185 Turn 17/25, decisions: 4
