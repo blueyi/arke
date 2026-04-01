@@ -26,11 +26,33 @@ from benchmarks.tasks import BENCHMARK_TASKS, BenchmarkTask
 logger = logging.getLogger(__name__)
 
 
+def _save_kernel(
+    output_dir: str,
+    task_name: str,
+    method: str,
+    trial: int,
+    code: str,
+) -> str | None:
+    """Save generated kernel code to a file.
+
+    Returns the saved file path, or None if no code.
+    """
+    if not code:
+        return None
+    kernel_dir = Path(output_dir) / "kernels" / method
+    kernel_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{task_name}_t{trial}.py"
+    filepath = kernel_dir / filename
+    filepath.write_text(code)
+    return str(filepath)
+
+
 def run_arke_trial(
     task: BenchmarkTask,
     runner: LLMRunner,
     trial: int,
     max_turns: int = 25,
+    output_dir: str = "benchmarks/results",
 ) -> TrialResult:
     """Run one Arke optimization trial on a task."""
     logger.info(f"[Arke] {task.name} trial {trial}")
@@ -58,6 +80,13 @@ def run_arke_trial(
                 verify_result = entry.get("result", {})
                 correct = verify_result.get("passed", False)
                 break
+
+        # Save generated kernel file
+        kernel_path = _save_kernel(
+            output_dir, task.name, "arke", trial, result.generated_code
+        )
+        if kernel_path:
+            logger.info(f"  Saved kernel: {kernel_path}")
 
         return TrialResult(
             task_name=task.name,
@@ -154,6 +183,7 @@ def run_direct_trial(
     task: BenchmarkTask,
     runner: LLMRunner,
     trial: int,
+    output_dir: str = "benchmarks/results",
 ) -> TrialResult:
     """Run one LLM-direct-Triton trial on a task.
 
@@ -213,6 +243,13 @@ def run_direct_trial(
                 tokens_out=tokens_out,
                 duration_s=time.time() - start,
             )
+
+        # Save generated kernel file
+        kernel_path = _save_kernel(
+            output_dir, task.name, "direct", trial, code
+        )
+        if kernel_path:
+            logger.info(f"  Saved kernel: {kernel_path}")
 
         # Try to compile and verify
         from arke.backend.compiler import TritonCompiler
@@ -349,7 +386,9 @@ def run_benchmark(
                     task_name=task.name, method="arke"
                 )
                 for t in range(trials):
-                    result = run_arke_trial(task, runner, t)
+                    result = run_arke_trial(
+                        task, runner, t, output_dir=output_dir
+                    )
                     summary.trials.append(result)
                     logger.info(
                         f"  [Arke] {task.name} t{t}: "
@@ -363,7 +402,9 @@ def run_benchmark(
                     task_name=task.name, method="direct"
                 )
                 for t in range(trials):
-                    result = run_direct_trial(task, runner, t)
+                    result = run_direct_trial(
+                        task, runner, t, output_dir=output_dir
+                    )
                     summary.trials.append(result)
                     logger.info(
                         f"  [Direct] {task.name} t{t}: "
@@ -377,7 +418,16 @@ def run_benchmark(
 
     # Save results
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    report.save(f"{output_dir}/benchmark_report.json")
+    report_json_path = f"{output_dir}/benchmark_report.json"
+    report.save(report_json_path)
+
+    # Export CSV and task catalog
+    from benchmarks.export import export_csv, export_task_catalog
+    csv_path = export_csv(report_json_path)
+    catalog_path = export_task_catalog(f"{output_dir}/task_catalog.csv")
+    print(f"\nCSV results: {csv_path}")
+    print(f"Task catalog: {catalog_path}")
+    print(f"Kernel files: {output_dir}/kernels/")
 
     # Print Gate G4 summary
     passed, reasons = report.gate_g4_pass()

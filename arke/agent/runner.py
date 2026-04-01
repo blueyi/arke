@@ -43,6 +43,7 @@ class RunResult:
     trajectory: list[dict[str, Any]]
     conversation: list[dict[str, Any]]
     errors: list[str] = field(default_factory=list)
+    generated_code: str = ""  # Final Triton kernel source code
 
 
 class LLMRunner:
@@ -203,6 +204,17 @@ class LLMRunner:
 
         duration = time.time() - start
 
+        # Try to capture final generated Triton code
+        generated_code = ""
+        try:
+            from arke.backend.triton_backend import TritonBackend
+            backend = TritonBackend()
+            generated_code = backend.translate(
+                session.semantic_ir, session.env.strategy
+            )
+        except Exception:
+            pass  # Code generation is best-effort
+
         return RunResult(
             model_used=spec,
             decisions=session.env.strategy.decision_count,
@@ -214,6 +226,7 @@ class LLMRunner:
             trajectory=session.export_trajectory(),
             conversation=messages,
             errors=errors,
+            generated_code=generated_code,
         )
 
     # ─── LLM API calls ───
