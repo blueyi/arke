@@ -111,8 +111,8 @@ def run_arke_trial(
 
         # Save generated kernel file
         kernel_path = _save_kernel(
-            output_dir, task.name, "arke", trial, result.generated_code
-        )
+            archive_dir, task.name, "arke", trial, result.generated_code
+        ) if archive_dir else None
         if kernel_path:
             logger.info(f"  Saved kernel: {kernel_path}")
 
@@ -211,7 +211,7 @@ def run_direct_trial(
     task: BenchmarkTask,
     runner: LLMRunner,
     trial: int,
-    output_dir: str = "benchmarks/results",
+    archive_dir: Path | None = None,
 ) -> TrialResult:
     """Run one LLM-direct-Triton trial on a task.
 
@@ -274,8 +274,8 @@ def run_direct_trial(
 
         # Save generated kernel file
         kernel_path = _save_kernel(
-            output_dir, task.name, "direct", trial, code
-        )
+            archive_dir, task.name, "direct", trial, code
+        ) if archive_dir else None
         if kernel_path:
             logger.info(f"  Saved kernel: {kernel_path}")
 
@@ -389,6 +389,7 @@ def run_benchmark(
     trials: int = 3,
     tasks: list[BenchmarkTask] | None = None,
     output_dir: str = "benchmarks/results",
+    phase: str = "run",
 ) -> BenchmarkReport:
     """Run the full benchmark suite."""
     import os
@@ -403,9 +404,18 @@ def run_benchmark(
     config = load_from_openclaw(openclaw_dir)
     runner = LLMRunner(config, timeout=300.0)
 
+    timestamp = time.strftime("%Y-%m-%d_%H%M%S")
     report = BenchmarkReport(
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%S")
     )
+
+    # Create archive directory: {output_dir}/{phase}/{timestamp}/
+    archive_dir = Path(output_dir) / phase / timestamp
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save Arke IR source files
+    for task in tasks:
+        _save_arke_ir(archive_dir, task)
 
     try:
         for task in tasks:
@@ -415,7 +425,7 @@ def run_benchmark(
                 )
                 for t in range(trials):
                     result = run_arke_trial(
-                        task, runner, t, output_dir=output_dir
+                        task, runner, t, archive_dir=archive_dir
                     )
                     summary.trials.append(result)
                     logger.info(
@@ -431,7 +441,7 @@ def run_benchmark(
                 )
                 for t in range(trials):
                     result = run_direct_trial(
-                        task, runner, t, output_dir=output_dir
+                        task, runner, t, archive_dir=archive_dir
                     )
                     summary.trials.append(result)
                     logger.info(
@@ -444,18 +454,19 @@ def run_benchmark(
     finally:
         runner.close()
 
-    # Save results
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    report_json_path = f"{output_dir}/benchmark_report.json"
+    # Save results to archive
+    report_json_path = str(archive_dir / "benchmark_report.json")
     report.save(report_json_path)
 
     # Export CSV and task catalog
     from benchmarks.export import export_csv, export_task_catalog
-    csv_path = export_csv(report_json_path)
-    catalog_path = export_task_catalog(f"{output_dir}/task_catalog.csv")
-    print(f"\nCSV results: {csv_path}")
+    csv_path = export_csv(report_json_path, str(archive_dir / "benchmark_results.csv"))
+    catalog_path = export_task_catalog(str(archive_dir / "task_catalog.csv"))
+    print(f"\nArchive: {archive_dir}")
+    print(f"CSV results: {csv_path}")
     print(f"Task catalog: {catalog_path}")
-    print(f"Kernel files: {output_dir}/kernels/")
+    print(f"Arke IR: {archive_dir / 'arke_ir/'}")
+    print(f"Triton kernels: {archive_dir / 'triton_kernels/'}")
 
     # Print Gate G4 summary
     passed, reasons = report.gate_g4_pass()
@@ -493,6 +504,10 @@ def main() -> None:
         help="Output directory",
     )
     parser.add_argument(
+        "--phase", default="run",
+        help="Phase/stage label for archival (e.g. phase1.5_baseline)",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true",
         help="Verbose logging",
     )
@@ -518,6 +533,7 @@ def main() -> None:
         trials=args.trials,
         tasks=tasks,
         output_dir=args.output,
+        phase=args.phase,
     )
 
 
