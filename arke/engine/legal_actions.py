@@ -163,7 +163,10 @@ class LegalActionsEngine:
                         id=action_id,
                         kind="tile",
                         params={"loop": loop_name, "factors": factors},
-                        blocked_reason=f"Would exceed shared memory limit ({current_shared + est_shared} > {shared_mem_limit})",
+                        blocked_reason=(
+                            f"Would exceed shared memory limit"
+                            f" ({current_shared + est_shared} > {shared_mem_limit})"
+                        ),
                     ))
                     continue
 
@@ -177,7 +180,10 @@ class LegalActionsEngine:
                     kind="tile",
                     params={"loop": loop_name, "factors": factors},
                     estimated_impact={
-                        "shared_memory_delta": f"+{est_shared // 1024}KB" if est_shared > 0 else "+0KB",
+                        "shared_memory_delta": (
+                            f"+{est_shared // 1024}KB"
+                            if est_shared > 0 else "+0KB"
+                        ),
                         "blocks_in_dim": loop_bound // outer if loop_bound > 0 else "unknown",
                     },
                     priority=priority,
@@ -245,12 +251,12 @@ class LegalActionsEngine:
             return legal, blocked
 
         already_parallelized = self._get_parallel_loops(strategy)
-        max_threads = hw_profile.get("constraints", {}).get("max_threads_per_block", 1024)
+        hw_profile.get("constraints", {}).get("max_threads_per_block", 1024)
         compute_units = hw_profile.get("compute_units", 1)
 
         # Generate outer loop → block mapping candidates
         outer_loops = [f"{loop}_outer" for loop in tiled_loops]
-        inner_loops = [f"{loop}_inner" for loop in tiled_loops]
+        [f"{loop}_inner" for loop in tiled_loops]
 
         if outer_loops and not already_parallelized:
             # Map outer loops to blocks
@@ -313,7 +319,10 @@ class LegalActionsEngine:
                     id=f"place_{param.name}_shared_blocked",
                     kind="place",
                     params={"tensor": tile_name, "memory": "shared"},
-                    blocked_reason=f"Would exceed shared memory ({current_shared + tile_size} > {shared_mem_limit})",
+                    blocked_reason=(
+                        f"Would exceed shared memory"
+                        f" ({current_shared + tile_size} > {shared_mem_limit})"
+                    ),
                 ))
                 continue
 

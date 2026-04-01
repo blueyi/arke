@@ -90,7 +90,8 @@ class LLMRunner:
         errors: list[str] = []
 
         for turn in range(max_turns):
-            logger.info(f"Turn {turn + 1}/{max_turns}, decisions: {session.env.strategy.decision_count}")
+            dec_count = session.env.strategy.decision_count
+            logger.info(f"Turn {turn + 1}/{max_turns}, decisions: {dec_count}")
 
             response = None
             for attempt in range(3):
@@ -143,7 +144,10 @@ class LLMRunner:
                 tool_input = tool_use["input"]
                 tool_id = tool_use.get("id", f"call_{tool_calls_total}")
 
-                logger.info(f"  Tool: {tool_name}({json.dumps(tool_input, ensure_ascii=False)[:100]})")
+                input_str = json.dumps(
+                    tool_input, ensure_ascii=False
+                )[:100]
+                logger.info(f"  Tool: {tool_name}({input_str})")
 
                 result = session.run_tool(tool_name, tool_input)
 
@@ -164,7 +168,10 @@ class LLMRunner:
             if session.budget.exhausted:
                 messages.append({
                     "role": "user",
-                    "content": "Budget exhausted. Please summarize your optimization strategy and results.",
+                    "content": (
+                        "Budget exhausted. Please summarize your"
+                        " optimization strategy and results."
+                    ),
                 })
 
             # Nudge LLM toward verify+compile after enough decisions
@@ -180,7 +187,8 @@ class LLMRunner:
                     "role": "user",
                     "content": (
                         f"You have {decisions} decisions applied. "
-                        "Before adding more, call `verify_correctness()` to check numerical accuracy, "
+                        "Before adding more, call"
+                        " `verify_correctness()` to check accuracy, "
                         "then `compile_and_profile()` to measure GPU performance."
                     ),
                 })

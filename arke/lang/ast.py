@@ -100,7 +100,8 @@ class Rationale:
 @dataclass
 class StrategyDirective:
     """A single strategy decision (tile, reorder, fuse, etc.)."""
-    kind: str  # "tile" | "reorder" | "fuse" | "parallel" | "place" | "vectorize" | "unroll" | "algorithm"
+    # "tile"|"reorder"|"fuse"|"parallel"|"place"|"vectorize"|"unroll"|"algorithm"
+    kind: str
     params: dict[str, str | int | float | list]
     rationale: Rationale | None = None
 

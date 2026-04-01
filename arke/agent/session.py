@@ -170,7 +170,8 @@ class OptimizationSession:
         # Budget warning
         if self.budget.should_warn:
             result["budget_warning"] = (
-                f"You have used {self.budget.decisions_used}/{self.budget.max_decisions} decisions. "
+                f"You have used {self.budget.decisions_used}"
+                f"/{self.budget.max_decisions} decisions. "
                 f"Consider finalizing soon."
             )
 

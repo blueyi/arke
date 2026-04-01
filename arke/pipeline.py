@@ -125,7 +125,8 @@ class ArkePipeline:
                 apply_result = env.apply_decision(kind, params, rationale)
                 if not apply_result.get("success", False):
                     result.errors.append(
-                        f"Decision '{kind}' failed: {apply_result.get('validation', {}).get('violations', [])}"
+                        f"Decision '{kind}' failed: "
+                        f"{apply_result.get('validation', {}).get('violations', [])}"
                     )
                     break
                 result.decisions += 1
@@ -173,7 +174,11 @@ class ArkePipeline:
                     import torch
                     inputs = {}
                     for p in semantic_ir.params:
-                        dtype_map = {"f16": torch.float16, "f32": torch.float32, "bf16": torch.bfloat16}
+                        dtype_map = {
+                            "f16": torch.float16,
+                            "f32": torch.float32,
+                            "bf16": torch.bfloat16,
+                        }
                         t_dtype = dtype_map.get(p.dtype, torch.float16)
                         inputs[p.name] = torch.randn(p.shape, device="cuda", dtype=t_dtype)
                     prof = backend.profile(compiled, inputs)

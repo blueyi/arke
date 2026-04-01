@@ -248,7 +248,10 @@ class BenchmarkResult:
             "input_shape": self.input_shape,
             "config": self.config.to_dict(),
             "num_trials": len(self.trials),
-            "aggregate_metrics": self.aggregate_metrics.to_dict() if self.aggregate_metrics else None,
+            "aggregate_metrics": (
+                self.aggregate_metrics.to_dict()
+                if self.aggregate_metrics else None
+            ),
             "final_verdict": self.final_verdict.value,
             "trials": [t.to_dict() for t in self.trials],
             "environment": self.environment,
@@ -378,10 +381,16 @@ class AccuracyBenchmark:
 
         # Review conditions
         if metrics.rel_mean > config.accept_rel_mean:
-            reasons.append(f"rel_mean {metrics.rel_mean:.2e} > accept threshold {config.accept_rel_mean:.2e}")
+            reasons.append(
+                f"rel_mean {metrics.rel_mean:.2e}"
+                f" > accept threshold {config.accept_rel_mean:.2e}"
+            )
 
         if metrics.rel_p99 > config.accept_rel_p99:
-            reasons.append(f"rel_p99 {metrics.rel_p99:.2e} > accept threshold {config.accept_rel_p99:.2e}")
+            reasons.append(
+                f"rel_p99 {metrics.rel_p99:.2e}"
+                f" > accept threshold {config.accept_rel_p99:.2e}"
+            )
 
         if metrics.ulp_p99 > config.review_ulp_p99:
             reasons.append(f"ulp_p99 {metrics.ulp_p99:.1f} > {config.review_ulp_p99:.1f}")

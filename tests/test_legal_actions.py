@@ -143,7 +143,7 @@ def test_hint_changes_with_state():
     ir, env = _make_matmul_relu()
 
     # Initial: suggest fusion
-    hint_initial = env.list_legal_actions()["hint"]
+    env.list_legal_actions()["hint"]
 
     # After fusion: suggest tiling
     env.apply_decision("fuse", {"ops": ["matmul_0", "relu_1"], "type": "epilogue"}, "fuse")

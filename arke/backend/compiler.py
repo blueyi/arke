@@ -38,7 +38,7 @@ class TritonCompiler:
             tmp.close()
 
             # Attempt to import (validates syntax + imports)
-            module = self._import_module(tmp.name)
+            self._import_module(tmp.name)
             return CompileResult(
                 success=True,
                 code=source,

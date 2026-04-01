@@ -101,7 +101,10 @@ class StaticValidator:
                     violations.append(f"Step #{d.step}: empty tile factors")
                 for f in factors:
                     if not isinstance(f, int) or f <= 0:
-                        violations.append(f"Step #{d.step}: tile factor {f} must be positive integer")
+                        violations.append(
+                            f"Step #{d.step}: tile factor {f}"
+                            " must be positive integer"
+                        )
         return CheckResult(
             name="tile_legality",
             passed=len(violations) == 0,
@@ -131,7 +134,9 @@ class StaticValidator:
         max_threads = constraints.get("max_threads_per_block", 1024)
         if resources.estimated_threads_per_block > max_threads:
             violations.append(
-                f"Estimated threads per block {resources.estimated_threads_per_block} exceeds limit {max_threads}"
+                f"Estimated threads per block"
+                f" {resources.estimated_threads_per_block}"
+                f" exceeds limit {max_threads}"
             )
 
         return CheckResult(

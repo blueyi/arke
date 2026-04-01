@@ -26,18 +26,24 @@ classifiers = [
 ]
 
 dependencies = [
+    "numpy>=1.24",
     "lark>=1.1",
     "click>=8.0",
     "rich>=13.0",
 ]
 
 [project.optional-dependencies]
+gpu = [
+    "torch>=2.0",
+    "triton>=2.0",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.4",
     "mypy>=1.0",
     "jsonschema>=4.20",
+    "numpy>=1.24",
 ]
 
 [project.scripts]
@@ -57,11 +63,23 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP"]
+ignore = [
+    "N803",   # argument name should be lowercase — we use A, B, X for tensors (math convention)
+    "N806",   # variable in function should be lowercase — same reason
+    "N812",   # lowercase imported as non-lowercase
+    "E741",   # ambiguous variable name (l, O, I) — we use these in math context
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]  # Allow longer lines in tests for readability
+"arke/agent/prompts.py" = ["E501"]  # System prompt strings are naturally long
+"arke/agent/tools_schema.py" = ["E501"]  # JSON schema descriptions are naturally long
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [tool.mypy]
 python_version = "3.10"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
+disallow_untyped_defs = false

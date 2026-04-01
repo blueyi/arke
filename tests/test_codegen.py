@@ -341,7 +341,7 @@ class TestFusedActivationDetection:
 
 
 try:
-    import torch
+    import torch  # noqa: F401
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False

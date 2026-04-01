@@ -246,5 +246,8 @@ def get_reference_source(name: str = "numpy_cpu", **kwargs: Any) -> ReferenceSou
     """Get a reference source by name."""
     cls = REFERENCE_SOURCES.get(name)
     if cls is None:
-        raise ValueError(f"Unknown reference source: {name}. Available: {list(REFERENCE_SOURCES.keys())}")
+        available = list(REFERENCE_SOURCES.keys())
+        raise ValueError(
+            f"Unknown reference source: {name}. Available: {available}"
+        )
     return cls(**kwargs)
