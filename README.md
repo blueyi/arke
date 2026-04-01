@@ -14,12 +14,12 @@ In our context, Arke is the messenger between two worlds — translating **what 
 
 ## Key Features
 
-- 🤖 **AI-First Design** — Explicit semantics, structured representation, enumerable search spaces
-- 🔗 **Semantic IR → Strategy IR → Hardware Code** — Multi-level IR separating "what" from "how"
+- 🤖 **AI-First Design** — LLM agents as optimization decision makers, not just code generators
+- 🔗 **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are independent, enabling safe exploration
 - 🛡️ **Compiler-Verified** — Every LLM decision validated by deterministic checks (static → numerical → performance)
-- 💬 **`@rationale` Annotations** — Every optimization decision carries a natural language explanation
-- ⚡ **Tool-Use Agent Runtime** — LLM autonomously explores, applies, verifies, and profiles optimizations
-- 🎯 **106% cuBLAS** — LLM-optimized matmul+relu kernel outperforms NVIDIA's library on RTX 3060
+- ⚡ **Extreme Performance** — LLM-guided strategy search achieves vendor-library-level performance across hardware targets
+- 🎯 **Multi-Hardware** — Single kernel definition targets NVIDIA, Ascend, and beyond (Stage 2+)
+- 💬 **`@rationale` Annotations** — Every optimization decision carries a natural language explanation, making AI reasoning auditable
 
 ## Architecture
 
@@ -98,7 +98,7 @@ result = arke.optimize(
     llm="anthropic"
 )
 
-print(result.performance)  # "106% of cuBLAS"
+print(result.performance)  # vs vendor library baseline
 print(result.trajectory)   # Full optimization trace
 ```
 
