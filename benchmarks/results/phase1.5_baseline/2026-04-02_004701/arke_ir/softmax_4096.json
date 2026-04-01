@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "kernel_id": "softmax_4096",
+  "params": [
+    {
+      "name": "X",
+      "shape": [
+        4096,
+        4096
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    }
+  ],
+  "return_type": {
+    "shape": [
+      4096,
+      4096
+    ],
+    "dtype": "f16",
+    "layout": "row_major"
+  },
+  "nodes": [
+    {
+      "id": "softmax_0",
+      "op": "softmax",
+      "inputs": {
+        "X": {
+          "ref": "param",
+          "name": "X"
+        }
+      },
+      "output": {
+        "shape": [
+          4096,
+          4096
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      "semantics": {
+        "computation": "Y[i,j] = exp(X[i,j]) / sum(exp(X[i,:]), axis=j)",
+        "index_vars": [
+          "i",
+          "j"
+        ],
+        "reduction_axes": [
+          "j"
+        ],
+        "properties": [
+          "row-wise"
+        ]
+      }
+    }
+  ],
+  "edges": [],
+  "return_node": "softmax_0",
+  "fusion_groups": []
+}

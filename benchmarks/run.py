@@ -26,24 +26,52 @@ from benchmarks.tasks import BENCHMARK_TASKS, BenchmarkTask
 logger = logging.getLogger(__name__)
 
 
+def _make_archive_dir(output_dir: str, timestamp: str) -> Path:
+    """Create a timestamped archive directory.
+
+    Structure: {output_dir}/{phase}/{timestamp}/
+    Phase is inferred from the output_dir name or defaults to 'run'.
+    """
+    # Use parent dir name as phase identifier
+    base = Path(output_dir)
+    archive = base / timestamp
+    archive.mkdir(parents=True, exist_ok=True)
+    return archive
+
+
 def _save_kernel(
-    output_dir: str,
+    archive_dir: Path,
     task_name: str,
     method: str,
     trial: int,
     code: str,
 ) -> str | None:
-    """Save generated kernel code to a file.
+    """Save generated Triton kernel code to archive.
 
     Returns the saved file path, or None if no code.
     """
     if not code:
         return None
-    kernel_dir = Path(output_dir) / "kernels" / method
+    kernel_dir = archive_dir / "triton_kernels" / method
     kernel_dir.mkdir(parents=True, exist_ok=True)
     filename = f"{task_name}_t{trial}.py"
     filepath = kernel_dir / filename
     filepath.write_text(code)
+    return str(filepath)
+
+
+def _save_arke_ir(
+    archive_dir: Path,
+    task: BenchmarkTask,
+) -> str:
+    """Save Arke IR source (SemanticIR JSON) to archive.
+
+    Returns the saved file path.
+    """
+    ir_dir = archive_dir / "arke_ir"
+    ir_dir.mkdir(parents=True, exist_ok=True)
+    filepath = ir_dir / f"{task.name}.json"
+    filepath.write_text(task.semantic_ir.to_json())
     return str(filepath)
 
 
@@ -52,7 +80,7 @@ def run_arke_trial(
     runner: LLMRunner,
     trial: int,
     max_turns: int = 25,
-    output_dir: str = "benchmarks/results",
+    archive_dir: Path | None = None,
 ) -> TrialResult:
     """Run one Arke optimization trial on a task."""
     logger.info(f"[Arke] {task.name} trial {trial}")
