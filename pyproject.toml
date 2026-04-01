@@ -59,6 +59,9 @@ Documentation = "https://github.com/arke-lang/arke/tree/main/docs"
 where = ["."]
 include = ["arke*", "arkec*"]
 
+[project.scripts]
+arke = "arke.cli:main"
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
