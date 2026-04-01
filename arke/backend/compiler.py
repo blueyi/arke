@@ -14,9 +14,12 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-import torch
-
 from arke.backend.base import CompileResult, ProfileResult
+
+try:
+    import torch
+except ImportError:
+    torch = None  # type: ignore[assignment]
 
 
 class TritonCompiler:

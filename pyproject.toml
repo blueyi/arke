@@ -46,8 +46,8 @@ dev = [
     "numpy>=1.24",
 ]
 
-[project.scripts]
-arke = "arkec.main:cli"
+# [project.scripts]
+# arke = "arkec.main:cli"  # TODO: Phase 1.6
 
 [project.urls]
 Repository = "https://github.com/arke-lang/arke"
