@@ -79,11 +79,17 @@ class ArkeTransformer(Transformer):
     def dim_list(self, *dims):
         return list(dims)
 
-    def scalar_type(self, token):
+    def SCALAR_TYPE(self, token):
         return str(token)
 
-    def layout(self, token):
+    def scalar_type(self, val):
+        return val
+
+    def LAYOUT(self, token):
         return str(token)
+
+    def layout(self, val):
+        return val
 
     def tensor_type(self, *args):
         dims = args[0]

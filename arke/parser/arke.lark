@@ -13,11 +13,13 @@ param: IDENT ":" tensor_type
 
 tensor_type: "Tensor" "<" "[" dim_list "]" "," scalar_type ("," layout)? ">"
 dim_list: INT ("," INT)*
-scalar_type: "f16" | "f32" | "f64" | "bf16"
+scalar_type: SCALAR_TYPE
+SCALAR_TYPE: "f16" | "f32" | "f64" | "bf16"
            | "i8" | "i16" | "i32" | "i64"
            | "u8" | "u16" | "u32" | "u64"
            | "bool" | "index"
-layout: "row_major" | "col_major"
+layout: LAYOUT
+LAYOUT: "row_major" | "col_major"
 
 kernel_body: (let_stmt | return_stmt)+
 let_stmt: "let" IDENT "=" op_call ";"
@@ -31,7 +33,7 @@ arg: IDENT "=" IDENT    -> named_arg
 // ─── Strategy Definition ───
 strategy_def: "strategy" IDENT "for" "target" "(" STRING ")" "{" strategy_body "}"
 strategy_body: strategy_stmt*
-strategy_stmt: strategy_action annotation?
+strategy_stmt: strategy_action annotation? ";"?
 strategy_action: IDENT "(" strategy_args ")"
 strategy_args: strategy_kwarg ("," strategy_kwarg)*
 strategy_kwarg: IDENT "=" strategy_value
