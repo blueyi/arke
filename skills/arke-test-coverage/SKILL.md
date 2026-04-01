@@ -27,9 +27,9 @@ python -m benchmarks.run --phase <phase_name> --method both --trials 3 --tier 3
 
 | Tier | Tasks | When | Time (1 trial) |
 |:-----|------:|:-----|:----------------|
-| 1 | ~12 | Every run, CI, quick validation | ~1h |
-| 2 | ~40 | Weekly, after major changes | ~3h |
-| 3 | 126+ | Pre-release, full validation | ~10h |
+| 1 | 15 | Every run, CI, quick validation | ~1.5h |
+| 2 | 31 | Weekly, after major changes | ~3h |
+| 3 | 50 | Pre-release, full validation | ~6h |
 
 Default to **Tier 1** unless user specifies otherwise.
 
@@ -57,8 +57,11 @@ Read `references/vector-tasks.md` for the full task list.
 **Tier 1 Vector tasks** (always included):
 - `softmax_4096` — 4096×4096, standard reduce
 - `softmax_short` — 4096×64, short reduction dim
+- `softmax_w32_n33` — 4096×33, **N%32=1 不对齐 reduce**
 - `relu_medium` — 1024×1024, elementwise baseline
 - `add_large` — 4096×4096, binary elementwise
+- `relu_w32_n33` — 1024×33, **N%32=1 不对齐 elementwise**
+- `add_w32_n65` — 1024×65, **N%32=1 双 warp + 1**
 
 ### Fusion Combinations
 

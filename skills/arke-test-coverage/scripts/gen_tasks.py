@@ -47,28 +47,39 @@ TASK_DEFS = [
     # Tier 1
     {"name": "relu_medium",       "tier": 1, "cat": "vector", "op": "relu",  "M": 1024, "N": 1024},
     {"name": "add_large",         "tier": 1, "cat": "vector", "op": "add",   "M": 4096, "N": 4096},
+    {"name": "relu_w32_n33",      "tier": 1, "cat": "vector", "op": "relu",  "M": 1024, "N": 33},
+    {"name": "add_w32_n65",       "tier": 1, "cat": "vector", "op": "add",   "M": 1024, "N": 65},
     # Tier 2
     {"name": "gelu_tall",         "tier": 2, "cat": "vector", "op": "gelu",  "M": 8192, "N": 128},
     {"name": "mul_wide",          "tier": 2, "cat": "vector", "op": "mul",   "M": 128,  "N": 8192},
     {"name": "add_unaligned",     "tier": 2, "cat": "vector", "op": "add",   "M": 1000, "N": 1000},
+    {"name": "gelu_w32_n100",     "tier": 2, "cat": "vector", "op": "gelu",  "M": 2048, "N": 100},
+    {"name": "mul_w32_n127",      "tier": 2, "cat": "vector", "op": "mul",   "M": 2048, "N": 127},
     # Tier 3
     {"name": "relu_small",        "tier": 3, "cat": "vector", "op": "relu",  "M": 256,  "N": 256},
     {"name": "relu_1row",         "tier": 3, "cat": "vector", "op": "relu",  "M": 1,    "N": 65536},
     {"name": "gelu_1col",         "tier": 3, "cat": "vector", "op": "gelu",  "M": 65536,"N": 1},
     {"name": "relu_prime",        "tier": 3, "cat": "vector", "op": "relu",  "M": 997,  "N": 1009},
     {"name": "mul_1d",            "tier": 3, "cat": "vector", "op": "mul",   "M": 1,    "N": 1048576},
+    {"name": "relu_w32_n1",       "tier": 3, "cat": "vector", "op": "relu",  "M": 4096, "N": 1},
+    {"name": "add_w32_n17",       "tier": 3, "cat": "vector", "op": "add",   "M": 4096, "N": 17},
 
     # ═══ Vector Class — Reduce ═══
     # Tier 1
     {"name": "softmax_short",     "tier": 1, "cat": "reduce", "op": "softmax",    "M": 4096, "N": 64},
     {"name": "softmax_4096",      "tier": 1, "cat": "reduce", "op": "softmax",    "M": 4096, "N": 4096},
+    {"name": "softmax_w32_n33",   "tier": 1, "cat": "reduce", "op": "softmax",    "M": 4096, "N": 33},
     # Tier 2
     {"name": "reduce_sum_medium", "tier": 2, "cat": "reduce", "op": "reduce_sum", "M": 4096, "N": 1024},
     {"name": "reduce_sum_long",   "tier": 2, "cat": "reduce", "op": "reduce_sum", "M": 1024, "N": 16384},
+    {"name": "reduce_sum_w32_n65","tier": 2, "cat": "reduce", "op": "reduce_sum", "M": 4096, "N": 65},
+    {"name": "softmax_w32_n100",  "tier": 2, "cat": "reduce", "op": "softmax",    "M": 2048, "N": 100},
     # Tier 3
     {"name": "reduce_max_1row",   "tier": 3, "cat": "reduce", "op": "reduce_max", "M": 1,    "N": 65536},
     {"name": "softmax_many_short","tier": 3, "cat": "reduce", "op": "softmax",    "M": 16384,"N": 32},
     {"name": "reduce_sum_unaligned","tier":3,"cat": "reduce", "op": "reduce_sum", "M": 1000, "N": 1000},
+    {"name": "reduce_max_w32_n127","tier":3, "cat": "reduce", "op": "reduce_max", "M": 2048, "N": 127},
+    {"name": "softmax_w32_n17",   "tier": 3, "cat": "reduce", "op": "softmax",    "M": 4096, "N": 17},
 
     # ═══ Fusion ═══
     # Tier 1
