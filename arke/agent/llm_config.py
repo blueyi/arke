@@ -76,7 +76,8 @@ def load_from_openclaw(
     """Load LLM config from OpenClaw's agent config files.
 
     Reads:
-    - ~/.openclaw/agents/<agent_id>/agent/models.json (providers + keys)
+    - ~/.openclaw/agents/<agent_id>/agent/models.json (providers + models)
+    - ~/.openclaw/agents/<agent_id>/agent/auth-profiles.json (real API keys)
     - ~/.openclaw/openclaw.json (primary model + fallbacks)
     """
     if openclaw_dir is None:
@@ -84,7 +85,7 @@ def load_from_openclaw(
     else:
         openclaw_dir = Path(openclaw_dir)
 
-    # Load provider models + keys
+    # Load provider models
     models_path = openclaw_dir / "agents" / agent_id / "agent" / "models.json"
     if not models_path.exists():
         raise FileNotFoundError(f"Models config not found: {models_path}")
@@ -92,9 +93,18 @@ def load_from_openclaw(
     with open(models_path) as f:
         models_data = json.load(f)
 
+    # Load real API keys from auth-profiles.json
+    auth_keys = _load_auth_profiles(openclaw_dir, agent_id)
+
     providers: dict[str, ProviderConfig] = {}
     for prov_name, prov_data in models_data.get("providers", {}).items():
-        if not prov_data.get("apiKey"):
+        # Resolve API key: auth-profiles.json > models.json > env var
+        api_key = (
+            auth_keys.get(prov_name)
+            or prov_data.get("apiKey", "")
+            or os.environ.get(f"ARKE_{prov_name.upper().replace('-', '_')}_KEY", "")
+        )
+        if not api_key:
             continue
 
         models = []
@@ -111,21 +121,14 @@ def load_from_openclaw(
         providers[prov_name] = ProviderConfig(
             name=prov_name,
             base_url=prov_data.get("baseUrl", ""),
-            api_key=prov_data["apiKey"],
+            api_key=api_key,
             api=prov_data.get("api", "openai-completions"),
             models=models,
         )
 
     # Load primary + fallbacks from openclaw.json
-    config_path = openclaw_dir / "openclaw.json"
     primary = "api-proxy-claude/claude-opus-4-6"
     fallbacks: list[str] = []
-
-    if config_path.exists():
-        # Parse JSONC (json5-like) — openclaw.json uses unquoted keys
-        # For simplicity, just use the models from the agent config
-        # and default to claude opus as primary
-        pass
 
     # Try to find fallback order from the parsed config
     for agent in _load_agents_list(openclaw_dir):
@@ -142,6 +145,29 @@ def load_from_openclaw(
         fallbacks=fallbacks,
         providers=providers,
     )
+
+
+def _load_auth_profiles(openclaw_dir: Path, agent_id: str) -> dict[str, str]:
+    """Load real API keys from auth-profiles.json.
+
+    Returns a dict mapping provider name (e.g. 'api-proxy-claude') to API key.
+    """
+    auth_path = openclaw_dir / "agents" / agent_id / "agent" / "auth-profiles.json"
+    if not auth_path.exists():
+        return {}
+
+    with open(auth_path) as f:
+        data = json.load(f)
+
+    keys: dict[str, str] = {}
+    for profile_name, profile in data.get("profiles", {}).items():
+        # Profile names are like "api-proxy-claude:default"
+        provider = profile.get("provider", profile_name.split(":")[0])
+        key = profile.get("key", "")
+        if key and key != "N/A":
+            keys[provider] = key
+
+    return keys
 
 
 def _load_agents_list(openclaw_dir: Path) -> list[dict]:

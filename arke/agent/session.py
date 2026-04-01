@@ -21,6 +21,7 @@ from typing import Any
 from arke.agent.prompts import build_initial_user_message, build_system_prompt
 from arke.agent.tools_schema import TOOL_METADATA, get_tool_schemas
 from arke.engine.env import ArkeEnv
+from arke.engine.numerical_check import NumericalValidator
 from arke.ir.semantic import SemanticIR
 
 
@@ -113,6 +114,7 @@ class OptimizationSession:
 
     def __post_init__(self) -> None:
         self.env = ArkeEnv(self.semantic_ir, self.target_hw)
+        self.numerical_validator = NumericalValidator()
         self._init_messages()
 
     def _init_messages(self) -> None:
@@ -187,8 +189,8 @@ class OptimizationSession:
             "apply_decision": lambda p: self.env.apply_decision(
                 p["kind"], p["params"], p.get("rationale", ""),
             ),
-            "verify_correctness": lambda p: {"status": "not_implemented_yet"},
-            "compile_and_profile": lambda p: {"status": "not_implemented_yet"},
+            "verify_correctness": lambda p: self._handle_verify_correctness(p),
+            "compile_and_profile": lambda p: self._handle_compile_and_profile(p),
             "rollback": lambda p: self.env.rollback(p.get("steps", 1)),
             "checkpoint": lambda p: self.env.checkpoint(p.get("name")),
             "restore": lambda p: self.env.restore(p["checkpoint_id"]),
@@ -215,6 +217,60 @@ class OptimizationSession:
         kind = params.get("kind")
         limit = params.get("limit", 10)
         return self.env.list_legal_actions(kind=kind, limit=limit)
+
+    def _handle_verify_correctness(self, params: dict) -> dict[str, Any]:
+        """Handle verify_correctness — V1 numerical validation."""
+        trials = params.get("trials", 3)
+        try:
+            result = self.numerical_validator.validate(
+                self.semantic_ir, trials=trials
+            )
+            return {
+                "success": True,
+                "passed": result.passed,
+                "trials": result.trials,
+                "max_absolute_error": result.max_absolute_error,
+                "max_relative_error": result.max_relative_error,
+                "tolerance": result.tolerance,
+                "errors": result.errors,
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def _handle_compile_and_profile(self, params: dict) -> dict[str, Any]:
+        """Handle compile_and_profile — compile kernel and run GPU benchmarks."""
+        try:
+            from arke.pipeline import CompilePipeline
+            pipeline = CompilePipeline(self.semantic_ir, self.env.strategy, self.target_hw)
+            perf = pipeline.compile_and_profile()
+            return {
+                "success": True,
+                "performance": perf,
+            }
+        except ImportError:
+            # Pipeline module may not have compile_and_profile yet
+            return self._compile_and_profile_fallback(params)
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def _compile_and_profile_fallback(self, params: dict) -> dict[str, Any]:
+        """Fallback compile_and_profile using backend directly."""
+        try:
+            from arke.backend.triton_backend import TritonBackend
+            backend = TritonBackend()
+            result = backend.compile_and_run(
+                self.semantic_ir, self.env.strategy
+            )
+            return {
+                "success": True,
+                "performance": result,
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Compilation failed: {e}",
+                "hint": "Ensure the current strategy decisions are compatible with the Triton backend.",
+            }
 
     def _budget_exhausted_response(self) -> dict[str, Any]:
         """Response when budget is exhausted."""

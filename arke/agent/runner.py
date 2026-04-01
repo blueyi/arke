@@ -48,7 +48,7 @@ class RunResult:
 class LLMRunner:
     """Drives LLM optimization sessions via tool-use."""
 
-    def __init__(self, config: LLMConfig, timeout: float = 60.0):
+    def __init__(self, config: LLMConfig, timeout: float = 180.0):
         self.config = config
         self.timeout = timeout
         self.client = httpx.Client(timeout=timeout)
@@ -138,7 +138,10 @@ class LLMRunner:
 
             # Add tool results to conversation
             tool_result_msg = self._format_tool_results(tool_results, model.api)
-            messages.append(tool_result_msg)
+            if isinstance(tool_result_msg, list):
+                messages.extend(tool_result_msg)
+            else:
+                messages.append(tool_result_msg)
 
             # Check if budget exhausted
             if session.budget.exhausted:
@@ -330,8 +333,12 @@ class LLMRunner:
 
     def _format_tool_results(
         self, results: list[dict], api: str
-    ) -> dict:
-        """Format tool results for the next LLM turn."""
+    ) -> dict | list[dict]:
+        """Format tool results for the next LLM turn.
+
+        For Anthropic: returns a single user message with tool_result blocks.
+        For OpenAI: returns a list of tool messages (one per result).
+        """
         if api == "anthropic-messages":
             content = []
             for r in results:
@@ -343,18 +350,14 @@ class LLMRunner:
             return {"role": "user", "content": content}
         else:
             # OpenAI format — each tool result is a separate message
-            # For simplicity, combine into one
-            content = []
+            msgs = []
             for r in results:
-                content.append({
+                msgs.append({
                     "role": "tool",
                     "tool_call_id": r["id"],
                     "content": json.dumps(r["result"], ensure_ascii=False),
                 })
-            # Return first result (simplified — real impl needs multi-message)
-            if content:
-                return content[0]
-            return {"role": "user", "content": "No tool results."}
+            return msgs if msgs else [{"role": "user", "content": "No tool results."}]
 
     def _build_initial_message(self, session: OptimizationSession) -> str:
         """Build the initial user message."""
