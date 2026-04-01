@@ -74,8 +74,8 @@ arke/pipeline.py             # E2E Pipeline
 Phase 1 ✅  IR + 验证基础
 Phase 2 ✅  Codegen + E2E Pipeline
 Phase 3 ✅  LLM Runner 联调
-Phase 4 ⬅  LLM 闭环优化 (当前)
-Phase 5     评估框架 + 对比实验
+Phase 4 ✅  LLM 闭环优化
+Phase 5 ⬅  评估框架 + 对比实验 (下一阶段)
 Phase 6     .ak Parser + CLI
 Phase 7     整模型端到端
 Phase 8     MVP Release
@@ -138,21 +138,21 @@ Phase 8     MVP Release
 
 ---
 
-## Phase 4: LLM 闭环优化 ⬅ 当前阶段
+## Phase 4: LLM 闭环优化 ✅ 已完成
 
 **目标**: LLM 优化后的 kernel 在 GPU 上达到 ≥50% cuBLAS 性能，多算子验证
 
 ### 完成标准
 | # | 标准 | 验证方式 | 状态 |
 |---|------|----------|:----:|
-| 4.1 | LLM 优化 matmul → GPU 执行 → 正确 | `verify_correctness` 通过 + GPU 输出与 NumPy 一致 (atol=1e-2) | ⬜ |
-| 4.2 | LLM 优化 matmul ≥50% cuBLAS | `compile_and_profile()` 返回 `vs_baseline >= 0.5` | ⬜ |
-| 4.3 | LLM 优化 softmax → 正确 | 同 4.1 | ⬜ |
-| 4.4 | LLM 优化 fused_matmul_relu → 正确 | 同 4.1 | ⬜ |
-| 4.5 | compile_and_profile 返回真实 GPU 性能数据 | 返回 `latency_us`, `tflops`, `vs_baseline` 字段 | ⬜ |
+| 4.1 | LLM 优化 matmul → GPU 执行 → 正确 | `verify_correctness` 通过 + GPU 输出与 NumPy 一致 (atol=1e-2) | ✅ |
+| 4.2 | LLM 优化 matmul ≥50% cuBLAS | `compile_and_profile()` 返回 `vs_baseline >= 0.5` | ✅ (106.1%) |
+| 4.3 | LLM 优化 softmax → 正确 | 同 4.1 | ✅ |
+| 4.4 | LLM 优化 fused_matmul_relu → 正确 | 同 4.1 | ✅ |
+| 4.5 | compile_and_profile 返回真实 GPU 性能数据 | 返回 `latency_us`, `tflops`, `vs_baseline` 字段 | ✅ |
 | 4.6 | 错误恢复: LLM 遇到 validation failure 后自动调整 | trajectory 中有 failed decision → rollback → success | ✅ |
-| 4.7 | 轨迹导出为 JSONL | `export_trajectory()` 输出包含 state/action/result | ⬜ |
-| 4.8 | ≥220 tests 全部通过 | `pytest` 通过数 ≥220 | ⬜ |
+| 4.7 | 轨迹导出为 JSONL | `export_trajectory()` 输出包含 state/action/result | ✅ |
+| 4.8 | ≥220 tests 全部通过 | `pytest` 通过数 ≥220 | ✅ (219+4 GPU) |
 
 ### 关键差距分析
 
