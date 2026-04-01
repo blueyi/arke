@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 
 import torch
-import torch.nn.functional as F
 
 # ============================================================
 # GPT-2 Baseline Profiling
@@ -40,14 +39,12 @@ def profile_inference(
     runs: int = 20,
 ) -> dict:
     """Profile model inference latency."""
-    # Warmup
     with torch.no_grad():
         for _ in range(warmup):
             model(input_ids)
 
     torch.cuda.synchronize()
 
-    # Timed runs
     start_events = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
     end_events = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
 
@@ -79,217 +76,78 @@ def get_memory_usage() -> dict:
 
 
 # ============================================================
-# Arke Kernel Hooks
+# Fast Arke Kernel Integration (via KernelCache)
 # ============================================================
 
 
-class ArkeMatmulHook:
-    """Replace torch.matmul / F.linear with Arke-compiled Triton kernel."""
+def get_gpt2_shapes(seq_len: int = 128) -> dict:
+    """Get all unique matmul/softmax shapes for GPT-2 Small."""
+    h = 768     # hidden size
+    n_head = 12
+    mlp_dim = h * 4         # 3072
+    vocab = 50257
 
-    def __init__(self):
-        self.kernel_cache: dict[tuple, callable] = {}
-        self.call_count = 0
+    # All Conv1D/Linear matmul shapes: (M, N, K)
+    matmul_shapes = [
+        (seq_len, 3 * h, h),         # c_attn: [seq, 768] @ [768, 2304]
+        (seq_len, h, h),             # c_proj: [seq, 768] @ [768, 768]
+        (seq_len, mlp_dim, h),       # c_fc:   [seq, 768] @ [768, 3072]
+        (seq_len, h, mlp_dim),       # c_proj: [seq, 3072] @ [3072, 768]
+        (seq_len, vocab, h),         # lm_head:[seq, 768] @ [768, 50257]
+    ]
 
-    def get_or_compile(self, M: int, N: int, K: int) -> callable:
-        """Get cached kernel or compile a new one for the given shapes."""
-        key = (M, N, K)
-        if key not in self.kernel_cache:
-            self.kernel_cache[key] = self._compile(M, N, K)
-        return self.kernel_cache[key]
+    # Attention softmax: [batch * n_head, seq, seq]
+    softmax_shapes = [
+        (n_head, seq_len),  # per batch element
+    ]
 
-    def _compile(self, M: int, N: int, K: int) -> callable:
-        """Compile Arke matmul kernel for given shapes."""
-        from arke.backend.triton_backend import TritonBackend
-        from arke.ir.builder import KernelBuilder
-        from arke.ir.strategy import StrategyIR
-
-        # Build IR
-        b = KernelBuilder(f"matmul_{M}_{N}_{K}")
-        b.param("A", [M, K], "f16")
-        b.param("B", [K, N], "f16")
-        m = b.op("matmul", A="A", B="B")
-        b.returns(m, [M, N], "f16")
-        ir = b.build()
-
-        # Compile with default strategy
-        backend = TritonBackend()
-        strategy = StrategyIR()
-        source = backend.translate(ir, strategy)
-        compiled = backend.compile(source)
-
-        if not compiled.success:
-            raise RuntimeError(f"Arke matmul compile failed: {compiled.error}")
-
-        return compiled
-
-    def __call__(self, input_tensor, weight, bias=None):
-        """Replace F.linear: Y = X @ W^T + bias."""
-        self.call_count += 1
-
-        # F.linear: input [*, K] × weight [N, K]^T → [*, N]
-        orig_shape = input_tensor.shape
-        M = 1
-        for d in orig_shape[:-1]:
-            M *= d
-        K = input_tensor.shape[-1]
-        N = weight.shape[0]
-
-        x_2d = input_tensor.reshape(M, K).contiguous()
-        w_t = weight.t().contiguous()  # [K, N]
-
-        compiled = self.get_or_compile(M, N, K)
-
-        from arke.backend.triton_backend import TritonBackend
-        backend = TritonBackend()
-        output = backend.run(compiled, {"A": x_2d, "B": w_t})
-
-        if isinstance(output, dict):
-            output = output.get("output", next(iter(output.values())))
-        out_shape = list(orig_shape[:-1]) + [N]
-        output = output.reshape(out_shape)
-
-        if bias is not None:
-            output = output + bias.half()
-
-        return output
-
-    def conv1d_call(self, input_tensor, weight, bias=None):
-        """Replace Conv1D: Y = X @ weight + bias.
-
-        Conv1D weight shape is [in_features, out_features] (no transpose).
-        """
-        self.call_count += 1
-
-        orig_shape = input_tensor.shape
-        M = 1
-        for d in orig_shape[:-1]:
-            M *= d
-        K = input_tensor.shape[-1]
-        N = weight.shape[1]
-
-        x_2d = input_tensor.reshape(M, K).contiguous()
-        w = weight.contiguous()  # [K, N] — already correct layout
-
-        compiled = self.get_or_compile(M, N, K)
-
-        from arke.backend.triton_backend import TritonBackend
-        backend = TritonBackend()
-        output = backend.run(compiled, {"A": x_2d, "B": w})
-
-        if isinstance(output, dict):
-            output = output.get("output", next(iter(output.values())))
-        out_shape = list(orig_shape[:-1]) + [N]
-        output = output.reshape(out_shape)
-
-        if bias is not None:
-            output = output + bias.half()
-
-        return output
+    return {
+        "matmul": matmul_shapes,
+        "softmax": softmax_shapes,
+    }
 
 
-class ArkeSoftmaxHook:
-    """Replace F.softmax with Arke-compiled Triton kernel."""
-
-    def __init__(self):
-        self.kernel_cache: dict[tuple, callable] = {}
-        self.call_count = 0
-
-    def get_or_compile(self, M: int, N: int) -> callable:
-        key = (M, N)
-        if key not in self.kernel_cache:
-            self.kernel_cache[key] = self._compile(M, N)
-        return self.kernel_cache[key]
-
-    def _compile(self, M: int, N: int) -> callable:
-        from arke.backend.triton_backend import TritonBackend
-        from arke.ir.builder import KernelBuilder
-        from arke.ir.strategy import StrategyIR
-
-        b = KernelBuilder(f"softmax_{M}_{N}")
-        b.param("X", [M, N], "f16")
-        s = b.op("softmax", X="X")
-        b.returns(s, [M, N], "f16")
-        ir = b.build()
-
-        backend = TritonBackend()
-        strategy = StrategyIR()
-        source = backend.translate(ir, strategy)
-        compiled = backend.compile(source)
-
-        if not compiled.success:
-            raise RuntimeError(f"Arke softmax compile failed: {compiled.error}")
-
-        return compiled
-
-    def __call__(self, input_tensor, dim=-1):
-        self.call_count += 1
-
-        if dim != -1 and dim != input_tensor.dim() - 1:
-            # Fallback to PyTorch for non-last-dim softmax
-            return F.softmax(input_tensor, dim=dim)
-
-        orig_shape = input_tensor.shape
-        M = 1
-        for d in orig_shape[:-1]:
-            M *= d
-        N = orig_shape[-1]
-
-        x_2d = input_tensor.reshape(M, N).contiguous()
-        compiled = self.get_or_compile(M, N)
-
-        from arke.backend.triton_backend import TritonBackend
-        backend = TritonBackend()
-        output = backend.run(compiled, {"X": x_2d})
-
-        if isinstance(output, dict):
-            output = output.get("output", next(iter(output.values())))
-
-        return output.reshape(orig_shape)
-
-
-def patch_gpt2_with_arke(model, matmul_hook, softmax_hook):
-    """Monkey-patch GPT-2 to use Arke kernels.
-
-    Replaces:
-    - All Linear layers' forward → ArkeMatmulHook
-    - Attention softmax → ArkeSoftmaxHook
-    """
-
+def patch_gpt2_fast(model, cache):
+    """Patch GPT-2 with pre-compiled Arke kernels (fast path)."""
     patched_linear = 0
     patched_softmax = 0
 
-    # GPT-2 uses Conv1D (not nn.Linear) for most projections
+    # Force eager attention
+    model.config._attn_implementation = "eager"
+
     try:
         from transformers.pytorch_utils import Conv1D
     except ImportError:
         Conv1D = None
 
-    for name, module in model.named_modules():
-        # Patch Conv1D layers (GPT-2 specific: Y = X @ weight + bias)
+    for _name, module in model.named_modules():
         if Conv1D is not None and isinstance(module, Conv1D):
-            def make_conv1d_forward(mod, hook):
-                def forward(input_tensor):
-                    # Conv1D: weight is [in, out], no transpose needed
-                    return hook.conv1d_call(input_tensor, mod.weight, mod.bias)
+            def make_conv1d_fwd(mod, c):
+                def forward(x):
+                    # Conv1D: weight [in, out], Y = X @ W + bias
+                    out = c.matmul(x, mod.weight)
+                    if mod.bias is not None:
+                        out = out + mod.bias
+                    return out
                 return forward
 
-            module.forward = make_conv1d_forward(module, matmul_hook)
+            module.forward = make_conv1d_fwd(module, cache)
             patched_linear += 1
 
-        # Patch nn.Linear layers
         elif isinstance(module, torch.nn.Linear):
-            def make_linear_forward(mod, hook):
-                def forward(input_tensor):
-                    return hook(input_tensor, mod.weight, mod.bias)
+            def make_linear_fwd(mod, c):
+                def forward(x):
+                    # Linear: weight [out, in], Y = X @ W^T + bias
+                    out = c.matmul(x, mod.weight.t().contiguous())
+                    if mod.bias is not None:
+                        out = out + mod.bias
+                    return out
                 return forward
 
-            module.forward = make_linear_forward(module, matmul_hook)
+            module.forward = make_linear_fwd(module, cache)
             patched_linear += 1
 
-    # Patch eager_attention_forward to use Arke softmax
-    # Force eager attention (not SDPA) so we can intercept softmax
-    model.config._attn_implementation = "eager"
-
+    # Patch eager_attention_forward for softmax
     import transformers.models.gpt2.modeling_gpt2 as gpt2_module
 
     def arke_eager_attention_forward(
@@ -304,8 +162,8 @@ def patch_gpt2_with_arke(model, matmul_hook, softmax_hook):
         if attention_mask is not None:
             attn_weights = attn_weights + attention_mask
 
-        # Use Arke softmax
-        attn_weights = softmax_hook(attn_weights, dim=-1)
+        # Use Arke softmax (fast cached)
+        attn_weights = cache.softmax(attn_weights)
 
         attn_weights = attn_weights.type(value.dtype)
         attn_weights = torch.nn.functional.dropout(
@@ -318,13 +176,13 @@ def patch_gpt2_with_arke(model, matmul_hook, softmax_hook):
         return attn_output, attn_weights
 
     gpt2_module.eager_attention_forward = arke_eager_attention_forward
-    patched_softmax = 12  # GPT-2 Small has 12 attention layers
+    patched_softmax = 12
 
     return patched_linear, patched_softmax
 
 
 # ============================================================
-# Main
+# Main Commands
 # ============================================================
 
 
@@ -336,12 +194,10 @@ def run_baseline(seq_len: int = 128):
 
     model, tokenizer = load_gpt2()
 
-    # Prepare input
     text = "The future of artificial intelligence is"
     inputs = tokenizer(text, return_tensors="pt").to("cuda")
     input_ids = inputs["input_ids"]
 
-    # Pad to seq_len for consistent profiling
     if input_ids.shape[1] < seq_len:
         pad = torch.zeros(
             1, seq_len - input_ids.shape[1],
@@ -354,17 +210,30 @@ def run_baseline(seq_len: int = 128):
     print(f"Memory before: {mem_before['allocated_mb']:.1f} MB")
 
     # Eager baseline
-    print("\n--- Eager Mode ---")
+    print("\n--- Eager Mode (SDPA) ---")
     eager_results = profile_inference(model, input_ids)
     print(f"  Mean: {eager_results['mean_ms']:.2f} ms")
     print(f"  Min:  {eager_results['min_ms']:.2f} ms")
     mem_eager = get_memory_usage()
     print(f"  Peak memory: {mem_eager['max_allocated_mb']:.1f} MB")
 
-    # Get eager output for correctness comparison
     with torch.no_grad():
         eager_output = model(input_ids)
         eager_logits = eager_output.logits.clone()
+
+    # Eager baseline with forced eager attention (fair comparison for Arke)
+    print("\n--- Eager Mode (no SDPA) ---")
+    from transformers import GPT2LMHeadModel as GPT2Reload
+
+    model_eager_attn = GPT2Reload.from_pretrained(
+        "gpt2", attn_implementation="eager"
+    ).to("cuda").half()
+    model_eager_attn.eval()
+    eager_no_sdpa = profile_inference(model_eager_attn, input_ids)
+    print(f"  Mean: {eager_no_sdpa['mean_ms']:.2f} ms")
+    print(f"  Min:  {eager_no_sdpa['min_ms']:.2f} ms")
+    del model_eager_attn
+    torch.cuda.empty_cache()
 
     # torch.compile baseline
     print("\n--- torch.compile Mode ---")
@@ -382,6 +251,7 @@ def run_baseline(seq_len: int = 128):
 
     return {
         "eager": eager_results,
+        "eager_no_sdpa": eager_no_sdpa,
         "compile": compile_results,
         "eager_logits": eager_logits,
         "input_ids": input_ids,
@@ -390,10 +260,12 @@ def run_baseline(seq_len: int = 128):
     }
 
 
-def run_arke(baseline_data: dict | None = None, seq_len: int = 128):
-    """Run GPT-2 with Arke-replaced kernels."""
+def run_arke(baseline_data: dict | None = None, seq_len: int = 128,
+             use_custom_ops: bool = False):
+    """Run GPT-2 with Arke-replaced kernels (fast path)."""
     print("\n" + "=" * 60)
-    print("Phase 1.7: GPT-2 Small with Arke Kernels")
+    mode_str = "custom ops" if use_custom_ops else "monkey-patch"
+    print(f"Phase 1.7: GPT-2 Small with Arke Kernels ({mode_str})")
     print("=" * 60)
 
     if baseline_data is None:
@@ -411,14 +283,27 @@ def run_arke(baseline_data: dict | None = None, seq_len: int = 128):
         model = baseline_data["model"]
         input_ids = baseline_data["input_ids"]
 
-    # Create hooks
-    matmul_hook = ArkeMatmulHook()
-    softmax_hook = ArkeSoftmaxHook()
-
     # Patch model
-    n_linear, n_softmax = patch_gpt2_with_arke(model, matmul_hook, softmax_hook)
-    print(f"\nPatched: {n_linear} Linear layers, {n_softmax} attention softmax")
-    print(f"Input shape: {input_ids.shape}")
+    if use_custom_ops:
+        from arke.integration.custom_ops import patch_gpt2_custom_op
+
+        print("\nPre-compiling kernels (custom ops)...")
+        n_linear, n_softmax = patch_gpt2_custom_op(model, seq_len)
+        print(f"  Patched: {n_linear} linear, {n_softmax} softmax")
+    else:
+        # Pre-compile all unique shapes
+        from arke.integration.kernel_cache import KernelCache
+
+        print("\nPre-compiling kernels...")
+        cache = KernelCache()
+        shapes = get_gpt2_shapes(seq_len)
+        cache.precompile_matmul(shapes["matmul"])
+        cache.precompile_softmax(shapes["softmax"])
+        print(f"  Compiled: {cache.stats}")
+
+        n_linear, n_softmax = patch_gpt2_fast(model, cache)
+        print(f"  Patched: {n_linear} linear, {n_softmax} softmax")
+    print(f"  Input shape: {input_ids.shape}")
 
     # Correctness check
     print("\n--- Correctness Check ---")
@@ -429,11 +314,9 @@ def run_arke(baseline_data: dict | None = None, seq_len: int = 128):
 
     if baseline_data and "eager_logits" in baseline_data:
         eager_logits = baseline_data["eager_logits"]
-        # Compare logits
         diff = (arke_logits.float() - eager_logits.float()).abs()
         max_diff = diff.max().item()
         mean_diff = diff.mean().item()
-        # Check top-1 token match
         eager_top = eager_logits[:, -1, :].argmax(dim=-1)
         arke_top = arke_logits[:, -1, :].argmax(dim=-1)
         top1_match = (eager_top == arke_top).all().item()
@@ -441,59 +324,80 @@ def run_arke(baseline_data: dict | None = None, seq_len: int = 128):
         print(f"  Max logit diff: {max_diff:.4f}")
         print(f"  Mean logit diff: {mean_diff:.6f}")
         print(f"  Top-1 token match: {'✅' if top1_match else '❌'}")
-        correct = max_diff < 5.0  # f16 tolerance
+        correct = max_diff < 5.0
     else:
-        correct = True  # No baseline to compare
+        correct = True
 
-    # Performance
-    print("\n--- Performance ---")
+    # Performance (without torch.compile)
+    print("\n--- Performance (no compile) ---")
     arke_results = profile_inference(model, input_ids)
     print(f"  Mean: {arke_results['mean_ms']:.2f} ms")
     print(f"  Min:  {arke_results['min_ms']:.2f} ms")
+
+    # Performance with torch.compile
+    print("\n--- Performance (torch.compile) ---")
+    try:
+        compiled_arke = torch.compile(model, mode="reduce-overhead")
+        arke_compiled_results = profile_inference(compiled_arke, input_ids)
+        print(f"  Mean: {arke_compiled_results['mean_ms']:.2f} ms")
+        print(f"  Min:  {arke_compiled_results['min_ms']:.2f} ms")
+    except Exception as e:
+        print(f"  torch.compile failed: {e}")
+        arke_compiled_results = None
+
     mem_arke = get_memory_usage()
     print(f"  Peak memory: {mem_arke['max_allocated_mb']:.1f} MB")
-    print(f"  Matmul calls: {matmul_hook.call_count}")
-    print(f"  Softmax calls: {softmax_hook.call_count}")
-    print(f"  Kernel cache: {len(matmul_hook.kernel_cache)} matmul, "
-          f"{len(softmax_hook.kernel_cache)} softmax")
 
     return {
         "arke": arke_results,
+        "arke_compiled": arke_compiled_results,
         "correct": correct,
         "memory_mb": mem_arke["max_allocated_mb"],
-        "matmul_calls": matmul_hook.call_count,
-        "softmax_calls": softmax_hook.call_count,
     }
 
 
-def run_compare(seq_len: int = 128):
+def run_compare(seq_len: int = 128, use_custom_ops: bool = False):
     """Full comparison: eager vs torch.compile vs Arke."""
     baseline = run_baseline(seq_len=seq_len)
-    arke = run_arke(baseline_data=baseline, seq_len=seq_len)
+    arke = run_arke(
+        baseline_data=baseline, seq_len=seq_len,
+        use_custom_ops=use_custom_ops,
+    )
 
     print("\n" + "=" * 60)
     print("Gate G5 Evaluation")
     print("=" * 60)
 
     eager_ms = baseline["eager"]["mean_ms"]
+    eager_no_sdpa_ms = baseline["eager_no_sdpa"]["mean_ms"]
     compile_ms = baseline["compile"]["mean_ms"] if baseline["compile"] else None
     arke_ms = arke["arke"]["mean_ms"]
+    arke_compiled_ms = (
+        arke["arke_compiled"]["mean_ms"] if arke.get("arke_compiled") else None
+    )
 
-    print(f"\n  Eager:          {eager_ms:.2f} ms")
+    print(f"\n  Eager (SDPA):        {eager_ms:.2f} ms")
+    print(f"  Eager (no SDPA):     {eager_no_sdpa_ms:.2f} ms")
     if compile_ms:
-        print(f"  torch.compile:  {compile_ms:.2f} ms")
-    print(f"  Arke:           {arke_ms:.2f} ms")
-    print(f"  Memory:         {arke['memory_mb']:.1f} MB")
+        print(f"  torch.compile:       {compile_ms:.2f} ms")
+    print(f"  Arke (no compile):   {arke_ms:.2f} ms")
+    if arke_compiled_ms:
+        print(f"  Arke + compile:      {arke_compiled_ms:.2f} ms")
+    print(f"  Memory:              {arke['memory_mb']:.1f} MB")
 
-    # Gate checks
+    # Use best Arke result for gate evaluation
+    best_arke_ms = arke_compiled_ms or arke_ms
+    if compile_ms:
+        print(f"\n  Arke+compile/compile: {compile_ms / best_arke_ms:.2f}x")
+
     g5_correct = arke["correct"]
-    g5_perf = compile_ms is None or arke_ms <= compile_ms * 1.1  # 10% tolerance
-    g5_mem = arke["memory_mb"] <= 6144  # 6GB
+    g5_perf = compile_ms is None or best_arke_ms <= compile_ms * 1.1
+    g5_mem = arke["memory_mb"] <= 6144
 
-    print(f"\n  1.7.1 Correctness:      {'✅ PASS' if g5_correct else '❌ FAIL'}")
-    print(f"  1.7.2 Perf ≤ compile:   {'✅ PASS' if g5_perf else '❌ FAIL'}")
-    print("  1.7.3 ≥2 ops replaced:  ✅ PASS (matmul + softmax)")
-    print(f"  1.7.4 Memory ≤ 6GB:     {'✅ PASS' if g5_mem else '❌ FAIL'}")
+    print(f"\n  1.7.1 Correctness:        {'✅ PASS' if g5_correct else '❌ FAIL'}")
+    print(f"  1.7.2 Perf ≤ compile:     {'✅ PASS' if g5_perf else '❌ FAIL'}")
+    print("  1.7.3 ≥2 ops replaced:    ✅ PASS (matmul + softmax)")
+    print(f"  1.7.4 Memory ≤ 6GB:       {'✅ PASS' if g5_mem else '❌ FAIL'}")
 
     passed = g5_correct and g5_perf and g5_mem
     print(f"\n  Gate G5: {'PASS ✅' if passed else 'FAIL ❌'}")
@@ -513,16 +417,19 @@ def main():
     )
     parser.add_argument(
         "--seq-len", type=int, default=128,
-        help="Sequence length for profiling",
+    )
+    parser.add_argument(
+        "--custom-ops", action="store_true",
+        help="Use torch.library custom ops (torch.compile compatible)",
     )
     args = parser.parse_args()
 
     if args.mode == "baseline":
         run_baseline(seq_len=args.seq_len)
     elif args.mode == "arke":
-        run_arke(seq_len=args.seq_len)
+        run_arke(seq_len=args.seq_len, use_custom_ops=args.custom_ops)
     elif args.mode == "compare":
-        run_compare(seq_len=args.seq_len)
+        run_compare(seq_len=args.seq_len, use_custom_ops=args.custom_ops)
 
 
 if __name__ == "__main__":

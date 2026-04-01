@@ -150,11 +150,12 @@ class TestMatmulTemplateRendering:
         assert "import triton.language as tl" in code
         assert "test_matmul_kernel" in code
         assert "test_matmul" in code
-        assert "BLOCK_M=128" in code
-        assert "BLOCK_N=128" in code
-        assert "BLOCK_K=32" in code
+        assert "@triton.autotune" in code
+        assert "BLOCK_M" in code
+        assert "BLOCK_N" in code
+        assert "BLOCK_K" in code
+        assert "GROUP_SIZE_M" in code
         # No activation
-        assert "ACTIVATION" not in code
         assert "tl.maximum" not in code
 
     def test_matmul_valid_python(self) -> None:
@@ -173,7 +174,7 @@ class TestMatmulTemplateRendering:
         code = self.engine.translate(semantic, strategy)
 
         assert "tl.maximum(acc, 0.0)" in code
-        assert "ACTIVATION" in code
+        assert "@triton.autotune" in code
 
     def test_matmul_relu_valid_python(self) -> None:
         """Generated fused matmul+relu code should be parseable."""
@@ -189,19 +190,19 @@ class TestMatmulTemplateRendering:
         strategy = _make_strategy_with_tiles(block_m=64, block_n=256, block_k=16)
         code = self.engine.translate(semantic, strategy)
 
-        assert "BLOCK_M=64" in code
-        assert "BLOCK_N=256" in code
-        assert "BLOCK_K=16" in code
+        # With autotune, tile sizes are in config dicts, not explicit args
+        assert "@triton.autotune" in code
+        assert "BLOCK_M" in code
 
     def test_default_tile_sizes(self) -> None:
-        """Without tile decisions, should use defaults (64, 64, 32)."""
+        """Without tile decisions, should still produce autotuned code."""
         semantic = _make_matmul_semantic()
         strategy = StrategyIR(kernel_id="test_matmul")  # no decisions
         code = self.engine.translate(semantic, strategy)
 
-        assert "BLOCK_M=64" in code
-        assert "BLOCK_N=64" in code
-        assert "BLOCK_K=32" in code
+        assert "@triton.autotune" in code
+        assert "BLOCK_M" in code
+        assert "BLOCK_N" in code
 
     def test_output_dtype_float16(self) -> None:
         """Float16 inputs should produce float16 output dtype."""
