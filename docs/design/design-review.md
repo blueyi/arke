@@ -191,7 +191,7 @@ LLM 做了 20 步决策后的 strategy，编译出来的 kernel：
 
 当前 plan 的 7 个里程碑偏向"技术交付"（IR 可用、Codegen 可用...）。但更重要的是**假设验证里程碑**：
 
-### Gate 0：环境可行性（Week 1 末）
+### Gate 0：环境可行性（Phase 1）
 
 | 验证项 | 标准 | 失败应对 |
 |--------|------|----------|
@@ -200,7 +200,7 @@ LLM 做了 20 步决策后的 strategy，编译出来的 kernel：
 
 **这是最简单的 gate，几乎不会失败。**
 
-### Gate 1：IR 表达力验证（Week 2 末）
+### Gate 1：IR 表达力验证（Phase 1）
 
 | 验证项 | 标准 | 失败应对 |
 |--------|------|----------|
@@ -210,7 +210,7 @@ LLM 做了 20 步决策后的 strategy，编译出来的 kernel：
 
 **验证假设**：Arke 的表达力足够。如果已知好的优化策略无法在 Arke 中表达，项目有根本问题。
 
-### Gate 2：端到端通路验证（Week 3 末）🔴 关键
+### Gate 2：端到端通路验证（Phase 2）🔴 关键
 
 | 验证项 | 标准 | 失败应对 |
 |--------|------|----------|
@@ -222,7 +222,7 @@ LLM 做了 20 步决策后的 strategy，编译出来的 kernel：
 
 **关键洞察**：Gate 2 验证的是 **Arke 的下限**。如果下限就不行，后面的 LLM 部分全是空中楼阁。
 
-### Gate 3：LLM 可行性验证（Week 4 末）🔴🔴 最关键
+### Gate 3：LLM 可行性验证（Phase 4）🔴🔴 最关键
 
 | 验证项 | 标准 | 失败应对 |
 |--------|------|----------|
@@ -242,7 +242,7 @@ LLM 做了 20 步决策后的 strategy，编译出来的 kernel：
 - 问题 1：优化 prompt、加领域知识到 system prompt、提供 few-shot 示例
 - 问题 2：考虑 fine-tuning，或者 pivot 到"LLM 从预定义模式库中选择"而非自由搜索
 
-### Gate 4：对比优势验证（Week 6 末）🔴🔴🔴 生死判断
+### Gate 4：对比优势验证（Phase 5）🔴🔴🔴 生死判断
 
 | 验证项 | 标准 | 失败应对 |
 |--------|------|----------|
@@ -260,7 +260,7 @@ LLM 做了 20 步决策后的 strategy，编译出来的 kernel：
 | Arke 正确率低 + 性能差 | ❌ 核心假设不成立 | **Kill** 或根本性 pivot |
 | Arke ≈ 直写 Triton | ⚠️ 没有优势 | 审视 Arke 的增量价值（可解释性？可迁移性？） |
 
-### Gate 5：整模型端到端验证（Week 7-8）🔴🔴 最终验证
+### Gate 5：整模型端到端验证（Phase 7）🔴🔴 最终验证
 
 > 单算子 benchmark 可能给出虚假信心。算子快了 20% 不代表模型快了 20%——
 > 框架集成开销、内存 layout 转换、kernel launch latency 都会吃掉收益。
@@ -435,20 +435,20 @@ v2.1 的 AscendC 模板是基于公开文档写的骨架代码。但 AscendC 的
 **建议**：
 - Phase 1 中找到至少一个 AscendC 的开源 matmul 实现作为参考（华为 CANN samples 仓库）
 - 用真实代码校准 Arke 的 AscendC 模板和 HW Profile
-- 在 Week 5 做 AscendC 骨架时，如果发现抽象层有问题，立即修正
+- 在 Phase 6 做 AscendC 骨架时，如果发现抽象层有问题，立即修正
 
 ---
 
 ## 六、修正后的验证框架总结
 
 ```
-Week 1-2: Gate 0 + Gate 1 (环境 + 表达力)
+Phase 1-2: Gate 0 + Gate 1 (环境 + 表达力)
   "Arke 能描述问题吗？"
 
-Week 3: Gate 2 (端到端通路)                ← 第一个真正的检查点
+Phase 2: Gate 2 (端到端通路)                ← 第一个真正的检查点
   "如果策略是对的，Arke 能生成好代码吗？"
 
-Week 4: Gate 3 (LLM 可行性)                ← 最关键的检查点
+Phase 4: Gate 3 (LLM 可行性)                ← 最关键的检查点
   "LLM 能通过 Arke 做有效的优化吗？"
   同时测试 matmul + softmax
 

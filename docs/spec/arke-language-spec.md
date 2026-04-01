@@ -1,7 +1,7 @@
 # Arke Language Specification
 
 > Version: 0.2.0-draft
-> Status: 🚧 Draft — implementation priority: Week 5+
+> Status: 🚧 Draft — implementation priority: Phase 6+
 > Principle: **Human Interface to AI-First IR**
 
 ---
@@ -398,12 +398,11 @@ Where `.ak'` is semantically identical to `.ak` (formatting may differ).
 
 ## 10. Implementation Priority
 
-Per `plan-v2.1.md`, the language is **Stream 3** (Week 5+):
+Per `plan-v3.0.md`, the language is **Phase 6** (after LLM integration proven):
 
 ```
-Week 1-4: LLM Protocol + IR + Validation + Codegen (no .ak parser needed)
-Week 5:   .ak EBNF grammar (Lark) → Parser → AST → Semantic IR
-Week 7:   CLI polish (parse/inspect/optimize/codegen)
+Phase 1-4: IR + Validation + Codegen + LLM Integration (no .ak parser needed)
+Phase 6:   .ak EBNF grammar (Lark) → Parser → AST → Semantic IR + CLI
 ```
 
 The language exists to serve humans. The system works without it —
@@ -414,4 +413,4 @@ a critical path component.
 
 *Spec version: 0.2.0-draft | Date: 2026-04-01*
 *Previous: docs/spec/deprecated/arke-language-spec.md (v0.1.0)*
-*Implementation: Week 5+ (arke/lang/parser.py, arke/lang/ast.py)*
+*Implementation: Phase 6+ (arke/lang/parser.py, arke/lang/ast.py)*

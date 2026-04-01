@@ -396,7 +396,7 @@ Level 2: Loop (Phase 2, future) — HOW to structure loops
   LLM decides loop-level details, compiler handles HW mapping
 
 Level 3: Hardware (Phase 3, future) — HOW to map to hardware
-  register_hint, barrier, schedule_hint, bank_conflict_avoid
+  register_hint, barrier, instruction_schedule_hint, bank_conflict_avoid
   LLM decides hardware-level details, LLVM handles final codegen
 ```
 

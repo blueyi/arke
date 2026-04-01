@@ -1,5 +1,8 @@
-# Arke Project — 修正执行计划 v2.1
+# Arke Project — 修正执行计划 v2.1 (已归档)
 
+> ⚠️ **此文档已被 `plan-v3.0.md` 取代。** 保留作为历史参考。
+> Week 时间制已改为 Phase 目标制，详见 plan-v3.0.md。
+>
 > 核心修正：从"先做语言再接 AI"转向"先让 LLM 跑通，再补人类界面"
 > 预计 MVP 周期：8 周
 > Date: 2026-03-31
@@ -306,7 +309,7 @@ class ArkeEnv:
 
 ### 4.2 Strategy IR 完善（Week 1-2）
 
-当前 `arke/ir/schedule.py` 已有骨架，需要：
+当前 `arke/ir/strategy.py` 已完善（原 schedule.py 已重命名），需要：
 - 与 Semantic IR 的关联验证（strategy 引用的算子必须存在于 semantic graph）
 - 约束检查（每个 decision 的 precondition 验证）
 - 搜索空间枚举（给定 semantic + hw，列出所有合法 tiling/fusion/etc.）
@@ -666,7 +669,7 @@ print("✅ GPU + Triton 环境验证通过")
 
 | 风险 | 严重度 | 应对 |
 |------|:---:|------|
-| LLM tool-use 循环不收敛 | 🔴 | 限制搜索预算 + 内置 fallback 策略（预定义的 good-enough schedule） |
+| LLM tool-use 循环不收敛 | 🔴 | 限制搜索预算 + 内置 fallback 策略（预定义的 good-enough strategy） |
 | Triton codegen 表达力不足 | 🟡 | 路径 B（LLM 生成）作为灵活补充；MVP 范围限制为标准模式 |
 | LLM 生成的 Triton 代码不正确 | 🟡 | V1 验证系统是安全网；不正确就 rollback + retry |
 | 评估显示 Arke 不比直写 Triton 好 | 🔴 | 这是关键信号——如果证实，需要重新审视项目方向或调整切入点 |
@@ -704,7 +707,7 @@ arke/
 │   │   └── grammar.py
 │   ├── ir/                        # IR 层（Stream 2）
 │   │   ├── semantic.py
-│   │   ├── strategy.py            # 原 schedule.py
+│   │   ├── strategy.py            # Strategy IR (优化决策)
 │   │   ├── builder.py             # IR 构建工具
 │   │   ├── schemas/
 │   │   │   ├── semantic.schema.json
@@ -935,7 +938,7 @@ Phase 3: LLM 做 Level 1-2-3 全部决策，LLVM 只做 final codegen
 ```
 Level 1: tile, fuse, parallel, place, reorder, algorithm
 Level 2: vectorize, unroll, pipeline, prefetch, access_pattern    ← 预留
-Level 3: register_hint, barrier, schedule_hint                    ← 预留
+Level 3: register_hint, barrier, instruction_schedule_hint                    ← 预留
 ```
 
 3. Semantic IR 的 `semantics.index_vars` 已经是好的基础——循环嵌套生成只需要这些变量 + tiling 信息
@@ -947,7 +950,7 @@ Level 3: register_hint, barrier, schedule_hint                    ← 预留
 
 **Semantic IR（不改）：**
 - 当前 Semantic IR 的 `computation` 语义公式 + `index_vars` + `reduction_axes` 足够推导循环嵌套
-- 这和 Halide/TVM 的 "algorithm + schedule" 分离完全一致
+- 这和 Halide/TVM 的 "algorithm + strategy" 分离完全一致
 - 从 Semantic IR 生成循环嵌套是确定性的（给定 shape + index_vars → loop bounds）
 - 不需要改 Semantic IR 就能支持 Phase 2-3 的 lowering
 
