@@ -15,6 +15,7 @@ from arke.engine.accuracy import (
     AccuracyMetrics,
     CompareConfig,
     CompareResult,
+    CROSS_DTYPE_CONFIGS,
     DTYPE_CONFIGS,
     Verdict,
 )
@@ -133,10 +134,20 @@ class TestVerdict:
         assert verdict == Verdict.REVIEW
 
     def test_dtype_specific_config(self):
-        """f16 config should have relaxed thresholds."""
+        """Default configs use same dtype for test and ref."""
         f16_config = DTYPE_CONFIGS["f16"]
-        assert f16_config.accept_rel_mean > DTYPE_CONFIGS["f32"].accept_rel_mean
         assert f16_config.precision_test == "f16"
+        assert f16_config.precision_ref == "f16"  # same dtype
+
+        f32_config = DTYPE_CONFIGS["f32"]
+        assert f32_config.precision_ref == "f32"  # same dtype
+        assert f32_config.accept_rel_mean < f16_config.accept_rel_mean  # f32 tighter
+
+    def test_cross_dtype_config(self):
+        """Cross-dtype configs for precision loss measurement."""
+        config = CROSS_DTYPE_CONFIGS["f16_vs_f32"]
+        assert config.precision_test == "f16"
+        assert config.precision_ref == "f32"
 
 
 # ============================================================
@@ -214,8 +225,8 @@ class TestReferenceSources:
 
     def test_numpy_cpu_source(self):
         ir = self._build_matmul()
-        source = NumPyCPUSource(compute_dtype="f64")
-
+        # Default: same-dtype reference (no upcast)
+        source = NumPyCPUSource()
         inputs = source.generate_inputs(ir, seed=42)
         assert "A" in inputs and "B" in inputs
         assert inputs["A"].shape == (64, 32)
@@ -223,7 +234,15 @@ class TestReferenceSources:
         ref = source.generate_reference(ir, inputs)
         assert ref.shape == (64, 128)
 
-        # Verify correctness
+    def test_numpy_cpu_source_upcast(self):
+        """Cross-precision mode: upcast to f64."""
+        ir = self._build_matmul()
+        source = NumPyCPUSource(compute_dtype="f64")
+        inputs = source.generate_inputs(ir, seed=42)
+        ref = source.generate_reference(ir, inputs)
+        assert ref.shape == (64, 128)
+
+        # f64 reference should be accurate
         expected = np.matmul(inputs["A"].astype(np.float64), inputs["B"].astype(np.float64))
         np.testing.assert_allclose(ref, expected, rtol=1e-10)
 
@@ -290,10 +309,12 @@ class TestAccuracyIntegration:
         env.apply_decision("tile", {"loop": "j", "factors": [128, 16]}, "t")
         env.apply_decision("tile", {"loop": "k", "factors": [32, 16]}, "t")
 
-        # Generate reference
-        ref_source = NumPyCPUSource(compute_dtype="f64")
+        # Generate same-dtype reference (f16 kernel → f16 NumPy reference)
+        ref_source = NumPyCPUSource()  # default: same dtype
         inputs_np = ref_source.generate_inputs(ir, seed=42)
-        ref_output = ref_source.generate_reference(ir, inputs_np).astype(np.float32)
+        # Compute reference at f16 precision (same as kernel)
+        f16_inputs = {k: v.astype(np.float16) for k, v in inputs_np.items()}
+        ref_output = ref_source.generate_reference(ir, f16_inputs).astype(np.float32)
 
         # Run Arke kernel
         backend = TritonBackend()

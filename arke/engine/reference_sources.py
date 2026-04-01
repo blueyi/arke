@@ -45,17 +45,32 @@ class ReferenceSource(ABC):
 
 
 class NumPyCPUSource(ReferenceSource):
-    """NumPy CPU reference — highest precision, always available."""
+    """NumPy CPU reference — same dtype as kernel params by default.
+
+    When compute_dtype is None (default), uses the kernel's own dtype.
+    This produces a same-precision reference to test implementation correctness.
+
+    Set compute_dtype="f64" to get a higher-precision reference for
+    cross-precision comparison.
+    """
 
     name = "numpy_cpu"
 
-    def __init__(self, compute_dtype: str = "f64"):
+    # Map Arke dtypes to NumPy dtypes
+    _ARKE_TO_NP: dict[str, np.dtype] = {
+        "f16": np.dtype(np.float16),
+        "f32": np.dtype(np.float32),
+        "f64": np.dtype(np.float64),
+        "bf16": np.dtype(np.float32),  # NumPy has no bf16, use f32
+    }
+
+    def __init__(self, compute_dtype: str | None = None):
         """Args:
-            compute_dtype: Precision for reference computation.
-                "f64" (default) for maximum precision, "f32" for faster.
+            compute_dtype: Override dtype for computation.
+                None (default): use kernel's own dtype (same-precision reference).
+                "f32", "f64": upcast for cross-precision comparison.
         """
         self.compute_dtype = compute_dtype
-        self._dtype_map = {"f64": np.float64, "f32": np.float32}
 
     def generate_reference(
         self,
@@ -65,11 +80,14 @@ class NumPyCPUSource(ReferenceSource):
         from arke.engine.numerical_check import NumericalValidator
         validator = NumericalValidator()
 
-        # Upcast inputs to compute_dtype for higher precision reference
-        np_dtype = self._dtype_map.get(self.compute_dtype, np.float64)
-        upcast_inputs = {k: v.astype(np_dtype) for k, v in inputs.items()}
-
-        return validator.generate_reference(semantic_ir, upcast_inputs)
+        if self.compute_dtype is not None:
+            # Cross-precision mode: upcast to specified dtype
+            np_dtype = self._ARKE_TO_NP.get(self.compute_dtype, np.float64)
+            cast_inputs = {k: v.astype(np_dtype) for k, v in inputs.items()}
+            return validator.generate_reference(semantic_ir, cast_inputs)
+        else:
+            # Same-precision mode: use inputs as-is (already at kernel dtype)
+            return validator.generate_reference(semantic_ir, inputs)
 
     def generate_inputs(
         self,

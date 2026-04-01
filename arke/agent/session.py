@@ -268,6 +268,9 @@ class OptimizationSession:
     def _verify_gpu_correctness(self, trials: int = 3) -> dict[str, Any]:
         """Compile kernel with current strategy and verify GPU output vs NumPy reference.
 
+        Uses SAME dtype for reference (measures implementation correctness,
+        not precision loss). e.g. f16 kernel vs NumPy f16 computation.
+
         Returns:
             Dict with 'passed', 'max_absolute_error', 'max_relative_error', 'errors'
         """
@@ -289,23 +292,27 @@ class OptimizationSession:
                 "errors": [f"Compilation failed: {compiled.error}"],
             }
 
-        # 3. Run trials
-        dtype_map = {"f16": torch.float16, "f32": torch.float32, "bf16": torch.bfloat16}
-        np_dtype_map = {"f16": np.float16, "f32": np.float32, "bf16": np.float32}
-
-        # Determine tolerance from output dtype
-        out_dtype = "f32"
+        # 3. Determine kernel dtype
+        kernel_dtype = "f16"  # default
         if self.semantic_ir.return_type:
-            out_dtype = self.semantic_ir.return_type.dtype
+            kernel_dtype = self.semantic_ir.return_type.dtype
         elif self.semantic_ir.params:
-            out_dtype = self.semantic_ir.params[0].dtype
+            kernel_dtype = self.semantic_ir.params[0].dtype
 
+        # Map dtype for NumPy and torch
+        np_dtype_map = {"f16": np.float16, "f32": np.float32, "bf16": np.float32}
+        torch_dtype_map = {"f16": torch.float16, "f32": torch.float32, "bf16": torch.bfloat16}
+        np_compute = np_dtype_map.get(kernel_dtype, np.float16)
+        torch_compute = torch_dtype_map.get(kernel_dtype, torch.float16)
+
+        # Tolerance: same-dtype comparison should have very tight tolerance
+        # Differences come from reduction order, FMA, etc.
         tol_map = {
-            "f16": {"atol": 1e-1, "rtol": 5e-2},   # f16 accumulation can have larger error
+            "f16": {"atol": 1e-1, "rtol": 5e-2},
             "bf16": {"atol": 1e-1, "rtol": 5e-2},
             "f32": {"atol": 1e-4, "rtol": 1e-4},
         }
-        tolerance = tol_map.get(out_dtype, {"atol": 1e-2, "rtol": 1e-2})
+        tolerance = tol_map.get(kernel_dtype, {"atol": 1e-2, "rtol": 1e-2})
 
         max_abs_error = 0.0
         max_rel_error = 0.0
@@ -314,23 +321,23 @@ class OptimizationSession:
         for trial in range(trials):
             seed = 42 + trial
 
-            # Generate random inputs for NumPy reference
+            # Generate random inputs at kernel dtype
             np_inputs = self.numerical_validator.generate_random_inputs(
                 self.semantic_ir, seed=seed
             )
 
-            # Compute NumPy reference output
+            # Compute NumPy reference at SAME dtype (not upcast)
+            same_dtype_inputs = {k: v.astype(np_compute) for k, v in np_inputs.items()}
             np_output = self.numerical_validator.generate_reference(
-                self.semantic_ir, np_inputs
+                self.semantic_ir, same_dtype_inputs
             )
 
             # Create GPU tensors from same data
             gpu_inputs = {}
             for p in self.semantic_ir.params:
-                t_dtype = dtype_map.get(p.dtype, torch.float16)
                 gpu_inputs[p.name] = torch.from_numpy(
                     np_inputs[p.name].astype(np.float32)
-                ).to(dtype=t_dtype, device="cuda")
+                ).to(dtype=torch_compute, device="cuda")
 
             # Run GPU kernel
             try:
@@ -342,13 +349,12 @@ class OptimizationSession:
                 errors.append(f"Trial {trial}: GPU execution failed — {e}")
                 continue
 
-            # Compare
+            # Compare (both in float32 for safe comparison)
             ref_f32 = np_output.astype(np.float32)
             abs_err = float(np.max(np.abs(gpu_output_np - ref_f32)))
             max_abs_error = max(max_abs_error, abs_err)
 
-            denom = np.maximum(np.abs(ref_f32), 1e-6)  # avoid div by ~0 for relu outputs
-            # Only compute relative error where reference is non-trivial
+            # Relative error only where reference is non-trivial
             nontrivial = np.abs(ref_f32) > 1e-4
             if np.any(nontrivial):
                 rel_err = float(np.max(
@@ -378,6 +384,8 @@ class OptimizationSession:
             "max_absolute_error": max_abs_error,
             "max_relative_error": max_rel_error,
             "tolerance": tolerance,
+            "reference_dtype": kernel_dtype,
+            "comparison_mode": "same_dtype",
             "errors": errors,
         }
 

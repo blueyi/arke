@@ -111,11 +111,18 @@ class AccuracyMetrics:
 
 @dataclass
 class CompareConfig:
-    """Configuration for an accuracy comparison."""
+    """Configuration for an accuracy comparison.
 
-    # Precision labels
+    Design principle: reference uses THE SAME dtype as test by default.
+    This measures implementation correctness (is my kernel right?),
+    not precision loss (is f16 good enough?).
+
+    To measure precision loss instead, set precision_ref to a higher dtype.
+    """
+
+    # Precision labels — same dtype by default
     precision_test: str = "f16"   # e.g. "f16", "f32", "int8", "f8"
-    precision_ref: str = "f32"    # reference precision
+    precision_ref: str = "f16"    # defaults to SAME as test
 
     # Threshold for "nontrivial" elements (skip near-zero for relative error)
     epsilon: float = 1e-6
@@ -147,29 +154,50 @@ class CompareConfig:
         }
 
 
-# Per-dtype default configs
+# Per-dtype default configs — reference uses SAME dtype as test
+# These thresholds account for non-determinism in GPU implementations
+# (different reduction order, fused multiply-add, etc.)
 DTYPE_CONFIGS: dict[str, CompareConfig] = {
     "f16": CompareConfig(
-        precision_test="f16", precision_ref="f32",
+        precision_test="f16", precision_ref="f16",
         accept_rel_mean=1e-3, accept_rel_p99=5e-2,
         review_rel_mean=5e-2, review_rel_p99=2e-1,
         accept_ulp_mean=8.0, review_ulp_p99=64.0,
     ),
     "bf16": CompareConfig(
-        precision_test="bf16", precision_ref="f32",
+        precision_test="bf16", precision_ref="bf16",
         accept_rel_mean=1e-3, accept_rel_p99=5e-2,
         review_rel_mean=5e-2, review_rel_p99=2e-1,
         accept_ulp_mean=8.0, review_ulp_p99=64.0,
     ),
     "f32": CompareConfig(
-        precision_test="f32", precision_ref="f64",
+        precision_test="f32", precision_ref="f32",
         accept_rel_mean=1e-5, accept_rel_p99=1e-4,
         review_rel_mean=1e-3, review_rel_p99=1e-2,
     ),
     "int8": CompareConfig(
-        precision_test="int8", precision_ref="f32",
+        precision_test="int8", precision_ref="int8",
         accept_rel_mean=5e-2, accept_rel_p99=2e-1,
         review_rel_mean=1e-1, review_rel_p99=5e-1,
+    ),
+}
+
+# Cross-precision configs — for measuring precision loss (optional)
+CROSS_DTYPE_CONFIGS: dict[str, CompareConfig] = {
+    "f16_vs_f32": CompareConfig(
+        precision_test="f16", precision_ref="f32",
+        accept_rel_mean=1e-3, accept_rel_p99=5e-2,
+        review_rel_mean=5e-2, review_rel_p99=2e-1,
+    ),
+    "f16_vs_f64": CompareConfig(
+        precision_test="f16", precision_ref="f64",
+        accept_rel_mean=1e-3, accept_rel_p99=5e-2,
+        review_rel_mean=5e-2, review_rel_p99=2e-1,
+    ),
+    "f32_vs_f64": CompareConfig(
+        precision_test="f32", precision_ref="f64",
+        accept_rel_mean=1e-5, accept_rel_p99=1e-4,
+        review_rel_mean=1e-3, review_rel_p99=1e-2,
     ),
 }
 
