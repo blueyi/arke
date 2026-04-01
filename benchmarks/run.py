@@ -104,7 +104,7 @@ def _build_direct_prompt(task: BenchmarkTask) -> str:
 
     return f"""Write a complete, optimized Triton kernel for the following computation.
 
-Kernel: {ir.name}
+Kernel: {ir.kernel_id}
 Parameters:
 {chr(10).join(params_desc)}
 
@@ -118,7 +118,7 @@ Target: NVIDIA Ampere (RTX 3060, 28 SMs, 128KB shared mem, warp=32)
 Requirements:
 1. Write a complete Python file with `import triton` and `import triton.language as tl`
 2. Define the Triton kernel with `@triton.jit`
-3. Define a wrapper function named `{ir.name}` that:
+3. Define a wrapper function named `{ir.kernel_id}` that:
    - Takes PyTorch tensors as arguments (in order: {', '.join(p.name for p in ir.params)})
    - Allocates the output tensor
    - Launches the kernel with appropriate grid
