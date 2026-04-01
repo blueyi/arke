@@ -37,12 +37,13 @@ def main():
     ir = build_matmul_relu()
     logger.info(f"Kernel: {ir.kernel_id}, params: {len(ir.params)}, nodes: {len(ir.nodes)}")
 
-    # Run optimization
-    with LLMRunner(config, timeout=120.0) as runner:
+    # Run optimization — use sonnet for speed (opus is too slow for long conversations)
+    with LLMRunner(config, timeout=300.0) as runner:
         result = runner.optimize(
             semantic_ir=ir,
             target_hw="nvidia_ampere",
-            max_turns=15,  # Conservative for first test
+            max_turns=25,
+            model_spec="api-proxy-claude/claude-sonnet-4-6",
         )
 
     # Report results

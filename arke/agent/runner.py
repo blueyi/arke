@@ -48,7 +48,7 @@ class RunResult:
 class LLMRunner:
     """Drives LLM optimization sessions via tool-use."""
 
-    def __init__(self, config: LLMConfig, timeout: float = 180.0):
+    def __init__(self, config: LLMConfig, timeout: float = 300.0):
         self.config = config
         self.timeout = timeout
         self.client = httpx.Client(timeout=timeout)
@@ -92,13 +92,30 @@ class LLMRunner:
         for turn in range(max_turns):
             logger.info(f"Turn {turn + 1}/{max_turns}, decisions: {session.env.strategy.decision_count}")
 
-            try:
-                response = self._call_llm(provider, model, messages)
-            except Exception as e:
-                error_msg = f"LLM call failed: {e}"
-                logger.error(error_msg)
-                errors.append(error_msg)
+            response = None
+            for attempt in range(3):
+                try:
+                    response = self._call_llm(provider, model, messages)
+                    break
+                except httpx.ReadTimeout:
+                    logger.warning(f"Timeout on attempt {attempt + 1}/3, retrying...")
+                    if attempt == 2:
+                        errors.append("LLM call timed out after 3 attempts")
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code == 429:
+                        wait = min(2 ** attempt * 5, 30)
+                        logger.warning(f"Rate limited, waiting {wait}s...")
+                        time.sleep(wait)
+                    else:
+                        errors.append(f"LLM call failed: {e}")
+                        break
+                except Exception as e:
+                    error_msg = f"LLM call failed: {e}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
+                    break
 
+            if response is None:
                 # Try fallback
                 fallback_result = self._try_fallback(messages, errors)
                 if fallback_result is None:
@@ -148,6 +165,32 @@ class LLMRunner:
                 messages.append({
                     "role": "user",
                     "content": "Budget exhausted. Please summarize your optimization strategy and results.",
+                })
+
+            # Nudge LLM toward verify+compile after enough decisions
+            decisions = session.env.strategy.decision_count
+            has_verified = any(
+                e.tool == "verify_correctness" for e in session.trajectory
+            )
+            has_compiled = any(
+                e.tool == "compile_and_profile" for e in session.trajectory
+            )
+            if decisions >= 4 and not has_verified and turn >= 8:
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        f"You have {decisions} decisions applied. "
+                        "Before adding more, call `verify_correctness()` to check numerical accuracy, "
+                        "then `compile_and_profile()` to measure GPU performance."
+                    ),
+                })
+            elif has_verified and not has_compiled and turn >= 10:
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Verification passed. Now call `compile_and_profile()` to measure "
+                        "actual GPU performance against the cuBLAS baseline."
+                    ),
                 })
 
         duration = time.time() - start

@@ -120,8 +120,11 @@ class StaticValidator:
         # Shared memory check
         sm_limit = constraints.get("max_shared_memory_per_block", 49152)
         if resources.shared_memory_bytes > sm_limit:
+            overshoot = resources.shared_memory_bytes - sm_limit
             violations.append(
-                f"Shared memory {resources.shared_memory_bytes}B exceeds limit {sm_limit}B"
+                f"Shared memory {resources.shared_memory_bytes}B exceeds limit {sm_limit}B "
+                f"(over by {overshoot}B). Consider: reduce tile sizes, place fewer tensors "
+                f"in shared memory, or use smaller dtypes."
             )
 
         # Thread count check
