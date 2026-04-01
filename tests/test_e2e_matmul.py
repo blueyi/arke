@@ -9,7 +9,6 @@ All GPU tests are skipped if CUDA is not available.
 from __future__ import annotations
 
 import ast
-import time
 
 import pytest
 

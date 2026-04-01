@@ -3,13 +3,12 @@
 
 """Tests for Arke Agent tools schema and session."""
 
-from arke.agent.session import OptimizationBudget, OptimizationSession, SessionState
+from arke.agent.session import OptimizationSession, SessionState
 from arke.agent.tools_schema import (
     TOOL_METADATA,
     TOOLS,
     get_tool_names,
     get_tool_schema,
-    get_tool_schemas,
 )
 from arke.ir.builder import KernelBuilder
 

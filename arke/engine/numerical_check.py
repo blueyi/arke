@@ -19,7 +19,6 @@ import numpy as np
 
 from arke.ir.semantic import NodeRef, ParamRef, SemanticIR
 
-
 # ============================================================
 # Dtype mapping
 # ============================================================

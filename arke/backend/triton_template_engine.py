@@ -12,7 +12,6 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from arke.ir.ops.catalog import OP_CATALOG, is_fusable_epilogue
 from arke.ir.semantic import SemanticIR
 from arke.ir.strategy import StrategyIR
 

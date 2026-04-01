@@ -11,7 +11,6 @@ from arke.ir.shape_inference import (
     validate_shapes,
 )
 
-
 # ============================================================
 # infer_output_shape — happy paths for all 10 operators
 # ============================================================

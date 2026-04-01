@@ -162,7 +162,6 @@ class TorchGPUSource(ReferenceSource):
 
     def _execute_graph(self, ir: SemanticIR, inputs: dict) -> Any:
         """Execute SemanticIR using PyTorch ops on GPU."""
-        import torch
         from arke.ir.semantic import NodeRef, ParamRef
 
         values = dict(inputs)

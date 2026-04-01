@@ -16,7 +16,6 @@ import json
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-
 # ============================================================
 # Data Types
 # ============================================================

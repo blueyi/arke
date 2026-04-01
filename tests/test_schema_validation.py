@@ -26,7 +26,7 @@ from arke.ir.semantic import (
     Semantics,
     TensorDesc,
 )
-from arke.ir.strategy import Decision, HardwareConstraints, Rationale, StrategyIR
+from arke.ir.strategy import Decision, HardwareConstraints, StrategyIR
 
 # ============================================================
 # Schema loading helpers

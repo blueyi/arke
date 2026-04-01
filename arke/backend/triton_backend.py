@@ -8,8 +8,6 @@ Implements ArkeBackend for Triton code generation, compilation, and execution.
 
 from __future__ import annotations
 
-import torch
-
 from arke.backend.base import (
     ArkeBackend,
     CompileResult,

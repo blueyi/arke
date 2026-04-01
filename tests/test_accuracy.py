@@ -5,18 +5,17 @@
 
 import json
 import os
-import tempfile
 
 import numpy as np
 import pytest
 
 from arke.engine.accuracy import (
+    CROSS_DTYPE_CONFIGS,
+    DTYPE_CONFIGS,
     AccuracyBenchmark,
     AccuracyMetrics,
     CompareConfig,
     CompareResult,
-    CROSS_DTYPE_CONFIGS,
-    DTYPE_CONFIGS,
     Verdict,
 )
 from arke.engine.reference_sources import (
@@ -25,7 +24,6 @@ from arke.engine.reference_sources import (
     get_reference_source,
 )
 from arke.ir.builder import KernelBuilder
-
 
 # ============================================================
 # AccuracyMetrics tests
@@ -291,9 +289,10 @@ class TestAccuracyIntegration:
     )
     def test_arke_matmul_accuracy_vs_numpy(self):
         """Compare Arke Triton matmul kernel against NumPy reference."""
+        import torch
+
         from arke.backend.triton_backend import TritonBackend
         from arke.engine.env import ArkeEnv
-        import torch
 
         # Build kernel
         b = KernelBuilder("accuracy_mm")

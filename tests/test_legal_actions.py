@@ -3,10 +3,8 @@
 
 """Tests for Legal Actions Engine."""
 
-import json
 
 from arke.engine.env import ArkeEnv
-from arke.engine.legal_actions import LegalActionsEngine
 from arke.ir.builder import KernelBuilder
 
 

@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from arke.agent.prompts import build_initial_user_message, build_system_prompt
+from arke.agent.prompts import build_system_prompt
 from arke.agent.tools_schema import TOOL_METADATA, get_tool_schemas
 from arke.engine.env import ArkeEnv
 from arke.engine.numerical_check import NumericalValidator
@@ -275,9 +275,9 @@ class OptimizationSession:
             Dict with 'passed', 'max_absolute_error', 'max_relative_error', 'errors'
         """
         import numpy as np
+        import torch
 
         from arke.backend.triton_backend import TritonBackend
-        import torch
 
         backend = TritonBackend()
 
@@ -395,8 +395,9 @@ class OptimizationSession:
         Full pipeline: Strategy decisions → Triton codegen → compile → profile.
         """
         try:
-            from arke.backend.triton_backend import TritonBackend
             import torch
+
+            from arke.backend.triton_backend import TritonBackend
 
             backend = TritonBackend()
 

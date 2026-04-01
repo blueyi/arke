@@ -9,7 +9,6 @@ No broadcasting in v0.2.0 — elementwise ops require exact shape match.
 
 from __future__ import annotations
 
-
 # ============================================================
 # Operator categories for dispatch
 # ============================================================

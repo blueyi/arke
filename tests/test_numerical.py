@@ -7,22 +7,13 @@ import numpy as np
 import pytest
 
 from arke.engine.numerical_check import (
-    DTYPE_MAP,
-    NumericalResult,
     NumericalValidator,
     _to_numpy_dtype,
 )
 from arke.ir.builder import KernelBuilder
 from arke.ir.semantic import (
-    Node,
-    NodeRef,
-    Param,
-    ParamRef,
     SemanticIR,
-    Semantics,
-    TensorDesc,
 )
-
 
 # ============================================================
 # Helpers — build common IR structures

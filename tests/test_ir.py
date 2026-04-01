@@ -6,8 +6,15 @@
 from arke.ir.builder import KernelBuilder
 from arke.ir.ops.catalog import OP_CATALOG, get_op, is_fusable_epilogue, list_ops
 from arke.ir.semantic import (
-    Edge, FusionGroup, Node, NodeRef, Param, ParamRef,
-    SemanticIR, Semantics, TensorDesc,
+    Edge,
+    FusionGroup,
+    Node,
+    NodeRef,
+    Param,
+    ParamRef,
+    SemanticIR,
+    Semantics,
+    TensorDesc,
 )
 from arke.ir.strategy import StrategyIR
 

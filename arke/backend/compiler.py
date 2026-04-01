@@ -9,10 +9,8 @@ Compiles generated Triton source code, executes kernels, and profiles performanc
 from __future__ import annotations
 
 import importlib.util
-import re
 import sys
 import tempfile
-import time
 from pathlib import Path
 from typing import Any
 

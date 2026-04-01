@@ -23,7 +23,6 @@ from arke.ir.semantic import (
 )
 from arke.ir.strategy import StrategyIR
 
-
 # ============================================================
 # Helpers — build IR fixtures
 # ============================================================
