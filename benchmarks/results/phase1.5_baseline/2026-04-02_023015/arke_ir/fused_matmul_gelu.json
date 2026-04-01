@@ -1,0 +1,117 @@
+{
+  "version": "0.2.0",
+  "kernel_id": "fused_matmul_gelu",
+  "params": [
+    {
+      "name": "A",
+      "shape": [
+        1024,
+        1024
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    {
+      "name": "B",
+      "shape": [
+        1024,
+        2048
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    }
+  ],
+  "return_type": {
+    "shape": [
+      1024,
+      2048
+    ],
+    "dtype": "f16",
+    "layout": "row_major"
+  },
+  "nodes": [
+    {
+      "id": "matmul_0",
+      "op": "matmul",
+      "inputs": {
+        "A": {
+          "ref": "param",
+          "name": "A"
+        },
+        "B": {
+          "ref": "param",
+          "name": "B"
+        }
+      },
+      "output": {
+        "shape": [
+          1024,
+          2048
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      "semantics": {
+        "computation": "C[i,j] = sum(A[i,k] * B[k,j], axis=k)",
+        "index_vars": [
+          "i",
+          "j",
+          "k"
+        ],
+        "reduction_axes": [
+          "k"
+        ],
+        "properties": [
+          "associative",
+          "distributive"
+        ]
+      }
+    },
+    {
+      "id": "gelu_1",
+      "op": "gelu",
+      "inputs": {
+        "X": {
+          "ref": "node",
+          "id": "matmul_0"
+        }
+      },
+      "output": {
+        "shape": [
+          1024,
+          2048
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      "semantics": {
+        "computation": "Y = X * Phi(X)",
+        "index_vars": [],
+        "reduction_axes": [],
+        "properties": [
+          "elementwise"
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from_node": "matmul_0",
+      "to_node": "gelu_1",
+      "tensor_name": "matmul_0_out",
+      "lifetime": "local"
+    }
+  ],
+  "return_node": "gelu_1",
+  "fusion_groups": [
+    {
+      "id": "fg_matmul_0_gelu_1",
+      "nodes": [
+        "matmul_0",
+        "gelu_1"
+      ],
+      "fusion_type": "epilogue",
+      "reason": "gelu is elementwise; can fuse into epilogue"
+    }
+  ]
+}

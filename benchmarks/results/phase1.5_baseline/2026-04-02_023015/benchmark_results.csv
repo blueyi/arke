@@ -1,0 +1,7 @@
+task_name,method,trial,correct,vs_baseline,latency_us,tflops,kernel_id,dtype,target_hw,operations,tags,M,N,K,input_A_shape,input_B_shape,output_shape,output_dtype,decisions,tool_calls,tokens_in,tokens_out,total_tokens,duration_s,error
+fused_matmul_gelu,direct,0,False,,,,fused_matmul_gelu,f16,nvidia_ampere,matmul → gelu,"matmul,fusion,gelu",1024,2048,1024,1024x1024,1024x2048,1024x2048,f16,0,0,337,1334,1671,27.88,GPU execution failed: module 'triton.language.math' has no attribute 'tanh'
+fused_matmul_relu,direct,0,True,1.1017119474428205,203.36640253663063,10.55967761249645,fused_matmul_relu,f16,nvidia_ampere,matmul → relu,"matmul,fusion,relu",1024,1024,1024,1024x1024,1024x1024,1024x1024,f16,0,0,332,1191,1523,33.48,
+matmul_1024,direct,0,True,1.3180260517581204,149.40160065889359,14.373899868067877,matmul_1024,f16,nvidia_ampere,matmul,"matmul,square,core",1024,1024,1024,1024x1024,1024x1024,1024x1024,f16,0,0,308,1153,1461,24.2,
+matmul_2048,direct,0,True,0.14386521005058542,6044.057583808899,2.842439693166099,matmul_2048,f16,nvidia_ampere,matmul,"matmul,square,large",2048,2048,2048,2048x2048,2048x2048,2048x2048,f16,0,0,308,1131,1439,78.39,
+matmul_rect,direct,0,True,1.281094313764534,1150.9759962558746,1.8657936003754774,matmul_rect,f16,nvidia_ampere,matmul,"matmul,rectangular",1024,2048,512,1024x512,512x2048,1024x2048,f16,0,0,304,1174,1478,50.88,
+softmax_4096,direct,0,True,,264.3968015909195,0.0,softmax_4096,f16,nvidia_ampere,softmax,"softmax,memory_bound",4096,4096,,4096x4096,,4096x4096,f16,0,0,274,1085,1359,19.97,
