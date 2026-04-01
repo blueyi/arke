@@ -9,23 +9,27 @@ import pytest
 
 from arke.agent.llm_config import LLMConfig, ModelConfig, ProviderConfig, load_from_openclaw
 
+# Detect if openclaw config is available (not present on CI)
+_openclaw_dir = os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw"))
+_has_openclaw = os.path.isfile(os.path.join(_openclaw_dir, "agents/main/agent/models.json"))
+
 # ============================================================
-# Config Loading Tests
+# Config Loading Tests (require local OpenClaw install)
 # ============================================================
 
+@pytest.mark.skipif(not _has_openclaw, reason="OpenClaw config not available")
 def test_load_from_openclaw():
     """Load config from OpenClaw directory."""
-    openclaw_dir = os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw"))
-    config = load_from_openclaw(openclaw_dir)
+    config = load_from_openclaw(_openclaw_dir)
 
     assert config.primary != ""
     assert len(config.providers) > 0
 
 
+@pytest.mark.skipif(not _has_openclaw, reason="OpenClaw config not available")
 def test_config_has_claude_provider():
     """Config should have api-proxy-claude provider."""
-    openclaw_dir = os.environ.get("OPENCLAW_STATE_DIR", os.path.expanduser("~/.openclaw"))
-    config = load_from_openclaw(openclaw_dir)
+    config = load_from_openclaw(_openclaw_dir)
 
     assert "api-proxy-claude" in config.providers
     claude = config.providers["api-proxy-claude"]
