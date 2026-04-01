@@ -1,0 +1,30 @@
+{
+  "model": "api-proxy-claude/claude-opus-4-6",
+  "decisions": 0,
+  "tool_calls": 0,
+  "tokens": {
+    "in": 0,
+    "out": 0
+  },
+  "duration": 2.54,
+  "trajectory": [],
+  "session_summary": {
+    "kernel_id": "fused_matmul_relu",
+    "target_hw": "nvidia_ampere",
+    "state": "created",
+    "decisions": 0,
+    "budget": {
+      "decisions_used": 0,
+      "decisions_remaining": 50,
+      "compiles_used": 0,
+      "compiles_remaining": 10,
+      "target_performance": 0.7
+    },
+    "best_performance": null,
+    "trajectory_steps": 0,
+    "duration_seconds": 2.5
+  },
+  "errors": [
+    "LLM call failed: Client error '401 Unauthorized' for url 'https://yunwu.ai/v1/messages'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401"
+  ]
+}
