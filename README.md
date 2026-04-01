@@ -8,10 +8,9 @@
 
 ## About the Name
 
-**Arke** (Ἄρκη) — the twin sister of Iris in Greek mythology. Both were messenger goddesses of the rainbow, but while Iris served the Olympians, Arke chose the Titans.
+**Arke** (Ἄρκη) — a swift-footed messenger goddess in Greek mythology. Zeus later gave her iridescent wings to Thetis as a wedding gift, symbolizing speed and brilliance.
 
-- **Iris** represents the established path — traditional compilers with hand-written optimization rules
-- **Arke** represents the new path — AI-driven optimization where LLMs bridge the gap between human intent and hardware reality
+In our context, Arke is the messenger between two worlds — translating **what to compute** (semantic intent) into **how to compute it** (hardware-specific strategy), through rapid, iterative AI-driven optimization cycles.
 
 ## Key Features
 
@@ -47,26 +46,45 @@
 
 ## Quick Example
 
+Arke separates **what to compute** from **how to optimize** — the kernel author declares pure math, and the optimization strategy is a separate, machine-searchable artifact that an LLM agent can explore and refine.
+
 ```arke
-// Declare computation (what to compute)
+// ─── Semantic Layer: WHAT to compute ───
+// Pure math declaration. No tiling, no thread mapping, no hardware details.
+// This is the single source of truth for correctness verification.
 kernel fused_matmul_relu(
     A: Tensor<[1024, 512], f16>,
     B: Tensor<[512, 2048], f16>
 ) -> Tensor<[1024, 2048], f16> {
-    let C = matmul(A, B);
-    let Y = relu(C);
+    let C = matmul(A, B);    // Matrix multiplication
+    let Y = relu(C);          // Elementwise activation
     return Y;
 }
 
-// Declare optimization strategy (how to optimize)
+// ─── Strategy Layer: HOW to optimize ───
+// Separate from the kernel — can be searched, modified, or regenerated
+// without changing the computation semantics.
+// Each decision is a discrete, reversible action the LLM agent can explore.
 strategy fused_matmul_relu for target("nvidia_ampere") {
+    // Tile the i-loop into 64×16 blocks
+    // → 64 maps to L2 cache lines, 16 maps to warp size
     tile(loop="i", factors=[64, 16])
         @rationale("L2 cache line = 64, warp size = 16");
+
+    // Tile the j-loop for memory coalescing
     tile(loop="j", factors=[128, 8])
         @rationale("maximize memory coalescing");
+
+    // Fuse relu into matmul as an epilogue
+    // → eliminates one global memory round-trip
     fuse(ops=["matmul", "relu"], type=epilogue);
 }
 ```
+
+**Why this design:**
+- **Correctness is verifiable** — the semantic layer is pure math, checkable against a NumPy reference
+- **Strategy is searchable** — each decision (tile size, fusion, placement) is a discrete action an LLM can enumerate, apply, and rollback
+- **`@rationale` is auditable** — every optimization carries a natural language explanation, making LLM reasoning transparent
 
 ## Python API
 
