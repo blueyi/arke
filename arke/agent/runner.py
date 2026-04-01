@@ -223,12 +223,21 @@ class LLMRunner:
         provider: ProviderConfig,
         model: ModelConfig,
         messages: list[dict],
+        tools: bool = True,
     ) -> dict:
-        """Call the LLM API."""
+        """Call the LLM API.
+
+        Args:
+            tools: If False, omit tools (plain text generation).
+        """
         if model.api == "anthropic-messages":
-            return self._call_anthropic(provider, model, messages)
+            return self._call_anthropic(
+                provider, model, messages, tools=tools
+            )
         elif model.api == "openai-completions":
-            return self._call_openai(provider, model, messages)
+            return self._call_openai(
+                provider, model, messages, tools=tools
+            )
         else:
             raise ValueError(f"Unsupported API type: {model.api}")
 
@@ -237,6 +246,7 @@ class LLMRunner:
         provider: ProviderConfig,
         model: ModelConfig,
         messages: list[dict],
+        tools: bool = True,
     ) -> dict:
         """Call Anthropic Messages API."""
         # Separate system message
@@ -248,16 +258,17 @@ class LLMRunner:
             else:
                 api_messages.append(msg)
 
-        # Convert tools to Anthropic format
-        tools = self._tools_to_anthropic()
-
         body: dict[str, Any] = {
             "model": model.id,
             "max_tokens": model.max_tokens,
-            "system": system,
             "messages": api_messages,
-            "tools": tools,
         }
+        if system:
+            body["system"] = system
+
+        # Only include tools if requested
+        if tools:
+            body["tools"] = self._tools_to_anthropic()
 
         headers = {
             "x-api-key": provider.api_key,
@@ -278,17 +289,17 @@ class LLMRunner:
         provider: ProviderConfig,
         model: ModelConfig,
         messages: list[dict],
+        tools: bool = True,
     ) -> dict:
         """Call OpenAI-compatible Chat Completions API."""
-        # Convert tools to OpenAI format
-        tools = get_tool_schemas()
-
-        body = {
+        body: dict[str, Any] = {
             "model": model.id,
             "messages": messages,
-            "tools": tools,
             "max_tokens": model.max_tokens,
         }
+
+        if tools:
+            body["tools"] = get_tool_schemas()
 
         headers = {
             "Authorization": f"Bearer {provider.api_key}",

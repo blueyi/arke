@@ -1,0 +1,37 @@
+{
+  "timestamp": "2026-04-02T00:23:44",
+  "gate_g4": {
+    "passed": true,
+    "reasons": [
+      "\u2705 Correctness: Arke 0.0% >= Direct 0.0%"
+    ]
+  },
+  "arke": {
+    "matmul_1024": {
+      "task_name": "matmul_1024",
+      "method": "arke",
+      "correct_rate": 0.0,
+      "mean_perf": null,
+      "std_perf": null,
+      "total_tokens": 225364,
+      "trials": [
+        {
+          "task_name": "matmul_1024",
+          "method": "arke",
+          "trial": 0,
+          "correct": false,
+          "vs_baseline": null,
+          "latency_us": null,
+          "tflops": null,
+          "error": null,
+          "decisions": 7,
+          "tool_calls": 30,
+          "tokens_in": 220869,
+          "tokens_out": 4495,
+          "duration_s": 282.70214104652405
+        }
+      ]
+    }
+  },
+  "direct": {}
+}
