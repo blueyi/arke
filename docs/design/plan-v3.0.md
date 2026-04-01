@@ -171,6 +171,44 @@ Phase 8     MVP Release
 
 **目标**: 定量证明 Arke (LLM + tool-use) 优于 LLM 直写 Triton
 
+### 精度对比框架
+
+精度验证是所有性能对比的基础。已实现的框架 (`arke/engine/accuracy.py`) 设计原则：
+
+**同 dtype 对比（默认）：** 标杆数据与被测数据保持相同精度
+- GPU f16 kernel → NumPy CPU f16 reference（测实现正确性）
+- GPU f32 kernel → NumPy CPU f32 reference
+- 差异仅来源于实现差异（reduction order, FMA, non-determinism）
+
+**跨精度对比（显式指定）：** 用于量化精度损失
+- f16 kernel vs f32 reference（`CROSS_DTYPE_CONFIGS["f16_vs_f32"]`）
+- f32 kernel vs f64 reference
+
+**标杆源（pluggable）：**
+- `NumPyCPUSource` — NumPy CPU，默认同 dtype（无 GPU 时 fallback）
+- `TorchGPUSource` — PyTorch GPU（GPU-vs-GPU 对比）
+- `CustomSource` — 用户提供（Ascend 等外部数据源）
+
+**度量指标（10 项）：**
+- 绝对误差: max, mean, median, std
+- 相对误差: max, mean, median, P90, P99（仅 |ref| > ε 的元素）
+- ULP 误差: mean, max, P99
+- 异常: NaN count, Inf count, sign mismatch rate
+- 相似度: cosine similarity, zero diff rate
+
+**三级判定：**
+| 级别 | 条件 |
+|------|------|
+| Accept | rel_mean < 阈值 且 rel_p99 < 阈值 |
+| Review | rel_mean 或 rel_p99 超 accept 但未超 reject |
+| Reject | NaN/Inf、sign mismatch > 0.1%、rel_mean > reject 阈值 |
+
+**输入采样策略：**
+- normal: N(0,1)，常规覆盖
+- uniform: U(-1,1)，不同幅值
+- edge: 边界值（极大/极小、次正规数、接近零）
+- 固定随机种子，多 trial 取中位数
+
 ### 完成标准
 | # | 标准 | 验证方式 | 状态 |
 |---|------|----------|:----:|
