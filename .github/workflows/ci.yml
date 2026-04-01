@@ -27,7 +27,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Lint
-        run: ruff check arke/ tests/
+        run: ruff check arke/ tests/ benchmarks/
 
       - name: Type check
         run: mypy arke/ --ignore-missing-imports
