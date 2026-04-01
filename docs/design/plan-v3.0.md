@@ -40,8 +40,8 @@ Phase 1.2 ✅  Codegen + E2E pipeline
 Phase 1.3 ✅  LLM agent integration
 Phase 1.4 ✅  LLM closed-loop optimization
 Phase 1.5 ✅  Evaluation framework + comparison
-Phase 1.6 ⬅  .ak Parser + CLI (next)
-Phase 1.7     Whole-model E2E
+Phase 1.6 ✅  .ak Parser + CLI
+Phase 1.7 ⬅  Whole-model E2E (next)
 Phase 1.8     MVP release
 ```
 
@@ -231,20 +231,20 @@ Phase 1.8     MVP release
 
 ---
 
-## Phase 1.6: .ak Parser + CLI 🔨
+## Phase 1.6: .ak Parser + CLI ✅
 
 **Objective:** Human-readable `.ak` syntax parsed into Semantic IR, with CLI commands for parse/optimize/inspect workflows.
 
 ### Completion Criteria
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
-| 1.6.1 | Parse matmul kernel | `parser.parse("examples/01_matmul.ak")` returns AST | ⬜ |
-| 1.6.2 | Parse fused kernel | `parser.parse("examples/02_matmul_relu_fused.ak")` returns AST | ⬜ |
-| 1.6.3 | AST → Semantic IR correct | `ast_to_ir(ast)` equals `KernelBuilder.build()` output | ⬜ |
-| 1.6.4 | CLI `arke parse` | `arke parse kernel.ak -o kernel.json` outputs valid JSON | ⬜ |
-| 1.6.5 | CLI `arke optimize` | `arke optimize kernel.json --target ampere` starts LLM session | ⬜ |
-| 1.6.6 | CLI `arke inspect` | `arke inspect kernel.json` outputs human-readable IR | ⬜ |
-| 1.6.7 | ≥3 .ak examples work E2E | matmul, softmax, fused_matmul_relu: parse → optimize → GPU | ⬜ |
+| 1.6.1 | Parse matmul kernel | `parser.parse("examples/01_matmul.ak")` returns AST | ✅ |
+| 1.6.2 | Parse fused kernel | `parser.parse("examples/02_matmul_relu_fused.ak")` returns AST | ✅ |
+| 1.6.3 | AST → Semantic IR correct | `ast_to_ir(ast)` equals `KernelBuilder.build()` output | ✅ |
+| 1.6.4 | CLI `arke parse` | `arke parse kernel.ak -o kernel.json` outputs valid JSON | ✅ |
+| 1.6.5 | CLI `arke optimize` | `arke optimize kernel.json --target ampere` starts LLM session | ✅ |
+| 1.6.6 | CLI `arke inspect` | `arke inspect kernel.json` outputs human-readable IR | ✅ |
+| 1.6.7 | ≥3 .ak examples work E2E | matmul, softmax, fused_matmul_relu: parse → optimize → GPU | ✅ |
 
 **Dependency:** Phase 1.4 complete
 
