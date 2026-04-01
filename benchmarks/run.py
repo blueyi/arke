@@ -508,6 +508,11 @@ def main() -> None:
         help="Phase/stage label for archival (e.g. phase1.5_baseline)",
     )
     parser.add_argument(
+        "--tier", type=int, choices=[1, 2, 3], default=None,
+        help="Tier level for task selection (1=core, 2=extended, 3=full). "
+             "Overrides --tasks.",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true",
         help="Verbose logging",
     )
@@ -524,7 +529,19 @@ def main() -> None:
     )
 
     tasks = None
-    if args.tasks:
+    if args.tier:
+        # Use tier-based task selection from skill scripts
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "run_tier",
+            Path(__file__).parent.parent
+            / "skills" / "arke-test-coverage" / "scripts" / "run_tier.py",
+        )
+        run_tier_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(run_tier_mod)
+        tasks = run_tier_mod.build_benchmark_tasks(args.tier)
+        logger.info(f"Tier {args.tier}: {len(tasks)} tasks")
+    elif args.tasks:
         from benchmarks.tasks import get_task
         tasks = [get_task(name) for name in args.tasks]
 
