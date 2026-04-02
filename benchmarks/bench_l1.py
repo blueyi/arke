@@ -27,16 +27,14 @@ import benchmarks.baselines.flaggems  # noqa: F401
 import benchmarks.baselines.inductor  # noqa: F401
 import benchmarks.baselines.liger  # noqa: F401
 import benchmarks.baselines.pytorch_eager  # noqa: F401
+import benchmarks.baselines.triton_tutorial  # noqa: F401
 from benchmarks.baselines.base import get_all_runners, get_runners_for_op
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
 from benchmarks.shapes import (
-    ELEMENTWISE_SHAPES,
-    MATMUL_SHAPES,
-    NORM_SHAPES,
-    SOFTMAX_SHAPES,
     MatmulShape,
     Shape2D,
+    get_shapes,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,16 +59,12 @@ class OpResult:
     tflops: float | None = None
 
 
-def _get_shapes(op: str) -> list[MatmulShape] | list[Shape2D]:
-    if op in ("matmul", "batch_matmul"):
-        return MATMUL_SHAPES
-    elif op == "softmax":
-        return SOFTMAX_SHAPES
-    elif op in ("layernorm", "rmsnorm"):
-        return NORM_SHAPES
-    elif op in ("relu", "gelu", "silu", "dropout"):
-        return ELEMENTWISE_SHAPES
-    else:
+def _get_shapes(
+    op: str, tier: int | None = None
+) -> list[MatmulShape] | list[Shape2D]:
+    try:
+        return get_shapes(op, tier=tier)
+    except ValueError:
         return []
 
 
@@ -79,10 +73,11 @@ def run_op(
     shapes: list[MatmulShape] | list[Shape2D] | None = None,
     warmup: int = 200,
     reps: int = 500,
+    tier: int | None = None,
 ) -> list[OpResult]:
     """Benchmark one operator across shapes and baselines."""
     if shapes is None:
-        shapes = _get_shapes(op)
+        shapes = _get_shapes(op, tier=tier)
 
     runners = get_runners_for_op(op)
     if not runners:
@@ -243,6 +238,7 @@ def run_l1(
     output_dir: str = "benchmarks/results",
     warmup: int = 200,
     reps: int = 500,
+    tier: int | None = None,
 ) -> dict[str, list[OpResult]]:
     """Run L1 benchmark suite."""
     timestamp = time.strftime("%Y-%m-%d_%H%M%S")
@@ -271,6 +267,7 @@ def run_l1(
         "ops": ops,
         "warmup": warmup,
         "reps": reps,
+        "tier": tier,
     }
     with open(base_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
@@ -288,7 +285,7 @@ def run_l1(
         logger.info(f"L1 Benchmark: {op}")
         logger.info(f"{'='*60}")
 
-        results = run_op(op, warmup=warmup, reps=reps)
+        results = run_op(op, warmup=warmup, reps=reps, tier=tier)
         all_results[op] = results
 
         csv_path = save_results(results, base_dir, op)
@@ -326,6 +323,10 @@ def main() -> None:
         "--output", default="benchmarks/results",
     )
     parser.add_argument(
+        "--tier", type=int, default=None,
+        help="Shape tier (1=fast, 2=standard, 3=full). Default: all shapes.",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true",
     )
     args = parser.parse_args()
@@ -342,7 +343,10 @@ def main() -> None:
     else:
         ops = ["matmul", "softmax"]
 
-    run_l1(ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps)
+    run_l1(
+        ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps,
+        tier=args.tier,
+    )
 
 
 if __name__ == "__main__":
