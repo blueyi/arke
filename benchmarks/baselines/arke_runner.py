@@ -95,11 +95,10 @@ class ArkeRunner(BaselineRunner):
         K: int,
         dtype: torch.dtype,
     ) -> Callable[[], torch.Tensor] | None:
-        """Get a matmul callable that always uses the Triton kernel.
+        """Get a matmul callable that uses the Arke Triton kernel.
 
-        KernelCache.matmul() falls back to cuBLAS when M < TRITON_M_THRESHOLD.
-        For benchmarking we bypass that: compile the Triton kernel directly
-        and call the raw function.
+        Compiles the kernel for the exact shape and returns the raw function
+        for benchmarking with minimal dispatch overhead.
         """
         # Force-compile the Triton kernel for this shape (bypasses threshold)
         cache.precompile_matmul([(M, N, K)])
@@ -127,10 +126,10 @@ class ArkeRunner(BaselineRunner):
         N: int,
         dtype: torch.dtype,
     ) -> Callable[[], torch.Tensor] | None:
-        """Get a softmax callable that always uses the Triton kernel.
+        """Get a softmax callable that uses the Arke Triton kernel.
 
-        KernelCache.softmax() falls back to PyTorch when M*N < SOFTMAX_THRESHOLD.
-        For benchmarking we bypass that and call the raw Triton function.
+        Compiles the kernel for the exact shape and returns the raw function
+        for benchmarking with minimal dispatch overhead.
         """
         # Force-compile the Triton kernel for this shape
         cache.precompile_softmax([(M, N)])
