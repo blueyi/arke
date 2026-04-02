@@ -1,4 +1,4 @@
-.PHONY: help setup install dev test test-gpu lint format check clean
+.PHONY: help setup install dev test test-gpu lint format check bench clean
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -35,15 +35,24 @@ test-gpu:  ## Run tests including GPU correctness tests
 	ARKE_GPU_TESTS=1 pytest tests/ -v --tb=short
 
 lint:  ## Run linter
-	ruff check arke/ tests/
+	ruff check arke/ tests/ benchmarks/
 
 format:  ## Format code
-	ruff format arke/ tests/
+	ruff format arke/ tests/ benchmarks/
 
 check:  ## Run all checks (lint + type check + test)
-	ruff check arke/ tests/
+	ruff check arke/ tests/ benchmarks/
 	mypy arke/ --ignore-missing-imports
 	pytest tests/ -v --tb=short
+
+bench:  ## Run full benchmark suite (L1 + L2 + L3)
+	python -m benchmarks --all
+
+bench-l1:  ## Run L1 single operator benchmarks
+	python -m benchmarks --layer L1
+
+bench-report:  ## Generate benchmark report from existing results
+	python -m benchmarks --report
 
 clean:  ## Clean build artifacts
 	rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache
