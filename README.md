@@ -16,11 +16,11 @@ In our context, Arke is the messenger between two worlds — translating **what 
 
 - 🤖 **AI-First Design** — LLM agents as optimization decision makers, not just code generators
 - 🪙 **Minimal-Token Efficiency** — Arke minimizes end-to-end token consumption from kernel definition through optimization to peak performance
+- 💬 **`@rationale` Annotations** — Every optimization decision carries a natural language explanation, making AI reasoning auditable
+- ⚡ **Extreme Performance** — LLM-guided strategy search achieves vendor-library-level performance across hardware targets
 - 🔗 **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are independent, enabling safe exploration
 - 🛡️ **Compiler-Verified** — Every LLM decision validated by deterministic checks (static → numerical → performance)
-- ⚡ **Extreme Performance** — LLM-guided strategy search achieves vendor-library-level performance across hardware targets
 - 🎯 **Multi-Hardware** — Single kernel definition targets NVIDIA, Ascend, and beyond (Stage 2+)
-- 💬 **`@rationale` Annotations** — Every optimization decision carries a natural language explanation, making AI reasoning auditable
 
 ## Architecture
 
