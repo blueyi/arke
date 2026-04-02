@@ -148,13 +148,13 @@ Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 | Phase | Objective | Gate | Exit Criteria | Status |
 |:-----:|:----------|:----:|:-------------|:------:|
 | **1.0** | Environment setup | G0 | `make setup` → venv + PyTorch + Triton + CUDA; GPU smoke test; ≥100 tests | ✅ |
-| **1.1** | IR + Validation | G1 | ≥10 ops, ≥6 strategy types, IR round-trip 100%; **Tier 3 全量数值验证 100%** | ✅ |
-| **1.2** | Codegen + Pipeline | G2 | IR → Triton → GPU; **Tier 3 精度 100%**; 性能 geomean ≥60% cuBLAS | ✅ |
+| **1.1** | IR + Validation | G1 | ≥10 ops, ≥6 strategy types, IR round-trip 100%; **Tier 3 full numerical validation 100%** | ✅ |
+| **1.2** | Codegen + Pipeline | G2 | IR → Triton → GPU; **Tier 3 accuracy 100%**; perf geomean ≥60% cuBLAS | ✅ |
 | **1.3** | LLM agent integration | — | LLM uses ≥8 tools, applies ≥4 decisions, zero human intervention | ✅ |
-| **1.4** | LLM closed-loop | G3 | Agent 闭环优化; **Tier 3 抽样 10 shapes 精度 100%**; 性能观测记录 | ✅ |
+| **1.4** | LLM closed-loop | G3 | Agent closed-loop optimization; **Tier 3 sampled 10 shapes accuracy 100%**; perf observed | ✅ |
 | **1.5** | Evaluation + comparison | G4 | Arke correct ≥ LLM-direct; perf ≥90% direct, ≥70% FlagGems; token ≤60% | ✅ |
 | **1.6** | .ak parser + CLI | — | `.ak` → AST → IR for ≥3 kernels; `arke parse/optimize/inspect` CLI | ✅ |
-| **1.7** | Whole-model E2E | G5 | **多配置精度 100%**; latency ≤1.15× eager; mem ≤6GB; ≥48 ops replaced | ✅ |
+| **1.7** | Whole-model E2E | G5 | **Multi-config accuracy 100%**; latency ≤1.15× eager; mem ≤6GB; ≥48 ops replaced | ✅ |
 | **1.8** | MVP release | — | CI green ×3 Python; API docs 99%; evaluation report; v0.1.0 tag | ✅ |
 
 > **Post Stage 1 TODO:** Evaluate implementation language for Stages 2–3. Consider compile-time performance, MLIR/LLVM C++ API integration ergonomics, deployment binary size, and whether a Rust/C++ rewrite of the compiler core (keeping Python for agent/LLM layer) is warranted.
@@ -210,12 +210,12 @@ Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 
 | Gate | Type | Validates | Key Criteria | Status |
 |:----:|:----:|:----------|:-------------|:------:|
-| G0 | 功能 | Environment | CUDA + Triton + GPU execution + ≥100 tests | ✅ |
-| G1 | 功能+精度 | IR & Validation | ≥10 ops, ≥6 decision types, **Tier 3 全量数值验证 100%** | ✅ |
-| G2 | 功能+精度+性能 | Codegen quality | **Tier 3 精度 100%**; 性能: ≥50% shapes ≥50% cuBLAS, geomean ≥60% | ✅ |
-| G3 | 功能+精度 | LLM agent | ≥8 tools, ≥4 decisions, 闭环无人工; **Tier 3 抽样 10 shapes 精度 100%** | ✅ |
-| G4 | 精度+性能 | Arke vs baselines | Arke correct ≥ LLM-direct; **perf ≥90% direct, ≥70% FlagGems**; token ≤60% | ✅ |
-| G5 | 精度+性能 | E2E integration | **多配置精度 100%** (3 seq × 3 batch); latency ≤1.15× eager; mem ≤6GB | ✅ |
+| G0 | Function | Environment | CUDA + Triton + GPU execution + ≥100 tests | ✅ |
+| G1 | Func+Acc | IR & Validation | ≥10 ops, ≥6 decision types, **Tier 3 full numerical validation 100%** | ✅ |
+| G2 | Func+Acc+Perf | Codegen quality | **Tier 3 accuracy 100%**; perf: ≥50% shapes ≥50% cuBLAS, geomean ≥60% | ✅ |
+| G3 | Func+Acc | LLM agent | ≥8 tools, ≥4 decisions, closed-loop autonomous; **Tier 3 sampled 10 shapes accuracy 100%** | ✅ |
+| G4 | Acc+Perf | Arke vs baselines | Arke correct ≥ LLM-direct; **perf ≥90% direct, ≥70% FlagGems**; token ≤60% | ✅ |
+| G5 | Acc+Perf | E2E integration | **Multi-config accuracy 100%** (3 seq × 3 batch); latency ≤1.15× eager; mem ≤6GB | ✅ |
 
 ---
 
