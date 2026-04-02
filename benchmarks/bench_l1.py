@@ -21,6 +21,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+import benchmarks.baselines.arke_runner  # noqa: F401
 import benchmarks.baselines.cublas  # noqa: F401
 import benchmarks.baselines.flaggems  # noqa: F401
 import benchmarks.baselines.inductor  # noqa: F401
