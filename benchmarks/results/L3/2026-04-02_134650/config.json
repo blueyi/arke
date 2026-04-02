@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-04-02_134650",
+  "model": "GPT-2 Small",
+  "seq_lens": [
+    128,
+    512
+  ],
+  "warmup_runs": 10,
+  "measure_runs": 50,
+  "layer": "L3"
+}

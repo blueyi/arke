@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-04-02_134301",
+  "ops": [
+    "matmul",
+    "softmax"
+  ],
+  "warmup": 50,
+  "reps": 100
+}

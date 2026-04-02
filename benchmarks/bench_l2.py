@@ -119,11 +119,12 @@ def _build_flaggems_fn(
 ) -> tuple[callable, str] | tuple[None, str]:
     """FlagGems-dispatched matmul + activation."""
     try:
-        import flag_gems
-
-        flag_gems.enable()
-    except ImportError:
+        from benchmarks.baselines.flaggems import _ensure_enabled
+        _ensure_enabled()
+    except (ImportError, Exception):
         return None, ""
+
+    import flag_gems
 
     A = torch.randn(M, K, device="cuda", dtype=dtype)
     B = torch.randn(K, N, device="cuda", dtype=dtype)

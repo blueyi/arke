@@ -1,0 +1,7 @@
+model,seq_len,mode,source,mean_ms,min_ms,max_ms,median_ms,peak_memory_mb,correct,max_logit_diff,mean_logit_diff,top1_match
+GPT-2 Small,128,eager,PyTorch 2.6.0+cu124 eager mode | https://pytorch.org | License: BSD-3-Clause,7.41,6.28,10.32,7.39,285.3,True,0.0000,0.000000,True
+GPT-2 Small,128,torch.compile,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,5.73,5.17,8.60,5.64,298.6,True,4.6250,0.162523,True
+GPT-2 Small,128,arke,Arke 0.1.0-dev (KernelCache monkey-patch) | https://github.com/arke-ai/arke | License: Apache-2.0,11.33,10.99,16.33,11.22,383.4,True,2.8750,0.129878,True
+GPT-2 Small,512,eager,PyTorch 2.6.0+cu124 eager mode | https://pytorch.org | License: BSD-3-Clause,11.66,11.28,13.14,11.39,617.8,True,0.0000,0.000000,True
+GPT-2 Small,512,torch.compile,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,10.13,9.70,12.31,9.77,1021.6,True,1.5000,0.048841,True
+GPT-2 Small,512,arke,Arke 0.1.0-dev (KernelCache monkey-patch) | https://github.com/arke-ai/arke | License: Apache-2.0,19.24,18.64,26.27,19.06,548.3,True,4.7500,0.057909,True

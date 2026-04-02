@@ -1,0 +1,37 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops
+matmul_relu,tiny,128,128,128,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,35.7,30.5,0.117
+matmul_relu,tiny,128,128,128,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,99.4,79.7,0.042
+matmul_relu,small,128,768,768,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,25.9,37.9,5.837
+matmul_relu,small,128,768,768,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,118.0,141.3,1.279
+matmul_relu,medium,128,2304,768,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,49.5,52.2,9.149
+matmul_relu,medium,128,2304,768,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,115.3,156.5,3.930
+matmul_relu,square-1k,1024,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,213.5,215.0,10.057
+matmul_relu,square-1k,1024,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,249.2,333.8,8.616
+matmul_relu,square-2k,2048,2048,2048,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,1000.1,922.6,17.179
+matmul_relu,square-2k,2048,2048,2048,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,1076.1,1010.7,15.965
+matmul_relu,square-4k,4096,4096,4096,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,6342.9,6137.9,21.668
+matmul_relu,square-4k,4096,4096,4096,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,6743.1,6483.9,20.382
+matmul_relu,rect-wide,1024,4096,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,478.8,477.0,17.942
+matmul_relu,rect-wide,1024,4096,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,565.9,562.2,15.180
+matmul_relu,rect-tall,4096,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,475.4,481.2,18.068
+matmul_relu,rect-tall,4096,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,541.9,550.9,15.852
+matmul_relu,lm-head,128,50257,768,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,747.4,729.1,13.221
+matmul_relu,lm-head,128,50257,768,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,1245.2,1214.5,7.936
+matmul_relu,llama-q,4096,4096,4096,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,6297.0,6132.7,21.826
+matmul_relu,llama-q,4096,4096,4096,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,6702.7,6557.5,20.505
+matmul_relu,llama-ffn,4096,11008,4096,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,16348.0,16154.6,22.594
+matmul_relu,llama-ffn,4096,11008,4096,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,17213.7,16870.2,21.458
+matmul_relu,seq512,512,2304,768,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,118.5,120.8,15.293
+matmul_relu,seq512,512,2304,768,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,133.4,180.2,13.587
+matmul_relu,tiny,128,128,128,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,119.5,135.4,0.035
+matmul_relu,small,128,768,768,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,126.1,153.6,1.198
+matmul_relu,medium,128,2304,768,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,117.9,136.2,3.842
+matmul_relu,square-1k,1024,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,115.8,159.7,18.546
+matmul_relu,square-2k,2048,2048,2048,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,1051.9,932.9,16.332
+matmul_relu,square-4k,4096,4096,4096,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,6345.8,6180.7,21.658
+matmul_relu,rect-wide,1024,4096,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,475.1,478.1,18.080
+matmul_relu,rect-tall,4096,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,477.8,481.3,17.977
+matmul_relu,lm-head,128,50257,768,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,947.6,943.1,10.427
+matmul_relu,llama-q,4096,4096,4096,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,6325.6,6191.0,21.727
+matmul_relu,llama-ffn,4096,11008,4096,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,16566.4,16140.3,22.296
+matmul_relu,seq512,512,2304,768,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,114.2,95.2,15.864
