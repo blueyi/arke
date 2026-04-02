@@ -1,8 +1,12 @@
-# Stage 1 Gate 体系 v3 — 功能优先 + 精度全过 + 性能渐进
+# Stage 1 Gate System v3 — Function-First + Accuracy-Always + Performance-Progressive
 
-## 设计原则
+## Design Principles
 
-**Gate 优先级：功能 > 精度 > 性能**
+**Gate priority: Function > Accuracy > Performance**
+
+> **Shape definitions:** All Tier 1/2/3 shapes (including non-aligned cases for every op category)
+> are defined in [benchmarks/BENCHMARK.md § Shape Matrix](../../benchmarks/BENCHMARK.md#3-shape-matrix).
+> Gate criteria reference those shapes by tier and count.
 
 每个 Gate 的本质目标不同：
 - 功能 Gate：验证某项能力是否存在（能不能做）

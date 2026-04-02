@@ -177,9 +177,16 @@ Shapes are organized into three tiers for different use cases:
 | `llama-q` | 4096 | 4096 | 4096 | 2 | LLaMA-7B | Attention Q/K/V |
 | `llama-ffn` | 4096 | 11008 | 4096 | 2 | LLaMA-7B | FFN up-projection |
 | `seq512` | 512 | 2304 | 768 | 2 | GPT-2 seq=512 | Triton sweet spot |
-| `non-align-1` | 127 | 513 | 1000 | 3 | stress | Non-power-of-2 dims |
+| `non-align-1` | 127 | 513 | 1000 | 3 | stress | Non-power-of-2 all dims |
 | `non-align-2` | 333 | 777 | 555 | 3 | stress | Odd dimensions |
-| `non-align-3` | 1023 | 1025 | 1024 | 3 | stress | Off-by-one from aligned |
+| `non-align-3` | 1023 | 1025 | 1024 | 3 | stress | Off-by-one M and N |
+| `non-align-4` | 1000 | 1000 | 1000 | 3 | stress | Round non-power-of-2 |
+| `non-align-5` | 384 | 640 | 1536 | 3 | stress | Non-power-of-2 real-world-ish |
+| `non-align-6` | 2049 | 2047 | 2050 | 3 | stress | Off-by-one from 2048 |
+| `non-align-7` | 513 | 2305 | 769 | 3 | stress | GPT-2 shapes +1 |
+| `extreme-1row` | 1 | 1024 | 1024 | 3 | stress | Single-row matmul |
+| `extreme-16` | 16 | 4096 | 4096 | 3 | stress | Very small M |
+| `extreme-long` | 8192 | 64 | 4096 | 3 | stress | Extreme M/N ratio |
 
 > Tier 3 includes 50 matmul shapes total (see `benchmarks/shapes.py` for the full list).
 
@@ -189,10 +196,29 @@ Shapes are organized into three tiers for different use cases:
 |:----|----:|----:|:----:|:------|
 | `attn-small` | 12 | 128 | 1 | GPT-2 12-head, seq=128 |
 | `attn-med` | 12 | 512 | 1 | GPT-2 12-head, seq=512 |
+| `attn-256` | 12 | 256 | 1 | GPT-2 12-head, seq=256 |
 | `attn-large` | 32 | 2048 | 2 | LLaMA 32-head, seq=2048 |
-| `square-4k` | 4096 | 4096 | 2 | Classic stress test |
-| `wide` | 1 | 50257 | 2 | Vocabulary softmax |
-| `non-align` | 13 | 513 | 3 | Non-aligned head count |
+| `attn-64` | 12 | 64 | 2 | Short attention |
+| `attn-4k` | 32 | 4096 | 2 | Long context |
+| `attn-8k` | 32 | 8192 | 2 | Very long context |
+| `square-1k` | 1024 | 1024 | 2 | Moderate stress test |
+| `square-4k` | 4096 | 4096 | 2 | Large stress test |
+| `wide-vocab` | 1 | 50257 | 2 | Vocabulary softmax |
+| `wide-llama` | 1 | 128256 | 2 | LLaMA-3 vocabulary |
+| `batch-large` | 128 | 4096 | 2 | Batch softmax |
+| `batch-xlarge` | 1024 | 1024 | 2 | Large batch |
+| `non-align-1` | 13 | 513 | 3 | Non-aligned head count + N |
+| `non-align-2` | 7 | 511 | 3 | Prime heads, off-by-one N |
+| `non-align-3` | 15 | 1023 | 3 | Non-power-of-2 dims |
+| `non-align-4` | 32 | 2049 | 3 | Off-by-one from 2048 |
+| `non-align-5` | 11 | 127 | 3 | Prime head, off-by-one N |
+| `non-align-6` | 1 | 50261 | 3 | Non-aligned vocab (prime-ish) |
+| `non-align-7` | 33 | 1000 | 3 | Non-power-of-2 both dims |
+| `extreme-tiny` | 1 | 16 | 3 | Minimal softmax |
+| `extreme-wide` | 1 | 1048576 | 3 | 1M-wide single row |
+| `extreme-tall` | 65536 | 64 | 3 | Many short rows |
+| `extreme-batch` | 4096 | 512 | 3 | Many medium rows |
+| `mixed-1` | 100 | 3000 | 3 | Round non-power-of-2 |
 
 > Tier 3 includes 25 softmax shapes total.
 
@@ -201,16 +227,42 @@ Shapes are organized into three tiers for different use cases:
 | Tag | Batch | Hidden | Tier | Notes |
 |:----|------:|-------:|:----:|:------|
 | `gpt2` | 128 | 768 | 1 | GPT-2 |
+| `gpt2-ffn` | 128 | 3072 | 1 | GPT-2 FFN intermediate |
 | `llama` | 128 | 4096 | 2 | LLaMA-7B |
+| `llama-13b` | 128 | 5120 | 2 | LLaMA-13B |
 | `large` | 2048 | 4096 | 2 | Long sequence |
+| `seq1k` | 1024 | 768 | 2 | GPT-2 long seq |
+| `batch-large` | 4096 | 4096 | 2 | Stress test |
+| `non-align-1` | 127 | 769 | 3 | Non-aligned both dims |
+| `non-align-2` | 1000 | 3000 | 3 | Round non-power-of-2 |
+| `non-align-3` | 333 | 4097 | 3 | Off-by-one hidden |
+| `non-align-4` | 2049 | 4095 | 3 | Off-by-one both |
+| `non-align-5` | 100 | 5121 | 3 | LLaMA-13B +1 |
+| `extreme-small` | 1 | 768 | 3 | Single-sample norm |
+| `extreme-large` | 8192 | 4096 | 3 | Very long sequence |
+| `extreme-hidden` | 128 | 14336 | 3 | Mixtral FFN hidden |
+
+> Tier 3 includes 15 layernorm/rmsnorm shapes total.
 
 ### Elementwise Shapes (relu, gelu, silu)
 
-| Tag | Size | Tier | Notes |
-|:----|-----:|:----:|:------|
-| `small` | 128 × 768 | 1 | GPT-2 hidden |
-| `medium` | 128 × 3072 | 1 | GPT-2 FFN |
-| `large` | 4096 × 4096 | 2 | Stress test |
+| Tag | M | N | Tier | Notes |
+|:----|----:|----:|:----:|:------|
+| `small` | 128 | 768 | 1 | GPT-2 hidden |
+| `medium` | 128 | 3072 | 1 | GPT-2 FFN |
+| `large` | 4096 | 4096 | 2 | Stress test |
+| `llama-ffn` | 4096 | 11008 | 2 | LLaMA-7B FFN |
+| `xlarge` | 8192 | 4096 | 2 | Very large |
+| `seq1k` | 1024 | 768 | 2 | GPT-2 long seq |
+| `non-align-1` | 127 | 769 | 3 | Off-by-one both dims |
+| `non-align-2` | 1000 | 3000 | 3 | Round non-power-of-2 |
+| `non-align-3` | 2049 | 4097 | 3 | Off-by-one from aligned |
+| `non-align-4` | 333 | 11009 | 3 | LLaMA FFN +1, odd batch |
+| `non-align-5` | 513 | 769 | 3 | Off-by-one, GPT-2 like |
+| `extreme-flat` | 1 | 1048576 | 3 | Single-row 1M elements |
+| `extreme-tall` | 65536 | 16 | 3 | Many very short rows |
+| `extreme-wide` | 32768 | 128 | 3 | Many medium rows |
+| `mixed-1` | 100 | 14336 | 3 | Mixtral FFN, round batch |
 
 > Tier 3 includes 15 elementwise shapes total.
 
