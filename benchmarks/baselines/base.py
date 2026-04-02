@@ -33,6 +33,11 @@ class BaselineRunner(ABC):
 
     @property
     @abstractmethod
+    def source(self) -> str:
+        """Provenance: package name, version, and origin URL."""
+
+    @property
+    @abstractmethod
     def available(self) -> bool:
         """Whether this baseline's dependencies are installed."""
 

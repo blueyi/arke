@@ -25,6 +25,14 @@ class InductorRunner(BaselineRunner):
         return 4
 
     @property
+    def source(self) -> str:
+        v = torch.__version__
+        return (
+            f"torch.compile (Inductor) via PyTorch {v} | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+
+    @property
     def available(self) -> bool:
         return torch.cuda.is_available() and hasattr(torch, "compile")
 

@@ -30,6 +30,14 @@ class PyTorchEagerRunner(BaselineRunner):
         return 3
 
     @property
+    def source(self) -> str:
+        v = torch.__version__
+        return (
+            f"PyTorch {v} eager mode (default dispatch) | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+
+    @property
     def available(self) -> bool:
         return torch.cuda.is_available()
 

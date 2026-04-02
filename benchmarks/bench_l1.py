@@ -26,7 +26,7 @@ import benchmarks.baselines.flaggems  # noqa: F401
 import benchmarks.baselines.inductor  # noqa: F401
 import benchmarks.baselines.liger  # noqa: F401
 import benchmarks.baselines.pytorch_eager  # noqa: F401
-from benchmarks.baselines.base import get_runners_for_op
+from benchmarks.baselines.base import get_all_runners, get_runners_for_op
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
 from benchmarks.shapes import (
@@ -54,6 +54,7 @@ class OpResult:
     K: int
     baseline: str
     priority: int
+    source: str
     latency_us: float
     latency_min_us: float
     tflops: float | None = None
@@ -94,47 +95,58 @@ def run_op(
 
     results: list[OpResult] = []
 
-    for shape in shapes:
-        if isinstance(shape, MatmulShape):
-            tag, M, N, K = shape.tag, shape.M, shape.N, shape.K
-        else:
-            tag, M, N, K = shape.tag, shape.M, shape.N, 0
+    # IMPORTANT: FlagGems.enable() globally replaces ATen dispatch.
+    # Run ALL non-FlagGems baselines first (for all shapes),
+    # then FlagGems last. This prevents FlagGems from polluting
+    # cuBLAS/PyTorch measurements.
+    non_fg_runners = [r for r in runners if r.name != "FlagGems"]
+    fg_runners = [r for r in runners if r.name == "FlagGems"]
 
-        for runner in runners:
-            fn = runner.get_fn(op, M, N, K)
-            if fn is None:
-                logger.debug(
-                    f"  {runner.name} does not support {op}@{tag}, skipping"
-                )
-                continue
+    for runner_group in [non_fg_runners, fg_runners]:
+        for shape in shapes:
+            if isinstance(shape, MatmulShape):
+                tag, M, N, K = shape.tag, shape.M, shape.N, shape.K
+            else:
+                tag, M, N, K = shape.tag, shape.M, shape.N, 0
 
-            try:
-                bench_result: BenchResult = bench_fn(fn, warmup=warmup, reps=reps)
+            for runner in runner_group:
+                fn = runner.get_fn(op, M, N, K)
+                if fn is None:
+                    logger.debug(
+                        f"  {runner.name} does not support {op}@{tag}, skipping"
+                    )
+                    continue
 
-                tflops = None
-                if op in ("matmul", "batch_matmul") and K > 0:
-                    tflops = compute_matmul_tflops(M, N, K, bench_result.latency_us)
+                try:
+                    bench_result: BenchResult = bench_fn(fn, warmup=warmup, reps=reps)
 
-                result = OpResult(
-                    op=op,
-                    shape_tag=tag,
-                    M=M,
-                    N=N,
-                    K=K,
-                    baseline=runner.name,
-                    priority=runner.priority,
-                    latency_us=bench_result.latency_us,
-                    latency_min_us=bench_result.latency_min_us,
-                    tflops=tflops,
-                )
-                results.append(result)
-                tflops_str = f" {tflops:.2f} TFLOPS" if tflops else ""
-                logger.info(
-                    f"  {tag:15s} {runner.name:15s} "
-                    f"{bench_result.latency_us:8.1f} μs{tflops_str}"
-                )
-            except Exception as e:
-                logger.warning(f"  {tag} {runner.name}: FAILED ({e})")
+                    tflops = None
+                    if op in ("matmul", "batch_matmul") and K > 0:
+                        tflops = compute_matmul_tflops(
+                            M, N, K, bench_result.latency_us
+                        )
+
+                    result = OpResult(
+                        op=op,
+                        shape_tag=tag,
+                        M=M,
+                        N=N,
+                        K=K,
+                        baseline=runner.name,
+                        priority=runner.priority,
+                        source=runner.source,
+                        latency_us=bench_result.latency_us,
+                        latency_min_us=bench_result.latency_min_us,
+                        tflops=tflops,
+                    )
+                    results.append(result)
+                    tflops_str = f" {tflops:.2f} TFLOPS" if tflops else ""
+                    logger.info(
+                        f"  {tag:15s} {runner.name:15s} "
+                        f"{bench_result.latency_us:8.1f} μs{tflops_str}"
+                    )
+                except Exception as e:
+                    logger.warning(f"  {tag} {runner.name}: FAILED ({e})")
 
     return results
 
@@ -149,7 +161,7 @@ def save_results(
     csv_path = output_dir / f"{op}_results.csv"
 
     fieldnames = [
-        "op", "shape_tag", "M", "N", "K", "baseline", "priority",
+        "op", "shape_tag", "M", "N", "K", "baseline", "priority", "source",
         "latency_us", "latency_min_us", "tflops",
     ]
 
@@ -165,6 +177,7 @@ def save_results(
                 "K": r.K,
                 "baseline": r.baseline,
                 "priority": r.priority,
+                "source": r.source,
                 "latency_us": f"{r.latency_us:.1f}",
                 "latency_min_us": f"{r.latency_min_us:.1f}",
                 "tflops": f"{r.tflops:.3f}" if r.tflops else "",
@@ -239,6 +252,18 @@ def run_l1(
     hw = collect_hardware_info()
     hw.save(str(base_dir / "hardware.json"))
 
+    # Save baseline sources manifest
+    all_runners = get_all_runners()
+    sources_manifest = {
+        r.name: {
+            "priority": f"P{r.priority}",
+            "source": r.source,
+        }
+        for r in all_runners
+    }
+    with open(base_dir / "sources.json", "w") as f:
+        json.dump(sources_manifest, f, indent=2)
+
     # Save config
     config = {
         "timestamp": timestamp,
@@ -250,6 +275,12 @@ def run_l1(
         json.dump(config, f, indent=2)
 
     all_results: dict[str, list[OpResult]] = {}
+
+    # Print baseline sources
+    logger.info("Baseline Sources:")
+    for r in get_all_runners():
+        logger.info(f"  P{r.priority} {r.name}: {r.source}")
+    logger.info("")
 
     for op in ops:
         logger.info(f"\n{'='*60}")

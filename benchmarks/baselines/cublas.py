@@ -25,6 +25,15 @@ class CuBLASRunner(BaselineRunner):
         return 0
 
     @property
+    def source(self) -> str:
+        v = torch.__version__
+        cuda = torch.version.cuda or "unknown"
+        return (
+            f"NVIDIA cuBLAS/cuDNN via PyTorch {v} (CUDA {cuda}) | "
+            "https://pytorch.org | License: NVIDIA EULA (proprietary)"
+        )
+
+    @property
     def available(self) -> bool:
         return torch.cuda.is_available()
 

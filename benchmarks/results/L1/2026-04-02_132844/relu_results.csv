@@ -1,0 +1,13 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+relu,small,128,768,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),62.7,39.8,
+relu,small,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,85.9,90.1,
+relu,small,128,768,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,263.0,234.5,
+relu,medium,128,3072,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),59.1,88.1,
+relu,medium,128,3072,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,60.0,84.0,
+relu,medium,128,3072,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,236.2,236.5,
+relu,large,4096,4096,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),216.2,219.1,
+relu,large,4096,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,216.2,219.1,
+relu,large,4096,4096,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,443.1,481.3,
+relu,small,128,768,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,56.4,87.8,
+relu,medium,128,3072,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,57.3,88.1,
+relu,large,4096,4096,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,215.6,218.1,

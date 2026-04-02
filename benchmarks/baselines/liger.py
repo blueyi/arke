@@ -36,6 +36,19 @@ class LigerRunner(BaselineRunner):
         return 1
 
     @property
+    def source(self) -> str:
+        v = "unknown"
+        try:
+            from importlib.metadata import version
+            v = version("liger-kernel")
+        except Exception:
+            pass
+        return (
+            f"Liger-Kernel {v} (LinkedIn) | "
+            "https://github.com/linkedin/Liger-Kernel | License: BSD-2-Clause"
+        )
+
+    @property
     def available(self) -> bool:
         return _AVAILABLE and torch.cuda.is_available()
 
