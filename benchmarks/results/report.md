@@ -1,6 +1,6 @@
 # Arke Benchmark Report
 
-Generated: 2026-04-02 13:47:39
+Generated: 2026-04-02 20:47:12
 
 ## Hardware
 
