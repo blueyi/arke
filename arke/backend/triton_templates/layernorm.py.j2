@@ -55,6 +55,15 @@ def {{ kernel_name }}(
     BLOCK_N = triton.next_power_of_2(N)
     # Clamp BLOCK_N to avoid overly large blocks
     BLOCK_N = min(BLOCK_N, 65536)
+    # Heuristic num_warps selection
+    if BLOCK_N <= 256:
+        num_warps = 2
+    elif BLOCK_N <= 2048:
+        num_warps = 4
+    elif BLOCK_N <= 8192:
+        num_warps = 8
+    else:
+        num_warps = 16
     has_bias = bias is not None
     if not has_bias:
         bias = torch.zeros(1, device=X.device, dtype=X.dtype)  # dummy
@@ -67,5 +76,6 @@ def {{ kernel_name }}(
         eps=eps,
         BLOCK_N=BLOCK_N,
         HAS_BIAS=has_bias,
+        num_warps=num_warps,
     )
     return Y

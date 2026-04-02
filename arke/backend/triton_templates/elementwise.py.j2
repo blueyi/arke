@@ -2,7 +2,7 @@
 import torch
 import triton
 import triton.language as tl
-import math
+
 
 @triton.jit
 def {{ kernel_name }}_kernel(
@@ -35,7 +35,18 @@ def {{ kernel_name }}_kernel(
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     Y = torch.empty_like(X)
     n_elements = X.numel()
-    BLOCK_SIZE = 1024
+    # Heuristic: larger blocks reduce grid overhead for large tensors
+    if n_elements <= 65536:
+        BLOCK_SIZE = 1024
+        num_warps = 4
+    elif n_elements <= 524288:
+        BLOCK_SIZE = 4096
+        num_warps = 4
+    else:
+        BLOCK_SIZE = 8192
+        num_warps = 8
     grid = (triton.cdiv(n_elements, BLOCK_SIZE),)
-    {{ kernel_name }}_kernel[grid](X, Y, n_elements, BLOCK_SIZE=BLOCK_SIZE)
+    {{ kernel_name }}_kernel[grid](
+        X, Y, n_elements, BLOCK_SIZE=BLOCK_SIZE, num_warps=num_warps,
+    )
     return Y

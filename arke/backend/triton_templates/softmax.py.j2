@@ -3,6 +3,7 @@ import torch
 import triton
 import triton.language as tl
 
+
 @triton.jit
 def {{ kernel_name }}_kernel(
     X_ptr, Y_ptr,
@@ -10,27 +11,24 @@ def {{ kernel_name }}_kernel(
     stride_xm, stride_xn,
     stride_ym, stride_yn,
     BLOCK_N: tl.constexpr,
-    ROWS_PER_PROG: tl.constexpr,
 ):
-    pid = tl.program_id(0)
-    row_start = pid * ROWS_PER_PROG
+    row = tl.program_id(0)
+    if row >= M:
+        return
     offs_n = tl.arange(0, BLOCK_N)
     n_mask = offs_n < N
 
-    for row_offset in range(ROWS_PER_PROG):
-        row = row_start + row_offset
-        if row < M:
-            x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
-            x = tl.load(x_ptrs, mask=n_mask, other=-float('inf'))
+    x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
+    x = tl.load(x_ptrs, mask=n_mask, other=-float('inf'))
 
-            x_max = tl.max(x, axis=0)
-            x_shifted = x - x_max
-            exp_x = tl.exp(x_shifted)
-            sum_exp = tl.sum(exp_x, axis=0)
-            y = exp_x / sum_exp
+    x_max = tl.max(x, axis=0)
+    x_shifted = x - x_max
+    exp_x = tl.exp(x_shifted)
+    sum_exp = tl.sum(exp_x, axis=0)
+    y = exp_x / sum_exp
 
-            y_ptrs = Y_ptr + row * stride_ym + offs_n * stride_yn
-            tl.store(y_ptrs, y, mask=n_mask)
+    y_ptrs = Y_ptr + row * stride_ym + offs_n * stride_yn
+    tl.store(y_ptrs, y, mask=n_mask)
 
 
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
@@ -38,21 +36,22 @@ def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     M, N = X.shape
     Y = torch.empty_like(X)
     BLOCK_N = triton.next_power_of_2(N)
-    # Process multiple rows per program for small M
-    if M <= 32:
-        ROWS_PER_PROG = max(1, 4)
-    elif M <= 128:
-        ROWS_PER_PROG = 2
+    # Heuristic num_warps selection based on row width
+    if BLOCK_N <= 256:
+        num_warps = 2
+    elif BLOCK_N <= 2048:
+        num_warps = 4
+    elif BLOCK_N <= 8192:
+        num_warps = 8
     else:
-        ROWS_PER_PROG = 1
-    n_progs = triton.cdiv(M, ROWS_PER_PROG)
-    grid = (n_progs,)
+        num_warps = 16
+    grid = (M,)
     {{ kernel_name }}_kernel[grid](
         X, Y,
         M, N,
         X.stride(0), X.stride(1),
         Y.stride(0), Y.stride(1),
         BLOCK_N=BLOCK_N,
-        ROWS_PER_PROG=ROWS_PER_PROG,
+        num_warps=num_warps,
     )
     return Y
