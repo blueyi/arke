@@ -15,7 +15,7 @@ In our context, Arke is the messenger between two worlds — translating **what 
 ## Key Features
 
 - 🤖 **AI-First Design** — LLM agents as optimization decision makers, not just code generators
-- 🪙 **Minimal-Token Efficiency** — An `.ak` kernel is 10–50× shorter than equivalent Python/Triton code. LLMs generate optimal GPU kernels from minimal token budgets, dramatically reducing cost and latency vs. direct code generation
+- 🪙 **Minimal-Token Efficiency** — `.ak` kernels express compute intent in an order of magnitude fewer tokens than hand-written low-level code. LLMs spend tokens on *what to compute*, not *how to implement it*, maximizing optimization throughput per token budget
 - 🔗 **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are independent, enabling safe exploration
 - 🛡️ **Compiler-Verified** — Every LLM decision validated by deterministic checks (static → numerical → performance)
 - ⚡ **Extreme Performance** — LLM-guided strategy search achieves vendor-library-level performance across hardware targets
