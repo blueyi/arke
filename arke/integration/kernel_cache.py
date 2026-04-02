@@ -87,13 +87,27 @@ class KernelCache:
         out_shape = list(orig_shape[:-1]) + [n]
         return out.reshape(out_shape)
 
+    # Maximum N for single-block softmax (Triton constexpr limit).
+    # Beyond this, compilation is extremely slow or OOM.
+    SOFTMAX_MAX_N = 131072  # 128K elements
+
     def softmax(self, x: torch.Tensor) -> torch.Tensor:
-        """Direct softmax dispatch — always uses Arke Triton kernel."""
+        """Direct softmax dispatch — always uses Arke Triton kernel.
+
+        Raises ValueError for N > SOFTMAX_MAX_N (single-block limitation).
+        """
         orig_shape = x.shape
         m = 1
         for d in orig_shape[:-1]:
             m *= d
         n = orig_shape[-1]
+
+        if n > self.SOFTMAX_MAX_N:
+            raise ValueError(
+                f"Arke softmax: N={n} exceeds single-block limit "
+                f"({self.SOFTMAX_MAX_N}). Multi-block softmax not yet "
+                f"implemented."
+            )
 
         key = (m, n)
         func = self._softmax_cache.get(key)

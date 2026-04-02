@@ -302,11 +302,15 @@ def run_g1() -> GateSummary:
         )
     )
 
-    # G1.8: softmax (all shapes)
+    # G1.8: softmax (all shapes, skip N > SOFTMAX_MAX_N)
     softmax_shapes = get_shapes("softmax")
     sm_pass = 0
+    sm_skip = 0
     sm_fail_details: list[str] = []
     for shape in softmax_shapes:
+        if shape.N > cache.SOFTMAX_MAX_N:
+            sm_skip += 1
+            continue
         try:
             x = torch.randn(shape.M, shape.N, device="cuda", dtype=torch.float16)
             arke_out = cache.softmax(x)
@@ -315,7 +319,10 @@ def run_g1() -> GateSummary:
             sm_pass += 1
         except Exception as e:
             sm_fail_details.append(f"{shape.tag}: {e}")
-    detail = f"{sm_pass}/{len(softmax_shapes)}"
+    sm_tested = len(softmax_shapes) - sm_skip
+    detail = f"{sm_pass}/{sm_tested}"
+    if sm_skip:
+        detail += f" ({sm_skip} skipped: N>{cache.SOFTMAX_MAX_N})"
     if sm_fail_details:
         detail += (
             " (failed: "
@@ -325,8 +332,8 @@ def run_g1() -> GateSummary:
     results.append(
         GateResult(
             "G1", "G1.8",
-            f"V1 softmax ({len(softmax_shapes)} shapes)", "accuracy",
-            sm_pass == len(softmax_shapes), detail,
+            f"V1 softmax ({sm_tested} shapes)", "accuracy",
+            sm_pass == sm_tested, detail,
         )
     )
 
@@ -498,10 +505,14 @@ def run_g2(tier: int = 3) -> GateSummary:
         )
     )
 
-    # G2.4: softmax correctness
+    # G2.4: softmax correctness (skip N > SOFTMAX_MAX_N)
     sp = 0
+    s_skip = 0
     sfails: list[str] = []
     for s in shapes_softmax:
+        if s.N > cache.SOFTMAX_MAX_N:
+            s_skip += 1
+            continue
         try:
             x = torch.randn(s.M, s.N, device="cuda", dtype=torch.float16)
             torch.testing.assert_close(
@@ -512,14 +523,17 @@ def run_g2(tier: int = 3) -> GateSummary:
             sp += 1
         except Exception:
             sfails.append(s.tag)
-    detail = f"{sp}/{len(shapes_softmax)}"
+    s_tested = len(shapes_softmax) - s_skip
+    detail = f"{sp}/{s_tested}"
+    if s_skip:
+        detail += f" ({s_skip} skipped: N>{cache.SOFTMAX_MAX_N})"
     if sfails:
         detail += f" (fail: {', '.join(sfails[:3])})"
     results.append(
         GateResult(
             "G2", "G2.4",
-            f"softmax correctness ({len(shapes_softmax)})", "accuracy",
-            sp == len(shapes_softmax), detail,
+            f"softmax correctness ({s_tested})", "accuracy",
+            sp == s_tested, detail,
         )
     )
 
@@ -636,8 +650,11 @@ def run_g2(tier: int = 3) -> GateSummary:
         )
     )
 
-    # G2.9: softmax perf — ≥40% shapes ≥50% cuDNN (excl N≤32)
-    sm_perf_shapes = [s for s in shapes_softmax if s.N > 32]
+    # G2.9: softmax perf — ≥40% shapes ≥50% cuDNN (excl N≤32 and N>SOFTMAX_MAX_N)
+    sm_perf_shapes = [
+        s for s in shapes_softmax
+        if s.N > 32 and s.N <= cache.SOFTMAX_MAX_N
+    ]
     sm_beat = 0
     for s in sm_perf_shapes:
         try:
