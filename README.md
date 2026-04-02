@@ -15,7 +15,7 @@ In our context, Arke is the messenger between two worlds — translating **what 
 ## Key Features
 
 - 🤖 **AI-First Design** — LLM agents as optimization decision makers, not just code generators
-- 🪙 **Minimal-Token Efficiency** — `.ak` kernels express compute intent in an order of magnitude fewer tokens than hand-written low-level code. LLMs spend tokens on *what to compute*, not *how to implement it*, maximizing optimization throughput per token budget
+- 🪙 **Minimal-Token Efficiency** — Arke minimizes end-to-end token consumption from kernel definition through optimization to peak performance. Semantic IR captures intent concisely, strategy decisions are discrete structured actions (not free-form code), and compiler-driven verification eliminates costly trial-and-error — so LLMs reach optimal kernels spending the fewest tokens possible
 - 🔗 **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are independent, enabling safe exploration
 - 🛡️ **Compiler-Verified** — Every LLM decision validated by deterministic checks (static → numerical → performance)
 - ⚡ **Extreme Performance** — LLM-guided strategy search achieves vendor-library-level performance across hardware targets
@@ -89,23 +89,25 @@ strategy fused_matmul_relu for target("nvidia_ampere") {
 
 ### Token Efficiency
 
-The same fused matmul+relu kernel in different representations (GPT-4 tokenizer):
+Arke minimizes token consumption across the full optimization pipeline — not just the kernel definition, but the entire path from specification to peak performance.
 
-| Representation | Tokens | Ratio | Result |
-|:--------------|-------:|:-----:|:-------|
-| **Arke `.ak`** (kernel only) | 72 | **1×** | ≥100% cuBLAS, compiler-verified |
-| **Arke `.ak`** (kernel + strategy) | 160 | 2× | Full optimization specification |
-| Triton (autotuned, hand-written) | 1,102 | 15× | Requires expert knowledge |
-| LLM direct-write Triton | 563 | 8× | 83% correct, inconsistent perf |
+**Representation cost** (GPT-4 tokenizer, fused matmul+relu):
 
-Arke's semantic representation lets an LLM express **intent** in ~70 tokens,
-then the compiler handles tiling, fusion, memory layout, and autotuning —
-decisions that otherwise cost hundreds of tokens of fragile Triton code.
+| Representation | Tokens | Ratio |
+|:--------------|-------:|:-----:|
+| **Arke `.ak`** (kernel only) | 72 | **1×** |
+| **Arke `.ak`** (kernel + strategy) | 160 | 2× |
+| LLM direct-write Triton | 563 | 8× |
+| Triton (autotuned, hand-written) | 1,102 | 15× |
 
-**Why this matters:**
-- **Lower cost** — 8–15× fewer output tokens per kernel
-- **Faster iteration** — More optimization attempts within the same context window
-- **Higher reliability** — Compiler guarantees correctness; LLM only decides *what*, not *how*
+**End-to-end optimization cost** — beyond representation, Arke reduces tokens at every stage:
+
+- **Kernel definition**: Semantic IR captures intent; no tiling/masking/memory boilerplate
+- **Strategy search**: Each optimization decision is a structured action (~10 tokens), not a full code rewrite (~500 tokens)
+- **Verification**: Compiler checks correctness deterministically — no multi-turn "fix this bug" debugging loops
+- **Iteration**: Failed strategies roll back cleanly; the LLM tries the next option without regenerating the whole kernel
+
+The result: LLMs reach peak-performance kernels spending a fraction of the tokens that direct code generation requires.
 
 ## Python API
 
