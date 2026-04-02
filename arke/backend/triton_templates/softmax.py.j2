@@ -10,37 +10,49 @@ def {{ kernel_name }}_kernel(
     stride_xm, stride_xn,
     stride_ym, stride_yn,
     BLOCK_N: tl.constexpr,
+    ROWS_PER_PROG: tl.constexpr,
 ):
-    pid_m = tl.program_id(0)
+    pid = tl.program_id(0)
+    row_start = pid * ROWS_PER_PROG
     offs_n = tl.arange(0, BLOCK_N)
-    mask = offs_n < N
+    n_mask = offs_n < N
 
-    x_ptrs = X_ptr + pid_m * stride_xm + offs_n * stride_xn
-    x = tl.load(x_ptrs, mask=mask, other=-float('inf'))
+    for row_offset in range(ROWS_PER_PROG):
+        row = row_start + row_offset
+        if row < M:
+            x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
+            x = tl.load(x_ptrs, mask=n_mask, other=-float('inf'))
 
-    # Numerically stable softmax: subtract max, exp, normalize
-    x_max = tl.max(x, axis=0)
-    x_shifted = x - x_max
-    exp_x = tl.exp(x_shifted)
-    sum_exp = tl.sum(exp_x, axis=0)
-    y = exp_x / sum_exp
+            x_max = tl.max(x, axis=0)
+            x_shifted = x - x_max
+            exp_x = tl.exp(x_shifted)
+            sum_exp = tl.sum(exp_x, axis=0)
+            y = exp_x / sum_exp
 
-    y_ptrs = Y_ptr + pid_m * stride_ym + offs_n * stride_yn
-    tl.store(y_ptrs, y, mask=mask)
+            y_ptrs = Y_ptr + row * stride_ym + offs_n * stride_yn
+            tl.store(y_ptrs, y, mask=n_mask)
 
 
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     assert X.ndim == 2, "softmax expects 2D input"
     M, N = X.shape
     Y = torch.empty_like(X)
-    # BLOCK_N must be >= N and a power of 2
     BLOCK_N = triton.next_power_of_2(N)
-    grid = (M,)
+    # Process multiple rows per program for small M
+    if M <= 32:
+        ROWS_PER_PROG = max(1, 4)
+    elif M <= 128:
+        ROWS_PER_PROG = 2
+    else:
+        ROWS_PER_PROG = 1
+    n_progs = triton.cdiv(M, ROWS_PER_PROG)
+    grid = (n_progs,)
     {{ kernel_name }}_kernel[grid](
         X, Y,
         M, N,
         X.stride(0), X.stride(1),
         Y.stride(0), Y.stride(1),
         BLOCK_N=BLOCK_N,
+        ROWS_PER_PROG=ROWS_PER_PROG,
     )
     return Y

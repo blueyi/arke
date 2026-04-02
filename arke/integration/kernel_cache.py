@@ -62,15 +62,22 @@ class KernelCache:
                 del x
                 self._softmax_cache[(m, n)] = func
 
+    # Threshold: use cuBLAS for matmuls where M is small (Triton launch overhead
+    # dominates). Empirically on Ampere: Triton wins when M ≥ 512.
+    TRITON_M_THRESHOLD = 384  # Use Triton only when M ≥ this
+
     def matmul(self, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-        """Direct matmul dispatch — handles 3D inputs (batch × seq × hidden)."""
+        """Direct matmul dispatch — cuBLAS for small M, Triton for large M."""
         orig_shape = a.shape
-        # Flatten to 2D: [*, K] → [M, K]
         k = a.shape[-1]
         m = 1
         for d in orig_shape[:-1]:
             m *= d
         n = b.shape[-1]
+
+        # Small M fast path: cuBLAS is faster due to lower launch overhead
+        if m < self.TRITON_M_THRESHOLD:
+            return torch.matmul(a, b)
 
         a_2d = a.reshape(m, k).contiguous()
         b_2d = b.contiguous()
@@ -82,17 +89,24 @@ class KernelCache:
             self._matmul_cache[key] = func
 
         out = func(a_2d, b_2d)
-        # Reshape back: [M, N] → [*, N]
         out_shape = list(orig_shape[:-1]) + [n]
         return out.reshape(out_shape)
 
+    # Softmax threshold: PyTorch is faster for small M*N
+    SOFTMAX_THRESHOLD = 64 * 1024  # ~64K elements
+
     def softmax(self, x: torch.Tensor) -> torch.Tensor:
-        """Direct softmax dispatch — zero overhead after precompile."""
+        """Direct softmax dispatch — falls back to PyTorch for small shapes."""
         orig_shape = x.shape
         m = 1
         for d in orig_shape[:-1]:
             m *= d
         n = orig_shape[-1]
+
+        # Small shape fast path
+        if m * n < self.SOFTMAX_THRESHOLD:
+            return torch.nn.functional.softmax(x, dim=-1)
+
         key = (m, n)
         func = self._softmax_cache.get(key)
         if func is None:
