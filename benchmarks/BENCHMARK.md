@@ -889,46 +889,58 @@ class BaselineRunner(ABC):
 
 ### Runner Implementations
 
-| Runner | Tier | Status | Notes |
+| Runner | Tier | Status | Ops Supported |
 |:-------|:----:|:------:|:------|
-| `CuBLASRunner` | P0 | ✅ | cuBLAS via torch.matmul/torch.mm |
-| `CuDNNRunner` | P0 | ✅ | cuDNN via PyTorch (softmax, layernorm, SDPA) |
-| `FlagGemsRunner` | P1 | ✅ | FlagGems Triton operators |
-| `LigerRunner` | P1 | ✅ | Liger-Kernel operators |
-| `FlashAttnRunner` | P1 | ⬜ | FlashAttention Triton |
-| `TritonTutorialRunner` | P2 | ⬜ | Triton official tutorial kernels |
-| `PyTorchEagerRunner` | P3 | ✅ | PyTorch eager mode ops |
-| `InductorRunner` | P4 | ✅ | torch.compile generated kernels |
-| `LLMDirectRunner` | P5 | ⬜ | LLM writes Triton directly |
-| `ArkeRunner` | — | ✅ | Arke pipeline: IR → strategy → codegen → verify |
+| `CuBLASRunner` | P0 | ✅ | matmul, softmax, layernorm, gelu, relu, silu, dropout |
+| `FlagGemsRunner` | P1 | ✅ | matmul, softmax, layernorm, rmsnorm, gelu, relu, silu, dropout |
+| `LigerRunner` | P1 | ✅ | rmsnorm, gelu, silu, rope |
+| `FlashAttnRunner` | P1 | ⬜ | (planned: fused_attention) |
+| `TritonTutorialRunner` | P2 | ✅ | matmul, softmax |
+| `PyTorchEagerRunner` | P3 | ✅ | matmul, softmax, layernorm, gelu, relu, silu |
+| `InductorRunner` | P4 | ✅ | matmul, softmax, layernorm, gelu, relu, silu |
+| `LLMDirectRunner` | P5 | ⬜ | (planned: all ops via LLM codegen) |
+| `ArkeRunner` | — | ✅ | matmul, softmax |
 
 ### Benchmark Components
 
 | Component | Status | Description |
 |:----------|:------:|:------------|
-| `baselines/` directory | ✅ | BaselineRunner ABC + all runner classes |
-| `shapes.py` | ✅ | Shape matrix as structured config |
-| `measure.py` | ✅ | Unified measurement function |
-| `bench_l1.py` | ✅ | L1 single operator benchmarks |
+| `baselines/` directory | ✅ | BaselineRunner ABC + 8 runner classes |
+| `shapes.py` | ✅ | 77 shapes with Tier 1/2/3 tagging and `get_shapes(op, tier=N)` |
+| `measure.py` | ✅ | CUDA event timing, warmup/reps configurable |
+| `bench_l1.py` | ✅ | L1 single operator benchmarks with `--tier` filtering |
 | `bench_l2.py` | ✅ | L2 fused operator benchmarks |
-| `bench_l3.py` | ✅ | L3 E2E model benchmarks |
+| `bench_l3.py` | ✅ | L3 E2E model benchmarks (GPT-2) |
+| `gate.py` | ✅ | Gate verification CLI (`python -m benchmarks gate G0`) |
 | `cli.py` | ✅ | Unified CLI entry point (`python -m benchmarks`) |
 | `report.py` | ✅ | Markdown report generator |
 | Hardware info collection | ✅ | `hardware.json` per run |
 | Provenance tracking | ✅ | CSV source column + `sources.json` |
-| `arke bench` CLI | ⬜ | Planned unified CLI |
-| `arke gate` CLI | ⬜ | Planned gate verification CLI |
+| `arke bench` CLI | ⬜ | Planned unified CLI (currently `python -m benchmarks`) |
+| `arke gate` CLI | ⬜ | Planned unified CLI (currently `python -m benchmarks gate`) |
 | Cross-run comparison | ⬜ | `arke bench diff` |
 | CI integration | ⬜ | GitHub Actions regression mode |
+
+### Gate Implementation Status
+
+| Gate | Status | Description |
+|:-----|:------:|:------------|
+| G0 | ✅ | Environment Feasibility (4 criteria, all PASS) |
+| G1 | ⬜ | IR Expressiveness & Validation Correctness |
+| G2 | ⬜ | Codegen Correctness & Baseline Performance |
+| G3 | ⬜ | LLM Agent Autonomous Optimization |
+| G4 | ⬜ | Comparative Advantage over Direct LLM |
+| G5 | ⬜ | End-to-End Model Integration |
 
 ### Development Roadmap (Benchmark-Driven)
 
 | Sprint | Focus | Status |
 |:-------|:------|:------:|
-| Sprint 1 | Infrastructure + L1 Core (matmul, softmax) | ✅ |
-| Sprint 2 | L1 Extended (layernorm, elementwise) | ⬜ |
-| Sprint 3 | L2 Fused + L3 E2E refinement | ✅ (partial) |
-| Sprint 4 | CI + Advanced (regression, cross-run, rope, cross_entropy) | ⬜ |
+| Sprint 1 | Infrastructure + L1 Core (shapes, runners, measurement) | ✅ |
+| Sprint 2 | L1 Extended (Tier 2/3 shapes, TritonTutorial runner, gate CLI) | ✅ |
+| Sprint 3 | L2 Fused + L3 E2E refinement | ✅ (partial — L2/L3 run but limited ops) |
+| Sprint 4 | Gate G1-G5 implementation | ⬜ |
+| Sprint 5 | CI + Advanced (regression, cross-run, FlashAttn, LLMDirect) | ⬜ |
 
 ---
 
