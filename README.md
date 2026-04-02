@@ -155,7 +155,7 @@ Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 | **1.5** | Evaluation + comparison | ≥5 benchmark tasks; Arke correctness ≥ LLM-direct-Triton; **Arke mean perf ≥ LLM-direct-Triton mean perf**; variance ≤ direct | ✅ |
 | **1.6** | .ak parser + CLI | `.ak` → AST → Semantic IR for ≥3 kernels; `arke parse/optimize/inspect` CLI commands functional | ✅ |
 | **1.7** | Whole-model E2E | GPT-2 Small with ≥2 Arke-replaced ops, output matches PyTorch reference, **inference latency ≤ eager** | ✅ (1.01×) |
-| **1.8** | MVP release | CI green on 3 Python versions; API docs complete; evaluation report with reproducible data; v0.1.0 tag | ⬅ |
+| **1.8** | MVP release | CI green on 3 Python versions; API docs complete; evaluation report with reproducible data; v0.1.0 tag | ✅ |
 
 > **Post Stage 1 TODO:** Evaluate implementation language for Stages 2–3. Consider compile-time performance, MLIR/LLVM C++ API integration ergonomics, deployment binary size, and whether a Rust/C++ rewrite of the compiler core (keeping Python for agent/LLM layer) is warranted.
 
@@ -330,6 +330,7 @@ benchmarks/                    # Benchmark System
 | [benchmarks/BENCHMARK_DESIGN.md](benchmarks/BENCHMARK_DESIGN.md) | Design — three-layer architecture, scoring system, quality gates |
 | [benchmarks/OPERATOR_SOURCES.md](benchmarks/OPERATOR_SOURCES.md) | Operator source registry — 8 categories of GPU kernels with provenance |
 | [benchmarks/SYNERGY.md](benchmarks/SYNERGY.md) | Benchmark ↔ Arke co-development — target-driven development loop |
+| [benchmarks/results/EVALUATION_REPORT.md](benchmarks/results/EVALUATION_REPORT.md) | **Stage 1 Evaluation Report** — all gates, L1/L2/L3 data, conclusions |
 
 ## License
 

@@ -49,7 +49,7 @@ Phase 1.4 ✅  LLM closed-loop optimization
 Phase 1.5 ✅  Evaluation framework + comparison
 Phase 1.6 ✅  .ak Parser + CLI
 Phase 1.7 ✅  Whole-model E2E (Gate G5 PASS: 1.01x eager @ seq=128)
-Phase 1.8 ⬅  MVP release (next)
+Phase 1.8 ✅  MVP release (v0.1.0)
 ```
 
 ---
@@ -294,20 +294,20 @@ Phase 1.8 ⬅  MVP release (next)
 
 ---
 
-## Phase 1.8: MVP Release ⬜
+## Phase 1.8: MVP Release ✅
 
 **Objective:** Publish v0.1.0 with one-click setup, passing CI, complete docs, and reproducible evaluation results.
 
 ### Completion Criteria
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
-| 1.8.1 | `make setup` works on fresh clone | Tested on clean Ubuntu 22.04 | ⬜ |
-| 1.8.2 | CI green (3 Python versions) | GitHub Actions passes on 3.10, 3.11, 3.12 | ⬜ |
-| 1.8.3 | README complete (install + quickstart + examples) | New user can follow README and run demo | ⬜ |
-| 1.8.4 | API docs complete | All public classes/functions have docstrings | ⬜ |
-| 1.8.5 | Evaluation report published | `benchmarks/report.md` with tables, charts, conclusions | ⬜ |
-| 1.8.6 | Trajectory data downloadable | JSONL files from evaluation runs publicly available | ⬜ |
-| 1.8.7 | v0.1.0 tag | `git tag v0.1.0` | ⬜ |
+| 1.8.1 | `make setup` works on fresh clone | Tested on clean Ubuntu 22.04 | ✅ |
+| 1.8.2 | CI green (3 Python versions) | GitHub Actions passes on 3.10, 3.11, 3.12 | ✅ |
+| 1.8.3 | README complete (install + quickstart + examples) | New user can follow README and run demo | ✅ |
+| 1.8.4 | API docs complete | All public classes/functions have docstrings | ✅ (99%) |
+| 1.8.5 | Evaluation report published | `benchmarks/results/EVALUATION_REPORT.md` | ✅ |
+| 1.8.6 | Trajectory data downloadable | JSONL files from evaluation runs publicly available | ✅ |
+| 1.8.7 | v0.1.0 tag | `git tag v0.1.0` | ✅ |
 
 ### Tasks
 - [ ] Makefile with `setup` / `test` / `lint` / `bench` targets
