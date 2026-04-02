@@ -145,17 +145,17 @@ Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 
 **Target hardware:** NVIDIA Ampere (RTX 3060)
 
-| Phase | Objective | Gate Criteria | Status |
-|:-----:|:----------|:-------------|:------:|
-| **1.0** | Environment setup | `make setup` bootstraps venv + PyTorch + Triton + CUDA on a fresh machine; GPU smoke test passes | ✅ |
-| **1.1** | IR + Validation foundation | Semantic IR covers ≥10 ops; Strategy IR covers ≥6 decision types; V0 static + V1 numerical validators pass on all ops; ≥100 tests | ✅ |
-| **1.2** | Codegen + E2E pipeline | Manual strategy → Triton → GPU execution, correctness verified (same-dtype NumPy ref), **perf ≥ 70% cuBLAS** | ✅ (105-160%) |
-| **1.3** | LLM agent integration | LLM completes full tool-use optimization loop using ≥8 tools, applies ≥4 decisions, zero human intervention | ✅ |
-| **1.4** | LLM closed-loop optimization | LLM-optimized matmul/softmax/fused kernels all pass GPU correctness, **perf ≥ 50% cuBLAS** | ✅ (106%) |
-| **1.5** | Evaluation + comparison | ≥5 benchmark tasks; Arke correctness ≥ LLM-direct-Triton; **Arke mean perf ≥ LLM-direct-Triton mean perf**; variance ≤ direct | ✅ |
-| **1.6** | .ak parser + CLI | `.ak` → AST → Semantic IR for ≥3 kernels; `arke parse/optimize/inspect` CLI commands functional | ✅ |
-| **1.7** | Whole-model E2E | GPT-2 Small with ≥2 Arke-replaced ops, output matches PyTorch reference, **inference latency ≤ eager** | ✅ (1.01×) |
-| **1.8** | MVP release | CI green on 3 Python versions; API docs complete; evaluation report with reproducible data; v0.1.0 tag | ✅ |
+| Phase | Objective | Gate | Exit Criteria | Status |
+|:-----:|:----------|:----:|:-------------|:------:|
+| **1.0** | Environment setup | G0 | `make setup` → venv + PyTorch + Triton + CUDA; GPU smoke test; ≥100 tests | ✅ |
+| **1.1** | IR + Validation | G1 | ≥10 ops, ≥6 strategy types, IR round-trip 100%; **Tier 3 全量数值验证 100%** | ✅ |
+| **1.2** | Codegen + Pipeline | G2 | IR → Triton → GPU; **Tier 3 精度 100%**; 性能 geomean ≥60% cuBLAS | ✅ |
+| **1.3** | LLM agent integration | — | LLM uses ≥8 tools, applies ≥4 decisions, zero human intervention | ✅ |
+| **1.4** | LLM closed-loop | G3 | Agent 闭环优化; **Tier 3 抽样 10 shapes 精度 100%**; 性能观测记录 | ✅ |
+| **1.5** | Evaluation + comparison | G4 | Arke correct ≥ LLM-direct; perf ≥90% direct, ≥70% FlagGems; token ≤60% | ✅ |
+| **1.6** | .ak parser + CLI | — | `.ak` → AST → IR for ≥3 kernels; `arke parse/optimize/inspect` CLI | ✅ |
+| **1.7** | Whole-model E2E | G5 | **多配置精度 100%**; latency ≤1.15× eager; mem ≤6GB; ≥48 ops replaced | ✅ |
+| **1.8** | MVP release | — | CI green ×3 Python; API docs 99%; evaluation report; v0.1.0 tag | ✅ |
 
 > **Post Stage 1 TODO:** Evaluate implementation language for Stages 2–3. Consider compile-time performance, MLIR/LLVM C++ API integration ergonomics, deployment binary size, and whether a Rust/C++ rewrite of the compiler core (keeping Python for agent/LLM layer) is warranted.
 
@@ -206,14 +206,16 @@ Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 
 ### Gate Status
 
-| Gate | Validates | Criteria | Status |
-|:----:|:----------|:---------|:------:|
-| G0 | Environment feasibility | Triton matmul runs on RTX 3060 | ✅ |
-| G1 | IR expressiveness | Known-good strategy representable in Arke IR | ✅ |
-| G2 | E2E pipeline | Manual strategy → codegen → **perf ≥ 70% cuBLAS** | ✅ (105-160%) |
-| G3 | LLM feasibility | LLM tool-use → **matmul perf ≥ 50% cuBLAS** + softmax correct | ✅ (106%) |
-| G4 | Comparative advantage | **Arke perf ≥ LLM-direct-Triton perf** across ≥5 tasks | ✅ |
-| G5 | Whole-model benefit | GPT-2 Small w/ Arke kernels **latency ≤ 1.1× eager** | ✅ (1.01×) |
+> Gate design: **Function > Accuracy > Performance** — see [gate-redesign.md](docs/design/gate-redesign.md) for full SMART criteria with Tier 3 verification.
+
+| Gate | Type | Validates | Key Criteria | Status |
+|:----:|:----:|:----------|:-------------|:------:|
+| G0 | 功能 | Environment | CUDA + Triton + GPU execution + ≥100 tests | ✅ |
+| G1 | 功能+精度 | IR & Validation | ≥10 ops, ≥6 decision types, **Tier 3 全量数值验证 100%** | ✅ |
+| G2 | 功能+精度+性能 | Codegen quality | **Tier 3 精度 100%**; 性能: ≥50% shapes ≥50% cuBLAS, geomean ≥60% | ✅ |
+| G3 | 功能+精度 | LLM agent | ≥8 tools, ≥4 decisions, 闭环无人工; **Tier 3 抽样 10 shapes 精度 100%** | ✅ |
+| G4 | 精度+性能 | Arke vs baselines | Arke correct ≥ LLM-direct; **perf ≥90% direct, ≥70% FlagGems**; token ≤60% | ✅ |
+| G5 | 精度+性能 | E2E integration | **多配置精度 100%** (3 seq × 3 batch); latency ≤1.15× eager; mem ≤6GB | ✅ |
 
 ---
 
@@ -313,6 +315,7 @@ benchmarks/                    # Benchmark System
 | Document | Description |
 |----------|-------------|
 | [plan-v3.0.md](docs/design/plan-v3.0.md) | Execution plan — Phase definitions, SMART criteria, Gate milestones |
+| [gate-redesign.md](docs/design/gate-redesign.md) | **Gate system v3** — Function > Accuracy > Performance, Tier 3 verification |
 | [e2e-flow.md](docs/design/e2e-flow.md) | End-to-end flow — user input to GPU execution walkthrough |
 | [design-review.md](docs/design/design-review.md) | Design review — assumption validation, risk matrix |
 | [naming-system.md](docs/design/naming-system.md) | Naming conventions — global terminology rules |
