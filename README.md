@@ -15,7 +15,7 @@ In our context, Arke is the messenger between two worlds — translating **what 
 ## Key Features
 
 - 🤖 **AI-First Design** — LLM agents as optimization decision makers, not just code generators
-- 🪙 **Minimal-Token Efficiency** — Arke minimizes end-to-end token consumption from kernel definition through optimization to peak performance. Semantic IR captures intent concisely, strategy decisions are discrete structured actions (not free-form code), and compiler-driven verification eliminates costly trial-and-error — so LLMs reach optimal kernels spending the fewest tokens possible
+- 🪙 **Minimal-Token Efficiency** — Arke minimizes end-to-end token consumption from kernel definition through optimization to peak performance
 - 🔗 **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are independent, enabling safe exploration
 - 🛡️ **Compiler-Verified** — Every LLM decision validated by deterministic checks (static → numerical → performance)
 - ⚡ **Extreme Performance** — LLM-guided strategy search achieves vendor-library-level performance across hardware targets
@@ -133,7 +133,7 @@ Three stages from hypothesis validation to full compiler stack:
 
 ```
 Stage 1: Arke → Triton → GPU          Validate hypothesis    (current)
-Stage 2: Arke → MLIR Dialect → Multi   Break free from deps
+Stage 2: Arke → MLIR Dialect → Multi   Multi-hardware support
 Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 ```
 
