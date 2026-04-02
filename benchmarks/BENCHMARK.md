@@ -370,19 +370,19 @@ L3 weighted highest because real-world impact matters most.
 | 🟡 | ≥ 80% of baseline |
 | 🔴 | < 80% of baseline |
 
-### Quality Gates (G2–G5)
+### Quality Gates (G0–G5)
 
 Quality gates follow the principle **Function > Accuracy > Performance** and use progressive performance thresholds across development stages.
-See [gate-redesign.md](../docs/design/gate-redesign.md) for full SMART criteria.
+See [gate-redesign.md](../docs/design/gate-redesign.md) for full SMART criteria per gate.
 
-| Gate | Type | Core Question | Key Criteria |
-|:----:|:----:|:-------------|:-------------|
-| **G0** | Function | Environment works? | CUDA + Triton + GPU execution + ≥100 tests |
-| **G1** | Func+Acc | IR expressible & validation correct? | ≥10 ops, ≥6 decision types, Tier 3 numerical validation 100% |
-| **G2** | Func+Acc+Perf | Codegen produces correct, usable kernels? | Tier 3 accuracy 100%; ≥50% shapes ≥50% cuBLAS; geomean ≥60% cuBLAS |
-| **G3** | Func+Acc | LLM agent completes closed-loop optimization? | ≥8 tools, ≥4 decisions, autonomous; Tier 3 sampled 10 shapes 100% correct |
-| **G4** | Acc+Perf | Arke beats LLM-direct? | Arke correct ≥ LLM-direct; perf ≥90% direct, ≥70% FlagGems; token ≤60% |
-| **G5** | Acc+Perf | Works in real models? | Multi-config accuracy 100%; latency ≤1.15× eager; mem ≤6GB; ≥48 ops replaced |
+| Gate | Type | Core Question | Accuracy | Performance |
+|:----:|:----:|:-------------|:---------|:------------|
+| **G0** | Function | Environment works? | — | — |
+| **G1** | Func+Acc | IR expressible & validation correct? | Tier 3 full 100% (4 ops) | — |
+| **G2** | Func+Acc+Perf | Codegen produces correct, usable kernels? | Tier 3 full 100% (4 ops) | matmul ≥50% shapes ≥50% cuBLAS, geomean ≥60%; softmax ≥40% ≥50% cuDNN; elementwise ≥50% ≥50% PyTorch; layernorm ≥40% ≥50% cuDNN |
+| **G3** | Func+Acc | LLM agent closed-loop optimization? | Tier 3 sampled 10 shapes 100% | Observe only |
+| **G4** | Acc+Perf | Arke beats LLM-direct? | correct rate ≥ LLM-direct | ≥90% LLM-direct; ≥70% FlagGems; tokens ≤60% |
+| **G5** | Acc+Perf | Works in real models? | Multi-config 100% | ≤1.15× eager (seq=128); ≤1.20× (seq=512); mem ≤6GB |
 
 #### Performance Progression
 
@@ -390,9 +390,10 @@ See [gate-redesign.md](../docs/design/gate-redesign.md) for full SMART criteria.
            G2 (Template)  G3 (Agent)    G4 (Compare)   G5 (E2E)
            ────────────   ──────────    ────────────   ────────
 Function:  ✓ required     ✓ core        —              ✓ coverage
-Accuracy:  100%           100%          ≥ LLM-direct   100% multi-config
+Accuracy:  100% (4 ops)   100%          ≥ LLM-direct   100% multi-config
 Perf goal: ≥50% cuBLAS    observe only  ≥90% direct    ≤1.15× eager
-                                        ≥70% FlagGems
+           ≥40% cuDNN                   ≥70% FlagGems
+           ≥50% PyTorch
 Perf type: absolute floor  no gate      relative edge  E2E overhead
 ```
 
@@ -402,6 +403,8 @@ Perf type: absolute floor  no gate      relative edge  E2E overhead
 |:---------|:---------|:-------|
 | M ≤ 32 (matmul) | Accuracy must pass; perf excluded from stats | Triton ~55μs launch floor |
 | N ≤ 32 (softmax) | Accuracy must pass; perf excluded from stats | Same |
+| M×N ≤ 1024 (elementwise) | Accuracy must pass; perf excluded from stats | Kernel-launch dominated |
+| Batch ≤ 1 (layernorm) | Accuracy must pass; perf excluded from stats | Single-sample overhead |
 | OOM shapes | Skip, record "OOM" | 6GB VRAM limit |
 | Triton compile timeout (>60s) | Record "TIMEOUT", accuracy marked fail | Template may need fix |
 
