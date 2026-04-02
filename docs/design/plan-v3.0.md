@@ -227,14 +227,14 @@ Phase 1.8 ✅  MVP release (v0.1.0)
 **3-tier verdict:** Accept / Review / Reject with per-dtype thresholds
 
 ### Tasks
-- [ ] Define ≥5 benchmark tasks (matmul sizes, softmax, fused ops, reduction)
-- [ ] Implement Arke benchmark runner
-- [ ] Implement LLM-direct-Triton baseline runner
-- [ ] Run all tasks × both methods × 3 trials
-- [ ] Statistical analysis (mean, variance, significance)
-- [ ] Token counting integration
-- [ ] Generate evaluation report (`benchmarks/report.md`)
-- [ ] Gate G4 decision
+- [x] Define ≥5 benchmark tasks (matmul sizes, softmax, fused ops, reduction)
+- [x] Implement Arke benchmark runner
+- [x] Implement LLM-direct-Triton baseline runner
+- [x] Run all tasks × both methods × 3 trials
+- [x] Statistical analysis (mean, variance, significance)
+- [x] Token counting integration
+- [x] Generate evaluation report (`benchmarks/report.md`)
+- [x] Gate G4 decision
 
 ---
 
@@ -256,15 +256,15 @@ Phase 1.8 ✅  MVP release (v0.1.0)
 **Dependency:** Phase 1.4 complete
 
 ### Tasks
-- [ ] EBNF grammar definition (`arke.lark`)
-- [ ] Lark parser implementation
-- [ ] AST node definitions
-- [ ] AST → Semantic IR converter
-- [ ] CLI entry point (`arkec` or `arke`)
-- [ ] `parse` subcommand
-- [ ] `optimize` subcommand
-- [ ] `inspect` subcommand
-- [ ] Example .ak files (≥3)
+- [x] EBNF grammar definition (`arke.lark`)
+- [x] Lark parser implementation
+- [x] AST node definitions
+- [x] AST → Semantic IR converter
+- [x] CLI entry point (`arkec` or `arke`)
+- [x] `parse` subcommand
+- [x] `optimize` subcommand
+- [x] `inspect` subcommand
+- [x] Example .ak files (≥3)
 
 ---
 
@@ -285,12 +285,12 @@ Phase 1.8 ✅  MVP release (v0.1.0)
 **Dependency:** Phase 1.5 Gate G4 passes
 
 ### Tasks
-- [ ] GPT-2 Small baseline (eager + torch.compile) profiling
-- [ ] PyTorch custom op registration (`torch.library`)
-- [ ] Arke kernel integration into GPT-2 forward pass
-- [ ] Correctness verification (token-level output comparison)
-- [ ] Latency benchmark (Arke vs eager vs torch.compile)
-- [ ] Memory profiling
+- [x] GPT-2 Small baseline (eager + torch.compile) profiling
+- [x] PyTorch custom op registration (`torch.library`)
+- [x] Arke kernel integration into GPT-2 forward pass
+- [x] Correctness verification (token-level output comparison)
+- [x] Latency benchmark (Arke vs eager vs torch.compile)
+- [x] Memory profiling
 
 ---
 
@@ -310,13 +310,13 @@ Phase 1.8 ✅  MVP release (v0.1.0)
 | 1.8.7 | v0.1.0 tag | `git tag v0.1.0` | ✅ |
 
 ### Tasks
-- [ ] Makefile with `setup` / `test` / `lint` / `bench` targets
-- [ ] CI workflow fix (lint + type check + test)
-- [ ] README quickstart verification on clean machine
-- [ ] API documentation pass
-- [ ] Evaluation report finalization
-- [ ] Trajectory data packaging
-- [ ] Version tag + GitHub release
+- [x] Makefile with `setup` / `test` / `lint` / `bench` targets
+- [x] CI workflow fix (lint + type check + test)
+- [x] README quickstart verification on clean machine
+- [x] API documentation pass
+- [x] Evaluation report finalization
+- [x] Trajectory data packaging
+- [x] Version tag + GitHub release
 
 ---
 
