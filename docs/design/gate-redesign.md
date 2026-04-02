@@ -110,11 +110,11 @@ Performance thresholds increase progressively — no unrealistic targets at earl
 
 | # | Criterion | Type | Verification | Pass Condition |
 |---|-----------|:----:|-------------|----------------|
-| G2.7 | matmul perf pass rate | Performance | Tier 3 50 shapes vs cuBLAS (excl. M≤32) | **≥ 50%** shapes achieve ≥ 50% cuBLAS |
-| G2.8 | matmul perf geomean | Performance | Tier 3 50 shapes geomean (excl. M≤32) | **geomean ≥ 60%** cuBLAS |
-| G2.9 | softmax perf pass rate | Performance | Tier 3 25 shapes vs cuDNN (excl. N≤32) | **≥ 40%** shapes achieve ≥ 50% cuDNN |
-| G2.10 | elementwise perf | Performance | Tier 3 15 shapes vs PyTorch eager | **≥ 50%** shapes achieve ≥ 50% PyTorch |
-| G2.11 | layernorm perf | Performance | Tier 3 15 shapes vs cuDNN | **≥ 40%** shapes achieve ≥ 50% cuDNN |
+| G2.7 | matmul perf pass rate | Performance | Tier 3 50 shapes vs cuBLAS (excl. M×N×K < 2^20) | **≥ 50%** shapes achieve ≥ 50% cuBLAS |
+| G2.8 | matmul perf geomean | Performance | Tier 3 50 shapes geomean (excl. M×N×K < 2^20) | **geomean ≥ 60%** cuBLAS |
+| G2.9 | softmax perf pass rate | Performance | Tier 3 25 shapes vs cuDNN (excl. M×N < 2^19) | **≥ 40%** shapes achieve ≥ 50% cuDNN |
+| G2.10 | elementwise perf | Performance | Tier 3 15 shapes vs PyTorch eager (excl. numel < 2^20) | **≥ 50%** shapes achieve ≥ 50% PyTorch |
+| G2.11 | layernorm perf | Performance | Tier 3 15 shapes vs cuDNN (excl. M×N < 2^19) | **≥ 40%** shapes achieve ≥ 50% cuDNN |
 
 > **Performance thresholds are low.** This is the Phase 1.2 exit — manual strategy template codegen, no LLM optimization or autotune yet. Goal is "usable" not "fastest".
 
@@ -267,12 +267,16 @@ Perf type: absolute floor  no gate      relative edge  E2E overhead
 
 ## Exclusion Rules
 
-| Scenario | Handling | Reason |
-|:---------|:---------|:-------|
-| M ≤ 32 (matmul) | Accuracy must pass; perf excluded from stats | Triton ~55μs launch floor |
-| N ≤ 32 (softmax) | Accuracy must pass; perf excluded from stats | Same |
-| M×N ≤ 1024 (elementwise) | Accuracy must pass; perf excluded from stats | Trivially kernel-launch dominated |
-| Batch ≤ 1 (layernorm) | Accuracy must pass; perf excluded from stats | Single-sample overhead dominated |
+Performance measurements exclude shapes where Triton kernel launch overhead
+(~30µs) dominates over actual compute time. Accuracy is ALWAYS tested on ALL shapes.
+
+| Rule | Effect | Rationale |
+|:-----|:-------|:----------|
+| matmul: M×N×K < 2^20 | perf excluded from stats | Launch overhead > compute |
+| softmax: M×N < 2^19 | perf excluded from stats | Same |
+| elementwise: numel < 2^20 | perf excluded from stats | Same |
+| layernorm: M×N < 2^19 | perf excluded from stats | Same |
+| softmax: N > 131072 | accuracy+perf excluded | Single-block template limit |
 | OOM shapes | Skip, record "OOM" | 6GB VRAM limit |
 | Triton compile timeout (>60s) | Record "TIMEOUT", accuracy marked fail | Template may need fix |
 

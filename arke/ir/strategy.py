@@ -28,8 +28,32 @@ class Rationale:
 class Decision:
     """A single optimization decision.
 
-    Kinds: tile | reorder | fuse | parallel | place | vectorize | unroll | algorithm
+    Kinds: tile | reorder | fuse | parallel | place | vectorize | unroll
+           | algorithm | launch_config | autotune
     Levels: 1=strategy (Phase 1), 2=loop (Phase 2), 3=hardware (Phase 3)
+
+    ``launch_config`` params schema::
+
+        {
+            "num_warps": 4,        # int or list[int] for autotune candidates
+            "num_stages": 3,       # int or list[int] for autotune candidates
+            "block_sizes": {       # optional: override default BLOCK_SIZE values
+                "BLOCK_M": 64,     # int or list[int]
+                "BLOCK_N": 64,
+                "BLOCK_K": 32,
+            }
+        }
+
+    ``autotune`` params schema::
+
+        {
+            "configs": [
+                {"num_warps": 2, "num_stages": 3, "block_sizes": {"BLOCK_SIZE": 1024}},
+                {"num_warps": 4, "num_stages": 3, "block_sizes": {"BLOCK_SIZE": 4096}},
+                {"num_warps": 8, "num_stages": 3, "block_sizes": {"BLOCK_SIZE": 8192}},
+            ],
+            "key": ["n_elements"],  # autotune key dimensions
+        }
     """
     kind: str
     params: dict

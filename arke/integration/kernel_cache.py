@@ -96,27 +96,35 @@ class KernelCache:
 
         Raises ValueError for N > SOFTMAX_MAX_N (single-block limitation).
         """
-        orig_shape = x.shape
-        m = 1
-        for d in orig_shape[:-1]:
-            m *= d
-        n = orig_shape[-1]
+        # Fast path: 2D contiguous input
+        if x.ndim == 2 and x.is_contiguous():
+            m, n = x.shape
+            if n > self.SOFTMAX_MAX_N:
+                raise ValueError(
+                    f"Arke softmax: N={n} exceeds single-block limit "
+                    f"({self.SOFTMAX_MAX_N})."
+                )
+            func = self._softmax_cache.get((m, n))
+            if func is None:
+                func = self._compile_softmax(m, n)
+                self._softmax_cache[(m, n)] = func
+            return func(x)
 
+        # General path: reshape to 2D
+        orig_shape = x.shape
+        n = orig_shape[-1]
         if n > self.SOFTMAX_MAX_N:
             raise ValueError(
                 f"Arke softmax: N={n} exceeds single-block limit "
-                f"({self.SOFTMAX_MAX_N}). Multi-block softmax not yet "
-                f"implemented."
+                f"({self.SOFTMAX_MAX_N})."
             )
-
-        key = (m, n)
-        func = self._softmax_cache.get(key)
+        m = x.numel() // n
+        func = self._softmax_cache.get((m, n))
         if func is None:
             func = self._compile_softmax(m, n)
-            self._softmax_cache[key] = func
+            self._softmax_cache[(m, n)] = func
         x_2d = x.reshape(m, n).contiguous()
-        out = func(x_2d)
-        return out.reshape(orig_shape)
+        return func(x_2d).reshape(orig_shape)
 
     def precompile_layernorm(self, shapes: list[tuple[int, int]]) -> None:
         """Pre-compile layernorm and rmsnorm kernels for all given (M, N) shapes.
@@ -144,20 +152,25 @@ class KernelCache:
         eps: float = 1e-5,
     ) -> torch.Tensor:
         """Direct layernorm dispatch — always uses Arke Triton kernel."""
-        orig_shape = x.shape
-        m = 1
-        for d in orig_shape[:-1]:
-            m *= d
-        n = orig_shape[-1]
+        # Fast path: 2D contiguous input
+        if x.ndim == 2 and x.is_contiguous():
+            m, n = x.shape
+            func = self._layernorm_cache.get(("layernorm", m, n))
+            if func is None:
+                func = self._compile_layernorm("layernorm", m, n)
+                self._layernorm_cache[("layernorm", m, n)] = func
+            return func(x, weight, bias, eps)
 
-        key = ("layernorm", m, n)
-        func = self._layernorm_cache.get(key)
+        # General path
+        orig_shape = x.shape
+        n = orig_shape[-1]
+        m = x.numel() // n
+        func = self._layernorm_cache.get(("layernorm", m, n))
         if func is None:
             func = self._compile_layernorm("layernorm", m, n)
-            self._layernorm_cache[key] = func
+            self._layernorm_cache[("layernorm", m, n)] = func
         x_2d = x.reshape(m, n).contiguous()
-        out = func(x_2d, weight, bias, eps)
-        return out.reshape(orig_shape)
+        return func(x_2d, weight, bias, eps).reshape(orig_shape)
 
     def rmsnorm(
         self,
@@ -166,36 +179,36 @@ class KernelCache:
         eps: float = 1e-5,
     ) -> torch.Tensor:
         """Direct rmsnorm dispatch — always uses Arke Triton kernel."""
-        orig_shape = x.shape
-        m = 1
-        for d in orig_shape[:-1]:
-            m *= d
-        n = orig_shape[-1]
+        # Fast path: 2D contiguous input
+        if x.ndim == 2 and x.is_contiguous():
+            m, n = x.shape
+            func = self._layernorm_cache.get(("rmsnorm", m, n))
+            if func is None:
+                func = self._compile_layernorm("rmsnorm", m, n)
+                self._layernorm_cache[("rmsnorm", m, n)] = func
+            return func(x, weight, None, eps)
 
-        key = ("rmsnorm", m, n)
-        func = self._layernorm_cache.get(key)
+        # General path
+        orig_shape = x.shape
+        n = orig_shape[-1]
+        m = x.numel() // n
+        func = self._layernorm_cache.get(("rmsnorm", m, n))
         if func is None:
             func = self._compile_layernorm("rmsnorm", m, n)
-            self._layernorm_cache[key] = func
+            self._layernorm_cache[("rmsnorm", m, n)] = func
         x_2d = x.reshape(m, n).contiguous()
-        out = func(x_2d, weight, None, eps)
-        return out.reshape(orig_shape)
+        return func(x_2d, weight, None, eps).reshape(orig_shape)
 
     def elementwise(self, x: torch.Tensor, activation: str) -> torch.Tensor:
         """Direct elementwise dispatch — always uses Arke Triton kernel."""
         n_elements = x.numel()
-        # Round up to next power of 2 for cache key (reduces unique compilations)
-        n_rounded = 1
-        while n_rounded < n_elements:
-            n_rounded *= 2
-
-        key = (activation, n_rounded)
+        key = (activation, n_elements)
         func = self._elementwise_cache.get(key)
         if func is None:
-            func = self._compile_elementwise(activation, n_rounded)
+            func = self._compile_elementwise(activation, n_elements)
             self._elementwise_cache[key] = func
-
-        return func(x.contiguous())
+        # Skip .contiguous() if already contiguous (hot path)
+        return func(x if x.is_contiguous() else x.contiguous())
 
     def relu(self, x: torch.Tensor) -> torch.Tensor:
         """Convenience: elementwise ReLU via Arke Triton kernel."""
@@ -218,12 +231,9 @@ class KernelCache:
         """
         for activation, m, n in shapes:
             n_elements = m * n
-            n_rounded = 1
-            while n_rounded < n_elements:
-                n_rounded *= 2
-            key = (activation, n_rounded)
+            key = (activation, n_elements)
             if key not in self._elementwise_cache:
-                func = self._compile_elementwise(activation, n_rounded)
+                func = self._compile_elementwise(activation, n_elements)
                 x = torch.randn(m, n, device="cuda", dtype=torch.float16)
                 for _ in range(3):
                     func(x)
@@ -269,12 +279,12 @@ class KernelCache:
         func = self._compiler._find_entry_function(module)
         return func
 
-    def _compile_elementwise(self, activation: str, n_rounded: int) -> Callable:
+    def _compile_elementwise(self, activation: str, n_elements: int) -> Callable:
         """Compile and cache the raw function for an elementwise op."""
-        b = KernelBuilder(f"{activation}_{n_rounded}")
-        b.param("X", [n_rounded], "f16")
+        b = KernelBuilder(f"{activation}_{n_elements}")
+        b.param("X", [n_elements], "f16")
         node = b.op(activation, X="X")
-        b.returns(node, [n_rounded], "f16")
+        b.returns(node, [n_elements], "f16")
         ir = b.build()
 
         strategy = StrategyIR()

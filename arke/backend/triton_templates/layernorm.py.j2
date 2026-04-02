@@ -43,32 +43,30 @@ def {{ kernel_name }}_kernel(
     tl.store(y_ptrs, y.to(tl.float16), mask=mask)
 
 
+# Cached dummy bias (avoids allocation per call)
+_dummy_bias: torch.Tensor | None = None
+
+
 def {{ kernel_name }}(
     X: torch.Tensor,
     weight: torch.Tensor,
     bias: torch.Tensor | None = None,
     eps: float = 1e-5,
 ) -> torch.Tensor:
-    assert X.ndim == 2, "{{ norm_type }} expects 2D input (M, N)"
+    global _dummy_bias
     M, N = X.shape
     Y = torch.empty_like(X)
     BLOCK_N = triton.next_power_of_2(N)
-    # Clamp BLOCK_N to avoid overly large blocks
-    BLOCK_N = min(BLOCK_N, 65536)
-    # Heuristic num_warps selection
-    if BLOCK_N <= 256:
-        num_warps = 2
-    elif BLOCK_N <= 2048:
-        num_warps = 4
-    elif BLOCK_N <= 8192:
-        num_warps = 8
-    else:
-        num_warps = 16
+    if BLOCK_N > 65536:
+        BLOCK_N = 65536
     has_bias = bias is not None
     if not has_bias:
-        bias = torch.zeros(1, device=X.device, dtype=X.dtype)  # dummy
-    grid = (M,)
-    {{ kernel_name }}_kernel[grid](
+        if _dummy_bias is None or _dummy_bias.device != X.device:
+            _dummy_bias = torch.zeros(1, device=X.device, dtype=X.dtype)
+        bias = _dummy_bias
+    # Heuristic num_warps
+    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    {{ kernel_name }}_kernel[(M,)](
         X, Y, weight, bias,
         M, N,
         X.stride(0), X.stride(1),

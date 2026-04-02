@@ -76,6 +76,8 @@ class StaticValidator:
             self._check_hw_constraints(semantic, strategy, hw_profile),
             self._check_no_duplicate_transforms(strategy),
             self._check_fusion_legality(semantic, strategy),
+            self._check_launch_config(strategy),
+            self._check_autotune(strategy),
         ]
 
         resources = self._estimate_resources(semantic, strategy, hw_profile)
@@ -200,6 +202,126 @@ class StaticValidator:
 
         return CheckResult(
             name="fusion_legality",
+            passed=len(violations) == 0,
+            violations=violations,
+        )
+
+    def _check_launch_config(self, strategy: StrategyIR) -> CheckResult:
+        """Validate launch_config decisions."""
+        violations: list[str] = []
+        valid_warps = (1, 2, 4, 8, 16, 32)
+
+        for d in strategy.decisions:
+            if d.kind != "launch_config":
+                continue
+
+            # Validate num_warps
+            nw = d.params.get("num_warps")
+            if nw is not None:
+                if isinstance(nw, int):
+                    if nw not in valid_warps:
+                        violations.append(
+                            f"Step #{d.step}: invalid num_warps {nw},"
+                            f" must be one of {valid_warps}"
+                        )
+                elif isinstance(nw, list):
+                    for w in nw:
+                        if w not in valid_warps:
+                            violations.append(
+                                f"Step #{d.step}: invalid num_warps candidate {w},"
+                                f" must be one of {valid_warps}"
+                            )
+
+            # Validate num_stages (must be positive int or list of positive ints)
+            ns = d.params.get("num_stages")
+            if ns is not None:
+                if isinstance(ns, int):
+                    if ns < 1:
+                        violations.append(
+                            f"Step #{d.step}: num_stages must be >= 1, got {ns}"
+                        )
+                elif isinstance(ns, list):
+                    for s in ns:
+                        if not isinstance(s, int) or s < 1:
+                            violations.append(
+                                f"Step #{d.step}: invalid num_stages candidate {s},"
+                                " must be positive integer"
+                            )
+
+            # Validate block_sizes (values must be positive ints or lists of positive ints)
+            bs = d.params.get("block_sizes")
+            if bs is not None and isinstance(bs, dict):
+                for key, val in bs.items():
+                    if isinstance(val, int):
+                        if val <= 0:
+                            violations.append(
+                                f"Step #{d.step}: block_sizes['{key}'] must be"
+                                f" positive, got {val}"
+                            )
+                    elif isinstance(val, list):
+                        for v in val:
+                            if not isinstance(v, int) or v <= 0:
+                                violations.append(
+                                    f"Step #{d.step}: invalid block_sizes['{key}']"
+                                    f" candidate {v}, must be positive integer"
+                                )
+
+        return CheckResult(
+            name="launch_config",
+            passed=len(violations) == 0,
+            violations=violations,
+        )
+
+    def _check_autotune(self, strategy: StrategyIR) -> CheckResult:
+        """Validate autotune decisions."""
+        violations: list[str] = []
+        valid_warps = (1, 2, 4, 8, 16, 32)
+
+        for d in strategy.decisions:
+            if d.kind != "autotune":
+                continue
+
+            configs = d.params.get("configs")
+            if configs is None or not isinstance(configs, list):
+                violations.append(
+                    f"Step #{d.step}: autotune decision must have a 'configs' list"
+                )
+                continue
+
+            if len(configs) == 0:
+                violations.append(
+                    f"Step #{d.step}: autotune configs list must not be empty"
+                )
+
+            for i, cfg in enumerate(configs):
+                if not isinstance(cfg, dict):
+                    violations.append(
+                        f"Step #{d.step}: autotune config[{i}] must be a dict"
+                    )
+                    continue
+
+                nw = cfg.get("num_warps")
+                if nw is not None and isinstance(nw, int) and nw not in valid_warps:
+                    violations.append(
+                        f"Step #{d.step}: autotune config[{i}] invalid"
+                        f" num_warps {nw}, must be one of {valid_warps}"
+                    )
+
+                ns = cfg.get("num_stages")
+                if ns is not None and isinstance(ns, int) and ns < 1:
+                    violations.append(
+                        f"Step #{d.step}: autotune config[{i}] num_stages"
+                        f" must be >= 1, got {ns}"
+                    )
+
+            key = d.params.get("key")
+            if key is not None and not isinstance(key, list):
+                violations.append(
+                    f"Step #{d.step}: autotune 'key' must be a list of strings"
+                )
+
+        return CheckResult(
+            name="autotune",
             passed=len(violations) == 0,
             violations=violations,
         )

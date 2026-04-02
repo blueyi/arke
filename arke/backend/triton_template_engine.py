@@ -97,6 +97,16 @@ class TritonTemplateEngine:
 
         ctx: dict = {"kernel_name": kernel_name}
 
+        # Extract launch_config from strategy decisions
+        launch_config = self._extract_launch_config(strategy)
+        if launch_config:
+            ctx["launch_config"] = launch_config
+
+        # Extract autotune from strategy decisions
+        autotune_config = self._extract_autotune(strategy)
+        if autotune_config:
+            ctx["autotune"] = autotune_config
+
         if primary_op == "matmul":
             tile = self._extract_tile_params(strategy)
             ctx.update(tile)
@@ -180,6 +190,22 @@ class TritonTemplateEngine:
             if node.op in fused_ops & activation_ops:
                 return node.op
 
+        return None
+
+    # ─── Strategy decision extraction ─────────────────────────
+
+    def _extract_launch_config(self, strategy: StrategyIR) -> dict | None:
+        """Extract launch_config from strategy decisions."""
+        for decision in strategy.decisions:
+            if decision.kind == "launch_config":
+                return decision.params
+        return None
+
+    def _extract_autotune(self, strategy: StrategyIR) -> dict | None:
+        """Extract autotune config from strategy decisions."""
+        for decision in strategy.decisions:
+            if decision.kind == "autotune":
+                return decision.params
         return None
 
     # ─── Helpers ───────────────────────────────────────────────
