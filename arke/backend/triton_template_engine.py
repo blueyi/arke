@@ -71,6 +71,16 @@ class TritonTemplateEngine:
         if "softmax" in ops:
             return "softmax.py.j2", "softmax"
 
+        norm_ops = {"layernorm", "rmsnorm"}
+        if any(op in norm_ops for op in ops):
+            first_norm = next(op for op in ops if op in norm_ops)
+            return "layernorm.py.j2", first_norm
+
+        elementwise_ops = {"relu", "gelu", "silu", "add", "mul"}
+        if any(op in elementwise_ops for op in ops):
+            first_ew = next(op for op in ops if op in elementwise_ops)
+            return "elementwise.py.j2", first_ew
+
         # Fallback: pick first op and hope we have a template
         first_op = ops[0] if ops else "matmul"
         return f"{first_op}.py.j2", first_op
@@ -97,6 +107,10 @@ class TritonTemplateEngine:
         elif primary_op == "softmax":
             # softmax template needs kernel_name only; BLOCK_N is computed at runtime
             pass
+        elif primary_op in ("layernorm", "rmsnorm"):
+            ctx["norm_type"] = primary_op
+        elif primary_op in ("relu", "gelu", "silu"):
+            ctx["activation"] = primary_op
 
         return ctx
 

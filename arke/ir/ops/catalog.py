@@ -95,6 +95,17 @@ GELU = _register(OpDefinition(
     numpy_ref="0.5 * X * (1 + scipy.special.erf(X / math.sqrt(2)))",
 ))
 
+SILU = _register(OpDefinition(
+    name="silu",
+    category="elementwise",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = X * sigmoid(X)",
+    properties=["elementwise"],
+    can_fuse_as="epilogue",
+    numpy_ref="X / (1 + np.exp(-X))",
+))
+
 ADD = _register(OpDefinition(
     name="add",
     category="elementwise",
@@ -118,6 +129,35 @@ MUL = _register(OpDefinition(
 ))
 
 # --- Reduce ---
+
+LAYERNORM = _register(OpDefinition(
+    name="layernorm",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]", "W": "Tensor[N]", "B": "Tensor[N]"},
+    output="Tensor[M,N]",
+    computation=(
+        "Y[i,j] = (X[i,j] - mean(X[i,:], axis=j)) "
+        "/ sqrt(var(X[i,:], axis=j) + eps) * W[j] + B[j]"
+    ),
+    index_vars=["i", "j"],
+    reduction_axes=["j"],
+    properties=["row-wise"],
+    can_fuse_as=None,
+    numpy_ref="(X - X.mean(-1, keepdims=True)) / np.sqrt(X.var(-1, keepdims=True) + eps) * W + B",
+))
+
+RMSNORM = _register(OpDefinition(
+    name="rmsnorm",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]", "W": "Tensor[N]"},
+    output="Tensor[M,N]",
+    computation="Y[i,j] = X[i,j] / sqrt(mean(X[i,:]^2, axis=j) + eps) * W[j]",
+    index_vars=["i", "j"],
+    reduction_axes=["j"],
+    properties=["row-wise"],
+    can_fuse_as=None,
+    numpy_ref="X / np.sqrt(np.mean(X**2, axis=-1, keepdims=True) + eps) * W",
+))
 
 SOFTMAX = _register(OpDefinition(
     name="softmax",

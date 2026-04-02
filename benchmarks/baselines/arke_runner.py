@@ -69,7 +69,7 @@ class ArkeRunner(BaselineRunner):
         return _AVAILABLE and torch.cuda.is_available()
 
     def supports(self, op: str) -> bool:
-        return op in ("matmul", "softmax")
+        return op in ("matmul", "softmax", "relu", "gelu", "silu", "layernorm", "rmsnorm")
 
     def get_fn(
         self,
@@ -85,6 +85,10 @@ class ArkeRunner(BaselineRunner):
             return self._get_matmul_fn(cache, M, N, K, dtype)
         elif op == "softmax":
             return self._get_softmax_fn(cache, M, N, dtype)
+        elif op in ("relu", "gelu", "silu"):
+            return self._get_elementwise_fn(cache, op, M, N, dtype)
+        elif op in ("layernorm", "rmsnorm"):
+            return self._get_layernorm_fn(cache, op, M, N, dtype)
         return None
 
     def _get_matmul_fn(
@@ -147,3 +151,59 @@ class ArkeRunner(BaselineRunner):
         torch.cuda.synchronize()
 
         return lambda: raw_fn(X)
+
+    def _get_elementwise_fn(
+        self,
+        cache: KernelCache,
+        op: str,
+        M: int,
+        N: int,
+        dtype: torch.dtype,
+    ) -> Callable[[], torch.Tensor] | None:
+        """Get an elementwise callable that uses the Arke Triton kernel.
+
+        Compiles the kernel for the exact shape and returns the raw function
+        for benchmarking with minimal dispatch overhead.
+        """
+        cache.precompile_elementwise([(op, M, N)])
+
+        X = torch.randn(M, N, device="cuda", dtype=dtype)
+
+        # Warmup
+        for _ in range(3):
+            cache.elementwise(X, op)
+        torch.cuda.synchronize()
+
+        return lambda: cache.elementwise(X, op)
+
+    def _get_layernorm_fn(
+        self,
+        cache: KernelCache,
+        op: str,
+        M: int,
+        N: int,
+        dtype: torch.dtype,
+    ) -> Callable[[], torch.Tensor] | None:
+        """Get a layernorm/rmsnorm callable that uses the Arke Triton kernel.
+
+        Compiles the kernel for the exact shape and returns the raw function
+        for benchmarking with minimal dispatch overhead.
+        """
+        cache.precompile_layernorm([(M, N)])
+
+        X = torch.randn(M, N, device="cuda", dtype=dtype)
+        W = torch.ones(N, device="cuda", dtype=dtype)
+
+        if op == "layernorm":
+            B = torch.zeros(N, device="cuda", dtype=dtype)
+            # Warmup
+            for _ in range(3):
+                cache.layernorm(X, W, B)
+            torch.cuda.synchronize()
+            return lambda: cache.layernorm(X, W, B)
+        else:
+            # Warmup
+            for _ in range(3):
+                cache.rmsnorm(X, W)
+            torch.cuda.synchronize()
+            return lambda: cache.rmsnorm(X, W)

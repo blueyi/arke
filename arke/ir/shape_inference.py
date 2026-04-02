@@ -13,9 +13,10 @@ from __future__ import annotations
 # Operator categories for dispatch
 # ============================================================
 
-_ELEMENTWISE_UNARY = {"relu", "gelu"}
+_ELEMENTWISE_UNARY = {"relu", "gelu", "silu"}
 _ELEMENTWISE_BINARY = {"add", "mul"}
 _SAME_SHAPE_OPS = {"softmax"}
+_NORM_OPS = {"layernorm", "rmsnorm"}
 _REDUCE_OPS = {"reduce_sum", "reduce_max"}
 
 
@@ -61,6 +62,10 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
         return list(a)
 
     if op_name in _SAME_SHAPE_OPS:
+        x = input_shapes["X"]
+        return list(x)
+
+    if op_name in _NORM_OPS:
         x = input_shapes["X"]
         return list(x)
 
@@ -162,6 +167,24 @@ def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[st
         x = input_shapes["X"]
         if len(x) < 2:
             errors.append(f"{op_name}: input must be at least 2D, got {len(x)}D")
+
+    elif op_name in _NORM_OPS:
+        if "X" not in input_shapes:
+            errors.append(f"{op_name} requires input 'X'")
+            return errors
+        if "W" not in input_shapes:
+            errors.append(f"{op_name} requires input 'W'")
+            return errors
+        x = input_shapes["X"]
+        w = input_shapes["W"]
+        if len(x) < 2:
+            errors.append(f"{op_name}: X must be at least 2D, got {len(x)}D")
+        if len(w) != 1:
+            errors.append(f"{op_name}: W must be 1D, got {len(w)}D")
+        if len(x) >= 2 and len(w) == 1 and x[-1] != w[0]:
+            errors.append(
+                f"{op_name}: W dim ({w[0]}) must match last dim of X ({x[-1]})"
+            )
 
     elif op_name in _REDUCE_OPS:
         if "X" not in input_shapes:
