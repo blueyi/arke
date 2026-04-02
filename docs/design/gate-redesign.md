@@ -1,216 +1,313 @@
-# Stage 1 Gate Redesign — SMART 化 + Benchmark 驱动
+# Stage 1 Gate Redesign v2 — 泛化驱动 + Tier 3 全量验证
 
-## 当前问题诊断
+## 核心修正
 
-### 问题 1: Gate 标准不够 SMART
-| Gate | 问题 |
-|:-----|:-----|
-| G0 | "Triton matmul runs" — 没有量化标准，什么叫 "runs"？ |
-| G1 | "Known-good strategy representable" — 主观判断，无自动验证 |
-| G2 | "perf ≥ 70% cuBLAS" — 哪个 shape？哪个 dtype？单次还是多次？ |
-| G3 | "matmul perf ≥ 50% cuBLAS" — 同上，且阈值太低 |
-| G4 | "across ≥5 tasks" — 但 5 个 task 的具体定义不在 Gate 中 |
-| G5 | "latency ≤ torch.compile" vs "≤ 1.1× eager" — 标准改过，不一致 |
+v1 的错误：把 SMART 做成了"挑几个 shape 达标"，这是在做 cherry-pick 而非验证泛化。
 
-### 问题 2: 验证不可自动化
-- 大部分 Gate 验证靠人工跑脚本 + 目视检查
-- 没有 `arke gate G2` 这样的一键验证命令
-- 结果没有归档到 benchmark results
+**正确的 SMART 目标：**
+- ❌ "matmul square-1k ≥ 80% cuBLAS" — 过关 ≠ 泛化
+- ✅ "matmul 在 Tier 3 全量 50 shapes 上，≥ X% shapes 达到 Y% cuBLAS" — 分布+泛化
 
-### 问题 3: 缺少 Benchmark 对齐
-- G2-G5 的性能标准没有对应到 L1/L2/L3 benchmark 的具体 shape/baseline
-- 无法从 benchmark CSV 自动判断 Gate 是否通过
+---
+
+## Tier 体系（Shape 测试集）
+
+### Tier 1: Smoke（15 shapes）
+- 快速回归，CI 每次 commit 跑
+- 覆盖 tiny/medium/large 各一个代表
+- 用途：开发迭代中的快速检查
+
+### Tier 2: Standard（31 shapes）
+- 日常开发完成后跑
+- 覆盖方阵/矩形/LLM-typical/边界
+- 用途：PR 合并前的质量门
+
+### Tier 3: Full（50 shapes）— Gate 出口标准
+- 包含 Tier 1 + Tier 2 的全部 shapes
+- **额外加入：**
+  - warp-32 不对齐 shapes（如 M=127, K=257, N=513）
+  - 极小 shapes（M=1, M=16）
+  - 极大 shapes（8192³ if memory allows）
+  - 非 2 的幂（M=384, K=640, N=1536）
+  - 混合长短边（M=8192, N=64, K=4096）
+  - LLM 实际 shapes（GPT-2, LLaMA-7B, LLaMA-13B, Mistral 各层）
+- **用途：Gate 出口验证 — 必须在 Tier 3 全量上达标**
+
+### Tier 3 Matmul Shapes（50）
+
+| 类别 | 数量 | 示例 shapes (M,N,K) | 设计意图 |
+|:-----|:----:|:--------------------|:---------|
+| 方阵-小 | 4 | 32³, 64³, 128³, 256³ | Triton launch overhead |
+| 方阵-中 | 4 | 512³, 1024³, 2048³, 3072³ | 主战场 |
+| 方阵-大 | 3 | 4096³, 6144³, 8192³ | 大 GEMM，内存压力 |
+| 非对齐 | 6 | 127×127×127, 257×513×129, 384×640×1536, 1000×1000×1000, 1023×1025×511, 2049×2047×2050 | warp 不对齐，padding 策略 |
+| LLM-GPT2 | 5 | 128×768×768, 128×2304×768, 128×50257×768, 512×2304×768, 1024×768×768 | GPT-2 实际层 |
+| LLM-LLaMA7B | 5 | 4096×4096×4096, 4096×11008×4096, 1×4096×4096, 2048×4096×4096, 128×32000×4096 | LLaMA-7B 实际层 |
+| LLM-LLaMA13B | 4 | 5120×5120×5120, 5120×13824×5120, 2048×5120×5120, 128×32000×5120 | LLaMA-13B |
+| 矩形-宽 | 4 | 128×4096×512, 256×8192×1024, 1024×4096×1024, 64×16384×256 | FFN up projection |
+| 矩形-高 | 4 | 4096×128×512, 8192×256×1024, 4096×1024×1024, 16384×64×256 | FFN down / embedding |
+| 极端比例 | 4 | 1×1024×1024, 16×4096×4096, 8192×64×4096, 32768×1×1024 | 单行/极窄/超长 batch |
+| Batch-seq | 4 | 32×512×768, 64×256×768, 16×1024×768, 8×2048×768 | Batch×Seq × Hidden |
+| 混合实际 | 3 | 2048×7168×4096, 4096×14336×4096, 1024×8192×2048 | Mixtral/更大模型 |
+
+### Tier 3 Softmax Shapes（25）
+
+| 类别 | 数量 | 示例 shapes (M,N) | 设计意图 |
+|:-----|:----:|:-------------------|:---------|
+| Attention-小 | 4 | 12×64, 12×128, 12×256, 12×512 | GPT-2 heads |
+| Attention-大 | 4 | 32×1024, 32×2048, 32×4096, 32×8192 | LLaMA/Mistral |
+| 方阵 | 3 | 256×256, 1024×1024, 4096×4096 | Stress |
+| 宽行 | 4 | 1×32000, 1×50257, 1×128256, 4×100000 | Vocabulary |
+| 非对齐 | 4 | 12×127, 32×2049, 7×511, 15×1023 | warp 不对齐 |
+| 大 batch | 3 | 128×4096, 1024×1024, 4096×512 | Memory bandwidth |
+| 极端 | 3 | 1×16, 1×1048576, 65536×64 | 极小/极大/多行短 |
+
+### Tier 3 Elementwise Shapes（15）
+
+| 类别 | 数量 | 示例 shapes (M,N) | 设计意图 |
+|:-----|:----:|:-------------------|:---------|
+| 小 | 3 | 128×768, 256×768, 512×768 | GPT-2 |
+| 中 | 3 | 128×3072, 1024×4096, 2048×4096 | FFN |
+| 大 | 3 | 4096×4096, 8192×4096, 4096×11008 | LLaMA FFN |
+| 非对齐 | 3 | 127×769, 1000×3000, 2049×4097 | 边界 |
+| 极端 | 3 | 1×1048576, 65536×16, 32768×128 | 单行大/多行小 |
 
 ---
 
 ## 重新设计的 Gate 体系
 
-### 设计原则
-1. **Specific** — 每个 Gate 引用具体的 benchmark shape、baseline、阈值
-2. **Measurable** — 每个 criterion 有精确的数值判定，可从 CSV 自动计算
-3. **Achievable** — 阈值基于实际硬件能力设定，不过高也不过低
-4. **Relevant** — 每个 Gate 直接验证一个核心假设
-5. **Time-bound** — 每个 Gate 有对应的 Phase，完成即过
+### 评判原则
 
-### Gate → 假设 → Benchmark 层映射
-
-```
-Gate    验证假设                           Benchmark 层    自动化命令
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-G0      环境 + 工具链可用                   —              make setup && make test
-G1      IR 表达力 + 验证正确性              单元测试        pytest tests/ -q
-G2      Codegen 质量（单算子）              L1             arke gate G2
-G3      LLM 闭环优化能力                    L1 + Agent     arke gate G3
-G4      Arke vs LLM-direct 优势            L1 + L2        arke gate G4
-G5      整模型端到端                        L3             arke gate G5
-```
+1. **Gate 出口 = Tier 3 全量统计指标**，不挑 shape
+2. **指标是通过率 + 聚合比率**，不是单点
+3. **正确性是 hard gate（100%）**，性能是 soft gate（分布指标）
+4. **自动化命令产出 pass/fail + 详细 CSV**
 
 ---
 
-## Gate 定义（SMART 版）
-
 ### G0: Environment & Toolchain
-**假设：** Triton + CUDA + PyTorch 在目标硬件上可用且稳定
+**假设：** 硬件+软件栈可用且稳定
 
-| # | Criterion | 验证方法 | 通过条件 |
-|---|-----------|---------|---------|
+| # | Criterion | 验证 | 通过条件 |
+|---|-----------|------|---------|
 | G0.1 | CUDA 可用 | `torch.cuda.is_available()` | `True` |
-| G0.2 | Triton 编译 | Triton matmul 编译无错误 | exit code 0 |
-| G0.3 | GPU 执行 | Triton matmul [128,128,128] 产出正确结果 | `allclose(triton, numpy, atol=0.1)` |
-| G0.4 | 测试基线 | `pytest tests/ -q` | ≥100 passed, 0 failed |
+| G0.2 | Triton 编译通过 | Triton matmul 128³ 编译 | exit 0 |
+| G0.3 | GPU 执行正确 | Triton matmul 128³ vs NumPy | `allclose(atol=0.1)` |
+| G0.4 | 测试基线 | `pytest tests/ -q` | ≥ 100 passed, 0 failed |
 
-**出口产物：** `make test` 通过的 CI log
+**出口：** `make test` CI log
+**自动化：** `arke gate G0`
 
 ---
 
 ### G1: IR Expressiveness & Validation
-**假设：** 两层 IR 能完整表达优化策略，验证器能检测非法操作
+**假设：** IR + 验证器在各种 shape/op 组合下均正确
 
-| # | Criterion | 验证方法 | 通过条件 |
-|---|-----------|---------|---------|
-| G1.1 | OP_CATALOG 覆盖 | `len(OP_CATALOG)` | ≥ 10 ops |
-| G1.2 | Strategy 决策类型 | `len(decision_kinds)` | ≥ 6 种 (tile/fuse/place/parallel/reorder/algorithm) |
-| G1.3 | IR 序列化完整 | `ir == from_json(to_json(ir))` for 所有 10 ops | 100% round-trip |
-| G1.4 | V0 静态验证速度 | `timer(v0_validate(ir))` | < 1ms |
-| G1.5 | V1 数值验证 | matmul+softmax, 3 random seeds | 100% pass (f16: atol=0.1, rtol=0.05) |
-| G1.6 | .ak 解析 | `parse(file) → AST → IR` for ≥3 kernels | AST→IR == KernelBuilder 输出 |
+| # | Criterion | 验证 | 通过条件 |
+|---|-----------|------|---------|
+| G1.1 | OP_CATALOG 覆盖 | `len(OP_CATALOG)` | ≥ 10 |
+| G1.2 | Strategy 决策类型 | 枚举 kinds | ≥ 6 种 |
+| G1.3 | IR 序列化 | 所有 10 ops × round-trip | 100% 一致 |
+| G1.4 | V0 静态验证速度 | timer() 跨 10 ops | 100% < 1ms |
+| G1.5 | V1 数值验证-泛化 | **Tier 3 全量 shapes** × matmul/softmax, 3 seeds | **100% pass** (f16: atol=0.1, rtol=0.05) |
+| G1.6 | .ak 解析 | ≥ 3 kernel files | AST→IR == KernelBuilder |
 | G1.7 | 测试覆盖 | `pytest tests/ -q` | ≥ 200 passed, 0 failed |
 
-**出口产物：** `pytest tests/test_ir.py tests/test_validation.py tests/test_parser.py -v` 全绿
+**G1.5 是关键改变：** 不是验证"几个 shape 正确"，而是"Tier 3 所有 shape 下 V1 验证都通过"。
+
+**出口：** `arke gate G1` → 跑全量 V1 验证 + 单元测试
+**产物：** `gate_results/G1/validation_matrix.csv` (shape × op × seed → pass/fail)
 
 ---
 
-### G2: Codegen Quality (Single-Op)
-**假设：** Arke 模板生成的 Triton kernel 性能可达 vendor library 水平
+### G2: Codegen Quality — Shape 泛化
+**假设：** Arke 模板生成的 kernel 在广泛 shapes 上都性能合格
 
-| # | Criterion | 验证方法 | 通过条件 |
-|---|-----------|---------|---------|
-| G2.1 | matmul 正确性 | L1 Arke runner, 所有 12 shapes | 100% `allclose(arke, numpy, atol=0.1)` |
-| G2.2 | softmax 正确性 | L1 Arke runner, 所有 5 shapes | 100% `allclose` |
-| G2.3 | matmul 性能 (中型) | L1: `square-1k` [1024³] | Arke ≥ 80% cuBLAS |
-| G2.4 | matmul 性能 (大型) | L1: `square-4k` [4096³] | Arke ≥ 90% cuBLAS |
-| G2.5 | matmul 性能 (LLM shape) | L1: `seq512` [512,2304,768] | Arke ≥ 80% cuBLAS |
-| G2.6 | softmax 性能 | L1: `attn-large` [32,2048] | Arke ≥ 80% cuDNN |
-| G2.7 | vs FlagGems (P1) | L1 matmul geomean across 12 shapes | Arke ≥ 80% FlagGems |
+| # | Criterion | 验证 | 通过条件 |
+|---|-----------|------|---------|
+| G2.1 | matmul 正确性 | L1, **Tier 3 全部 50 shapes** | **100% allclose** |
+| G2.2 | softmax 正确性 | L1, **Tier 3 全部 25 shapes** | **100% allclose** |
+| G2.3 | matmul 性能通过率 | L1 Tier 3 50 shapes, 每个 vs cuBLAS | **≥ 70% shapes 达到 ≥ 80% cuBLAS** |
+| G2.4 | matmul 性能下限 | L1 Tier 3 50 shapes 中最差的 | **0% shapes 低于 20% cuBLAS**（排除 M≤32 的极端 shape） |
+| G2.5 | matmul geomean vs cuBLAS | L1 Tier 3 50 shapes 的几何平均 | **geomean ≥ 85%** cuBLAS |
+| G2.6 | softmax 性能通过率 | L1 Tier 3 25 shapes, 每个 vs cuDNN | **≥ 60% shapes 达到 ≥ 80% cuDNN** |
+| G2.7 | softmax 性能下限 | L1 Tier 3 25 shapes 中最差的 | **0% shapes 低于 10% cuDNN**（排除 N≤32 极端） |
+| G2.8 | vs FlagGems 竞争力 | L1 Tier 3 matmul geomean | **geomean ≥ 75% FlagGems** |
 
-**出口产物：** `python -m benchmarks --layer L1 --op matmul,softmax` CSV + 自动判定脚本
+**关键指标解读：**
+- G2.3 "70% shapes ≥ 80% cuBLAS" = 50 个 shape 中至少 35 个达到 cuBLAS 八成性能
+- G2.4 "0% < 20%" = 不能有某个 shape 只跑到 cuBLAS 五分之一（排除已知差的极小 shape）
+- G2.5 geomean 是整体实力的聚合指标
 
-**自动验证命令：** `arke gate G2`
+**出口：** `arke gate G2` → L1 全量 Tier 3 bench
+**产物：**
+- `gate_results/G2/matmul_tier3.csv` (50 shapes × baselines)
+- `gate_results/G2/softmax_tier3.csv` (25 shapes × baselines)
+- `gate_results/G2/summary.json` (通过率、geomean、最差 shape)
+
+---
+
+### G3: LLM Closed-Loop Optimization — 泛化能力
+**假设：** LLM agent 在不同 shape 上都能自主优化到合格水平
+
+| # | Criterion | 验证 | 通过条件 |
+|---|-----------|------|---------|
+| G3.1 | Agent 工具使用 | 1 session | ≥ 8 distinct tools |
+| G3.2 | Agent 策略质量 | 1 session | ≥ 4 decisions |
+| G3.3 | 闭环无人工 | Agent runner | 0 human steps |
+| G3.4 | Agent 正确性-泛化 | Agent 对 **≥10 diverse shapes** 生成 kernel | **100% 正确** |
+| G3.5 | Agent 性能-泛化 | Agent kernels 在 ≥10 shapes 上 vs cuBLAS | **geomean ≥ 70% cuBLAS** |
+| G3.6 | Agent 错误恢复 | trajectory 分析 | ≥ 1 rollback→success |
+| G3.7 | 轨迹完整性 | JSONL output | header + ≥6 step records |
+
+**G3.4-G3.5 的改变：** 不是只在一个 shape 上跑 agent，而是在 10+ diverse shapes 上验证 agent 是否都能产出合格 kernel。shapes 从 Tier 3 中按类别抽样（方阵×3, 矩形×3, 非对齐×2, LLM×2）。
+
+**出口：** `arke gate G3`
+**产物：**
+- `gate_results/G3/agent_trajectories/` (每个 shape 一个 JSONL)
+- `gate_results/G3/agent_kernels/` (每个 shape 的生成 kernel)
+- `gate_results/G3/agent_performance.csv` (shape × latency × vs_cublas)
+
+---
+
+### G4: Arke vs Baselines — 全面对比
+**假设：** Arke 在正确性+稳定性+效率上全面优于 LLM-direct
+
+| # | Criterion | 验证 | 通过条件 |
+|---|-----------|------|---------|
+| G4.1 | 正确性优势 | **Tier 3 全量** × 3 trials | Arke correct rate ≥ LLM-direct correct rate |
+| G4.2 | 性能竞争 (L1) | Tier 3 matmul geomean | Arke geomean ≥ 90% LLM-direct geomean |
+| G4.3 | 一致性优势 | Tier 3 × 3 trials 的 variance | Arke stddev ≤ LLM-direct stddev |
+| G4.4 | Token 效率 | 端到端 token 统计 | Arke ≤ 50% LLM-direct tokens |
+| G4.5 | vs P1 Expert 竞争 | L1 Tier 3 matmul geomean vs FlagGems | Arke ≥ 85% FlagGems |
+| G4.6 | L2 融合泛化 | L2 **Tier 3 全量** matmul+gelu | Arke fused geomean ≥ 80% FlagGems |
+
+**出口：** `arke gate G4`
+**产物：**
+- `gate_results/G4/comparison_matrix.csv` (Tier 3 × method × trial)
+- `gate_results/G4/token_efficiency.json`
+- `gate_results/G4/summary.json`
+
+---
+
+### G5: End-to-End Model — 多配置泛化
+**假设：** Arke kernel 在真实模型的多种推理配置下都可接受
+
+| # | Criterion | 验证 | 通过条件 |
+|---|-----------|------|---------|
+| G5.1 | 正确性 | GPT-2 logits, **3 seq_lens** (128/256/512) | **100%** top-1 match, max_diff < 5.0 |
+| G5.2 | 延迟泛化 | L3, **3 seq_lens** | **≥ 2/3 seq_lens**: Arke ≤ 1.1× eager |
+| G5.3 | 延迟 geomean | L3, 3 seq_lens 的 geomean ratio | **geomean(arke/eager) ≤ 1.15** |
+| G5.4 | 内存 | L3, 所有 seq_lens | **100%** peak_mem ≤ 6144 MB |
+| G5.5 | 替换覆盖 | patch 统计 | ≥ 48 ops 替换 |
+| G5.6 | batch 泛化 | L3, batch=1/4/8 × seq=128 | **≥ 2/3 batch sizes**: 正确 + ≤ 1.15× eager |
+
+**出口：** `arke gate G5`
+**产物：**
+- `gate_results/G5/e2e_results.csv` (seq × batch × mode → latency/mem/correct)
+- `gate_results/G5/summary.json`
+
+---
+
+## 评分聚合公式
+
+### 单算子评分（per shape）
+```
+shape_score = cublas_latency / arke_latency  (越高越好，>1 = 比 cuBLAS 快)
+```
+
+### Gate 聚合指标
+```
+geomean = exp(mean(log(shape_scores)))       # 几何平均：消除极端值影响
+pass_rate = count(shape_score >= threshold) / total_shapes
+worst_case = min(shape_scores)               # 最差 shape 不能太离谱
+```
+
+### Gate 判定
 ```python
-# 从 L1 CSV 读取数据，自动计算:
-for shape in ["square-1k", "square-4k", "seq512"]:
-    ratio = cublas_latency[shape] / arke_latency[shape]
-    assert ratio >= threshold[shape], f"G2 FAIL: {shape} ratio={ratio}"
+def check_gate_G2(results: pd.DataFrame) -> GateResult:
+    scores = results["cublas_us"] / results["arke_us"]
+    
+    # 排除极端小 shape（M ≤ 32）的性能判定
+    valid = results[results["M"] > 32]
+    valid_scores = valid["cublas_us"] / valid["arke_us"]
+    
+    return GateResult(
+        correctness_rate = (results["correct"] == True).mean(),  # must be 1.0
+        pass_rate_80 = (valid_scores >= 0.8).mean(),            # must be ≥ 0.70
+        worst_case = valid_scores.min(),                         # must be ≥ 0.20
+        geomean = gmean(valid_scores),                           # must be ≥ 0.85
+    )
 ```
 
 ---
 
-### G3: LLM Closed-Loop Optimization
-**假设：** LLM 通过 tool-use 能自主优化 kernel，达到合格性能
-
-| # | Criterion | 验证方法 | 通过条件 |
-|---|-----------|---------|---------|
-| G3.1 | LLM 工具使用 | 1 session trajectory | ≥ 8 distinct tools used |
-| G3.2 | LLM 策略应用 | 1 session trajectory | ≥ 4 decisions applied |
-| G3.3 | 闭环无人工 | Agent runner | start→finish, 0 human steps |
-| G3.4 | matmul 性能 | Agent output kernel, L1 shape `square-1k` | ≥ 80% cuBLAS |
-| G3.5 | 错误恢复 | Trajectory | 至少 1 次 rollback 后成功 |
-| G3.6 | 轨迹完整 | JSONL output | 包含 header + ≥6 step records |
-
-**出口产物：** 
-- Agent 运行 log + trajectory JSONL
-- Agent 生成的 kernel 存入 `benchmarks/results/kernels/agent/`
-- L1 benchmark 对 agent kernel 的性能数据
-
-**自动验证命令：** `arke gate G3` (运行 agent → 检查 trajectory → L1 bench agent kernel)
-
----
-
-### G4: Arke vs Baselines Advantage
-**假设：** Arke 在正确性+稳定性+Token 效率上优于 LLM 直接写 Triton
-
-| # | Criterion | 验证方法 | 通过条件 |
-|---|-----------|---------|---------|
-| G4.1 | 正确性优势 | 5+ tasks × 3 trials | Arke correct rate ≥ LLM-direct correct rate |
-| G4.2 | 性能竞争力 | L1 matmul geomean (≥6 shapes) | Arke ≥ 90% of LLM-direct perf |
-| G4.3 | 一致性优势 | 5+ tasks × 3 trials | Arke variance ≤ LLM-direct variance |
-| G4.4 | Token 效率 | 端到端 token 消耗 | Arke ≤ 50% of LLM-direct tokens |
-| G4.5 | vs FlagGems 竞争 | L1 geomean (large shapes: ≥1K) | Arke ≥ 90% FlagGems |
-| G4.6 | 融合算子竞争 | L2 matmul+gelu, shape square-1k | Arke fused ≥ 80% FlagGems fused |
-
-**出口产物：**
-- L1/L2 CSV 对比数据
-- Token 消耗统计
-- `benchmarks/results/comparison/arke_vs_direct.csv`
-
-**自动验证命令：** `arke gate G4`
-
----
-
-### G5: End-to-End Model Integration
-**假设：** Arke kernel 集成到真实模型后，性能/正确性/内存均可接受
-
-| # | Criterion | 验证方法 | 通过条件 |
-|---|-----------|---------|---------|
-| G5.1 | 正确性 | GPT-2 logits 比较 | top-1 match ✅, max_diff < 5.0 |
-| G5.2 | 延迟 (seq=128) | L3 benchmark | Arke ≤ 1.1× PyTorch eager |
-| G5.3 | 延迟 (seq=512) | L3 benchmark | Arke ≤ 1.1× PyTorch eager |
-| G5.4 | 内存 | L3 benchmark | peak_mem ≤ 6144 MB (GPU VRAM) |
-| G5.5 | 替换覆盖 | patch 统计 | ≥ 48 Conv1D/Linear 替换 |
-| G5.6 | 多 seq_len 稳定 | L3 seq=128,256,512 | 3 个 seq_len 中至少 2 个 pass G5.2 标准 |
-
-**出口产物：**
-- `python -m benchmarks --layer L3 --seq-len 128,256,512` CSV
-- 自动 pass/fail 判定
-
-**自动验证命令：** `arke gate G5`
-
----
-
-## Gate 自动验证 CLI
+## 自动化 CLI 设计
 
 ```bash
-# 验证单个 Gate
-arke gate G0          # 环境检查
-arke gate G2          # 运行 L1 bench + 判定
-arke gate G5          # 运行 L3 bench + 判定
-arke gate --all       # 所有 Gate
+# 单个 Gate
+arke gate G0                    # 环境检查
+arke gate G2                    # 跑 L1 Tier 3 全量 + 判定
+arke gate G5                    # 跑 L3 多配置 + 判定
+arke gate --all                 # 全部 Gate（耗时较长）
 
-# 输出格式
-G2: Codegen Quality (Single-Op)
-  G2.1 matmul correctness (12 shapes)    ✅ PASS  12/12
-  G2.2 softmax correctness (5 shapes)    ✅ PASS  5/5
-  G2.3 matmul perf square-1k ≥80%        ✅ PASS  164% cuBLAS
-  G2.4 matmul perf square-4k ≥90%        ✅ PASS  95% cuBLAS
-  G2.5 matmul perf seq512 ≥80%           ✅ PASS  139% cuBLAS
-  G2.6 softmax perf attn-large ≥80%      ✅ PASS  109% cuDNN
-  G2.7 vs FlagGems geomean ≥80%          ✅ PASS  94.5%
-  ──────────────────────────────────────
-  G2: PASS (7/7)
+# 指定 Tier
+arke gate G2 --tier 1           # 快速检查（15 shapes）
+arke gate G2 --tier 2           # 标准检查（31 shapes）
+arke gate G2 --tier 3           # Gate 出口（50 shapes）
+
+# 输出
+arke gate G2 --tier 3
+
+  G2: Codegen Quality — Shape Generalization (Tier 3: 50 shapes)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  G2.1 matmul correctness          ✅ 50/50 (100%)
+  G2.2 softmax correctness         ✅ 25/25 (100%)
+  G2.3 matmul ≥80% cuBLAS rate     ✅ 38/50 (76% ≥ 70%)
+  G2.4 matmul worst case           ✅ min=22% (M=32³, excluded)
+                                       min valid=43% (M=127³) ≥ 20%
+  G2.5 matmul geomean              ✅ 91% cuBLAS (≥ 85%)
+  G2.6 softmax ≥80% cuDNN rate     ✅ 17/25 (68% ≥ 60%)
+  G2.7 softmax worst case          ✅ min valid=15% (N=1048576) ≥ 10%
+  G2.8 vs FlagGems geomean         ✅ 82% (≥ 75%)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  G2: PASS (8/8)
+
+  Detailed CSV: gate_results/G2/matmul_tier3.csv
+  Worst shapes:
+    M=127,N=127,K=127  → 43% cuBLAS (non-aligned)
+    M=64,N=64,K=64     → 31% cuBLAS (launch overhead, excluded M≤32 rule)
 ```
 
 ---
 
-## 阈值设定依据
+## 阈值设定逻辑
 
-所有阈值基于 RTX 3060 Laptop 实测数据设定：
+| 阈值 | 设定方式 | 说明 |
+|:-----|:---------|:-----|
+| 正确性 100% | Hard gate | 生成的 kernel 必须全部正确，不允许例外 |
+| 性能通过率 70% | 基于 Pareto 分布 | 小 shape 天然慢（launch overhead），允许 30% 不达标 |
+| 性能 geomean 85% | 整体实力 | geomean 比 mean 更稳健，不被极端值拉动 |
+| worst case 20% | 底线 | 即使最差的 shape 也不能离谱到只有 cuBLAS 1/5 |
+| E2E 1.1× | 实用阈值 | 10% overhead 对用户可接受 |
+| Token 50% | 效率目标 | IR 编码比 raw code 短，应该省 token |
 
-| 阈值 | 来源 | 说明 |
-|:-----|:-----|:-----|
-| matmul ≥80% cuBLAS (1K) | 实测 164% | 留 2× 安全余量 |
-| matmul ≥90% cuBLAS (4K) | 实测 95% | 接近硬件天花板 |
-| softmax ≥80% cuDNN | 实测 109% | 留余量 |
-| vs FlagGems ≥80% | 实测 94.5% | FG 是 Triton 最强开源基线 |
-| E2E ≤1.1× eager | 实测 1.01× | 允许 10% overhead |
-| Token ≤50% LLM-direct | 实测 ~28% | IR 比 raw code 短很多 |
+**排除规则：**
+- 性能判定中排除 M≤32 (matmul) 或 N≤32 (softmax) 的极端 shape
+- 原因：Triton ~55μs launch floor 在极小 shape 上无法避免，这是 Triton 本身的限制而非 Arke 的问题
+- 这些 shape 仍要求**正确性 100%**，只是性能比率不计入通过率/geomean
 
 ---
 
-## 与 Benchmark 系统的映射
+## v1 → v2 关键变化
 
-| Gate Criterion | Benchmark Command | CSV Source | Auto-check |
-|:---------------|:-----------------|:-----------|:-----------|
-| G2.3 matmul 1K ≥80% | `--layer L1 --op matmul` | `matmul_results.csv` shape=square-1k | `arke[latency] / cublas[latency] ≤ 1.25` |
-| G2.7 vs FlagGems | `--layer L1 --op matmul` | `matmul_results.csv` | `geomean(cublas/arke) / geomean(cublas/flaggems) ≥ 0.8` |
-| G4.6 fused ≥80% FG | `--layer L2` | `matmul_gelu_results.csv` | `flaggems[latency] / arke[latency] ≤ 1.25` |
-| G5.2 E2E ≤1.1× | `--layer L3 --seq-len 128` | `gpt2_results.csv` | `arke[mean_ms] / eager[mean_ms] ≤ 1.1` |
+| 方面 | v1 (cherry-pick) | v2 (泛化驱动) |
+|:-----|:-----------------|:-------------|
+| Shape 覆盖 | 挑 3-4 个 shape | Tier 3 全量 50+ |
+| 性能标准 | 单点 ≥ X% | 通过率 + geomean + worst case |
+| 正确性 | 隐式 | 显式 hard gate 100% |
+| 非对齐 | 未覆盖 | 6+ 非对齐 shapes |
+| 极端 case | 未覆盖 | 极小/极大/单行/宽行 |
+| E2E 泛化 | 1 个 seq_len | 3 seq_lens + 3 batch sizes |
+| Agent 泛化 | 1 个 shape | 10+ diverse shapes |
+| 输出 | 人工检查 | 自动 pass/fail + CSV 归档 |
