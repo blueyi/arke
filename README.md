@@ -329,10 +329,7 @@ benchmarks/                    # Benchmark System
 
 | Document | Description |
 |----------|-------------|
-| [benchmarks/README.md](benchmarks/README.md) | Benchmark usage guide — CLI, layers, baselines, output format |
-| [benchmarks/BENCHMARK_DESIGN.md](benchmarks/BENCHMARK_DESIGN.md) | Design — three-layer architecture, scoring system, quality gates |
-| [benchmarks/OPERATOR_SOURCES.md](benchmarks/OPERATOR_SOURCES.md) | Operator source registry — 8 categories of GPU kernels with provenance |
-| [benchmarks/SYNERGY.md](benchmarks/SYNERGY.md) | Benchmark ↔ Arke co-development — target-driven development loop |
+| [benchmarks/BENCHMARK.md](benchmarks/BENCHMARK.md) | **Complete benchmark reference** — architecture, baselines, shapes, scoring, quality gates, operator sources, CLI, development workflow |
 | [benchmarks/results/EVALUATION_REPORT.md](benchmarks/results/EVALUATION_REPORT.md) | **Stage 1 Evaluation Report** — all gates, L1/L2/L3 data, conclusions |
 
 ## License
