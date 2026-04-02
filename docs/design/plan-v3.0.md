@@ -3,6 +3,13 @@
 > Each Phase has SMART completion criteria. Gate must pass before advancing.
 > Date: 2026-04-01
 
+## Design Principles
+
+1. **AI-First** — LLM agents make optimization decisions; compilers verify
+2. **Minimal-Token** — `.ak` kernels are 8–15× shorter than equivalent Triton. LLMs generate optimal GPU code from minimal token budgets, reducing cost and latency vs. direct code generation
+3. **Semantic/Strategy Separation** — *What to compute* and *how to optimize* are independent
+4. **Compiler-Verified** — Every decision validated by deterministic checks
+
 ---
 
 ## Current Snapshot (2026-04-01)

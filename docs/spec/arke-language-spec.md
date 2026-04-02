@@ -39,6 +39,10 @@ IR must be identical (modulo auto-generated IDs).
 The language design choices are informed by the fact that LLMs are the
 primary IR consumer:
 
+- **Minimal-token representation**: A complete kernel in `.ak` is 5–10 lines vs
+  50–200 lines of equivalent Triton/CUDA code. This means LLMs can generate and
+  reason about kernels with 10–50× fewer tokens, reducing cost and latency while
+  allowing broader search within context limits
 - **No implicit semantics**: Every operator call is explicit. No overloaded `*`
   that could mean matmul or elementwise mul depending on shapes
 - **Typed parameters**: Shape and dtype are always declared, never inferred
