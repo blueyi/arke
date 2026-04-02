@@ -35,6 +35,7 @@ class TrajectoryRecord:
     state: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize this trajectory record to a dict."""
         d = {
             "step": self.step,
             "timestamp": self.timestamp,
@@ -64,6 +65,7 @@ class TrajectoryWriter:
     """
 
     def __init__(self, path: str | Path):
+        """Initialize the trajectory writer for the given file path."""
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._file = open(self.path, "w")
@@ -119,9 +121,11 @@ class TrajectoryWriter:
         self._file.write(json.dumps(record.to_dict(), default=str) + "\n")
 
     def flush(self) -> None:
+        """Flush buffered trajectory data to disk."""
         self._file.flush()
 
     def close(self) -> None:
+        """Close the trajectory file."""
         self._file.close()
 
     def __enter__(self) -> TrajectoryWriter:

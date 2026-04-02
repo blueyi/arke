@@ -26,6 +26,7 @@ class TritonBackend(ArkeBackend):
     name = "triton"
 
     def __init__(self) -> None:
+        """Initialize with Triton template engine and compiler."""
         self._engine = TritonTemplateEngine()
         self._compiler = TritonCompiler()
 

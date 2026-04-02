@@ -40,6 +40,7 @@ class Param:
     layout: str = "row_major"
 
     def to_tensor_desc(self) -> TensorDesc:
+        """Convert this parameter to a TensorDesc."""
         return TensorDesc(shape=self.shape, dtype=self.dtype, layout=self.layout)
 
 
@@ -53,10 +54,12 @@ class ParamRef:
     name: str
 
     def to_dict(self) -> dict:
+        """Serialize this parameter reference to a dict."""
         return {"ref": "param", "name": self.name}
 
     @classmethod
     def from_dict(cls, d: dict) -> ParamRef:
+        """Deserialize a ParamRef from a dict."""
         return cls(name=d["name"])
 
 
@@ -66,10 +69,12 @@ class NodeRef:
     id: str
 
     def to_dict(self) -> dict:
+        """Serialize this node reference to a dict."""
         return {"ref": "node", "id": self.id}
 
     @classmethod
     def from_dict(cls, d: dict) -> NodeRef:
+        """Deserialize a NodeRef from a dict."""
         return cls(id=d["id"])
 
 

@@ -52,6 +52,7 @@ class ArkePipeline:
     """
 
     def __init__(self) -> None:
+        """Initialize the pipeline with a numerical validator."""
         self.numerical_validator = NumericalValidator()
 
     # ─── Convenience builders ───

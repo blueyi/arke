@@ -107,12 +107,14 @@ class Program:
     strategies: list[StrategyDef] = field(default_factory=list)
 
     def get_kernel(self, name: str) -> KernelDef | None:
+        """Get a kernel definition by name, or None if not found."""
         for k in self.kernels:
             if k.name == name:
                 return k
         return None
 
     def get_strategy(self, name: str) -> StrategyDef | None:
+        """Get a strategy definition by name, or None if not found."""
         for s in self.strategies:
             if s.name == name:
                 return s

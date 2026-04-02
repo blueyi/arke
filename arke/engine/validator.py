@@ -51,6 +51,7 @@ class ValidationResult:
 
     @property
     def violations(self) -> list[str]:
+        """Return all violation messages from all checks."""
         v = []
         for c in self.checks:
             v.extend(c.violations)
@@ -69,6 +70,7 @@ class StaticValidator:
         strategy: StrategyIR,
         hw_profile: dict,
     ) -> ValidationResult:
+        """Validate strategy IR against hardware constraints and IR invariants."""
         checks = [
             self._check_tile_legality(semantic, strategy),
             self._check_hw_constraints(semantic, strategy, hw_profile),

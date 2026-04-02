@@ -68,6 +68,7 @@ def patch_gpt2_custom_op(model, seq_len: int = 128):
     for _name, module in model.named_modules():
         if Conv1D is not None and isinstance(module, Conv1D):
             def make_conv1d_fwd(mod):
+                """Create a forward function that uses Arke matmul for Conv1D."""
                 def forward(x):
                     out = torch.ops.arke.matmul(x, mod.weight)
                     if mod.bias is not None:
@@ -80,6 +81,7 @@ def patch_gpt2_custom_op(model, seq_len: int = 128):
 
         elif isinstance(module, torch.nn.Linear):
             def make_linear_fwd(mod):
+                """Create a forward function that uses Arke matmul for Linear."""
                 def forward(x):
                     out = torch.ops.arke.matmul(x, mod.weight.t().contiguous())
                     if mod.bias is not None:
@@ -98,6 +100,7 @@ def patch_gpt2_custom_op(model, seq_len: int = 128):
         module, query, key, value, attention_mask,
         scaling=None, dropout=0.0, **kwargs
     ):
+        """Arke-patched eager attention using custom softmax op."""
         if scaling is None:
             scaling = query.size(-1) ** -0.5
 

@@ -25,6 +25,7 @@ class KernelCache:
     """Pre-compiled kernel cache with direct dispatch."""
 
     def __init__(self):
+        """Initialize the kernel cache with empty matmul and softmax caches."""
         self._backend = TritonBackend()
         self._compiler = TritonCompiler()
         self._matmul_cache: dict[tuple[int, int, int], Callable] = {}
@@ -156,6 +157,7 @@ class KernelCache:
 
     @property
     def stats(self) -> dict:
+        """Return cache statistics with counts of compiled shapes."""
         return {
             "matmul_shapes": len(self._matmul_cache),
             "softmax_shapes": len(self._softmax_cache),

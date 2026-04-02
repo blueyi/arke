@@ -77,6 +77,7 @@ class NumPyCPUSource(ReferenceSource):
         semantic_ir: SemanticIR,
         inputs: dict[str, np.ndarray],
     ) -> np.ndarray:
+        """Compute reference output using NumPy at the configured precision."""
         from arke.engine.numerical_check import NumericalValidator
         validator = NumericalValidator()
 
@@ -95,6 +96,7 @@ class NumPyCPUSource(ReferenceSource):
         seed: int = 42,
         input_type: str = "normal",
     ) -> dict[str, np.ndarray]:
+        """Generate random input tensors for accuracy comparison."""
         rng = np.random.RandomState(seed)
         inputs: dict[str, np.ndarray] = {}
 
@@ -130,6 +132,7 @@ class TorchGPUSource(ReferenceSource):
     name = "torch_gpu"
 
     def __init__(self, device: str = "cuda"):
+        """Initialize with the specified GPU device."""
         self.device = device
 
     def generate_reference(
@@ -137,6 +140,7 @@ class TorchGPUSource(ReferenceSource):
         semantic_ir: SemanticIR,
         inputs: dict[str, np.ndarray],
     ) -> np.ndarray:
+        """Compute reference output using PyTorch on GPU."""
         import torch
 
         # Convert to GPU tensors
@@ -156,6 +160,7 @@ class TorchGPUSource(ReferenceSource):
         seed: int = 42,
         input_type: str = "normal",
     ) -> dict[str, np.ndarray]:
+        """Generate random input tensors, delegating to NumPy source."""
         # Delegate to NumPy source for input generation
         cpu_source = NumPyCPUSource()
         return cpu_source.generate_inputs(semantic_ir, seed, input_type)
@@ -206,9 +211,11 @@ class CustomSource(ReferenceSource):
     name = "custom"
 
     def __init__(self, ref_data: dict[str, np.ndarray] | None = None):
+        """Initialize with optional pre-computed reference data."""
         self._ref_data = ref_data or {}
 
     def set_reference(self, inputs: dict[str, np.ndarray], output: np.ndarray) -> None:
+        """Set the reference inputs and expected output."""
         self._ref_data["output"] = output
         self._ref_data.update(inputs)
 
@@ -217,6 +224,7 @@ class CustomSource(ReferenceSource):
         semantic_ir: SemanticIR,
         inputs: dict[str, np.ndarray],
     ) -> np.ndarray:
+        """Return the stored reference output."""
         if "output" not in self._ref_data:
             raise ValueError("No reference output set. Call set_reference() first.")
         return self._ref_data["output"]
@@ -227,6 +235,7 @@ class CustomSource(ReferenceSource):
         seed: int = 42,
         input_type: str = "normal",
     ) -> dict[str, np.ndarray]:
+        """Return stored inputs or generate random ones as fallback."""
         # Return stored inputs, or fall back to random
         stored = {k: v for k, v in self._ref_data.items() if k != "output"}
         if stored:

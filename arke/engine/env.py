@@ -31,6 +31,7 @@ class ArkeEnv:
     """
 
     def __init__(self, semantic: SemanticIR, target_hw: str):
+        """Initialize the environment with a semantic IR and hardware target."""
         self.semantic = semantic
         self.target_hw = target_hw
         self.strategy = StrategyIR(

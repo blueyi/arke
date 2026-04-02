@@ -38,6 +38,7 @@ class KernelBuilder:
     """
 
     def __init__(self, name: str):
+        """Initialize a kernel builder with the given kernel name."""
         self.name = name
         self._params: list[Param] = []
         self._nodes: list[Node] = []

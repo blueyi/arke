@@ -124,7 +124,9 @@ def patch_gpt2_fast(model, cache):
     for _name, module in model.named_modules():
         if Conv1D is not None and isinstance(module, Conv1D):
             def make_conv1d_fwd(mod, c):
+                """Create a forward function using cached Arke matmul for Conv1D."""
                 def forward(x):
+                    """Run Conv1D forward pass with Arke cached matmul."""
                     out = c.matmul(x, mod.weight)
                     if mod.bias is not None:
                         out = out + mod.bias
@@ -136,7 +138,9 @@ def patch_gpt2_fast(model, cache):
 
         elif isinstance(module, torch.nn.Linear):
             def make_linear_fwd(mod, c):
+                """Create a forward function using cached Arke matmul for Linear."""
                 def forward(x):
+                    """Run Linear forward pass with Arke cached matmul."""
                     out = c.matmul(x, mod.weight.t().contiguous())
                     if mod.bias is not None:
                         out = out + mod.bias
@@ -360,6 +364,7 @@ def run_compare(seq_len: int = 128, use_custom_ops: bool = False):
 
 
 def main():
+    """CLI entry point for GPT-2 E2E benchmarking."""
     parser = argparse.ArgumentParser(
         description="GPT-2 Small E2E with Arke kernels"
     )

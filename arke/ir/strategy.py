@@ -62,6 +62,7 @@ class StrategyIR:
 
     @property
     def decision_count(self) -> int:
+        """Return the number of optimization decisions."""
         return len(self.decisions)
 
     def add_decision(self, decision: Decision) -> Decision:
@@ -79,6 +80,7 @@ class StrategyIR:
 
     def tile(self, loop: str, factors: list[int],
              rationale: str | None = None) -> Decision:
+        """Add a tile decision for the given loop with specified factors."""
         return self.add_decision(Decision(
             kind="tile",
             params={"loop": loop, "factors": factors},
@@ -87,6 +89,7 @@ class StrategyIR:
 
     def reorder(self, order: list[str],
                 rationale: str | None = None) -> Decision:
+        """Add a reorder decision with the specified loop order."""
         return self.add_decision(Decision(
             kind="reorder",
             params={"order": order},
@@ -95,6 +98,7 @@ class StrategyIR:
 
     def fuse(self, ops: list[str], fusion_type: str = "epilogue",
              rationale: str | None = None) -> Decision:
+        """Add a fusion decision for the specified operators."""
         return self.add_decision(Decision(
             kind="fuse",
             params={"ops": ops, "type": fusion_type},
@@ -103,6 +107,7 @@ class StrategyIR:
 
     def parallel(self, loops: list[str], mapping: dict[str, str],
                  rationale: str | None = None) -> Decision:
+        """Add a parallelism decision mapping loops to hardware dimensions."""
         return self.add_decision(Decision(
             kind="parallel",
             params={"loops": loops, "mapping": mapping},
@@ -111,6 +116,7 @@ class StrategyIR:
 
     def place(self, tensor: str, memory: str,
               rationale: str | None = None) -> Decision:
+        """Add a memory placement decision for a tensor."""
         return self.add_decision(Decision(
             kind="place",
             params={"tensor": tensor, "memory": memory},
@@ -126,17 +132,21 @@ class StrategyIR:
         return "\n".join(lines)
 
     def to_dict(self) -> dict:
+        """Serialize the strategy IR to a plain dict."""
         return asdict(self)
 
     def to_json(self, indent: int = 2) -> str:
+        """Serialize the strategy IR to a JSON string."""
         return json.dumps(self.to_dict(), indent=indent)
 
     def to_file(self, path: str) -> None:
+        """Save the strategy IR to a JSON file."""
         with open(path, "w") as f:
             f.write(self.to_json())
 
     @classmethod
     def from_dict(cls, data: dict) -> StrategyIR:
+        """Deserialize a StrategyIR from a plain dict."""
         ir = cls(
             version=data.get("version", "0.1.0"),
             kernel_id=data.get("kernel_id", ""),
@@ -155,4 +165,5 @@ class StrategyIR:
 
     @classmethod
     def from_json(cls, json_str: str) -> StrategyIR:
+        """Deserialize a StrategyIR from a JSON string."""
         return cls.from_dict(json.loads(json_str))

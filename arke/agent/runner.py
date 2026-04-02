@@ -50,6 +50,7 @@ class LLMRunner:
     """Drives LLM optimization sessions via tool-use."""
 
     def __init__(self, config: LLMConfig, timeout: float = 300.0):
+        """Initialize the LLM runner with config and timeout."""
         self.config = config
         self.timeout = timeout
         self.client = httpx.Client(timeout=timeout)

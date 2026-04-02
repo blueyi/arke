@@ -78,6 +78,7 @@ class AccuracyMetrics:
     nontrivial_elements: int = 0  # |ref| > epsilon
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize accuracy metrics to a dict."""
         return {
             "abs_max": round(self.abs_max, 8),
             "abs_mean": round(self.abs_mean, 8),
@@ -137,6 +138,7 @@ class CompareConfig:
     num_trials: int = 5
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize comparison config to a dict."""
         return {
             "precision_test": self.precision_test,
             "precision_ref": self.precision_ref,
@@ -216,6 +218,7 @@ class CompareResult:
     timestamp: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize comparison result to a dict."""
         return {
             "op_name": self.op_name,
             "input_shape": self.input_shape,
@@ -243,6 +246,7 @@ class BenchmarkResult:
     environment: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize benchmark result to a dict."""
         return {
             "op_name": self.op_name,
             "input_shape": self.input_shape,
@@ -537,12 +541,15 @@ class AccuracyBenchmark:
     ) -> AccuracyMetrics:
         """Aggregate metrics across trials using median."""
         def med(attr: str) -> float:
+            """Compute median of an attribute across metrics."""
             return float(np.median([getattr(m, attr) for m in metrics_list]))
 
         def max_(attr: str) -> float:
+            """Compute max of an attribute across metrics."""
             return float(np.max([getattr(m, attr) for m in metrics_list]))
 
         def sum_(attr: str) -> int:
+            """Compute sum of an attribute across metrics."""
             return int(np.sum([getattr(m, attr) for m in metrics_list]))
 
         return AccuracyMetrics(

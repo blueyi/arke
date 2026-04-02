@@ -48,27 +48,34 @@ class OptimizationBudget:
 
     @property
     def decisions_remaining(self) -> int:
+        """Return the number of decisions remaining in the budget."""
         return max(0, self.max_decisions - self.decisions_used)
 
     @property
     def compiles_remaining(self) -> int:
+        """Return the number of compiles remaining in the budget."""
         return max(0, self.max_compiles - self.compiles_used)
 
     @property
     def exhausted(self) -> bool:
+        """Return True if the decision budget is exhausted."""
         return self.decisions_remaining == 0
 
     @property
     def should_warn(self) -> bool:
+        """Return True if the budget warning threshold has been reached."""
         return self.decisions_used >= self.warning_threshold and not self.exhausted
 
     def use_decision(self) -> None:
+        """Record usage of one decision from the budget."""
         self.decisions_used += 1
 
     def use_compile(self) -> None:
+        """Record usage of one compile from the budget."""
         self.compiles_used += 1
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize budget state to a dict."""
         return {
             "decisions_used": self.decisions_used,
             "decisions_remaining": self.decisions_remaining,
@@ -480,14 +487,17 @@ class OptimizationSession:
 
     @property
     def tool_schemas(self) -> list[dict[str, Any]]:
+        """Return the tool schemas for LLM tool-use."""
         return get_tool_schemas()
 
     @property
     def system_prompt(self) -> str:
+        """Return the system prompt from the conversation."""
         return self.messages[0]["content"] if self.messages else ""
 
     @property
     def duration_seconds(self) -> float:
+        """Return elapsed seconds since session creation."""
         return time.time() - self._created_at
 
     def summary(self) -> dict[str, Any]:

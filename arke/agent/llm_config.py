@@ -61,6 +61,7 @@ class LLMConfig:
         return provider, model
 
     def get_primary(self) -> tuple[ProviderConfig, ModelConfig]:
+        """Resolve the primary provider and model config."""
         return self.get_provider_and_model(self.primary)
 
     def get_all_models(self) -> list[str]:

@@ -35,6 +35,7 @@ class TritonTemplateEngine:
     """Translates Strategy IR → Triton source code via Jinja2 templates."""
 
     def __init__(self) -> None:
+        """Initialize the Jinja2 template environment."""
         self._env = Environment(
             loader=FileSystemLoader(str(_TEMPLATE_DIR)),
             keep_trailing_newline=True,
