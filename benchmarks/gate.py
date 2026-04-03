@@ -1306,10 +1306,418 @@ def _archive_performance(gate_dir: Path, tier: int) -> None:
                 ])
 
 
+def run_g3(tier: int = 3, live: bool = False) -> GateSummary:
+    """G3: LLM Agent Autonomous Optimization.
+
+    Offline mode (default): validates agent infrastructure — config loading,
+    tool schemas, session lifecycle, rollback, multi-provider availability,
+    and trajectory export format.
+
+    Live mode (--live): actually calls LLM API for a full agent session.
+    """
+    if live:
+        return _g3_live_run(tier)
+    return _g3_offline_checks(tier)
+
+
+def _g3_offline_checks(tier: int) -> GateSummary:
+    """G3 offline verification — validates agent infrastructure without LLM calls."""
+    results: list[GateResult] = []
+
+    # ── G3.1: Tool usage breadth ──
+    # Offline: verify tool_schemas has ≥ 10 tools (live needs ≥ 8 distinct used)
+    from arke.agent.tools_schema import get_tool_schemas
+
+    schemas = get_tool_schemas()
+    tool_count = len(schemas)
+    results.append(
+        GateResult(
+            "G3", "G3.1", "Tool schema breadth", "function",
+            tool_count >= 10,
+            f"{tool_count} tools defined (≥10 required for ≥8 distinct use)",
+        )
+    )
+
+    # ── G3.2: Decision capability ──
+    # Create a session and apply ≥ 4 decisions via tool dispatch
+    from arke.agent.session import OptimizationSession
+    from arke.ir.builder import KernelBuilder
+
+    b = KernelBuilder("g3_test_matmul")
+    b.param("A", [1024, 512], "f16")
+    b.param("B", [512, 1024], "f16")
+    m = b.op("matmul", A="A", B="B")
+    b.returns(m, [1024, 1024], "f16")
+    ir = b.build()
+
+    session = OptimizationSession(semantic_ir=ir, target_hw="nvidia_ampere")
+
+    # Get legal actions across multiple kinds and apply ≥ 4
+    applied = 0
+    for kind in ["tile", "reorder", "parallel", "vectorize", "unroll", "fuse",
+                  "place", "algorithm"]:
+        if applied >= 4:
+            break
+        legal = session.run_tool(
+            "list_legal_actions", {"kind": kind, "limit": 10},
+        )
+        for action in legal.get("legal_actions", []):
+            if applied >= 4:
+                break
+            res = session.run_tool("apply_decision", {
+                "kind": action["kind"],
+                "params": action["params"],
+                "rationale": f"G3 offline test decision {applied + 1}",
+            })
+            if res.get("success"):
+                applied += 1
+
+    results.append(
+        GateResult(
+            "G3", "G3.2", "Decision capability", "function",
+            applied >= 4,
+            f"{applied} decisions applied (≥4 required)",
+        )
+    )
+
+    # ── G3.3: Closed-loop completeness ──
+    # Verify the optimize() pipeline exists and is callable without human steps
+    from arke.agent.runner import LLMRunner
+
+    has_optimize = callable(getattr(LLMRunner, "optimize", None))
+    # Check session state machine transitions: CREATED → ANALYZING → OPTIMIZING
+    from arke.agent.session import SessionState
+
+    state_flow = [
+        SessionState.CREATED, SessionState.ANALYZING,
+        SessionState.OPTIMIZING, SessionState.VERIFYING, SessionState.FINALIZED,
+    ]
+    states_defined = all(hasattr(SessionState, s.name) for s in state_flow)
+    closed_loop = has_optimize and states_defined
+    results.append(
+        GateResult(
+            "G3", "G3.3", "Closed-loop completeness", "function",
+            closed_loop,
+            f"LLMRunner.optimize={'yes' if has_optimize else 'no'}, "
+            f"states={'yes' if states_defined else 'no'}",
+        )
+    )
+
+    # ── G3.4: Error recovery (rollback → successful recovery) ──
+    # Use existing session: checkpoint → apply bad decision → rollback → re-apply good
+    cp_res = session.run_tool("checkpoint", {"name": "g3_before_test"})
+    cp_ok = "checkpoint_id" in cp_res
+    decisions_before = session.env.strategy.decision_count
+
+    # Rollback one decision
+    rb_res = session.run_tool("rollback", {"steps": 1})
+    rb_ok = rb_res.get("rolled_back", 0) >= 1
+    decisions_after_rb = session.env.strategy.decision_count
+
+    # Restore checkpoint
+    restore_res = session.run_tool("restore", {"checkpoint_id": "g3_before_test"})
+    restore_ok = restore_res.get("success", False)
+    decisions_after_restore = session.env.strategy.decision_count
+
+    recovery_ok = (
+        cp_ok and rb_ok
+        and decisions_after_rb < decisions_before
+        and restore_ok
+        and decisions_after_restore == decisions_before
+    )
+    results.append(
+        GateResult(
+            "G3", "G3.4", "Error recovery", "function",
+            recovery_ok,
+            f"checkpoint={'ok' if cp_ok else 'fail'}, "
+            f"rollback={'ok' if rb_ok else 'fail'} ({decisions_before}→{decisions_after_rb}), "
+            f"restore={'ok' if restore_ok else 'fail'} (→{decisions_after_restore})",
+        )
+    )
+
+    # ── G3.5: Multi-provider support ──
+    # Verify LLMConfig has ≥ 2 providers with API keys
+    try:
+        from arke.agent.llm_config import load_from_openclaw
+
+        config = load_from_openclaw()
+        provider_count = len(config.providers)
+        provider_names = list(config.providers.keys())
+        multi_ok = provider_count >= 2
+        detail = f"{provider_count} providers: {', '.join(provider_names[:5])}"
+    except Exception as e:
+        multi_ok = False
+        provider_count = 0
+        detail = f"Config load failed: {e}"
+    results.append(
+        GateResult(
+            "G3", "G3.5", "Multi-provider config", "function",
+            multi_ok,
+            detail,
+        )
+    )
+
+    # ── G3.6: Trajectory recording ──
+    # Verify trajectory export produces valid JSONL-compatible records
+    trajectory = session.export_trajectory()
+    traj_len = len(trajectory)
+    has_header_fields = all(
+        "step" in e and "type" in e and "tool" in e
+        for e in trajectory
+    )
+    # We need header + ≥ 6 step records; each tool call produces action+result = 2 entries
+    # 4 decisions = 8 entries + legal_actions(2) + checkpoint(2) + rollback(2) + restore(2)
+    # = 16+ entries
+    traj_ok = traj_len >= 6 and has_header_fields
+    results.append(
+        GateResult(
+            "G3", "G3.6", "Trajectory recording", "function",
+            traj_ok,
+            f"{traj_len} entries (≥6 required), "
+            f"fields={'ok' if has_header_fields else 'missing'}",
+        )
+    )
+
+    # ── G3.7: Agent kernel correctness (offline: framework check) ──
+    # Offline: verify KernelBuilder + session can handle diverse shapes
+    test_shapes = [
+        (128, 128, 128),
+        (1024, 1024, 1024),
+        (256, 512, 768),
+    ]
+    shape_pass = 0
+    for m, n, k in test_shapes:
+        try:
+            tb = KernelBuilder(f"g3_shape_{m}_{n}_{k}")
+            tb.param("A", [m, k], "f16")
+            tb.param("B", [k, n], "f16")
+            node = tb.op("matmul", A="A", B="B")
+            tb.returns(node, [m, n], "f16")
+            test_ir = tb.build()
+            test_sess = OptimizationSession(
+                semantic_ir=test_ir, target_hw="nvidia_ampere",
+            )
+            # Verify session is operational
+            test_sess.run_tool("analyze_compute", {})
+            shape_pass += 1
+        except Exception:
+            pass
+
+    results.append(
+        GateResult(
+            "G3", "G3.7", "Kernel shape diversity (offline)", "accuracy",
+            shape_pass == len(test_shapes),
+            f"{shape_pass}/{len(test_shapes)} shapes handled",
+        )
+    )
+
+    # ── G3.P1 / G3.P2: Performance observation (offline: record N/A) ──
+    results.append(
+        GateResult(
+            "G3", "G3.P1", "Agent kernel perf vs cuBLAS", "performance",
+            True,  # observation only, never gates
+            "N/A (offline mode — run with --live for actual measurements)",
+        )
+    )
+    results.append(
+        GateResult(
+            "G3", "G3.P2", "Agent vs G2 template", "performance",
+            True,  # observation only, never gates
+            "N/A (offline mode — run with --live for actual measurements)",
+        )
+    )
+
+    return GateSummary("G3", results)
+
+
+def _g3_live_run(tier: int) -> GateSummary:
+    """G3 live verification — runs actual LLM agent session.
+
+    Requires LLM API keys and CUDA GPU. Expensive (~1-5 min, API costs).
+    """
+    results: list[GateResult] = []
+
+    # Build test kernel
+    from arke.agent.llm_config import load_from_openclaw
+    from arke.agent.runner import LLMRunner
+    from arke.ir.builder import KernelBuilder
+
+    # Use a representative matmul kernel
+    b = KernelBuilder("g3_live_matmul_1024")
+    b.param("A", [1024, 1024], "f16")
+    b.param("B", [1024, 1024], "f16")
+    m = b.op("matmul", A="A", B="B")
+    b.returns(m, [1024, 1024], "f16")
+    ir = b.build()
+
+    # Load config and create runner
+    config = load_from_openclaw()
+    run_result = None
+
+    try:
+        with LLMRunner(config, timeout=300.0) as runner:
+            run_result = runner.optimize(
+                ir,
+                target_hw="nvidia_ampere",
+                max_turns=20,
+            )
+    except Exception as e:
+        # If live run fails entirely, report and bail
+        results.append(
+            GateResult(
+                "G3", "G3.0", "Live agent run", "function",
+                False, f"Agent run failed: {e}",
+            )
+        )
+        return GateSummary("G3", results)
+
+    # ── G3.1: Tool usage breadth (≥ 8 distinct tools) ──
+    tools_used = set()
+    for entry in run_result.trajectory:
+        if entry.get("type") == "action" and entry.get("tool"):
+            tools_used.add(entry["tool"])
+    results.append(
+        GateResult(
+            "G3", "G3.1", "Tool usage breadth", "function",
+            len(tools_used) >= 8,
+            f"{len(tools_used)} distinct tools: {', '.join(sorted(tools_used))}",
+        )
+    )
+
+    # ── G3.2: Decision capability (≥ 4 decisions) ──
+    results.append(
+        GateResult(
+            "G3", "G3.2", "Decision capability", "function",
+            run_result.decisions >= 4,
+            f"{run_result.decisions} decisions applied (≥4 required)",
+        )
+    )
+
+    # ── G3.3: Closed-loop completeness ──
+    results.append(
+        GateResult(
+            "G3", "G3.3", "Closed-loop completeness", "function",
+            len(run_result.errors) == 0,
+            f"errors={len(run_result.errors)}, "
+            f"duration={run_result.duration_seconds:.1f}s",
+        )
+    )
+
+    # ── G3.4: Error recovery ──
+    has_rollback = any(
+        e.get("tool") == "rollback" for e in run_result.trajectory
+        if e.get("type") == "action"
+    )
+    has_restore = any(
+        e.get("tool") == "restore" for e in run_result.trajectory
+        if e.get("type") == "action"
+    )
+    recovery_ok = has_rollback or has_restore
+    results.append(
+        GateResult(
+            "G3", "G3.4", "Error recovery", "function",
+            recovery_ok,
+            f"rollback={'yes' if has_rollback else 'no'}, "
+            f"restore={'yes' if has_restore else 'no'}",
+        )
+    )
+
+    # ── G3.5: Multi-provider support (config check only in live) ──
+    provider_count = len(config.providers)
+    results.append(
+        GateResult(
+            "G3", "G3.5", "Multi-provider config", "function",
+            provider_count >= 2,
+            f"{provider_count} providers configured",
+        )
+    )
+
+    # ── G3.6: Trajectory recording ──
+    traj = run_result.trajectory
+    traj_ok = len(traj) >= 6 and all(
+        "step" in e and "type" in e for e in traj
+    )
+    results.append(
+        GateResult(
+            "G3", "G3.6", "Trajectory recording", "function",
+            traj_ok,
+            f"{len(traj)} entries (≥6 required)",
+        )
+    )
+
+    # ── G3.7: Agent kernel correctness (live: check generated code) ──
+    has_code = bool(run_result.generated_code)
+    results.append(
+        GateResult(
+            "G3", "G3.7", "Agent kernel generation", "accuracy",
+            has_code,
+            f"generated_code={'yes' if has_code else 'no'} "
+            f"({len(run_result.generated_code)} chars)",
+        )
+    )
+
+    # ── G3.P1 / G3.P2: Performance observation ──
+    perf = run_result.session_summary.get("best_performance")
+    if perf:
+        vs_baseline = perf.get("vs_baseline", 0)
+        p1_detail = f"vs_cuBLAS={vs_baseline:.1%}" if vs_baseline else "no baseline"
+    else:
+        vs_baseline = 0
+        p1_detail = "no profiling data"
+    results.append(
+        GateResult(
+            "G3", "G3.P1", "Agent kernel perf vs cuBLAS", "performance",
+            True, p1_detail,
+        )
+    )
+    results.append(
+        GateResult(
+            "G3", "G3.P2", "Agent vs G2 template", "performance",
+            True, "N/A (requires G2 baseline comparison)",
+        )
+    )
+
+    # Save trajectory
+    _save_g3_trajectory(run_result, tier)
+
+    return GateSummary("G3", results)
+
+
+def _save_g3_trajectory(run_result: object, tier: int) -> None:
+    """Save G3 live run trajectory to benchmarks/results/gates/stage1/G3/."""
+    import json
+    from datetime import datetime
+
+    gate_dir = Path(__file__).parent / "results" / "gates" / "stage1" / "G3"
+    gate_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    traj_file = gate_dir / f"trajectory_{timestamp}.jsonl"
+
+    with open(traj_file, "w") as f:
+        # Header
+        header = {
+            "type": "header",
+            "gate": "G3",
+            "model": run_result.model_used,
+            "tier": tier,
+            "timestamp": timestamp,
+            "decisions": run_result.decisions,
+            "tool_calls": run_result.tool_calls,
+            "duration_seconds": run_result.duration_seconds,
+        }
+        f.write(json.dumps(header) + "\n")
+        for entry in run_result.trajectory:
+            f.write(json.dumps(entry) + "\n")
+
+    logger.info(f"G3 trajectory saved to {traj_file}")
+
+
 GATE_RUNNERS: dict[str, object] = {
     "G0": run_g0,
     "G1": run_g1,
     "G2": run_g2,
+    "G3": run_g3,
 }
 
 GATE_NAMES: dict[str, str] = {
@@ -1335,6 +1743,10 @@ def main() -> None:
     parser.add_argument(
         "--stage", type=str, default="stage1",
         help="Stage name for archive directory (default: stage1)",
+    )
+    parser.add_argument(
+        "--live", action="store_true",
+        help="Run live LLM API tests (G3+)",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
@@ -1365,7 +1777,9 @@ def main() -> None:
             continue
 
         runner = GATE_RUNNERS[gate]
-        if gate == "G2":
+        if gate == "G3":
+            summary = runner(tier=args.tier, live=args.live)
+        elif gate == "G2":
             summary = runner(tier=args.tier)
         else:
             summary = runner()
