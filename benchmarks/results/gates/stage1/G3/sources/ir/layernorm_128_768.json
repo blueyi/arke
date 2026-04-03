@@ -1,0 +1,83 @@
+{
+  "version": "0.2.0",
+  "kernel_id": "layernorm_128_768",
+  "params": [
+    {
+      "name": "X",
+      "shape": [
+        128,
+        768
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    {
+      "name": "W",
+      "shape": [
+        768
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    {
+      "name": "B",
+      "shape": [
+        768
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    }
+  ],
+  "return_type": {
+    "shape": [
+      128,
+      768
+    ],
+    "dtype": "f16",
+    "layout": "row_major"
+  },
+  "nodes": [
+    {
+      "id": "layernorm_0",
+      "op": "layernorm",
+      "inputs": {
+        "X": {
+          "ref": "param",
+          "name": "X"
+        },
+        "W": {
+          "ref": "param",
+          "name": "W"
+        },
+        "B": {
+          "ref": "param",
+          "name": "B"
+        }
+      },
+      "output": {
+        "shape": [
+          128,
+          768
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      "semantics": {
+        "computation": "Y[i,j] = (X[i,j] - mean(X[i,:], axis=j)) / sqrt(var(X[i,:], axis=j) + eps) * W[j] + B[j]",
+        "index_vars": [
+          "i",
+          "j"
+        ],
+        "reduction_axes": [
+          "j"
+        ],
+        "properties": [
+          "row-wise"
+        ]
+      }
+    }
+  ],
+  "edges": [],
+  "return_node": "layernorm_0",
+  "fusion_groups": []
+}

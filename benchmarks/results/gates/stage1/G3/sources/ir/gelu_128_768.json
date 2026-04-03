@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "kernel_id": "gelu_128_768",
+  "params": [
+    {
+      "name": "X",
+      "shape": [
+        98304
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    }
+  ],
+  "return_type": {
+    "shape": [
+      98304
+    ],
+    "dtype": "f16",
+    "layout": "row_major"
+  },
+  "nodes": [
+    {
+      "id": "gelu_0",
+      "op": "gelu",
+      "inputs": {
+        "X": {
+          "ref": "param",
+          "name": "X"
+        }
+      },
+      "output": {
+        "shape": [
+          98304
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      "semantics": {
+        "computation": "Y = X * Phi(X)",
+        "index_vars": [],
+        "reduction_axes": [],
+        "properties": [
+          "elementwise"
+        ]
+      }
+    }
+  ],
+  "edges": [],
+  "return_node": "gelu_0",
+  "fusion_groups": []
+}

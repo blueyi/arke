@@ -1,0 +1,73 @@
+"""Auto-generated Triton layernorm kernel by Arke."""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def layernorm_128_768_kernel(
+    X_ptr, Y_ptr, W_ptr, B_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    stride_ym, stride_yn,
+    eps: tl.constexpr,
+    BLOCK_N: tl.constexpr,
+    HAS_BIAS: tl.constexpr,
+):
+    row = tl.program_id(0)
+    offs_n = tl.arange(0, BLOCK_N)
+    mask = offs_n < N
+
+    x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
+    x = tl.load(x_ptrs, mask=mask, other=0.0).to(tl.float32)
+    w = tl.load(W_ptr + offs_n, mask=mask, other=1.0).to(tl.float32)
+
+    # LayerNorm: y = (x - mean) / sqrt(var + eps) * w + b
+    mean = tl.sum(x, axis=0) / N
+    x_centered = x - mean
+    var = tl.sum(x_centered * x_centered, axis=0) / N
+    x_norm = x_centered / tl.sqrt(var + eps)
+
+    y = x_norm * w
+    if HAS_BIAS:
+        b = tl.load(B_ptr + offs_n, mask=mask, other=0.0).to(tl.float32)
+        y = y + b
+
+    y_ptrs = Y_ptr + row * stride_ym + offs_n * stride_yn
+    tl.store(y_ptrs, y.to(tl.float16), mask=mask)
+
+
+# Cached dummy bias (avoids allocation per call)
+_dummy_bias: torch.Tensor | None = None
+
+
+def layernorm_128_768(
+    X: torch.Tensor,
+    weight: torch.Tensor,
+    bias: torch.Tensor | None = None,
+    eps: float = 1e-5,
+) -> torch.Tensor:
+    global _dummy_bias
+    M, N = X.shape
+    Y = torch.empty_like(X)
+    BLOCK_N = triton.next_power_of_2(N)
+    if BLOCK_N > 65536:
+        BLOCK_N = 65536
+    has_bias = bias is not None
+    if not has_bias:
+        if _dummy_bias is None or _dummy_bias.device != X.device:
+            _dummy_bias = torch.zeros(1, device=X.device, dtype=X.dtype)
+        bias = _dummy_bias
+    # Heuristic num_warps
+    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    layernorm_128_768_kernel[(M,)](
+        X, Y, weight, bias,
+        M, N,
+        X.stride(0), X.stride(1),
+        Y.stride(0), Y.stride(1),
+        eps=eps,
+        BLOCK_N=BLOCK_N,
+        HAS_BIAS=has_bias,
+        num_warps=num_warps,
+    )
+    return Y

@@ -1,0 +1,74 @@
+{
+  "version": "0.2.0",
+  "kernel_id": "matmul_1024_1024_1024",
+  "params": [
+    {
+      "name": "A",
+      "shape": [
+        1024,
+        1024
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    {
+      "name": "B",
+      "shape": [
+        1024,
+        1024
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    }
+  ],
+  "return_type": {
+    "shape": [
+      1024,
+      1024
+    ],
+    "dtype": "f16",
+    "layout": "row_major"
+  },
+  "nodes": [
+    {
+      "id": "matmul_0",
+      "op": "matmul",
+      "inputs": {
+        "A": {
+          "ref": "param",
+          "name": "A"
+        },
+        "B": {
+          "ref": "param",
+          "name": "B"
+        }
+      },
+      "output": {
+        "shape": [
+          1024,
+          1024
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      "semantics": {
+        "computation": "C[i,j] = sum(A[i,k] * B[k,j], axis=k)",
+        "index_vars": [
+          "i",
+          "j",
+          "k"
+        ],
+        "reduction_axes": [
+          "k"
+        ],
+        "properties": [
+          "associative",
+          "distributive"
+        ]
+      }
+    }
+  ],
+  "edges": [],
+  "return_node": "matmul_0",
+  "fusion_groups": []
+}
