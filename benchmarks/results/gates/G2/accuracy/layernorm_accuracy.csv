@@ -1,0 +1,8 @@
+shape_tag,op,M,N,K,matches_ref,max_abs_diff,status
+gpt2,layernorm,128,768,,True,0.003906,PASS
+gpt2-ffn,layernorm,128,3072,,True,0.003906,PASS
+llama,layernorm,128,4096,,True,0.000977,PASS
+llama-13b,layernorm,128,5120,,True,0.003906,PASS
+large,layernorm,2048,4096,,True,0.001953,PASS
+seq1k,layernorm,1024,768,,True,0.011719,PASS
+batch-large,layernorm,4096,4096,,True,0.001953,PASS

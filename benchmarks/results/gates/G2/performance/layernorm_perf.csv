@@ -1,0 +1,8 @@
+shape_tag,op,M,N,K,arke_us,baseline_us,baseline,ratio,trials,warmup,reps
+gpt2,layernorm,128,768,,38.81,13.05,cuDNN,0.3362,3,200,500
+gpt2-ffn,layernorm,128,3072,,38.96,13.18,cuDNN,0.3384,3,200,500
+llama,layernorm,128,4096,,79.68,13.07,cuDNN,0.1640,3,200,500
+llama-13b,layernorm,128,5120,,39.62,13.67,cuDNN,0.3449,3,200,500
+large,layernorm,2048,4096,,110.13,162.72,cuDNN,1.4775,3,200,500
+seq1k,layernorm,1024,768,,38.86,25.42,cuDNN,0.6542,3,200,500
+batch-large,layernorm,4096,4096,,216.71,326.05,cuDNN,1.5045,3,200,500

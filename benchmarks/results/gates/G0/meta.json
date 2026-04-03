@@ -1,0 +1,15 @@
+{
+  "gate": "G0",
+  "stage": "Stage 1",
+  "timestamp": "2026-04-03T09:13:21.803257+08:00",
+  "commit": "845c3fb",
+  "tier": 3,
+  "command": "python -m benchmarks.gate G0 --tier 3 --archive",
+  "passed": true,
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "cuda": "12.4",
+    "pytorch": "2.6.0+cu124",
+    "triton": "3.2.0"
+  }
+}

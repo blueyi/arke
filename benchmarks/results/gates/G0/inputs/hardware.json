@@ -1,0 +1,6 @@
+{
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "cuda": "12.4",
+  "pytorch": "2.6.0+cu124",
+  "triton": "3.2.0"
+}

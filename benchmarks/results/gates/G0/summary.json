@@ -1,13 +1,10 @@
 {
   "gate": "G0",
-  "gate_name": "Environment Feasibility",
-  "timestamp": "20260403_083106",
   "passed": true,
   "pass_count": 4,
   "total_count": 4,
   "results": [
     {
-      "gate": "G0",
       "criterion": "G0.1",
       "name": "CUDA detection",
       "type": "function",
@@ -15,7 +12,6 @@
       "detail": "torch.cuda.is_available() = True"
     },
     {
-      "gate": "G0",
       "criterion": "G0.2",
       "name": "Triton compilation",
       "type": "function",
@@ -23,15 +19,13 @@
       "detail": "Triton kernel compiled and ran successfully"
     },
     {
-      "gate": "G0",
       "criterion": "G0.3",
       "name": "GPU execution",
       "type": "function",
       "passed": true,
-      "detail": "matmul result norm = 1462.0000"
+      "detail": "matmul result norm = 1445.0000"
     },
     {
-      "gate": "G0",
       "criterion": "G0.4",
       "name": "Test framework",
       "type": "function",

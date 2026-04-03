@@ -26,48 +26,63 @@ def bench_fn(
     fn: Callable,
     warmup: int = 200,
     reps: int = 500,
+    trials: int = 3,
 ) -> BenchResult:
-    """Benchmark a callable using CUDA events.
+    """Benchmark a callable using CUDA events with multi-trial median.
+
+    Runs ``trials`` independent measurement rounds, each with ``warmup``
+    warm-up iterations followed by ``reps`` timed iterations.  The final
+    latency is the **median** across trials, which is robust against
+    outlier runs caused by GPU frequency scaling, thermal throttling,
+    or OS scheduling jitter.
 
     Args:
         fn: Zero-arg callable to benchmark (should call GPU kernel).
-        warmup: Number of warmup iterations.
-        reps: Number of timed iterations.
+        warmup: Number of warmup iterations per trial.
+        reps: Number of timed iterations per trial.
+        trials: Number of independent trials (≥1).  Median is taken.
 
     Returns:
-        BenchResult with latency statistics.
+        BenchResult with median latency and min/max across all trials.
     """
-    # Warmup
-    for _ in range(warmup):
-        fn()
-    torch.cuda.synchronize()
+    trial_means: list[float] = []
+    all_individual: list[float] = []
 
-    # Measure overall
-    start = torch.cuda.Event(enable_timing=True)
-    end = torch.cuda.Event(enable_timing=True)
-    start.record()
-    for _ in range(reps):
-        fn()
-    end.record()
-    torch.cuda.synchronize()
-    mean_us = start.elapsed_time(end) / reps * 1000
-
-    # Measure individual runs for min/max (subsample to avoid overhead)
-    n_individual = min(reps, 50)
-    individual_us = []
-    for _ in range(n_individual):
-        s = torch.cuda.Event(enable_timing=True)
-        e = torch.cuda.Event(enable_timing=True)
-        s.record()
-        fn()
-        e.record()
+    for _ in range(max(trials, 1)):
+        # Warmup
+        for _ in range(warmup):
+            fn()
         torch.cuda.synchronize()
-        individual_us.append(s.elapsed_time(e) * 1000)
+
+        # Measure overall
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+        start.record()
+        for _ in range(reps):
+            fn()
+        end.record()
+        torch.cuda.synchronize()
+        trial_means.append(start.elapsed_time(end) / reps * 1000)
+
+        # Individual samples for min/max
+        n_individual = min(reps, 30)
+        for _ in range(n_individual):
+            s = torch.cuda.Event(enable_timing=True)
+            e = torch.cuda.Event(enable_timing=True)
+            s.record()
+            fn()
+            e.record()
+            torch.cuda.synchronize()
+            all_individual.append(s.elapsed_time(e) * 1000)
+
+    # Median of trial means for stability
+    trial_means.sort()
+    median_us = trial_means[len(trial_means) // 2]
 
     return BenchResult(
-        latency_us=mean_us,
-        latency_min_us=min(individual_us),
-        latency_max_us=max(individual_us),
+        latency_us=median_us,
+        latency_min_us=min(all_individual) if all_individual else median_us,
+        latency_max_us=max(all_individual) if all_individual else median_us,
     )
 
 

@@ -818,6 +818,483 @@ def export_gate_result(summary: GateSummary, output_dir: Path) -> None:
 
 
 
+def archive_gate_result(
+    summary: GateSummary,
+    tier: int,
+    project_root: Path,
+) -> None:
+    """Archive comprehensive gate results."""
+    import json
+    import shutil
+    from datetime import datetime
+
+    gate_dir = project_root / "benchmarks" / "results" / "gates" / summary.gate
+    # 覆盖归档 — 删除旧的
+    if gate_dir.exists():
+        shutil.rmtree(gate_dir)
+
+    # 创建目录结构
+    for sub in [
+        "inputs", "sources/ak", "sources/ir", "sources/triton",
+        "accuracy", "performance",
+    ]:
+        (gate_dir / sub).mkdir(parents=True, exist_ok=True)
+
+    # meta.json
+    commit = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"],
+        capture_output=True, text=True, cwd=str(project_root),
+    ).stdout.strip()
+
+    import torch
+    meta = {
+        "gate": summary.gate,
+        "stage": "Stage 1",
+        "timestamp": datetime.now().astimezone().isoformat(),
+        "commit": commit,
+        "tier": tier,
+        "command": f"python -m benchmarks.gate {summary.gate} --tier {tier} --archive",
+        "passed": bool(summary.passed),
+        "hardware": {
+            "gpu": torch.cuda.get_device_name(0),
+            "cuda": torch.version.cuda,
+            "pytorch": torch.__version__,
+            "triton": __import__("triton").__version__,
+        },
+    }
+    with open(gate_dir / "meta.json", "w") as f:
+        json.dump(meta, f, indent=2)
+
+    # summary.json
+    summary_data = {
+        "gate": summary.gate,
+        "passed": bool(summary.passed),
+        "pass_count": summary.pass_count,
+        "total_count": summary.total_count,
+        "results": [
+            {
+                "criterion": r.criterion,
+                "name": r.name,
+                "type": r.type,
+                "passed": bool(r.passed),
+                "detail": str(r.detail),
+            }
+            for r in summary.results
+        ],
+    }
+    with open(gate_dir / "summary.json", "w") as f:
+        json.dump(summary_data, f, indent=2)
+
+    # inputs/shapes.json
+    from benchmarks.shapes import get_shapes
+    shapes_data = {}
+    for op in ["matmul", "softmax", "gelu", "layernorm"]:
+        shapes_data[op] = [
+            {
+                "tag": s.tag, "M": s.M, "N": s.N,
+                "K": getattr(s, "K", None), "tier": s.tier,
+            }
+            for s in get_shapes(op, tier=tier)
+        ]
+    with open(gate_dir / "inputs" / "shapes.json", "w") as f:
+        json.dump(shapes_data, f, indent=2)
+
+    # inputs/hardware.json
+    with open(gate_dir / "inputs" / "hardware.json", "w") as f:
+        json.dump(meta["hardware"], f, indent=2)
+
+    # sources/ak/ — 复制 .ak 文件
+    import shutil as _shutil
+    for ak_file in glob.glob(str(project_root / "examples" / "*.ak")):
+        _shutil.copy2(ak_file, gate_dir / "sources" / "ak" / Path(ak_file).name)
+
+    # sources/ir/ 和 sources/triton/ — 生成代表性的 IR 和 Triton
+    # 只为 G1+ gates 生成
+    if summary.gate >= "G1":
+        _archive_ir_and_triton(gate_dir, tier, project_root)
+
+    # accuracy/ 和 performance/ — 只为 G2+ gates 生成详细 CSV
+    if summary.gate >= "G2":
+        _archive_accuracy(gate_dir, tier)
+        _archive_performance(gate_dir, tier)
+
+    print(f"\n  📦 Archived to: {gate_dir}/")
+
+
+def _archive_ir_and_triton(
+    gate_dir: Path, tier: int, project_root: Path,
+) -> None:
+    """Archive IR snapshots and generated Triton source for representative shapes."""
+    from arke.backend.triton_backend import TritonBackend
+    from arke.ir.builder import KernelBuilder
+    from arke.ir.strategy import StrategyIR
+
+    backend = TritonBackend()
+
+    # Representative shapes per op
+    ops_shapes = {
+        "matmul": [("matmul", 1024, 1024, 1024)],
+        "softmax": [("softmax", 1024, 1024, None)],
+        "gelu": [("gelu", 128, 768, None)],
+        "layernorm": [("layernorm", 128, 768, None)],
+    }
+
+    for op, shapes in ops_shapes.items():
+        for _, m, n, k in shapes:
+            name = f"{op}_{m}_{n}" if k is None else f"{op}_{m}_{n}_{k}"
+
+            # Build IR
+            b = KernelBuilder(name)
+            if op == "matmul":
+                b.param("A", [m, k], "f16")
+                b.param("B", [k, n], "f16")
+                node = b.op("matmul", A="A", B="B")
+                b.returns(node, [m, n], "f16")
+            elif op == "softmax":
+                b.param("X", [m, n], "f16")
+                node = b.op("softmax", X="X")
+                b.returns(node, [m, n], "f16")
+            elif op in ("gelu", "relu", "silu"):
+                b.param("X", [m * n], "f16")
+                node = b.op(op, X="X")
+                b.returns(node, [m * n], "f16")
+            elif op == "layernorm":
+                b.param("X", [m, n], "f16")
+                b.param("W", [n], "f16")
+                b.param("B", [n], "f16")
+                node = b.op("layernorm", X="X", W="W", B="B")
+                b.returns(node, [m, n], "f16")
+
+            ir = b.build()
+            strategy = StrategyIR()
+
+            # Save IR JSON
+            with open(gate_dir / "sources" / "ir" / f"{name}.json", "w") as f:
+                f.write(ir.to_json())
+
+            # Generate and save Triton source
+            source = backend.translate(ir, strategy)
+            with open(gate_dir / "sources" / "triton" / f"{name}.py", "w") as f:
+                f.write(source)
+
+
+def _archive_accuracy(gate_dir: Path, tier: int) -> None:
+    """Run and archive per-shape accuracy results to CSV."""
+    import csv
+
+    import torch
+
+    from arke.integration.kernel_cache import KernelCache
+    from benchmarks.shapes import get_shapes
+
+    cache = KernelCache()
+
+    # matmul accuracy
+    with open(gate_dir / "accuracy" / "matmul_accuracy.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K",
+            "matches_ref", "max_abs_diff", "status",
+        ])
+        for s in get_shapes("matmul", tier=tier):
+            try:
+                a = torch.randn(s.M, s.K, device="cuda", dtype=torch.float16)
+                b_mat = torch.randn(s.K, s.N, device="cuda", dtype=torch.float16)
+                arke_out = cache.matmul(a, b_mat)
+                ref = torch.matmul(a, b_mat)
+                max_abs = (arke_out - ref).abs().max().item()
+                matches = max_abs < 0.1
+                w.writerow([
+                    s.tag, "matmul", s.M, s.N, s.K,
+                    matches, f"{max_abs:.6f}",
+                    "PASS" if matches else "FAIL",
+                ])
+            except Exception as e:
+                w.writerow([
+                    s.tag, "matmul", s.M, s.N, s.K,
+                    False, "N/A", f"ERROR: {e}",
+                ])
+
+    # softmax accuracy
+    with open(gate_dir / "accuracy" / "softmax_accuracy.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K",
+            "matches_ref", "max_abs_diff", "status",
+        ])
+        for s in get_shapes("softmax", tier=tier):
+            try:
+                if s.N > cache.SOFTMAX_MAX_N:
+                    w.writerow([
+                        s.tag, "softmax", s.M, s.N, "",
+                        "SKIP", "N/A", f"N>{cache.SOFTMAX_MAX_N}",
+                    ])
+                    continue
+                x = torch.randn(s.M, s.N, device="cuda", dtype=torch.float16)
+                arke_out = cache.softmax(x)
+                ref = torch.nn.functional.softmax(x, dim=-1)
+                max_abs = (arke_out - ref).abs().max().item()
+                matches = max_abs < 0.1
+                w.writerow([
+                    s.tag, "softmax", s.M, s.N, "",
+                    matches, f"{max_abs:.6f}",
+                    "PASS" if matches else "FAIL",
+                ])
+            except Exception as e:
+                w.writerow([
+                    s.tag, "softmax", s.M, s.N, "",
+                    False, "N/A", f"ERROR: {e}",
+                ])
+
+    # elementwise accuracy
+    with open(gate_dir / "accuracy" / "elementwise_accuracy.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K",
+            "matches_ref", "max_abs_diff", "status",
+        ])
+        for act in ["relu", "gelu", "silu"]:
+            fn_a = getattr(cache, act)
+            fn_r = {
+                "relu": torch.nn.functional.relu,
+                "gelu": torch.nn.functional.gelu,
+                "silu": torch.nn.functional.silu,
+            }[act]
+            for s in get_shapes("gelu", tier=tier):
+                try:
+                    x = torch.randn(
+                        s.M, s.N, device="cuda", dtype=torch.float16,
+                    )
+                    arke_out = fn_a(x)
+                    ref = fn_r(x)
+                    max_abs = (arke_out - ref).abs().max().item()
+                    matches = max_abs < 0.1
+                    w.writerow([
+                        s.tag, act, s.M, s.N, "",
+                        matches, f"{max_abs:.6f}",
+                        "PASS" if matches else "FAIL",
+                    ])
+                except Exception as e:
+                    w.writerow([
+                        s.tag, act, s.M, s.N, "",
+                        False, "N/A", f"ERROR: {e}",
+                    ])
+
+    # layernorm accuracy
+    with open(gate_dir / "accuracy" / "layernorm_accuracy.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K",
+            "matches_ref", "max_abs_diff", "status",
+        ])
+        for s in get_shapes("layernorm", tier=tier):
+            try:
+                x = torch.randn(s.M, s.N, device="cuda", dtype=torch.float16)
+                weight = torch.ones(s.N, device="cuda", dtype=torch.float16)
+                bias = torch.zeros(s.N, device="cuda", dtype=torch.float16)
+                arke_out = cache.layernorm(x, weight, bias)
+                ref = torch.nn.functional.layer_norm(
+                    x.float(), [s.N], weight.float(), bias.float(),
+                ).half()
+                max_abs = (arke_out - ref).abs().max().item()
+                matches = max_abs < 0.1
+                w.writerow([
+                    s.tag, "layernorm", s.M, s.N, "",
+                    matches, f"{max_abs:.6f}",
+                    "PASS" if matches else "FAIL",
+                ])
+            except Exception as e:
+                w.writerow([
+                    s.tag, "layernorm", s.M, s.N, "",
+                    False, "N/A", f"ERROR: {e}",
+                ])
+
+
+def _archive_performance(gate_dir: Path, tier: int) -> None:
+    """Run and archive per-shape performance results to CSV."""
+    import csv
+
+    import torch
+
+    from arke.integration.kernel_cache import KernelCache
+    from benchmarks.measure import bench_fn
+    from benchmarks.shapes import get_shapes
+
+    cache = KernelCache()
+    warmup, reps, trials = 200, 500, 3
+
+    # Pre-warm GPU
+    _w = torch.randn(1024, 1024, device="cuda", dtype=torch.float16)
+    for _ in range(10):
+        torch.matmul(_w, _w)
+    torch.cuda.synchronize()
+    del _w
+
+    # matmul perf
+    with open(gate_dir / "performance" / "matmul_perf.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K", "arke_us", "baseline_us",
+            "baseline", "ratio", "trials", "warmup", "reps",
+        ])
+        for s in get_shapes("matmul", tier=tier):
+            try:
+                a = torch.randn(s.M, s.K, device="cuda", dtype=torch.float16)
+                b_mat = torch.randn(
+                    s.K, s.N, device="cuda", dtype=torch.float16,
+                )
+
+                def ref_fn(a=a, b=b_mat):  # noqa: E301
+                    return torch.matmul(a, b)
+
+                def arke_fn(a=a, b=b_mat):  # noqa: E301
+                    return cache.matmul(a, b)
+
+                ref_r = bench_fn(ref_fn, warmup=warmup, reps=reps, trials=trials)
+                arke_r = bench_fn(
+                    arke_fn, warmup=warmup, reps=reps, trials=trials,
+                )
+                ratio = (
+                    ref_r.latency_us / arke_r.latency_us
+                    if arke_r.latency_us > 0
+                    else 0
+                )
+                w.writerow([
+                    s.tag, "matmul", s.M, s.N, s.K,
+                    f"{arke_r.latency_us:.2f}", f"{ref_r.latency_us:.2f}",
+                    "cuBLAS", f"{ratio:.4f}", trials, warmup, reps,
+                ])
+            except Exception:
+                w.writerow([
+                    s.tag, "matmul", s.M, s.N, s.K,
+                    "ERROR", "ERROR", "cuBLAS", "", trials, warmup, reps,
+                ])
+
+    # softmax perf
+    with open(gate_dir / "performance" / "softmax_perf.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K", "arke_us", "baseline_us",
+            "baseline", "ratio", "trials", "warmup", "reps",
+        ])
+        for s in get_shapes("softmax", tier=tier):
+            if s.N > cache.SOFTMAX_MAX_N:
+                w.writerow([
+                    s.tag, "softmax", s.M, s.N, "",
+                    "SKIP", "SKIP", "cuDNN", "", trials, warmup, reps,
+                ])
+                continue
+            try:
+                x = torch.randn(s.M, s.N, device="cuda", dtype=torch.float16)
+
+                def ref_fn(x=x):  # noqa: E301
+                    return torch.nn.functional.softmax(x, dim=-1)
+
+                def arke_fn(x=x):  # noqa: E301
+                    return cache.softmax(x)
+
+                ref_r = bench_fn(ref_fn, warmup=warmup, reps=reps, trials=trials)
+                arke_r = bench_fn(
+                    arke_fn, warmup=warmup, reps=reps, trials=trials,
+                )
+                ratio = (
+                    ref_r.latency_us / arke_r.latency_us
+                    if arke_r.latency_us > 0
+                    else 0
+                )
+                w.writerow([
+                    s.tag, "softmax", s.M, s.N, "",
+                    f"{arke_r.latency_us:.2f}", f"{ref_r.latency_us:.2f}",
+                    "cuDNN", f"{ratio:.4f}", trials, warmup, reps,
+                ])
+            except Exception:
+                w.writerow([
+                    s.tag, "softmax", s.M, s.N, "",
+                    "ERROR", "ERROR", "cuDNN", "", trials, warmup, reps,
+                ])
+
+    # elementwise perf (gelu as representative)
+    with open(
+        gate_dir / "performance" / "elementwise_perf.csv", "w", newline="",
+    ) as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K", "arke_us", "baseline_us",
+            "baseline", "ratio", "trials", "warmup", "reps",
+        ])
+        for s in get_shapes("gelu", tier=tier):
+            try:
+                x = torch.randn(s.M, s.N, device="cuda", dtype=torch.float16)
+
+                def ref_fn(x=x):  # noqa: E301
+                    return torch.nn.functional.gelu(x)
+
+                def arke_fn(x=x):  # noqa: E301
+                    return cache.gelu(x)
+
+                ref_r = bench_fn(ref_fn, warmup=warmup, reps=reps, trials=trials)
+                arke_r = bench_fn(
+                    arke_fn, warmup=warmup, reps=reps, trials=trials,
+                )
+                ratio = (
+                    ref_r.latency_us / arke_r.latency_us
+                    if arke_r.latency_us > 0
+                    else 0
+                )
+                w.writerow([
+                    s.tag, "gelu", s.M, s.N, "",
+                    f"{arke_r.latency_us:.2f}", f"{ref_r.latency_us:.2f}",
+                    "PyTorch", f"{ratio:.4f}", trials, warmup, reps,
+                ])
+            except Exception:
+                w.writerow([
+                    s.tag, "gelu", s.M, s.N, "",
+                    "ERROR", "ERROR", "PyTorch", "", trials, warmup, reps,
+                ])
+
+    # layernorm perf
+    with open(
+        gate_dir / "performance" / "layernorm_perf.csv", "w", newline="",
+    ) as f:
+        w = csv.writer(f)
+        w.writerow([
+            "shape_tag", "op", "M", "N", "K", "arke_us", "baseline_us",
+            "baseline", "ratio", "trials", "warmup", "reps",
+        ])
+        for s in get_shapes("layernorm", tier=tier):
+            try:
+                x = torch.randn(s.M, s.N, device="cuda", dtype=torch.float16)
+                _wt = torch.ones(s.N, device="cuda", dtype=torch.float16)
+                _bi = torch.zeros(s.N, device="cuda", dtype=torch.float16)
+                _n = s.N
+
+                def ref_fn(x=x, n=_n, wt=_wt, bi=_bi):  # noqa: E301
+                    return torch.nn.functional.layer_norm(x, [n], wt, bi)
+
+                def arke_fn(x=x, wt=_wt, bi=_bi):  # noqa: E301
+                    return cache.layernorm(x, wt, bi)
+
+                ref_r = bench_fn(ref_fn, warmup=warmup, reps=reps, trials=trials)
+                arke_r = bench_fn(
+                    arke_fn, warmup=warmup, reps=reps, trials=trials,
+                )
+                ratio = (
+                    ref_r.latency_us / arke_r.latency_us
+                    if arke_r.latency_us > 0
+                    else 0
+                )
+                w.writerow([
+                    s.tag, "layernorm", s.M, s.N, "",
+                    f"{arke_r.latency_us:.2f}", f"{ref_r.latency_us:.2f}",
+                    "cuDNN", f"{ratio:.4f}", trials, warmup, reps,
+                ])
+            except Exception:
+                w.writerow([
+                    s.tag, "layernorm", s.M, s.N, "",
+                    "ERROR", "ERROR", "cuDNN", "", trials, warmup, reps,
+                ])
+
+
 GATE_RUNNERS: dict[str, object] = {
     "G0": run_g0,
     "G1": run_g1,
@@ -840,6 +1317,10 @@ def main() -> None:
     parser.add_argument("--all", action="store_true", help="Run all gates")
     parser.add_argument("--tier", type=int, default=3, help="Shape tier (1/2/3)")
     parser.add_argument("--export", type=str, help="Export results to directory")
+    parser.add_argument(
+        "--archive", action="store_true",
+        help="Archive full gate results to benchmarks/results/gates/G{N}/",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -876,6 +1357,8 @@ def main() -> None:
         print_gate_result(summary)
         if export_dir:
             export_gate_result(summary, export_dir)
+        if args.archive:
+            archive_gate_result(summary, args.tier, Path(__file__).parent.parent)
         if not summary.passed:
             all_passed = False
 

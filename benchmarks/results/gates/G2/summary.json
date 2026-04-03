@@ -1,13 +1,10 @@
 {
   "gate": "G2",
-  "gate_name": "Codegen Correctness & Baseline Performance",
-  "timestamp": "20260403_083253",
   "passed": false,
   "pass_count": 10,
   "total_count": 11,
   "results": [
     {
-      "gate": "G2",
       "criterion": "G2.1",
       "name": "Pipeline connectivity",
       "type": "function",
@@ -15,7 +12,6 @@
       "detail": "IR \u2192 Strategy \u2192 Codegen \u2192 Compile \u2192 Run"
     },
     {
-      "gate": "G2",
       "criterion": "G2.2",
       "name": "Multi-op templates",
       "type": "function",
@@ -23,7 +19,6 @@
       "detail": "4/4 templates compile and execute"
     },
     {
-      "gate": "G2",
       "criterion": "G2.3",
       "name": "matmul correctness (12)",
       "type": "accuracy",
@@ -31,7 +26,6 @@
       "detail": "12/12"
     },
     {
-      "gate": "G2",
       "criterion": "G2.4",
       "name": "softmax correctness (13)",
       "type": "accuracy",
@@ -39,7 +33,6 @@
       "detail": "13/13"
     },
     {
-      "gate": "G2",
       "criterion": "G2.5",
       "name": "elementwise correctness (6\u00d73)",
       "type": "accuracy",
@@ -47,7 +40,6 @@
       "detail": "18/18"
     },
     {
-      "gate": "G2",
       "criterion": "G2.6",
       "name": "layernorm correctness (7)",
       "type": "accuracy",
@@ -55,7 +47,6 @@
       "detail": "7/7"
     },
     {
-      "gate": "G2",
       "criterion": "G2.7",
       "name": "matmul perf \u226550% rate",
       "type": "performance",
@@ -63,15 +54,13 @@
       "detail": "10/12 shapes \u226550% cuBLAS (83%)"
     },
     {
-      "gate": "G2",
       "criterion": "G2.8",
       "name": "matmul perf geomean \u226560%",
       "type": "performance",
       "passed": true,
-      "detail": "geomean = 75.2%"
+      "detail": "geomean = 75.4%"
     },
     {
-      "gate": "G2",
       "criterion": "G2.9",
       "name": "softmax perf \u226540% rate",
       "type": "performance",
@@ -79,7 +68,6 @@
       "detail": "1/4 shapes \u226550% cuDNN (25%)"
     },
     {
-      "gate": "G2",
       "criterion": "G2.10",
       "name": "elementwise perf \u226550% rate",
       "type": "performance",
@@ -87,12 +75,11 @@
       "detail": "3/3 shapes \u226550% PyTorch (100%)"
     },
     {
-      "gate": "G2",
       "criterion": "G2.11",
       "name": "layernorm perf \u226540% rate",
       "type": "performance",
       "passed": true,
-      "detail": "2/5 shapes \u226550% cuDNN (40%)"
+      "detail": "4/5 shapes \u226550% cuDNN (80%)"
     }
   ]
 }

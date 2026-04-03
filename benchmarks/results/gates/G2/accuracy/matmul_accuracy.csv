@@ -1,0 +1,13 @@
+shape_tag,op,M,N,K,matches_ref,max_abs_diff,status
+tiny,matmul,128,128,128,True,0.000000,PASS
+small,matmul,128,768,768,True,0.000000,PASS
+medium,matmul,128,2304,768,True,0.000000,PASS
+square-1k,matmul,1024,1024,1024,True,0.000000,PASS
+square-2k,matmul,2048,2048,2048,True,0.000000,PASS
+square-4k,matmul,4096,4096,4096,True,0.000000,PASS
+rect-wide,matmul,1024,4096,1024,True,0.000000,PASS
+rect-tall,matmul,4096,1024,1024,False,0.125000,FAIL
+lm-head,matmul,128,50257,768,True,0.000000,PASS
+llama-q,matmul,4096,4096,4096,True,0.000000,PASS
+llama-ffn,matmul,4096,11008,4096,True,0.000000,PASS
+seq512,matmul,512,2304,768,True,0.000000,PASS
