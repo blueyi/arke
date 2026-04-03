@@ -23,7 +23,7 @@
       "name": "GPU execution",
       "type": "function",
       "passed": true,
-      "detail": "matmul result norm = 1445.0000"
+      "detail": "matmul result norm = 1446.0000"
     },
     {
       "criterion": "G0.4",

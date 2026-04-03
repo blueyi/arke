@@ -7,39 +7,59 @@ Each archive is a self-contained snapshot for reproducibility.
 
 ```
 benchmarks/results/gates/
-└── G{N}/                              # One directory per gate (final exit state)
-    ├── meta.json                       # Gate metadata (commit, tag, command, timestamp)
-    ├── summary.json                    # Gate pass/fail summary with per-criterion detail
-    ├── inputs/                         # Engineering inputs
-    │   ├── shapes.json                 # Shape definitions used
-    │   └── hardware.json               # Hardware profile
-    ├── sources/                        # Arke source artifacts
-    │   ├── ak/                         # .ak source files
-    │   │   ├── 01_matmul.ak
-    │   │   └── ...
-    │   ├── ir/                         # Semantic + Strategy IR snapshots
-    │   │   ├── matmul_1024_1024.json
-    │   │   └── ...
-    │   └── triton/                     # Generated Triton source code
-    │       ├── matmul_1024_1024.py
-    │       └── ...
-    ├── accuracy/                       # Per-shape accuracy results
-    │   ├── matmul_accuracy.csv
-    │   ├── softmax_accuracy.csv
-    │   ├── elementwise_accuracy.csv
-    │   └── layernorm_accuracy.csv
-    └── performance/                    # Per-shape performance results
-        ├── matmul_perf.csv
-        ├── softmax_perf.csv
-        ├── elementwise_perf.csv
-        └── layernorm_perf.csv
+├── ARCHIVE.md                         # This file
+├── stage1/                            # Stage 1 archives
+│   ├── G0/                            # Gate 0 (final exit state)
+│   │   ├── meta.json
+│   │   ├── summary.json
+│   │   ├── inputs/
+│   │   │   ├── shapes.json
+│   │   │   └── hardware.json
+│   │   └── sources/
+│   │       └── ak/
+│   ├── G1/
+│   │   ├── ...
+│   │   └── sources/
+│   │       ├── ak/
+│   │       ├── ir/                    # Representative IR snapshots
+│   │       └── triton/                # Generated Triton source
+│   └── G2/
+│       ├── ...
+│       ├── accuracy/                  # Per-shape accuracy CSV
+│       │   ├── matmul_accuracy.csv
+│       │   ├── softmax_accuracy.csv
+│       │   ├── elementwise_accuracy.csv
+│       │   └── layernorm_accuracy.csv
+│       └── performance/               # Per-shape perf CSV (multi-trial median)
+│           ├── matmul_perf.csv
+│           ├── softmax_perf.csv
+│           ├── elementwise_perf.csv
+│           └── layernorm_perf.csv
+├── stage2/                            # Stage 2 archives (future)
+│   ├── G3/
+│   ├── G4/
+│   └── G5/
+└── ...
+```
+
+## Usage
+
+```bash
+# Archive with explicit stage
+python -m benchmarks.gate G0 G1 G2 --tier 2 --stage stage1 --archive
+
+# Default stage is "stage1"
+python -m benchmarks.gate G2 --tier 2 --archive
+
+# Future stages
+python -m benchmarks.gate G3 G4 --tier 3 --stage stage2 --archive
 ```
 
 ## CSV Format
 
 ### accuracy/*.csv
 ```
-shape_tag,op,M,N,K,arke_matches_ref,max_abs_diff,max_rel_diff,status
+shape_tag,op,M,N,K,matches_ref,max_abs_diff,status
 ```
 
 ### performance/*.csv
@@ -51,12 +71,12 @@ shape_tag,op,M,N,K,arke_us,baseline_us,baseline_name,ratio,trials,warmup,reps
 ```json
 {
   "gate": "G2",
-  "stage": "Stage 1",
+  "stage": "stage1",
   "timestamp": "2026-04-03T09:00:00+08:00",
   "commit": "845c3fb",
   "tag": "stage1-g2-exit",
   "tier": 2,
-  "command": "python -m benchmarks.gate G2 --tier 2 --archive",
+  "command": "python -m benchmarks.gate G2 --tier 2 --stage stage1 --archive",
   "hardware": {
     "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
     "cuda": "12.4",
@@ -67,6 +87,8 @@ shape_tag,op,M,N,K,arke_us,baseline_us,baseline_name,ratio,trials,warmup,reps
 ```
 
 ## Rules
-- Gate directory is **overwritten** on re-run (only final exit state kept)
+
+- Gate directory is **overwritten** on re-run (only final exit state kept per stage)
 - Each archive includes reproducibility info (commit, command)
-- Tag format: `stage{N}-g{M}-exit` (e.g., `stage1-g2-exit`)
+- Stages are independent — stage2 G3 doesn't overwrite stage1 G2
+- Tag format suggestion: `stage{N}-g{M}-exit` (e.g., `stage1-g2-exit`)

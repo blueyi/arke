@@ -1,10 +1,10 @@
 {
   "gate": "G0",
-  "stage": "Stage 1",
-  "timestamp": "2026-04-03T09:13:21.803257+08:00",
-  "commit": "845c3fb",
+  "stage": "stage1",
+  "timestamp": "2026-04-03T13:10:47.143703+08:00",
+  "commit": "1f9be35",
   "tier": 3,
-  "command": "python -m benchmarks.gate G0 --tier 3 --archive",
+  "command": "python -m benchmarks.gate G0 --tier 3 --stage stage1 --archive",
   "passed": true,
   "hardware": {
     "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",

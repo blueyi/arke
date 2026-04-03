@@ -822,13 +822,21 @@ def archive_gate_result(
     summary: GateSummary,
     tier: int,
     project_root: Path,
+    stage: str = "stage1",
 ) -> None:
-    """Archive comprehensive gate results."""
+    """Archive comprehensive gate results.
+
+    Archives to ``benchmarks/results/gates/<stage>/<gate>/``.
+    The gate directory is overwritten on each run so only the final
+    exit state for that stage is kept.
+    """
     import json
     import shutil
     from datetime import datetime
 
-    gate_dir = project_root / "benchmarks" / "results" / "gates" / summary.gate
+    gate_dir = (
+        project_root / "benchmarks" / "results" / "gates" / stage / summary.gate
+    )
     # 覆盖归档 — 删除旧的
     if gate_dir.exists():
         shutil.rmtree(gate_dir)
@@ -849,11 +857,14 @@ def archive_gate_result(
     import torch
     meta = {
         "gate": summary.gate,
-        "stage": "Stage 1",
+        "stage": stage,
         "timestamp": datetime.now().astimezone().isoformat(),
         "commit": commit,
         "tier": tier,
-        "command": f"python -m benchmarks.gate {summary.gate} --tier {tier} --archive",
+        "command": (
+            f"python -m benchmarks.gate {summary.gate}"
+            f" --tier {tier} --stage {stage} --archive"
+        ),
         "passed": bool(summary.passed),
         "hardware": {
             "gpu": torch.cuda.get_device_name(0),
@@ -1319,7 +1330,11 @@ def main() -> None:
     parser.add_argument("--export", type=str, help="Export results to directory")
     parser.add_argument(
         "--archive", action="store_true",
-        help="Archive full gate results to benchmarks/results/gates/G{N}/",
+        help="Archive full gate results to benchmarks/results/gates/<stage>/G{N}/",
+    )
+    parser.add_argument(
+        "--stage", type=str, default="stage1",
+        help="Stage name for archive directory (default: stage1)",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
@@ -1358,7 +1373,9 @@ def main() -> None:
         if export_dir:
             export_gate_result(summary, export_dir)
         if args.archive:
-            archive_gate_result(summary, args.tier, Path(__file__).parent.parent)
+            archive_gate_result(
+                summary, args.tier, Path(__file__).parent.parent, args.stage,
+            )
         if not summary.passed:
             all_passed = False
 
