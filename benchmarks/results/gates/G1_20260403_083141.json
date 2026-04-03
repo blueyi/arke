@@ -1,0 +1,90 @@
+{
+  "gate": "G1",
+  "gate_name": "IR Expressiveness & Validation Correctness",
+  "timestamp": "20260403_083141",
+  "passed": true,
+  "pass_count": 10,
+  "total_count": 10,
+  "results": [
+    {
+      "gate": "G1",
+      "criterion": "G1.1",
+      "name": "OP_CATALOG coverage",
+      "type": "function",
+      "passed": true,
+      "detail": "13 ops (\u226510 required)"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.2",
+      "name": "Strategy decision types",
+      "type": "function",
+      "passed": true,
+      "detail": "8 kinds defined (\u22656 required)"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.3",
+      "name": "IR serialization round-trip",
+      "type": "function",
+      "passed": true,
+      "detail": "13/13 ops"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.4",
+      "name": ".ak parse \u2192 IR",
+      "type": "function",
+      "passed": true,
+      "detail": "4/5 files parsed (\u22653 required)"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.5",
+      "name": "V0 validator available",
+      "type": "function",
+      "passed": true,
+      "detail": "StaticValidator class exists"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.6",
+      "name": "Unit tests \u2265 200",
+      "type": "function",
+      "passed": true,
+      "detail": "311 collected"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.7",
+      "name": "V1 matmul (22 shapes)",
+      "type": "accuracy",
+      "passed": true,
+      "detail": "22/22"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.8",
+      "name": "V1 softmax (24 shapes)",
+      "type": "accuracy",
+      "passed": true,
+      "detail": "24/24 (1 skipped: N>131072)"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.9",
+      "name": "V1 elementwise (15\u00d73 shapes)",
+      "type": "accuracy",
+      "passed": true,
+      "detail": "45/45"
+    },
+    {
+      "gate": "G1",
+      "criterion": "G1.10",
+      "name": "V1 layernorm (15 shapes)",
+      "type": "accuracy",
+      "passed": true,
+      "detail": "15/15"
+    }
+  ]
+}

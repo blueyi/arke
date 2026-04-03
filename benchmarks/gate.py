@@ -775,6 +775,49 @@ def print_gate_result(summary: GateSummary) -> None:
     print(f"  {summary.gate}: {status} ({summary.pass_count}/{summary.total_count})")
 
 
+def export_gate_result(summary: GateSummary, output_dir: Path) -> None:
+    """Export gate result to JSON file."""
+    import json
+    from datetime import datetime
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = output_dir / f"{summary.gate}_{timestamp}.json"
+
+    def _serialize(obj: object) -> object:
+        """Convert non-serializable types."""
+        # Handle torch.Tensor bools, numpy types, etc.
+        if hasattr(obj, "item"):
+            return obj.item()
+        return str(obj)
+
+    data = {
+        "gate": summary.gate,
+        "gate_name": GATE_NAMES.get(summary.gate, summary.gate),
+        "timestamp": timestamp,
+        "passed": bool(summary.passed),
+        "pass_count": summary.pass_count,
+        "total_count": summary.total_count,
+        "results": [
+            {
+                "gate": r.gate,
+                "criterion": r.criterion,
+                "name": r.name,
+                "type": r.type,
+                "passed": bool(r.passed),
+                "detail": str(r.detail),
+            }
+            for r in summary.results
+        ],
+    }
+
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=2, default=_serialize)
+
+    print(f"\n  📊 Results exported to: {filename}")
+
+
+
 GATE_RUNNERS: dict[str, object] = {
     "G0": run_g0,
     "G1": run_g1,
@@ -796,6 +839,7 @@ def main() -> None:
     parser.add_argument("gates", nargs="*", help="Gate names (G0, G1, ...)")
     parser.add_argument("--all", action="store_true", help="Run all gates")
     parser.add_argument("--tier", type=int, default=3, help="Shape tier (1/2/3)")
+    parser.add_argument("--export", type=str, help="Export results to directory")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -811,6 +855,8 @@ def main() -> None:
     else:
         parser.print_help()
         sys.exit(1)
+
+    export_dir = Path(args.export) if args.export else None
 
     all_passed = True
     for gate in gates:
@@ -828,6 +874,8 @@ def main() -> None:
         else:
             summary = runner()
         print_gate_result(summary)
+        if export_dir:
+            export_gate_result(summary, export_dir)
         if not summary.passed:
             all_passed = False
 
