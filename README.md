@@ -144,7 +144,7 @@ generalization. MLIR (Stage 3) removes Triton's abstraction ceiling. LLVM IR (St
 achieves maximum hardware expression completeness and performance headroom.
 
 > Gate benchmark coverage: Stage 2+ Gates must cover ≥3 Operator Categories and
-> include LLM-production shapes (LLaMA/DeepSeek/Qwen). See [BENCHMARK.md](benchmarks/BENCHMARK.md).
+> include LLM-production shapes (LLaMA/DeepSeek/Qwen). See [BENCHMARK.md](docs/design/BENCHMARK.md).
 
 ---
 
@@ -232,6 +232,28 @@ LLM Level-3 decisions (register, barrier, instruction scheduling) become possibl
 Cat A+B+C+D+E+F via LLVM • ≥3 backends ≥90% vendor • LLM Level 1-3 full stack • v1.0.0
 
 ---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [plan-v3.0.md](docs/design/plan-v3.0.md) | Execution plan — Phase definitions, SMART criteria, Gate milestones |
+| [gate-redesign.md](docs/design/gate-redesign.md) | **Gate system v3** — Function > Accuracy > Performance, Tier 3 verification |
+| [e2e-flow.md](docs/design/e2e-flow.md) | End-to-end flow — user input to GPU execution walkthrough |
+| [design-review.md](docs/design/design-review.md) | Design review — assumption validation, risk matrix |
+| [naming-system.md](docs/design/naming-system.md) | Naming conventions — global terminology rules |
+
+| Spec | Description |
+|------|-------------|
+| [arke-language-spec.md](docs/spec/arke-language-spec.md) | Arke language spec — syntax, type system, built-in ops |
+| [arke-ir-spec.md](docs/spec/arke-ir-spec.md) | Arke IR spec — Semantic IR / Strategy IR structure |
+
+### Benchmark System
+
+| Document | Description |
+|----------|-------------|
+| [docs/design/BENCHMARK.md](docs/design/BENCHMARK.md) | **Complete benchmark reference** — architecture, baselines, shapes, scoring, quality gates, operator sources, CLI, development workflow |
+| [benchmarks/results/EVALUATION_REPORT.md](benchmarks/results/EVALUATION_REPORT.md) | **Stage 1 Evaluation Report** — all gates, L1/L2/L3 data, conclusions |
 
 ## 📋 Current Progress (Stage 1)
 
@@ -351,28 +373,6 @@ benchmarks/                    # Benchmark System
 ├── measure.py                 # CUDA event measurement utils
 └── results/                   # Archived benchmark results
 ```
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [plan-v3.0.md](docs/design/plan-v3.0.md) | Execution plan — Phase definitions, SMART criteria, Gate milestones |
-| [gate-redesign.md](docs/design/gate-redesign.md) | **Gate system v3** — Function > Accuracy > Performance, Tier 3 verification |
-| [e2e-flow.md](docs/design/e2e-flow.md) | End-to-end flow — user input to GPU execution walkthrough |
-| [design-review.md](docs/design/design-review.md) | Design review — assumption validation, risk matrix |
-| [naming-system.md](docs/design/naming-system.md) | Naming conventions — global terminology rules |
-
-| Spec | Description |
-|------|-------------|
-| [arke-language-spec.md](docs/spec/arke-language-spec.md) | Arke language spec — syntax, type system, built-in ops |
-| [arke-ir-spec.md](docs/spec/arke-ir-spec.md) | Arke IR spec — Semantic IR / Strategy IR structure |
-
-### Benchmark System
-
-| Document | Description |
-|----------|-------------|
-| [benchmarks/BENCHMARK.md](benchmarks/BENCHMARK.md) | **Complete benchmark reference** — architecture, baselines, shapes, scoring, quality gates, operator sources, CLI, development workflow |
-| [benchmarks/results/EVALUATION_REPORT.md](benchmarks/results/EVALUATION_REPORT.md) | **Stage 1 Evaluation Report** — all gates, L1/L2/L3 data, conclusions |
 
 ## License
 
