@@ -848,7 +848,7 @@ def archive_gate_result(
 ) -> None:
     """Archive comprehensive gate results.
 
-    Archives to ``benchmarks/results/gates/<stage>/<gate>/``.
+    Archives to ``benchmarks/results/<stage>/gates/<gate>/``.
     The gate directory is overwritten on each run so only the final
     exit state for that stage is kept.
     """
@@ -857,7 +857,7 @@ def archive_gate_result(
     from datetime import datetime
 
     gate_dir = (
-        project_root / "benchmarks" / "results" / "gates" / stage / summary.gate
+        project_root / "benchmarks" / "results" / stage / "gates" / summary.gate
     )
     # 覆盖归档 — 删除旧的
     if gate_dir.exists():
@@ -2377,7 +2377,7 @@ def main() -> None:
     parser.add_argument("--export", type=str, help="Export results to directory")
     parser.add_argument(
         "--archive", action="store_true",
-        help="Archive full gate results to benchmarks/results/gates/<stage>/G{N}/",
+        help="Archive full gate results to benchmarks/results/<stage>/gates/G{N}/",
     )
     parser.add_argument(
         "--stage", type=str, default="stage1",

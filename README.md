@@ -176,7 +176,7 @@ achieves maximum hardware expression completeness and performance headroom.
 | Document                                                                           | Description                                                                                                                             |
 | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | [docs/design/BENCHMARK.md](docs/design/BENCHMARK.md)                               | **Complete benchmark reference** — architecture, baselines, shapes, scoring, quality gates, operator sources, CLI, development workflow |
-| [benchmarks/results/EVALUATION_REPORT.md](benchmarks/results/EVALUATION_REPORT.md) | **Stage 1 Evaluation Report** — all gates, L1/L2/L3 data, conclusions                                                                   |
+| [benchmarks/results/stage1/EVALUATION_REPORT.md](benchmarks/results/stage1/EVALUATION_REPORT.md) | **Stage 1 Evaluation Report** — all gates, L1/L2/L3 data, conclusions                                                                   |
 
 
 ### Stage 1: Arke → Triton → GPU — Validate Hypothesis

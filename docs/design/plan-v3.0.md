@@ -298,7 +298,7 @@ Phase 1.11 ⬜ Implementation Language Assessment (Gate G8)
   3. No graph-level fusion — each kernel dispatched individually
 - Mitigation attempted: monkey-patch 1.75×, +torch.compile 1.63×, custom_ops+compile 1.49×
 - Resolution: Stage 2 torch.compile Inductor backend (`arke/integration/custom_ops.py` already prototyped)
-- Full report: `benchmarks/results/gates/stage1/G5/REPORT.md`
+- Full report: `benchmarks/results/stage1/gates/G5/REPORT.md`
 
 **Dependency:** Phase 1.5 Gate G4 passes
 
@@ -323,7 +323,7 @@ Phase 1.11 ⬜ Implementation Language Assessment (Gate G8)
 | 1.8.2 | CI green (3 Python versions) | GitHub Actions passes on 3.10, 3.11, 3.12 | ✅ |
 | 1.8.3 | README complete (install + quickstart + examples) | New user can follow README and run demo | ✅ |
 | 1.8.4 | API docs complete | All public classes/functions have docstrings | ✅ (99%) |
-| 1.8.5 | Evaluation report published | `benchmarks/results/EVALUATION_REPORT.md` | ✅ |
+| 1.8.5 | Evaluation report published | `benchmarks/results/stage1/EVALUATION_REPORT.md` | ✅ |
 | 1.8.6 | Trajectory data downloadable | JSONL files from evaluation runs publicly available | ✅ |
 | 1.8.7 | v0.1.0 tag | `git tag v0.1.0` | ✅ |
 

@@ -128,7 +128,7 @@ coverage:  arke/ core modules ~85%
 - `arke/integration/` — KernelCache, gpt2_e2e, custom_ops
 - `benchmarks/` — gate system, baselines (cuBLAS/FlagGems/LLM-direct)
 
-Gate 结果 archive：`benchmarks/results/gates/stage1/G0-G5/`
+Gate 结果 archive：`benchmarks/results/stage1/gates/G0-G5/`
 
 最终 commit：`1992d5d` (G5 PASS)
 
