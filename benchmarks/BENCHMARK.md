@@ -8,16 +8,17 @@ automated provenance tracking, and three-layer evaluation architecture.
 ## Table of Contents
 
 1. [Overview & Three-Layer Architecture](#1-overview--three-layer-architecture)
-2. [Baseline Tiers & Operator → Baseline Matrix](#2-baseline-tiers--operator--baseline-matrix)
-3. [Shape Matrix](#3-shape-matrix)
-4. [Measurement Protocol](#4-measurement-protocol)
-5. [Scoring System & Quality Gates](#5-scoring-system--quality-gates)
-6. [Operator Source Registry](#6-operator-source-registry)
-7. [Output Structure & Provenance Tracking](#7-output-structure--provenance-tracking)
-8. [CLI Interface](#8-cli-interface)
-9. [Benchmark-Driven Development](#9-benchmark-driven-development)
-10. [Implementation Status](#10-implementation-status)
-11. [Dependencies](#11-dependencies)
+2. [Operator Categories](#2-operator-categories)
+3. [Baseline Tiers & Operator → Baseline Matrix](#3-baseline-tiers--operator--baseline-matrix)
+4. [Shape Matrix](#4-shape-matrix)
+5. [Measurement Protocol](#5-measurement-protocol)
+6. [Scoring System & Quality Gates](#6-scoring-system--quality-gates)
+7. [Operator Source Registry](#7-operator-source-registry)
+8. [Output Structure & Provenance Tracking](#8-output-structure--provenance-tracking)
+9. [CLI Interface](#9-cli-interface)
+10. [Benchmark-Driven Development](#10-benchmark-driven-development)
+11. [Implementation Status](#11-implementation-status)
+12. [Dependencies](#12-dependencies)
 
 ---
 
@@ -76,7 +77,34 @@ Reports: latency (mean/min/max/median), correctness (logit diff, top-1 match), p
 
 ---
 
-## 2. Baseline Tiers & Operator → Baseline Matrix
+## 2. Operator Categories
+
+All benchmark operators are organized by semantic role in modern LLM architectures.
+Every Gate from **Stage 2 onward must cover at least 3 operator categories** across
+multiple shape tiers — single-operator coverage is insufficient.
+
+| Cat | Name | Operators | Architecture Relevance |
+|:---:|:-----|:----------|:----------------------|
+| **A** | Dense Linear | `matmul`, `batch_matmul`, `grouped_matmul` | All Transformer layers (QKV, FFN, lm_head, MoE expert) |
+| **B** | Attention | `flash_attention`, `grouped_query_attention`, `multi_latent_attention` | All modern LLMs; DeepSeek MLA is unique |
+| **C** | Normalization | `layernorm`, `rmsnorm`, `rmsnorm_residual` | Pre/post layer norm; LLaMA/DeepSeek use RMSNorm |
+| **D** | Activation | `gelu`, `silu`, `swiglu`, `geglu`, `relu` | FFN non-linearity; SwiGLU dominant in LLaMA/DeepSeek |
+| **E** | Positional Encoding | `rope`, `yarn_rope` | Rotary PE; YaRN for long-context (DeepSeek/Qwen) |
+| **F** | Vocabulary | `embedding`, `cross_entropy` | Embedding lookup + language model head loss |
+| **G** | MoE | `moe_gating`, `grouped_matmul` | DeepSeek-V2/V3 sparse MoE layers |
+
+### Stage Coverage Requirements
+
+| Stage | Minimum Category Coverage | Tier Requirement |
+|:------|:--------------------------|:----------------|
+| Stage 1 (G0–G5) | A + partial B/C/D | Tier 1–3 |
+| Stage 2 | A + B + C + D + E (5 categories) | Tier 1–4 |
+| Stage 3 | A–F (6 categories + G partial) | Tier 1–4 |
+| Stage 4 | A–G (all 7 categories) | Tier 1–4 |
+
+---
+
+## 3. Baseline Tiers & Operator → Baseline Matrix
 
 For each operator, baselines are ranked by **expected performance** (highest first).
 The benchmark reports Arke's ratio against **every available baseline**.
@@ -146,20 +174,14 @@ Which source to use as primary baseline for each operator:
 
 ---
 
-## 3. Shape Matrix
+## 4. Shape Matrix
 
-Standard shapes covering small/medium/large and square/rectangular.
-Benchmark every operator at every applicable shape.
+Shapes are organized into **four tiers** for different use cases:
 
-Shapes are organized into three tiers for different use cases:
-
-- **Tier 1** (15 shapes): Fast regression checks, daily development (`arke gate G2 --tier 1`)
+- **Tier 1** (15 shapes): Fast regression checks, daily development
 - **Tier 2** (30 shapes): Standard CI, covers aligned + rectangular + LLM shapes
-- **Tier 3** (50+ shapes per op): Full evaluation including **non-aligned shapes**, used for Gate verification (G1–G5)
-
-> Tier 3 includes non-power-of-2 and non-aligned dimensions (e.g., M=127, N=513, K=1000)
-> to stress-test masking, boundary handling, and tile remainder logic.
-> See [gate-redesign.md](../docs/design/gate-redesign.md) for the full Tier 3 verification design.
+- **Tier 3** (50+ shapes per op): Full evaluation including **non-aligned shapes**, used for Gate G1–G5
+- **Tier 4** (complex fused ops): FlashAttention, MLA, GQA, RoPE, SwiGLU with **LLM-production shapes** incl. DeepSeek; used for Stage 2+ Gates
 
 ### Matmul Shapes
 
@@ -266,9 +288,141 @@ Shapes are organized into three tiers for different use cases:
 
 > Tier 3 includes 15 elementwise shapes total.
 
+### Tier 4: Complex Fused Operators
+
+Tier 4 covers operators with complex multi-stage semantics and hardware-specific
+optimization requirements. Used for Stage 2+ Gate verification.
+
+> Shape notation for attention: `(batch, seq_len, num_heads, head_dim)`.
+> DeepSeek shapes include long-context variants (8K–163K tokens).
+
+#### Reference LLM Architecture Parameters
+
+| Model | Hidden | Q Heads | KV Heads | Head Dim | FFN | Layers | Vocab | Max Ctx |
+|:------|-------:|--------:|---------:|---------:|----:|-------:|------:|--------:|
+| GPT-2 Small | 768 | 12 | 12 | 64 | 3072 | 12 | 50257 | 1024 |
+| GPT-2 Medium | 1024 | 16 | 16 | 64 | 4096 | 24 | 50257 | 1024 |
+| LLaMA-2 7B | 4096 | 32 | 32 | 128 | 11008 | 32 | 32000 | 4096 |
+| LLaMA-3 8B | 4096 | 32 | 8 | 128 | 14336 | 32 | 128256 | 8192 |
+| DeepSeek-V2 16B | 5120 | 128 | 128 | 128 | 12288 | 60 | 102400 | 163840 |
+| DeepSeek-V3 671B | 7168 | 128 | 128 | 128 | 18432 | 61 | 129280 | 163840 |
+| Qwen2.5 7B | 3584 | 28 | 4 | 128 | 18944 | 28 | 151936 | 131072 |
+| Mistral 7B | 4096 | 32 | 8 | 128 | 14336 | 32 | 32000 | 32768 |
+
+#### FlashAttention Shapes
+
+Baseline: `flash-attn` library (P1). dtype=f16/bf16.
+
+| Tag | Batch | Seq | Heads | Head Dim | Tier | Source | Notes |
+|:----|------:|----:|------:|---------:|:----:|:-------|:------|
+| `gpt2-sm-128` | 1 | 128 | 12 | 64 | 4 | GPT-2 Small | Short context |
+| `gpt2-sm-512` | 1 | 512 | 12 | 64 | 4 | GPT-2 Small | Medium context |
+| `gpt2-sm-1k` | 1 | 1024 | 12 | 64 | 4 | GPT-2 Small | Max context |
+| `gpt2-md-2k` | 1 | 2048 | 16 | 64 | 4 | GPT-2 Medium | Max context |
+| `llama2-7b-512` | 1 | 512 | 32 | 128 | 4 | LLaMA-2 7B | Typical inference |
+| `llama2-7b-2k` | 1 | 2048 | 32 | 128 | 4 | LLaMA-2 7B | Max context |
+| `llama2-7b-4k` | 1 | 4096 | 32 | 128 | 4 | LLaMA-2 7B | Extended |
+| `llama2-7b-batch` | 4 | 512 | 32 | 128 | 4 | LLaMA-2 7B | Batched inference |
+| `llama3-8b-512` | 1 | 512 | 32 | 128 | 4 | LLaMA-3 8B | GQA (kv_heads=8) |
+| `llama3-8b-8k` | 1 | 8192 | 32 | 128 | 4 | LLaMA-3 8B | Max context |
+| `qwen25-7b-512` | 1 | 512 | 28 | 128 | 4 | Qwen2.5 7B | Standard |
+| `qwen25-7b-2k` | 1 | 2048 | 28 | 128 | 4 | Qwen2.5 7B | — |
+| `qwen25-7b-8k` | 1 | 8192 | 28 | 128 | 4 | Qwen2.5 7B | Long context |
+| `ds-v2-512` | 1 | 512 | 128 | 128 | 4 | DeepSeek-V2 16B | Standard |
+| `ds-v2-1k` | 1 | 1024 | 128 | 128 | 4 | DeepSeek-V2 16B | — |
+| `ds-v2-2k` | 1 | 2048 | 128 | 128 | 4 | DeepSeek-V2 16B | — |
+| `ds-v2-4k` | 1 | 4096 | 128 | 128 | 4 | DeepSeek-V2 16B | — |
+| `ds-v2-8k` | 1 | 8192 | 128 | 128 | 4 | DeepSeek-V2 16B | Long context |
+| `ds-v2-16k` | 1 | 16384 | 128 | 128 | 4 | DeepSeek-V2 16B | Long context |
+| `ds-v3-32k` | 1 | 32768 | 128 | 128 | 4 | DeepSeek-V3 671B | Ultra-long ctx |
+| `ds-v3-163k` | 1 | 163840 | 128 | 128 | 4 | DeepSeek-V3 671B | Max context limit |
+| `ds-batch-8` | 8 | 512 | 128 | 128 | 4 | DeepSeek-V3 671B | Batched |
+
+> Long-context shapes (≥8K) may OOM on 6GB VRAM; recorded as OOM, not fail.
+> Stage 2 Gate requires passing ≥12 of 22 shapes (excluding OOM).
+
+#### Multi-Latent Attention (MLA, DeepSeek-V2/V3)
+
+DeepSeek-specific: compressed KV latent representation eliminates KV cache growth.
+Shape: `(batch, seq, n_heads, head_dim, kv_lora_rank)`. Baseline: custom DeepSeek reference.
+
+| Tag | Batch | Seq | Heads | Head Dim | KV LoRA Rank | Tier | Source |
+|:----|------:|----:|------:|---------:|-------------:|:----:|:-------|
+| `ds-v2-mla-512` | 1 | 512 | 128 | 128 | 512 | 4 | DeepSeek-V2 16B |
+| `ds-v2-mla-2k` | 1 | 2048 | 128 | 128 | 512 | 4 | DeepSeek-V2 16B |
+| `ds-v2-mla-4k` | 1 | 4096 | 128 | 128 | 512 | 4 | DeepSeek-V2 16B |
+| `ds-v2-mla-8k` | 1 | 8192 | 128 | 128 | 512 | 4 | DeepSeek-V2 16B |
+| `ds-v3-mla-512` | 1 | 512 | 128 | 128 | 1024 | 4 | DeepSeek-V3 671B |
+| `ds-v3-mla-2k` | 1 | 2048 | 128 | 128 | 1024 | 4 | DeepSeek-V3 671B |
+| `ds-v3-mla-4k` | 1 | 4096 | 128 | 128 | 1024 | 4 | DeepSeek-V3 671B |
+| `ds-v3-mla-8k` | 1 | 8192 | 128 | 128 | 1024 | 4 | DeepSeek-V3 671B |
+
+#### Grouped Query Attention (GQA)
+
+Shape: `(batch, seq, n_q_heads, head_dim)` with `n_kv_heads < n_q_heads`.
+
+| Tag | Batch | Seq | Q Heads | Head Dim | KV Heads | Tier | Source |
+|:----|------:|----:|--------:|---------:|---------:|:----:|:-------|
+| `llama3-8b-gqa-512` | 1 | 512 | 32 | 128 | 8 | 4 | LLaMA-3 8B |
+| `llama3-8b-gqa-2k` | 1 | 2048 | 32 | 128 | 8 | 4 | LLaMA-3 8B |
+| `llama3-8b-gqa-8k` | 1 | 8192 | 32 | 128 | 8 | 4 | LLaMA-3 8B |
+| `mistral-7b-512` | 1 | 512 | 32 | 128 | 8 | 4 | Mistral 7B |
+| `qwen25-7b-512` | 1 | 512 | 28 | 128 | 4 | 4 | Qwen2.5 7B |
+| `qwen25-7b-2k` | 1 | 2048 | 28 | 128 | 4 | 4 | Qwen2.5 7B |
+
+#### RoPE / YaRN Shapes
+
+Shape: `(seq_len, n_heads, head_dim)`, dtype=f16/bf16. YaRN = long-context extension.
+
+| Tag | Seq | Heads | Head Dim | Tier | Source | Notes |
+|:----|----:|------:|---------:|:----:|:-------|:------|
+| `llama2-512` | 512 | 32 | 128 | 4 | LLaMA-2 7B | Standard RoPE |
+| `llama2-2k` | 2048 | 32 | 128 | 4 | LLaMA-2 7B | Max context |
+| `llama2-4k` | 4096 | 32 | 128 | 4 | LLaMA-2 7B | Extended |
+| `ds-v2-8k` | 8192 | 128 | 128 | 4 | DeepSeek-V2 YaRN | Long context |
+| `ds-v2-16k` | 16384 | 128 | 128 | 4 | DeepSeek-V2 YaRN | — |
+| `ds-v2-32k` | 32768 | 128 | 128 | 4 | DeepSeek-V2 YaRN | — |
+| `ds-v3-65k` | 65536 | 128 | 128 | 4 | DeepSeek-V3 YaRN | Ultra-long |
+| `ds-v3-163k` | 163840 | 128 | 128 | 4 | DeepSeek-V3 YaRN | Max context |
+| `qwen25-8k` | 8192 | 28 | 128 | 4 | Qwen2.5 7B YaRN | — |
+
+#### SwiGLU / GeGLU Shapes
+
+Fused gate + activation used in LLaMA, DeepSeek FFN. Shape: `(seq_len, ffn_dim)`, dtype=f16.
+
+| Tag | Seq | FFN Dim | Tier | Source | Notes |
+|:----|----:|--------:|:----:|:-------|:------|
+| `gpt2-sm` | 128 | 3072 | 4 | GPT-2 Small | GELU (reference) |
+| `llama2-7b` | 512 | 11008 | 4 | LLaMA-2 7B | SwiGLU |
+| `llama2-7b-long` | 2048 | 11008 | 4 | LLaMA-2 7B | SwiGLU long seq |
+| `ds-v2-512` | 512 | 12288 | 4 | DeepSeek-V2 | SwiGLU |
+| `ds-v2-2k` | 2048 | 12288 | 4 | DeepSeek-V2 | SwiGLU |
+| `ds-v3-512` | 512 | 18432 | 4 | DeepSeek-V3 | SwiGLU (large FFN) |
+| `ds-v3-2k` | 2048 | 18432 | 4 | DeepSeek-V3 | SwiGLU |
+| `qwen25-7b` | 512 | 18944 | 4 | Qwen2.5 7B | SwiGLU |
+
+#### Matmul Tier 4 (LLM-Scale + Long Context)
+
+Extends Tier 3 with DeepSeek-V2/V3 and Qwen2.5 production shapes including long-context variants.
+
+| Tag | M | N | K | Tier | Source | Notes |
+|:----|----:|----:|----:|:----:|:-------|:------|
+| `ds-v2-attn` | 512 | 5120 | 5120 | 4 | DeepSeek-V2 | Attention proj |
+| `ds-v2-ffn-up` | 512 | 12288 | 5120 | 4 | DeepSeek-V2 | FFN up |
+| `ds-v2-ffn-down` | 512 | 5120 | 12288 | 4 | DeepSeek-V2 | FFN down |
+| `ds-v2-lmhead` | 512 | 102400 | 5120 | 4 | DeepSeek-V2 | lm_head (huge vocab) |
+| `ds-v3-attn` | 1024 | 7168 | 7168 | 4 | DeepSeek-V3 | Attention proj |
+| `ds-v3-ffn-up` | 1024 | 18432 | 7168 | 4 | DeepSeek-V3 | FFN up |
+| `ds-v3-lmhead` | 512 | 129280 | 7168 | 4 | DeepSeek-V3 | lm_head (huge vocab) |
+| `qwen25-attn` | 512 | 3584 | 3584 | 4 | Qwen2.5 7B | Attention |
+| `qwen25-ffn-up` | 512 | 18944 | 3584 | 4 | Qwen2.5 7B | FFN up (wide) |
+| `qwen25-lmhead` | 512 | 151936 | 3584 | 4 | Qwen2.5 7B | lm_head (huge vocab) |
+| `ds-v2-long-8k` | 8192 | 5120 | 5120 | 4 | DeepSeek-V2 | Long ctx seq=8K |
+| `ds-v3-long-32k` | 32768 | 7168 | 7168 | 4 | DeepSeek-V3 | Long ctx seq=32K |
+
 ---
 
-## 4. Measurement Protocol
+## 5. Measurement Protocol
 
 ### Single Operator (L1)
 
@@ -336,7 +490,7 @@ Same protocol as L1, but input is the unfused sequence of ops vs the fused kerne
 
 ---
 
-## 5. Scoring System & Quality Gates
+## 6. Scoring System & Quality Gates
 
 ### Single Operator Score (per shape)
 
@@ -410,7 +564,56 @@ Perf type: absolute floor  no gate      relative edge  E2E overhead
 
 ---
 
-## 6. Operator Source Registry
+### Quality Gates: Stage 2–4 (S2-G1 – S4-G*)
+
+All Stage 2+ Gates must cover **multiple operator categories** (see §2) and **multiple shape tiers**.
+Single-operator-only Gates are not acceptable from Stage 2 onward.
+
+#### Stage 2: SIMD Architecture Validation (Ascend backend)
+
+| Gate | Category Coverage | Shape Tier | Accuracy Criterion | Performance Criterion |
+|:----:|:-----------------|:----------:|:-------------------|:---------------------|
+| **S2-G1** | A (matmul, batch_matmul) + C (rmsnorm) + D (swiglu) | Tier 2 (15 shapes) | 100% on NVIDIA + Ascend | Arke/FlagGems ≥1.1× on Ascend (Tier 2 geomean) |
+| **S2-G2** | B (flash_attention, GQA) | Tier 4: ≥12/22 FlashAttention shapes (excl. OOM) | 100% correct | ≥0.7× flash-attn baseline |
+| **S2-G3** | E (rope, yarn_rope) | Tier 4 RoPE (9 shapes, incl. DeepSeek YaRN) | 100% correct | ≥0.8× Liger baseline |
+| **S2-G4** | D (swiglu, geglu) | Tier 4 SwiGLU (8 shapes) | 100% correct | ≥0.9× Liger swiglu baseline |
+| **S2-G5** | A (matmul) — LLM-scale shapes | Tier 4 Matmul (12 shapes, incl. DeepSeek/Qwen) | 100% correct | Arke/cuBLAS ≥0.85× geomean |
+| **S2-G6** | A+B+C+D+E combined | Tier 2 + Tier 4 sampled | 100% (all categories) | LLM w/  @rationale > w/o, ≥10% improvement |
+
+> S2-G2 baseline: `flash-attn` CUDA library (P1).
+> S2-G6 verifies the @rationale cross-architecture feedback loop (H4 validation).
+
+#### Stage 3: MLIR Backend + Level-2 LLM Decisions
+
+| Gate | Category Coverage | Shape Tier | Accuracy Criterion | Performance Criterion |
+|:----:|:-----------------|:----------:|:-------------------|:---------------------|
+| **S3-G1** | A (matmul) | Tier 2 (15 shapes) | 100% via MLIR path | MLIR ≥ Stage 1 Triton path (geomean) |
+| **S3-G2** | A+C+D | Tier 2 + Tier 4 sampled (20 shapes) | 100% via MLIR path | MLIR ≥ Stage 1 Triton path (all 3 cats) |
+| **S3-G3** | B (flash_attention, MLA) | Tier 4 FlashAttention + MLA (14 shapes) | 100% via MLIR path | MLIR ≥ Triton path |
+| **S3-G4** | A (matmul) | Tier 2 (15 shapes) | 100% | LLM Level-1+2 decisions > LLM Level-1 + default Level-2 by ≥15% |
+| **S3-G5** | B (flash_attention) | Tier 4 FlashAttention (10 shapes) | 100% | LLM Level-2 FlashAttention > default by ≥20% |
+| **S3-G6** | A+B+C+D+E+F | Tier 2 + Tier 4 (all cats) | 100% | @rationale knowledge base (≥50 entries) improves new-op optimization ≥10% |
+
+> S3-G4/G5 validate the core LLM-Native claim: LLM Level-2 decisions add measurable value.
+> S3-G6 validates the @rationale knowledge accumulation loop.
+
+#### Stage 4: Full LLM-Native Generation + LLVM Backend
+
+| Gate | Category Coverage | Shape Tier | Accuracy Criterion | Performance Criterion |
+|:----:|:-----------------|:----------:|:-------------------|:---------------------|
+| **S4-G1** | A+B+C+D (4 cats) | Tier 4 (all) | LLM-generated Semantic IR passes V0+V1 (100%) | — |
+| **S4-G2** | A+B+C+D (4 cats) | Tier 4 (all) | 100% | LLM end-to-end generated kernels ≥80% of human-written baseline |
+| **S4-G3** | B (flash_attention, MLA, GQA) | Tier 4 FlashAttention+MLA+GQA (all) | 100% | LLM-generated FlashAttention ≥70% of flash-attn-2 |
+| **S4-G4** | A+B+C+D+E+F | Tier 2 + Tier 4 | 100% | @rationale knowledge base (≥200 entries) > no knowledge base by ≥20% |
+| **S4-G5** | A+C (matmul, layernorm, rmsnorm) | Tier 2 (15 shapes) | 100% via LLVM path | LLVM path ≥ MLIR path + 5% |
+
+> S4-G3 is the ultimate FlashAttention challenge: LLM generates a custom FlashAttention
+> variant from scratch with @rationale guidance, reaching 70% of the gold standard.
+> S4-G4 validates the long-term "human experience → @rationale → LLM improvement" loop.
+
+---
+
+## 7. Operator Source Registry
 
 Centralized registry of GPU operators used as benchmark baselines.
 Each entry specifies: what it does, where it comes from, how to invoke it, and license.
@@ -603,7 +806,7 @@ Fast LLM fine-tuning with custom Triton kernels.
 
 ---
 
-## 7. Output Structure & Provenance Tracking
+## 8. Output Structure & Provenance Tracking
 
 ### Directory Layout
 
@@ -680,7 +883,7 @@ matmul,square-1k,1024,1024,1024,FlagGems,1,"FlagGems 5.0.0 (BAAI/FlagOS) | https
 
 ---
 
-## 8. CLI Interface
+## 9. CLI Interface
 
 ### Current Implementation ✅
 
@@ -751,7 +954,7 @@ arke bench --mode full --trials 3                  # Full suite
 
 ---
 
-## 9. Benchmark-Driven Development
+## 10. Benchmark-Driven Development
 
 ### Core Idea
 
@@ -862,7 +1065,7 @@ New ops in L1/L2 must be added to KernelCache dispatch.
 
 ---
 
-## 10. Implementation Status
+## 11. Implementation Status
 
 ### Baseline Runner Architecture ✅
 
@@ -944,7 +1147,7 @@ class BaselineRunner(ABC):
 
 ---
 
-## 11. Dependencies
+## 12. Dependencies
 
 ### Required (installed with Arke)
 
@@ -991,4 +1194,4 @@ except ImportError:
 
 ---
 
-*Last updated: 2026-04-02*
+*Last updated: 2026-04-04*
