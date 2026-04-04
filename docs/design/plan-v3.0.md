@@ -32,9 +32,14 @@
 
 ### Gate Status
 - G0 ✅ — Triton matmul runs on RTX 3060
-- G1 ✅ — Known-good strategy expressible in Arke IR
+- G1 ✅ (⚠️ G1.4 needs 100% revalidation) — IR + Validation
 - G2 ✅ — Manual strategy → codegen → 105-160% cuBLAS
 - G3 ✅ — LLM tool-use → 106% cuBLAS + softmax correct
+- G4 ✅ — Arke vs LLM-direct comparison
+- G5 ✅ (3 known-fail perf) — E2E GPT-2 integration
+- G6 ⬜ — Arke Lang & IR Completeness (Key Features validation)
+- G7 ⬜ — E2E Autonomous Kernel Generation (I/O contract)
+- G8 ⬜ — Implementation Language Assessment
 
 ---
 
@@ -42,14 +47,17 @@
 
 ```
 Phase 1.0 ✅  Environment setup
-Phase 1.1 ✅  IR + Validation foundation
+Phase 1.1 ✅  IR + Validation foundation (⚠️ G1.4 needs 100% fix)
 Phase 1.2 ✅  Codegen + E2E pipeline
 Phase 1.3 ✅  LLM agent integration
 Phase 1.4 ✅  LLM closed-loop optimization
 Phase 1.5 ✅  Evaluation framework + comparison
 Phase 1.6 ✅  .ak Parser + CLI
-Phase 1.7 ✅  Whole-model E2E (Gate G5 PASS: 1.01x eager @ seq=128)
+Phase 1.7 ✅  Whole-model E2E (G5: 3 known-fail perf criteria)
 Phase 1.8 ✅  MVP release (v0.1.0)
+Phase 1.9 ⬜  Arke Lang & IR Completeness (Gate G6) ← CURRENT
+Phase 1.10 ⬜ E2E Autonomous Kernel Generation (Gate G7)
+Phase 1.11 ⬜ Implementation Language Assessment (Gate G8)
 ```
 
 ---
@@ -327,6 +335,100 @@ Phase 1.8 ✅  MVP release (v0.1.0)
 - [x] Evaluation report finalization
 - [x] Trajectory data packaging
 - [x] Version tag + GitHub release
+
+---
+
+## Phase 1.9: Arke Lang & IR Completeness (Gate G6)
+
+> **Prerequisite:** G0-G5 must all pass at 100% (non-performance criteria).
+> G6 is the foundation for ALL subsequent development. Verification must be strict.
+
+**Objective:** Validate that Arke Lang and Arke IR satisfy all 7 Key Features with
+production-grade completeness on NVIDIA GPU. This includes full `.ak → SemanticIR →
+StrategyIR → Triton → GPU` pipeline, Python interoperability, and MLIR/LLVM IR
+structural compatibility.
+
+**Gate G6: REOPENED — Stage 1 strictness upgrade**
+
+Before G6, all existing Gates (G0-G5) must be re-verified at 100% pass rate
+(excluding known-fail performance criteria). Current gaps:
+- G1.4: `.ak parse → IR` threshold was ≥3/5 — must be ALL files (100%)
+- `04_attention.ak`: grammar doesn't support array literals / float constants in kernel args
+- Strategy block parse → StrategyIR converter does not exist (`ast_to_strategy()` missing)
+- `.ak → strategy → codegen → GPU` full pipeline never executed
+
+### Completion Criteria
+| # | Criterion | Verification | Key Feature | Status |
+|---|-----------|-------------|------------|:------:|
+| G6.1 | `.ak → SemanticIR → StrategyIR → Triton → GPU` E2E pipeline | All `examples/*.ak` parse, convert to both IRs, codegen to Triton, execute on GPU, correctness verified | AI-First + Compiler-Verified | ⬜ |
+| G6.2 | `ast_to_strategy()` converter implemented | Strategy blocks in `.ak` → StrategyIR, round-trip test passes | Semantic/Strategy Separation | ⬜ |
+| G6.3 | @rationale preserved through full pipeline | `.ak` @rationale → StrategyIR → codegen comments → trajectory/log; verified on ≥3 examples | @rationale Annotations | ⬜ |
+| G6.4 | Token efficiency: `.ak` ≤ Triton line count | Cat A+B+C+D operators (matmul, softmax, layernorm, gelu, rmsnorm, attention): `.ak` lines < equivalent Triton kernel lines at comparable performance | Minimal-Token Efficiency | ⬜ |
+| G6.5 | Python interop: IR ↔ Python dict/JSON | SemanticIR + StrategyIR round-trip: `.from_json()` / `.to_json()` / `from_dict()` / `to_dict()` for all OP_CATALOG ops | (Python interop) | ⬜ |
+| G6.6 | IR ↔ MLIR structural mapping documented | `docs/spec/ir-mlir-mapping.md`: every SemanticIR/StrategyIR field → MLIR dialect op/attribute mapping | (MLIR interop prep) | ⬜ |
+| G6.7 | Grammar completeness: ALL `.ak` files parse | G1.4 threshold upgraded from ≥3 to = ALL (0 failures); grammar supports array literals, float constants, all op parameter types | AI-First | ⬜ |
+| G6.8 | Arke Lang + IR expression completeness (NVIDIA) | Benchmark Cat A+B+C+D operators (matmul, softmax, layernorm, rmsnorm, gelu, silu, attention) all expressible in `.ak`, convertible to both IRs, codegen to Triton, correctness verified at Tier 2 shapes | All Key Features | ⬜ |
+| G6.9 | Arke Language Spec v1.0 + IR Spec v1.0 | Both spec docs updated to match implementation, tagged v1.0, consistency verified | (Spec freeze) | ⬜ |
+
+**Dependency:** G0-G5 re-verified at 100% (non-perf), grammar fixes complete
+
+### Tasks
+- [ ] Fix grammar: support array literals (`dims=[2,3]`) and float constants (`0.125`) in kernel args
+- [ ] Implement `ast_to_strategy()` converter (parser AST → StrategyIR)
+- [ ] Fix G1.4 threshold: `ak_pass >= 3` → `ak_pass == len(ak_files)` in gate.py
+- [ ] Write `.ak` examples for all Cat A+B+C+D operators
+- [ ] Implement full `.ak → SemanticIR + StrategyIR → Triton codegen → GPU` pipeline
+- [ ] Token efficiency benchmark: `.ak` lines vs Triton baseline lines
+- [ ] IR-MLIR mapping document
+- [ ] Language Spec v1.0 + IR Spec v1.0 update and freeze
+
+---
+
+## Phase 1.10: End-to-End Autonomous Kernel Generation (Gate G7)
+
+> **Prerequisite:** G6 must pass.
+> G7 defines Arke's input/output contract and validates full autonomy.
+
+**Objective:** Validate that Arke provides a complete autonomous kernel generation
+and optimization pipeline. Define the standard input formats and output artifacts.
+
+**Note:** G7 detailed criteria will be finalized after G6 passes. Below are the
+structural requirements that are already clear.
+
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| G7.1 | **Input support**: (a) `.ak` files, (b) natural language description, (c) existing code in any language (Python/NumPy/Triton/CUDA/etc.) | Each input type → Arke pipeline → correct GPU kernel; ≥2 operators per input type | ⬜ |
+| G7.2 | **Output definition**: executable Triton `.py` + Strategy IR JSON + benchmark report JSON + trajectory JSONL | Documented in `docs/spec/arke-io-spec.md` with examples | ⬜ |
+| G7.3 | `arke optimize <input>` single command | CLI E2E: input → LLM optimize → Triton → GPU → benchmark report | ⬜ |
+| G7.4 | LLM auto-generates Strategy (no human strategy input) | Kernel-only `.ak` (no strategy block) → LLM generates strategy → ≥80% cuBLAS | ⬜ |
+| G7.5 | LLM iterative optimization (≥3 rounds) | Trajectory shows ≥3 compile → profile → adjust cycles | ⬜ |
+| G7.6 | Validated on ≥2 operator types | matmul + softmax both complete full autonomous pipeline | ⬜ |
+| G7.7 | **Arke I/O Spec document** | `docs/spec/arke-io-spec.md` complete | ⬜ |
+
+**Dependency:** G6 PASS. Detailed criteria to be refined after G6 completion.
+
+---
+
+## Phase 1.11: Implementation Language Assessment (Gate G8)
+
+> **Prerequisite:** G6 must pass.
+> G8 evaluates whether Python is the optimal implementation language for Arke.
+
+**Objective:** Data-driven assessment of Python vs alternatives for Arke's
+implementation, with a clear decision and migration path for Stage 2+.
+
+### Completion Criteria
+| # | Criterion | Verification | Status |
+|---|-----------|-------------|:------:|
+| G8.1 | Python advantages quantified | Document: PyTorch/Triton/MLIR bindings ecosystem, LLM API integration, prototyping speed | ⬜ |
+| G8.2 | Python bottlenecks quantified | Measured: dispatch overhead, parse speed, memory footprint vs Rust/C++ theoretical | ⬜ |
+| G8.3 | Critical path analysis | Identify hot path: codegen? LLM API wait? Triton compile? Python overhead % | ⬜ |
+| G8.4 | Hybrid approach evaluation | Evaluate Python + Rust(pyo3) hybrid ROI | ⬜ |
+| G8.5 | **Decision document** | `docs/design/language-decision.md`: conclusion + data + migration path | ⬜ |
+| G8.6 | Stage 2+ language strategy | Explicitly define which modules stay Python, which may migrate | ⬜ |
+
+**Dependency:** G6 PASS. Detailed criteria to be refined after G6 completion.
 
 ---
 
@@ -664,4 +766,4 @@ Before advancing to the next Phase:
 
 ---
 
-*Plan version: v3.0 | Created: 2026-04-01 | Last updated: 2026-04-04*
+*Plan version: v3.0 | Created: 2026-04-01 | Last updated: 2026-04-05*

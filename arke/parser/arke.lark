@@ -27,8 +27,18 @@ return_stmt: "return" IDENT ";"
 
 op_call: IDENT "(" arg_list? ")"
 arg_list: arg ("," arg)*
-arg: IDENT "=" IDENT    -> named_arg
-   | IDENT              -> positional_arg
+arg: IDENT "=" arg_value    -> named_arg
+   | IDENT                  -> positional_arg
+
+arg_value: IDENT
+         | INT
+         | FLOAT
+         | STRING
+         | "true"          -> bool_true
+         | "false"         -> bool_false
+         | arg_array
+
+arg_array: "[" (arg_value ("," arg_value)*)? "]"
 
 // ─── Strategy Definition ───
 strategy_def: "strategy" IDENT "for" "target" "(" STRING ")" "{" strategy_body "}"
