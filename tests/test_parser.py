@@ -306,3 +306,12 @@ class TestParseFiles:
         prog = parse_file("examples/04_matmul_gelu.ak")
         ir = ast_to_ir(prog.kernels[0])
         assert [n.op for n in ir.nodes] == ["matmul", "gelu"]
+
+    def test_04_attention_keywords(self):
+        """Verify 04_attention.ak uses 'strategy' keyword (not 'schedule')."""
+        import pathlib
+        src = pathlib.Path("examples/04_attention.ak").read_text()
+        # Must use 'strategy' keyword per arke-language-spec
+        assert "\nstrategy " in src, "04_attention.ak must use 'strategy' keyword, not 'schedule'"
+        assert "\nschedule " not in src, "04_attention.ak still uses deprecated 'schedule' keyword"
+        # Note: full parse test deferred until grammar supports array literals in kernel args
