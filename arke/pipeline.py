@@ -39,6 +39,27 @@ class PipelineResult:
     errors: list[str] = field(default_factory=list)
     duration_seconds: float = 0.0
 
+    # ── Convenience properties ──────────────────────────────────────────────
+
+    @property
+    def correct(self) -> bool:
+        """True if numerical validation passed (or was not run)."""
+        if self.numerical_validation is None:
+            return True
+        return bool(self.numerical_validation.get("passed", True))
+
+    @property
+    def latency_us(self) -> float | None:
+        """Kernel latency in microseconds, or None if not profiled."""
+        if self.gpu_result is None:
+            return None
+        return self.gpu_result.get("latency_us")
+
+    @property
+    def strategy_source(self) -> str:
+        """Source of the strategy (user-provided or auto-generated)."""
+        return self.strategy_ir.get("_source", "unknown")
+
 
 class ArkePipeline:
     """End-to-end pipeline for kernel optimization.
@@ -235,21 +256,13 @@ class ArkePipeline:
 
         # ── Strategy resolution ──────────────────────────────────────────
         if prog.strategies:
-            # User provided a strategy block — parse it into StrategyIR
-            strat_def = prog.strategies[0]
-            strategy = StrategyIR(
-                kernel_id=sem_ir.kernel_id,
-                target_hw=strat_def.target,
-            )
-            from arke.ir.strategy import Decision, Rationale
-            for action in strat_def.actions:
-                ann = action.annotation
-                rationale = Rationale(text=ann.value) if ann else None
-                strategy.add_decision(Decision(
-                    kind=action.action,
-                    params=action.params,
-                    rationale=rationale,
-                ))
+            # User provided a strategy block — use ast_to_strategy converter
+            from arke.compiler.ast_to_strategy import program_to_strategy
+            strategy = program_to_strategy(prog, kernel.name, kernel_id=sem_ir.kernel_id)
+            if strategy is None:
+                # Fallback: use first strategy definition
+                from arke.compiler.ast_to_strategy import ast_to_strategy
+                strategy = ast_to_strategy(prog.strategies[0], kernel_id=sem_ir.kernel_id)
             source_note = "user-provided strategy block"
         else:
             # No strategy block — auto-generate from hardware profile

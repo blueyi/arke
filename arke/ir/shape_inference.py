@@ -31,6 +31,8 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
     Args:
         op_name: Operator name (must be in the P0 catalog).
         input_shapes: Mapping of input-name → shape list.
+            Accepts both canonical names (W, B) and semantic aliases
+            (weight, bias, gamma, beta, scale).
 
     Returns:
         The inferred output shape.
@@ -38,7 +40,9 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
     Raises:
         ValueError: On shape mismatch or unknown operator.
     """
-    errors = validate_shapes(op_name, input_shapes)
+    # Normalize aliases first so all downstream code uses canonical names
+    input_shapes = _normalize_inputs(input_shapes)
+    errors = validate_shapes(op_name, input_shapes)  # validate also normalizes (idempotent)
     if errors:
         raise ValueError("; ".join(errors))
 
@@ -99,16 +103,40 @@ def infer_output_dtype(op_name: str, input_dtypes: dict[str, str]) -> str:
     return next(iter(input_dtypes.values()))
 
 
+# Canonical input-name aliases: long/semantic names → internal short names
+_INPUT_ALIASES: dict[str, str] = {
+    "weight": "W",
+    "bias": "B",
+    "scale": "W",    # some ops use 'scale' instead of 'weight'
+    "gamma": "W",
+    "beta": "B",
+}
+
+
+def _normalize_inputs(
+    input_shapes: dict[str, list[int]],
+) -> dict[str, list[int]]:
+    """Normalize semantic input names to internal canonical names."""
+    result: dict[str, list[int]] = {}
+    for k, v in input_shapes.items():
+        result[_INPUT_ALIASES.get(k, k)] = v
+    return result
+
+
 def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[str]:
     """Return list of shape errors (empty list = valid).
 
     Args:
         op_name: Operator name.
         input_shapes: Mapping of input-name → shape list.
+            Accepts both canonical names (W, B) and semantic aliases
+            (weight, bias, gamma, beta, scale).
 
     Returns:
         List of human-readable error strings. Empty if valid.
     """
+    # Normalize aliases before validation
+    input_shapes = _normalize_inputs(input_shapes)
     errors: list[str] = []
 
     if op_name == "matmul":

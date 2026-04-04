@@ -166,7 +166,7 @@ print(result.trajectory)   # Full optimization trace
 Four stages from hypothesis validation to full compiler stack:
 
 ```
-Stage 1: Arke → Triton → NVIDIA GPU     SIMT feasibility ✅  (complete)
+Stage 1: Arke → Triton → NVIDIA GPU     SIMT MVP ✅; G6–G8 (lang/IR + autonomy) in progress
 Stage 2: Arke → Triton → Ascend NPU     SIMD feasibility     (next)
 Stage 3: Arke → MLIR Dialect            Full compiler control
 Stage 4: Arke → LLVM IR                 100% hardware completeness
@@ -216,21 +216,30 @@ achieves maximum hardware expression completeness and performance headroom.
 
 **Target hardware:** NVIDIA Ampere (RTX 3060)
 
+**Stage 1** splits into an **MVP track (Phases 1.0–1.8, v0.1.0)** and a **completion track (1.9–1.11, Gates G6–G8)** before Stage 2. Gates follow **Function > Accuracy > Performance**; full SMART criteria and tiers are in [gate-redesign.md](docs/design/gate-redesign.md) and [plan-v3.0.md](docs/design/plan-v3.0.md).
 
-| Phase   | Objective               | Gate | Exit Criteria                                                                             | Status |
-| ------- | ----------------------- | ---- | ----------------------------------------------------------------------------------------- | ------ |
-| **1.0** | Environment setup       | G0   | `make setup` → venv + PyTorch + Triton + CUDA; GPU smoke test; ≥100 tests                 | ✅      |
-| **1.1** | IR + Validation         | G1   | ≥10 ops, ≥6 strategy types, IR round-trip 100%; **Tier 3 full numerical validation 100%** | ✅      |
-| **1.2** | Codegen + Pipeline      | G2   | IR → Triton → GPU; **Tier 3 accuracy 100%**; perf geomean ≥60% cuBLAS                     | ✅      |
-| **1.3** | LLM agent integration   | —    | LLM uses ≥8 tools, applies ≥4 decisions, zero human intervention                          | ✅      |
-| **1.4** | LLM closed-loop         | G3   | Agent closed-loop optimization; **Tier 3 sampled 10 shapes accuracy 100%**; perf observed | ✅      |
-| **1.5** | Evaluation + comparison | G4   | Arke correct ≥ LLM-direct; perf ≥90% direct, ≥70% FlagGems; token ≤60%                    | ✅      |
-| **1.6** | .ak parser + CLI        | —    | `.ak` → AST → IR for ≥3 kernels; `arke parse/optimize/inspect` CLI                        | ✅      |
-| **1.7** | Whole-model E2E         | G5   | **Multi-config accuracy 100%**; latency ≤1.15× eager; mem ≤6GB; ≥48 ops replaced          | ✅      |
-| **1.8** | MVP release             | —    | CI green ×3 Python; API docs 99%; evaluation report; v0.1.0 tgitag                        | ✅      |
+| Phase | Gate | Deliverable | Status |
+| ----- | ---- | ----------- | ------ |
+| **1.0** | G0 | `make setup`, GPU smoke, ≥100 tests | ✅ |
+| **1.1** | G1 | IR + validators; ≥10 ops / ≥6 strategy kinds; Tier-3 numerical 100% | ✅ ⚠️ |
+| **1.2** | G2 | IR → Triton → GPU; Tier-3 accuracy; perf geomean ≥60% cuBLAS | ✅ |
+| **1.3** | — | LLM agent: ≥8 tools, ≥4 decisions, no human steps | ✅ |
+| **1.4** | G3 | Closed-loop optimize; Tier-3 sampled accuracy 100%; perf on GPU | ✅ |
+| **1.5** | G4 | vs LLM-direct Triton: correctness, perf (≥90% direct, ≥70% FlagGems), token ≤60% | ✅ |
+| **1.6** | — | Language → AST → IR (≥3 kernels); `arke parse` / `optimize` / `inspect` | ✅ |
+| **1.7** | G5 | Whole-model E2E: multi-config accuracy 100%; latency vs eager; mem ≤6GB; ≥48 ops | ✅ ⚠️ |
+| **1.8** | — | CI ×3 Python; API docs; evaluation report; **v0.1.0** tag | ✅ |
+| **1.9** | G6 | Language ↔ SemanticIR ↔ StrategyIR ↔ Triton ↔ GPU; Cat A–D Tier 2; token efficiency; Language + IR spec **v1.0** | ⬜ |
+| **1.10** | G7 | Multi-input (language / NL / code) → kernel; I/O spec | ⬜ |
+| **1.11** | G8 | Implementation language assessment (Python vs alternatives, hybrid path) | ⬜ |
 
+⚠️ **G1:** Tier-3 revalidation gap per [plan-v3.0.md](docs/design/plan-v3.0.md). **G5:** correctness ✅; **latency** vs eager — known-fail perf items ([G5 report](benchmarks/results/stage1/gates/G5/REPORT.md)).
 
-> **Post Stage 1 TODO:** Evaluate implementation language for Stages 2–3. Consider compile-time performance, MLIR/LLVM C++API integration ergonomics, deployment binary size, and whether a Rust/C++ rewrite of the compiler core (keeping Python for agent/LLM layer) is warranted.
+**MVP snapshot:** Sonnet 4.6 closed-loop matmul+relu (23 tool calls, 0 errors); **151.4% cuBLAS** at 2048²; **305** tests; benchmark stack — 6 baselines, L1/L2/L3, 7 operator categories.
+
+**Current focus:** **Phase 1.9 / G6** (⬜ — see deliverable cell above).
+
+> **Post Stage 1 TODO:** Evaluate implementation language for Stages 2–3. Consider compile-time performance, MLIR/LLVM C++ API integration ergonomics, deployment binary size, and whether a Rust/C++ rewrite of the compiler core (keeping Python for agent/LLM layer) is warranted.
 
 ---
 
@@ -300,44 +309,6 @@ LLM Level-3 decisions (register, barrier, instruction scheduling) become possibl
 
 **Stage 4 Summary Gate (S4-G_FINAL):**
 Cat A+B+C+D+E+F via LLVM • ≥3 backends ≥90% vendor • LLM Level 1-3 full stack • v1.0.0
-
----
-
-## 📋 Current Progress (Stage 1)
-
-### Key Achievements
-
-- **LLM closed-loop optimization** — Claude Sonnet 4.6 autonomously optimizes matmul+relu through 23 tool calls, zero errors
-- **151% cuBLAS** — LLM Agent kernel reaches 151.4% cuBLAS at 2048²
-- **Stage 1 Gates G0-G5 PASS** — All gates pass (G5: 3 known-fail perf criteria)
-- **Multi-tier benchmark system** — 6 baselines, 3 layers (L1/L2/L3), 7 operator categories, 4 shape tiers
-- **305 tests passing** (including GPU correctness tests)
-
-### Current Focus: Gate G6 — Lang & IR Completeness
-
-G6 validates the foundation for all subsequent development:
-- Full `.ak → SemanticIR → StrategyIR → Triton → GPU` pipeline
-- Cat A+B+C+D operator expression completeness at Tier 2 shapes
-- Token efficiency:  lines < equivalent Triton kernel lines
-- Python interop, MLIR structural mapping, Spec v1.0 freeze
-
-### Gate Status
-
-> Gate design: **Function > Accuracy > Performance** — see [gate-redesign.md](docs/design/gate-redesign.md) for full SMART criteria with Tier 3 verification.
-
-
-| Gate | Type          | Validates           | Key Criteria                                                                               | Status |
-| ---- | ------------- | ------------------- | ------------------------------------------------------------------------------------------ | ------ |
-| G0   | Function      | Environment         | CUDA + Triton + GPU execution + ≥100 tests                                                 | ✅      |
-| G1   | Func+Acc      | IR & Validation     | ≥10 ops, ≥6 decision types, **Tier 3 numerical validation 100%**                           | ✅ ⚠️   |
-| G2   | Func+Acc+Perf | Codegen quality     | **Tier 3 accuracy 100%**; perf: ≥50% shapes ≥50% cuBLAS, geomean ≥60%                      | ✅      |
-| G3   | Func+Acc      | LLM agent           | ≥8 tools, ≥4 decisions, closed-loop autonomous; **Tier 3 sampled accuracy 100%**           | ✅      |
-| G4   | Acc+Perf      | Arke vs baselines   | Arke correct ≥ LLM-direct; **perf ≥90% direct, ≥70% FlagGems**; token ≤60%                 | ✅      |
-| G5   | Acc+Perf      | E2E integration     | **Multi-config accuracy 100%**; latency ≤1.15× eager (⚠️ known-fail); mem ≤6GB             | ✅ ⚠️   |
-| G6   | Func+Acc      | Lang & IR complete  | `.ak` full E2E pipeline; Cat A-D expression; @rationale; token efficiency; spec v1.0       | ⬜      |
-| G7   | Func          | Autonomous pipeline | Multi-input (.ak/NL/code) → auto kernel gen; I/O spec defined                             | ⬜      |
-| G8   | Analysis      | Language decision   | Python vs alternatives; critical path; hybrid assessment; decision doc                     | ⬜      |
-
 
 ---
 

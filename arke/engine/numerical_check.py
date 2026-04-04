@@ -101,12 +101,47 @@ def _erf(x: np.ndarray) -> np.ndarray:
         return sign * y
 
 
+def _numpy_silu(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"]
+    return x / (1.0 + np.exp(-x))  # x * sigmoid(x)
+
+
 def _numpy_add(inputs: dict[str, np.ndarray]) -> np.ndarray:
     return inputs["A"] + inputs["B"]
 
 
 def _numpy_mul(inputs: dict[str, np.ndarray]) -> np.ndarray:
     return inputs["A"] * inputs["B"]
+
+
+def _numpy_layernorm(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"]
+    w = inputs.get("W", inputs.get("weight"))
+    b = inputs.get("B", inputs.get("bias"))
+    eps = inputs.get("eps", 1e-5)
+    if isinstance(eps, np.ndarray):
+        eps = float(eps.flat[0])
+    mean = x.mean(axis=-1, keepdims=True)
+    var = x.var(axis=-1, keepdims=True)
+    x_norm = (x - mean) / np.sqrt(var + eps)
+    if w is not None:
+        x_norm = x_norm * w
+    if b is not None:
+        x_norm = x_norm + b
+    return x_norm
+
+
+def _numpy_rmsnorm(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"]
+    w = inputs.get("W", inputs.get("weight"))
+    eps = inputs.get("eps", 1e-5)
+    if isinstance(eps, np.ndarray):
+        eps = float(eps.flat[0])
+    rms = np.sqrt(np.mean(x ** 2, axis=-1, keepdims=True) + eps)
+    x_norm = x / rms
+    if w is not None:
+        x_norm = x_norm * w
+    return x_norm
 
 
 def _numpy_softmax(inputs: dict[str, np.ndarray]) -> np.ndarray:
@@ -134,9 +169,12 @@ _NUMPY_DISPATCH: dict[str, Any] = {
     "batch_matmul": _numpy_batch_matmul,
     "relu": _numpy_relu,
     "gelu": _numpy_gelu,
+    "silu": _numpy_silu,
     "add": _numpy_add,
     "mul": _numpy_mul,
     "softmax": _numpy_softmax,
+    "layernorm": _numpy_layernorm,
+    "rmsnorm": _numpy_rmsnorm,
     "reduce_sum": _numpy_reduce_sum,
     "reduce_max": _numpy_reduce_max,
     "transpose": _numpy_transpose,

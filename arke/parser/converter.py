@@ -132,9 +132,13 @@ def _process_let(
     # Resolve variable references to node IDs
     resolved = {}
     for key, var_name in named.items():
-        # Non-string values (int, float, list) are literal parameters, pass through
+        # Non-string values (int, float, list, bool) are literal parameters, pass through
         if not isinstance(var_name, str):
             resolved[key] = var_name
+        elif var_name == "true":
+            resolved[key] = True
+        elif var_name == "false":
+            resolved[key] = False
         elif var_name in var_to_node:
             resolved[key] = var_to_node[var_name]
         elif var_name.startswith('__const_') or any(
