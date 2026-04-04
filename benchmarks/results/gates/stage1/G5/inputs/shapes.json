@@ -1,0 +1,276 @@
+{
+  "matmul": [
+    {
+      "tag": "tiny",
+      "M": 128,
+      "N": 128,
+      "K": 128,
+      "tier": 1
+    },
+    {
+      "tag": "small",
+      "M": 128,
+      "N": 768,
+      "K": 768,
+      "tier": 1
+    },
+    {
+      "tag": "medium",
+      "M": 128,
+      "N": 2304,
+      "K": 768,
+      "tier": 1
+    },
+    {
+      "tag": "square-1k",
+      "M": 1024,
+      "N": 1024,
+      "K": 1024,
+      "tier": 1
+    },
+    {
+      "tag": "square-2k",
+      "M": 2048,
+      "N": 2048,
+      "K": 2048,
+      "tier": 1
+    },
+    {
+      "tag": "square-4k",
+      "M": 4096,
+      "N": 4096,
+      "K": 4096,
+      "tier": 1
+    },
+    {
+      "tag": "rect-wide",
+      "M": 1024,
+      "N": 4096,
+      "K": 1024,
+      "tier": 2
+    },
+    {
+      "tag": "rect-tall",
+      "M": 4096,
+      "N": 1024,
+      "K": 1024,
+      "tier": 2
+    },
+    {
+      "tag": "lm-head",
+      "M": 128,
+      "N": 50257,
+      "K": 768,
+      "tier": 2
+    },
+    {
+      "tag": "llama-q",
+      "M": 4096,
+      "N": 4096,
+      "K": 4096,
+      "tier": 2
+    },
+    {
+      "tag": "llama-ffn",
+      "M": 4096,
+      "N": 11008,
+      "K": 4096,
+      "tier": 2
+    },
+    {
+      "tag": "seq512",
+      "M": 512,
+      "N": 2304,
+      "K": 768,
+      "tier": 2
+    }
+  ],
+  "softmax": [
+    {
+      "tag": "attn-small",
+      "M": 12,
+      "N": 128,
+      "K": null,
+      "tier": 1
+    },
+    {
+      "tag": "attn-med",
+      "M": 12,
+      "N": 512,
+      "K": null,
+      "tier": 1
+    },
+    {
+      "tag": "attn-256",
+      "M": 12,
+      "N": 256,
+      "K": null,
+      "tier": 1
+    },
+    {
+      "tag": "attn-large",
+      "M": 32,
+      "N": 2048,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "attn-64",
+      "M": 12,
+      "N": 64,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "attn-4k",
+      "M": 32,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "attn-8k",
+      "M": 32,
+      "N": 8192,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "square-1k",
+      "M": 1024,
+      "N": 1024,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "square-4k",
+      "M": 4096,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "wide-vocab",
+      "M": 1,
+      "N": 50257,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "wide-llama",
+      "M": 1,
+      "N": 128256,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "batch-large",
+      "M": 128,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "batch-xlarge",
+      "M": 1024,
+      "N": 1024,
+      "K": null,
+      "tier": 2
+    }
+  ],
+  "gelu": [
+    {
+      "tag": "small",
+      "M": 128,
+      "N": 768,
+      "K": null,
+      "tier": 1
+    },
+    {
+      "tag": "medium",
+      "M": 128,
+      "N": 3072,
+      "K": null,
+      "tier": 1
+    },
+    {
+      "tag": "large",
+      "M": 4096,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "llama-ffn",
+      "M": 4096,
+      "N": 11008,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "xlarge",
+      "M": 8192,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "seq1k",
+      "M": 1024,
+      "N": 768,
+      "K": null,
+      "tier": 2
+    }
+  ],
+  "layernorm": [
+    {
+      "tag": "gpt2",
+      "M": 128,
+      "N": 768,
+      "K": null,
+      "tier": 1
+    },
+    {
+      "tag": "gpt2-ffn",
+      "M": 128,
+      "N": 3072,
+      "K": null,
+      "tier": 1
+    },
+    {
+      "tag": "llama",
+      "M": 128,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "llama-13b",
+      "M": 128,
+      "N": 5120,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "large",
+      "M": 2048,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "seq1k",
+      "M": 1024,
+      "N": 768,
+      "K": null,
+      "tier": 2
+    },
+    {
+      "tag": "batch-large",
+      "M": 4096,
+      "N": 4096,
+      "K": null,
+      "tier": 2
+    }
+  ]
+}
