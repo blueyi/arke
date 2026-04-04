@@ -15,6 +15,7 @@ from arke.ir.builder import KernelBuilder
 from arke.ir.ops.catalog import OP_CATALOG
 from arke.ir.semantic import SemanticIR
 from arke.parser.ast_nodes import (
+    Literal,
     KernelDef,
     LetStmt,
     ReturnStmt,
@@ -62,6 +63,11 @@ def ast_to_ir(kernel: KernelDef) -> SemanticIR:
 
     for stmt in kernel.body:
         if isinstance(stmt, LetStmt):
+            # Handle literal assignments (let scale = 0.125)
+            if isinstance(stmt.value, Literal):
+                # Store literal as a constant reference
+                var_to_node[stmt.name] = f"__const_{stmt.name}"
+                continue
             node_id = _process_let(builder, stmt, var_to_node)
             var_to_node[stmt.name] = node_id
 
@@ -126,8 +132,20 @@ def _process_let(
     # Resolve variable references to node IDs
     resolved = {}
     for key, var_name in named.items():
-        if var_name in var_to_node:
+        # Non-string values (int, float, list) are literal parameters, pass through
+        if not isinstance(var_name, str):
+            resolved[key] = var_name
+        elif var_name in var_to_node:
             resolved[key] = var_to_node[var_name]
+        elif var_name.startswith('__const_') or any(
+            v == f'__const_{var_name}' for v in var_to_node.values()
+        ):
+            # Constant reference — look up the constant
+            const_key = f'__const_{var_name}'
+            if const_key in var_to_node.values():
+                resolved[key] = var_name  # pass through as constant ref
+            else:
+                resolved[key] = var_name
         else:
             raise ConversionError(
                 f"Undefined variable '{var_name}' in "

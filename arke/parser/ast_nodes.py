@@ -34,10 +34,17 @@ class OpCall:
 
 
 @dataclass
+class Literal:
+    """A literal value (int, float, string, bool)."""
+    value: int | float | str | bool
+    type: str  # 'int', 'float', 'string', 'bool'
+
+
+@dataclass
 class LetStmt:
-    """let var = op_call;"""
+    """let var = expr; (expr is OpCall or Literal)"""
     name: str
-    value: OpCall
+    value: OpCall | Literal
 
 
 @dataclass
@@ -52,7 +59,7 @@ class KernelDef:
     name: str
     params: list[Param]
     return_type: TensorType
-    body: list[LetStmt | ReturnStmt]
+    body: list[LetStmt | ReturnStmt]  # LetStmt.value can be OpCall or Literal
 
     @property
     def return_var(self) -> str | None:

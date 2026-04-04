@@ -16,6 +16,7 @@ from pathlib import Path
 from lark import Lark, Transformer, v_args
 
 from arke.parser.ast_nodes import (
+    Literal,
     Annotation,
     ImportStmt,
     KernelDef,
@@ -141,6 +142,42 @@ class ArkeTransformer(Transformer):
                 # Positional: use the value as both key and value for single-arg ops
                 named[f"_pos_{i}"] = val
         return OpCall(op=op_name, args=named)
+
+    def expr(self, value):
+        """Unwrap expr → op_call | literal."""
+        return value
+
+    def literal(self, token):
+        """Construct a Literal from a token."""
+        val = token
+        if isinstance(val, bool):
+            return Literal(value=val, type='bool')
+        elif hasattr(val, 'type'):
+            # Lark Token
+            if val.type in ('FLOAT', 'SIGNED_FLOAT'):
+                return Literal(value=float(val), type='float')
+            elif val.type in ('INT', 'SIGNED_INT'):
+                return Literal(value=int(val), type='int')
+            elif val.type == 'STRING':
+                return Literal(value=str(val)[1:-1], type='string')
+        return Literal(value=val, type=type(val).__name__)
+
+    def arg_value(self, val):
+        """Unwrap arg_value."""
+        if hasattr(val, 'type'):
+            if val.type == 'IDENT':
+                return str(val)
+            elif val.type in ('INT', 'SIGNED_INT'):
+                return int(val)
+            elif val.type in ('FLOAT', 'SIGNED_FLOAT'):
+                return float(val)
+            elif val.type == 'STRING':
+                return str(val)[1:-1]
+        return val
+
+    def arg_array(self, *items):
+        """Construct array from items."""
+        return list(items)
 
     def let_stmt(self, name, value):
         """Construct a LetStmt from variable name and value."""

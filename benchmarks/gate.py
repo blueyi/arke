@@ -225,7 +225,7 @@ def run_g1() -> GateSummary:
     results.append(
         GateResult(
             "G1", "G1.4", ".ak parse → IR", "function",
-            ak_pass >= 3, f"{ak_pass}/{len(ak_files)} files parsed (≥3 required)",
+            ak_pass == len(ak_files), f"{ak_pass}/{len(ak_files)} files parsed (ALL required)",
         )
     )
 

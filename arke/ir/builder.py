@@ -67,9 +67,17 @@ class KernelBuilder:
         op_def = get_op(op_name)
 
         # Build input dict: resolve parameter refs vs node refs
+        # Non-string values (int, float, list, bool) are op attributes, skip
         resolved_inputs: dict[str, InputRef] = {}
         param_names = {p.name for p in self._params}
         for key, ref in inputs.items():
+            if not isinstance(ref, str):
+                # Scalar/attribute parameter (e.g., axis=-1, dims=[2,3])
+                # Store as-is; these are op config, not tensor references
+                continue
+            if ref.startswith('__const_'):
+                # Constant reference from literal assignment
+                continue
             if ref in param_names:
                 resolved_inputs[key] = ParamRef(name=ref)
             else:
