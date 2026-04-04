@@ -15,9 +15,11 @@ from __future__ import annotations
 
 _ELEMENTWISE_UNARY = {"relu", "gelu", "silu"}
 _ELEMENTWISE_BINARY = {"add", "mul"}
+_GATED_ACTIVATIONS = {"swiglu", "geglu"}  # split last dim in half
 _SAME_SHAPE_OPS = {"softmax"}
-_NORM_OPS = {"layernorm", "rmsnorm"}
+_NORM_OPS = {"layernorm", "rmsnorm", "rmsnorm_residual"}
 _REDUCE_OPS = {"reduce_sum", "reduce_max"}
+_ATTENTION_OPS = {"flash_attention", "grouped_query_attention", "multi_latent_attention"}
 
 
 # ============================================================
@@ -65,6 +67,11 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
         a = input_shapes["A"]
         return list(a)
 
+    if op_name in _GATED_ACTIVATIONS:
+        # swiglu / geglu: input last dim is 2N, output is N
+        x = input_shapes["X"]
+        return list(x[:-1]) + [x[-1] // 2]
+
     if op_name in _SAME_SHAPE_OPS:
         x = input_shapes["X"]
         return list(x)
@@ -81,6 +88,16 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
     if op_name == "transpose":
         x = input_shapes["X"]
         return [x[1], x[0]]
+
+    if op_name == "grouped_matmul":
+        x = input_shapes["X"]
+        w = input_shapes["W"]
+        return [x[0], x[1], w[2]]  # [B, M, N]
+
+    if op_name in _ATTENTION_OPS:
+        # All attention ops: output shape = Q shape [B, H, S, D] or [B, H_q, S, D]
+        q = input_shapes["Q"]
+        return list(q)
 
     raise ValueError(f"Unknown operator: {op_name}")
 
@@ -229,6 +246,65 @@ def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[st
         x = input_shapes["X"]
         if len(x) != 2:
             errors.append(f"transpose: input must be 2D, got {len(x)}D shape {x}")
+
+    elif op_name in _GATED_ACTIVATIONS:
+        if "X" not in input_shapes:
+            errors.append(f"{op_name} requires input 'X'")
+            return errors
+        x = input_shapes["X"]
+        if x[-1] % 2 != 0:
+            errors.append(
+                f"{op_name}: last dim must be even (split into 2), got {x[-1]}"
+            )
+
+    elif op_name == "grouped_matmul":
+        for req in ("X", "W", "indices"):
+            if req not in input_shapes:
+                errors.append(f"grouped_matmul requires input '{req}'")
+                return errors
+        x, w = input_shapes["X"], input_shapes["W"]
+        if len(x) != 3:
+            errors.append(f"grouped_matmul: X must be 3D, got {len(x)}D")
+        if len(w) != 3:
+            errors.append(f"grouped_matmul: W must be 3D, got {len(w)}D")
+        if len(x) == 3 and len(w) == 3 and x[2] != w[1]:
+            errors.append(
+                f"grouped_matmul: K mismatch: X[2]={x[2]} != W[1]={w[1]}"
+            )
+
+    elif op_name in _ATTENTION_OPS:
+        if "Q" not in input_shapes:
+            errors.append(f"{op_name} requires input 'Q'")
+            return errors
+        q = input_shapes["Q"]
+        if len(q) != 4:
+            errors.append(f"{op_name}: Q must be 4D [B,H,S,D], got {len(q)}D")
+        if op_name == "flash_attention":
+            for inp in ("K", "V"):
+                if inp not in input_shapes:
+                    errors.append(f"{op_name} requires input '{inp}'")
+                elif input_shapes[inp] != q:
+                    errors.append(
+                        f"{op_name}: {inp} shape {input_shapes[inp]} != Q shape {q}"
+                    )
+        elif op_name == "grouped_query_attention":
+            for inp in ("K", "V"):
+                if inp not in input_shapes:
+                    errors.append(f"{op_name} requires input '{inp}'")
+                else:
+                    kv = input_shapes[inp]
+                    if len(kv) != 4:
+                        errors.append(f"{op_name}: {inp} must be 4D")
+                    elif kv[0] != q[0] or kv[2] != q[2] or kv[3] != q[3]:
+                        errors.append(f"{op_name}: {inp} B/S/D must match Q")
+        elif op_name == "multi_latent_attention":
+            for inp in ("KV_compressed", "W_uk", "W_uv"):
+                if inp not in input_shapes:
+                    errors.append(f"{op_name} requires input '{inp}'")
+
+    elif op_name == "rmsnorm_residual":
+        # already caught by _NORM_OPS (rmsnorm_residual is in it)
+        pass
 
     else:
         errors.append(f"Unknown operator: {op_name}")

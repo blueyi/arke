@@ -187,11 +187,22 @@ def run_g6(tier: int = 2) -> GateSummary:  # noqa: ARG001
 
     # ── G6.5: IR ↔ JSON round-trip (all OP_CATALOG ops) ──────────────────
     _OP_SHAPES: dict[str, dict[str, list[int]]] = {
-        "batch_matmul": {"A": [4, 32, 64], "B": [4, 64, 32]},
-        "layernorm":    {"X": [32, 64], "W": [64]},
-        "rmsnorm":      {"X": [32, 64], "W": [64]},
-        "transpose":    {"X": [32, 64]},
-        "matmul":       {"A": [32, 64], "B": [64, 32]},
+        "batch_matmul":           {"A": [4, 32, 64], "B": [4, 64, 32]},
+        "grouped_matmul":         {"X": [4, 32, 64], "W": [8, 64, 32], "indices": [4]},
+        "layernorm":              {"X": [32, 64], "W": [64]},
+        "rmsnorm":                {"X": [32, 64], "W": [64]},
+        "rmsnorm_residual":       {"X": [32, 64], "residual": [32, 64], "W": [64]},
+        "transpose":              {"X": [32, 64]},
+        "matmul":                 {"A": [32, 64], "B": [64, 32]},
+        "swiglu":                 {"X": [32, 128]},
+        "geglu":                  {"X": [32, 128]},
+        "flash_attention":        {"Q": [2, 4, 32, 16], "K": [2, 4, 32, 16], "V": [2, 4, 32, 16]},
+        "grouped_query_attention":{"Q": [2, 8, 32, 16], "K": [2, 2, 32, 16], "V": [2, 2, 32, 16]},
+        "multi_latent_attention": {"Q": [2, 4, 32, 16], "KV_compressed": [2, 32, 8],
+                                   "W_uk": [8, 4, 16], "W_uv": [8, 4, 16]},
+    }
+    _OP_DTYPES: dict[str, dict[str, str]] = {
+        "grouped_matmul": {"indices": "i32"},
     }
     rt_ok = 0
     rt_fail = 0
@@ -200,9 +211,11 @@ def run_g6(tier: int = 2) -> GateSummary:  # noqa: ARG001
             b = KernelBuilder(f"test_{op_name}")
             op_def = OP_CATALOG[op_name]
             custom = _OP_SHAPES.get(op_name, {})
+            custom_dtypes = _OP_DTYPES.get(op_name, {})
             kwargs: dict = {}
             for inp in op_def.inputs:
-                b.param(inp, custom.get(inp, [64, 64]), "f16")
+                dtype = custom_dtypes.get(inp, "f16")
+                b.param(inp, custom.get(inp, [64, 64]), dtype)
                 kwargs[inp] = inp
             nid = b.op(op_name, **kwargs)
             b.returns(nid, b._params[0].shape, "f16")

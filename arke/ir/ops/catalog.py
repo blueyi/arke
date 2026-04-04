@@ -213,6 +213,102 @@ TRANSPOSE = _register(OpDefinition(
 ))
 
 
+# --- Cat A: Dense Linear (additional) ---
+
+GROUPED_MATMUL = _register(OpDefinition(
+    name="grouped_matmul",
+    category="compute",
+    inputs={"X": "Tensor[B,M,K]", "W": "Tensor[E,K,N]", "indices": "Tensor[B]"},
+    output="Tensor[B,M,N]",
+    computation="Y[b,i,j] = sum(X[b,i,k] * W[indices[b],k,j], axis=k)",
+    index_vars=["b", "i", "j", "k"],
+    reduction_axes=["k"],
+    properties=["associative"],
+    can_fuse_as="prologue",
+    numpy_ref="np.stack([X[b] @ W[idx[b]] for b in range(B)])",
+))
+
+# --- Cat B: Attention ---
+
+FLASH_ATTENTION = _register(OpDefinition(
+    name="flash_attention",
+    category="attention",
+    inputs={"Q": "Tensor[B,H,S,D]", "K": "Tensor[B,H,S,D]", "V": "Tensor[B,H,S,D]"},
+    output="Tensor[B,H,S,D]",
+    computation="O = softmax(Q @ K^T / sqrt(D)) @ V  (tiled, online softmax)",
+    index_vars=["b", "h", "i", "j", "k"],
+    reduction_axes=["j", "k"],
+    properties=["causal_mask_optional", "online_softmax"],
+    can_fuse_as=None,
+    numpy_ref="softmax(Q @ K.T / sqrt(D)) @ V",
+))
+
+GROUPED_QUERY_ATTENTION = _register(OpDefinition(
+    name="grouped_query_attention",
+    category="attention",
+    inputs={"Q": "Tensor[B,H_q,S,D]", "K": "Tensor[B,H_kv,S,D]", "V": "Tensor[B,H_kv,S,D]"},
+    output="Tensor[B,H_q,S,D]",
+    computation="GQA: Q heads grouped over fewer KV heads; O = softmax(Q @ K^T / sqrt(D)) @ V",
+    index_vars=["b", "h_q", "h_kv", "i", "j", "k"],
+    reduction_axes=["j", "k"],
+    properties=["causal_mask_optional", "online_softmax", "kv_head_repeat"],
+    can_fuse_as=None,
+    numpy_ref="GQA with head repeat",
+))
+
+MULTI_LATENT_ATTENTION = _register(OpDefinition(
+    name="multi_latent_attention",
+    category="attention",
+    inputs={"Q": "Tensor[B,H,S,D]", "KV_compressed": "Tensor[B,S,D_c]", "W_uk": "Tensor[D_c,H,D]", "W_uv": "Tensor[D_c,H,D]"},
+    output="Tensor[B,H,S,D]",
+    computation="MLA: decompress KV from low-rank latent, then standard attention",
+    index_vars=["b", "h", "i", "j", "k"],
+    reduction_axes=["j", "k"],
+    properties=["causal_mask_optional", "online_softmax", "latent_decompress"],
+    can_fuse_as=None,
+    numpy_ref="MLA: K=KV_c@W_uk, V=KV_c@W_uv, then softmax(Q@K^T/sqrt(D))@V",
+))
+
+# --- Cat C: Normalization (additional) ---
+
+RMSNORM_RESIDUAL = _register(OpDefinition(
+    name="rmsnorm_residual",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]", "residual": "Tensor[M,N]", "W": "Tensor[N]"},
+    output="Tensor[M,N]",
+    computation="H = X + residual; Y[i,j] = H[i,j] / sqrt(mean(H[i,:]^2) + eps) * W[j]",
+    index_vars=["i", "j"],
+    reduction_axes=["j"],
+    properties=["row-wise", "fused_residual"],
+    can_fuse_as=None,
+    numpy_ref="H = X + residual; H / np.sqrt(np.mean(H**2, axis=-1, keepdims=True) + eps) * W",
+))
+
+# --- Cat D: Activation (additional) ---
+
+SWIGLU = _register(OpDefinition(
+    name="swiglu",
+    category="elementwise",
+    inputs={"X": "Tensor[...,2N]"},
+    output="Tensor[...,N]",
+    computation="x1, x2 = split(X); Y = silu(x1) * x2",
+    properties=["elementwise", "gated"],
+    can_fuse_as="epilogue",
+    numpy_ref="x1, x2 = np.split(X, 2, axis=-1); x1 / (1 + np.exp(-x1)) * x2",
+))
+
+GEGLU = _register(OpDefinition(
+    name="geglu",
+    category="elementwise",
+    inputs={"X": "Tensor[...,2N]"},
+    output="Tensor[...,N]",
+    computation="x1, x2 = split(X); Y = gelu(x1) * x2",
+    properties=["elementwise", "gated"],
+    can_fuse_as="epilogue",
+    numpy_ref="x1, x2 = np.split(X, 2, axis=-1); 0.5*x1*(1+erf(x1/sqrt(2))) * x2",
+))
+
+
 # ============================================================
 # Lookup utilities
 # ============================================================

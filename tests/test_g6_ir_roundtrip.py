@@ -23,11 +23,22 @@ from arke.ir.strategy import Decision, Rationale, StrategyIR
 
 # Override default [64, 64] for ops that require specific shapes
 _OP_SHAPES: dict[str, dict[str, list[int]]] = {
-    "batch_matmul": {"A": [4, 32, 64], "B": [4, 64, 32]},
-    "layernorm":    {"X": [32, 64], "W": [64]},
-    "rmsnorm":      {"X": [32, 64], "W": [64]},
-    "transpose":    {"X": [32, 64]},
-    "matmul":       {"A": [32, 64], "B": [64, 32]},
+    "batch_matmul":           {"A": [4, 32, 64], "B": [4, 64, 32]},
+    "grouped_matmul":         {"X": [4, 32, 64], "W": [8, 64, 32], "indices": [4]},
+    "layernorm":              {"X": [32, 64], "W": [64]},
+    "rmsnorm":                {"X": [32, 64], "W": [64]},
+    "rmsnorm_residual":       {"X": [32, 64], "residual": [32, 64], "W": [64]},
+    "transpose":              {"X": [32, 64]},
+    "matmul":                 {"A": [32, 64], "B": [64, 32]},
+    "swiglu":                 {"X": [32, 128]},
+    "geglu":                  {"X": [32, 128]},
+    "flash_attention":        {"Q": [2, 4, 32, 16], "K": [2, 4, 32, 16], "V": [2, 4, 32, 16]},
+    "grouped_query_attention":{"Q": [2, 8, 32, 16], "K": [2, 2, 32, 16], "V": [2, 2, 32, 16]},
+    "multi_latent_attention": {"Q": [2, 4, 32, 16], "KV_compressed": [2, 32, 8],
+                               "W_uk": [8, 4, 16], "W_uv": [8, 4, 16]},
+}
+_OP_DTYPES: dict[str, dict[str, str]] = {
+    "grouped_matmul": {"indices": "i32"},
 }
 _DEFAULT_SHAPE = [64, 64]
 
@@ -37,10 +48,12 @@ def _build_semantic_ir(op_name: str) -> SemanticIR:
     b = KernelBuilder(f"test_{op_name}")
     op_def = OP_CATALOG[op_name]
     custom = _OP_SHAPES.get(op_name, {})
+    custom_dtypes = _OP_DTYPES.get(op_name, {})
     kwargs: dict[str, str] = {}
     for inp in op_def.inputs:
         shape = custom.get(inp, _DEFAULT_SHAPE)
-        b.param(inp, shape, "f16")
+        dtype = custom_dtypes.get(inp, "f16")
+        b.param(inp, shape, dtype)
         kwargs[inp] = inp
     nid = b.op(op_name, **kwargs)
     out_shape = b._params[0].shape

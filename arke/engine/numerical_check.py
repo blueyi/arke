@@ -164,6 +164,92 @@ def _numpy_transpose(inputs: dict[str, np.ndarray]) -> np.ndarray:
     return inputs["X"].T
 
 
+def _numpy_swiglu(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"]
+    x1, x2 = np.split(x, 2, axis=-1)
+    return (x1 / (1.0 + np.exp(-x1))) * x2  # silu(x1) * x2
+
+
+def _numpy_geglu(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"]
+    x1, x2 = np.split(x, 2, axis=-1)
+    try:
+        import scipy.special
+        gelu_x1 = 0.5 * x1 * (1.0 + scipy.special.erf(x1 / math.sqrt(2.0)))
+    except ImportError:
+        gelu_x1 = 0.5 * x1 * (1.0 + _erf(x1 / math.sqrt(2.0)))
+    return gelu_x1 * x2
+
+
+def _numpy_rmsnorm_residual(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"]
+    residual = inputs.get("residual", np.zeros_like(x))
+    w = inputs.get("W", inputs.get("weight", np.ones(x.shape[-1])))
+    eps = inputs.get("eps", 1e-5)
+    if isinstance(eps, np.ndarray):
+        eps = float(eps.flat[0])
+    h = x + residual
+    rms = np.sqrt(np.mean(h ** 2, axis=-1, keepdims=True) + eps)
+    return h / rms * w
+
+
+def _numpy_grouped_matmul(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"]       # [B, M, K]
+    w = inputs["W"]       # [E, K, N]
+    indices = inputs["indices"]  # [B]
+    B = x.shape[0]
+    out = np.stack([x[b] @ w[int(indices[b])] for b in range(B)])
+    return out
+
+
+def _numpy_flash_attention(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    q = inputs["Q"].astype(np.float32)  # [B, H, S, D]
+    k = inputs["K"].astype(np.float32)
+    v = inputs["V"].astype(np.float32)
+    d = q.shape[-1]
+    scores = q @ k.transpose(0, 1, 3, 2) / math.sqrt(d)  # [B, H, S, S]
+    # Numerically stable softmax
+    scores_max = np.max(scores, axis=-1, keepdims=True)
+    exp_scores = np.exp(scores - scores_max)
+    attn = exp_scores / np.sum(exp_scores, axis=-1, keepdims=True)
+    return (attn @ v).astype(q.dtype)
+
+
+def _numpy_grouped_query_attention(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    q = inputs["Q"].astype(np.float32)  # [B, H_q, S, D]
+    k = inputs["K"].astype(np.float32)  # [B, H_kv, S, D]
+    v = inputs["V"].astype(np.float32)  # [B, H_kv, S, D]
+    B, H_q, S, D = q.shape
+    H_kv = k.shape[1]
+    group = H_q // H_kv
+    # Repeat KV heads
+    k = np.repeat(k, group, axis=1)  # [B, H_q, S, D]
+    v = np.repeat(v, group, axis=1)
+    scores = q @ k.transpose(0, 1, 3, 2) / math.sqrt(D)
+    scores_max = np.max(scores, axis=-1, keepdims=True)
+    exp_scores = np.exp(scores - scores_max)
+    attn = exp_scores / np.sum(exp_scores, axis=-1, keepdims=True)
+    return (attn @ v).astype(q.dtype)
+
+
+def _numpy_multi_latent_attention(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    q = inputs["Q"].astype(np.float32)     # [B, H, S, D]
+    kv_c = inputs["KV_compressed"].astype(np.float32)  # [B, S, D_c]
+    w_uk = inputs["W_uk"].astype(np.float32)  # [D_c, H, D]
+    w_uv = inputs["W_uv"].astype(np.float32)  # [D_c, H, D]
+    B, H, S, D = q.shape
+    D_c = kv_c.shape[-1]
+    # Decompress: K[b,h,s,d] = kv_c[b,s,:] @ w_uk[:,h,d]
+    # Reshape for batch matmul: kv_c [B,S,D_c] @ w_uk [D_c, H*D] -> [B,S,H*D] -> [B,H,S,D]
+    k = (kv_c @ w_uk.reshape(D_c, H * D)).reshape(B, S, H, D).transpose(0, 2, 1, 3)
+    v = (kv_c @ w_uv.reshape(D_c, H * D)).reshape(B, S, H, D).transpose(0, 2, 1, 3)
+    scores = q @ k.transpose(0, 1, 3, 2) / math.sqrt(D)
+    scores_max = np.max(scores, axis=-1, keepdims=True)
+    exp_scores = np.exp(scores - scores_max)
+    attn = exp_scores / np.sum(exp_scores, axis=-1, keepdims=True)
+    return (attn @ v).astype(q.dtype)
+
+
 _NUMPY_DISPATCH: dict[str, Any] = {
     "matmul": _numpy_matmul,
     "batch_matmul": _numpy_batch_matmul,
@@ -175,9 +261,16 @@ _NUMPY_DISPATCH: dict[str, Any] = {
     "softmax": _numpy_softmax,
     "layernorm": _numpy_layernorm,
     "rmsnorm": _numpy_rmsnorm,
+    "rmsnorm_residual": _numpy_rmsnorm_residual,
     "reduce_sum": _numpy_reduce_sum,
     "reduce_max": _numpy_reduce_max,
     "transpose": _numpy_transpose,
+    "swiglu": _numpy_swiglu,
+    "geglu": _numpy_geglu,
+    "grouped_matmul": _numpy_grouped_matmul,
+    "flash_attention": _numpy_flash_attention,
+    "grouped_query_attention": _numpy_grouped_query_attention,
+    "multi_latent_attention": _numpy_multi_latent_attention,
 }
 
 
@@ -273,6 +366,24 @@ class NumericalValidator:
 
         return values[semantic_ir.return_node]
 
+    @staticmethod
+    def _infer_index_range(
+        param_name: str,
+        semantic_ir: "SemanticIR",
+    ) -> tuple[int, int] | None:
+        """Infer valid [low, high) range for integer index params.
+
+        For ops like grouped_matmul, 'indices' must be in [0, E) where E
+        is the number of experts (first dim of 'W').
+        """
+        name_lower = param_name.lower()
+        if name_lower in ("indices", "expert_ids", "routing_ids"):
+            # Look for a sibling param named 'W' or 'weight' with shape [E, ...]
+            for p in semantic_ir.params:
+                if p.name in ("W", "weight", "experts") and p.shape:
+                    return (0, p.shape[0])
+        return None
+
     def generate_random_inputs(
         self,
         semantic_ir: SemanticIR,
@@ -297,9 +408,14 @@ class NumericalValidator:
                 # Standard normal scaled to [-1, 1] for numerical stability
                 arr = rng.randn(*param.shape).astype(np_dtype)
             elif np.issubdtype(np_dtype, np.integer):
-                info = np.iinfo(np_dtype)
-                low = max(info.min, -128)
-                high = min(info.max, 127) + 1
+                # For index parameters, try to infer valid range from sibling params
+                valid_range = self._infer_index_range(param.name, semantic_ir)
+                if valid_range is not None:
+                    low, high = valid_range
+                else:
+                    info = np.iinfo(np_dtype)
+                    low = max(info.min, -128)
+                    high = min(info.max, 127) + 1
                 arr = rng.randint(low, high, size=param.shape).astype(np_dtype)
             else:
                 arr = rng.randn(*param.shape).astype(np_dtype)

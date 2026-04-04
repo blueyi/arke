@@ -214,8 +214,8 @@ def test_strategy_ir_summary():
 # ============================================================
 
 def test_op_catalog_completeness():
-    """P0 catalog should have 10 operators."""
-    assert len(OP_CATALOG) == 13
+    """Catalog should have all A+B+C+D operators (20 ops as of Stage 1 G6)."""
+    assert len(OP_CATALOG) == 20
 
 
 def test_op_catalog_lookup():
@@ -229,7 +229,7 @@ def test_op_catalog_lookup():
 def test_op_catalog_filter():
     """Test filtering by category."""
     elementwise = list_ops("elementwise")
-    assert len(elementwise) == 5  # relu, gelu, silu, add, mul
+    assert len(elementwise) == 7  # relu, gelu, silu, add, mul, swiglu, geglu
     assert all(op.category == "elementwise" for op in elementwise)
 
 
