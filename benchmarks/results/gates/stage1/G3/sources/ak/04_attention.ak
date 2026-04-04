@@ -1,5 +1,5 @@
 // Example 04: Scaled Dot-Product Attention
-// Demonstrates complex multi-operator kernel with FlashAttention-style schedule
+// Demonstrates complex multi-operator kernel with FlashAttention-style strategy
 
 kernel attention(
     Q: Tensor<[1, 32, 1024, 64], f16>,
@@ -15,7 +15,7 @@ kernel attention(
     return O;
 }
 
-schedule attention for target("nvidia_ampere") {
+strategy attention for target("nvidia_ampere") {
     // FlashAttention-style tiling
     tile(loop="seq_q", factors=[128])
         @rationale("query block size = 128, fits in shared memory");

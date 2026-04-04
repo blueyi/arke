@@ -130,4 +130,3 @@ class Program:
 # ============================================================
 
 ScheduleDirective = StrategyDirective
-ScheduleDef = StrategyDef
