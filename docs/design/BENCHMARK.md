@@ -97,7 +97,7 @@ multiple shape tiers — single-operator coverage is insufficient.
 
 | Stage | Minimum Category Coverage | Tier Requirement |
 |:------|:--------------------------|:----------------|
-| Stage 1 (G0–G5) | A + partial B/C/D | Tier 1–3 |
+| Stage 1 (G0–G5) | A + partial B/C/D | Tier 1–4 |
 | Stage 2 | A + B + C + D + E (5 categories) | Tier 1–4 |
 | Stage 3 | A–F (6 categories + G partial) | Tier 1–4 |
 | Stage 4 | A–G (all 7 categories) | Tier 1–4 |

@@ -363,11 +363,11 @@ Before G6, all existing Gates (G0-G5) must be re-verified at 100% pass rate
 | G6.1 | `.ak → SemanticIR → StrategyIR → Triton → GPU` E2E pipeline | All `examples/*.ak` parse, convert to both IRs, codegen to Triton, execute on GPU, correctness verified | AI-First + Compiler-Verified | ⬜ |
 | G6.2 | `ast_to_strategy()` converter implemented | Strategy blocks in `.ak` → StrategyIR, round-trip test passes | Semantic/Strategy Separation | ⬜ |
 | G6.3 | @rationale preserved through full pipeline | `.ak` @rationale → StrategyIR → codegen comments → trajectory/log; verified on ≥3 examples | @rationale Annotations | ⬜ |
-| G6.4 | Token efficiency: `.ak` ≤ Triton line count | Cat A+B+C+D operators (matmul, softmax, layernorm, gelu, rmsnorm, attention): `.ak` lines < equivalent Triton kernel lines at comparable performance | Minimal-Token Efficiency | ⬜ |
+| G6.4 | Token efficiency: `.ak` ≤ Triton line count | benchmark Cat A+B+C+D operators : `.ak` lines < equivalent Triton kernel lines at comparable performance | Minimal-Token Efficiency | ⬜ |
 | G6.5 | Python interop: IR ↔ Python dict/JSON | SemanticIR + StrategyIR round-trip: `.from_json()` / `.to_json()` / `from_dict()` / `to_dict()` for all OP_CATALOG ops | (Python interop) | ⬜ |
 | G6.6 | IR ↔ MLIR structural mapping documented | `docs/spec/ir-mlir-mapping.md`: every SemanticIR/StrategyIR field → MLIR dialect op/attribute mapping | (MLIR interop prep) | ⬜ |
 | G6.7 | Grammar completeness: ALL `.ak` files parse | G1.4 threshold upgraded from ≥3 to = ALL (0 failures); grammar supports array literals, float constants, all op parameter types | AI-First | ⬜ |
-| G6.8 | Arke Lang + IR expression completeness (NVIDIA) | Benchmark Cat A+B+C+D operators (matmul, softmax, layernorm, rmsnorm, gelu, silu, attention) all expressible in `.ak`, convertible to both IRs, codegen to Triton, correctness verified at Tier 2 shapes | All Key Features | ⬜ |
+| G6.8 | Arke Lang + IR expression completeness (NVIDIA) | Benchmark Cat A+B+C+D operators all expressible in `.ak`, convertible to both IRs, codegen to Triton, correctness verified at Tier 2 shapes | All Key Features | ⬜ |
 | G6.9 | Arke Language Spec v1.0 + IR Spec v1.0 | Both spec docs updated to match implementation, tagged v1.0, consistency verified | (Spec freeze) | ⬜ |
 
 **Dependency:** G0-G5 re-verified at 100% (non-perf), grammar fixes complete

@@ -2357,6 +2357,7 @@ GATE_RUNNERS: dict[str, object] = {
     "G3": run_g3,
     "G4": run_g4,
     "G5": run_g5,
+    "G6": None,  # loaded lazily from gate_g6.py
 }
 
 GATE_NAMES: dict[str, str] = {
@@ -2366,6 +2367,7 @@ GATE_NAMES: dict[str, str] = {
     "G3": "LLM Agent Autonomous Optimization",
     "G4": "Comparative Advantage over Direct LLM",
     "G5": "End-to-End Model Integration",
+    "G6": "Arke Lang & IR Completeness",
 }
 
 
@@ -2416,9 +2418,13 @@ def main() -> None:
             continue
 
         runner = GATE_RUNNERS[gate]
+        # Lazy-load G6 from its own module
+        if runner is None and gate == "G6":
+            from benchmarks.gate_g6 import run_g6
+            runner = run_g6
         if gate in ("G3", "G4"):
             summary = runner(tier=args.tier, live=args.live)
-        elif gate in ("G2", "G5"):
+        elif gate in ("G2", "G5", "G6"):
             summary = runner(tier=args.tier)
         else:
             summary = runner()

@@ -1,6 +1,6 @@
-# Stage 1 Gate System v3 — Function-First + Accuracy-Always + Performance-Progressive
+Gate System  — Function-First + Accuracy-Always + Performance-Progressive
 
-> **Shape definitions:** All Tier 1/2/3 shapes (including non-aligned cases for every op category)
+> **Shape definitions:** All Tier shapes (including non-aligned cases for every op category)
 > are defined in [docs/design/BENCHMARK.md § Shape Matrix](../../docs/design/BENCHMARK.md#3-shape-matrix).
 > Gate criteria reference those shapes by tier and count.
 
@@ -9,6 +9,7 @@
 ## Design Principles
 
 **Gate priority: Function > Accuracy > Performance**
+All of accuracy of operators from the Benchmark layers and Tiers must be success.
 
 Each gate has a distinct essential purpose:
 - **Function gates:** Verify a capability exists (can it do this at all?)
