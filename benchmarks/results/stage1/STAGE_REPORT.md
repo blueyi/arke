@@ -10,7 +10,7 @@
 |:----:|:------:|:------------:|:----------:|:-----------|
 | G0 | ✅ PASS | 4/4 | 0 | Triton matmul runs on RTX 3060 |
 | G1 | ✅ PASS | 10/10 | 0 | 13 ops, 5/5 .ak parse, Tier 2 numerical 100% |
-| G2 | ✅ PASS | 11/11 | 0 | Tier 2 accuracy 100%; matmul geomean 109% cuBLAS |
+| G2 | ⚠️ FAIL | 10/11 | 1 | Tier 2 accuracy 100%; matmul geomean 75% cuBLAS; G2.9 softmax perf 1/4 shapes (known-fail) |
 | G3 | ✅ PASS | 9/9 | 0 | LLM Agent 151.4% cuBLAS @ 2048² |
 | G4 | ✅ PASS | 6/6 | 0 | Arke/FlagGems geomean 0.991 |
 | G5 | ✅ PASS | 7/7 | 3 | E2E GPT-2 correct; latency 1.71-2.31× (known-fail) |

@@ -12,7 +12,7 @@
 |------|------|------|---------|
 | G0 | 环境验证 | **PASS 4/4** | CUDA ✅ Triton ✅ GPU ✅ 测试框架 ✅ |
 | G1 | IR + 精度 | **PASS 10/10** | 10 op, Tier 3 全精度验证通过 |
-| G2 | 代码生成 + 性能 | **PASS 11/11** | 75.4% cuBLAS geomean, 100% 正确性 |
+| G2 | 代码生成 + 性能 | **FAIL 10/11** | 75.4% cuBLAS geomean, 100% 正确性; G2.9 softmax 性能 known-fail (1/4 shapes) |
 | G3 | LLM Agent 闭环 | **PASS 9/9** | Agent kernel 151.4% cuBLAS @ 2k², 116.5% @ lm-head |
 | G4 | Arke vs LLM-direct | **PASS 6/6** | Arke/FlagGems geomean=0.991 |
 | G5 | E2E GPT-2 集成 | **PASS 7/7** (3 known-fail) | 正确性 ✅ 覆盖率 ✅ 内存 ✅ 延迟 ⚠️ |
