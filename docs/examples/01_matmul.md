@@ -34,6 +34,7 @@ kernel matmul(
     return C;
 }
 
+// optional
 strategy matmul for target("nvidia_ampere") {
     tile(loop="M", factors=[128])
         @rationale("128 rows per thread block for L1 reuse");
@@ -185,7 +186,66 @@ strategy matmul for target("nvidia_ampere") {
 
 ---
 
-## 5. 两层 IR 的关系
+## 5. Strategy 块是可选的
+
+`strategy` 块**不是必须的**。只写 `kernel` 块就是合法的 `.ak` 文件：
+
+```arke
+kernel matmul(
+    A: Tensor<[1024, 1024], f16>,
+    B: Tensor<[1024, 1024], f16>
+) -> Tensor<[1024, 1024], f16> {
+    let C = matmul(A=A, B=B);
+    return C;
+}
+// ← 无 strategy 块，编译器自动生成
+```
+
+当缺少 strategy 块时，`DefaultStrategyGenerator` 根据硬件 profile 自动生成：
+
+```
+输入: kernel 块 + 目标硬件
+         ↓
+  DefaultStrategyGenerator
+    │  读取 hw_profile (arke/ir/targets/nvidia_ampere.json)
+    │  识别主导算子类型 (compute / reduce / elementwise / move)
+    │  根据 shared_mem 大小、tensor core shape 、warp_size 计算 tile 大小
+    ↓
+  输出: Strategy IR（每个 Decision 都含 @rationale）
+```
+
+自动生成的 7 个决策（RTX 3060 Laptop / Ampere SM 8.6）：
+
+| Step | Decision | 值 | 依据 |
+|:----:|---------|---|------|
+| 1 | `tile(M)` | 64 | tensor core 16×8×16，对齐倍数 |
+| 2 | `tile(N)` | 64 | 同上 |
+| 3 | `tile(K)` | 16 | A+B tile = 4096B ≤ smem/2 (24576B) |
+| 4 | `reorder([M,N,K])` | 外层M/N, 内层K | 并行局部性 |
+| 5 | `parallel(M→blockIdx.x, N→blockIdx.y)` | 2D 网格 | 独立输出 tile |
+| 6 | `place(A_tile→shared)` | shared mem | K 循环重用 A |
+| 7 | `place(B_tile→shared)` | shared mem | K 循环重用 B |
+
+如果不满意默认策略，可以任意添加 `strategy` 块覆盖它。**显式 strategy 块总是优先于自动生成的结果。**
+
+使用示例：
+
+```python
+from arke.pipeline import ArkePipeline
+
+# 有 strategy 块：使用用户提供的
+# 无 strategy 块：自动生成
+result = ArkePipeline.from_ak_file(
+    "docs/examples/01_matmul.ak",
+    target_hw="nvidia_ampere",
+)
+print(result.strategy_ir["_source"])  # → "auto-generated (no strategy block in 01_matmul.ak)"
+print(len(result.strategy_ir["decisions"]))  # → 7
+```
+
+---
+
+## 6. 两层 IR 的关系
 
 ```
 自然语言                .ak 源码                  Semantic IR          Strategy IR         Triton Kernel
@@ -214,7 +274,7 @@ strategy matmul for target("nvidia_ampere") {
 
 ---
 
-## 6. 复现
+## 7. 复现
 
 ```bash
 cd /path/to/arke

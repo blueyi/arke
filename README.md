@@ -4,7 +4,7 @@
 
 ---
 
-**Arke** (*/ˈɑːrki/*) is an AI-native language and compiler toolchain for describing and optimizing GPU/NPU tensor operators — where LLM agents make optimization decisions and deterministic compilers verify every step.
+**Arke** (*/ˈɑːrki/*) is an AI-native operator programming language and compiler toolchain for GPU/NPU tensor operators. The entire pipeline — from kernel definition through LLM-driven strategy search to peak performance — is designed for minimal token consumption, with every optimization decision carrying a `@rationale` annotation for auditability. A single `.ak` definition targets NVIDIA, Ascend, and beyond, achieving vendor-library-level performance across hardware targets.
 
 ## About the Name
 
@@ -31,38 +31,49 @@ In our context, Arke is the messenger between two worlds — translating **what 
 ## Architecture
 
 ```
-    .ak File / Python API / CLI
-                │
-                ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                  Semantic IR — WHAT to compute                    │
-│              (immutable computation graph, pure math)             │
-└───────────────────────────┬──────────────────────────────────────┘
-                            │
-    ┌───────────────────────▼──────────────────────────────────────┐
-    │              LLM ◄══ Structured Protocol ══► Compiler         │
-    │                                                               │
-    │  LLM Agent (Decides)       ArkeEnv (Verifies)                │
-    │  ┌──────────────────┐      ┌───────────────────────────────┐ │
-    │  │ analyze kernel   │─────►│ enumerate legal_actions       │ │
-    │  │ select action    │◄─────│ (bounded decision space)      │ │
-    │  │ apply @rationale │─────►│ validate: V0(<1ms) → V1 → V2 │ │
-    │  │ iterate / stop   │◄─────│ checkpoint / rollback         │ │
-    │  └──────────────────┘      └───────────────┬───────────────┘ │
-    │                                             │                 │
-    │  ┌──────────────────────────────────────────▼───────────────┐│
-    │  │  Strategy IR — HOW to optimize (built decision-by-decision)││
-    │  └──────────────────────────────────────────────────────────┘│
-    └──────────────────────────────┬────────────────────────────────┘
-                                   │
-    ┌──────────────────────────────▼────────────────────────────────┐
-    │  Codegen: Triton → MLIR Dialect → LLVM IR                     │
-    │  Target:  NVIDIA │ Ascend │ AMD                               │
-    └──────────────────────────────┬────────────────────────────────┘
-                                   │
-    ┌──────────────────────────────▼────────────────────────────────┐
-    │  GPU/NPU Kernel + Benchmark Report + Trajectory + @rationale  │
-    └───────────────────────────────────────────────────────────────┘
+  Python │ Triton │ CUDA │ Natural Language │ ...
+                         │
+                         │ LLM translates
+                         ▼
+  ┌────────────────────────────────────────────────────────────┐
+  │  .ak — Arke Language (AI-Native Operator Programming)      │
+  │  kernel { semantics }    strategy { @rationale decisions } │
+  └────────────────────────────┬───────────────────────────────┘
+                               │ parse
+                               ▼
+  ┌────────────────────────────────────────────────────────────┐
+  │            Semantic IR — WHAT to compute                    │
+  │         (immutable computation graph, pure math)            │
+  └────────────────────────────┬───────────────────────────────┘
+                               │
+  ┌────────────────────────────▼───────────────────────────────┐
+  │         LLM ◄══ Structured Protocol ══► Compiler            │
+  │                                                             │
+  │  LLM Agent (Decides)       ArkeEnv (Verifies)              │
+  │  ┌──────────────────┐      ┌─────────────────────────────┐ │
+  │  │ analyze kernel   │─────►│ enumerate legal_actions     │ │
+  │  │ select action    │◄─────│ (bounded decision space)    │ │
+  │  │ apply @rationale │─────►│ validate: V0(<1ms)→V1→V2   │ │
+  │  │ iterate / stop   │◄─────│ checkpoint / rollback       │ │
+  │  └──────────────────┘      └──────────────┬──────────────┘ │
+  │                                            │                │
+  │  ┌─────────────────────────────────────────▼──────────────┐│
+  │  │  Strategy IR — HOW to optimize (decision-by-decision)  ││
+  │  └────────────────────────────────────────────────────────┘│
+  └────────────────────────────┬───────────────────────────────┘
+                               │
+  ┌────────────────────────────▼───────────────────────────────┐
+  │  Codegen Backends (progressive depth into hardware)         │
+  │                                                             │
+  │   Triton   │  MLIR Dialect  │   LLVM IR   │   HW ISA       │
+  │  (Stage 1) │   (Stage 3)   │  (Stage 4)  │  (Future)      │
+  │                                                             │
+  │  ◄── deeper hardware control ── extreme performance ──►    │
+  └────────────────────────────┬───────────────────────────────┘
+                               │
+  ┌────────────────────────────▼───────────────────────────────┐
+  │      GPU / NPU Execution: NVIDIA │ Ascend │ AMD │ ...      │
+  └────────────────────────────────────────────────────────────┘
 ```
 
 ## Quick Example

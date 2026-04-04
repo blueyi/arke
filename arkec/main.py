@@ -23,8 +23,47 @@ def parse(input_file: str, output: str | None):
 
 
 @cli.command()
-@click.argument("ir_file", type=click.Path(exists=True))
-def inspect(ir_file: str):
+@click.argument("input_file", type=click.Path(exists=True))
+@click.option("-o", "--output", help="Output file path")
+@click.option("--target", default="nvidia_ampere", show_default=True,
+              help="Target hardware (e.g., nvidia_ampere, ascend_a3)")
+@click.option("--codegen", is_flag=True, help="Emit Triton source code")
+@click.option("--show-strategy", is_flag=True, help="Print resolved Strategy IR")
+def compile(input_file: str, output: str | None, target: str,
+            codegen: bool, show_strategy: bool):
+    """Compile a .ak file: parse, (auto-)generate strategy, and optionally emit code.
+
+    If the .ak file has no `strategy` block, a default Strategy IR is
+    automatically generated based on the target hardware profile.
+    """
+    from arke.pipeline import ArkePipeline
+    import json
+
+    click.echo(f"Compiling {input_file} → target={target}")
+    try:
+        result = ArkePipeline.from_ak_file(
+            input_file,
+            target_hw=target,
+            codegen=codegen,
+        )
+        source_note = result.strategy_ir.get("_source", "")
+        click.echo(f"  Strategy: {source_note}")
+        click.echo(f"  Decisions: {len(result.strategy_ir.get('decisions', []))}")
+        if result.errors:
+            for e in result.errors:
+                click.echo(f"  [ERROR] {e}", err=True)
+        if show_strategy:
+            click.echo(json.dumps(result.strategy_ir, indent=2))
+        if output:
+            ArkePipeline.save_result(result, output)
+            click.echo(f"  Saved → {output}")
+        click.echo("  OK")
+    except Exception as e:
+        click.echo(f"  [FAIL] {e}", err=True)
+        raise SystemExit(1)
+
+
+@cli.command()
     """Inspect an Arke IR file (human-readable view)."""
     click.echo(f"[TODO] Inspecting {ir_file}...")
     # TODO: Implement IR pretty-printer

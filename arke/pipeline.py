@@ -17,10 +17,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from arke.compiler.default_strategy import DefaultStrategyGenerator
 from arke.engine.env import ArkeEnv
 from arke.engine.numerical_check import NumericalValidator
 from arke.ir.builder import KernelBuilder
 from arke.ir.semantic import SemanticIR
+from arke.ir.strategy import StrategyIR
 
 
 @dataclass
@@ -195,6 +197,88 @@ class ArkePipeline:
         return result
 
     # ─── Serialization ───
+
+    @classmethod
+    def from_ak_file(
+        cls,
+        ak_path: str,
+        target_hw: str = "nvidia_ampere",
+        **run_kwargs,
+    ) -> PipelineResult:
+        """Compile and run a .ak file end-to-end.
+
+        If the .ak file has no ``strategy`` block, the DefaultStrategyGenerator
+        automatically produces a hardware-aware baseline Strategy IR.
+
+        Args:
+            ak_path:    Path to the .ak source file.
+            target_hw:  Target hardware name (default: ``nvidia_ampere``).
+            **run_kwargs: Forwarded to :meth:`run` (codegen, profile, etc.).
+
+        Example::
+
+            result = ArkePipeline.from_ak_file("mykernel.ak", target_hw="nvidia_ampere")
+            print(result.strategy_ir)   # auto-generated if no strategy block
+        """
+        from arke.parser.converter import ast_to_ir
+        from arke.parser.parser import parse_file
+        from arke.engine.env import ArkeEnv
+        from pathlib import Path
+        import json
+
+        prog = parse_file(ak_path)
+        if not prog.kernels:
+            raise ValueError(f"No kernel found in {ak_path}")
+
+        kernel = prog.kernels[0]
+        sem_ir = ast_to_ir(kernel)
+
+        # ── Strategy resolution ──────────────────────────────────────────
+        if prog.strategies:
+            # User provided a strategy block — parse it into StrategyIR
+            strat_def = prog.strategies[0]
+            strategy = StrategyIR(
+                kernel_id=sem_ir.kernel_id,
+                target_hw=strat_def.target,
+            )
+            from arke.ir.strategy import Decision, Rationale
+            for action in strat_def.actions:
+                ann = action.annotation
+                rationale = Rationale(text=ann.value) if ann else None
+                strategy.add_decision(Decision(
+                    kind=action.action,
+                    params=action.params,
+                    rationale=rationale,
+                ))
+            source_note = "user-provided strategy block"
+        else:
+            # No strategy block — auto-generate from hardware profile
+            hw_path = (
+                Path(__file__).parent / "ir" / "targets" / f"{target_hw}.json"
+            )
+            hw_profile = json.loads(hw_path.read_text()) if hw_path.exists() else {"name": target_hw}
+            gen = DefaultStrategyGenerator(hw_profile)
+            strategy = gen.generate(sem_ir)
+            source_note = f"auto-generated (no strategy block in {Path(ak_path).name})"
+
+        # Inject strategy into env directly and run
+        env = ArkeEnv(sem_ir, target_hw)
+        env.strategy = strategy
+
+        pipeline = cls()
+        decisions_list = [
+            (d.kind, d.params, d.rationale.text if d.rationale else "")
+            for d in strategy.decisions
+        ]
+        result = pipeline.run(
+            sem_ir,
+            target_hw,
+            decisions=None,   # already applied via env.strategy
+            **run_kwargs,
+        )
+        result.strategy_ir = strategy.to_dict()
+        result.strategy_ir["_source"] = source_note
+        return result
 
     @staticmethod
     def save_result(result: PipelineResult, path: str) -> None:
