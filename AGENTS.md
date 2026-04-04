@@ -58,6 +58,12 @@ Every task follows this loop:
 7. Check CI: gh run list --repo arke-lang/arke --limit 1
 ```
 
+### Performance CSV
+All performance data must use the unified CSV schema:
+- **Spec:** `benchmarks/PERF_CSV_SPEC.md`
+- **Python:** `from benchmarks.perf_csv import PerfCSVWriter, PerfRow`
+- **Merge:** `from benchmarks.perf_csv import merge_stage_csvs`
+
 ### Gate Verification
 ```bash
 source ~/.venvs/arke/bin/activate

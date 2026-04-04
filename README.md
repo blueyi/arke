@@ -14,35 +14,55 @@ In our context, Arke is the messenger between two worlds — translating **what 
 
 ## Key Features
 
-- 🤖 **AI-First Design** — LLM agents as optimization decision makers, not just code generators
-- 🪙 **Maximum-Token Efficiency** — Arke minimizes end-to-end token consumption from kernel definition through optimization to peak performance
-- 💬 `**@rationale` Annotations** — Every optimization decision carries a natural language explanation, making AI reasoning auditable
-- ⚡ **Extreme Performance** — LLM-guided strategy search achieves vendor-library-level performance across hardware targets
-- 🔗 **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are independent, enabling safe exploration
-- 🛡️ **Compiler-Verified** — Every LLM decision validated by deterministic checks (static → numerical → performance)
-- 🎯 **Multi-Hardware** — Single kernel definition targets NVIDIA, Ascend, and beyond 
+### LLM-Native Language
+
+- **Semantic/Strategy Separation** — "What to compute" (immutable math) and "how to optimize" (searchable decisions) are independent layers, enabling LLMs to explore strategies without risking correctness
+- **Minimal-Token End-to-End** — The entire pipeline — definition, search, verification, iteration — consumes an order of magnitude fewer tokens than direct code generation
+- **Bounded Action Space** — LLMs select from compiler-enumerated legal actions, not free-form code — turning optimization into navigating a decision tree
+- **`@rationale` Annotations** — Every optimization decision carries a natural language explanation, preserved in IR as a first-class construct for auditability and cross-hardware knowledge transfer
+
+### LLM-Native Compiler Toolchain
+
+- **Compiler-as-Verifier** — The compiler does not optimize; it verifies every LLM decision through progressive checks: V0 Static (<1ms) → V1 Numerical → V2 Performance
+- **Structured LLM-Compiler Protocol** — LLM and compiler interact through a closed-loop tool-use API (analyze → decide → verify → iterate), not free-text generation
+- **Safe Exploration** — Checkpoint/rollback with correctness-first gating (Function > Accuracy > Performance); LLMs explore boldly because invalid decisions are caught at V0 in under 1ms
+- **Multi-Hardware** — Single kernel definition targets NVIDIA, Ascend, and beyond; strategy adapts per hardware, semantics stay fixed
 
 ## Architecture
 
 ```
-                ┌──────────────────────────────────────────────┐
-                │              LLM Agent (Decision Maker)       │
-                │   analyze → decide → verify → iterate         │
-                └──────────┬──────────────┬────────────────────┘
-                           │ tool-use     │ tool results
-                ┌──────────▼──────────────▼────────────────────┐
-                │              ArkeEnv (Compiler Env)            │
-                │                                                │
-                │  ┌─────────┐  ┌──────────┐  ┌──────────────┐  │
-                │  │Semantic  │→ │Strategy  │→ │  Codegen     │  │
-                │  │IR        │  │IR        │  │  (Triton)    │  │
-                │  └─────────┘  └──────────┘  └──────┬───────┘  │
-                │                                     │          │
-                │  ┌─────────────────────────────────▼────────┐ │
-                │  │ Validation: V0 Static → V1 Numeric → V2  │ │
-                │  │                                  Perf     │ │
-                │  └───────────────────────────────────────────┘ │
-                └────────────────────────────────────────────────┘
+    .ak File / Python API / CLI
+                │
+                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                  Semantic IR — WHAT to compute                    │
+│              (immutable computation graph, pure math)             │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+    ┌───────────────────────▼──────────────────────────────────────┐
+    │              LLM ◄══ Structured Protocol ══► Compiler         │
+    │                                                               │
+    │  LLM Agent (Decides)       ArkeEnv (Verifies)                │
+    │  ┌──────────────────┐      ┌───────────────────────────────┐ │
+    │  │ analyze kernel   │─────►│ enumerate legal_actions       │ │
+    │  │ select action    │◄─────│ (bounded decision space)      │ │
+    │  │ apply @rationale │─────►│ validate: V0(<1ms) → V1 → V2 │ │
+    │  │ iterate / stop   │◄─────│ checkpoint / rollback         │ │
+    │  └──────────────────┘      └───────────────┬───────────────┘ │
+    │                                             │                 │
+    │  ┌──────────────────────────────────────────▼───────────────┐│
+    │  │  Strategy IR — HOW to optimize (built decision-by-decision)││
+    │  └──────────────────────────────────────────────────────────┘│
+    └──────────────────────────────┬────────────────────────────────┘
+                                   │
+    ┌──────────────────────────────▼────────────────────────────────┐
+    │  Codegen: Triton → MLIR Dialect → LLVM IR                     │
+    │  Target:  NVIDIA │ Ascend │ AMD                               │
+    └──────────────────────────────┬────────────────────────────────┘
+                                   │
+    ┌──────────────────────────────▼────────────────────────────────┐
+    │  GPU/NPU Kernel + Benchmark Report + Trajectory + @rationale  │
+    └───────────────────────────────────────────────────────────────┘
 ```
 
 ## Quick Example
