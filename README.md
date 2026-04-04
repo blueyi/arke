@@ -129,13 +129,22 @@ print(result.trajectory)   # Full optimization trace
 
 ## 🗺️ Roadmap
 
-Three stages from hypothesis validation to full compiler stack:
+Four stages from hypothesis validation to full compiler stack:
 
 ```
-Stage 1: Arke → Triton → GPU          Validate hypothesis    (current)
-Stage 2: Arke → MLIR Dialect → Multi   Multi-hardware support
-Stage 3: Arke → LLVM IR → All HW       Full compiler stack
+Stage 1: Arke → Triton → NVIDIA GPU     SIMT feasibility ✅  (complete)
+Stage 2: Arke → Triton → Ascend NPU     SIMD feasibility     (next)
+Stage 3: Arke → MLIR Dialect            Full compiler control
+Stage 4: Arke → LLVM IR                 100% hardware completeness
 ```
+
+**Core principle:** Each Stage validates Arke's capabilities on a new architectural dimension.
+NVIDIA (Stage 1) proves SIMT feasibility. Ascend (Stage 2) proves cross-architecture
+generalization. MLIR (Stage 3) removes Triton's abstraction ceiling. LLVM IR (Stage 4)
+achieves maximum hardware expression completeness and performance headroom.
+
+> Gate benchmark coverage: Stage 2+ Gates must cover ≥3 Operator Categories and
+> include LLM-production shapes (LLaMA/DeepSeek/Qwen). See [BENCHMARK.md](benchmarks/BENCHMARK.md).
 
 ---
 
@@ -161,33 +170,66 @@ Stage 3: Arke → LLVM IR → All HW       Full compiler stack
 
 ---
 
-### Stage 2: Arke → MLIR Dialect → Multi-Hardware
+### Stage 2: Arke → Ascend Triton — SIMD Architecture Validation
 
-**Goal:** Replace Triton backend with a custom MLIR dialect. Generate hardware-specific code for multiple targets from a single Arke IR, **matching or exceeding Triton-backend performance**.
+**Goal:** Verify Arke Lang/IR works on SIMD architecture (Ascend NPU) via Ascend Triton backend.
+Arke-generated Ascend kernels must **outperform FlagGems on Ascend**.
+Complete Arke Lang/IR to cover Operator Categories B–E (Attention, Norm, Activation, Positional Encoding).
 
-**Target hardware:** NVIDIA + Huawei Ascend
+**Hardware target:** Huawei Ascend 910B
 
-| Phase | Objective | Gate Criteria |
-|:-----:|:----------|:-------------|
-| **2.1** | MLIR dialect design | Define Arke MLIR dialect ops; lower elementwise Arke IR → MLIR → LLVM IR; generated code produces correct output |
-| **2.2** | NVIDIA codegen via MLIR | matmul via MLIR path, correctness verified (same-dtype ref), **perf ≥ Stage 1 Triton-backend result on same hardware** |
-| **2.3** | Ascend backend prototype | matmul on Ascend 910B, correctness verified against same-dtype NumPy reference, **perf ≥ 50% Ascend CANN library** |
-| **2.4** | Cross-hardware evaluation | Same Arke kernel → NVIDIA + Ascend, both correct; **NVIDIA perf ≥ Stage 1 baseline; Ascend perf ≥ 50% CANN** |
+| Phase | Objective | Gate | Key Criteria |
+|:-----:|:----------|:----:|:-------------|
+| **2.1** | Ascend env + IR completeness | — | Ascend Triton smoke test; Cat B/D/E ops in OP_CATALOG; SIMD decision kinds in Strategy IR |
+| **2.2** | Ascend Triton codegen | S2-G1 | Cat A+C+D correctness 100% (Tier 2); LLM makes SIMD-aware decisions |
+| **2.3** | Ascend performance vs FlagGems | S2-G2 | matmul+rmsnorm+swiglu geomean ≥ FlagGems/Ascend |
+| **2.4** | FlashAttention + GQA | S2-G3 | FA Tier 4 ≥12 shapes correct on NVIDIA (≥0.7× FA-2); ≥8 shapes correct on Ascend; DeepSeek shapes included |
+| **2.5** | RoPE/YaRN + @rationale | S2-G4 | RoPE/YaRN correctness incl. DeepSeek 8K-32K; @rationale ≥10% cross-arch lift |
+
+**Stage 2 Summary Gate (S2-G_FINAL):**
+Cat A+B+C+D+E all passing • Tier 2 + Tier 4 shapes • Ascend perf ≥ FlagGems • H4 (cross-hardware) verified
 
 ---
 
-### Stage 3: Arke → LLVM IR → All Hardware
+### Stage 3: Arke → MLIR Dialect — Full Compiler Control
 
-**Goal:** Full compiler stack emitting LLVM IR directly. Maximum control over optimization passes and code generation, targeting all major accelerators with **performance within 90% of vendor libraries**.
+**Goal:** Replace Triton backend with Arke MLIR Dialect for NVIDIA + Ascend.
+MLIR removes Triton's abstraction ceiling, enabling deeper LLM decisions (Level 2: loop nest, memory access)
+and more complete operator support. Performance must **match or exceed Stage 2 Triton path**.
 
-**Target hardware:** NVIDIA + Ascend + AMD + Intel
+**Hardware target:** NVIDIA + Ascend (via NVVM dialect + AscendNPU IR)
 
-| Phase | Objective | Gate Criteria |
-|:-----:|:----------|:-------------|
-| **3.1** | Direct LLVM IR emission | Emit PTX/AMDGCN/SPIR-V from Arke IR; matmul correct on ≥2 backends |
-| **3.2** | Custom optimization passes | Arke-specific LLVM passes for tiling, fusion, memory placement; **perf ≥ Stage 2 MLIR-backend on same ops** |
-| **3.3** | Multi-target parity | Same kernel → ≥3 backends, all correct, **perf within 90% of each platform's vendor library** |
-| **3.4** | Production release | Stable public API; pip/cargo package; benchmark suite across ≥3 hardware platforms; v1.0.0 tag |
+| Phase | Objective | Gate | Key Criteria |
+|:-----:|:----------|:----:|:-------------|
+| **3.1** | Arke MLIR Dialect design | — | `arke.kernel` + `arke.strategy` dialect; Strategy IR Level 2 fields (loop_nest, memory_access_pattern) |
+| **3.2** | MLIR correctness (NVIDIA) | S3-G1 | Cat A+C+D via MLIR: Tier 2+4 100% correct |
+| **3.3** | MLIR performance ≥ Triton | S3-G2 | All Cat A+B+C+D MLIR geomean ≥ Stage 2 Triton |
+| **3.4** | LLM Level-2 decisions | S3-G3 | LLM L1+2 ≥ L1+default L2 by ≥15% (matmul), ≥20% (FA) |
+| **3.5** | Ascend via MLIR | S3-G4 | matmul+rmsnorm correct on Ascend via MLIR; perf ≥ Stage 2 |
+
+**Stage 3 Summary Gate (S3-G_FINAL):**
+Cat A+B+C+D+E via MLIR • Tier 2+Tier 4 • MLIR ≥ Triton (NVIDIA+Ascend) • LLM Level-2 value verified
+
+---
+
+### Stage 4: Arke → LLVM IR — 100% Hardware Completeness
+
+**Goal:** Full compiler stack emitting LLVM IR directly, achieving **100% hardware expression completeness**
+and performance headroom beyond MLIR. Supports ≥3 hardware backends (NVIDIA + Ascend + AMD).
+LLM Level-3 decisions (register, barrier, instruction scheduling) become possible.
+
+**Hardware target:** NVIDIA + Ascend + AMD (≥3 backends)
+
+| Phase | Objective | Gate | Key Criteria |
+|:-----:|:----------|:----:|:-------------|
+| **4.1** | LLVM IR emission | S4-G1 | matmul via LLVM correct on ≥2 backends (Tier 2) |
+| **4.2** | LLVM performance ≥ MLIR | S4-G2 | Cat A+C+D LLVM geomean ≥ MLIR + 5% |
+| **4.3** | LLM Level-3 decisions | S4-G3 | LLM L1+2+3 ≥ L1+2+default L3 by ≥5% |
+| **4.4** | FlashAttention/MLA + multi-HW | S4-G4 | FA via LLVM ≥0.85× FA-2; MLA correct; ≥3 backends ≥90% vendor |
+| **4.5** | Production release v1.0.0 | S4-G_FINAL | pip package; ≥3 platforms; @rationale KB ≥200 entries |
+
+**Stage 4 Summary Gate (S4-G_FINAL):**
+Cat A+B+C+D+E+F via LLVM • ≥3 backends ≥90% vendor • LLM Level 1-3 full stack • v1.0.0
 
 ---
 
