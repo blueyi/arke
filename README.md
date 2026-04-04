@@ -4,7 +4,7 @@
 
 ---
 
-**Arke** (*/ˈɑːrki/*) is an AI-native operator programming language and compiler toolchain for GPU/NPU tensor operators. The entire pipeline — from kernel definition through LLM-driven strategy search to peak performance — is designed for minimal token consumption, with every optimization decision carrying a `@rationale` annotation for auditability. A single `.ak` definition targets NVIDIA, Ascend, and beyond, achieving vendor-library-level performance across hardware targets.
+**Arke** (*/ˈɑːrki/*) is an AI-native operator programming language and compiler toolchain for GPU/NPU tensor operators. The entire pipeline — from kernel definition through LLM-driven strategy search to peak performance — is designed for minimal token consumption, with optional `@rationale` annotations capturing expert knowledge to guide optimization. A single kernel definition targets NVIDIA, Ascend, and beyond, achieving vendor-library-level performance across hardware targets.
 
 ## About the Name
 

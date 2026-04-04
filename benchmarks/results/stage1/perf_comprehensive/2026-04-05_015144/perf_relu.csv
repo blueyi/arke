@@ -1,0 +1,13 @@
+﻿stage,gate,run_id,operator,category,shape_tag,shape_tier,dtype,backend,method,latency_us,correct,M,N,K,batch,seq_len,num_heads,head_dim,latency_min_us,latency_max_us,latency_std_us,tflops,bandwidth_gbps,max_abs_err,max_rel_err,baseline_method,baseline_latency_us,ratio_vs_baseline,warmup_iters,bench_iters,gpu_name,gpu_mem_mb,cuda_version,triton_version,pytorch_version,notes
+stage1,G0-G5,2026-04-05_015144,relu,D,small,2,f16,nvidia,eager,102.5,TRUE,128,768,,,,,,100.43,105.47,2.05,,,,,,,,50,200,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,small,2,f16,nvidia,arke,62.88,TRUE,128,768,,,,,,58.37,64.51,2.56,,,0.0,0.0,eager,102.5,1.6301,50,200,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,medium,2,f16,nvidia,eager,98.93,TRUE,128,3072,,,,,,97.28,101.84,1.86,,,,,,,,50,200,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,medium,2,f16,nvidia,arke,62.25,TRUE,128,3072,,,,,,59.39,64.59,2.01,,,0.0,0.0,eager,98.93,1.5892,50,200,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,large,2,f16,nvidia,eager,218.62,TRUE,4096,4096,,,,,,218.11,219.14,0.51,,,,,,,,50,50,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,large,2,f16,nvidia,arke,218.11,TRUE,4096,4096,,,,,,218.11,218.11,0.0,,,0.0,0.0,eager,218.62,1.0023,50,50,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,llama-ffn,2,f16,nvidia,eager,608.87,TRUE,4096,11008,,,,,,575.49,666.62,44.39,,,,,,,,50,50,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,llama-ffn,2,f16,nvidia,arke,580.81,TRUE,4096,11008,,,,,,577.54,583.68,2.44,,,0.0,0.0,eager,608.87,1.0483,50,50,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,xlarge,2,f16,nvidia,eager,467.25,TRUE,8192,4096,,,,,,430.08,513.02,35.48,,,,,,,,50,50,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,xlarge,2,f16,nvidia,arke,433.36,TRUE,8192,4096,,,,,,430.08,436.22,2.84,,,0.0,0.0,eager,467.25,1.0782,50,50,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,seq1k,2,f16,nvidia,eager,100.48,TRUE,1024,768,,,,,,94.21,107.07,5.96,,,,,,,,50,200,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
+stage1,G0-G5,2026-04-05_015144,relu,D,seq1k,2,f16,nvidia,arke,61.56,TRUE,1024,768,,,,,,56.38,65.54,4.14,,,0.0,0.0,eager,100.48,1.6322,50,200,NVIDIA GeForce RTX 3060 Laptop GPU,6143,12.4,3.2.0,2.6.0+cu124,
