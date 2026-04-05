@@ -2,7 +2,7 @@
 
 Measurement protocol, scoring system, CLI interface, output structure, and implementation status.
 
-→ Parent: [`BENCHMARK.md`](../BENCHMARK.md)
+→ Parent: [`benchmark-design.md`](../benchmark-design.md)
 
 ---
 

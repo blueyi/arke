@@ -2,7 +2,7 @@
 
 Full operator catalog with tier classification, complexity rationale, and baseline mapping.
 
-→ Parent: [`BENCHMARK.md`](../BENCHMARK.md)
+→ Parent: [`benchmark-design.md`](../benchmark-design.md)
 
 ---
 

@@ -14,18 +14,19 @@ automated provenance tracking, and a three-layer evaluation architecture.
 5. [Baselines](#5-baselines)
 6. [Measurement Protocol](./benchmark/benchmark-protocol.md#measurement-protocol)
 7. [Scoring System](./benchmark/benchmark-protocol.md#scoring-system)
-8. [Operator Source Registry](./benchmark/benchmark-sources.md)
-9. [Output Structure & Provenance](./benchmark/benchmark-protocol.md#output-structure--provenance-tracking)
+8. [Output & CSV Spec](./benchmark/benchmark-csv-spec.md)
+9. [Operator Source Registry](./benchmark/operator-source-registry.md)
 10. [CLI Interface](./benchmark/benchmark-protocol.md#cli-interface)
 11. [Benchmark-Driven Development](./benchmark/benchmark-protocol.md#benchmark-driven-development)
 12. [Implementation Status](./benchmark/benchmark-protocol.md#implementation-status)
 13. [Dependencies](./benchmark/benchmark-protocol.md#dependencies)
 
-**Sub-documents:**
+**Sub-documents** (all in [`benchmark/`](./benchmark/)):
 - [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, per-op baseline selection
 - [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md) — Shape Tier definitions, full shape matrices per operator
 - [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md) — Measurement protocol, scoring, CLI, implementation status
-- [`operator-source-registry.md`](./benchmark/operator-source-registry.md) — Complete baseline source catalog (14 sources: cuBLAS, FlagGems, Liger, FlashAttn, vLLM, ...)
+- [`benchmark-csv-spec.md`](./benchmark/benchmark-csv-spec.md) — Unified CSV output schema (39 columns, Excel-friendly)
+- [`operator-source-registry.md`](./benchmark/operator-source-registry.md) — Complete baseline source catalog (14 sources)
 
 ---
 

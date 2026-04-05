@@ -1,6 +1,6 @@
 # Arke Benchmark — Full Operator Source Registry
 
-→ Parent: [`BENCHMARK.md`](./BENCHMARK.md) §5 Baselines
+→ Parent: [`benchmark-design.md`](../benchmark-design.md) §5 Baselines
 
 > **Purpose:** Comprehensive catalog of all obtainable GPU operator sources for
 > Arke benchmark baselines. Covers vendor libraries, Triton operator libraries,
@@ -436,7 +436,7 @@ benchmarks/
 │       └── sglang/
 │           ├── rmsnorm_onepass.py
 │           └── PROVENANCE.md
-├── BENCHMARK.md              # Design document (existing)
+├── benchmark-design.md              # Design document (existing)
 ├── shapes.py                 # Shape matrix (existing)
 ├── tasks.py                  # Task definitions (existing)
 └── results/                  # Benchmark outputs

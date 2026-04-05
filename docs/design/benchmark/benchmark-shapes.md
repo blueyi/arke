@@ -2,7 +2,7 @@
 
 Full shape definitions for all operator tiers, organized by Shape Tier (ST1–ST4).
 
-→ Parent: [`BENCHMARK.md`](../BENCHMARK.md)
+→ Parent: [`benchmark-design.md`](../benchmark-design.md)
 
 ---
 
