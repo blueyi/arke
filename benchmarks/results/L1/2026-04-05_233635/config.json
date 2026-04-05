@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-04-05_233635",
+  "ops": [
+    "tanh",
+    "sigmoid",
+    "add"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1
+}

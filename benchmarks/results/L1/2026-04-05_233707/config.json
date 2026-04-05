@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-04-05_233707",
+  "ops": [
+    "flash_attention"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1
+}

@@ -67,9 +67,15 @@ class OpResult:
 
 def _get_shapes(
     op: str, tier: int | None = None
-) -> list[MatmulShape] | list[Shape2D]:
+) -> list:
     try:
-        return get_shapes(op, tier=tier)
+        shapes = get_shapes(op, tier=tier)
+        if not shapes and tier is not None:
+            # Fallback: try all tiers if requested tier has no shapes
+            shapes = get_shapes(op)
+            if shapes:
+                logger.info(f"  No tier ≤{tier} shapes for {op}, using all {len(shapes)} shapes")
+        return shapes
     except ValueError:
         return []
 
@@ -106,10 +112,22 @@ def run_op(
 
     for runner_group in [non_fg_runners, fg_runners]:
         for shape in shapes:
-            if isinstance(shape, MatmulShape):
-                tag, M, N, K = shape.tag, shape.M, shape.N, shape.K
-            else:
-                tag, M, N, K = shape.tag, shape.M, shape.N, 0
+            # Generic shape extraction — works for all shape types
+            tag = shape.tag
+            M = getattr(shape, 'M', 0)
+            N = getattr(shape, 'N', 0)
+            K = getattr(shape, 'K', 0)
+            # Attention shapes: map B*H→M, S→N, D→K
+            if hasattr(shape, 'B') and hasattr(shape, 'H') and hasattr(shape, 'S'):
+                M = shape.B * shape.H
+                N = shape.S
+                K = getattr(shape, 'D', 64)
+            # BatchMatmul: use B as M
+            elif hasattr(shape, 'B') and not hasattr(shape, 'H'):
+                M = getattr(shape, 'B', M)
+            # GatedShape: use M, N from shape
+            elif hasattr(shape, 'M') and hasattr(shape, 'N'):
+                pass  # M, N already set
 
             for runner in runner_group:
                 fn = runner.get_fn(op, M, N, K)
