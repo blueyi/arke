@@ -6,9 +6,24 @@ Measurement protocol, scoring system, CLI interface, output structure, and imple
 
 ---
 
+## Design Goal
+
+**Default target: all operators correct on all shapes, performance ≥ P0 (vendor-optimized).**
+
+```
+Correctness: 100% pass rate across all OT × ST combinations
+Performance: Arke latency ≤ P0 vendor baseline (ratio ≥ 1.0)
+```
+
+When P0 is unavailable for an operator (e.g. rmsnorm, swiglu), the primary
+baseline falls back to P1 (expert Triton). See
+[`benchmark-ops.md`](./benchmark-ops.md) for per-op primary baseline.
+
+---
+
 ## Measurement Protocol
 
-### Single Operator (L1)
+### L1: Single Operator
 
 ```python
 # 1. Warmup: 200 iterations (triggers autotune, JIT)
@@ -31,14 +46,15 @@ from triton.testing import do_bench
 latency_ms = do_bench(lambda: kernel(inputs), warmup=200, rep=500)
 ```
 
-### Fused Operator (L2)
+### L2: Fused Operator
 
-Same protocol as L1, but input is the unfused sequence of ops vs the fused kernel.
+Same protocol as L1. Compares: (a) unfused sequential, (b) torch.compile fusion,
+(c) expert fusion (FlagGems/Liger), (d) Arke fusion.
 
-### E2E Model (L3)
+### L3: E2E Model (= BL6)
 
 ```python
-# 1. Load model, apply patches (KernelCache)
+# 1. Load model, apply Arke kernel patches (KernelCache)
 # 2. Warmup: 50 forward passes
 # 3. Measure: 200 forward passes with CUDA events
 # 4. Report: mean latency (ms), throughput (tok/s)
@@ -55,69 +71,176 @@ Same protocol as L1, but input is the unfused sequence of ops vs the fused kerne
 
 ### Metrics Collected Per Run
 
+See [`benchmark-csv-spec.md`](./benchmark-csv-spec.md) for the full 41-column CSV schema.
+Key metrics:
+
 | Metric | Unit | Description |
 |:-------|:-----|:------------|
-| `latency_us` | μs | Mean kernel latency |
-| `latency_min_us` | μs | Minimum kernel latency |
+| `latency_us` | μs | Median kernel latency |
 | `tflops` | TFLOPS | Achieved throughput (compute-bound ops) |
 | `gbps` | GB/s | Achieved bandwidth (memory-bound ops) |
-| `vs_p0` | ratio | Arke / P0 vendor baseline latency |
-| `vs_p1` | ratio | Arke / P1 expert Triton latency |
-| `vs_p3` | ratio | Arke / P3 PyTorch eager latency |
-| `vs_p5` | ratio | Arke / P5 LLM-direct latency |
+| `ratio_vs_baseline` | ratio | `baseline_latency / arke_latency` (>1 = Arke faster) |
 | `correct` | bool | Passes numerical tolerance |
-| `max_diff` | float | Maximum absolute difference |
-| `tokens_in` | int | LLM input tokens consumed (Arke/LLM-direct) |
-| `tokens_out` | int | LLM output tokens consumed |
 | `compile_time_s` | s | Time to generate + compile kernel |
-| `arke_turns` | int | Number of LLM agent turns (Arke only) |
 
 ---
 
 ## Scoring System
 
-### Single Operator Score (per shape)
+### Correctness Gate (binary)
+
+Every (operator, shape, dtype) must pass correctness. **No exceptions.**
+A single correctness failure blocks the entire benchmark level from passing.
+
+### Performance Score (per shape)
 
 ```
-op_score = Σ(weight_i × ratio_to_baseline_i) / Σ(weight_i)
-
-where:
-  ratio_to_baseline = baseline_latency / arke_latency  (>1 = Arke faster)
-  weights: P0=3, P1=2, P3=1
+ratio = P0_baseline_latency / arke_latency     (>1.0 = Arke faster than vendor)
 ```
 
-### Layer Score
+When P0 is unavailable, use the primary baseline defined in benchmark-ops.md.
+
+### Aggregation
 
 ```
-layer_score = geomean(op_scores)   # geometric mean across all ops
+op_score     = geomean(ratio across all shapes for one operator)
+tier_score   = geomean(op_scores across all operators in one OT tier)
+level_score  = geomean(tier_scores across all OT tiers in one BL level)
+arke_score   = 0.3 × L1_level_score + 0.3 × L2_level_score + 0.4 × L3_level_score
 ```
 
-### Overall Arke Score
-
-```
-arke_score = 0.3 × L1_score + 0.3 × L2_score + 0.4 × L3_score
-```
-
-L3 weighted highest because real-world impact matters most.
+L3 weighted highest because real-world E2E impact matters most.
 
 ### Report Indicators
 
 | Indicator | Meaning |
 |:---------:|:--------|
-| 🟢 | ≥ 90% of baseline |
-| 🟡 | ≥ 80% of baseline |
-| 🔴 | < 80% of baseline |
+| 🟢 | ratio ≥ 1.0 (Arke ≥ vendor) |
+| 🟡 | ratio ≥ 0.8 (within 20%) |
+| 🔴 | ratio < 0.8 |
 
 ### Exclusion Rules
 
 | Scenario | Handling | Reason |
 |:---------|:---------|:-------|
-| M ≤ 32 (matmul) | Accuracy must pass; perf excluded | Triton ~55μs launch floor |
-| N ≤ 32 (softmax) | Accuracy must pass; perf excluded | Same |
-| M×N ≤ 1024 (elementwise) | Accuracy must pass; perf excluded | Kernel-launch dominated |
-| Batch ≤ 1 (layernorm) | Accuracy must pass; perf excluded | Single-sample overhead |
-| OOM shapes | Skip, record "OOM" | 6GB VRAM limit |
-| Triton compile timeout (>60s) | Record "TIMEOUT", accuracy fail | Template may need fix |
+| M ≤ 32 (matmul) | Correctness required; perf excluded from score | Triton ~55μs launch floor |
+| N ≤ 32 (softmax) | Correctness required; perf excluded from score | Same |
+| M×N ≤ 1024 (elementwise) | Correctness required; perf excluded from score | Kernel-launch dominated |
+| OOM shapes | Skip, record "OOM" | Hardware VRAM limit |
+| Triton compile timeout (>60s) | Record "TIMEOUT", correctness = fail | Template may need fix |
+
+---
+
+## CLI Interface
+
+### Design Principle
+
+CLI parameters directly map to the benchmark classification system:
+
+| Parameter | Maps to | Values |
+|:----------|:--------|:-------|
+| `--bl` | Benchmark Level | `1`–`6` (default: `2`) |
+| `--ot` | Operator Tier filter | `0`–`4`, comma-separated |
+| `--st` | Shape Tier filter | `1`–`4`, comma-separated |
+| `--layer` | Evaluation Layer | `L1`, `L2`, `L3` |
+| `--op` | Specific operator(s) | operator name, comma-separated |
+
+**`--bl` is the primary control.** It determines the default OT and ST ranges.
+`--ot`, `--st`, `--layer`, `--op` are overrides for fine-grained control.
+
+### Default Behavior
+
+```
+arke bench              → BL2 (OT0–OT2 × ST1–ST2, L1 only)
+arke bench --bl 5       → BL5 (OT0–OT4 × ST1–ST4, L1+L2)
+arke bench --bl 6       → BL6 (Model-Complete, L1+L2+L3)
+```
+
+### BL → Default Expansion
+
+| `--bl` | Default OT | Default ST | Default Layer | Description |
+|:------:|:-----------|:-----------|:--------------|:------------|
+| `1` | OT0–OT2 | ST1 | L1 | Smoke test, <30s |
+| `2` | OT0–OT2 | ST1–ST2 | L1 | Daily CI, ~5 min |
+| `3` | OT0–OT2 | ST1–ST3 | L1 | Gate validation |
+| `4` | OT0–OT4 | ST1–ST2 | L1, L2 | Operator completeness |
+| `5` | OT0–OT4 | ST1–ST4 | L1, L2 | Complete suite |
+| `6` | Model-Complete | Model-Real | L1, L2, L3 | E2E model validation |
+
+### Examples
+
+```bash
+# Quick smoke test (BL1)
+arke bench --bl 1
+
+# Daily CI (BL2, default)
+arke bench
+
+# Gate validation with full stress shapes
+arke bench --bl 3
+
+# All operators, standard shapes
+arke bench --bl 4
+
+# Complete benchmark (all ops × all shapes)
+arke bench --bl 5
+
+# E2E model validation
+arke bench --bl 6
+arke bench --bl 6 --model gpt2                     # Specific model
+arke bench --bl 6 --model llama2-7b --seq-len 512,2048
+
+# Filter by Operator Tier
+arke bench --ot 0                                   # Elementwise only
+arke bench --ot 2,4                                 # Dense + Attention only
+arke bench --bl 5 --ot 4                            # All shapes, attention only
+
+# Filter by Shape Tier
+arke bench --st 4                                   # Production shapes only
+arke bench --bl 3 --st 3                            # Stress shapes only
+
+# Filter by Evaluation Layer
+arke bench --layer L1                               # Single ops only
+arke bench --layer L2                               # Fused ops only
+arke bench --layer L3                               # E2E only (implies BL6)
+
+# Filter by specific operator
+arke bench --op matmul                              # All shapes for matmul
+arke bench --op matmul --st 4                       # matmul production shapes
+arke bench --op matmul,softmax --bl 3               # matmul+softmax, stress shapes
+
+# Specific shapes
+arke bench --op matmul --shapes square-1k,square-4k
+
+# Baseline control
+arke bench --baselines cublas,flaggems,arke         # Only these baselines
+arke bench --baselines all                          # All available baselines
+
+# Report & comparison
+arke bench report {run_id}                          # Generate report
+arke bench diff {run_id_1} {run_id_2}               # Compare two runs
+arke bench history --op matmul --shape square-4k    # Performance trend
+```
+
+### Validation Rules
+
+- `--layer L3` automatically sets `--bl 6` (L3 ≡ BL6)
+- `--layer L2` requires `--bl ≥ 4` (L2 needs OT3+)
+- `--ot 4` requires `--st 4` (attention ops only have ST4 shapes)
+- `--bl 6 --op matmul` is valid (runs only matmul shapes from the model graph)
+
+### Current Implementation (python -m benchmarks)
+
+Existing CLI is not yet aligned with BL/OT/ST. Migration path:
+
+```bash
+# Current (legacy)                        # New equivalent
+python -m benchmarks --all                → arke bench --bl 6
+python -m benchmarks --layer L1           → arke bench --layer L1 --bl 2
+python -m benchmarks --op matmul          → arke bench --op matmul
+python -m benchmarks --op matmul --tier 2 → arke bench --op matmul --st 2
+python -m benchmarks --report             → arke bench report latest
+```
 
 ---
 
@@ -127,79 +250,55 @@ L3 weighted highest because real-world impact matters most.
 
 ```
 benchmarks/results/{run_id}/
-├── config.json              # Run configuration
-├── hardware.json            # GPU info, driver, CUDA, PyTorch/Triton versions
-├── L1_single_ops/
-│   ├── {op}/
-│   │   ├── results.csv      # shape × baseline × trial results
-│   │   ├── arke/            # Arke-generated kernel code per shape
-│   │   └── llm_direct/      # LLM-direct kernel code per shape
-├── L2_fused_ops/
-│   └── {fused_op}/
-│       └── results.csv
-├── L3_e2e/
+├── config.json              # Run configuration (bl, ot, st, layer)
+├── hardware.json            # GPU, driver, CUDA, PyTorch/Triton versions
+├── L1/
+│   ├── OT0/                 # Elementwise results
+│   │   ├── perf_relu.csv
+│   │   ├── perf_gelu.csv
+│   │   └── ...
+│   ├── OT1/                 # Reduction results
+│   ├── OT2/                 # Compute-dense results
+│   ├── OT3/                 # Gated activation results
+│   └── OT4/                 # Attention results
+├── L2/
+│   ├── perf_matmul_relu.csv
+│   └── ...
+├── L3/
 │   └── {model}/
-│       ├── results.csv
+│       ├── perf_e2e.csv
 │       └── config.json      # Model, seq_len, patches
-├── summary.json             # Aggregated results
-├── summary.csv              # Flat CSV
+├── summary.json             # Aggregated scores by BL/OT/ST
+├── PERF_ALL.csv             # All rows in unified CSV v2.0 schema
 └── report.md                # Human-readable report
 ```
 
 ### Provenance Tracking
 
 Every result carries full source attribution:
-- **CSV `source` column** — package name, version, URL, license per row
-- **`sources.json`** — per-run manifest of all baselines used
+- **CSV schema** — unified 41-column format ([`benchmark-csv-spec.md`](./benchmark-csv-spec.md))
+- **`config.json`** — run parameters: bl, ot, st, layer, baselines
 - **`hardware.json`** — GPU name, CUDA version, driver, framework versions
-
----
-
-## CLI Interface
-
-### Current (python -m benchmarks)
-
-```bash
-python -m benchmarks --all                          # L1 + L2 + L3
-python -m benchmarks --layer L1                     # Single operator
-python -m benchmarks --layer L2                     # Fused operator
-python -m benchmarks --layer L3                     # E2E model
-python -m benchmarks --op matmul                    # Specific op
-python -m benchmarks --op matmul --tier 2           # With shape tier
-python -m benchmarks --report                       # Generate report
-```
-
-### Planned (arke bench)
-
-```bash
-arke bench --all
-arke bench --layer L1 --op matmul --shapes square-1k,square-2k
-arke bench --layer L1 --op matmul --tier 3          # All ST3 shapes
-arke bench --layer L3 --model gpt2 --seq-len 128,512
-arke bench --baselines cublas,flaggems,arke
-arke bench diff {run_id_1} {run_id_2}
-arke bench report {run_id}
-```
 
 ---
 
 ## Benchmark-Driven Development
 
-The benchmark is not post-hoc validation — it is the **target state definition** for Arke development.
+The benchmark is the **target state definition** for Arke development.
 
 ### Capability Mapping
 
-| Benchmark Target | Arke IR | Template | Strategy |
-|:-----------------|:--------|:---------|:---------|
-| L1 matmul ≥80% cuBLAS | `matmul` op ✅ | `matmul.py.j2` ✅ | tile, split-k, swizzle ✅ |
-| L1 softmax ≥80% PyTorch | `softmax` op ✅ | `softmax.py.j2` ✅ | rows_per_prog ✅ |
-| L1 layernorm ≥90% FG | `layernorm` op ✅ | `layernorm.py.j2` ⬜ | block_size ⬜ |
-| L1 rmsnorm ≥90% FG | `rmsnorm` op ✅ | `rmsnorm.py.j2` ⬜ | block_size ⬜ |
-| L1 flash_attention | `flash_attention` op ✅ | `flash_attn.py.j2` ⬜ | tiling ⬜ |
-| L1 swiglu | `swiglu` op ✅ | `swiglu.py.j2` ⬜ | — ⬜ |
-| L2 matmul+gelu | fusion ✅ | epilogue ✅ | fusion decision ✅ |
-| L3 GPT-2 ≤1.15× eager | all above ✅ | all above ✅ | KernelCache ✅ |
-| L3 LLaMA ≤1.15× eager | + rmsnorm, swiglu, flash_attn | + new templates | Model-specific patch |
+| Benchmark Target | Primary Baseline | Arke IR | Template | Strategy |
+|:-----------------|:-----------------|:--------|:---------|:---------|
+| L1 matmul ≥ P0 | cuBLAS | ✅ | ✅ | tile, split-k, swizzle ✅ |
+| L1 softmax ≥ P0 | cuDNN/PyTorch | ✅ | ✅ | rows_per_prog ✅ |
+| L1 layernorm ≥ P0 | cuDNN/PyTorch | ✅ | ⬜ | block_size ⬜ |
+| L1 rmsnorm ≥ P1 | FlagGems | ✅ | ⬜ | block_size ⬜ |
+| L1 swiglu ≥ P1 | Liger | ✅ | ⬜ | — ⬜ |
+| L1 flash_attention ≥ P1 | FlashAttention | ✅ | ⬜ | tiling ⬜ |
+| L2 matmul+gelu ≥ P1 | FlagGems fusion | ✅ | ✅ | fusion decision ✅ |
+| L3/BL6 GPT-2 ≤ eager | E2E eager | ✅ | ✅ | KernelCache ✅ |
+| L3/BL6 LLaMA ≤ eager | E2E eager | partial | ⬜ | Model-specific patch ⬜ |
 
 ---
 
@@ -224,7 +323,8 @@ The benchmark is not post-hoc validation — it is the **target state definition
 | Component | Status | Description |
 |:----------|:------:|:------------|
 | `baselines/` | ✅ | BaselineRunner ABC + 8 runner classes |
-| `shapes.py` | ✅ | Shape registry with Tier tagging |
+| `shapes.py` | ✅ | Shape registry with ST1–ST4 tagging |
+| `perf_csv.py` | ✅ | PerfRow + PerfCSVWriter (CSV v2.0, 41 columns) |
 | `measure.py` | ✅ | CUDA event timing |
 | `bench_l1.py` | ✅ | L1 single operator benchmarks |
 | `bench_l2.py` | ✅ | L2 fused operator benchmarks |
@@ -233,8 +333,8 @@ The benchmark is not post-hoc validation — it is the **target state definition
 | `cli.py` | ✅ | Unified CLI entry point |
 | `report.py` | ✅ | Markdown report generator |
 | Hardware info | ✅ | `hardware.json` per run |
-| Provenance | ✅ | CSV source column + `sources.json` |
-| `arke bench` CLI | ⬜ | Planned unified CLI |
+| Provenance | ✅ | CSV source column + per-run manifest |
+| BL/OT/ST CLI | ⬜ | `arke bench --bl/--ot/--st/--layer` |
 | Cross-run diff | ⬜ | `arke bench diff` |
 | CI integration | ⬜ | GitHub Actions regression mode |
 
