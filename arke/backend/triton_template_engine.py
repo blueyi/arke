@@ -71,14 +71,43 @@ class TritonTemplateEngine:
         if "softmax" in ops:
             return "softmax.py.j2", "softmax"
 
+        # Fused RMSNorm + Residual (check before plain norm ops)
+        if "rmsnorm_residual" in ops:
+            return "rmsnorm_residual.py.j2", "rmsnorm_residual"
+
         norm_ops = {"layernorm", "rmsnorm"}
         if any(op in norm_ops for op in ops):
             first_norm = next(op for op in ops if op in norm_ops)
             return "layernorm.py.j2", first_norm
 
-        elementwise_ops = {"relu", "gelu", "silu", "add", "mul"}
-        if any(op in elementwise_ops for op in ops):
-            first_ew = next(op for op in ops if op in elementwise_ops)
+        # Reduction ops (OT1)
+        reduction_ops = {"reduce_sum", "reduce_max", "reduce_mean", "argmax"}
+        if any(op in reduction_ops for op in ops):
+            first_red = next(op for op in ops if op in reduction_ops)
+            return "reduction.py.j2", first_red
+
+        # Top-K
+        if "topk" in ops:
+            return "topk.py.j2", "topk"
+
+        # Cumulative sum
+        if "cumsum" in ops:
+            return "cumsum.py.j2", "cumsum"
+
+        # Cast
+        if "cast" in ops:
+            return "cast.py.j2", "cast"
+
+        # Binary elementwise ops
+        binary_ops = {"add", "mul", "where_"}
+        if any(op in binary_ops for op in ops):
+            first_bin = next(op for op in ops if op in binary_ops)
+            return "elementwise_binary.py.j2", first_bin
+
+        # Unary elementwise ops (activations)
+        unary_ops = {"relu", "gelu", "silu", "tanh", "sigmoid", "exp", "neg", "rsqrt"}
+        if any(op in unary_ops for op in ops):
+            first_ew = next(op for op in ops if op in unary_ops)
             return "elementwise.py.j2", first_ew
 
         # Fallback: pick first op and hope we have a template
@@ -119,8 +148,20 @@ class TritonTemplateEngine:
             pass
         elif primary_op in ("layernorm", "rmsnorm"):
             ctx["norm_type"] = primary_op
-        elif primary_op in ("relu", "gelu", "silu"):
+        elif primary_op in ("relu", "gelu", "silu", "tanh", "sigmoid", "exp", "neg", "rsqrt"):
             ctx["activation"] = primary_op
+        elif primary_op in ("add", "mul", "where_"):
+            ctx["binary_op"] = primary_op
+        elif primary_op == "cast":
+            ctx["target_dtype"] = self._resolve_output_dtype(semantic)
+        elif primary_op in ("reduce_sum", "reduce_max", "reduce_mean", "argmax"):
+            ctx["reduction_op"] = primary_op
+        elif primary_op == "rmsnorm_residual":
+            pass  # rmsnorm_residual template needs only kernel_name
+        elif primary_op == "cumsum":
+            pass  # cumsum template needs only kernel_name
+        elif primary_op == "topk":
+            pass  # topk template needs only kernel_name
 
         return ctx
 

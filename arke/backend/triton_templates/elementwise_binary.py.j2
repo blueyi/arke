@@ -1,0 +1,78 @@
+"""Auto-generated Triton elementwise binary kernel by Arke."""
+import torch
+import triton
+import triton.language as tl
+
+
+{% if binary_op == "where_" %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Cond_ptr, A_ptr, B_ptr, Y_ptr,
+    n_elements,
+    BLOCK_SIZE: tl.constexpr,
+):
+    pid = tl.program_id(0)
+    offsets = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
+    mask = offsets < n_elements
+    cond = tl.load(Cond_ptr + offsets, mask=mask)
+    a = tl.load(A_ptr + offsets, mask=mask)
+    b = tl.load(B_ptr + offsets, mask=mask)
+    y = tl.where(cond != 0, a, b)
+    tl.store(Y_ptr + offsets, y, mask=mask)
+
+
+def {{ kernel_name }}(Cond: torch.Tensor, A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
+    Y = torch.empty_like(A)
+    n_elements = A.numel()
+    if n_elements <= 65536:
+        BLOCK_SIZE = 1024
+        num_warps = 4
+    elif n_elements <= 524288:
+        BLOCK_SIZE = 4096
+        num_warps = 4
+    else:
+        BLOCK_SIZE = 8192
+        num_warps = 8
+    grid = (triton.cdiv(n_elements, BLOCK_SIZE),)
+    {{ kernel_name }}_kernel[grid](
+        Cond, A, B, Y, n_elements, BLOCK_SIZE=BLOCK_SIZE, num_warps=num_warps,
+    )
+    return Y
+{% else %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    A_ptr, B_ptr, Y_ptr,
+    n_elements,
+    BLOCK_SIZE: tl.constexpr,
+):
+    pid = tl.program_id(0)
+    offsets = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
+    mask = offsets < n_elements
+    a = tl.load(A_ptr + offsets, mask=mask)
+    b = tl.load(B_ptr + offsets, mask=mask)
+    {% if binary_op == "add" %}
+    y = a + b
+    {% elif binary_op == "mul" %}
+    y = a * b
+    {% endif %}
+    tl.store(Y_ptr + offsets, y, mask=mask)
+
+
+def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
+    Y = torch.empty_like(A)
+    n_elements = A.numel()
+    if n_elements <= 65536:
+        BLOCK_SIZE = 1024
+        num_warps = 4
+    elif n_elements <= 524288:
+        BLOCK_SIZE = 4096
+        num_warps = 4
+    else:
+        BLOCK_SIZE = 8192
+        num_warps = 8
+    grid = (triton.cdiv(n_elements, BLOCK_SIZE),)
+    {{ kernel_name }}_kernel[grid](
+        A, B, Y, n_elements, BLOCK_SIZE=BLOCK_SIZE, num_warps=num_warps,
+    )
+    return Y
+{% endif %}

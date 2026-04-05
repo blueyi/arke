@@ -1,0 +1,67 @@
+"""Auto-generated Triton top-K kernel by Arke."""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    X_ptr, Values_ptr, Indices_ptr,
+    M, N, K,
+    stride_xm, stride_xn,
+    stride_vm, stride_vk,
+    stride_im, stride_ik,
+    BLOCK_N: tl.constexpr,
+    BLOCK_K: tl.constexpr,
+):
+    row = tl.program_id(0)
+    offs_n = tl.arange(0, BLOCK_N)
+    mask = offs_n < N
+
+    x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
+    x = tl.load(x_ptrs, mask=mask, other=float("-inf")).to(tl.float32)
+
+    # Iterative top-K: find max K times, masking out found elements
+    offs_k = tl.arange(0, BLOCK_K)
+    cur_x = x
+    for ki in tl.static_range(0, BLOCK_K):
+        # Find current max
+        max_val = tl.max(cur_x, axis=0)
+        is_max = (cur_x == max_val) & (offs_n < N)
+        # Pick smallest index among ties
+        candidate_idx = tl.where(is_max, offs_n, N)
+        max_idx = tl.min(candidate_idx, axis=0)
+        # Store value and index for this k position
+        k_mask = offs_k == ki
+        tl.store(
+            Values_ptr + row * stride_vm + ki * stride_vk,
+            max_val,
+        )
+        tl.store(
+            Indices_ptr + row * stride_im + ki * stride_ik,
+            max_idx,
+        )
+        # Mask out the found element
+        cur_x = tl.where(offs_n == max_idx, float("-inf"), cur_x)
+
+
+def {{ kernel_name }}(X: torch.Tensor, k: int) -> tuple[torch.Tensor, torch.Tensor]:
+    M, N = X.shape
+    Values = torch.empty(M, k, device=X.device, dtype=X.dtype)
+    Indices = torch.empty(M, k, device=X.device, dtype=torch.int64)
+    BLOCK_N = triton.next_power_of_2(N)
+    if BLOCK_N > 65536:
+        BLOCK_N = 65536
+    BLOCK_K = triton.next_power_of_2(k)
+    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    {{ kernel_name }}_kernel[(M,)](
+        X, Values, Indices,
+        M, N, k,
+        X.stride(0), X.stride(1),
+        Values.stride(0), Values.stride(1),
+        Indices.stride(0), Indices.stride(1),
+        BLOCK_N=BLOCK_N,
+        BLOCK_K=BLOCK_K,
+        num_warps=num_warps,
+    )
+    return Values, Indices
