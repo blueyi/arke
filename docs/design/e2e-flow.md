@@ -202,7 +202,7 @@ Semantic IR 构建完成后，系统自动计算特征，作为 LLM 做决策的
 
 ---
 
-## 二之二、算子覆盖（Operator Tier）
+## 二点五、算子覆盖（Operator Tier）
 
 当前 Arke 覆盖 **45 个算子**，按复杂度分为 5 层（OT0-OT4）：
 
@@ -968,7 +968,7 @@ class AgentRunner:
 
 ---
 
-## 六之二、Benchmark 分层体系与 Gate 系统
+## 六点五、Benchmark 分层体系与 Gate 系统
 
 ### Benchmark Level (BL)
 
