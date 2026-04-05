@@ -31,10 +31,10 @@ In our context, Arke is the messenger between two worlds — translating **what 
 ## Architecture
 
 ```
-  Python │ Triton │ CUDA │ Natural Language │ ...
-                         │
-                         │ LLM translates
-                         ▼
+      Python │ Triton │ CUDA │ Natural Language │ ...
+                             │
+                             │ LLM translates
+                             ▼
   ┌────────────────────────────────────────────────────────────┐
   │  .ak — Arke Language (AI-Native Operator Programming)      │
   │  kernel { semantics }    strategy { @rationale decisions } │
@@ -42,32 +42,32 @@ In our context, Arke is the messenger between two worlds — translating **what 
                                │ parse
                                ▼
   ┌────────────────────────────────────────────────────────────┐
-  │            Semantic IR — WHAT to compute                    │
-  │         (immutable computation graph, pure math)            │
+  │            Semantic IR — WHAT to compute                   │
+  │         (immutable computation graph, pure math)           │
   └────────────────────────────┬───────────────────────────────┘
                                │
   ┌────────────────────────────▼───────────────────────────────┐
-  │         LLM ◄══ Structured Protocol ══► Compiler            │
-  │                                                             │
+  │         LLM ◄══ Structured Protocol ══► Compiler           │
+  │                                                            │
   │  LLM Agent (Decides)       ArkeEnv (Verifies)              │
   │  ┌──────────────────┐      ┌─────────────────────────────┐ │
   │  │ analyze kernel   │─────►│ enumerate legal_actions     │ │
   │  │ select action    │◄─────│ (bounded decision space)    │ │
-  │  │ apply @rationale │─────►│ validate: V0(<1ms)→V1→V2   │ │
+  │  │ apply @rationale │─────►│ validate: V0(<1ms)→V1→V2    │ │
   │  │ iterate / stop   │◄─────│ checkpoint / rollback       │ │
   │  └──────────────────┘      └──────────────┬──────────────┘ │
-  │                                            │                │
+  │                                            │               │
   │  ┌─────────────────────────────────────────▼──────────────┐│
   │  │  Strategy IR — HOW to optimize (decision-by-decision)  ││
   │  └────────────────────────────────────────────────────────┘│
   └────────────────────────────┬───────────────────────────────┘
                                │
   ┌────────────────────────────▼───────────────────────────────┐
-  │  Codegen Backends (progressive depth into hardware)         │
-  │                                                             │
+  │  Codegen Backends (progressive depth into hardware)        │
+  │                                                            │
   │   Triton   │  MLIR Dialect  │   LLVM IR   │   HW ISA       │
-  │  (Stage 1) │   (Stage 3)   │  (Stage 4)  │  (Future)      │
-  │                                                             │
+  │  (Stage 1) │   (Stage 3)   │  (Stage 4)  │  (Future)       │
+  │                                                            │
   │  ◄── deeper hardware control ── extreme performance ──►    │
   └────────────────────────────┬───────────────────────────────┘
                                │

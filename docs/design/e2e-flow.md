@@ -968,7 +968,7 @@ class AgentRunner:
 
 ---
 
-## 六点五、Benchmark 分层体系与 Gate 系统
+## 七、Benchmark 分层体系与 Gate 系统
 
 ### Benchmark Level (BL)
 
@@ -1010,7 +1010,7 @@ Stage 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L �
 → 详见 [benchmark-design.md](benchmark-design.md) | [stage1-gate-design.md](stage1-gate-design.md)
 
 
-## 七、数据流总结
+## 八、数据流总结
 
 ```
 用户输入（自然语言 / CLI 参数 / .ak 文件 / Python API）
