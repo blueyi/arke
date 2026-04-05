@@ -11,7 +11,7 @@ automated provenance tracking, and a three-layer evaluation architecture.
 2. [Operator Tier (OT)](#2-operator-tier-ot)
 3. [Shape Tier (ST)](#3-shape-tier-st)
 4. [Evaluation Layers (L1/L2/L3)](#4-evaluation-layers-l1l2l3)
-5. [Baseline Tiers & Operator→Baseline Matrix](#5-baseline-tiers--operatorbaseline-matrix)
+5. [Baselines](#5-baselines)
 6. [Measurement Protocol](./benchmark/benchmark-protocol.md#measurement-protocol)
 7. [Scoring System](./benchmark/benchmark-protocol.md#scoring-system)
 8. [Operator Source Registry](./benchmark/benchmark-sources.md)
@@ -22,10 +22,10 @@ automated provenance tracking, and a three-layer evaluation architecture.
 13. [Dependencies](./benchmark/benchmark-protocol.md#dependencies)
 
 **Sub-documents:**
-- [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, baseline matrix per op
+- [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, per-op baseline selection
 - [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md) — Shape Tier definitions, full shape matrices per operator
 - [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md) — Measurement protocol, scoring, CLI, implementation status
-- [`benchmark-sources.md`](./benchmark/benchmark-sources.md) — Operator source registry (cuBLAS, FlagGems, Liger, FlashAttn, ...)
+- [`operator-source-registry.md`](./operator-source-registry.md) — Complete baseline source catalog (14 sources: cuBLAS, FlagGems, Liger, FlashAttn, vLLM, ...)
 
 ---
 
@@ -175,9 +175,11 @@ Reports: latency (mean/min/max/median), correctness (logit diff, top-1 match), p
 
 ---
 
-## 5. Baseline Tiers & Operator→Baseline Matrix
+## 5. Baselines
 
 ### Baseline Priority Tiers
+
+Each operator is benchmarked against multiple baseline tiers, ranked by expected performance:
 
 | Tier | Name | Source | License |
 |:----:|:-----|:-------|:--------|
@@ -188,32 +190,15 @@ Reports: latency (mean/min/max/median), correctness (logit diff, top-1 match), p
 | **P4** | Inductor-generated | `torch.compile` output | BSD-3-Clause |
 | **P5** | LLM-direct | LLM writes Triton directly | — |
 
-### Operator → Baseline Matrix (L1)
+### Where to find details
 
-| Operator | OT | P0 Vendor | P1 Expert Triton | P2 Ref Triton | P3 PyTorch | P4 Inductor | P5 LLM-direct |
-|:---------|:--:|:----------|:-----------------|:--------------|:-----------|:------------|:--------------|
-| relu | 0 | — | FlagGems | — | `F.relu` | ✓ | ✓ |
-| gelu | 0 | — | FlagGems | — | `F.gelu` | ✓ | ✓ |
-| silu | 0 | — | FlagGems | — | `F.silu` | ✓ | ✓ |
-| add | 0 | — | FlagGems | — | `torch.add` | ✓ | ✓ |
-| mul | 0 | — | FlagGems | — | `torch.mul` | ✓ | ✓ |
-| softmax | 1 | cuDNN (via PyTorch) | FlagGems | Tutorial 02 | `F.softmax` | ✓ | ✓ |
-| layernorm | 1 | cuDNN (via PyTorch) | FlagGems | Tutorial 05 | `F.layer_norm` | ✓ | ✓ |
-| rmsnorm | 1 | — | FlagGems, Liger | — | ✓ | ✓ | ✓ |
-| rmsnorm_residual | 1 | — | Liger | — | manual | ✓ | ✓ |
-| reduce_sum | 1 | — | FlagGems | — | `torch.sum` | ✓ | ✓ |
-| reduce_max | 1 | — | FlagGems | — | `torch.max` | ✓ | ✓ |
-| matmul | 2 | cuBLAS | FlagGems | Tutorial 03 | `torch.mm` | ✓ | ✓ |
-| batch_matmul | 2 | cuBLAS | FlagGems | — | `torch.bmm` | ✓ | ✓ |
-| grouped_matmul | 2 | CUTLASS | FlagGems (matmul_ogs) | — | — | ✓ | ✓ |
-| transpose | 2 | — | FlagGems | — | `torch.transpose` | ✓ | ✓ |
-| swiglu | 3 | — | Liger | — | manual | ✓ | ✓ |
-| geglu | 3 | — | Liger | — | manual | ✓ | ✓ |
-| flash_attention | 4 | cuDNN SDPA | FlashAttention | Tutorial 06 | SDPA | ✓ | ✓ |
-| grouped_query_attention | 4 | cuDNN SDPA | FlashAttention | — | SDPA | ✓ | ✓ |
-| multi_latent_attention | 4 | — | DeepSeek ref | — | — | — | ✓ |
+| What | Where |
+|:-----|:------|
+| **Per-operator baseline selection** (primary + expert baselines) | [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — each op card lists its P0–P5 mapping |
+| **Source installation, API, version, full op lists** | [`operator-source-registry.md`](./operator-source-registry.md) — complete catalog of all 14 baseline sources |
+| **Fused operator baselines** | [`benchmark-ops.md` §OT3/OT4](./benchmark/benchmark-ops.md) + table below |
 
-### Fused Operator → Baseline Matrix (L2)
+### Fused Operator → Baseline Summary (L2)
 
 | Fused Op | P0 Vendor | P1 Expert | P3 PyTorch | P5 LLM-direct |
 |:---------|:----------|:----------|:-----------|:--------------|
@@ -227,7 +212,7 @@ Reports: latency (mean/min/max/median), correctness (logit diff, top-1 match), p
 ---
 
 *For full shape matrices, see [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md).*
-*For operator source details and installation, see [`benchmark-sources.md`](./benchmark/benchmark-sources.md).*
+*For baseline source installation and API details, see [`operator-source-registry.md`](./operator-source-registry.md).*
 *For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md).*
 
 ---
