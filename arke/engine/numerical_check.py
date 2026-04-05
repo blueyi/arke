@@ -36,6 +36,7 @@ DTYPE_MAP: dict[str, np.dtype] = {
     "u16": np.dtype(np.uint16),
     "u32": np.dtype(np.uint32),
     "u64": np.dtype(np.uint64),
+    "bool": np.dtype(np.bool_),
 }
 
 
@@ -250,6 +251,99 @@ def _numpy_multi_latent_attention(inputs: dict[str, np.ndarray]) -> np.ndarray:
     return (attn @ v).astype(q.dtype)
 
 
+def _first_input(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    """Get the first tensor input (usually 'X')."""
+    return inputs.get("X", next(iter(inputs.values())))
+
+
+def _numpy_scatter(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs.get("X", list(inputs.values())[0]).copy()
+    idx = inputs.get("idx", list(inputs.values())[1]).astype(np.intp)
+    src = inputs.get("src", list(inputs.values())[2])
+    np.put_along_axis(x, idx, src, axis=-1)
+    return x
+
+
+def _numpy_embedding(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    indices = inputs.get("indices", list(inputs.values())[0]).astype(np.intp)
+    weight = inputs.get("weight", inputs.get("W", list(inputs.values())[1]))
+    return weight[indices]
+
+
+def _numpy_rope(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs["X"].astype(np.float32)
+    cos = inputs.get("cos", inputs.get("cos_cached", np.ones_like(x[..., :x.shape[-1]//2]))).astype(np.float32)
+    sin = inputs.get("sin", inputs.get("sin_cached", np.zeros_like(x[..., :x.shape[-1]//2]))).astype(np.float32)
+    d = x.shape[-1]
+    x1, x2 = x[..., :d//2], x[..., d//2:]
+    y1 = x1 * cos - x2 * sin
+    y2 = x2 * cos + x1 * sin
+    return np.concatenate([y1, y2], axis=-1).astype(x.dtype)
+
+
+def _numpy_cross_entropy(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    logits = inputs.get("logits", inputs.get("X", list(inputs.values())[0])).astype(np.float64)
+    labels = inputs.get("labels", list(inputs.values())[1]).astype(np.intp)
+    logits_max = np.max(logits, axis=-1, keepdims=True)
+    log_probs = logits - logits_max - np.log(np.sum(np.exp(logits - logits_max), axis=-1, keepdims=True))
+    loss = -np.mean(log_probs[np.arange(len(labels)), labels])
+    return np.array(loss, dtype=np.float32)
+
+
+def _numpy_fused_linear_cross_entropy(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs.get("X", list(inputs.values())[0]).astype(np.float64)
+    w = inputs.get("W", list(inputs.values())[1]).astype(np.float64)
+    labels = inputs.get("labels", list(inputs.values())[2]).astype(np.intp)
+    logits = x @ w.T
+    logits_max = np.max(logits, axis=-1, keepdims=True)
+    log_probs = logits - logits_max - np.log(np.sum(np.exp(logits - logits_max), axis=-1, keepdims=True))
+    loss = -np.mean(log_probs[np.arange(len(labels)), labels])
+    return np.array(loss, dtype=np.float32)
+
+
+def _numpy_quantize_per_token(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x = inputs.get("X", next(iter(inputs.values()))).astype(np.float32)
+    scale = np.max(np.abs(x), axis=-1, keepdims=True) / 127.0
+    scale = np.maximum(scale, 1e-8)
+    return np.clip(np.round(x / scale), -128, 127).astype(np.int8)
+
+
+def _numpy_dequantize_per_channel(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    x_int8 = inputs.get("X_int8", next(iter(inputs.values()))).astype(np.float32)
+    scale = inputs.get("scale", inputs.get("W", list(inputs.values())[1])).astype(np.float32)
+    zp = inputs.get("zero_point", np.zeros_like(scale)).astype(np.float32)
+    return ((x_int8 - zp) * scale).astype(np.float32)
+
+
+def _numpy_paged_attention(inputs: dict[str, np.ndarray]) -> np.ndarray:
+    """Simplified paged attention — assemble K/V from cache then standard attention."""
+    q = inputs["Q"].astype(np.float32)  # [B, H, 1, D]
+    k_cache = inputs["K_cache"].astype(np.float32)  # [num_blocks, block_size, H, D]
+    v_cache = inputs["V_cache"].astype(np.float32)
+    block_table = inputs["block_table"].astype(np.intp)  # [B, max_blocks]
+    B, H, _, D = q.shape
+    num_blocks_per_seq = block_table.shape[1]
+    block_size = k_cache.shape[1]
+    seq_len = num_blocks_per_seq * block_size
+    # Assemble K/V from paged cache
+    k = np.zeros((B, H, seq_len, D), dtype=np.float32)
+    v = np.zeros((B, H, seq_len, D), dtype=np.float32)
+    for b in range(B):
+        for blk_idx in range(num_blocks_per_seq):
+            phys_block = block_table[b, blk_idx] % k_cache.shape[0]
+            start = blk_idx * block_size
+            end = start + block_size
+            # k_cache: [num_blocks, block_size, H, D] -> [H, block_size, D]
+            k[b, :, start:end, :] = k_cache[phys_block].transpose(1, 0, 2)  # [H, block_size, D]
+            v[b, :, start:end, :] = v_cache[phys_block].transpose(1, 0, 2)
+    # Standard attention
+    scores = q @ k.transpose(0, 1, 3, 2) / math.sqrt(D)  # [B, H, 1, seq_len]
+    scores_max = np.max(scores, axis=-1, keepdims=True)
+    exp_scores = np.exp(scores - scores_max)
+    attn = exp_scores / np.sum(exp_scores, axis=-1, keepdims=True)
+    return (attn @ v).astype(q.dtype)
+
+
 _NUMPY_DISPATCH: dict[str, Any] = {
     "matmul": _numpy_matmul,
     "batch_matmul": _numpy_batch_matmul,
@@ -271,6 +365,32 @@ _NUMPY_DISPATCH: dict[str, Any] = {
     "flash_attention": _numpy_flash_attention,
     "grouped_query_attention": _numpy_grouped_query_attention,
     "multi_latent_attention": _numpy_multi_latent_attention,
+    # --- Newly added ops ---
+    "tanh": lambda inputs: np.tanh(_first_input(inputs)),
+    "sigmoid": lambda inputs: 1.0 / (1.0 + np.exp(-_first_input(inputs).astype(np.float64))),
+    "neg": lambda inputs: -_first_input(inputs),
+    "exp": lambda inputs: np.exp(_first_input(inputs).astype(np.float64)).astype(_first_input(inputs).dtype),
+    "rsqrt": lambda inputs: (1.0 / np.sqrt(_first_input(inputs).astype(np.float64) + 1e-6)).astype(_first_input(inputs).dtype),
+    "where_": lambda inputs: np.where(inputs.get("cond", _first_input(inputs)), inputs.get("A", list(inputs.values())[1]), inputs.get("B", list(inputs.values())[2])),
+    "cast": lambda inputs: _first_input(inputs).astype(np.float16),
+    "copy_": lambda inputs: _first_input(inputs).copy(),
+    "reduce_mean": lambda inputs: np.mean(_first_input(inputs), axis=-1),
+    "argmax": lambda inputs: np.argmax(_first_input(inputs), axis=-1),
+    "topk": lambda inputs: np.sort(_first_input(inputs), axis=-1)[..., -min(50, _first_input(inputs).shape[-1]):],
+    "cumsum": lambda inputs: np.cumsum(_first_input(inputs), axis=-1),
+    "concat": lambda inputs: np.concatenate([inputs.get("A", list(inputs.values())[0]), inputs.get("B", list(inputs.values())[1])], axis=-1),
+    "split": lambda inputs: np.split(_first_input(inputs), 2, axis=-1)[0],
+    "gather": lambda inputs: np.take_along_axis(inputs.get("X", _first_input(inputs)), inputs.get("idx", list(inputs.values())[1]).astype(np.intp), axis=-1),
+    "scatter": lambda inputs: _numpy_scatter(inputs),
+    "embedding": lambda inputs: _numpy_embedding(inputs),
+    "permute": lambda inputs: np.transpose(_first_input(inputs), axes=list(range(_first_input(inputs).ndim))[::-1]),
+    "rope": lambda inputs: _numpy_rope(inputs),
+    "cross_entropy": lambda inputs: _numpy_cross_entropy(inputs),
+    "fused_linear_cross_entropy": lambda inputs: _numpy_fused_linear_cross_entropy(inputs),
+    "quantize_per_token": lambda inputs: _numpy_quantize_per_token(inputs),
+    "dequantize_per_channel": lambda inputs: _numpy_dequantize_per_channel(inputs),
+    "cross_attention": _numpy_flash_attention,  # same logic, no causal mask
+    "paged_attention": lambda inputs: _numpy_paged_attention(inputs),
 }
 
 
@@ -407,6 +527,11 @@ class NumericalValidator:
             if np.issubdtype(np_dtype, np.floating):
                 # Standard normal scaled to [-1, 1] for numerical stability
                 arr = rng.randn(*param.shape).astype(np_dtype)
+                # For ops that need positive inputs, take abs
+                if self._needs_positive_inputs(semantic_ir):
+                    arr = np.abs(arr) + 0.01
+            elif np.issubdtype(np_dtype, np.bool_):
+                arr = rng.randint(0, 2, size=param.shape).astype(np.bool_)
             elif np.issubdtype(np_dtype, np.integer):
                 # For index parameters, try to infer valid range from sibling params
                 valid_range = self._infer_index_range(param.name, semantic_ir)
@@ -423,6 +548,12 @@ class NumericalValidator:
             inputs[param.name] = arr
 
         return inputs
+
+    @staticmethod
+    def _needs_positive_inputs(semantic_ir: SemanticIR) -> bool:
+        """Check if any node uses an op that requires positive inputs."""
+        _POSITIVE_OPS = {"rsqrt", "sqrt"}
+        return any(node.op in _POSITIVE_OPS for node in semantic_ir.nodes)
 
     def validate(
         self,

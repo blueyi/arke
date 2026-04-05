@@ -1,7 +1,7 @@
 // Example 45: Paged Attention (Category B — attention, vLLM-style paged KV cache)
 //
 // Natural Language:
-//   "分页注意力: Q:[128, 12, 64] + KV cache in paged blocks → O:[128, 12, 64]"
+//   "分页注意力: Q:[1, 12, 1, 64] + KV cache in paged blocks → O:[1, 12, 1, 64]"
 //   "vLLM 风格：KV cache 以 block_size=16 分页存储，通过 block_table 索引"
 //
 // Semantics: O = paged_softmax(Q @ K_pages^T / sqrt(D)) @ V_pages
@@ -9,12 +9,12 @@
 // Category: B (attention — paged KV cache)
 
 kernel paged_attention_kernel(
-    Q: Tensor<[128, 12, 64], f16>,
-    K_cache: Tensor<[1024, 12, 16, 64], f16>,
-    V_cache: Tensor<[1024, 12, 16, 64], f16>,
-    Block_table: Tensor<[128, 64], i32>
-) -> Tensor<[128, 12, 64], f16> {
-    let O = paged_attention(Q=Q, K_cache=K_cache, V_cache=V_cache, Block_table=Block_table);
+    Q: Tensor<[1, 12, 1, 64], f16>,
+    K_cache: Tensor<[64, 16, 12, 64], f16>,
+    V_cache: Tensor<[64, 16, 12, 64], f16>,
+    block_table: Tensor<[1, 64], i32>
+) -> Tensor<[1, 12, 1, 64], f16> {
+    let O = paged_attention(Q=Q, K_cache=K_cache, V_cache=V_cache, block_table=block_table);
     return O;
 }
 

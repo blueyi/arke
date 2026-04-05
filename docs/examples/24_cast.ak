@@ -9,7 +9,7 @@
 kernel cast_kernel(
     X: Tensor<[128, 3072], f32>
 ) -> Tensor<[128, 3072], f16> {
-    let Y = cast(X=X, dtype="f16");
+    let Y = cast(X=X);
     return Y;
 }
 
