@@ -1,0 +1,109 @@
+"""Auto-generated Triton RoPE kernel by Arke.
+
+Rotary Position Embedding (RoPE).
+Input: X[batch * seq_len * n_heads, head_dim] (flattened)
+       cos_table[max_seq_len, head_dim // 2]
+       sin_table[max_seq_len, head_dim // 2]
+Output: Y with same shape as X, positions rotated.
+
+Uses half-rotate approach:
+  x0, x1 = x[..., :D//2], x[..., D//2:]
+  y0 = x0 * cos - x1 * sin
+  y1 = x1 * cos + x0 * sin
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    X_ptr, Cos_ptr, Sin_ptr, Y_ptr,
+    seq_len, n_heads, head_dim, half_dim,
+    stride_x_row, stride_x_d,
+    stride_cos_seq, stride_cos_d,
+    stride_y_row, stride_y_d,
+    BLOCK_ROW: tl.constexpr,
+    BLOCK_HD: tl.constexpr,
+):
+    """Apply RoPE to flattened input.
+
+    Each row = one (batch, seq, head) combination.
+    Position index = (row // n_heads) % seq_len.
+    """
+    pid_row = tl.program_id(0)
+    pid_hd = tl.program_id(1)
+
+    offs_row = pid_row * BLOCK_ROW + tl.arange(0, BLOCK_ROW)
+    offs_hd = pid_hd * BLOCK_HD + tl.arange(0, BLOCK_HD)
+
+    total_rows = seq_len * n_heads  # per batch (will be handled by grid)
+    mask_row = offs_row < total_rows
+    mask_hd = offs_hd < half_dim
+    mask = mask_row[:, None] & mask_hd[None, :]
+
+    # Compute position for each row: pos = (row // n_heads) % seq_len
+    pos = (offs_row // n_heads) % seq_len
+
+    # Load cos/sin for these positions
+    cos_ptrs = Cos_ptr + pos[:, None] * stride_cos_seq + offs_hd[None, :] * stride_cos_d
+    sin_ptrs = Sin_ptr + pos[:, None] * stride_cos_seq + offs_hd[None, :] * stride_cos_d
+    cos_val = tl.load(cos_ptrs, mask=mask, other=1.0)
+    sin_val = tl.load(sin_ptrs, mask=mask, other=0.0)
+
+    # Load x0 (first half of head_dim) and x1 (second half)
+    x0_ptrs = X_ptr + offs_row[:, None] * stride_x_row + offs_hd[None, :] * stride_x_d
+    x1_ptrs = X_ptr + offs_row[:, None] * stride_x_row + (offs_hd[None, :] + half_dim) * stride_x_d
+    x0 = tl.load(x0_ptrs, mask=mask, other=0.0).to(tl.float32)
+    x1 = tl.load(x1_ptrs, mask=mask, other=0.0).to(tl.float32)
+    cos_f = cos_val.to(tl.float32)
+    sin_f = sin_val.to(tl.float32)
+
+    # Apply rotation
+    y0 = x0 * cos_f - x1 * sin_f
+    y1 = x1 * cos_f + x0 * sin_f
+
+    # Store
+    y0_ptrs = Y_ptr + offs_row[:, None] * stride_y_row + offs_hd[None, :] * stride_y_d
+    y1_ptrs = Y_ptr + offs_row[:, None] * stride_y_row + (offs_hd[None, :] + half_dim) * stride_y_d
+    tl.store(y0_ptrs, y0.to(x0.dtype), mask=mask)
+    tl.store(y1_ptrs, y1.to(x0.dtype), mask=mask)
+
+
+def {{ kernel_name }}(
+    X: torch.Tensor,
+    cos_table: torch.Tensor,
+    sin_table: torch.Tensor,
+    seq_len: int,
+    n_heads: int,
+) -> torch.Tensor:
+    """Apply RoPE to X.
+
+    Args:
+        X: [total_rows, head_dim] where total_rows = batch * seq_len * n_heads
+        cos_table: [max_seq_len, head_dim // 2]
+        sin_table: [max_seq_len, head_dim // 2]
+        seq_len: sequence length
+        n_heads: number of heads
+
+    Returns:
+        Y with same shape, rotated.
+    """
+    assert X.ndim == 2
+    total_rows, head_dim = X.shape
+    half_dim = head_dim // 2
+    Y = torch.empty_like(X)
+
+    BLOCK_ROW = 32
+    BLOCK_HD = min(triton.next_power_of_2(half_dim), 128)
+    grid = (triton.cdiv(total_rows, BLOCK_ROW), triton.cdiv(half_dim, BLOCK_HD))
+
+    {{ kernel_name }}_kernel[grid](
+        X, cos_table, sin_table, Y,
+        seq_len, n_heads, head_dim, half_dim,
+        X.stride(0), X.stride(1),
+        cos_table.stride(0), cos_table.stride(1),
+        Y.stride(0), Y.stride(1),
+        BLOCK_ROW=BLOCK_ROW, BLOCK_HD=BLOCK_HD,
+    )
+    return Y

@@ -1,0 +1,153 @@
+"""Auto-generated Triton paged attention kernel by Arke.
+
+vLLM-style paged attention for decoding:
+  Q[B, H, D] — single query token per sequence
+  kv_cache[num_blocks, 2, H, block_size, D] — paged KV cache (0=K, 1=V)
+  block_tables[B, max_blocks] — block indices for each sequence
+  context_lens[B] — actual context length per sequence
+
+Output: O[B, H, D]
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Q_ptr, KV_cache_ptr, Block_tables_ptr, Context_lens_ptr, O_ptr,
+    sm_scale,
+    B, H, D, block_size, max_blocks, num_kv_heads,
+    stride_qb, stride_qh, stride_qd,
+    stride_kv_block, stride_kv_type, stride_kv_h, stride_kv_pos, stride_kv_d,
+    stride_bt_b, stride_bt_mb,
+    stride_ob, stride_oh, stride_od,
+    GQA_GROUPS: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+    BLOCK_BS: tl.constexpr,
+):
+    """Paged attention: one program per (batch, head)."""
+    pid_b = tl.program_id(0)
+    pid_h = tl.program_id(1)
+
+    if pid_b >= B:
+        return
+
+    kv_head = pid_h // GQA_GROUPS
+    context_len = tl.load(Context_lens_ptr + pid_b)
+    num_context_blocks = tl.cdiv(context_len, block_size)
+
+    offs_d = tl.arange(0, BLOCK_D)
+    d_mask = offs_d < D
+
+    # Load query: [D]
+    q = tl.load(
+        Q_ptr + pid_b * stride_qb + pid_h * stride_qh + offs_d * stride_qd,
+        mask=d_mask,
+        other=0.0,
+    ).to(tl.float32)
+
+    # Online softmax accumulators
+    m_i = float("-inf")
+    l_i = 0.0
+    o_acc = tl.zeros((BLOCK_D,), dtype=tl.float32)
+
+    # Iterate over KV blocks
+    for block_idx in range(0, num_context_blocks):
+        # Load physical block index from block table
+        phys_block = tl.load(Block_tables_ptr + pid_b * stride_bt_b + block_idx * stride_bt_mb)
+
+        # Determine valid positions in this block
+        start_pos = block_idx * block_size
+        offs_pos = tl.arange(0, BLOCK_BS)
+        abs_pos = start_pos + offs_pos
+        pos_mask = (offs_pos < block_size) & (abs_pos < context_len)
+
+        # Load K for this block: [block_size, D]
+        k_base = KV_cache_ptr + phys_block * stride_kv_block + 0 * stride_kv_type + kv_head * stride_kv_h
+        k = tl.load(
+            k_base + offs_pos[:, None] * stride_kv_pos + offs_d[None, :] * stride_kv_d,
+            mask=pos_mask[:, None] & d_mask[None, :],
+            other=0.0,
+        ).to(tl.float32)
+
+        # Compute attention scores: [block_size]
+        # score[i] = sum_d q[d] * k[i, d]
+        scores = tl.sum(q[None, :] * k, axis=1) * sm_scale
+        scores = tl.where(pos_mask, scores, float("-inf"))
+
+        # Online softmax update
+        block_max = tl.max(scores)
+        m_new = tl.maximum(m_i, block_max)
+        alpha = tl.exp(m_i - m_new)
+        p = tl.exp(scores - m_new)
+
+        l_i = l_i * alpha + tl.sum(tl.where(pos_mask, p, 0.0))
+        o_acc = o_acc * alpha
+
+        # Load V for this block: [block_size, D]
+        v_base = KV_cache_ptr + phys_block * stride_kv_block + 1 * stride_kv_type + kv_head * stride_kv_h
+        v = tl.load(
+            v_base + offs_pos[:, None] * stride_kv_pos + offs_d[None, :] * stride_kv_d,
+            mask=pos_mask[:, None] & d_mask[None, :],
+            other=0.0,
+        ).to(tl.float32)
+
+        # Accumulate: o += sum over pos of p[pos] * v[pos, :]
+        o_acc += tl.sum(p[:, None] * v, axis=0)
+        m_i = m_new
+
+    # Normalize
+    o_acc = o_acc / tl.maximum(l_i, 1e-6)
+
+    # Store output
+    o_ptrs = O_ptr + pid_b * stride_ob + pid_h * stride_oh + offs_d * stride_od
+    tl.store(o_ptrs, o_acc.to(tl.float16), mask=d_mask)
+
+
+def {{ kernel_name }}(
+    Q: torch.Tensor,
+    kv_cache: torch.Tensor,
+    block_tables: torch.Tensor,
+    context_lens: torch.Tensor,
+) -> torch.Tensor:
+    """Paged attention (vLLM style).
+
+    Args:
+        Q: [B, H, D] — query (one token per sequence, decoding phase)
+        kv_cache: [num_blocks, 2, Hkv, block_size, D]
+        block_tables: [B, max_blocks] (int32)
+        context_lens: [B] (int32) — actual context length per sequence
+
+    Returns:
+        O: [B, H, D]
+    """
+    B, H, D = Q.shape
+    num_blocks_total, _, num_kv_heads, block_size, D2 = kv_cache.shape
+    assert D == D2
+    max_blocks = block_tables.shape[1]
+    GQA_GROUPS = H // num_kv_heads
+
+    O = torch.empty_like(Q)
+    sm_scale = 1.0 / (D ** 0.5)
+
+    BLOCK_D = triton.next_power_of_2(D)
+    BLOCK_BS = triton.next_power_of_2(block_size)
+
+    grid = (B, H)
+
+    {{ kernel_name }}_kernel[grid](
+        Q, kv_cache, block_tables, context_lens, O,
+        sm_scale,
+        B, H, D, block_size, max_blocks, num_kv_heads,
+        Q.stride(0), Q.stride(1), Q.stride(2),
+        kv_cache.stride(0), kv_cache.stride(1), kv_cache.stride(2),
+        kv_cache.stride(3), kv_cache.stride(4),
+        block_tables.stride(0), block_tables.stride(1),
+        O.stride(0), O.stride(1), O.stride(2),
+        GQA_GROUPS=GQA_GROUPS,
+        BLOCK_D=BLOCK_D,
+        BLOCK_BS=BLOCK_BS,
+        num_warps=4, num_stages=2,
+    )
+    return O

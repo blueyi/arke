@@ -1,0 +1,159 @@
+"""Auto-generated Triton quantization kernel by Arke.
+
+Handles: quantize_per_token, dequantize_per_channel
+Template variable `quant_op` controls the operation.
+
+quantize_per_token: X[M,N] f16/f32 → Y[M,N] int8 + scales[M]
+dequantize_per_channel: X[M,N] int8 + scales[N] → Y[M,N] f16
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+{% if quant_op == "quantize" %}
+@triton.jit
+def {{ kernel_name }}_scale_kernel(
+    X_ptr, Scales_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    BLOCK_N: tl.constexpr,
+):
+    """Compute per-token scale: scales[m] = max(|X[m, :]|) / 127."""
+    pid_m = tl.program_id(0)
+    if pid_m >= M:
+        return
+
+    max_abs = 0.0
+    for n_start in range(0, N, BLOCK_N):
+        offs_n = n_start + tl.arange(0, BLOCK_N)
+        mask = offs_n < N
+        x = tl.load(X_ptr + pid_m * stride_xm + offs_n * stride_xn, mask=mask, other=0.0)
+        x_abs = tl.abs(x.to(tl.float32))
+        max_abs = tl.maximum(max_abs, tl.max(x_abs))
+
+    scale = max_abs / 127.0
+    # Avoid division by zero
+    scale = tl.maximum(scale, 1e-10)
+    tl.store(Scales_ptr + pid_m, scale)
+
+
+@triton.jit
+def {{ kernel_name }}_quant_kernel(
+    X_ptr, Scales_ptr, Y_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    stride_ym, stride_yn,
+    BLOCK_N: tl.constexpr,
+):
+    """Quantize: Y[m,n] = round(X[m,n] / scale[m])."""
+    pid_m = tl.program_id(0)
+    pid_n = tl.program_id(1)
+
+    if pid_m >= M:
+        return
+
+    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+    mask = offs_n < N
+
+    scale = tl.load(Scales_ptr + pid_m)
+    x = tl.load(X_ptr + pid_m * stride_xm + offs_n * stride_xn, mask=mask, other=0.0)
+
+    # Quantize to int8 range [-127, 127]
+    x_f32 = x.to(tl.float32)
+    q = tl.math.nearbyint(x_f32 / scale)
+    q = tl.maximum(tl.minimum(q, 127.0), -127.0)
+
+    tl.store(Y_ptr + pid_m * stride_ym + offs_n * stride_yn, q.to(tl.int8), mask=mask)
+
+
+def {{ kernel_name }}(X: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Quantize per token: X[M,N] → (Y_int8[M,N], scales[M]).
+
+    Each row is quantized independently.
+    """
+    assert X.ndim == 2
+    M, N = X.shape
+    scales = torch.empty(M, device=X.device, dtype=torch.float32)
+    Y = torch.empty((M, N), device=X.device, dtype=torch.int8)
+
+    BLOCK_N = min(triton.next_power_of_2(N), 4096)
+
+    # Phase 1: compute scales
+    {{ kernel_name }}_scale_kernel[(M,)](
+        X, scales, M, N,
+        X.stride(0), X.stride(1),
+        BLOCK_N=BLOCK_N,
+    )
+
+    # Phase 2: quantize
+    grid = (M, triton.cdiv(N, BLOCK_N))
+    {{ kernel_name }}_quant_kernel[grid](
+        X, scales, Y,
+        M, N,
+        X.stride(0), X.stride(1),
+        Y.stride(0), Y.stride(1),
+        BLOCK_N=BLOCK_N,
+    )
+    return Y, scales
+
+
+{% elif quant_op == "dequantize" %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    X_ptr, Scales_ptr, Y_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    stride_ym, stride_yn,
+    BLOCK_M: tl.constexpr,
+    BLOCK_N: tl.constexpr,
+):
+    """Dequantize per channel: Y[m,n] = X_int8[m,n] * scales[n]."""
+    pid_m = tl.program_id(0)
+    pid_n = tl.program_id(1)
+
+    offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
+    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+
+    mask = (offs_m[:, None] < M) & (offs_n[None, :] < N)
+
+    # Load int8 values
+    x = tl.load(
+        X_ptr + offs_m[:, None] * stride_xm + offs_n[None, :] * stride_xn,
+        mask=mask,
+        other=0,
+    ).to(tl.float32)
+
+    # Load per-channel scales
+    scales = tl.load(Scales_ptr + offs_n, mask=offs_n < N, other=1.0)
+
+    # Dequantize
+    y = x * scales[None, :]
+    y_f16 = y.to(tl.float16)
+
+    tl.store(
+        Y_ptr + offs_m[:, None] * stride_ym + offs_n[None, :] * stride_yn,
+        y_f16,
+        mask=mask,
+    )
+
+
+def {{ kernel_name }}(X: torch.Tensor, scales: torch.Tensor) -> torch.Tensor:
+    """Dequantize per channel: X_int8[M,N] * scales[N] → Y_f16[M,N]."""
+    assert X.ndim == 2
+    M, N = X.shape
+    Y = torch.empty((M, N), device=X.device, dtype=torch.float16)
+
+    BLOCK_M = 32
+    BLOCK_N = min(triton.next_power_of_2(N), 1024)
+    grid = (triton.cdiv(M, BLOCK_M), triton.cdiv(N, BLOCK_N))
+
+    {{ kernel_name }}_kernel[grid](
+        X, scales, Y,
+        M, N,
+        X.stride(0), X.stride(1),
+        Y.stride(0), Y.stride(1),
+        BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N,
+    )
+    return Y
+{% endif %}

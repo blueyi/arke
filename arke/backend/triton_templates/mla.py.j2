@@ -1,0 +1,199 @@
+"""Auto-generated Triton Multi-Latent Attention (MLA) kernel by Arke.
+
+DeepSeek-style MLA:
+  Q[B, H, N, D]
+  KV_compressed[B, S, Dc]  — compressed KV (low-rank)
+  W_uk[Dc, H, D]           — up-projection for keys
+  W_uv[Dc, H, D]           — up-projection for values
+
+The kernel first decompresses KV, then performs attention.
+Two-phase approach for clarity:
+  Phase 1: Decompress K, V from compressed representation
+  Phase 2: Standard attention with decompressed K, V
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_decompress_kernel(
+    KVC_ptr, W_ptr, Out_ptr,
+    S, Dc, H, D,
+    stride_kvc_s, stride_kvc_dc,
+    stride_w_dc, stride_w_h, stride_w_d,
+    stride_o_h, stride_o_s, stride_o_d,
+    BLOCK_S: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+    BLOCK_DC: tl.constexpr,
+):
+    """Decompress: Out[h, s, d] = sum_dc KVC[s, dc] * W[dc, h, d]."""
+    pid_s = tl.program_id(0)
+    pid_hd = tl.program_id(1)
+    num_d_blocks = tl.cdiv(D, BLOCK_D)
+    pid_h = pid_hd // num_d_blocks
+    pid_d = pid_hd % num_d_blocks
+
+    offs_s = pid_s * BLOCK_S + tl.arange(0, BLOCK_S)
+    offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+
+    mask_s = offs_s < S
+    mask_d = offs_d < D
+
+    acc = tl.zeros((BLOCK_S, BLOCK_D), dtype=tl.float32)
+
+    for dc_start in range(0, Dc, BLOCK_DC):
+        offs_dc = dc_start + tl.arange(0, BLOCK_DC)
+        mask_dc = offs_dc < Dc
+
+        # Load KVC[s, dc]: [BLOCK_S, BLOCK_DC]
+        kvc = tl.load(
+            KVC_ptr + offs_s[:, None] * stride_kvc_s + offs_dc[None, :] * stride_kvc_dc,
+            mask=mask_s[:, None] & mask_dc[None, :],
+            other=0.0,
+        ).to(tl.float32)
+
+        # Load W[dc, h, d]: [BLOCK_DC, BLOCK_D]
+        w = tl.load(
+            W_ptr + offs_dc[:, None] * stride_w_dc + pid_h * stride_w_h + offs_d[None, :] * stride_w_d,
+            mask=mask_dc[:, None] & mask_d[None, :],
+            other=0.0,
+        ).to(tl.float32)
+
+        acc += tl.dot(kvc, w)
+
+    # Store Out[h, s, d]
+    out_ptrs = Out_ptr + pid_h * stride_o_h + offs_s[:, None] * stride_o_s + offs_d[None, :] * stride_o_d
+    mask = mask_s[:, None] & mask_d[None, :]
+    tl.store(out_ptrs, acc.to(tl.float16), mask=mask)
+
+
+@triton.jit
+def {{ kernel_name }}_attn_kernel(
+    Q_ptr, K_ptr, V_ptr, O_ptr,
+    sm_scale,
+    H, N, S, D,
+    stride_qh, stride_qn, stride_qd,
+    stride_kh, stride_ks, stride_kd,
+    stride_vh, stride_vs, stride_vd,
+    stride_oh, stride_on, stride_od,
+    BLOCK_N: tl.constexpr,
+    BLOCK_S: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+):
+    """Standard attention on decompressed K, V (single batch element)."""
+    pid_n = tl.program_id(0)
+    pid_h = tl.program_id(1)
+
+    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+    offs_d = tl.arange(0, BLOCK_D)
+
+    q_ptrs = Q_ptr + pid_h * stride_qh + offs_n[:, None] * stride_qn + offs_d[None, :] * stride_qd
+    q_mask = (offs_n[:, None] < N) & (offs_d[None, :] < D)
+    q = tl.load(q_ptrs, mask=q_mask, other=0.0).to(tl.float32)
+
+    m_i = tl.full((BLOCK_N,), float("-inf"), dtype=tl.float32)
+    l_i = tl.zeros((BLOCK_N,), dtype=tl.float32)
+    o_acc = tl.zeros((BLOCK_N, BLOCK_D), dtype=tl.float32)
+
+    for s_start in range(0, S, BLOCK_S):
+        offs_s = s_start + tl.arange(0, BLOCK_S)
+        s_mask = offs_s < S
+
+        k_ptrs = K_ptr + pid_h * stride_kh + offs_s[:, None] * stride_ks + offs_d[None, :] * stride_kd
+        k = tl.load(k_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
+
+        attn = tl.dot(q, tl.trans(k)) * sm_scale
+        attn = tl.where(s_mask[None, :], attn, float("-inf"))
+
+        m_new = tl.maximum(m_i, tl.max(attn, axis=1))
+        alpha = tl.exp(m_i - m_new)
+        p = tl.exp(attn - m_new[:, None])
+        l_i = l_i * alpha + tl.sum(p, axis=1)
+        o_acc = o_acc * alpha[:, None]
+
+        v_ptrs = V_ptr + pid_h * stride_vh + offs_s[:, None] * stride_vs + offs_d[None, :] * stride_vd
+        v = tl.load(v_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
+        o_acc += tl.dot(p.to(v.dtype), v)
+        m_i = m_new
+
+    o_acc = o_acc / l_i[:, None]
+
+    o_ptrs = O_ptr + pid_h * stride_oh + offs_n[:, None] * stride_on + offs_d[None, :] * stride_od
+    o_mask = (offs_n[:, None] < N) & (offs_d[None, :] < D)
+    tl.store(o_ptrs, o_acc.to(tl.float16), mask=o_mask)
+
+
+def {{ kernel_name }}(
+    Q: torch.Tensor,
+    kv_compressed: torch.Tensor,
+    W_uk: torch.Tensor,
+    W_uv: torch.Tensor,
+) -> torch.Tensor:
+    """Multi-Latent Attention (DeepSeek style).
+
+    Args:
+        Q: [B, H, N, D]
+        kv_compressed: [B, S, Dc] — compressed KV
+        W_uk: [Dc, H, D] — key up-projection
+        W_uv: [Dc, H, D] — value up-projection
+
+    Returns:
+        O: [B, H, N, D]
+    """
+    B, H, N, D = Q.shape
+    _, S, Dc = kv_compressed.shape
+    assert D <= 128
+
+    sm_scale = 1.0 / (D ** 0.5)
+    BLOCK_D = triton.next_power_of_2(D)
+    BLOCK_DC = min(triton.next_power_of_2(Dc), 128)
+
+    O = torch.empty_like(Q)
+
+    for b in range(B):
+        # Phase 1: Decompress KV
+        K_decomp = torch.empty((H, S, D), device=Q.device, dtype=Q.dtype)
+        V_decomp = torch.empty((H, S, D), device=Q.device, dtype=Q.dtype)
+
+        BLOCK_S_dec = 32
+        grid_dec = (triton.cdiv(S, BLOCK_S_dec), H * triton.cdiv(D, BLOCK_D))
+
+        # Decompress keys
+        {{ kernel_name }}_decompress_kernel[grid_dec](
+            kv_compressed[b], W_uk, K_decomp,
+            S, Dc, H, D,
+            kv_compressed.stride(1), kv_compressed.stride(2),
+            W_uk.stride(0), W_uk.stride(1), W_uk.stride(2),
+            K_decomp.stride(0), K_decomp.stride(1), K_decomp.stride(2),
+            BLOCK_S=BLOCK_S_dec, BLOCK_D=BLOCK_D, BLOCK_DC=BLOCK_DC,
+        )
+
+        # Decompress values
+        {{ kernel_name }}_decompress_kernel[grid_dec](
+            kv_compressed[b], W_uv, V_decomp,
+            S, Dc, H, D,
+            kv_compressed.stride(1), kv_compressed.stride(2),
+            W_uv.stride(0), W_uv.stride(1), W_uv.stride(2),
+            V_decomp.stride(0), V_decomp.stride(1), V_decomp.stride(2),
+            BLOCK_S=BLOCK_S_dec, BLOCK_D=BLOCK_D, BLOCK_DC=BLOCK_DC,
+        )
+
+        # Phase 2: Attention with decompressed K, V
+        BLOCK_N = 64
+        BLOCK_S_attn = 64
+        grid_attn = (triton.cdiv(N, BLOCK_N), H)
+
+        {{ kernel_name }}_attn_kernel[grid_attn](
+            Q[b], K_decomp, V_decomp, O[b],
+            sm_scale,
+            H, N, S, D,
+            Q.stride(1), Q.stride(2), Q.stride(3),
+            K_decomp.stride(0), K_decomp.stride(1), K_decomp.stride(2),
+            V_decomp.stride(0), V_decomp.stride(1), V_decomp.stride(2),
+            O.stride(1), O.stride(2), O.stride(3),
+            BLOCK_N=BLOCK_N, BLOCK_S=BLOCK_S_attn, BLOCK_D=BLOCK_D,
+            num_warps=4, num_stages=2,
+        )
+
+    return O

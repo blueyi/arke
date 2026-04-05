@@ -1,0 +1,161 @@
+"""Auto-generated Triton FlashAttention kernel by Arke.
+
+Handles: flash_attention, grouped_query_attention, cross_attention
+Template variables:
+  - causal (bool): apply causal mask
+  - gqa_groups (int): GQA group count (1=MHA, >1=GQA). KV heads = Q heads / gqa_groups
+
+Standard FlashAttention-2 tiled algorithm:
+  Q[B, H, N, D], K[B, Hkv, S, D], V[B, Hkv, S, D] → O[B, H, N, D]
+
+Outer loop over Q blocks, inner loop over KV blocks.
+"""
+import torch
+import triton
+import triton.language as tl
+
+{% set GQA_GROUPS = gqa_groups | default(1) %}
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Q_ptr, K_ptr, V_ptr, O_ptr,
+    sm_scale,
+    B, H, N, S, D,
+    stride_qb, stride_qh, stride_qn, stride_qd,
+    stride_kb, stride_kh, stride_ks, stride_kd,
+    stride_vb, stride_vh, stride_vs, stride_vd,
+    stride_ob, stride_oh, stride_on, stride_od,
+    GQA_GROUPS: tl.constexpr,
+    CAUSAL: tl.constexpr,
+    BLOCK_N: tl.constexpr,
+    BLOCK_S: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+):
+    """FlashAttention-2 forward pass."""
+    pid_n = tl.program_id(0)   # query block index
+    pid_bh = tl.program_id(1)  # batch * head index
+
+    batch_id = pid_bh // H
+    head_id = pid_bh % H
+    kv_head_id = head_id // GQA_GROUPS
+
+    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+    offs_d = tl.arange(0, BLOCK_D)
+
+    # Load Q block: [BLOCK_N, D]
+    q_ptrs = (Q_ptr
+              + batch_id * stride_qb
+              + head_id * stride_qh
+              + offs_n[:, None] * stride_qn
+              + offs_d[None, :] * stride_qd)
+    q_mask = (offs_n[:, None] < N) & (offs_d[None, :] < D)
+    q = tl.load(q_ptrs, mask=q_mask, other=0.0).to(tl.float32)
+
+    # Accumulators
+    m_i = tl.full((BLOCK_N,), float("-inf"), dtype=tl.float32)  # row max
+    l_i = tl.zeros((BLOCK_N,), dtype=tl.float32)               # row sum
+    o_acc = tl.zeros((BLOCK_N, BLOCK_D), dtype=tl.float32)      # output
+
+    # Determine KV range
+    if CAUSAL:
+        kv_len = tl.minimum(S, (pid_n + 1) * BLOCK_N)
+    else:
+        kv_len = S
+
+    # Inner loop over KV blocks
+    for s_start in range(0, kv_len, BLOCK_S):
+        offs_s = s_start + tl.arange(0, BLOCK_S)
+        s_mask = offs_s < S
+
+        # Load K block: [BLOCK_S, D]
+        k_ptrs = (K_ptr
+                  + batch_id * stride_kb
+                  + kv_head_id * stride_kh
+                  + offs_s[:, None] * stride_ks
+                  + offs_d[None, :] * stride_kd)
+        k = tl.load(k_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
+
+        # S = Q @ K^T * sm_scale: [BLOCK_N, BLOCK_S]
+        attn = tl.dot(q, tl.trans(k)) * sm_scale
+
+        # Causal mask
+        if CAUSAL:
+            causal_mask = offs_n[:, None] >= offs_s[None, :]
+            attn = tl.where(causal_mask & s_mask[None, :], attn, float("-inf"))
+        else:
+            attn = tl.where(s_mask[None, :], attn, float("-inf"))
+
+        # Online softmax update
+        m_new = tl.maximum(m_i, tl.max(attn, axis=1))
+        alpha = tl.exp(m_i - m_new)
+        p = tl.exp(attn - m_new[:, None])
+
+        l_i = l_i * alpha + tl.sum(p, axis=1)
+        o_acc = o_acc * alpha[:, None]
+
+        # Load V block: [BLOCK_S, D]
+        v_ptrs = (V_ptr
+                  + batch_id * stride_vb
+                  + kv_head_id * stride_vh
+                  + offs_s[:, None] * stride_vs
+                  + offs_d[None, :] * stride_vd)
+        v = tl.load(v_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
+
+        # Accumulate: O += P @ V
+        o_acc += tl.dot(p.to(v.dtype), v)
+        m_i = m_new
+
+    # Normalize
+    o_acc = o_acc / l_i[:, None]
+
+    # Store output
+    o_ptrs = (O_ptr
+              + batch_id * stride_ob
+              + head_id * stride_oh
+              + offs_n[:, None] * stride_on
+              + offs_d[None, :] * stride_od)
+    o_mask = (offs_n[:, None] < N) & (offs_d[None, :] < D)
+    tl.store(o_ptrs, o_acc.to(tl.float16), mask=o_mask)
+
+
+def {{ kernel_name }}(
+    Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor
+) -> torch.Tensor:
+    """FlashAttention-2 forward.
+
+    Args:
+        Q: [B, H, N, D]
+        K: [B, Hkv, S, D]
+        V: [B, Hkv, S, D]
+
+    Returns:
+        O: [B, H, N, D]
+    """
+    B, H, N, D = Q.shape
+    _, Hkv, S, _ = K.shape
+
+    assert D <= 128, "head_dim > 128 not supported"
+    O = torch.empty_like(Q)
+
+    sm_scale = 1.0 / (D ** 0.5)
+
+    BLOCK_N = 64
+    BLOCK_S = 64
+    BLOCK_D = triton.next_power_of_2(D)
+
+    grid = (triton.cdiv(N, BLOCK_N), B * H)
+
+    {{ kernel_name }}_kernel[grid](
+        Q, K, V, O,
+        sm_scale,
+        B, H, N, S, D,
+        Q.stride(0), Q.stride(1), Q.stride(2), Q.stride(3),
+        K.stride(0), K.stride(1), K.stride(2), K.stride(3),
+        V.stride(0), V.stride(1), V.stride(2), V.stride(3),
+        O.stride(0), O.stride(1), O.stride(2), O.stride(3),
+        GQA_GROUPS={{ GQA_GROUPS }},
+        CAUSAL={{ "True" if causal else "False" }},
+        BLOCK_N=BLOCK_N, BLOCK_S=BLOCK_S, BLOCK_D=BLOCK_D,
+        num_warps=4, num_stages=2,
+    )
+    return O

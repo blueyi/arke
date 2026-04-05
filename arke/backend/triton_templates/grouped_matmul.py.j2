@@ -1,0 +1,105 @@
+"""Auto-generated Triton grouped_matmul kernel by Arke.
+
+Handles: grouped_matmul (multiple small GEMMs packed into one kernel launch).
+Each group g: A_g[M_g, K] @ B_g[K, N] → C_g[M_g, N]
+Groups are stacked along M dimension with offsets.
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    A_ptr, B_ptr, C_ptr,
+    group_offsets_ptr,
+    N, K, num_groups,
+    stride_ak, stride_bk, stride_bn,
+    stride_cn,
+    BLOCK_M: tl.constexpr,
+    BLOCK_N: tl.constexpr,
+    BLOCK_K: tl.constexpr,
+):
+    """Grouped matmul: each group has variable M, shared K and N."""
+    pid = tl.program_id(0)
+    pid_n = tl.program_id(1)
+
+    # Binary search for which group this pid_m belongs to
+    # Simple linear scan (groups are typically few)
+    group_start = tl.load(group_offsets_ptr)
+    group_id = 0
+    for g in range(1, 1024):  # max groups
+        if g >= num_groups:
+            break
+        next_start = tl.load(group_offsets_ptr + g)
+        total_blocks = tl.cdiv(next_start - group_start, BLOCK_M)
+        if pid < total_blocks:
+            break
+        pid -= total_blocks
+        group_start = next_start
+        group_id = g
+
+    if group_id < num_groups - 1:
+        group_end = tl.load(group_offsets_ptr + group_id + 1)
+    else:
+        group_end = tl.load(group_offsets_ptr + num_groups)
+
+    M_g = group_end - group_start
+
+    offs_m = pid * BLOCK_M + tl.arange(0, BLOCK_M)
+    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+    offs_k = tl.arange(0, BLOCK_K)
+
+    # A is stacked: A[total_M, K], group g starts at row group_start
+    a_ptrs = A_ptr + (group_start + offs_m[:, None]) * stride_ak + offs_k[None, :]
+    # B is shared or indexed by group: B[K, N] (shared)
+    b_ptrs = B_ptr + offs_k[:, None] * stride_bk + offs_n[None, :] * stride_bn
+
+    acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+
+    for k in range(0, K, BLOCK_K):
+        a = tl.load(a_ptrs, mask=(offs_m[:, None] < M_g) & (offs_k[None, :] < K), other=0.0)
+        b = tl.load(b_ptrs, mask=(offs_k[:, None] < K) & (offs_n[None, :] < N), other=0.0)
+        acc += tl.dot(a, b)
+        a_ptrs += BLOCK_K
+        b_ptrs += BLOCK_K * stride_bk
+        offs_k += BLOCK_K
+
+    c = acc.to(tl.float16)
+    c_ptrs = C_ptr + (group_start + offs_m[:, None]) * stride_cn + offs_n[None, :] 
+    mask = (offs_m[:, None] < M_g) & (offs_n[None, :] < N)
+    tl.store(c_ptrs, c, mask=mask)
+
+
+def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor, group_offsets: torch.Tensor) -> torch.Tensor:
+    """Grouped matmul: A[total_M, K] @ B[K, N] with groups defined by offsets.
+
+    Args:
+        A: [total_M, K] — stacked input matrices
+        B: [K, N] — shared weight matrix
+        group_offsets: [num_groups + 1] — cumulative row offsets (starts with 0)
+
+    Returns:
+        C: [total_M, N]
+    """
+    total_M, K = A.shape
+    K2, N = B.shape
+    assert K == K2
+    num_groups = group_offsets.numel() - 1
+
+    C = torch.empty((total_M, N), device=A.device, dtype=A.dtype)
+
+    BLOCK_M = 64
+    BLOCK_N = 64
+    BLOCK_K = 32
+    grid = (triton.cdiv(total_M, BLOCK_M), triton.cdiv(N, BLOCK_N))
+
+    {{ kernel_name }}_kernel[grid](
+        A, B, C,
+        group_offsets,
+        N, K, num_groups,
+        A.stride(0), B.stride(0), B.stride(1),
+        C.stride(1),
+        BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N, BLOCK_K=BLOCK_K,
+    )
+    return C

@@ -1,0 +1,171 @@
+"""Auto-generated Triton index operations kernel by Arke.
+
+Handles: gather, scatter, embedding
+Template variable `index_op` controls the operation.
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+{% if index_op == "gather" %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Src_ptr, Idx_ptr, Out_ptr,
+    num_indices, D,
+    stride_src_row, stride_src_d,
+    stride_out_row, stride_out_d,
+    BLOCK_D: tl.constexpr,
+    BLOCK_IDX: tl.constexpr,
+):
+    """Gather: Out[i, d] = Src[Idx[i], d] for i in [0, num_indices), d in [0, D)."""
+    pid_row = tl.program_id(0)
+    pid_d = tl.program_id(1)
+
+    offs_row = pid_row * BLOCK_IDX + tl.arange(0, BLOCK_IDX)
+    offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+
+    mask_row = offs_row < num_indices
+    mask_d = offs_d < D
+
+    # Load indices
+    idx = tl.load(Idx_ptr + offs_row, mask=mask_row, other=0)
+
+    # Gather from source
+    src_ptrs = Src_ptr + idx[:, None] * stride_src_row + offs_d[None, :] * stride_src_d
+    mask = mask_row[:, None] & mask_d[None, :]
+    vals = tl.load(src_ptrs, mask=mask, other=0.0)
+
+    # Store to output
+    out_ptrs = Out_ptr + offs_row[:, None] * stride_out_row + offs_d[None, :] * stride_out_d
+    tl.store(out_ptrs, vals, mask=mask)
+
+
+def {{ kernel_name }}(src: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
+    """Gather rows from src using indices: out[i] = src[indices[i]]."""
+    assert src.ndim == 2
+    num_indices = indices.numel()
+    D = src.shape[1]
+    out = torch.empty((num_indices, D), device=src.device, dtype=src.dtype)
+
+    BLOCK_D = min(triton.next_power_of_2(D), 1024)
+    BLOCK_IDX = 32
+    grid = (triton.cdiv(num_indices, BLOCK_IDX), triton.cdiv(D, BLOCK_D))
+
+    {{ kernel_name }}_kernel[grid](
+        src, indices, out,
+        num_indices, D,
+        src.stride(0), src.stride(1),
+        out.stride(0), out.stride(1),
+        BLOCK_D=BLOCK_D, BLOCK_IDX=BLOCK_IDX,
+    )
+    return out
+
+
+{% elif index_op == "scatter" %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Src_ptr, Idx_ptr, Out_ptr,
+    num_indices, D,
+    stride_src_row, stride_src_d,
+    stride_out_row, stride_out_d,
+    BLOCK_D: tl.constexpr,
+    BLOCK_IDX: tl.constexpr,
+):
+    """Scatter: Out[Idx[i], d] = Src[i, d]."""
+    pid_row = tl.program_id(0)
+    pid_d = tl.program_id(1)
+
+    offs_row = pid_row * BLOCK_IDX + tl.arange(0, BLOCK_IDX)
+    offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+
+    mask_row = offs_row < num_indices
+    mask_d = offs_d < D
+
+    # Load indices
+    idx = tl.load(Idx_ptr + offs_row, mask=mask_row, other=0)
+
+    # Load source values
+    src_ptrs = Src_ptr + offs_row[:, None] * stride_src_row + offs_d[None, :] * stride_src_d
+    mask = mask_row[:, None] & mask_d[None, :]
+    vals = tl.load(src_ptrs, mask=mask, other=0.0)
+
+    # Scatter to output
+    out_ptrs = Out_ptr + idx[:, None] * stride_out_row + offs_d[None, :] * stride_out_d
+    tl.store(out_ptrs, vals, mask=mask)
+
+
+def {{ kernel_name }}(src: torch.Tensor, indices: torch.Tensor, out_rows: int) -> torch.Tensor:
+    """Scatter rows from src into output: out[indices[i]] = src[i]."""
+    assert src.ndim == 2
+    num_indices = indices.numel()
+    D = src.shape[1]
+    out = torch.zeros((out_rows, D), device=src.device, dtype=src.dtype)
+
+    BLOCK_D = min(triton.next_power_of_2(D), 1024)
+    BLOCK_IDX = 32
+    grid = (triton.cdiv(num_indices, BLOCK_IDX), triton.cdiv(D, BLOCK_D))
+
+    {{ kernel_name }}_kernel[grid](
+        src, indices, out,
+        num_indices, D,
+        src.stride(0), src.stride(1),
+        out.stride(0), out.stride(1),
+        BLOCK_D=BLOCK_D, BLOCK_IDX=BLOCK_IDX,
+    )
+    return out
+
+
+{% elif index_op == "embedding" %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Table_ptr, Idx_ptr, Out_ptr,
+    num_indices, D,
+    stride_table_row, stride_table_d,
+    stride_out_row, stride_out_d,
+    BLOCK_D: tl.constexpr,
+    BLOCK_IDX: tl.constexpr,
+):
+    """Embedding lookup: Out[i, d] = Table[Idx[i], d]."""
+    pid_row = tl.program_id(0)
+    pid_d = tl.program_id(1)
+
+    offs_row = pid_row * BLOCK_IDX + tl.arange(0, BLOCK_IDX)
+    offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+
+    mask_row = offs_row < num_indices
+    mask_d = offs_d < D
+
+    # Load token indices
+    idx = tl.load(Idx_ptr + offs_row, mask=mask_row, other=0)
+
+    # Gather from embedding table
+    table_ptrs = Table_ptr + idx[:, None] * stride_table_row + offs_d[None, :] * stride_table_d
+    mask = mask_row[:, None] & mask_d[None, :]
+    vals = tl.load(table_ptrs, mask=mask, other=0.0)
+
+    # Store to output
+    out_ptrs = Out_ptr + offs_row[:, None] * stride_out_row + offs_d[None, :] * stride_out_d
+    tl.store(out_ptrs, vals, mask=mask)
+
+
+def {{ kernel_name }}(table: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
+    """Embedding lookup: out[i] = table[indices[i]]."""
+    assert table.ndim == 2
+    V, D = table.shape
+    num_indices = indices.numel()
+    out = torch.empty((num_indices, D), device=table.device, dtype=table.dtype)
+
+    BLOCK_D = min(triton.next_power_of_2(D), 1024)
+    BLOCK_IDX = 32
+    grid = (triton.cdiv(num_indices, BLOCK_IDX), triton.cdiv(D, BLOCK_D))
+
+    {{ kernel_name }}_kernel[grid](
+        table, indices, out,
+        num_indices, D,
+        table.stride(0), table.stride(1),
+        out.stride(0), out.stride(1),
+        BLOCK_D=BLOCK_D, BLOCK_IDX=BLOCK_IDX,
+    )
+    return out
+{% endif %}

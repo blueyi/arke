@@ -1,0 +1,178 @@
+"""Auto-generated Triton cross entropy kernel by Arke.
+
+Handles: cross_entropy, fused_linear_cross_entropy
+Template variable `fused_linear` (bool) controls the variant.
+
+cross_entropy: logits[M, V] + labels[M] → loss[M]
+fused_linear_cross_entropy: hidden[M, D] @ weight[V, D]^T → logits → CE loss
+
+Uses online softmax (numerically stable): log_softmax then nll.
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+{% if fused_linear %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Hidden_ptr, Weight_ptr, Labels_ptr, Loss_ptr,
+    M, D, V,
+    stride_hm, stride_hd,
+    stride_wv, stride_wd,
+    BLOCK_V: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+):
+    """Fused linear + cross entropy: compute logits on-the-fly, then CE loss."""
+    pid_m = tl.program_id(0)
+    if pid_m >= M:
+        return
+
+    label = tl.load(Labels_ptr + pid_m)
+
+    # Load hidden state for this row
+    offs_d = tl.arange(0, BLOCK_D)
+
+    # Compute logits in chunks of BLOCK_V, track running max and sum
+    max_logit = float("-inf")
+    sum_exp = 0.0
+    target_logit = 0.0
+
+    for v_start in range(0, V, BLOCK_V):
+        offs_v = v_start + tl.arange(0, BLOCK_V)
+        mask_v = offs_v < V
+
+        # Compute logits[v] = sum_d hidden[m, d] * weight[v, d]
+        acc = tl.zeros((BLOCK_V,), dtype=tl.float32)
+        for d_start in range(0, D, BLOCK_D):
+            d_offs = d_start + tl.arange(0, BLOCK_D)
+            d_mask = d_offs < D
+
+            h = tl.load(Hidden_ptr + pid_m * stride_hm + d_offs * stride_hd, mask=d_mask, other=0.0)
+            w = tl.load(
+                Weight_ptr + offs_v[:, None] * stride_wv + d_offs[None, :] * stride_wd,
+                mask=mask_v[:, None] & d_mask[None, :],
+                other=0.0,
+            )
+            acc += tl.sum(w * h[None, :], axis=1)
+
+        logits = acc  # [BLOCK_V]
+
+        # Track target logit
+        is_target = offs_v == label
+        target_logit += tl.sum(tl.where(is_target, logits, 0.0))
+
+        # Online softmax: update max and sum_exp
+        chunk_max = tl.max(tl.where(mask_v, logits, float("-inf")))
+        new_max = tl.maximum(max_logit, chunk_max)
+        sum_exp = sum_exp * tl.exp(max_logit - new_max) + tl.sum(
+            tl.where(mask_v, tl.exp(logits - new_max), 0.0)
+        )
+        max_logit = new_max
+
+    # loss = -target_logit + max + log(sum_exp)
+    loss = -target_logit + max_logit + tl.log(sum_exp)
+    tl.store(Loss_ptr + pid_m, loss)
+
+
+def {{ kernel_name }}(
+    hidden: torch.Tensor, weight: torch.Tensor, labels: torch.Tensor
+) -> torch.Tensor:
+    """Fused linear + cross entropy.
+
+    Args:
+        hidden: [M, D]
+        weight: [V, D]
+        labels: [M] (int64)
+
+    Returns:
+        loss: [M]
+    """
+    M, D = hidden.shape
+    V = weight.shape[0]
+    loss = torch.empty(M, device=hidden.device, dtype=torch.float32)
+
+    BLOCK_V = min(triton.next_power_of_2(V), 4096)
+    BLOCK_D = min(triton.next_power_of_2(D), 1024)
+    grid = (M,)
+
+    {{ kernel_name }}_kernel[grid](
+        hidden, weight, labels, loss,
+        M, D, V,
+        hidden.stride(0), hidden.stride(1),
+        weight.stride(0), weight.stride(1),
+        BLOCK_V=BLOCK_V, BLOCK_D=BLOCK_D,
+    )
+    return loss
+
+
+{% else %}
+@triton.jit
+def {{ kernel_name }}_kernel(
+    Logits_ptr, Labels_ptr, Loss_ptr,
+    M, V,
+    stride_lm, stride_lv,
+    BLOCK_V: tl.constexpr,
+):
+    """Cross entropy: loss[m] = -log_softmax(logits[m])[label[m]]."""
+    pid_m = tl.program_id(0)
+    if pid_m >= M:
+        return
+
+    label = tl.load(Labels_ptr + pid_m)
+
+    # Online softmax over vocabulary dimension
+    max_logit = float("-inf")
+    sum_exp = 0.0
+    target_logit = 0.0
+
+    for v_start in range(0, V, BLOCK_V):
+        offs_v = v_start + tl.arange(0, BLOCK_V)
+        mask_v = offs_v < V
+
+        logits = tl.load(
+            Logits_ptr + pid_m * stride_lm + offs_v * stride_lv,
+            mask=mask_v,
+            other=float("-inf"),
+        ).to(tl.float32)
+
+        # Track target logit
+        is_target = offs_v == label
+        target_logit += tl.sum(tl.where(is_target, logits, 0.0))
+
+        # Online softmax
+        chunk_max = tl.max(logits)
+        new_max = tl.maximum(max_logit, chunk_max)
+        sum_exp = sum_exp * tl.exp(max_logit - new_max) + tl.sum(
+            tl.where(mask_v, tl.exp(logits - new_max), 0.0)
+        )
+        max_logit = new_max
+
+    loss = -target_logit + max_logit + tl.log(sum_exp)
+    tl.store(Loss_ptr + pid_m, loss)
+
+
+def {{ kernel_name }}(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    """Cross entropy loss.
+
+    Args:
+        logits: [M, V]
+        labels: [M] (int64)
+
+    Returns:
+        loss: [M]
+    """
+    M, V = logits.shape
+    loss = torch.empty(M, device=logits.device, dtype=torch.float32)
+
+    BLOCK_V = min(triton.next_power_of_2(V), 4096)
+    grid = (M,)
+
+    {{ kernel_name }}_kernel[grid](
+        logits, labels, loss,
+        M, V,
+        logits.stride(0), logits.stride(1),
+        BLOCK_V=BLOCK_V,
+    )
+    return loss
+{% endif %}

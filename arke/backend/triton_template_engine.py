@@ -66,8 +66,56 @@ class TritonTemplateEngine:
         """
         ops = [node.op for node in semantic.nodes]
 
-        if "matmul" in ops or "batch_matmul" in ops:
+        # --- OT4: Attention (check first, most specific) ---
+        if "paged_attention" in ops:
+            return "paged_attention.py.j2", "paged_attention"
+        if "multi_latent_attention" in ops:
+            return "mla.py.j2", "multi_latent_attention"
+        attention_ops = {"flash_attention", "grouped_query_attention", "cross_attention"}
+        if any(op in attention_ops for op in ops):
+            first_attn = next(op for op in ops if op in attention_ops)
+            return "flash_attention.py.j2", first_attn
+
+        # --- OT3: Fused Compound ---
+        gated_ops = {"swiglu", "geglu"}
+        if any(op in gated_ops for op in ops):
+            first_gate = next(op for op in ops if op in gated_ops)
+            return "gated_activation.py.j2", first_gate
+        if "rope" in ops:
+            return "rope.py.j2", "rope"
+        if "fused_linear_cross_entropy" in ops:
+            return "cross_entropy.py.j2", "fused_linear_cross_entropy"
+        if "cross_entropy" in ops:
+            return "cross_entropy.py.j2", "cross_entropy"
+        quant_ops = {"quantize_per_token", "dequantize_per_channel"}
+        if any(op in quant_ops for op in ops):
+            first_quant = next(op for op in ops if op in quant_ops)
+            return "quantize.py.j2", first_quant
+
+        # --- OT2: Data Movement & Dense ---
+        if "grouped_matmul" in ops:
+            return "grouped_matmul.py.j2", "grouped_matmul"
+        if "batch_matmul" in ops:
+            return "batch_matmul.py.j2", "batch_matmul"
+        if "matmul" in ops:
             return "matmul.py.j2", "matmul"
+
+        transpose_ops = {"transpose", "permute", "copy_"}
+        if any(op in transpose_ops for op in ops):
+            first_trans = next(op for op in ops if op in transpose_ops)
+            return "transpose.py.j2", first_trans
+
+        data_move_ops = {"concat", "split"}
+        if any(op in data_move_ops for op in ops):
+            first_dm = next(op for op in ops if op in data_move_ops)
+            return "data_movement.py.j2", first_dm
+
+        index_ops = {"gather", "scatter", "embedding"}
+        if any(op in index_ops for op in ops):
+            first_idx = next(op for op in ops if op in index_ops)
+            return "index_ops.py.j2", first_idx
+
+        # --- OT0/OT1: Existing ops ---
         if "softmax" in ops:
             return "softmax.py.j2", "softmax"
 
@@ -143,6 +191,12 @@ class TritonTemplateEngine:
                 semantic, strategy
             )
             ctx["output_dtype"] = self._resolve_output_dtype(semantic)
+        elif primary_op == "batch_matmul":
+            tile = self._extract_tile_params(strategy)
+            ctx.update(tile)
+        elif primary_op == "grouped_matmul":
+            tile = self._extract_tile_params(strategy)
+            ctx.update(tile)
         elif primary_op == "softmax":
             # softmax template needs kernel_name only; BLOCK_N is computed at runtime
             pass
@@ -162,6 +216,47 @@ class TritonTemplateEngine:
             pass  # cumsum template needs only kernel_name
         elif primary_op == "topk":
             pass  # topk template needs only kernel_name
+        # --- OT2: Data Movement ---
+        elif primary_op in ("transpose", "permute"):
+            ctx["transpose_op"] = primary_op
+        elif primary_op == "copy_":
+            ctx["transpose_op"] = "copy_"
+        elif primary_op == "concat":
+            ctx["data_op"] = "concat"
+        elif primary_op == "split":
+            ctx["data_op"] = "split"
+        elif primary_op == "gather":
+            ctx["index_op"] = "gather"
+        elif primary_op == "scatter":
+            ctx["index_op"] = "scatter"
+        elif primary_op == "embedding":
+            ctx["index_op"] = "embedding"
+        # --- OT3: Fused Compound ---
+        elif primary_op == "swiglu":
+            ctx["gate_activation"] = "silu"
+        elif primary_op == "geglu":
+            ctx["gate_activation"] = "gelu"
+        elif primary_op == "rope":
+            pass  # rope template needs only kernel_name
+        elif primary_op == "cross_entropy":
+            ctx["fused_linear"] = False
+        elif primary_op == "fused_linear_cross_entropy":
+            ctx["fused_linear"] = True
+        elif primary_op == "quantize_per_token":
+            ctx["quant_op"] = "quantize"
+        elif primary_op == "dequantize_per_channel":
+            ctx["quant_op"] = "dequantize"
+        # --- OT4: Attention ---
+        elif primary_op in ("flash_attention", "grouped_query_attention", "cross_attention"):
+            ctx["causal"] = primary_op != "cross_attention"
+            if primary_op == "grouped_query_attention":
+                ctx["gqa_groups"] = self._extract_gqa_groups(strategy)
+            else:
+                ctx["gqa_groups"] = 1
+        elif primary_op == "multi_latent_attention":
+            pass  # mla template needs only kernel_name
+        elif primary_op == "paged_attention":
+            pass  # paged_attention template needs only kernel_name
 
         return ctx
 
@@ -250,6 +345,20 @@ class TritonTemplateEngine:
         return None
 
     # ─── Helpers ───────────────────────────────────────────────
+
+    def _extract_gqa_groups(self, strategy: StrategyIR) -> int:
+        """Extract GQA group count from strategy decisions.
+
+        Looks for a decision with kind='gqa' and params containing 'groups'.
+        Defaults to 1 (standard MHA).
+        """
+        for decision in strategy.decisions:
+            if decision.kind == "gqa":
+                return decision.params.get("groups", 1)
+            # Also check generic params
+            if "gqa_groups" in decision.params:
+                return decision.params["gqa_groups"]
+        return 1
 
     def _resolve_output_dtype(self, semantic: SemanticIR) -> str:
         """Resolve the output dtype for the kernel.

@@ -1,0 +1,72 @@
+"""Auto-generated Triton transpose kernel by Arke.
+
+Handles: transpose, permute, copy_
+Uses tiled approach (BLOCK_M × BLOCK_N) with shared memory to avoid bank conflicts.
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    X_ptr, Y_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    stride_ym, stride_yn,
+    BLOCK_M: tl.constexpr,
+    BLOCK_N: tl.constexpr,
+):
+    """Tiled 2D transpose: X[M, N] → Y[N, M] (or identity copy)."""
+    pid_m = tl.program_id(0)
+    pid_n = tl.program_id(1)
+
+    offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
+    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+
+    mask = (offs_m[:, None] < M) & (offs_n[None, :] < N)
+
+    # Load tile from X[M, N]
+    x_ptrs = X_ptr + offs_m[:, None] * stride_xm + offs_n[None, :] * stride_xn
+    tile = tl.load(x_ptrs, mask=mask, other=0.0)
+
+    {% if transpose_op == "copy_" %}
+    # Identity copy: Y[M, N] = X[M, N]
+    y_ptrs = Y_ptr + offs_m[:, None] * stride_ym + offs_n[None, :] * stride_yn
+    tl.store(y_ptrs, tile, mask=mask)
+    {% else %}
+    # Transpose: Y[N, M] = X[M, N]^T
+    # Write transposed: row=offs_n, col=offs_m
+    out_mask = (offs_n[:, None] < N) & (offs_m[None, :] < M)
+    y_ptrs = Y_ptr + offs_n[:, None] * stride_ym + offs_m[None, :] * stride_yn
+    tl.store(y_ptrs, tl.trans(tile), mask=out_mask)
+    {% endif %}
+
+
+def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
+    """Transpose or copy a 2D tensor.
+
+    For transpose: X[M, N] → Y[N, M]
+    For copy_: X[M, N] → Y[M, N] (contiguous copy)
+    """
+    assert X.ndim == 2, "transpose template expects 2D input"
+    M, N = X.shape
+
+    {% if transpose_op == "copy_" %}
+    Y = torch.empty((M, N), device=X.device, dtype=X.dtype)
+    {% else %}
+    Y = torch.empty((N, M), device=X.device, dtype=X.dtype)
+    {% endif %}
+
+    BLOCK_M = 32
+    BLOCK_N = 32
+    grid = (triton.cdiv(M, BLOCK_M), triton.cdiv(N, BLOCK_N))
+
+    {{ kernel_name }}_kernel[grid](
+        X, Y,
+        M, N,
+        X.stride(0), X.stride(1),
+        Y.stride(0), Y.stride(1),
+        BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N,
+    )
+    return Y
