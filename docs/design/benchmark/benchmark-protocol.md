@@ -288,17 +288,48 @@ The benchmark is the **target state definition** for Arke development.
 
 ### Capability Mapping
 
-| Benchmark Target | Primary Baseline | Arke IR | Template | Strategy |
-|:-----------------|:-----------------|:--------|:---------|:---------|
-| L1 matmul ≥ P0 | cuBLAS | ✅ | ✅ | tile, split-k, swizzle ✅ |
-| L1 softmax ≥ P0 | cuDNN/PyTorch | ✅ | ✅ | rows_per_prog ✅ |
-| L1 layernorm ≥ P0 | cuDNN/PyTorch | ✅ | ⬜ | block_size ⬜ |
-| L1 rmsnorm ≥ P1 | FlagGems | ✅ | ⬜ | block_size ⬜ |
-| L1 swiglu ≥ P1 | Liger | ✅ | ⬜ | — ⬜ |
-| L1 flash_attention ≥ P1 | FlashAttention | ✅ | ⬜ | tiling ⬜ |
-| L2 matmul+gelu ≥ P1 | FlagGems fusion | ✅ | ✅ | fusion decision ✅ |
-| L3/BL6 GPT-2 ≤ eager | E2E eager | ✅ | ✅ | KernelCache ✅ |
-| L3/BL6 LLaMA ≤ eager | E2E eager | partial | ⬜ | Model-specific patch ⬜ |
+> **Legend:** ✅ = done, 🔶 = IR defined but no codegen template, ⬜ = not started
+
+| Benchmark Target | Primary Baseline | IR | Template | Codegen | Strategy |
+|:-----------------|:-----------------|:--:|:--------:|:-------:|:--------:|
+| **OT0 Elementwise** | | | | | |
+| L1 relu | PyTorch `F.relu` (P3) | ✅ | ✅ `elementwise.py.j2` | ✅ | — |
+| L1 gelu | PyTorch `F.gelu` (P3) | ✅ | ✅ `elementwise.py.j2` | ✅ | — |
+| L1 silu | PyTorch `F.silu` (P3) | ✅ | ✅ `elementwise.py.j2` | ✅ | — |
+| L1 add | PyTorch `torch.add` (P3) | ✅ | ✅ `elementwise.py.j2` | ✅ | — |
+| L1 mul | PyTorch `torch.mul` (P3) | ✅ | ✅ `elementwise.py.j2` | ✅ | — |
+| **OT1 Reduction** | | | | | |
+| L1 softmax | cuDNN/PyTorch (P0/P3) | ✅ | ✅ `softmax.py.j2` | ✅ | rows_per_prog ✅ |
+| L1 layernorm | cuDNN/PyTorch (P0/P3) | ✅ | ✅ `layernorm.py.j2` | ✅ | block_size ✅ |
+| L1 rmsnorm | FlagGems (P1) | ✅ | ✅ `layernorm.py.j2` | ✅ | block_size ✅ |
+| L1 rmsnorm_residual | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 reduce_sum | PyTorch (P3) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 reduce_max | PyTorch (P3) | ✅ | 🔶 | ❌ | ⬜ |
+| **OT2 Compute-Dense** | | | | | |
+| L1 matmul ≥ P0 | cuBLAS (P0) | ✅ | ✅ `matmul.py.j2` | ✅ | tile, split-k, swizzle ✅ |
+| L1 batch_matmul ≥ P0 | cuBLAS (P0) | ✅ | ✅ `matmul.py.j2` | ✅ | batch dim ✅ |
+| L1 grouped_matmul | CUTLASS (P0) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 transpose | PyTorch (P3) | ✅ | 🔶 | ❌ | ⬜ |
+| **OT3 Gated Activation** | | | | | |
+| L1 swiglu ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 geglu ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| **OT4 Attention** | | | | | |
+| L1 flash_attention ≥ P1 | FlashAttention (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 grouped_query_attention | FlashAttention (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 multi_latent_attention | DeepSeek ref | ✅ | 🔶 | ❌ | ⬜ |
+| **L2 Fused** | | | | | |
+| L2 matmul+gelu ≥ P1 | FlagGems fusion (P1) | ✅ | ✅ epilogue | ✅ | fusion decision ✅ |
+| L2 matmul+relu ≥ P1 | FlagGems fusion (P1) | ✅ | ✅ epilogue | ✅ | fusion decision ✅ |
+| L2 swiglu ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| **L3/BL6 E2E** | | | | | |
+| GPT-2 ≤ eager | E2E eager | ✅ | ✅ | ✅ | KernelCache ✅ |
+| LLaMA-2 7B ≤ eager | E2E eager | partial | 🔶 | ❌ | ⬜ |
+| DeepSeek-V2 ≤ eager | E2E eager | partial | 🔶 | ❌ | ⬜ |
+
+**Summary:** 11/20 operators have working codegen (Triton template). 9 operators
+(reduce_sum/max, transpose, rmsnorm_residual, grouped_matmul, swiglu, geglu,
+flash_attention, GQA, MLA) have IR + numerical validation but no Triton
+template yet — this is the primary Stage 2 codegen gap.
 
 ---
 
