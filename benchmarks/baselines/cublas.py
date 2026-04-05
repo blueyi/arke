@@ -41,6 +41,14 @@ class CuBLASRunner(BaselineRunner):
         return op in (
             "matmul", "batch_matmul", "softmax", "layernorm",
             "relu", "gelu", "silu", "dropout",
+            # OT0 extensions (cuDNN dispatch)
+            "tanh", "sigmoid", "add", "mul", "neg", "exp", "rsqrt",
+            # OT1 extensions
+            "reduce_sum", "reduce_max", "reduce_mean",
+            # OT2 extensions
+            "transpose",
+            # OT4 (cuDNN flash attention)
+            "flash_attention",
         )
 
     def get_fn(
@@ -89,5 +97,60 @@ class CuBLASRunner(BaselineRunner):
         elif op == "dropout":
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             return lambda: torch.nn.functional.dropout(X, p=0.1, training=True)
+
+        # ── OT0 Elementwise extensions ──
+        elif op == "tanh":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: torch.tanh(X)
+        elif op == "sigmoid":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: torch.sigmoid(X)
+        elif op == "add":
+            A = torch.randn(M, N, device="cuda", dtype=dtype)
+            B = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: A + B
+        elif op == "mul":
+            A = torch.randn(M, N, device="cuda", dtype=dtype)
+            B = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: A * B
+        elif op == "neg":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: -X
+        elif op == "exp":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: torch.exp(X)
+        elif op == "rsqrt":
+            X = torch.randn(M, N, device="cuda", dtype=dtype).abs() + 1e-6
+            return lambda: torch.rsqrt(X)
+
+        # ── OT1 Reduction extensions ──
+        elif op == "reduce_sum":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: X.sum(dim=-1)
+        elif op == "reduce_max":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: X.max(dim=-1).values
+        elif op == "reduce_mean":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: X.mean(dim=-1)
+
+        # ── OT2 extensions ──
+        elif op == "transpose":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            return lambda: X.T.contiguous()
+
+        # ── OT4 cuDNN flash attention ──
+        elif op == "flash_attention":
+            # M=batch*heads, N=seq_len, K=head_dim
+            B_size = max(1, M // 8)  # assume 8 heads
+            H = 8
+            S = N
+            D = max(K, 64)
+            Q = torch.randn(B_size, H, S, D, device="cuda", dtype=dtype)
+            Kk = torch.randn(B_size, H, S, D, device="cuda", dtype=dtype)
+            V = torch.randn(B_size, H, S, D, device="cuda", dtype=dtype)
+            return lambda: torch.nn.functional.scaled_dot_product_attention(
+                Q, Kk, V, is_causal=True
+            )
 
         return None

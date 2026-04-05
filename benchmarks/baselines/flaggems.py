@@ -65,9 +65,17 @@ class FlagGemsRunner(BaselineRunner):
         return _AVAILABLE and torch.cuda.is_available()
 
     def supports(self, op: str) -> bool:
+        # FlagGems overrides ATen dispatch — supports most standard ops
         return op in (
             "matmul", "softmax", "layernorm", "rmsnorm",
             "relu", "gelu", "silu", "dropout",
+            # OT0 elementwise (via ATen override)
+            "tanh", "sigmoid", "add", "mul", "neg", "exp", "rsqrt",
+            "where_", "cast",
+            # OT1 reduction
+            "reduce_sum", "reduce_max", "reduce_mean", "cumsum",
+            # OT2 data movement
+            "batch_matmul", "transpose", "embedding",
         )
 
     def get_fn(
@@ -127,5 +135,88 @@ class FlagGemsRunner(BaselineRunner):
             torch.nn.functional.dropout(X, p=0.1, training=True)
             torch.cuda.synchronize()
             return lambda: torch.nn.functional.dropout(X, p=0.1, training=True)
+
+        elif op == "rmsnorm":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            w = torch.ones(N, device="cuda", dtype=dtype)
+            # FlagGems intercepts the underlying ops
+            eps = 1e-6
+            def _rmsnorm():
+                rms = torch.rsqrt(X.pow(2).mean(-1, keepdim=True) + eps)
+                return X * rms * w
+            _rmsnorm(); torch.cuda.synchronize()
+            return _rmsnorm
+
+        elif op == "tanh":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            torch.tanh(X); torch.cuda.synchronize()
+            return lambda: torch.tanh(X)
+        elif op == "sigmoid":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            torch.sigmoid(X); torch.cuda.synchronize()
+            return lambda: torch.sigmoid(X)
+        elif op == "add":
+            A = torch.randn(M, N, device="cuda", dtype=dtype)
+            B = torch.randn(M, N, device="cuda", dtype=dtype)
+            (A + B); torch.cuda.synchronize()
+            return lambda: A + B
+        elif op == "mul":
+            A = torch.randn(M, N, device="cuda", dtype=dtype)
+            B = torch.randn(M, N, device="cuda", dtype=dtype)
+            (A * B); torch.cuda.synchronize()
+            return lambda: A * B
+        elif op == "neg":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            (-X); torch.cuda.synchronize()
+            return lambda: -X
+        elif op == "exp":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            torch.exp(X); torch.cuda.synchronize()
+            return lambda: torch.exp(X)
+        elif op == "rsqrt":
+            X = torch.randn(M, N, device="cuda", dtype=dtype).abs() + 1e-6
+            torch.rsqrt(X); torch.cuda.synchronize()
+            return lambda: torch.rsqrt(X)
+        elif op == "where_":
+            cond = torch.randn(M, N, device="cuda") > 0
+            A = torch.randn(M, N, device="cuda", dtype=dtype)
+            B = torch.randn(M, N, device="cuda", dtype=dtype)
+            torch.where(cond, A, B); torch.cuda.synchronize()
+            return lambda: torch.where(cond, A, B)
+        elif op == "cast":
+            X = torch.randn(M, N, device="cuda", dtype=torch.float32)
+            X.to(dtype); torch.cuda.synchronize()
+            return lambda: X.to(dtype)
+        elif op == "reduce_sum":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            X.sum(dim=-1); torch.cuda.synchronize()
+            return lambda: X.sum(dim=-1)
+        elif op == "reduce_max":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            X.max(dim=-1); torch.cuda.synchronize()
+            return lambda: X.max(dim=-1).values
+        elif op == "reduce_mean":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            X.mean(dim=-1); torch.cuda.synchronize()
+            return lambda: X.mean(dim=-1)
+        elif op == "cumsum":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            torch.cumsum(X, dim=-1); torch.cuda.synchronize()
+            return lambda: torch.cumsum(X, dim=-1)
+        elif op == "batch_matmul":
+            B_size = max(M, 1)
+            A = torch.randn(B_size, N, K, device="cuda", dtype=dtype)
+            Bm = torch.randn(B_size, K, N, device="cuda", dtype=dtype)
+            torch.bmm(A, Bm); torch.cuda.synchronize()
+            return lambda: torch.bmm(A, Bm)
+        elif op == "transpose":
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            X.T.contiguous(); torch.cuda.synchronize()
+            return lambda: X.T.contiguous()
+        elif op == "embedding":
+            weight = torch.randn(M, N, device="cuda", dtype=dtype)
+            indices = torch.randint(0, M, (min(K or 128, M),), device="cuda")
+            torch.nn.functional.embedding(indices, weight); torch.cuda.synchronize()
+            return lambda: torch.nn.functional.embedding(indices, weight)
 
         return None
