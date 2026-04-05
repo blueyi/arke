@@ -12,20 +12,20 @@ automated provenance tracking, and a three-layer evaluation architecture.
 3. [Shape Tier (ST)](#3-shape-tier-st)
 4. [Three-Layer Architecture](#4-three-layer-architecture)
 5. [Baseline Tiers & Operator→Baseline Matrix](#5-baseline-tiers--operatorbaseline-matrix)
-6. [Measurement Protocol](./benchmark-protocol.md#measurement-protocol)
-7. [Scoring System](./benchmark-protocol.md#scoring-system)
-8. [Operator Source Registry](./benchmark-sources.md)
-9. [Output Structure & Provenance](./benchmark-protocol.md#output-structure--provenance-tracking)
-10. [CLI Interface](./benchmark-protocol.md#cli-interface)
-11. [Benchmark-Driven Development](./benchmark-protocol.md#benchmark-driven-development)
-12. [Implementation Status](./benchmark-protocol.md#implementation-status)
-13. [Dependencies](./benchmark-protocol.md#dependencies)
+6. [Measurement Protocol](./benchmark/benchmark-protocol.md#measurement-protocol)
+7. [Scoring System](./benchmark/benchmark-protocol.md#scoring-system)
+8. [Operator Source Registry](./benchmark/benchmark-sources.md)
+9. [Output Structure & Provenance](./benchmark/benchmark-protocol.md#output-structure--provenance-tracking)
+10. [CLI Interface](./benchmark/benchmark-protocol.md#cli-interface)
+11. [Benchmark-Driven Development](./benchmark/benchmark-protocol.md#benchmark-driven-development)
+12. [Implementation Status](./benchmark/benchmark-protocol.md#implementation-status)
+13. [Dependencies](./benchmark/benchmark-protocol.md#dependencies)
 
 **Sub-documents:**
-- [`benchmark-ops.md`](./benchmark-ops.md) — Op Tier definitions, operator catalog, baseline matrix per op
-- [`benchmark-shapes.md`](./benchmark-shapes.md) — Shape Tier definitions, full shape matrices per operator
-- [`benchmark-protocol.md`](./benchmark-protocol.md) — Measurement protocol, scoring, CLI, implementation status
-- [`benchmark-sources.md`](./benchmark-sources.md) — Operator source registry (cuBLAS, FlagGems, Liger, FlashAttn, ...)
+- [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, baseline matrix per op
+- [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md) — Shape Tier definitions, full shape matrices per operator
+- [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md) — Measurement protocol, scoring, CLI, implementation status
+- [`benchmark-sources.md`](./benchmark/benchmark-sources.md) — Operator source registry (cuBLAS, FlagGems, Liger, FlashAttn, ...)
 
 ---
 
@@ -80,7 +80,7 @@ Model-Complete  ──────────────── BL6 ───�
 
 Operators are classified by **computational complexity and kernel design difficulty**.
 
-> Full details: [`benchmark-ops.md`](./benchmark-ops.md)
+> Full details: [`benchmark-ops.md`](./benchmark/benchmark-ops.md)
 
 | Tier | Name | Operators | Core Characteristic |
 |:----:|:-----|:----------|:--------------------|
@@ -102,7 +102,7 @@ Operators are classified by **computational complexity and kernel design difficu
 
 Shapes are classified by **scale, alignment, and production relevance**.
 
-> Full shape matrices: [`benchmark-shapes.md`](./benchmark-shapes.md)
+> Full shape matrices: [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md)
 
 | Tier | Name | Description | Count (approx) |
 |:----:|:-----|:------------|:--------------:|
@@ -224,9 +224,9 @@ Reports: latency (mean/min/max/median), correctness (logit diff, top-1 match), p
 
 ---
 
-*For full shape matrices, see [`benchmark-shapes.md`](./benchmark-shapes.md).*
-*For operator source details and installation, see [`benchmark-sources.md`](./benchmark-sources.md).*
-*For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark-protocol.md).*
+*For full shape matrices, see [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md).*
+*For operator source details and installation, see [`benchmark-sources.md`](./benchmark/benchmark-sources.md).*
+*For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md).*
 
 ---
 
