@@ -40,11 +40,19 @@ BL_DEFAULTS: dict[int, dict] = {
 # ── OT → Operators ──────────────────────────────────────────────────────
 
 OT_OPS: dict[int, list[str]] = {
-    0: ["relu", "gelu", "silu", "add", "mul"],
-    1: ["softmax", "layernorm", "rmsnorm", "rmsnorm_residual", "reduce_sum", "reduce_max"],
-    2: ["matmul", "batch_matmul", "grouped_matmul", "transpose"],
-    3: ["swiglu", "geglu"],
-    4: ["flash_attention", "grouped_query_attention", "multi_latent_attention"],
+    0: ["relu", "gelu", "silu", "tanh", "sigmoid", "add", "mul",
+        "where_", "cast", "neg", "exp", "rsqrt"],
+    1: ["softmax", "layernorm", "rmsnorm", "rmsnorm_residual",
+        "reduce_sum", "reduce_max", "reduce_mean",
+        "argmax", "topk", "cumsum"],
+    2: ["matmul", "batch_matmul", "grouped_matmul", "transpose",
+        "concat", "split", "gather", "scatter",
+        "embedding", "permute", "copy_"],
+    3: ["swiglu", "geglu", "rope",
+        "fused_linear_cross_entropy", "cross_entropy",
+        "quantize_per_token", "dequantize_per_channel"],
+    4: ["flash_attention", "grouped_query_attention", "multi_latent_attention",
+        "cross_attention", "paged_attention"],
 }
 
 

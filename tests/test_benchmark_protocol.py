@@ -163,7 +163,9 @@ class TestOTOpsMapping:
     def test_ot0_elementwise(self):
         from benchmarks.cli import OT_OPS
 
-        assert set(OT_OPS[0]) == {"relu", "gelu", "silu", "add", "mul"}
+        # Core OT0 ops present; check supersets not exact equality (catalog expanded)
+        assert {"relu", "gelu", "silu", "add", "mul"}.issubset(set(OT_OPS[0]))
+        assert {"tanh", "sigmoid", "exp", "rsqrt", "neg", "where_", "cast"}.issubset(set(OT_OPS[0]))
 
     def test_ot1_reduction(self):
         from benchmarks.cli import OT_OPS
@@ -172,23 +174,45 @@ class TestOTOpsMapping:
         assert "layernorm" in OT_OPS[1]
         assert "rmsnorm" in OT_OPS[1]
         assert "reduce_sum" in OT_OPS[1]
+        # new additions
+        assert "topk" in OT_OPS[1]
+        assert "argmax" in OT_OPS[1]
+        assert "cumsum" in OT_OPS[1]
+        assert "reduce_mean" in OT_OPS[1]
 
     def test_ot2_dense(self):
         from benchmarks.cli import OT_OPS
 
         assert "matmul" in OT_OPS[2]
         assert "batch_matmul" in OT_OPS[2]
+        # new data movement ops
+        assert "concat" in OT_OPS[2]
+        assert "gather" in OT_OPS[2]
+        assert "scatter" in OT_OPS[2]
+        assert "embedding" in OT_OPS[2]
+        assert "permute" in OT_OPS[2]
 
     def test_ot3_gated(self):
         from benchmarks.cli import OT_OPS
 
-        assert set(OT_OPS[3]) == {"swiglu", "geglu"}
+        # Original gated activations still present
+        assert "swiglu" in OT_OPS[3]
+        assert "geglu" in OT_OPS[3]
+        # new fused compound ops
+        assert "rope" in OT_OPS[3]
+        assert "cross_entropy" in OT_OPS[3]
+        assert "fused_linear_cross_entropy" in OT_OPS[3]
+        assert "quantize_per_token" in OT_OPS[3]
+        assert "dequantize_per_channel" in OT_OPS[3]
 
     def test_ot4_attention(self):
         from benchmarks.cli import OT_OPS
 
-        expected = {"flash_attention", "grouped_query_attention", "multi_latent_attention"}
-        assert set(OT_OPS[4]) == expected
+        assert {"flash_attention", "grouped_query_attention",
+                "multi_latent_attention"}.issubset(set(OT_OPS[4]))
+        # new attention variants
+        assert "cross_attention" in OT_OPS[4]
+        assert "paged_attention" in OT_OPS[4]
 
     def test_bl2_ops_are_ot0_to_ot2(self):
         """BL2 should only include OT0-OT2 operators."""
@@ -207,19 +231,31 @@ class TestOTOpsMapping:
 
 
 # ============================================================
-# 4. Shapes module: all 20 ops covered
+# 4. Shapes module: all 45 ops covered
 # ============================================================
 
 
 class TestShapesCoverage:
 
     ALL_OPS = [
-        "relu", "gelu", "silu", "add", "mul",
+        # OT0 (12)
+        "relu", "gelu", "silu", "tanh", "sigmoid", "add", "mul",
+        "where_", "cast", "neg", "exp", "rsqrt",
+        # OT1 (10)
         "softmax", "layernorm", "rmsnorm", "rmsnorm_residual",
-        "reduce_sum", "reduce_max",
+        "reduce_sum", "reduce_max", "reduce_mean",
+        "argmax", "topk", "cumsum",
+        # OT2 (11)
         "matmul", "batch_matmul", "grouped_matmul", "transpose",
-        "swiglu", "geglu",
+        "concat", "split", "gather", "scatter",
+        "embedding", "permute", "copy_",
+        # OT3 (7)
+        "swiglu", "geglu", "rope",
+        "fused_linear_cross_entropy", "cross_entropy",
+        "quantize_per_token", "dequantize_per_channel",
+        # OT4 (5)
         "flash_attention", "grouped_query_attention", "multi_latent_attention",
+        "cross_attention", "paged_attention",
     ]
 
     def test_all_ops_have_shapes(self):
@@ -263,7 +299,7 @@ class TestShapesCoverage:
         assert all(s.tier == 4 for s in fa)
 
     def test_op_tier_map_covers_all_ops(self):
-        """OP_TIER dict covers all 20 ops."""
+        """OP_TIER dict covers all 45 ops."""
         from benchmarks.shapes import OP_TIER
 
         for op in self.ALL_OPS:

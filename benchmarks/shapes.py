@@ -303,12 +303,25 @@ MLA_SHAPES: list[AttentionShape] = [
 
 # OT0: Elementwise, OT1: Reduction, OT2: Dense, OT3: Gated, OT4: Attention
 OP_TIER: dict[str, int] = {
-    "relu": 0, "gelu": 0, "silu": 0, "add": 0, "mul": 0,
+    # OT0 — Elementwise (12)
+    "relu": 0, "gelu": 0, "silu": 0, "tanh": 0, "sigmoid": 0,
+    "add": 0, "mul": 0, "where_": 0, "cast": 0,
+    "neg": 0, "exp": 0, "rsqrt": 0,
+    # OT1 — Reduction (10)
     "softmax": 1, "layernorm": 1, "rmsnorm": 1, "rmsnorm_residual": 1,
-    "reduce_sum": 1, "reduce_max": 1,
+    "reduce_sum": 1, "reduce_max": 1, "reduce_mean": 1,
+    "argmax": 1, "topk": 1, "cumsum": 1,
+    # OT2 — Data Movement & Dense (11)
     "matmul": 2, "batch_matmul": 2, "grouped_matmul": 2, "transpose": 2,
-    "swiglu": 3, "geglu": 3,
+    "concat": 2, "split": 2, "gather": 2, "scatter": 2,
+    "embedding": 2, "permute": 2, "copy_": 2,
+    # OT3 — Fused Compound (7)
+    "swiglu": 3, "geglu": 3, "rope": 3,
+    "fused_linear_cross_entropy": 3, "cross_entropy": 3,
+    "quantize_per_token": 3, "dequantize_per_channel": 3,
+    # OT4 — Attention (5)
     "flash_attention": 4, "grouped_query_attention": 4, "multi_latent_attention": 4,
+    "cross_attention": 4, "paged_attention": 4,
 }
 
 
@@ -319,6 +332,20 @@ _SHAPE_MAP: dict[str, str] = {
     "mm": "matmul", "gemm": "matmul",
     "bmm": "batch_matmul",
     "dropout": "relu",  # same elementwise shape
+    "gqa": "grouped_query_attention",
+    "mla": "multi_latent_attention",
+    # OT0 aliases
+    "where": "where_", "to": "cast",
+    # OT1 aliases
+    "mean": "reduce_mean",
+    # OT2 aliases
+    "cat": "concat", "index_select": "gather",
+    "scatter_add": "scatter", "contiguous": "copy_",
+    # OT3 aliases
+    "fused_ce": "fused_linear_cross_entropy", "ce": "cross_entropy",
+    "quantize": "quantize_per_token", "dequantize": "dequantize_per_channel",
+    # OT4 aliases
+    "paged_attn": "paged_attention", "cross_attn": "cross_attention",
 }
 
 def get_shapes(  # noqa: F811 — intentional override of the original above
@@ -326,7 +353,7 @@ def get_shapes(  # noqa: F811 — intentional override of the original above
 ) -> list:
     """Get shapes for an operator, optionally filtered by tier.
 
-    Supports all 20 OP_CATALOG operators.
+    Supports all 45 OP_CATALOG operators (benchmark-ops.md).
 
     Parameters
     ----------
@@ -350,9 +377,11 @@ def get_shapes(  # noqa: F811 — intentional override of the original above
         shapes = SOFTMAX_SHAPES
     elif op in ("layernorm", "rmsnorm", "rmsnorm_residual"):
         shapes = NORM_SHAPES
-    elif op in ("relu", "gelu", "silu", "add", "mul"):
+    elif op in ("relu", "gelu", "silu", "add", "mul",
+                "tanh", "sigmoid", "where_", "cast", "neg", "exp", "rsqrt"):
         shapes = ELEMENTWISE_SHAPES
-    elif op in ("reduce_sum", "reduce_max"):
+    elif op in ("reduce_sum", "reduce_max", "reduce_mean", "argmax",
+                "topk", "cumsum"):
         shapes = REDUCE_SHAPES
     elif op == "transpose":
         shapes = TRANSPOSE_SHAPES
@@ -364,6 +393,25 @@ def get_shapes(  # noqa: F811 — intentional override of the original above
         shapes = GQA_SHAPES
     elif op == "multi_latent_attention":
         shapes = MLA_SHAPES
+    # --- OT2 data movement ops ---
+    elif op in ("concat", "split", "copy_", "permute"):
+        shapes = ELEMENTWISE_SHAPES
+    elif op in ("gather", "scatter"):
+        shapes = REDUCE_SHAPES
+    elif op == "embedding":
+        shapes = MATMUL_SHAPES
+    # --- OT3 fused compound ops ---
+    elif op == "rope":
+        shapes = FLASH_ATTENTION_SHAPES
+    elif op in ("cross_entropy", "fused_linear_cross_entropy"):
+        shapes = MATMUL_SHAPES
+    elif op in ("quantize_per_token", "dequantize_per_channel"):
+        shapes = ELEMENTWISE_SHAPES
+    # --- OT4 attention variants ---
+    elif op == "cross_attention":
+        shapes = FLASH_ATTENTION_SHAPES
+    elif op == "paged_attention":
+        shapes = GQA_SHAPES
     else:
         raise ValueError(f"No shape set for op '{op}'")
 
