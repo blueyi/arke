@@ -1,0 +1,16 @@
+# Benchmark dependencies (on top of requirements.txt + GPU deps)
+# Install: pip install -r requirements-benchmark.txt
+
+# GPU runtime (required)
+torch>=2.0
+triton>=2.0
+
+# P1 Expert Triton baselines
+flag-gems>=5.0
+liger-kernel>=0.4
+
+# P1 FlashAttention (requires CUDA build)
+# flash-attn>=2.0  # uncomment if CUDA build available
+
+# Dev / test
+pytest>=7.0

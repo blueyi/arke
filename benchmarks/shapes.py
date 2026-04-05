@@ -148,29 +148,222 @@ ELEMENTWISE_SHAPES: list[Shape2D] = [
 ]
 
 
-def get_shapes(
+
+
+
+# ── New dataclasses for expanded operator coverage ──────────────────────
+
+@dataclass(frozen=True)
+class BatchMatmulShape:
+    """Shape for batch_matmul: [B, M, K] × [B, K, N] → [B, M, N]."""
+    tag: str
+    B: int
+    M: int
+    K: int
+    N: int
+    notes: str = ""
+    tier: int = field(default=1)
+
+
+@dataclass(frozen=True)
+class GroupedMatmulShape:
+    """Shape for grouped_matmul: [B, M, K] × [E, K, N] × indices[B] → [B, M, N]."""
+    tag: str
+    B: int
+    E: int
+    M: int
+    K: int
+    N: int
+    notes: str = ""
+    tier: int = field(default=1)
+
+
+@dataclass(frozen=True)
+class AttentionShape:
+    """Shape for attention ops: Q/K/V [B, H, S, D]."""
+    tag: str
+    B: int
+    H: int
+    S: int
+    D: int
+    Hkv: int | None = None    # GQA: KV heads (< H)
+    D_c: int | None = None    # MLA: KV compressed dim
+    notes: str = ""
+    tier: int = field(default=4)
+
+
+@dataclass(frozen=True)
+class GatedShape:
+    """Shape for gated activations (swiglu, geglu): [seq, ffn×2] → [seq, ffn]."""
+    tag: str
+    seq: int
+    ffn_x2: int  # Input dim = 2 × FFN dim
+    notes: str = ""
+    tier: int = field(default=1)
+
+
+# ── Batch matmul shapes ─────────────────────────────────────────────────
+
+BATCH_MATMUL_SHAPES: list[BatchMatmulShape] = [
+    # Tier 1
+    BatchMatmulShape("gpt2-attn-128", 8, 128, 64, 128, "GPT-2 H=8 seq=128", tier=1),
+    BatchMatmulShape("gpt2-attn-512", 12, 512, 64, 512, "GPT-2 H=12 seq=512", tier=1),
+    # Tier 2
+    BatchMatmulShape("llama-attn-512", 32, 512, 128, 512, "LLaMA-2 7B seq=512", tier=2),
+    BatchMatmulShape("llama-attn-2k", 32, 2048, 128, 2048, "LLaMA-2 7B seq=2k", tier=2),
+    BatchMatmulShape("batched-8", 8, 64, 64, 64, "Batched inference", tier=2),
+    BatchMatmulShape("batched-32", 32, 128, 128, 128, "Batched inference", tier=2),
+    # Tier 3
+    BatchMatmulShape("non-align-1", 7, 127, 65, 129, "Non-aligned all", tier=3),
+    BatchMatmulShape("non-align-2", 15, 513, 129, 513, "Off-by-one", tier=3),
+    BatchMatmulShape("extreme-bsz", 64, 32, 64, 32, "Large batch small seq", tier=3),
+]
+
+# ── Grouped matmul shapes ───────────────────────────────────────────────
+
+GROUPED_MATMUL_SHAPES: list[GroupedMatmulShape] = [
+    # Tier 1
+    GroupedMatmulShape("moe-tiny", 4, 8, 32, 64, 128, "Minimal MoE", tier=1),
+    GroupedMatmulShape("moe-small", 8, 8, 64, 256, 256, "Small MoE", tier=1),
+    # Tier 2
+    GroupedMatmulShape("moe-medium", 16, 8, 128, 768, 3072, "GPT-2 scale MoE", tier=2),
+    # Tier 3
+    GroupedMatmulShape("non-align-1", 7, 8, 127, 769, 769, "Non-aligned dims", tier=3),
+]
+
+# ── Transpose shapes ────────────────────────────────────────────────────
+
+TRANSPOSE_SHAPES: list[Shape2D] = [
+    Shape2D("small", 128, 512, "Typical", tier=1),
+    Shape2D("square-1k", 1024, 1024, "Square", tier=1),
+    Shape2D("llama-kv", 512, 4096, "KV head reshape", tier=2),
+    Shape2D("wide", 64, 8192, "Wide matrix", tier=2),
+    Shape2D("non-align-1", 127, 513, "Off-by-one", tier=3),
+    Shape2D("extreme-tall", 65536, 64, "Extreme aspect ratio", tier=3),
+]
+
+# ── Gated activation shapes (swiglu, geglu) ─────────────────────────────
+
+GATED_SHAPES: list[GatedShape] = [
+    # Tier 1
+    GatedShape("gpt2-sm", 128, 6144, "GPT-2 Small GeGLU", tier=1),
+    # Tier 2
+    GatedShape("llama-7b-512", 512, 22016, "LLaMA-2 7B SwiGLU", tier=2),
+    GatedShape("llama-7b-2k", 2048, 22016, "LLaMA-2 7B SwiGLU long", tier=2),
+    GatedShape("llama3-8b", 512, 28672, "LLaMA-3 8B SwiGLU", tier=2),
+    # Tier 3
+    GatedShape("non-align-1", 127, 6145, "Off-by-one all", tier=3),
+    GatedShape("non-align-2", 333, 22017, "LLaMA FFN+1", tier=3),
+]
+
+# ── Reduce shapes (reduce_sum, reduce_max) ──────────────────────────────
+
+REDUCE_SHAPES: list[Shape2D] = [
+    Shape2D("small", 128, 768, "GPT-2 hidden", tier=1),
+    Shape2D("medium", 128, 4096, "LLaMA hidden", tier=1),
+    Shape2D("large", 1024, 4096, "Stress test", tier=2),
+    Shape2D("wide", 1, 50257, "Vocabulary", tier=2),
+    Shape2D("non-align-1", 127, 769, "Off-by-one", tier=3),
+    Shape2D("non-align-2", 333, 4097, "Off-by-one hidden", tier=3),
+    Shape2D("extreme-tall", 65536, 64, "Many short rows", tier=3),
+]
+
+# ── Attention shapes (flash_attention, GQA, MLA) ────────────────────────
+
+FLASH_ATTENTION_SHAPES: list[AttentionShape] = [
+    AttentionShape("gpt2-sm-128", 1, 12, 128, 64, notes="GPT-2 Small short", tier=4),
+    AttentionShape("gpt2-sm-512", 1, 12, 512, 64, notes="GPT-2 Small", tier=4),
+    AttentionShape("gpt2-sm-1k", 1, 12, 1024, 64, notes="GPT-2 Small max", tier=4),
+    AttentionShape("llama2-7b-512", 1, 32, 512, 128, notes="LLaMA-2 7B typical", tier=4),
+    AttentionShape("llama2-7b-2k", 1, 32, 2048, 128, notes="LLaMA-2 7B max", tier=4),
+    AttentionShape("llama2-7b-4k", 1, 32, 4096, 128, notes="LLaMA-2 7B extended", tier=4),
+    AttentionShape("llama2-7b-batch", 4, 32, 512, 128, notes="LLaMA-2 7B batched", tier=4),
+    AttentionShape("ds-v2-512", 1, 128, 512, 128, notes="DeepSeek-V2 many-head", tier=4),
+    AttentionShape("ds-v2-2k", 1, 128, 2048, 128, notes="DeepSeek-V2", tier=4),
+]
+
+GQA_SHAPES: list[AttentionShape] = [
+    AttentionShape("llama3-8b-512", 1, 32, 512, 128, Hkv=8, notes="GQA 4:1", tier=4),
+    AttentionShape("llama3-8b-2k", 1, 32, 2048, 128, Hkv=8, notes="GQA 4:1", tier=4),
+    AttentionShape("llama3-8b-8k", 1, 32, 8192, 128, Hkv=8, notes="GQA 4:1 max", tier=4),
+    AttentionShape("qwen25-7b-512", 1, 28, 512, 128, Hkv=4, notes="GQA 7:1", tier=4),
+    AttentionShape("qwen25-7b-2k", 1, 28, 2048, 128, Hkv=4, notes="GQA 7:1", tier=4),
+]
+
+MLA_SHAPES: list[AttentionShape] = [
+    AttentionShape("ds-v2-mla-512", 1, 128, 512, 128, D_c=512, notes="DeepSeek-V2", tier=4),
+    AttentionShape("ds-v2-mla-2k", 1, 128, 2048, 128, D_c=512, notes="DeepSeek-V2", tier=4),
+    AttentionShape("ds-v2-mla-4k", 1, 128, 4096, 128, D_c=512, notes="DeepSeek-V2", tier=4),
+    AttentionShape("ds-v3-mla-512", 1, 128, 512, 128, D_c=1024, notes="DeepSeek-V3", tier=4),
+    AttentionShape("ds-v3-mla-2k", 1, 128, 2048, 128, D_c=1024, notes="DeepSeek-V3", tier=4),
+]
+
+
+# ── Operator Tier mapping ───────────────────────────────────────────────
+
+# OT0: Elementwise, OT1: Reduction, OT2: Dense, OT3: Gated, OT4: Attention
+OP_TIER: dict[str, int] = {
+    "relu": 0, "gelu": 0, "silu": 0, "add": 0, "mul": 0,
+    "softmax": 1, "layernorm": 1, "rmsnorm": 1, "rmsnorm_residual": 1,
+    "reduce_sum": 1, "reduce_max": 1,
+    "matmul": 2, "batch_matmul": 2, "grouped_matmul": 2, "transpose": 2,
+    "swiglu": 3, "geglu": 3,
+    "flash_attention": 4, "grouped_query_attention": 4, "multi_latent_attention": 4,
+}
+
+
+# ── Extended get_shapes ─────────────────────────────────────────────────
+
+# Alias map for backward compatibility and flexible naming
+_SHAPE_MAP: dict[str, str] = {
+    "mm": "matmul", "gemm": "matmul",
+    "bmm": "batch_matmul",
+    "dropout": "relu",  # same elementwise shape
+}
+
+def get_shapes(  # noqa: F811 — intentional override of the original above
     op: str, *, tier: int | None = None
-) -> list[MatmulShape] | list[Shape2D]:
+) -> list:
     """Get shapes for an operator, optionally filtered by tier.
+
+    Supports all 20 OP_CATALOG operators.
 
     Parameters
     ----------
     op : str
-        Operator name (e.g. ``"matmul"``, ``"softmax"``).
+        Operator name (e.g. ``"matmul"``, ``"flash_attention"``).
     tier : int, optional
         If given, return shapes with ``shape.tier <= tier``.
-        ``tier=1`` → Tier 1 only, ``tier=2`` → Tier 1+2, ``tier=3`` → all.
+        ``tier=1`` → Tier 1 only, ``tier=2`` → Tier 1+2, etc.
         If *None*, return all shapes regardless of tier.
     """
-    op = op.lower()
-    if op in ("matmul", "batch_matmul", "mm", "gemm"):
+    op = _SHAPE_MAP.get(op.lower(), op.lower())
+
+    shapes: list
+    if op in ("matmul",):
         shapes = MATMUL_SHAPES
-    elif op in ("softmax",):
+    elif op == "batch_matmul":
+        shapes = BATCH_MATMUL_SHAPES
+    elif op == "grouped_matmul":
+        shapes = GROUPED_MATMUL_SHAPES
+    elif op == "softmax":
         shapes = SOFTMAX_SHAPES
-    elif op in ("layernorm", "rmsnorm"):
+    elif op in ("layernorm", "rmsnorm", "rmsnorm_residual"):
         shapes = NORM_SHAPES
-    elif op in ("relu", "gelu", "silu", "dropout"):
+    elif op in ("relu", "gelu", "silu", "add", "mul"):
         shapes = ELEMENTWISE_SHAPES
+    elif op in ("reduce_sum", "reduce_max"):
+        shapes = REDUCE_SHAPES
+    elif op == "transpose":
+        shapes = TRANSPOSE_SHAPES
+    elif op in ("swiglu", "geglu"):
+        shapes = GATED_SHAPES
+    elif op == "flash_attention":
+        shapes = FLASH_ATTENTION_SHAPES
+    elif op == "grouped_query_attention":
+        shapes = GQA_SHAPES
+    elif op == "multi_latent_attention":
+        shapes = MLA_SHAPES
     else:
         raise ValueError(f"No shape set for op '{op}'")
 
