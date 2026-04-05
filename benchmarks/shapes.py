@@ -423,3 +423,170 @@ def get_shapes(  # noqa: F811 — intentional override of the original above
     if tier is not None:
         shapes = [s for s in shapes if s.tier <= tier]
     return shapes
+
+
+# ── Registry override (single source of truth from benchmark-shapes.md) ─────
+# Import parsed shapes; fallback gracefully if shape_registry is unavailable.
+
+_REGISTRY_AVAILABLE = False
+try:
+    from benchmarks.shape_registry import (  # noqa: E402
+        SHAPE_TABLES as _SHAPE_TABLES,
+        TOTAL_SHAPES as _REGISTRY_TOTAL_SHAPES,  # noqa: F401
+        get_registry_shapes_for_op as _get_registry_shapes_for_op,
+    )
+    _REGISTRY_AVAILABLE = True
+except ImportError:
+    pass
+
+
+def _dict_to_shape(op: str, row: dict):
+    """Convert a shape_registry row dict to the appropriate dataclass instance.
+
+    The op determines which dataclass to use.  Unknown ops fall back to
+    ``Shape2D`` (the most generic type).  All conversions are best-effort;
+    missing numeric fields default to 0 rather than raising.
+    """
+    tag = str(row.get("tag", ""))
+    tier_val = row.get("tier")
+    try:
+        t = int(tier_val) if tier_val is not None else 4
+    except (ValueError, TypeError):
+        t = 4
+    notes = str(row.get("notes") or "")
+
+    def _i(key: str, default: int = 0) -> int:
+        v = row.get(key)
+        try:
+            return int(v) if v is not None else default
+        except (ValueError, TypeError):
+            return default
+
+    # Resolve canonical op name
+    canon = _SHAPE_MAP.get(op.lower(), op.lower())
+
+    if canon == "matmul":
+        return MatmulShape(tag=tag, M=_i("m"), N=_i("n"), K=_i("k"), notes=notes, tier=t)
+    elif canon == "batch_matmul":
+        return BatchMatmulShape(tag=tag, B=_i("b"), M=_i("m"), K=_i("k"), N=_i("n"), notes=notes, tier=t)
+    elif canon == "grouped_matmul":
+        return GroupedMatmulShape(tag=tag, B=_i("b"), E=_i("e"), M=_i("m"), K=_i("k"), N=_i("n"), notes=notes, tier=t)
+    elif canon in ("flash_attention", "rope", "cross_attention"):
+        return AttentionShape(tag=tag, B=_i("b"), H=_i("h"), S=_i("s"), D=_i("d"), notes=notes, tier=t)
+    elif canon == "grouped_query_attention":
+        hkv = row.get("hkv")
+        return AttentionShape(tag=tag, B=_i("b"), H=_i("hq"), S=_i("s"), D=_i("d"),
+                              Hkv=int(hkv) if hkv is not None else None, notes=notes, tier=t)
+    elif canon == "multi_latent_attention":
+        d_c = row.get("d_c")
+        return AttentionShape(tag=tag, B=_i("b"), H=_i("h"), S=_i("s"), D=_i("d"),
+                              D_c=int(d_c) if d_c is not None else None, notes=notes, tier=t)
+    elif canon == "paged_attention":
+        # paged_attention has no Hq/Hkv distinction; map to AttentionShape
+        return AttentionShape(tag=tag, B=_i("b"), H=_i("h"), S=_i("context_len"), D=_i("d"),
+                              notes=notes, tier=t)
+    elif canon in ("swiglu", "geglu"):
+        return GatedShape(tag=tag, seq=_i("seq"), ffn_x2=_i("ffn\u00d72"), notes=notes, tier=t)
+    else:
+        # Generic Shape2D: pick M, N heuristically
+        # Most tables have 'm'/'n'; fallback to 'b'/'h' for norm-style, etc.
+        m_key = next((k for k in ("m", "b", "bs") if k in row), None)
+        n_key = next((k for k in ("n", "h", "v") if k in row), None)
+        m = _i(m_key) if m_key else 0
+        n = _i(n_key) if n_key else 0
+        return Shape2D(tag=tag, M=m, N=n, notes=notes, tier=t)
+
+
+def _registry_shapes(op: str, tier: int | None) -> list | None:
+    """Return registry-derived dataclass shapes for *op*, or None if unavailable."""
+    if not _REGISTRY_AVAILABLE:
+        return None
+    canon = _SHAPE_MAP.get(op.lower(), op.lower())
+    rows = _get_registry_shapes_for_op(canon)
+    if not rows:
+        return None
+    shapes = [_dict_to_shape(canon, row) for row in rows]
+    if tier is not None:
+        shapes = [s for s in shapes if s.tier <= tier]
+    return shapes
+
+
+def get_shapes(op: str, *, tier: int | None = None) -> list:  # noqa: F811
+    """Get shapes for an operator, optionally filtered by tier.
+
+    Registry (benchmark-shapes.md) is preferred when available; falls back
+    to hard-coded shapes on import error or missing op.
+
+    Parameters
+    ----------
+    op : str
+        Operator name (e.g. ``"matmul"``, ``"flash_attention"``).
+    tier : int, optional
+        If given, return shapes with ``shape.tier <= tier``.
+        ``tier=1`` → Tier 1 only, ``tier=2`` → Tier 1+2, etc.
+        If *None*, return all shapes regardless of tier.
+    """
+    reg = _registry_shapes(op, tier)
+    if reg is not None:
+        return reg
+    # ── Fallback to hard-coded shapes ──────────────────────────────────
+    return get_shapes.__wrapped__(op, tier=tier)
+
+
+# Wrap the original get_shapes so the registry version can call it.
+get_shapes.__wrapped__ = lambda op, *, tier=None: _hardcoded_get_shapes(op, tier=tier)
+
+
+def _hardcoded_get_shapes(op: str, *, tier: int | None = None) -> list:
+    """Original hard-coded shape routing (fallback when registry unavailable)."""
+    op = _SHAPE_MAP.get(op.lower(), op.lower())
+
+    shapes: list
+    if op in ("matmul",):
+        shapes = MATMUL_SHAPES
+    elif op == "batch_matmul":
+        shapes = BATCH_MATMUL_SHAPES
+    elif op == "grouped_matmul":
+        shapes = GROUPED_MATMUL_SHAPES
+    elif op == "softmax":
+        shapes = SOFTMAX_SHAPES
+    elif op in ("layernorm", "rmsnorm", "rmsnorm_residual"):
+        shapes = NORM_SHAPES
+    elif op in ("relu", "gelu", "silu", "add", "mul",
+                "tanh", "sigmoid", "where_", "cast", "neg", "exp", "rsqrt"):
+        shapes = ELEMENTWISE_SHAPES
+    elif op in ("reduce_sum", "reduce_max", "reduce_mean", "argmax",
+                "topk", "cumsum"):
+        shapes = REDUCE_SHAPES
+    elif op == "transpose":
+        shapes = TRANSPOSE_SHAPES
+    elif op in ("swiglu", "geglu"):
+        shapes = GATED_SHAPES
+    elif op == "flash_attention":
+        shapes = FLASH_ATTENTION_SHAPES
+    elif op == "grouped_query_attention":
+        shapes = GQA_SHAPES
+    elif op == "multi_latent_attention":
+        shapes = MLA_SHAPES
+    elif op in ("concat", "split", "copy_", "permute"):
+        shapes = ELEMENTWISE_SHAPES
+    elif op in ("gather", "scatter"):
+        shapes = REDUCE_SHAPES
+    elif op == "embedding":
+        shapes = MATMUL_SHAPES
+    elif op == "rope":
+        shapes = FLASH_ATTENTION_SHAPES
+    elif op in ("cross_entropy", "fused_linear_cross_entropy"):
+        shapes = MATMUL_SHAPES
+    elif op in ("quantize_per_token", "dequantize_per_channel"):
+        shapes = ELEMENTWISE_SHAPES
+    elif op == "cross_attention":
+        shapes = FLASH_ATTENTION_SHAPES
+    elif op == "paged_attention":
+        shapes = GQA_SHAPES
+    else:
+        raise ValueError(f"No shape set for op '{op}'")
+
+    if tier is not None:
+        shapes = [s for s in shapes if s.tier <= tier]
+    return shapes
