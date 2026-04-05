@@ -9,14 +9,16 @@ Usage:
     writer = PerfCSVWriter("benchmarks/results/stage1/gates/G2/performance/perf_matmul.csv")
     writer.write(PerfRow(
         stage="stage1", gate="G2", run_id="2026-04-05_012345",
-        operator="matmul", category="A", shape_tag="square-1k", shape_tier=2,
+        operator="matmul", op_tier=2, category="A",
+        shape_tag="square-1k", shape_tier=2,
+        benchmark_level=2, eval_layer="L1",
         M=1024, N=1024, K=1024, dtype="f16", backend="nvidia",
         method="arke", latency_us=39.8, correct=True,
         baseline_method="cublas", baseline_latency_us=44.2,
     ))
     writer.close()
 
-See benchmarks/PERF_CSV_SPEC.md for full column specification.
+See docs/design/benchmark/benchmark-csv-spec.md for full column specification.
 """
 
 from __future__ import annotations
@@ -37,12 +39,16 @@ class PerfRow:
     gate: str = ""
     run_id: str = ""
     operator: str = ""
+    op_tier: Optional[int] = None
     category: str = ""
     shape_tag: str = ""
     shape_tier: int = 0
+    benchmark_level: Optional[int] = None
+    eval_layer: Optional[str] = None
     dtype: str = "f16"
     backend: str = "nvidia"
     method: str = ""
+    baseline_tier: Optional[str] = None
     latency_us: float = 0.0
     correct: bool = True
 
@@ -182,7 +188,7 @@ def merge_stage_csvs(stage_dir: str | Path, output: str = "STAGE_PERF_ALL.csv") 
                     field_type = type(getattr(pr, k))
                     if field_type == bool or v in ("TRUE", "FALSE"):
                         setattr(pr, k, v == "TRUE")
-                    elif field_type == int or (field_type == type(None) and k.endswith(("_mb", "_iters", "tier"))):
+                    elif field_type == int or (field_type == type(None) and k.endswith(("_mb", "_iters", "tier", "op_tier", "benchmark_level"))):
                         try:
                             setattr(pr, k, int(v))
                         except ValueError:
