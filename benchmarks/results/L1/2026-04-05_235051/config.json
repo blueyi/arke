@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-04-05_235051",
+  "ops": [
+    "softmax"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1
+}

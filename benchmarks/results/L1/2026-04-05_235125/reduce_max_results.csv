@@ -1,0 +1,7 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+reduce_max,small,128,768,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),182.8,135.5,
+reduce_max,small,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,161.8,21.3,
+reduce_max,medium,128,4096,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),158.1,72.8,
+reduce_max,medium,128,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,143.3,55.3,
+reduce_max,small,128,768,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,151.2,142.3,
+reduce_max,medium,128,4096,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,218.4,120.8,

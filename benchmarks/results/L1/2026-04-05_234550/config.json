@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-04-05_234550",
+  "ops": [
+    "softmax",
+    "layernorm",
+    "rmsnorm",
+    "rmsnorm_residual",
+    "reduce_sum",
+    "reduce_max",
+    "reduce_mean",
+    "argmax",
+    "topk",
+    "cumsum"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2
+}

@@ -1,0 +1,73 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+matmul,tiny,128,128,128,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),74.8,12.3,0.056
+matmul,tiny,128,128,128,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,79.0,16.4,0.053
+matmul,tiny,128,128,128,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,64.8,15.4,0.065
+matmul,tiny,128,128,128,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,272.8,212.0,0.015
+matmul,tiny,128,128,128,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,70.3,55.2,0.060
+matmul,gpt2-c_proj,128,768,768,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),57.7,35.8,2.617
+matmul,gpt2-c_proj,128,768,768,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,65.6,20.5,2.302
+matmul,gpt2-c_proj,128,768,768,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,58.8,75.0,2.566
+matmul,gpt2-c_proj,128,768,768,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,320.3,310.3,0.471
+matmul,gpt2-c_proj,128,768,768,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,72.7,42.0,2.077
+matmul,gpt2-c_attn,128,2304,768,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),53.8,40.8,8.418
+matmul,gpt2-c_attn,128,2304,768,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,67.7,33.8,6.688
+matmul,gpt2-c_attn,128,2304,768,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,55.3,39.8,8.197
+matmul,gpt2-c_attn,128,2304,768,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,339.2,271.6,1.335
+matmul,gpt2-c_attn,128,2304,768,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,70.3,65.5,6.440
+matmul,square-1k,1024,1024,1024,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),138.1,147.5,15.546
+matmul,square-1k,1024,1024,1024,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,145.2,155.6,14.792
+matmul,square-1k,1024,1024,1024,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,145.2,152.5,14.787
+matmul,square-1k,1024,1024,1024,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,328.6,333.8,6.535
+matmul,square-1k,1024,1024,1024,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,142.0,148.5,15.127
+matmul,square-2k,2048,2048,2048,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),1082.9,1033.2,15.864
+matmul,square-2k,2048,2048,2048,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,856.1,798.7,20.068
+matmul,square-2k,2048,2048,2048,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,961.8,915.5,17.863
+matmul,square-2k,2048,2048,2048,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,1128.6,1081.3,15.222
+matmul,square-2k,2048,2048,2048,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,941.8,915.5,18.242
+matmul,square-4k,4096,4096,4096,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),6299.2,6119.4,21.818
+matmul,square-4k,4096,4096,4096,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,6093.1,5885.7,22.557
+matmul,square-4k,4096,4096,4096,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,6238.0,6100.0,22.032
+matmul,square-4k,4096,4096,4096,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,6679.5,6590.3,20.576
+matmul,square-4k,4096,4096,4096,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,6434.6,6308.7,21.359
+matmul,rect-wide,1024,4096,1024,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),447.4,446.5,19.198
+matmul,rect-wide,1024,4096,1024,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,428.3,431.1,20.058
+matmul,rect-wide,1024,4096,1024,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,455.9,461.8,18.843
+matmul,rect-wide,1024,4096,1024,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,534.2,570.4,16.081
+matmul,rect-wide,1024,4096,1024,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,479.4,462.8,17.919
+matmul,rect-tall,4096,1024,1024,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),481.7,475.1,17.834
+matmul,rect-tall,4096,1024,1024,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,450.1,443.4,19.086
+matmul,rect-tall,4096,1024,1024,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,469.6,462.8,18.294
+matmul,rect-tall,4096,1024,1024,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,542.0,607.0,15.850
+matmul,rect-tall,4096,1024,1024,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,464.5,458.8,18.494
+matmul,lm-head-gpt2,128,50257,768,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),1008.0,975.9,9.802
+matmul,lm-head-gpt2,128,50257,768,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,1044.7,960.5,9.458
+matmul,lm-head-gpt2,128,50257,768,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1004.0,911.2,9.842
+matmul,lm-head-gpt2,128,50257,768,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,1545.7,1452.0,6.393
+matmul,lm-head-gpt2,128,50257,768,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,888.1,814.1,11.126
+matmul,llama-q,4096,4096,4096,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),6225.2,6102.0,22.078
+matmul,llama-q,4096,4096,4096,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,6125.3,6032.4,22.438
+matmul,llama-q,4096,4096,4096,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,6271.8,6054.9,21.914
+matmul,llama-q,4096,4096,4096,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,6720.3,6622.1,20.451
+matmul,llama-q,4096,4096,4096,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,6470.3,5871.6,21.242
+matmul,llama-ffn,4096,11008,4096,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),16257.5,15522.8,22.720
+matmul,llama-ffn,4096,11008,4096,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,16498.6,15891.5,22.388
+matmul,llama-ffn,4096,11008,4096,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,16287.5,16225.3,22.678
+matmul,llama-ffn,4096,11008,4096,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,17087.6,17005.4,21.616
+matmul,llama-ffn,4096,11008,4096,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,17151.7,16961.3,21.535
+matmul,seq512,512,2304,768,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),97.2,105.4,18.648
+matmul,seq512,512,2304,768,Triton-Tutorial,2,Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT,95.6,104.4,18.956
+matmul,seq512,512,2304,768,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,96.9,104.4,18.697
+matmul,seq512,512,2304,768,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,319.0,241.7,5.680
+matmul,seq512,512,2304,768,Arke,5,Arke 0.1.0-dev (KernelCache Triton codegen) | https://github.com/arke-ai/arke | License: Apache-2.0,104.9,119.8,17.270
+matmul,tiny,128,128,128,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,55.8,11.6,0.075
+matmul,gpt2-c_proj,128,768,768,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,55.9,17.4,2.700
+matmul,gpt2-c_attn,128,2304,768,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,58.4,53.2,7.763
+matmul,square-1k,1024,1024,1024,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,137.7,146.4,15.595
+matmul,square-2k,2048,2048,2048,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,1097.1,1024.0,15.660
+matmul,square-4k,4096,4096,4096,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,6315.8,6114.3,21.761
+matmul,rect-wide,1024,4096,1024,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,449.9,459.6,19.095
+matmul,rect-tall,4096,1024,1024,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,453.5,452.5,18.941
+matmul,lm-head-gpt2,128,50257,768,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,909.8,852.8,10.860
+matmul,llama-q,4096,4096,4096,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,6335.9,6120.2,21.692
+matmul,llama-ffn,4096,11008,4096,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,16232.8,15854.6,22.754
+matmul,seq512,512,2304,768,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,139.8,118.8,12.963

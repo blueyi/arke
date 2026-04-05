@@ -1,0 +1,10 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+rmsnorm_residual,gpt2-small,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1754.4,752.6,
+rmsnorm_residual,gpt2-ffn,128,3072,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1703.2,848.9,
+rmsnorm_residual,gpt2-medium,128,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1850.1,902.1,
+rmsnorm_residual,llama-7b,128,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1517.9,891.9,
+rmsnorm_residual,llama-13b,128,5120,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1676.0,884.7,
+rmsnorm_residual,llama-long,2048,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1713.7,1047.6,
+rmsnorm_residual,ds-v2,128,5120,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1648.5,941.1,
+rmsnorm_residual,ds-v3,128,7168,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,981.2,729.1,
+rmsnorm_residual,mixtral-ffn,128,14336,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,773.4,499.7,

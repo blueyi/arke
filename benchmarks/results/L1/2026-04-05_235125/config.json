@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-04-05_235125",
+  "ops": [
+    "reduce_sum",
+    "reduce_max",
+    "reduce_mean",
+    "argmax"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1
+}

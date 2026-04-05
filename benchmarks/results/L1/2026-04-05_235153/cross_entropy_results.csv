@@ -1,0 +1,10 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+cross_entropy,tiny,64,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,195.7,166.9,
+cross_entropy,gpt2-seq128,128,50257,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,523.5,496.6,
+cross_entropy,gpt2-seq512,512,50257,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1174.6,1161.2,
+cross_entropy,llama2-seq512,512,32000,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,663.9,653.3,
+cross_entropy,llama2-seq2k,2048,32000,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,2553.4,2549.8,
+cross_entropy,llama3-seq512,512,128256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,2603.5,2584.5,
+cross_entropy,qwen25-seq512,512,151936,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,3049.1,3029.0,
+cross_entropy,ds-v2-seq512,512,102400,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,2049.4,2034.7,
+cross_entropy,batch4-seq512,2048,50257,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,4683.7,4638.7,

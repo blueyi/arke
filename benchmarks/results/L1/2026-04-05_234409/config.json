@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-04-05_234409",
+  "ops": [
+    "relu",
+    "gelu",
+    "silu",
+    "tanh",
+    "sigmoid",
+    "add",
+    "mul",
+    "neg",
+    "exp",
+    "rsqrt"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1
+}
