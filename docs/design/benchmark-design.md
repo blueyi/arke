@@ -20,6 +20,7 @@ automated provenance tracking, and a three-layer evaluation architecture.
 11. [Benchmark-Driven Development](./benchmark/benchmark-protocol.md#benchmark-driven-development)
 12. [Implementation Status](./benchmark/benchmark-protocol.md#implementation-status)
 13. [Dependencies](./benchmark/benchmark-protocol.md#dependencies)
+14. [Op Catalog — Single Source of Truth](#op-catalog--single-source-of-truth)
 
 **Sub-documents** (all in [`benchmark/`](./benchmark/)):
 - [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, per-op baseline selection
@@ -215,6 +216,68 @@ Each operator is benchmarked against multiple baseline tiers, ranked by expected
 *For full shape matrices, see [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md).*
 *For baseline source installation and API details, see [`operator-source-registry.md`](./benchmark/operator-source-registry.md).*
 *For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md).*
+
+---
+
+## Op Catalog — Single Source of Truth
+
+`benchmark-ops.md` is the **authoritative definition** of all operators and their OT tier.
+All code consumes it through `benchmarks/op_registry.py` — no hardcoded op lists anywhere else.
+
+### Data Flow
+
+```
+benchmark-ops.md  ←── edit here to add/remove/move operators
+       │
+       ▼
+benchmarks/op_registry.py     ← parses OT Summary table at import time
+       │                         exports: OT_OPS, OP_TIER, ALL_OPS, TOTAL_OPS
+       │
+       ├──▶ benchmarks/cli.py        (OT_OPS — BL expansion & op filtering)
+       └──▶ benchmarks/shapes.py     (OP_TIER — op→tier mapping)
+
+tests/conftest.py              ← pytest hook, runs on every test session
+       │
+       ├─ snapshot unchanged → silent pass (zero overhead)
+       └─ snapshot changed   → diff report + scripts/sync_ops.py
+                                └─ validates registry + checks shape coverage
+                                └─ updates .benchmark_ops_snapshot.json
+```
+
+### Auto-Sync Behavior
+
+| Scenario | Result |
+|:---------|:-------|
+| `benchmark-ops.md` unchanged | conftest silent; tests run normally |
+| Operator added / removed | conftest prints `Added`/`Removed` diff, runs sync, updates snapshot |
+| Operator moved between tiers | conftest prints `Moved: op(OT0→OT1)`, runs sync |
+| Count declared in md ≠ parsed count | `op_registry` raises `ValueError`; pytest exits with error |
+| New op has no shape route yet | `sync_ops.py` prints `WARNING`; tests continue (fallback shape used) |
+| `arke` not on PATH | Tests use `sys.executable -m arke.cli bench` — always portable |
+
+### Key Files
+
+| File | Role |
+|:-----|:-----|
+| `docs/design/benchmark/benchmark-ops.md` | **Edit this** — OT Summary table is the catalog |
+| `benchmarks/op_registry.py` | Parser + module-level singletons (`OT_OPS`, `OP_TIER`, `ALL_OPS`) |
+| `benchmarks/cli.py` | Imports `OT_OPS` from `op_registry` |
+| `benchmarks/shapes.py` | Imports `OP_TIER` from `op_registry`; routes all 45 ops to shape sets |
+| `tests/conftest.py` | `pytest_configure` hook — detects catalog changes before any test runs |
+| `scripts/sync_ops.py` | Validates registry + shape coverage; called by conftest |
+| `.benchmark_ops_snapshot.json` | Persisted OT catalog hash — change detection baseline |
+
+### How to Add a New Operator
+
+1. Edit `benchmark-ops.md` → add the op to the OT Summary table
+   - Increment the **Count** column for that tier
+   - Add `` `op_name` `` to the Operators cell
+   - Add a full operator spec section in the tier's body
+2. Run `pytest tests/test_benchmark_protocol.py` (or any pytest)
+   - conftest detects the count change, runs `sync_ops.py`
+   - If the op has no shape route: a WARNING is printed
+3. Add a shape route in `benchmarks/shapes.py` `get_shapes()` (map to closest existing shape set)
+4. All other files (`cli.py`, tests) pick up the new op automatically
 
 ---
 

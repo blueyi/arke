@@ -362,10 +362,12 @@ template yet — this is the primary Stage 2 codegen gap.
 | `bench_l3.py` | ✅ | L3 E2E model benchmarks (GPT-2) |
 | `gate.py` | ✅ | Gate verification CLI |
 | `cli.py` | ✅ | Unified CLI entry point |
+| `op_registry.py` | ✅ | Parses benchmark-ops.md → OT_OPS / OP_TIER / ALL_OPS (single source of truth) |
 | `report.py` | ✅ | Markdown report generator |
 | Hardware info | ✅ | `hardware.json` per run |
 | Provenance | ✅ | CSV source column + per-run manifest |
 | BL/OT/ST CLI | ✅ | `arke bench --bl/--ot/--st/--layer` |
+| Op catalog auto-sync | ✅ | `tests/conftest.py` + `scripts/sync_ops.py` detect md changes on every pytest run |
 | Cross-run diff | ⬜ | `arke bench diff` |
 | CI integration | ⬜ | GitHub Actions regression mode |
 
