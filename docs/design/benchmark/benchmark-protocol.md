@@ -368,6 +368,8 @@ template yet — this is the primary Stage 2 codegen gap.
 | Provenance | ✅ | CSV source column + per-run manifest |
 | BL/OT/ST CLI | ✅ | `arke bench --bl/--ot/--st/--layer` |
 | Op catalog auto-sync | ✅ | `tests/conftest.py` + `scripts/sync_ops.py` detect md changes on every pytest run |
+| `shape_registry.py` | ✅ | Parses benchmark-shapes.md → SHAPE_TABLES / SHAPES_BY_TIER / ALL_SHAPE_TAGS (single source of truth) |
+| Shape catalog auto-sync | ✅ | `tests/conftest.py` + `scripts/sync_shapes.py` detect shape changes via SHA-256 tags hash |
 | Cross-run diff | ⬜ | `arke bench diff` |
 | CI integration | ⬜ | GitHub Actions regression mode |
 

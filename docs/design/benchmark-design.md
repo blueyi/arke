@@ -21,6 +21,7 @@ automated provenance tracking, and a three-layer evaluation architecture.
 12. [Implementation Status](./benchmark/benchmark-protocol.md#implementation-status)
 13. [Dependencies](./benchmark/benchmark-protocol.md#dependencies)
 14. [Op Catalog — Single Source of Truth](#op-catalog--single-source-of-truth)
+15. [Shape Catalog — Single Source of Truth](#shape-catalog--single-source-of-truth)
 
 **Sub-documents** (all in [`benchmark/`](./benchmark/)):
 - [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, per-op baseline selection
@@ -276,8 +277,97 @@ tests/conftest.py              ← pytest hook, runs on every test session
 2. Run `pytest tests/test_benchmark_protocol.py` (or any pytest)
    - conftest detects the count change, runs `sync_ops.py`
    - If the op has no shape route: a WARNING is printed
-3. Add a shape route in `benchmarks/shapes.py` `get_shapes()` (map to closest existing shape set)
-4. All other files (`cli.py`, tests) pick up the new op automatically
+3. Add a shape table in `benchmark-shapes.md` (or map to an existing table)
+4. Add a shape route in `benchmarks/shapes.py` `get_shapes()` if needed
+5. All other files (`cli.py`, tests) pick up the new op automatically
+
+---
+
+## Shape Catalog — Single Source of Truth
+
+`benchmark-shapes.md` is the **authoritative definition** of all benchmark shapes and their ST tier.
+All code consumes it through `benchmarks/shape_registry.py` — shapes are parsed from markdown at import time.
+
+### Data Flow
+
+```
+benchmark-shapes.md  ←── edit here to add/remove/modify shapes
+       │
+       ▼
+benchmarks/shape_registry.py   ← parses all markdown tables at import time
+       │                          exports: SHAPE_TABLES, ALL_SHAPE_TAGS,
+       │                                   TOTAL_SHAPES, SHAPES_BY_TIER
+       │
+       └──▶ benchmarks/shapes.py   get_shapes(op) prefers registry data;
+                                   _dict_to_shape() converts rows → dataclass
+                                   hardcoded dataclasses remain as fallback
+
+tests/conftest.py               ← pytest hook (after op catalog check)
+       │
+       ├─ tags_hash unchanged → silent pass (zero overhead)
+       └─ tags_hash changed   → diff report + scripts/sync_shapes.py
+                                 └─ validates registry + checks op coverage
+                                 └─ updates .benchmark_shapes_snapshot.json
+```
+
+### Auto-Sync Behavior
+
+| Scenario | Result |
+|:---------|:-------|
+| `benchmark-shapes.md` unchanged | conftest silent; tests run normally |
+| Shape added / removed | conftest prints `Added`/`Removed` tag diff, runs sync, updates snapshot |
+| Shape table modified (new rows) | tags_hash changes; sync validates and updates snapshot |
+| Markdown format error | `shape_registry` logs warning; fallback to hardcoded shapes |
+| New op has no shape table yet | `sync_shapes.py` prints `WARNING`; get_shapes() falls back to hardcoded route |
+| `shape_registry.py` import fails | `_REGISTRY_AVAILABLE = False`; all shapes served from hardcoded dataclasses |
+
+### Key Files
+
+| File | Role |
+|:-----|:-----|
+| `docs/design/benchmark/benchmark-shapes.md` | **Edit this** — shape tables are the catalog (30 tables, ~358 shapes) |
+| `benchmarks/shape_registry.py` | Parser + module-level singletons (`SHAPE_TABLES`, `SHAPES_BY_TIER`, `ALL_SHAPE_TAGS`) |
+| `benchmarks/shapes.py` | `get_shapes()` prefers registry → fallback to hardcoded; `_dict_to_shape()` converter |
+| `tests/conftest.py` | `pytest_configure` hook — detects shape catalog changes (tags_hash via SHA-256) |
+| `scripts/sync_shapes.py` | Validates registry + per-op coverage; called by conftest |
+| `.benchmark_shapes_snapshot.json` | Persisted tags hash + per-table row counts — change detection baseline |
+
+### How to Add a New Shape
+
+1. Edit `benchmark-shapes.md` → add rows to an existing table (or create a new `###` section)
+   - Include Tag, dimensions, Tier (1–4), Source, and Notes columns
+   - Follow ST1 = power-of-2, ST2 = production, ST3 = non-aligned/stress, ST4 = large-scale
+2. Run `pytest` (any test file)
+   - conftest detects the tags_hash change, runs `sync_shapes.py`
+   - sync validates and updates the snapshot
+3. `get_shapes()` automatically picks up the new shape on next import
+4. No code changes needed unless a completely new table requires a new routing entry
+
+### Combined Architecture
+
+```
+                 ┌─────────────────┐     ┌──────────────────────┐
+                 │ benchmark-ops.md│     │ benchmark-shapes.md  │
+                 │   (45 operators)│     │ (30 tables, 358 shapes)│
+                 └────────┬────────┘     └──────────┬───────────┘
+                          │                         │
+                          ▼                         ▼
+                 op_registry.py            shape_registry.py
+                 OT_OPS, OP_TIER           SHAPE_TABLES, SHAPES_BY_TIER
+                          │                         │
+              ┌───────────┼──────────┐              │
+              ▼           ▼          ▼              ▼
+          cli.py     shapes.py   tests     shapes.py (get_shapes)
+         (OT_OPS)   (OP_TIER)  (ALL_OPS)  (registry → fallback)
+                          │
+                  ┌───────┴───────┐
+                  ▼               ▼
+          conftest.py        conftest.py
+      (ops snapshot)      (shapes snapshot)
+              │                   │
+              ▼                   ▼
+        sync_ops.py         sync_shapes.py
+```
 
 ---
 
