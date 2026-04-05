@@ -25,7 +25,7 @@ automated provenance tracking, and a three-layer evaluation architecture.
 - [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, per-op baseline selection
 - [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md) — Shape Tier definitions, full shape matrices per operator
 - [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md) — Measurement protocol, scoring, CLI, implementation status
-- [`operator-source-registry.md`](./operator-source-registry.md) — Complete baseline source catalog (14 sources: cuBLAS, FlagGems, Liger, FlashAttn, vLLM, ...)
+- [`operator-source-registry.md`](./benchmark/operator-source-registry.md) — Complete baseline source catalog (14 sources: cuBLAS, FlagGems, Liger, FlashAttn, vLLM, ...)
 
 ---
 
@@ -195,7 +195,7 @@ Each operator is benchmarked against multiple baseline tiers, ranked by expected
 | What | Where |
 |:-----|:------|
 | **Per-operator baseline selection** (primary + expert baselines) | [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — each op card lists its P0–P5 mapping |
-| **Source installation, API, version, full op lists** | [`operator-source-registry.md`](./operator-source-registry.md) — complete catalog of all 14 baseline sources |
+| **Source installation, API, version, full op lists** | [`operator-source-registry.md`](./benchmark/operator-source-registry.md) — complete catalog of all 14 baseline sources |
 | **Fused operator baselines** | [`benchmark-ops.md` §OT3/OT4](./benchmark/benchmark-ops.md) + table below |
 
 ### Fused Operator → Baseline Summary (L2)
@@ -212,7 +212,7 @@ Each operator is benchmarked against multiple baseline tiers, ranked by expected
 ---
 
 *For full shape matrices, see [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md).*
-*For baseline source installation and API details, see [`operator-source-registry.md`](./operator-source-registry.md).*
+*For baseline source installation and API details, see [`operator-source-registry.md`](./benchmark/operator-source-registry.md).*
 *For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md).*
 
 ---
