@@ -9,13 +9,21 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                        用户入口（三种方式）                            │
+│                        用户入口（四种方式）                            │
 │                                                                      │
-│  方式 A: CLI               方式 B: Python API       方式 C: .ak 文件  │
-│  arke optimize \           arke.optimize(            kernel matmul(   │
-│    --kernel matmul \         kernel="matmul",          A: Tensor...   │
-│    --shape 1024,512,2048     shape=[1024,512,2048],  ) + strategy {  │
-│    --target ampere           target="ampere")          @rationale... }│
+│  方式 A: 自然语言           方式 B: CLI 参数                          │
+│  arke optimize \           arke optimize \                           │
+│    "写一个高效的矩阵乘法     --kernel matmul \                        │
+│     kernel，支持 f16 和      --shape 1024,512,2048 \                  │
+│     tensor core"              --target ampere                        │
+│    → LLM 生成 .ak           → 系统从算子目录构建 IR                   │
+│                                                                      │
+│  方式 C: .ak 文件           方式 D: Python API                       │
+│  kernel matmul(              arke.optimize(                          │
+│    A: Tensor...                kernel="matmul",                      │
+│  ) + strategy {                shape=[1024,512,2048],                │
+│    @rationale...               target="ampere")                      │
+│  }                                                                   │
 └──────────────────────┬───────────────────────────────────────────────┘
                        │
                        ▼
@@ -72,15 +80,21 @@
 
 ## 二、Phase 1 — 构建 Semantic IR
 
-### 2.1 三种输入路径
+### 2.1 四种输入路径
 
 ```
-路径 A: CLI / Python API（最常用）
+路径 A: 自然语言描述（LLM-Native 入口）
+  用户以自然语言描述需求（中文/英文）
+  → LLM 引擎理解意图 → 自动生成 .ak 文件（kernel + strategy）
+  → Lark Parser → AST → Semantic IR
+  示例：arke optimize "写一个高效的 matmul kernel，1024x512x2048，f16，Ampere"
+
+路径 B: CLI 参数（结构化入口）
   用户指定算子名 + shape + dtype + target
   → 系统从算子目录查找定义
   → 自动构建 Semantic IR
 
-路径 B: .ak 文件
+路径 C: .ak 文件（精确控制）
   用户编写 .ak 语法（kernel + strategy 分离）
   → Lark Parser → AST → Semantic IR
 
@@ -113,10 +127,18 @@ strategy fused_matmul_relu for target("nvidia_ampere") {
 - `strategy` 块：优化决策（"怎么优化"），每个决策附 `@rationale`
 - 分离设计让 LLM 可以只生成 strategy，kernel 由人工或工具生成
 
-路径 C: LLM 自行构建（Agent 模式）
+路径 D: Python API（编程集成）
+  arke.optimize(kernel="matmul", shape=[1024,512,2048], target="ampere")
+  → 系统从算子目录查找定义 → 自动构建 Semantic IR
+
+路径内部: LLM Agent 模式（路径 A/B/C/D 均可触发）
   LLM 调用 create_kernel() tool
   → 系统验证并构建 Semantic IR
 ```
+
+> **路径 A 是 Arke 的 LLM-Native 特色**：用户无需了解算子细节或 .ak 语法，
+> LLM 引擎自动将自然语言意图转化为结构化的 kernel 描述和优化策略。
+> 这也是 G7（Autonomous Engineering）的核心验证目标之一。
 
 ### 2.2 Semantic IR 示例（matmul + relu 融合）
 
@@ -976,7 +998,11 @@ Stage 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L �
 ## 七、数据流总结
 
 ```
-用户输入（CLI / Python API / .ak 文件）
+用户输入（自然语言 / CLI 参数 / .ak 文件 / Python API）
+  │
+  ├── 自然语言 → LLM 生成 .ak       ← LLM-Native 入口
+  ├── CLI/API → 算子目录查找        ← 结构化入口
+  └── .ak 文件 → Lark Parser         ← 精确控制入口
   │
   ▼
 Semantic IR (JSON)                      ← "算什么"（纯语义）
