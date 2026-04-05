@@ -1,7 +1,7 @@
 # Arke — Execution Plan
 
-> Gate 出口标准的权威定义见 `stage1-gate-design.md`（及后续 stage 系列文档）。
-> 本文档记录执行历史、Phase 摘要，以及 Stage 2-4 长期规划。
+> Authoritative Gate exit criteria are defined in `stage1-gate-design.md` (and future stage-N series).
+> This document records execution history, Phase summaries, and long-term Stage 2-4 roadmap.
 
 ## Design Principles
 
@@ -37,11 +37,11 @@
 - G3 ✅ — LLM tool-use → 106% cuBLAS + softmax correct
 - G4 ✅ — Arke vs LLM-direct comparison
 - G5 ✅ (3 known-fail perf) — E2E GPT-2 integration
-- G6 ⬜ — BL5×L1+L2 — Lang & IR 完备性
+- G6 ⬜ — BL5×L1+L2 — Lang & IR Completeness
 - G7 ⬜ — Arke Autonomous Engineering
-- G8 ⬜ — BL6×L3 (4模型) + Stage 1 最终验收
+- G8 ⬜ — BL6×L3 (4 models) + Stage 1 Final Acceptance
 
-→ 详见 [stage1-gate-design.md](stage1-gate-design.md)
+→ Details: [stage1-gate-design.md](stage1-gate-design.md)
 
 ---
 
@@ -131,25 +131,25 @@ v0.1.0 — one-click setup, CI green (3 Python versions), complete docs, reprodu
 
 ## Phase 1.9: Arke Lang & IR Completeness (Gate G6) ⬜
 
-**Gate G6 — BL5×L1+L2** | Arke Lang & IR 完备性验证
+**Gate G6 — BL5×L1+L2** | Arke Lang & IR Completeness Validation
 
-→ 出口标准、能力反推、开发项详见 [stage1-gate-design.md §5](stage1-gate-design.md#5-g6--bl5l1l2lang--ir-完备性当前目标)
+→ Exit criteria, capability backtrack, and dev items: [stage1-gate-design.md §5](stage1-gate-design.md#5-g6--bl5l1l2-lang--ir-completeness-current-target)
 
 ---
 
 ## Phase 1.10: Arke Autonomous Engineering (Gate G7) ⬜
 
-**Gate G7** | 自主 kernel 生成 + 模型 E2E 验证
+**Gate G7** | Autonomous kernel generation + model E2E validation
 
-→ 详见 [stage1-gate-design.md §6](stage1-gate-design.md#6-g7--arke-autonomous-engineering)
+→ Details: [stage1-gate-design.md §6](stage1-gate-design.md#6-g7--arke-autonomous-engineering)
 
 ---
 
 ## Phase 1.11: Stage 1 Final Validation (Gate G8) ⬜
 
-**Gate G8 — BL6×L3 (4模型)** | Stage 1 最终验收
+**Gate G8 — BL6×L3 (4 models)** | Stage 1 Final Acceptance
 
-→ 详见 [stage1-gate-design.md §7](stage1-gate-design.md#7-g8--stage-1-最终验收)
+→ Details: [stage1-gate-design.md §7](stage1-gate-design.md#7-g8--stage-1-final-acceptance)
 
 ---
 
