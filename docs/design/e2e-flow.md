@@ -202,9 +202,7 @@ Semantic IR 构建完成后，系统自动计算特征，作为 LLM 做决策的
 
 ---
 
----
-
-## 1.5 算子覆盖（Operator Tier）
+## 二之二、算子覆盖（Operator Tier）
 
 当前 Arke 覆盖 **45 个算子**，按复杂度分为 5 层（OT0-OT4）：
 
@@ -793,6 +791,25 @@ def patch_model(model, optimized_ops):
     return model
 ```
 
+#### KernelCache（实际集成方式）
+
+Arke 通过 `KernelCache` 管理优化后的 kernel，提供基于算子名 + shape 的自动 dispatch：
+
+```python
+from arke.integration import KernelCache
+
+cache = KernelCache()
+cache.register("matmul", shape=[1024, 1024], kernel_fn=optimized_matmul)
+
+# 模型前向时自动查找并使用缓存的 kernel
+output = cache.dispatch("matmul", A, B)
+```
+
+**未来集成路径（G7/G8 目标）**：
+- 通过 `torch.compile` Inductor backend 可消除 Python dispatch 开销
+- 实现图级 fusion + 缓存 kernel 的零开销调用
+- 支持 `torch.library.custom_op` 注册为原生算子
+
 ### 5.3 整模型端到端流程
 
 ```
@@ -951,9 +968,7 @@ class AgentRunner:
 
 ---
 
----
-
-## 5.5 Benchmark 分层体系与 Gate 系统
+## 六之二、Benchmark 分层体系与 Gate 系统
 
 ### Benchmark Level (BL)
 
@@ -992,7 +1007,7 @@ Stage 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L �
 | G7 | BL5×L1+L2 + BL6×L3 | **Autonomous Engineering**（自主生成 + LLaMA-2/DS-V2） | ⬜ |
 | G8 | BL6×L3 (4模型) | **Stage 1 最终验收** | ⬜ |
 
-→ 详见 [benchmark-design.md](benchmark/benchmark-design.md) | [stage1-gate-design.md](stage1-gate-design.md)
+→ 详见 [benchmark-design.md](benchmark-design.md) | [stage1-gate-design.md](stage1-gate-design.md)
 
 
 ## 七、数据流总结
