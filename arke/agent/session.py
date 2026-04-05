@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from arke.agent.context import format_context_prompt, load_agent_context
 from arke.agent.prompts import build_system_prompt
 from arke.agent.tools_schema import TOOL_METADATA, get_tool_schemas
 from arke.engine.env import ArkeEnv
@@ -125,15 +126,26 @@ class OptimizationSession:
         self._init_messages()
 
     def _init_messages(self) -> None:
-        """Initialize conversation with system prompt."""
+        """Initialize conversation with system prompt + agent context."""
+        # Load agent context files (AGENTS.md, IDENTITY.md, etc.)
+        agent_context = load_agent_context()
+        context_prompt = format_context_prompt(agent_context)
+
+        # Build optimization-specific system prompt
         system_prompt = build_system_prompt(
             hw_profile=self.env.hw_profile,
             budget_decisions=self.budget.max_decisions,
             budget_compiles=self.budget.max_compiles,
             target_performance=self.budget.target_performance,
         )
+
+        # Combine: agent context first, then optimization prompt
+        full_prompt = system_prompt
+        if context_prompt:
+            full_prompt = context_prompt + "\n\n" + system_prompt
+
         self.messages = [
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": full_prompt},
         ]
 
     # ─── Tool dispatch ───
