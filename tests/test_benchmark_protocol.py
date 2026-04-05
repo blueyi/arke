@@ -6,8 +6,7 @@ output structure, and arke bench entry point.
 
 These tests guard the implementation against benchmark-protocol.md.
 
-Convention: all CLI invocations use `arke bench` as the canonical entry
-point. `python -m benchmarks` is only tested for backward compatibility.
+Both `arke bench` and `python -m benchmarks` are supported entry points.
 """
 
 from __future__ import annotations
@@ -475,8 +474,8 @@ class TestArkeBenchCLI:
         assert result.returncode == 0
         assert "--op" in result.stdout
 
-    def test_python_m_benchmarks_compat(self):
-        """`python -m benchmarks` is a compatibility alias for arke bench."""
+    def test_python_m_benchmarks_help(self):
+        """`python -m benchmarks --help` works the same as arke bench --help."""
         result = subprocess.run(
             [sys.executable, "-m", "benchmarks", "--help"],
             capture_output=True, text=True
