@@ -39,7 +39,13 @@ from benchmarks.shapes import (
 
 logger = logging.getLogger(__name__)
 
-ALL_OPS = ["matmul", "softmax", "layernorm", "gelu", "relu", "silu"]
+from benchmarks.op_registry import ALL_OPS as _REGISTRY_OPS
+
+# Use op_registry as the canonical source; fallback to hardcoded if unavailable
+try:
+    ALL_OPS = list(_REGISTRY_OPS)
+except Exception:
+    ALL_OPS = ["matmul", "softmax", "layernorm", "gelu", "relu", "silu"]
 
 
 @dataclass

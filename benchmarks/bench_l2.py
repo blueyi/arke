@@ -30,7 +30,11 @@ from benchmarks.shapes import MATMUL_SHAPES, MatmulShape
 
 logger = logging.getLogger(__name__)
 
-ALL_FUSED_OPS = ["matmul_relu", "matmul_gelu"]
+ALL_FUSED_OPS = [
+    "matmul_relu", "matmul_gelu",
+    "swiglu", "geglu",
+    # Future: rmsnorm_residual, fused_linear_cross_entropy
+]
 
 # ── Fused shapes — reuse matmul shapes ──────────────────────
 
