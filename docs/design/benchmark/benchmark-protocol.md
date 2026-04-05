@@ -365,7 +365,7 @@ template yet — this is the primary Stage 2 codegen gap.
 | `report.py` | ✅ | Markdown report generator |
 | Hardware info | ✅ | `hardware.json` per run |
 | Provenance | ✅ | CSV source column + per-run manifest |
-| BL/OT/ST CLI | ⬜ | `arke bench --bl/--ot/--st/--layer` |
+| BL/OT/ST CLI | ✅ | `arke bench --bl/--ot/--st/--layer` |
 | Cross-run diff | ⬜ | `arke bench diff` |
 | CI integration | ⬜ | GitHub Actions regression mode |
 

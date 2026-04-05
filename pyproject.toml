@@ -57,7 +57,7 @@ Documentation = "https://github.com/arke-lang/arke/tree/main/docs"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["arke*", "arkec*"]
+include = ["arke*", "arkec*", "benchmarks*"]
 
 [project.scripts]
 arke = "arke.cli:main"

@@ -204,8 +204,32 @@ def cmd_optimize(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_bench(argv: list[str]) -> int:
+    """Delegate to benchmarks.cli with the remaining argv."""
+    import sys as _sys
+
+    # Replace sys.argv so benchmarks.cli.main() sees the right args
+    saved = _sys.argv
+    _sys.argv = ["arke bench", *argv]
+    try:
+        from benchmarks.cli import main as bench_main
+
+        bench_main()
+    except SystemExit as e:
+        return e.code if isinstance(e.code, int) else (1 if e.code else 0)
+    finally:
+        _sys.argv = saved
+    return 0
+
+
 def main() -> int:
     """CLI entry point."""
+    # Intercept 'bench' subcommand early so benchmarks.cli owns its own
+    # argparse (including --help).  This avoids the top-level parser
+    # swallowing flags like --help or --bl before bench sees them.
+    if len(sys.argv) > 1 and sys.argv[1] == "bench":
+        return cmd_bench(sys.argv[2:])
+
     parser = argparse.ArgumentParser(
         prog="arke",
         description="Arke — AI-First Kernel Optimization Language",

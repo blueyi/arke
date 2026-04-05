@@ -4,6 +4,7 @@ GPU operator benchmark framework with multi-tier baselines, automated provenance
 and a classification system based on Operator Tier (OT), Shape Tier (ST), and Benchmark Level (BL).
 
 > Design document: [`docs/design/benchmark-design.md`](../docs/design/benchmark-design.md)
+> Protocol: [`docs/design/benchmark/benchmark-protocol.md`](../docs/design/benchmark/benchmark-protocol.md)
 
 ---
 
@@ -14,23 +15,21 @@ and a classification system based on Operator Tier (OT), Shape Tier (ST), and Be
 pip install -r requirements.txt
 pip install -r requirements-benchmark.txt
 
-# Run default benchmark (BL2: basic ops × standard shapes)
-python -m benchmarks
+# Run default benchmark (BL2: OT0-2 × ST1-2, L1)
+arke bench
 
-# Quick smoke test
-python -m benchmarks --bl 1
+# Quick smoke test (<30s)
+arke bench --bl 1
 
-# Full suite (all ops × all shapes)
-python -m benchmarks --bl 5
+# Complete suite (all ops × all shapes, L1+L2)
+arke bench --bl 5
 
-# E2E model validation
-python -m benchmarks --bl 6
+# E2E model validation (L1+L2+L3)
+arke bench --bl 6
+arke bench --bl 6 --model gpt2
 ```
 
-> **Note:** The canonical CLI is `arke bench --bl N` as defined in
-> [benchmark-protocol.md](../docs/design/benchmark/benchmark-protocol.md).
-> `python -m benchmarks` is the current implementation entry point;
-> `arke bench` will be added as an alias in a future release.
+> **Alternative entry point:** `python -m benchmarks` is equivalent to `arke bench`.
 
 ---
 
@@ -39,19 +38,22 @@ python -m benchmarks --bl 6
 | Parameter | Description | Default |
 |:----------|:------------|:--------|
 | `--bl N` | **Benchmark Level** (1–6). Primary control. | `2` |
-| `--ot N,N` | Operator Tier filter (0–4). Overrides BL. | from BL |
-| `--st N,N` | Shape Tier filter (1–4). Overrides BL. | from BL |
-| `--layer L` | Evaluation Layer (L1/L2/L3). Overrides BL. | from BL |
+| `--ot N,N` | Operator Tier filter (0–4, comma-separated). | from BL |
+| `--st N,N` | Shape Tier filter (1–4, comma-separated). | from BL |
+| `--layer L` | Evaluation Layer (L1/L2/L3). | from BL |
 | `--op name` | Specific operator(s), comma-separated. | from OT |
+| `--shapes tag,tag` | Specific shape tags, comma-separated. | all |
+| `--baselines name,name` | Baseline methods (comma-separated, or `all`). | all available |
+| `--model name` | Model for L3/BL6 (e.g. `gpt2`). | — |
 | `--warmup N` | Warmup iterations. | `200` |
 | `--reps N` | Measurement repetitions. | `500` |
-| `--report` | Generate report from existing results. | — |
+| `--seq-len N,N` | Sequence lengths for L3 (comma-separated). | `128,256,512` |
 | `-v` | Verbose output. | — |
 
 ### Benchmark Level Expansion
 
 | BL | Operator Tiers | Shape Tiers | Layers | Time |
-|:--:|:--------------|:-----------|:-------|:-----|
+|:--:|:---------------|:------------|:-------|:-----|
 | 1 | OT0–OT2 | ST1 | L1 | <30s |
 | 2 | OT0–OT2 | ST1–ST2 | L1 | ~5 min |
 | 3 | OT0–OT2 | ST1–ST3 | L1 | ~15 min |
@@ -69,47 +71,65 @@ python -m benchmarks --bl 6
 | 3 | Gated Activation | swiglu, geglu |
 | 4 | Attention | flash_attention, grouped_query_attention, multi_latent_attention |
 
+### Validation Rules
+
+- `--layer L3` automatically implies BL6
+- `--layer L2` requires OT3+ (auto-expanded)
+- `--ot 4` implies ST4 shapes (attention ops)
+
 ---
 
 ## Examples
 
 ```bash
-# Only elementwise operators
-python -m benchmarks --ot 0
+# Filter by Operator Tier
+arke bench --ot 0                           # Elementwise only
+arke bench --ot 2,4                         # Dense + Attention only
+arke bench --bl 5 --ot 4                    # All shapes, attention only
 
-# Only attention operators with production shapes
-python -m benchmarks --ot 4 --st 4
+# Filter by Shape Tier
+arke bench --st 4                           # Production shapes only
+arke bench --bl 3 --st 3                    # Stress shapes only
 
-# Matmul with stress shapes
-python -m benchmarks --op matmul --st 3
+# Filter by specific operator
+arke bench --op matmul                      # All shapes for matmul
+arke bench --op matmul --st 4              # Matmul production shapes
+arke bench --op matmul,softmax --bl 3      # Matmul+softmax stress shapes
 
-# L2 fused operators
-python -m benchmarks --layer L2
+# Specific shapes
+arke bench --op matmul --shapes square-1k,square-4k
 
-# L3 E2E model (GPT-2)
-python -m benchmarks --layer L3
+# Baseline control
+arke bench --baselines cublas,flaggems,arke
+arke bench --baselines all
 
-# Generate report from existing results
-python -m benchmarks --report
+# Report & comparison
+arke bench report                           # Latest results
+arke bench report {run_id}                  # Specific run
+arke bench diff {run_id_1} {run_id_2}       # Compare runs (planned)
+arke bench history --op matmul              # Performance trend (planned)
 ```
 
 ---
 
 ## Output Structure
 
+Each run produces a timestamped directory:
+
 ```
 benchmarks/results/{run_id}/
-├── config.json          # Run configuration (bl, ot, st, layer)
+├── config.json          # Run parameters (bl, ot, st, layer, baselines)
 ├── hardware.json        # GPU, CUDA, PyTorch/Triton versions
 ├── L1/
-│   └── {op}_results.csv
+│   └── OT{n}/
+│       └── perf_{op}.csv
 ├── L2/
-│   └── {fused_op}_results.csv
+│   └── perf_{fused_op}.csv
 ├── L3/
 │   └── {model}/
-│       └── results.csv
+│       └── perf_e2e.csv
+├── summary.json         # Aggregated geomean scores
 ├── PERF_ALL.csv         # Unified CSV (41-column schema)
-├── summary.json         # Aggregated scores
 └── report.md            # Human-readable report
 ```
 
@@ -122,8 +142,7 @@ CSV schema: [`docs/design/benchmark/benchmark-csv-spec.md`](../docs/design/bench
 ```bash
 # Run specific gate
 python -m benchmarks.gate G0 --tier 2
-
-# Run G6 (language completeness)
+python -m benchmarks.gate G3 --tier 2 --live --archive
 python -m benchmarks.gate G6 --tier 2
 ```
 
@@ -131,13 +150,17 @@ python -m benchmarks.gate G6 --tier 2
 
 ## Dependencies
 
-**Core** (in `requirements.txt`):
-- numpy, jinja2, httpx, lark, click, rich
+**Core** (`requirements.txt`):
+numpy, jinja2, httpx, lark, click, rich
 
-**Benchmark** (in `requirements-benchmark.txt`):
-- torch, triton (GPU runtime)
-- flag-gems (P1 Expert Triton baseline)
-- liger-kernel (P1 LLM training kernels)
-- flash-attn (P1 FlashAttention, optional)
+**Benchmark** (`requirements-benchmark.txt`):
+torch, triton, flag-gems, liger-kernel
+
+**Optional:**
+```bash
+pip install flash-attn --no-build-isolation   # FlashAttention (P1)
+pip install triton-kernels                     # HuggingFace community kernels
+pip install nvidia-cutlass                     # CUTLASS C++ GEMM baselines
+```
 
 Missing baselines are gracefully skipped with a warning.
