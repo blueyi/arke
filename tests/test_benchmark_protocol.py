@@ -5,6 +5,9 @@
 output structure, and arke bench entry point.
 
 These tests guard the implementation against benchmark-protocol.md.
+
+Convention: all CLI invocations use `arke bench` as the canonical entry
+point. `python -m benchmarks` is only tested for backward compatibility.
 """
 
 from __future__ import annotations
@@ -420,17 +423,23 @@ class TestOutputStructure:
 
 # ============================================================
 # 6. arke bench CLI entry point
+# All CLI invocations use `arke bench` as the canonical entry point.
 # ============================================================
+
+
+def _arke_bench(*args: str) -> subprocess.CompletedProcess:
+    """Run `arke bench <args>` as a subprocess."""
+    return subprocess.run(
+        ["arke", "bench", *args],
+        capture_output=True, text=True
+    )
 
 
 class TestArkeBenchCLI:
 
     def test_arke_bench_help(self):
         """arke bench --help must exit 0 and mention key parameters."""
-        result = subprocess.run(
-            [sys.executable, "-m", "arke.cli", "bench", "--help"],
-            capture_output=True, text=True
-        )
+        result = _arke_bench("--help")
         assert result.returncode == 0
         out = result.stdout
         assert "--bl" in out
@@ -443,10 +452,7 @@ class TestArkeBenchCLI:
 
     def test_arke_bench_subcommands_present(self):
         """report, diff, history subcommands must appear in help."""
-        result = subprocess.run(
-            [sys.executable, "-m", "arke.cli", "bench", "--help"],
-            capture_output=True, text=True
-        )
+        result = _arke_bench("--help")
         assert result.returncode == 0
         out = result.stdout
         assert "report" in out
@@ -454,32 +460,23 @@ class TestArkeBenchCLI:
         assert "history" in out
 
     def test_arke_bench_report_help(self):
-        result = subprocess.run(
-            [sys.executable, "-m", "arke.cli", "bench", "report", "--help"],
-            capture_output=True, text=True
-        )
+        result = _arke_bench("report", "--help")
         assert result.returncode == 0
         assert "run_id" in result.stdout
 
     def test_arke_bench_diff_help(self):
-        result = subprocess.run(
-            [sys.executable, "-m", "arke.cli", "bench", "diff", "--help"],
-            capture_output=True, text=True
-        )
+        result = _arke_bench("diff", "--help")
         assert result.returncode == 0
         assert "run_id_1" in result.stdout
         assert "run_id_2" in result.stdout
 
     def test_arke_bench_history_help(self):
-        result = subprocess.run(
-            [sys.executable, "-m", "arke.cli", "bench", "history", "--help"],
-            capture_output=True, text=True
-        )
+        result = _arke_bench("history", "--help")
         assert result.returncode == 0
         assert "--op" in result.stdout
 
-    def test_python_m_benchmarks_help(self):
-        """`python -m benchmarks --help` is equivalent to arke bench --help."""
+    def test_python_m_benchmarks_compat(self):
+        """`python -m benchmarks` is a compatibility alias for arke bench."""
         result = subprocess.run(
             [sys.executable, "-m", "benchmarks", "--help"],
             capture_output=True, text=True
@@ -489,20 +486,12 @@ class TestArkeBenchCLI:
 
     def test_arke_bench_diff_stub(self):
         """arke bench diff returns 0 and mentions 'Not yet implemented'."""
-        result = subprocess.run(
-            [sys.executable, "-m", "arke.cli", "bench", "diff",
-             "run_a", "run_b"],
-            capture_output=True, text=True
-        )
+        result = _arke_bench("diff", "run_a", "run_b")
         assert result.returncode == 0
         assert "Not yet implemented" in result.stdout
 
     def test_arke_bench_history_stub(self):
-        result = subprocess.run(
-            [sys.executable, "-m", "arke.cli", "bench", "history",
-             "--op", "matmul"],
-            capture_output=True, text=True
-        )
+        result = _arke_bench("history", "--op", "matmul")
         assert result.returncode == 0
         assert "Not yet implemented" in result.stdout
 
