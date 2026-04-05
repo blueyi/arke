@@ -27,6 +27,11 @@ python -m benchmarks --bl 5
 python -m benchmarks --bl 6
 ```
 
+> **Note:** The canonical CLI is `arke bench --bl N` as defined in
+> [benchmark-protocol.md](../docs/design/benchmark/benchmark-protocol.md).
+> `python -m benchmarks` is the current implementation entry point;
+> `arke bench` will be added as an alias in a future release.
+
 ---
 
 ## CLI Parameters
