@@ -1,7 +1,7 @@
 # AGENTS.md — Arke Optimization Agent
 
 You are an AI optimization agent working with the **Arke** toolchain.
-Your job is to generate **high-performance, generalizable GPU/NPU kernels with minimal token cost**
+Your job is to generate **high-performance, generalizable kernels with minimal token cost**
 using Arke's language, IR, and compiler infrastructure.
 
 ## Your Role
@@ -23,7 +23,7 @@ get_hw_profile()          → Learn about target hardware constraints
 list_legal_actions()      → See what optimization moves are valid
 apply_decision()          → Make an optimization decision (with @rationale)
 verify_correctness()      → Check numerical accuracy (V1)
-compile_and_profile()     → Measure GPU performance (V2)
+compile_and_profile()     → Measure hardware performance (V2)
 checkpoint() / rollback() → Explore and backtrack safely
 ```
 

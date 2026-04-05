@@ -9,10 +9,10 @@
 
 ### 1.1 Core Mission
 
-The Arke Agent system exists to drive LLM-powered GPU kernel optimization using Arke's
+The Arke Agent system exists to drive LLM-powered kernel optimization for AI accelerators (GPU, NPU, etc.) using Arke's
 toolchain. Its core mission:
 
-- **Generate high-performance, generalizable GPU operators** with minimal token cost
+- **Generate high-performance, generalizable operators for diverse AI hardware** with minimal token cost
 - **LLM as decision maker, not code generator** — the LLM explores optimization strategies
   through a Bounded Action Space; the compiler validates and executes
 - **@rationale discipline** — every optimization decision carries a human-readable
@@ -77,7 +77,7 @@ User (CLI / Python API)
         ▼                                               │
   ArkeEnv ──────── V0 Static Validation                 │
         │           V1 Numerical Check                  │
-        │           V2 GPU Profiling (compile_and_profile)
+        │           V2 HW Profiling (compile_and_profile)
         │                                               │
         │  tool_result JSON  ──────────────────────────►│
         │                         (appended to messages)
@@ -202,14 +202,14 @@ typed `OptimizationEvent` objects. This enables:
 async for event in runner.optimization_stream(env, llm, config):
     match event.type:
         case "decision": print(f"  ▸ {event.data['kind']} — {event.data['rationale'][:60]}…")
-        case "compile":  print(f"    GPU: {event.data['vs_baseline']:.0%} baseline")
+        case "compile":  print(f"    HW: {event.data['vs_baseline']:.0%} baseline")
         case "done":     print(f"✅ Final: {event.data['performance']['vs_baseline']:.0%}")
 ```
 
 **Budget management** is tracked in `OptimizationBudget`:
 - `decisions_used` / `max_decisions` (default 50) — counts `apply_decision` calls
 - `compiles_used` / `max_compiles` (default 10) — counts `verify_correctness` and
-  `compile_and_profile` calls (GPU-expensive operations)
+  `compile_and_profile` calls (hardware-expensive operations)
 - Budget status is injected into every tool result so the LLM sees remaining headroom
 
 ### 3.3 System Prompt Design
@@ -232,7 +232,7 @@ repeated optimization sessions:
 
 | Segment | Content | Cache behavior |
 |---|---|---|
-| 1 | Role + GPU optimization knowledge | Global cache (all sessions) |
+| 1 | Role + kernel optimization knowledge | Global cache (all sessions) |
 | 2 | Hardware profile | Hardware-level cache (per target) |
 | 3 | Semantic IR + auto-analysis | Kernel-level cache (per kernel) |
 | 4 | Current Strategy IR state + budget | No cache (changes every step) |
