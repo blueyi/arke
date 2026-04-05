@@ -27,7 +27,9 @@ def {{ kernel_name }}_kernel(
     yf = xf * tl.sigmoid(xf)
     y = yf.to(x.dtype)
     {% elif activation == "tanh" %}
-    y = tl.math.tanh(x.to(tl.float32)).to(x.dtype)
+    # tanh(x) = 2*sigmoid(2x) - 1
+    xf = x.to(tl.float32)
+    y = (2.0 * tl.sigmoid(2.0 * xf) - 1.0).to(x.dtype)
     {% elif activation == "sigmoid" %}
     y = tl.sigmoid(x.to(tl.float32)).to(x.dtype)
     {% elif activation == "exp" %}

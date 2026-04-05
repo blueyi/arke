@@ -310,6 +310,324 @@ GEGLU = _register(OpDefinition(
 
 
 # ============================================================
+# OT0: Additional Elementwise ops
+# ============================================================
+
+TANH = _register(OpDefinition(
+    name="tanh",
+    category="elementwise",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = tanh(X)",
+    properties=["elementwise", "monotonic"],
+    can_fuse_as="epilogue",
+    numpy_ref="np.tanh(X)",
+))
+
+SIGMOID = _register(OpDefinition(
+    name="sigmoid",
+    category="elementwise",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = 1 / (1 + exp(-X))",
+    properties=["elementwise", "monotonic"],
+    can_fuse_as="epilogue",
+    numpy_ref="1 / (1 + np.exp(-X))",
+))
+
+NEG = _register(OpDefinition(
+    name="neg",
+    category="elementwise",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = -X",
+    properties=["elementwise"],
+    can_fuse_as="epilogue",
+    numpy_ref="-X",
+))
+
+EXP = _register(OpDefinition(
+    name="exp",
+    category="elementwise",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = exp(X)",
+    properties=["elementwise"],
+    can_fuse_as="epilogue",
+    numpy_ref="np.exp(X)",
+))
+
+RSQRT = _register(OpDefinition(
+    name="rsqrt",
+    category="elementwise",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = 1 / sqrt(X)",
+    properties=["elementwise"],
+    can_fuse_as="epilogue",
+    numpy_ref="1 / np.sqrt(X)",
+))
+
+WHERE = _register(OpDefinition(
+    name="where_",
+    category="elementwise",
+    inputs={"cond": "Tensor[...]", "A": "Tensor[...]", "B": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = A if cond else B",
+    properties=["elementwise"],
+    can_fuse_as="epilogue",
+    numpy_ref="np.where(cond, A, B)",
+))
+
+CAST = _register(OpDefinition(
+    name="cast",
+    category="elementwise",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = cast(X, target_dtype)",
+    properties=["elementwise"],
+    can_fuse_as="epilogue",
+    numpy_ref="X.astype(target_dtype)",
+))
+
+# ============================================================
+# OT1: Additional Reduction ops
+# ============================================================
+
+REDUCE_MEAN = _register(OpDefinition(
+    name="reduce_mean",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]"},
+    output="Tensor[M]",
+    computation="Y[i] = mean(X[i,:], axis=j)",
+    index_vars=["i", "j"],
+    reduction_axes=["j"],
+    properties=["associative"],
+    can_fuse_as=None,
+    numpy_ref="np.mean(X, axis=-1)",
+))
+
+ARGMAX = _register(OpDefinition(
+    name="argmax",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]"},
+    output="Tensor[M]",
+    computation="Y[i] = argmax(X[i,:], axis=j)",
+    index_vars=["i", "j"],
+    reduction_axes=["j"],
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="np.argmax(X, axis=-1)",
+))
+
+TOPK = _register(OpDefinition(
+    name="topk",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]"},
+    output="Tensor[M,K]",
+    computation="values, indices = topk(X[i,:], k, axis=j)",
+    index_vars=["i", "j"],
+    reduction_axes=["j"],
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="np.partition(X, -k, axis=-1)[..., -k:]",
+))
+
+CUMSUM = _register(OpDefinition(
+    name="cumsum",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]"},
+    output="Tensor[M,N]",
+    computation="Y[i,j] = sum(X[i,0:j+1])",
+    index_vars=["i", "j"],
+    reduction_axes=[],
+    properties=["scan"],
+    can_fuse_as=None,
+    numpy_ref="np.cumsum(X, axis=-1)",
+))
+
+# ============================================================
+# OT2: Additional Data Movement ops
+# ============================================================
+
+CONCAT = _register(OpDefinition(
+    name="concat",
+    category="move",
+    inputs={"A": "Tensor[M,N1]", "B": "Tensor[M,N2]"},
+    output="Tensor[M,N1+N2]",
+    computation="Y = concat(A, B, axis=-1)",
+    index_vars=["i", "j"],
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="np.concatenate([A, B], axis=-1)",
+))
+
+SPLIT = _register(OpDefinition(
+    name="split",
+    category="move",
+    inputs={"X": "Tensor[M,N]"},
+    output="Tuple[Tensor[M,N/2], Tensor[M,N/2]]",
+    computation="A, B = split(X, 2, axis=-1)",
+    index_vars=["i", "j"],
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="np.split(X, 2, axis=-1)",
+))
+
+GATHER = _register(OpDefinition(
+    name="gather",
+    category="move",
+    inputs={"X": "Tensor[M,N]", "idx": "Tensor[M,K]"},
+    output="Tensor[M,K]",
+    computation="Y[i,j] = X[i, idx[i,j]]",
+    index_vars=["i", "j"],
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="np.take_along_axis(X, idx, axis=-1)",
+))
+
+SCATTER = _register(OpDefinition(
+    name="scatter",
+    category="move",
+    inputs={"X": "Tensor[M,N]", "idx": "Tensor[M,K]", "src": "Tensor[M,K]"},
+    output="Tensor[M,N]",
+    computation="Y = X.copy(); Y[i, idx[i,j]] = src[i,j]",
+    index_vars=["i", "j"],
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="np.put_along_axis(X.copy(), idx, src, axis=-1)",
+))
+
+EMBEDDING = _register(OpDefinition(
+    name="embedding",
+    category="move",
+    inputs={"indices": "Tensor[B,S]", "weight": "Tensor[V,D]"},
+    output="Tensor[B,S,D]",
+    computation="Y[b,s,:] = weight[indices[b,s], :]",
+    index_vars=["b", "s", "d"],
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="weight[indices]",
+))
+
+PERMUTE = _register(OpDefinition(
+    name="permute",
+    category="move",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = permute(X, dims)",
+    properties=[],
+    can_fuse_as=None,
+    numpy_ref="np.transpose(X, axes=dims)",
+))
+
+COPY = _register(OpDefinition(
+    name="copy_",
+    category="move",
+    inputs={"X": "Tensor[...]"},
+    output="Tensor[...]",
+    computation="Y = X.clone()",
+    properties=["elementwise"],
+    can_fuse_as=None,
+    numpy_ref="X.copy()",
+))
+
+# ============================================================
+# OT3: Additional Fused ops
+# ============================================================
+
+ROPE = _register(OpDefinition(
+    name="rope",
+    category="elementwise",
+    inputs={"X": "Tensor[B,H,S,D]", "cos": "Tensor[S,D/2]", "sin": "Tensor[S,D/2]"},
+    output="Tensor[B,H,S,D]",
+    computation="Y = X * cos + rotate_half(X) * sin",
+    properties=["elementwise", "position_encoding"],
+    can_fuse_as="epilogue",
+    numpy_ref="x * cos + rotate_half(x) * sin",
+))
+
+CROSS_ENTROPY = _register(OpDefinition(
+    name="cross_entropy",
+    category="reduce",
+    inputs={"logits": "Tensor[B,V]", "labels": "Tensor[B]"},
+    output="Tensor[]",
+    computation="loss = -mean(log_softmax(logits)[i, labels[i]])",
+    index_vars=["i", "j"],
+    reduction_axes=["i", "j"],
+    properties=["loss_function"],
+    can_fuse_as=None,
+    numpy_ref="-np.mean(np.log(softmax(logits))[np.arange(B), labels])",
+))
+
+FUSED_LINEAR_CROSS_ENTROPY = _register(OpDefinition(
+    name="fused_linear_cross_entropy",
+    category="compute",
+    inputs={"X": "Tensor[B,D]", "W": "Tensor[V,D]", "labels": "Tensor[B]"},
+    output="Tensor[]",
+    computation="loss = cross_entropy(X @ W^T, labels)",
+    index_vars=["i", "j", "k"],
+    reduction_axes=["i", "j", "k"],
+    properties=["fused", "loss_function"],
+    can_fuse_as=None,
+    numpy_ref="cross_entropy(X @ W.T, labels)",
+))
+
+QUANTIZE_PER_TOKEN = _register(OpDefinition(
+    name="quantize_per_token",
+    category="reduce",
+    inputs={"X": "Tensor[M,N]"},
+    output="Tuple[Tensor[M,N](int8), Tensor[M](f32)]",
+    computation="scale[i] = max(abs(X[i,:]))/127; Q[i,j] = round(X[i,j]/scale[i])",
+    index_vars=["i", "j"],
+    reduction_axes=["j"],
+    properties=["quantization"],
+    can_fuse_as=None,
+    numpy_ref="scale = X.abs().max(-1).values/127; (X/scale[...,None]).round().to(int8)",
+))
+
+DEQUANTIZE_PER_CHANNEL = _register(OpDefinition(
+    name="dequantize_per_channel",
+    category="elementwise",
+    inputs={"X_int8": "Tensor[M,N](int8)", "scale": "Tensor[N](f32)", "zero_point": "Tensor[N](int8)"},
+    output="Tensor[M,N]",
+    computation="Y[i,j] = (X_int8[i,j] - zero_point[j]) * scale[j]",
+    properties=["elementwise", "dequantization"],
+    can_fuse_as="prologue",
+    numpy_ref="(X_int8.float() - zero_point) * scale",
+))
+
+# ============================================================
+# OT4: Additional Attention ops
+# ============================================================
+
+CROSS_ATTENTION = _register(OpDefinition(
+    name="cross_attention",
+    category="attention",
+    inputs={"Q": "Tensor[B,H,Sq,D]", "K": "Tensor[B,H,Skv,D]", "V": "Tensor[B,H,Skv,D]"},
+    output="Tensor[B,H,Sq,D]",
+    computation="O = softmax(Q @ K^T / sqrt(D)) @ V  (no causal mask)",
+    index_vars=["b", "h", "i", "j", "k"],
+    reduction_axes=["j", "k"],
+    properties=["online_softmax"],
+    can_fuse_as=None,
+    numpy_ref="softmax(Q @ K.T / sqrt(D)) @ V",
+))
+
+PAGED_ATTENTION = _register(OpDefinition(
+    name="paged_attention",
+    category="attention",
+    inputs={"Q": "Tensor[B,H,1,D]", "K_cache": "Tensor[num_blocks,block_size,H,D]", "V_cache": "Tensor[num_blocks,block_size,H,D]", "block_table": "Tensor[B,max_blocks]"},
+    output="Tensor[B,H,1,D]",
+    computation="Paged KV-cache attention with block_table indirection",
+    index_vars=["b", "h", "i", "j"],
+    reduction_axes=["j"],
+    properties=["decode_only", "paged_kv"],
+    can_fuse_as=None,
+    numpy_ref="paged attention with block indirection",
+))
+
+# ============================================================
 # Lookup utilities
 # ============================================================
 

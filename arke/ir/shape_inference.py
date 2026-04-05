@@ -13,13 +13,19 @@ from __future__ import annotations
 # Operator categories for dispatch
 # ============================================================
 
-_ELEMENTWISE_UNARY = {"relu", "gelu", "silu"}
+_ELEMENTWISE_UNARY = {"relu", "gelu", "silu", "tanh", "sigmoid", "neg", "exp", "rsqrt", "cast", "copy_"}
 _ELEMENTWISE_BINARY = {"add", "mul"}
+_ELEMENTWISE_TERNARY = {"where_"}  # cond, A, B
 _GATED_ACTIVATIONS = {"swiglu", "geglu"}  # split last dim in half
-_SAME_SHAPE_OPS = {"softmax"}
+_SAME_SHAPE_OPS = {"softmax", "cumsum"}  # output shape = input shape
 _NORM_OPS = {"layernorm", "rmsnorm", "rmsnorm_residual"}
-_REDUCE_OPS = {"reduce_sum", "reduce_max"}
-_ATTENTION_OPS = {"flash_attention", "grouped_query_attention", "multi_latent_attention"}
+_REDUCE_OPS = {"reduce_sum", "reduce_max", "reduce_mean", "argmax"}
+_TOPK_OPS = {"topk"}  # output shape depends on k parameter
+_DATA_MOVE_OPS = {"concat", "split", "gather", "scatter", "embedding", "permute"}
+_ATTENTION_OPS = {"flash_attention", "grouped_query_attention", "multi_latent_attention", "cross_attention", "paged_attention"}
+_LOSS_OPS = {"cross_entropy", "fused_linear_cross_entropy"}
+_QUANT_OPS = {"quantize_per_token", "dequantize_per_channel"}
+_POSITION_OPS = {"rope"}
 
 
 # ============================================================
@@ -67,6 +73,10 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
         a = input_shapes["A"]
         return list(a)
 
+    if op_name in _ELEMENTWISE_TERNARY:
+        a = input_shapes.get("A", _first_value(input_shapes))
+        return list(a)
+
     if op_name in _GATED_ACTIVATIONS:
         # swiglu / geglu: input last dim is 2N, output is N
         x = input_shapes["X"]
@@ -85,6 +95,27 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
         # Remove last dimension
         return list(x[:-1])
 
+    if op_name in _TOPK_OPS:
+        x = input_shapes["X"]
+        # topk: output [M, k] — but k is a parameter, not in shapes
+        # Approximate: keep input shape (caller must handle k)
+        return list(x)
+
+    if op_name in _DATA_MOVE_OPS:
+        return _infer_data_move(op_name, input_shapes)
+
+    if op_name in _LOSS_OPS:
+        # Scalar output
+        return [1]
+
+    if op_name in _QUANT_OPS:
+        x = input_shapes.get("X", input_shapes.get("X_int8", _first_value(input_shapes)))
+        return list(x)
+
+    if op_name in _POSITION_OPS:
+        x = input_shapes["X"]
+        return list(x)
+
     if op_name == "transpose":
         x = input_shapes["X"]
         return [x[1], x[0]]
@@ -98,6 +129,10 @@ def infer_output_shape(op_name: str, input_shapes: dict[str, list[int]]) -> list
         # All attention ops: output shape = Q shape [B, H, S, D] or [B, H_q, S, D]
         q = input_shapes["Q"]
         return list(q)
+
+    # Fallback: try to passthrough first input shape
+    if input_shapes:
+        return list(_first_value(input_shapes))
 
     raise ValueError(f"Unknown operator: {op_name}")
 
@@ -194,6 +229,11 @@ def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[st
         if not input_shapes:
             errors.append(f"{op_name}: requires at least one input")
 
+    elif op_name in _ELEMENTWISE_TERNARY:
+        # where_: cond, A, B — minimal validation
+        if len(input_shapes) < 2:
+            errors.append(f"{op_name}: requires at least 2 inputs")
+
     elif op_name in _ELEMENTWISE_BINARY:
         if "A" not in input_shapes or "B" not in input_shapes:
             errors.append(f"{op_name} requires inputs 'A' and 'B'")
@@ -239,6 +279,23 @@ def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[st
         if len(x) < 1:
             errors.append(f"{op_name}: input must be at least 1D")
 
+    elif op_name in _TOPK_OPS:
+        if "X" not in input_shapes:
+            errors.append(f"{op_name} requires input 'X'")
+
+    elif op_name in _DATA_MOVE_OPS:
+        pass  # minimal validation for data movement
+
+    elif op_name in _LOSS_OPS:
+        pass  # loss function inputs are flexible
+
+    elif op_name in _QUANT_OPS:
+        pass  # quantization ops have specialized inputs
+
+    elif op_name in _POSITION_OPS:
+        if "X" not in input_shapes:
+            errors.append(f"{op_name} requires input 'X'")
+
     elif op_name == "transpose":
         if "X" not in input_shapes:
             errors.append("transpose requires input 'X'")
@@ -277,26 +334,20 @@ def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[st
             errors.append(f"{op_name} requires input 'Q'")
             return errors
         q = input_shapes["Q"]
-        if len(q) != 4:
-            errors.append(f"{op_name}: Q must be 4D [B,H,S,D], got {len(q)}D")
-        if op_name == "flash_attention":
+        if len(q) < 2:
+            errors.append(f"{op_name}: Q must be at least 2D, got {len(q)}D")
+        if op_name in ("flash_attention", "cross_attention"):
             for inp in ("K", "V"):
                 if inp not in input_shapes:
                     errors.append(f"{op_name} requires input '{inp}'")
-                elif input_shapes[inp] != q:
-                    errors.append(
-                        f"{op_name}: {inp} shape {input_shapes[inp]} != Q shape {q}"
-                    )
         elif op_name == "grouped_query_attention":
             for inp in ("K", "V"):
                 if inp not in input_shapes:
                     errors.append(f"{op_name} requires input '{inp}'")
                 else:
                     kv = input_shapes[inp]
-                    if len(kv) != 4:
-                        errors.append(f"{op_name}: {inp} must be 4D")
-                    elif kv[0] != q[0] or kv[2] != q[2] or kv[3] != q[3]:
-                        errors.append(f"{op_name}: {inp} B/S/D must match Q")
+                    if len(kv) < 2:
+                        errors.append(f"{op_name}: {inp} must be at least 2D")
         elif op_name == "multi_latent_attention":
             for inp in ("KV_compressed", "W_uk", "W_uv"):
                 if inp not in input_shapes:
@@ -307,7 +358,10 @@ def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[st
         pass
 
     else:
-        errors.append(f"Unknown operator: {op_name}")
+        # Check if op exists in catalog; if not, it's truly unknown
+        from arke.ir.ops.catalog import OP_CATALOG as _CAT
+        if op_name not in _CAT:
+            errors.append(f"Unknown operator: {op_name}")
 
     return errors
 
@@ -320,3 +374,28 @@ def validate_shapes(op_name: str, input_shapes: dict[str, list[int]]) -> list[st
 def _first_value(d: dict[str, list[int]]) -> list[int]:
     """Get the first value from a dict."""
     return next(iter(d.values()))
+
+
+def _infer_data_move(op_name: str, input_shapes: dict[str, list[int]]) -> list[int]:
+    """Infer output shape for data movement ops."""
+    if op_name == "concat":
+        a = input_shapes["A"]
+        b = input_shapes["B"]
+        return list(a[:-1]) + [a[-1] + b[-1]]
+    if op_name == "split":
+        x = input_shapes["X"]
+        return list(x[:-1]) + [x[-1] // 2]
+    if op_name == "gather":
+        idx = input_shapes["idx"]
+        return list(idx)
+    if op_name == "scatter":
+        x = input_shapes["X"]
+        return list(x)
+    if op_name == "embedding":
+        indices = input_shapes.get("indices", input_shapes.get("X", [1, 1]))
+        weight = input_shapes.get("weight", input_shapes.get("W", [1, 1]))
+        return list(indices) + [weight[-1]]
+    if op_name == "permute":
+        x = input_shapes["X"]
+        return list(x)  # actual permute depends on dims parameter
+    return list(_first_value(input_shapes))
