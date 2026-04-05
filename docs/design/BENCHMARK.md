@@ -10,7 +10,7 @@ automated provenance tracking, and a three-layer evaluation architecture.
 1. [Overview & Benchmark Level System](#1-overview--benchmark-level-system)
 2. [Operator Tier (OT)](#2-operator-tier-ot)
 3. [Shape Tier (ST)](#3-shape-tier-st)
-4. [Three-Layer Architecture](#4-three-layer-architecture)
+4. [Evaluation Layers (L1/L2/L3)](#4-evaluation-layers-l1l2l3)
 5. [Baseline Tiers & Operator→Baseline Matrix](#5-baseline-tiers--operatorbaseline-matrix)
 6. [Measurement Protocol](./benchmark/benchmark-protocol.md#measurement-protocol)
 7. [Scoring System](./benchmark/benchmark-protocol.md#scoring-system)
@@ -62,7 +62,7 @@ exact operator+shape combinations that appear in a real model's forward pass:
 > specific dimension combinations (e.g. LLaMA's head_dim=128 with n_kv_heads=8) that may
 > not be covered by the general shape matrix.
 
-### Coverage Matrix
+### OT × ST Coverage Matrix
 
 ```
               ST1(micro)  ST2(standard)  ST3(stress)  ST4(production)
@@ -73,6 +73,22 @@ OT3 (gated)     BL4          BL4            ─             BL5
 OT4 (attn)       ─            ─             ─             BL5
 Model-Complete  ──────────────── BL6 ────────────────────────
 ```
+
+### Layer × BL Coverage Matrix
+
+Benchmark Level (BL) defines **coverage scope**; Evaluation Layer (L) defines **what is measured**.
+They are orthogonal — a benchmark run specifies both (e.g. "L1 at BL3").
+
+```
+         BL1  BL2  BL3  BL4  BL5  BL6
+L1        ✓    ✓    ✓    ✓    ✓    ─     Single operator perf
+L2        ─    ─    ─    ✓    ✓    ─     Fused operator perf
+L3 ≡ BL6  ─    ─    ─    ─    ─    ✓     E2E model perf
+```
+
+> **L3 ≡ BL6**: L3 is the execution of BL6's model-complete operator+shape set as an
+> end-to-end forward pass. They are the same concept viewed from two angles —
+> BL6 defines the coverage, L3 defines the evaluation method.
 
 ---
 
@@ -116,33 +132,19 @@ operators at production scale are subsumed by ST3.
 
 ---
 
-## 4. Three-Layer Architecture
+## 4. Evaluation Layers (L1/L2/L3)
 
-A unified benchmark measuring Arke-generated kernels across three evaluation layers:
+Benchmark Level (BL) defines the **coverage scope** (how many ops × shapes).
+Evaluation Layers define the **measurement dimension** (what question is answered).
 
-```
-┌──────────────────────────────────────────────────────┐
-│  Layer 3 (L3): E2E Model Inference                   │
-│  GPT-2 / LLaMA-2 7B / DeepSeek-V2 forward pass      │
-│  Metric: wall-clock latency, throughput (tok/s)      │
-│  Coverage: BL6 (Model-Complete)                      │
-├──────────────────────────────────────────────────────┤
-│  Layer 2 (L2): Fused Operators                       │
-│  matmul+relu, matmul+gelu, swiglu, QKV+attn          │
-│  Metric: TFLOPS, vs best fused baseline              │
-│  Coverage: BL4–BL5                                   │
-├──────────────────────────────────────────────────────┤
-│  Layer 1 (L1): Single Operators                      │
-│  All 20 OP_CATALOG operators                         │
-│  Metric: μs latency, % of vendor-optimized baseline  │
-│  Coverage: BL1–BL5                                   │
-└──────────────────────────────────────────────────────┘
-```
+| Layer | Question | What is Measured | BL Range | Metric |
+|:-----:|:---------|:-----------------|:---------|:-------|
+| **L1** | Can Arke match hand-tuned single-op kernels? | Individual operator perf | BL1–BL5 | μs latency, TFLOPS/GB·s, % of baseline |
+| **L2** | Can Arke fuse operators as well as expert code? | Fused operator perf | BL4–BL5 | TFLOPS, vs best fused baseline |
+| **L3** | Does it make a real model faster end-to-end? | Full model forward pass | **BL6** | Wall-clock latency, tok/s, peak memory |
 
-Each layer answers a different question:
-- **L1:** Can Arke generate a kernel as fast as a hand-tuned one?
-- **L2:** Can Arke fuse operators as well as expert-written fused kernels?
-- **L3:** Does it actually make a real model faster end-to-end?
+> **L3 ≡ BL6**: L3 executes BL6's model-complete operator+shape set as an end-to-end
+> forward pass. BL6 defines the coverage; L3 defines the evaluation method.
 
 ### L1: Single Operators
 
@@ -159,9 +161,9 @@ Compares three approaches:
 
 Currently supports: `matmul+relu`, `matmul+gelu`, `swiglu`, `geglu`
 
-### L3: E2E Model
+### L3: E2E Model (= BL6)
 
-Full model forward pass benchmarks:
+Full model forward pass benchmarks using BL6 model-complete shape sets:
 
 | Mode | Description |
 |:-----|:------------|
