@@ -14,9 +14,8 @@
 │  方式 A: CLI               方式 B: Python API       方式 C: .ak 文件  │
 │  arke optimize \           arke.optimize(            kernel matmul(   │
 │    --kernel matmul \         kernel="matmul",          A: Tensor...   │
-│    --shape 1024,512,2048     shape=[1024,512,2048],  )                │
-│    --target ampere           target="ampere")                        │
-│    --llm anthropic                                                   │
+│    --shape 1024,512,2048     shape=[1024,512,2048],  ) + strategy {  │
+│    --target ampere           target="ampere")          @rationale... }│
 └──────────────────────┬───────────────────────────────────────────────┘
                        │
                        ▼
@@ -25,14 +24,22 @@
 │                                                                      │
 │  输入 → Parser / Builder → Semantic IR (JSON)                        │
 │  "算什么" — 纯计算语义，不含任何优化决策                                │
+│  自动分析：FLOPS、memory、arithmetic intensity、fusion opportunities  │
 └──────────────────────┬───────────────────────────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    Phase 2: LLM 优化循环                             │
+│                    Phase 2: LLM 优化循环（核心）                      │
 │                                                                      │
-│  ArkeEnv（编译器环境）←→ LLM（决策者）                                │
-│  通过 tool-use 协议交互，LLM 逐步构建 Strategy IR                     │
+│  ┌─────────────────┐         tool-use         ┌──────────────────┐  │
+│  │   LLM Agent     │ ◄────────────────────► │   ArkeEnv        │  │
+│  │  (决策者)        │   Bounded Action Space  │  (验证器+执行器)  │  │
+│  │                 │                         │                  │  │
+│  │  每步决策附      │   get_legal_actions()   │  V0 静态验证     │  │
+│  │  @rationale     │   apply_decision()      │  (每步自动)      │  │
+│  └─────────────────┘   compile_and_profile()  └──────────────────┘  │
+│                                                                      │
+│  LLM 逐步构建 Strategy IR（附 @rationale）                           │
 │  编译器负责验证每一步，LLM 负责做决策                                  │
 └──────────────────────┬───────────────────────────────────────────────┘
                        │
@@ -46,12 +53,20 @@
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    Phase 4: 输出                                     │
+│                    Phase 4: 输出与集成                                │
 │                                                                      │
-│  优化后的 Triton kernel + 性能报告 + 优化轨迹 + @rationale            │
-│  可选：注册为 PyTorch custom op → 整模型集成                          │
+│  优化后的 Triton kernel + 性能报告 + 优化轨迹（含 @rationale）        │
+│  → KernelCache → PyTorch custom op → torch.compile backend (未来)    │
+│  → Benchmark 验证（BL×L 体系）→ Gate 出口判定                         │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+**核心设计理念：**
+- **Bounded Action Space**：编译器提供合法动作集，LLM 在约束空间内探索
+- **@rationale**：每个优化决策附人类可读的推理过程，支持学习与调试
+- **Semantic IR ↔ Strategy IR 分离**：语义与优化决策解耦，支持多硬件后端
+- **三级验证（V0→V1→V2）**：静态 → 数值 → 性能，逐层保证正确性
+
 
 ---
 
@@ -66,8 +81,37 @@
   → 自动构建 Semantic IR
 
 路径 B: .ak 文件
-  用户编写 .ak 语法
+  用户编写 .ak 语法（kernel + strategy 分离）
   → Lark Parser → AST → Semantic IR
+
+**示例：.ak 语法**
+
+```arke
+kernel fused_matmul_relu(
+    A: Tensor<[1024, 512], f16>,
+    B: Tensor<[512, 2048], f16>
+) -> Tensor<[1024, 2048], f16> {
+    let C = matmul(A, B);
+    let Y = relu(C);
+    return Y;
+}
+
+strategy fused_matmul_relu for target("nvidia_ampere") {
+    tile(loop="i", factors=[64, 16])
+        @rationale("L2 cache line = 64, warp size = 16");
+    tile(loop="j", factors=[128, 8])
+        @rationale("maximize memory coalescing");
+    tile(loop="k", factors=[32])
+        @rationale("balance register pressure");
+    fuse(ops=["matmul", "relu"], type=epilogue)
+        @rationale("eliminate intermediate write, ~15% speedup");
+}
+```
+
+**关键特性：**
+- `kernel` 块：纯语义描述（"算什么"），不含优化决策
+- `strategy` 块：优化决策（"怎么优化"），每个决策附 `@rationale`
+- 分离设计让 LLM 可以只生成 strategy，kernel 由人工或工具生成
 
 路径 C: LLM 自行构建（Agent 模式）
   LLM 调用 create_kernel() tool
@@ -135,6 +179,29 @@ Semantic IR 构建完成后，系统自动计算特征，作为 LLM 做决策的
 ```
 
 ---
+
+---
+
+## 1.5 算子覆盖（Operator Tier）
+
+当前 Arke 覆盖 **45 个算子**，按复杂度分为 5 层（OT0-OT4）：
+
+| Tier | 名称 | 算子数 | 代表算子 |
+|:----:|:-----|:------:|:---------|
+| **OT0** | 元素级 | 12 | `relu`, `gelu`, `silu`, `add`, `mul`, `exp`, `sigmoid`, `tanh`... |
+| **OT1** | 规约 | 10 | `softmax`, `layernorm`, `rmsnorm`, `reduce_sum`, `reduce_max`... |
+| **OT2** | 数据移动与计算密集 | 11 | `matmul`, `batch_matmul`, `grouped_matmul`, `transpose`, `conv2d`... |
+| **OT3** | 融合复合 | 7 | `swiglu`, `geglu`, `rmsnorm_residual`, `fused_matmul_gelu`... |
+| **OT4** | 注意力 | 5 | `flash_attention`, `grouped_query_attention`, `multi_latent_attention`, `paged_attention`... |
+
+**Shape Tier (ST)**：每个算子在 4 个 shape 层级验证：
+- ST1: Micro（小规模对齐）
+- ST2: Standard（中规模 + LLM 典型）
+- ST3: Stress（非对齐 + 极端）
+- ST4: Production（真实 LLM 生产 shape）
+
+→ 完整算子列表见 [benchmark-ops.md](benchmark/benchmark-ops.md)
+
 
 ## 三、Phase 2 — LLM 优化循环（核心）
 
@@ -862,30 +929,71 @@ class AgentRunner:
 
 ---
 
+---
+
+## 5.5 Benchmark 分层体系与 Gate 系统
+
+### Benchmark Level (BL)
+
+Arke 使用三维 benchmark 体系衡量验证完整度：
+
+**BL = Operator Tier (OT) × Shape Tier (ST)**
+
+| Level | 覆盖范围 | 用途 |
+|:-----:|:---------|:-----|
+| BL1 | OT0-2 × ST1 | 快速回归（基础算子 + 小 shape） |
+| BL2 | OT0-2 × ST1-2 | 日常 CI（基础算子 + 标准 shape） |
+| BL3 | OT0-2 × ST1-3 | Gate 验证（基础算子 + 全量 shape） |
+| BL4 | OT0-4 × ST1-2 | 算子完整性（全算子 + 标准 shape） |
+| BL5 | OT0-4 × ST1-4 | 完整基准（全算子 × 全 shape） |
+| BL6 | Model-Complete | 真实模型端到端（GPT-2, LLaMA-2/3, Qwen2.5, DeepSeek-V2） |
+
+### 评估层次 (L)
+
+- **L1**: 单算子 benchmark（`benchmarks/bench_l1.py`）
+- **L2**: 融合算子 benchmark（`benchmarks/bench_l2.py`）
+- **L3**: 模型端到端 benchmark（`benchmarks/bench_l3.py`）
+
+### Gate 系统
+
+Stage 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L 组合**定义：
+
+| Gate | 出口 | 核心目标 | 状态 |
+|:----:|:-----|:---------|:----:|
+| G0 | — | GPU 环境验证 | ✅ |
+| G1 | — | IR + 验证系统 | ✅ |
+| G2 | BL1×L1 | 手动策略 → Codegen → GPU | ✅ |
+| G3 | BL1×L1 | LLM Agent 闭环优化 | ✅ |
+| G4 | BL2×L1 | Arke vs LLM-direct 对比 | ✅ |
+| G5 | BL3×L1 + BL6/GPT-2×L3 | 全基础算子 + E2E 正确性 | ✅ |
+| G6 | BL5×L1+L2 | **Lang & IR 完备性**（45 ops × 全 shape） | ⬜ |
+| G7 | BL5×L1+L2 + BL6×L3 | **Autonomous Engineering**（自主生成 + LLaMA-2/DS-V2） | ⬜ |
+| G8 | BL6×L3 (4模型) | **Stage 1 最终验收** | ⬜ |
+
+→ 详见 [benchmark-design.md](benchmark/benchmark-design.md) | [stage1-gate-design.md](stage1-gate-design.md)
+
+
 ## 七、数据流总结
 
 ```
-用户输入
+用户输入（CLI / Python API / .ak 文件）
   │
   ▼
-Semantic IR (JSON)                      ← "算什么"
+Semantic IR (JSON)                      ← "算什么"（纯语义）
   │
-  ├── auto_analysis                     ← 自动特征分析
+  ├── auto_analysis                     ← 自动特征分析（FLOPS、memory、AI、fusion）
   │
   ▼
-ArkeEnv + LLM 循环
+ArkeEnv + LLM 循环（Bounded Action Space）
   │
-  │  analyze_compute()                  ← LLM 了解问题
-  │  get_hw_profile()                   ← LLM 了解硬件
-  │  list_legal_actions()               ← 编译器告诉 LLM 能做什么
-  │  apply_decision() × N               ← LLM 逐步做决策（附 rationale）
-  │    └── V0 静态验证（每步自动）
-  │  verify_correctness()               ← 数值验证
-  │  compile_and_profile()              ← 性能验证
+  │  get_legal_actions()                ← 编译器提供合法动作集
+  │  apply_decision() × N               ← LLM 逐步做决策（附 @rationale）
+  │    └── V0 静态验证（每步自动）       ← 保证决策合法性
+  │  compile_and_profile()              ← V1 数值 + V2 性能验证
   │  rollback / checkpoint              ← 探索与回退
   │
   ▼
-Strategy IR (JSON)                      ← "怎么优化"（LLM 构建）
+Strategy IR (JSON)                      ← "怎么优化"（LLM 构建，含 @rationale）
   │
   ├── 路径 A: 模板 Codegen
   │     └── Jinja2 渲染 → Triton 代码
@@ -897,17 +1005,31 @@ Strategy IR (JSON)                      ← "怎么优化"（LLM 构建）
 Triton 代码
   │
   ├── NVIDIA: triton.compile() → GPU Binary
-  └── Ascend:  triton-ascend → NPU Binary (Phase 2)
+  └── Ascend:  triton-ascend → NPU Binary (Stage 2)
   │
   ▼
-输出
+输出与集成
   ├── kernel.py                         ← 可直接使用的 Triton kernel
   ├── strategy.json                     ← 优化策略（可复现）
-  ├── trajectory.jsonl                  ← 学习数据
+  ├── trajectory.jsonl                  ← 学习数据（含 @rationale）
   ├── report.json                       ← 性能报告
-  └── torch custom op                   ← 整模型集成
+  │
+  ├── KernelCache                       ← 缓存管理（自动 dispatch）
+  ├── PyTorch custom op                 ← 整模型集成（当前）
+  └── torch.compile backend             ← 零开销集成（G7/G8）
+  │
+  ▼
+Benchmark 验证（BL×L 体系）
+  │
+  ├── L1: 单算子 benchmark              ← 45 ops × ST1-4
+  ├── L2: 融合算子 benchmark            ← matmul+gelu, rmsnorm+residual...
+  └── L3: 模型端到端 benchmark          ← GPT-2, LLaMA-2/3, Qwen2.5, DS-V2
+  │
+  ▼
+Gate 出口判定（G0-G8）
+  └── Stage 1 完成 → Stage 2（MLIR Dialect + Ascend 后端）
 ```
 
 ---
 
-*文档版本：v1.0 | 创建日期：2026-03-31*
+*文档版本：v2.0 | 创建日期：2026-03-31 | 更新：2026-04-05（对齐 45 ops + BL/OT/ST/L 体系 + Gate 系统）*
