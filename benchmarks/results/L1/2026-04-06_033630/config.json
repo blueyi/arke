@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-04-06_033630",
+  "ops": [
+    "flash_attention",
+    "grouped_query_attention",
+    "cross_attention"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1
+}

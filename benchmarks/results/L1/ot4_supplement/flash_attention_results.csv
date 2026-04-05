@@ -1,0 +1,7 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+flash_attention,gpt2-sm-128,12,128,64,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),19.0,16.4,
+flash_attention,gpt2-sm-128,12,128,64,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,228.4,259.1,
+flash_attention,gpt2-sm-512,12,512,64,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),45.7,48.1,
+flash_attention,gpt2-sm-512,12,512,64,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,755.3,745.4,
+flash_attention,gpt2-sm-1k,12,1024,64,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),112.7,114.7,
+flash_attention,gpt2-sm-1k,12,1024,64,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,2734.9,2676.7,
