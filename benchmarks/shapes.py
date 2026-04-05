@@ -323,6 +323,11 @@ OP_TIER: dict[str, int] = {
     "flash_attention": 4, "grouped_query_attention": 4, "multi_latent_attention": 4,
     "cross_attention": 4, "paged_attention": 4,
 }
+# Override with live data from benchmark-ops.md (single source of truth)
+try:
+    from benchmarks.op_registry import OP_TIER  # noqa: E402
+except ImportError:
+    pass  # fall back to the static dict above
 
 
 # ── Extended get_shapes ─────────────────────────────────────────────────
