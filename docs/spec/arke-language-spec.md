@@ -404,7 +404,7 @@ Where `.ak'` is semantically identical to `.ak` (formatting may differ).
 
 ## 10. Implementation Priority
 
-Per `plan-v3.0.md`, the language is **Phase 6** (after LLM integration proven):
+Per `execution-plan.md`, the language is **Phase 6** (after LLM integration proven):
 
 ```
 Phase 1-4: IR + Validation + Codegen + LLM Integration (no .ak parser needed)

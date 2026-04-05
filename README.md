@@ -177,22 +177,20 @@ NVIDIA (Stage 1) proves SIMT feasibility. Ascend (Stage 2) proves cross-architec
 generalization. MLIR (Stage 3) removes Triton's abstraction ceiling. LLVM IR (Stage 4)
 achieves maximum hardware expression completeness and performance headroom.
 
-> Gate benchmark coverage: Stage 2+ Gates must cover ≥3 Operator Categories and
-> include LLM-production shapes (LLaMA/DeepSeek/Qwen). See [BENCHMARK.md](docs/design/BENCHMARK.md).
-
 ---
 
 ## Documentation
 
 
-| Document                                         | Description                                                                 |
-| ------------------------------------------------ | --------------------------------------------------------------------------- |
-| [plan-v3.0.md](docs/design/plan-v3.0.md)         | Execution plan — Phase definitions, SMART criteria, Gate milestones         |
-| [gate-redesign.md](docs/design/gate-redesign.md) | **Gate system v3** — Function > Accuracy > Performance, Tier 3 verification |
-| [e2e-flow.md](docs/design/e2e-flow.md)           | End-to-end flow — user input to GPU execution walkthrough                   |
-| [design-review.md](docs/design/design-review.md) | Design review — assumption validation, risk matrix                          |
-| [naming-system.md](docs/design/naming-system.md) | Naming conventions — global terminology rules                               |
-
+| Document                                                                       | Description                                                                 |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| [execution-plan.md](docs/design/execution-plan.md)                             | Execution history + long-term roadmap                                       |
+| [stage1-gate-design.md](docs/design/stage1-gate-design.md)                     | Stage 1 Gate design — G0-G8 with BL metrics                                 |
+| [benchmark-design.md](docs/design/benchmark-design.md)                         | Complete benchmark reference — baselines, shapes, scoring, operator sources |
+| [e2e-flow.md](docs/design/e2e-flow.md)                                         | End-to-end flow — user input to GPU execution walkthrough                   |
+| [design-review.md](docs/design/design-review.md)                               | Design review — assumption validation, risk matrix                          |
+| [naming-system.md](docs/design/naming-system.md)                               | Naming conventions — global terminology rules                               |
+| [benchmarks/results/stage1/EVALUATION_REPORT.md](benchmarks/results/stage1/EVALUATION_REPORT.md) | Stage 1 Evaluation Report — all gates, L1/L2/L3 data, conclusions |
 
 
 | Spec                                                     | Description                                            |
@@ -201,45 +199,21 @@ achieves maximum hardware expression completeness and performance headroom.
 | [arke-ir-spec.md](docs/spec/arke-ir-spec.md)             | Arke IR spec — Semantic IR / Strategy IR structure     |
 
 
-### Benchmark System
-
-
-| Document                                                                           | Description                                                                                                                             |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| [docs/design/BENCHMARK.md](docs/design/BENCHMARK.md)                               | **Complete benchmark reference** — architecture, baselines, shapes, scoring, quality gates, operator sources, CLI, development workflow |
-| [benchmarks/results/stage1/EVALUATION_REPORT.md](benchmarks/results/stage1/EVALUATION_REPORT.md) | **Stage 1 Evaluation Report** — all gates, L1/L2/L3 data, conclusions                                                                   |
-
-
 ### Stage 1: Arke → Triton → GPU — Validate Hypothesis
 
-**Goal:** Prove that LLM + structured IR + compiler verification produces kernels that are both correct and **faster than LLM-written Triton**, using Triton as the codegen backend.
+**Goal:** Prove LLM + structured IR + compiler verification produces correct, fast kernels.
+**Hardware:** NVIDIA Ampere (RTX 3060 Laptop, 6GB)
 
-**Target hardware:** NVIDIA Ampere (RTX 3060)
+| Gate | Status | Milestone |
+|:----:|:------:|:----------|
+| G0-G4 | ✅ | Environment, IR, Codegen, Agent, Evaluation |
+| G5 | ✅ | OT0-2 full shapes + GPT-2 E2E (correctness ✅, latency ⚠️ known-fail) |
+| G6 | ⬜ | **BL5×L1+L2 — Lang & IR completeness** (45 ops × all shapes) |
+| G7 | ⬜ | **Autonomous Engineering** — self-directed kernel gen + LLaMA-2/DS-V2 E2E |
+| G8 | ⬜ | **Stage 1 Final** — 4 model E2E + Arke vs LLM-direct |
 
-**Stage 1** splits into an **MVP track (Phases 1.0–1.8, v0.1.0)** and a **completion track (1.9–1.11, Gates G6–G8)** before Stage 2. Gates follow **Function > Accuracy > Performance**; full SMART criteria and tiers are in [gate-redesign.md](docs/design/gate-redesign.md) and [plan-v3.0.md](docs/design/plan-v3.0.md).
-
-| Phase | Gate | Deliverable | Status |
-| ----- | ---- | ----------- | ------ |
-| **1.0** | G0 | `make setup`, GPU smoke, ≥100 tests | ✅ |
-| **1.1** | G1 | IR + validators; ≥10 ops / ≥6 strategy kinds; Tier-3 numerical 100% | ✅ ⚠️ |
-| **1.2** | G2 | IR → Triton → GPU; Tier-3 accuracy; perf geomean ≥60% cuBLAS | ✅ |
-| **1.3** | — | LLM agent: ≥8 tools, ≥4 decisions, no human steps | ✅ |
-| **1.4** | G3 | Closed-loop optimize; Tier-3 sampled accuracy 100%; perf on GPU | ✅ |
-| **1.5** | G4 | vs LLM-direct Triton: correctness, perf (≥90% direct, ≥70% FlagGems), token ≤60% | ✅ |
-| **1.6** | — | Language → AST → IR (≥3 kernels); `arke parse` / `optimize` / `inspect` | ✅ |
-| **1.7** | G5 | Whole-model E2E: multi-config accuracy 100%; latency vs eager; mem ≤6GB; ≥48 ops | ✅ ⚠️ |
-| **1.8** | — | CI ×3 Python; API docs; evaluation report; **v0.1.0** tag | ✅ |
-| **1.9** | G6 | Language ↔ SemanticIR ↔ StrategyIR ↔ Triton ↔ GPU; Cat A–D Tier 2; token efficiency; Language + IR spec **v1.0** | ⬜ |
-| **1.10** | G7 | Multi-input (language / NL / code) → kernel; I/O spec | ⬜ |
-| **1.11** | G8 | Implementation language assessment (Python vs alternatives, hybrid path) | ⬜ |
-
-⚠️ **G1:** Tier-3 revalidation gap per [plan-v3.0.md](docs/design/plan-v3.0.md). **G5:** correctness ✅; **latency** vs eager — known-fail perf items ([G5 report](benchmarks/results/stage1/gates/G5/REPORT.md)).
-
-**MVP snapshot:** Sonnet 4.6 closed-loop matmul+relu (23 tool calls, 0 errors); **151.4% cuBLAS** at 2048²; **305** tests; benchmark stack — 6 baselines, L1/L2/L3, 7 operator categories.
-
-**Current focus:** **Phase 1.9 / G6** (⬜ — see deliverable cell above).
-
-> **Post Stage 1 TODO:** Evaluate implementation language for Stages 2–3. Consider compile-time performance, MLIR/LLVM C++ API integration ergonomics, deployment binary size, and whether a Rust/C++ rewrite of the compiler core (keeping Python for agent/LLM layer) is warranted.
+→ Gate details: [stage1-gate-design.md](docs/design/stage1-gate-design.md)
+→ Execution history: [execution-plan.md](docs/design/execution-plan.md)
 
 ---
 

@@ -26,7 +26,7 @@
 7. [G8 — Stage 1 最终验收](#7-g8--stage-1-最终验收)
 8. [Gate 依赖链](#8-gate-依赖链)
 9. [开发项附录](#9-开发项附录)
-10. [与 plan-v3.0.md 的对应关系](#10-与-plan-v30md-的对应关系)
+10. [与 execution-plan.md 的对应关系](#10-与-execution-planmd-的对应关系)
 
 ---
 
@@ -742,9 +742,9 @@ D6-IR1 → D6-E1(10类模板) → D6-E2(bench_l1) ──────────
 
 ---
 
-## 10. 与 plan-v3.0.md 的对应关系
+## 10. 与 execution-plan.md 的对应关系
 
-| plan-v3.0 Phase | stage1-gate-design Gate | 关键差异 |
+| execution-plan Phase | stage1-gate-design Gate | 关键差异 |
 |:----------------|:------------------------|:---------|
 | Phase 1.0（环境）| G0 | 无差异，直接对应 |
 | Phase 1.1（IR+验证）| G1 | 无差异，G1.4 已升级为全量 `.ak` 文件解析（非 ≥3/5）|
