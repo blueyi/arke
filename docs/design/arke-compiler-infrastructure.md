@@ -9,6 +9,8 @@
 
 ## 1. Executive Summary
 
+This document specifies the compiler infrastructure that serves Arke IR's **LLM-Native multi-layer architecture** (see `arke-ir-architecture.md`). The compiler pipeline transforms `.ak` source through SemanticIR and StrategyIR, lowering to multiple backends (Triton, MLIR, LLVM IR) via a composable pass system.
+
 Arke's compiler has a structural problem: the knowledge about each of its 45 ops is scattered across **6 separate files** (~3000 lines of redundant code total). Adding one new op requires touching 6 files and writing ~100 lines. The fix is a single architectural change — a unified **OpRegistry as the Single Source of Truth** — combined with a **Pass Infrastructure** that organizes compilation into composable, testable stages.
 
 This document specifies:
@@ -86,16 +88,23 @@ parse_file() ──→ Program (AST) ──→ ast_to_ir()
                          │             TypeCheckPass        │   (single
                          │  Transform: FusionPass           │    source of
                          │             TilingPass           │    truth)
-                         │  Lowering:  TritonCodegenPass ───┼── BackendRegistry
+                         │  Lowering:                       │
+                         │    Stage 1: TritonCodegenPass ───┼── BackendRegistry
+                         │    Stage 1: MLIRCodegenPass  ────┼── (BL1 verify)
+                         │    Stage 2+: MLIRCodegenPass ────┼── (full codegen)
+                         │    Stage 4: LLVMCodegenPass  ────┼── (direct LLVM)
                          │  Verify:    PostLowerCheckPass   │
                          └───────────────┬──────────────────┘
                                          │
                                  CompilationResult
                                   (source_code, artifacts)
                                          │
-                               TritonCompiler.compile()
-                                         │
-                                    GPU result
+                          ┌──────────────┼──────────────┐
+                          │              │              │
+                   Triton compile  MLIR verify   LLVM emit
+                          │              │              │
+                       GPU result   correctness   GPU result
+                       (Stage 1)    cross-check   (Stage 4)
 
 Validation path (replaces numerical_check.py):
   SemanticInterpreter ── executes IR graph via OpDef.reference_impl (PyTorch eager)
@@ -704,15 +713,51 @@ class TritonCodegenPass:
             return PassResult.fail(str(exc))
         ctx.artifacts["triton_source"] = source
         return PassResult.ok(triton_source=source)
+
+
+class MLIRCodegenPass:
+    """Lower SemanticIR + StrategyIR to MLIR standard dialects.
+
+    Stage 1: BL1 basic pathway — emit linalg/transform MLIR for 13 ops,
+             verify via mlir-opt (correctness cross-check, not primary codegen).
+    Stage 2+: Full codegen — emit complete MLIR for all ops, alternative
+              compilation path alongside Triton.
+    """
+    name = "mlir_codegen"
+
+    def run(self, ctx: PassContext) -> PassResult:
+        from arke.backend.mlir_emitter import MLIREmitter
+        try:
+            mlir_source = MLIREmitter(ctx.registry).emit(
+                ctx.semantic, ctx.strategy
+            )
+        except Exception as exc:
+            ctx.add_error(self.name, str(exc))
+            return PassResult.fail(str(exc))
+        ctx.artifacts["mlir_source"] = mlir_source
+        return PassResult.ok(mlir_source=mlir_source)
+
+
+class LLVMCodegenPass:
+    """Lower Arke IR directly to LLVM IR (Stage 4).
+
+    Bypasses both Triton and MLIR. Requires HardwareIR + InstructionIR
+    to be fully implemented.
+    """
+    name = "llvm_codegen"
+
+    def run(self, ctx: PassContext) -> PassResult:
+        # Stage 4 stub — not implemented in Stage 1
+        raise NotImplementedError("LLVMCodegenPass requires Stage 4 InstructionIR")
 ```
 
 ### 4.4 Pass Categories Reference
 
-| Category | Modifies IR? | Adds artifacts? | Stage 1 examples |
+| Category | Modifies IR? | Adds artifacts? | Examples |
 |---|---|---|---|
 | Analysis | No | Yes | SSAValidationPass, ShapeInferencePass, TypeCheckPass |
 | Transform | Yes (replaces) | Yes | FusionPass, TilingPass |
-| Lowering | No | Yes (source) | TritonCodegenPass |
+| Lowering | No | Yes (source) | TritonCodegenPass, MLIRCodegenPass, LLVMCodegenPass |
 | Verification | No | Maybe | PostLowerCheckPass |
 
 ---
@@ -1139,10 +1184,11 @@ class CompiledKernel:
 class ArkeBackend(Protocol):
     """Protocol for Arke compilation backends.
 
-    Stage 1: TritonBackend  (GPU via Triton)
-    Stage 2: TritonBackend  (Ascend via Triton)
-    Stage 3: MLIRBackend    (GPU/NPU via MLIR)
-    Stage 4: LLVMBackend    (bare metal via LLVM IR)
+    Stage 1:   TritonBackend  (GPU via Triton)
+    Stage 1:   MLIRBackend   (framework + BL1 verify)
+    Stage 2:   TritonBackend  (Ascend via Triton) + MLIRBackend (full integration)
+    Stage 3:   MLIRBackend    (primary codegen, deeper hardware control)
+    Stage 4:   LLVMBackend    (direct LLVM IR emission)
     """
     name: str
 
@@ -1169,7 +1215,7 @@ class ArkeBackend(Protocol):
 
 @runtime_checkable
 class MLIRBackend(Protocol):
-    """Stage 3 backend via MLIR dialect."""
+    """MLIR backend — Stage 1: framework + BL1 verify; Stage 2-3: full integration."""
     name: str
     def lower(self, semantic: SemanticIR, strategy: StrategyIR) -> BackendArtifact: ...
     def compile(self, artifact: BackendArtifact) -> CompiledKernel: ...
@@ -1476,6 +1522,7 @@ Time unit: hours of agent wall-clock execution.
 | T14 | Implement `TemplateRouter` using `OpDef.template_hint` | `template_router.py` | 2h | T02, T06 |
 | T15 | Add `BackendRegistry` + typed artifacts | `backend/registry.py`, `protocol.py` | 1h | — |
 | T16 | Add `lower()`/`compile()` adapters to `TritonBackend` | `backend/triton_backend.py` | 0.5h | T15 |
+| T16b | `MLIREmitter` skeleton + BL1 pathway (13 ops → linalg/transform MLIR, verify via mlir-opt) | `backend/mlir_emitter.py`, `tests/test_mlir_emitter.py` | 2h | T02, T15 |
 | T17 | Integrate `ShapeInferenceEngine` into `builder.py` | `ir/builder.py` | 1h | T09 |
 | T18 | Swap `TemplateEngine` → `TemplateRouter` in `TritonBackend` | `backend/triton_backend.py` | 1h | T14 |
 | T19 | Swap `NumericalChecker` → `SemanticInterpreter` in `accuracy.py` | `engine/accuracy.py` | 1h | T10 |
@@ -1486,14 +1533,14 @@ Time unit: hours of agent wall-clock execution.
 | T24 | Full regression: run all 422 tests; fix failures | all | 2h | all |
 | T25 | Delete dead code (phase 4 cleanup) | multiple | 1h | T24 |
 
-**Total estimate: ~31 hours** (can be compressed with parallel execution)
+**Total estimate: ~33 hours** (can be compressed with parallel execution)
 
 ### 10.2 Phase Grouping
 
 ```
 Phase A (Foundation)   — T01, T02, T03, T04, T15        [~4h, parallel]
 Phase B (Annotation)   — T05, T06, T07, T08              [~7.5h, sequential in catalog.py]
-Phase C (Engines)      — T09, T10, T11, T14, T16         [~8h, parallel]
+Phase C (Engines)      — T09, T10, T11, T14, T16, T16b   [~10h, parallel]
 Phase D (Passes)       — T12, T13                        [~2.5h, after T09/T11]
 Phase E (Cutover)      — T17, T18, T19, T20, T21, T22   [~7h, sequential per subsystem]
 Phase F (Verify+Clean) — T23, T24, T25                  [~6h]
