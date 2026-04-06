@@ -13,13 +13,13 @@
 1. [Executive Summary](#1-executive-summary)
 2. [Multi-Layer Architecture Overview](#2-multi-layer-architecture-overview)
 3. [Layer 4: Semantic IR Spec v1.0](#3-layer-4-semantic-ir-spec-v10)
-4. [Layer 3: Compute IR Spec](#4-layer-3-compute-ir-spec)
+4. [Layer 3: Strategy IR Spec](#4-layer-3-strategy-ir-spec)
 5. [Layer 2: Hardware IR Spec](#5-layer-2-hardware-ir-spec)
 6. [Layer 1: Instruction IR](#6-layer-1-instruction-ir)
 7. [StrategyIR v1.0 Spec](#7-strategyir-v10-spec)
 8. [Pass Infrastructure Design](#8-pass-infrastructure-design)
 9. [JSON Schema & Compact Format](#9-json-schema--compact-format)
-10. [MLIR Mapping & Replacement Roadmap](#10-mlir-mapping--replacement-roadmap)
+10. [MLIR Integration Design](#10-mlir-integration-design)
 11. [Backward Compatibility](#11-backward-compatibility)
 12. [Stage 1 Implementation Scope](#12-stage-1-implementation-scope)
 
@@ -31,13 +31,13 @@
 
 Arke IR is the central intermediate representation of the Arke compiler toolchain — the backbone through which an AI accelerator kernel travels from high-level mathematical description down to hardware-specific binary.
 
-**Core positioning:** Arke IR is not a thin wrapper over MLIR. It is an **LLM-Native replacement** for MLIR in the AI compilation stack. Where MLIR is designed for human compiler engineers writing dialects and passes in C++, Arke IR is designed for:
+**Core positioning:** Arke IR is an **LLM-Native, layered IR** with complete expressiveness for AI kernel optimization. It can lower to MLIR (leveraging its standard dialects such as `linalg`, `transform`, `scf`, `gpu`), and can also lower to LLVM IR directly when deeper hardware control is needed. If MLIR fully satisfies the optimization requirements, Arke IR serves as the LLM-friendly frontend to the MLIR ecosystem. Arke IR is designed for:
 
 - **LLM Agents** as the primary decision-making consumer (Layer 4)
-- **Automated lowering passes** handling the descent to hardware (Layers 3 → 2 → 1)
-- **Direct LLVM IR emission** as the final target (Stage 4)
+- **Structured optimization decisions** that LLMs can understand and manipulate (Layer 3)
+- **Flexible lowering targets**: MLIR dialects (Stage 1-3) or direct LLVM IR (Stage 4)
 
-### 1.2 The Strategic Bet
+### 1.2 Arke IR vs Traditional IRs
 
 | Dimension | MLIR | Arke IR |
 |-----------|------|---------|
@@ -48,31 +48,33 @@ Arke IR is the central intermediate representation of the Arke compiler toolchai
 | LLVM IR path | Through lowering pipelines | Direct emit (Stage 4 goal) |
 | Adoption barrier | High (MLIR expertise required) | Low (Python + JSON) |
 
-Arke IR makes a deliberate trade: it sacrifices MLIR's generality (arbitrary CFG, infinite dialects) in exchange for **LLM-optimized ergonomics**. This is the correct trade for AI kernel optimization workloads where:
-- Control flow is structured (no arbitrary CFG needed)
+Arke IR focuses on LLM-optimized ergonomics for AI kernel optimization workloads where:
+- Control flow is structured (no arbitrary CFG needed at operator level)
 - The decision-maker is an LLM, not a human compiler author
 - JSON legibility enables agent introspection and learning
 
+Arke IR and MLIR are **complementary**: Arke IR provides the LLM-native interface; MLIR provides battle-tested compiler infrastructure. Arke IR lowers to MLIR standard dialects to leverage existing optimization passes and hardware backends.
+
 ### 1.3 Stage Evolution
 
-Arke IR grows incrementally, replacing MLIR progressively:
+Arke IR grows incrementally, with progressively deeper MLIR integration:
 
-| Stage | Arke IR Covers | MLIR Role | LLVM IR Path |
-|-------|---------------|-----------|--------------|
-| **Stage 1** | Layer 4 only | Not involved | Via Triton |
-| **Stage 2** | Layer 4 + 3 | Optional bridge | Via Triton |
-| **Stage 3** | Layer 4 + 3 + 2 | Replaced | Direct interface |
-| **Stage 4** | Full stack (all 4 layers) | Not needed | Direct emit |
+| Stage | Arke IR Scope | MLIR Integration | Codegen Path |
+|-------|-------------|------------------|--------------|
+| **Stage 1** | Layer 4 + 3 (L1) | Framework + BL1 basic pathway | Via Triton |
+| **Stage 2** | + L2 | Full capability (NVIDIA + Ascend) | Via Triton + MLIR |
+| **Stage 3** | + L3 | Complete integration, deeper HW control | MLIR primary |
+| **Stage 4** | Full stack | Available as optional target | Direct LLVM IR |
 
 ### 1.4 Design Philosophy
 
-**SSA by construction.** Layer 4 (SemanticIR) is a DAG where every Node output is written exactly once. SSA is not a constraint to enforce — it is a structural invariant of the representation itself.
+**SSA by construction.** SemanticIR (Layer 4) is a DAG where every Node output is written exactly once. SSA is not a constraint to enforce — it is a structural invariant of the representation itself.
 
-**CFG lives downstream.** Arke IR uses structured conditional flow (`ConditionalNode`) at Layer 4. Arbitrary control flow graphs appear only at Layer 1/LLVM IR, where they belong.
+**CFG lives downstream.** Arke IR uses structured conditional flow (`ConditionalNode`) at the operator level. Arbitrary control flow graphs appear only in MLIR lowering targets (e.g., `scf.if`, `scf.for`) or LLVM IR, where they belong.
 
 **JSON is not the IR.** JSON is the serialization format and the LLM Agent's API surface. The IR lives as Python dataclass objects in memory. JSON serialization is lossless but JSON is not where passes operate.
 
-**Strategy is always separate.** `SemanticIR` (what to compute) and `StrategyIR` (how to optimize) are distinct objects. The LLM Agent operates exclusively on `StrategyIR`. `SemanticIR` is immutable after construction.
+**Semantic/Strategy separation.** `SemanticIR` (what to compute) and `StrategyIR` (how to optimize) are distinct objects. The LLM Agent explores `StrategyIR` decisions while `SemanticIR` remains immutable after construction. This separation is the core Arke architectural principle.
 
 ---
 
@@ -91,19 +93,20 @@ Arke IR grows incrementally, replacing MLIR progressively:
 │  Python: arke/ir/semantic.py   JSON: SemanticIR v1.0           │
 │  Stage 1: IMPLEMENTED                                           │
 └────────────────────────┬────────────────────────────────────────┘
-                         │ Lowering Pass: SemanticToCompute
-                         │ (Stage 2)
+                         │ Lowering Pass: SemanticToStrategy
+                         │ (StrategyIR L1: Stage 1, L2: Stage 2)
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    Layer 3: Compute IR                          │
+│                    Layer 3: Strategy IR                         │
 │                                                                 │
-│  Loop nests + memory hierarchy. "How loops are structured."    │
-│  ForNode, IfNode, ReduceNode, LoadTile, StoreTile, MAC         │
-│  Memory: global / shared / register                            │
+│  Optimization decisions. "How to optimize."                    │
+│  L1: tile/fuse/vectorize/place (operator-level, LLM-driven)   │
+│  L2: loop nests + memory hierarchy (ForNode, LoadTile, MAC)   │
+│  L3: hardware mapping (thread/block/warp/vector assignment)    │
 │  ─────────────────────────────────────────────────────────     │
-│  Python: arke/ir/compute.py    JSON: ComputeIR v1.0 (opt.)    │
-│  Stage 1: SPEC ONLY, Stage 2: IMPLEMENTED                      │
+│  Python: arke/ir/strategy.py   JSON: StrategyIR v1.0          │
+│  Stage 1: L1 IMPLEMENTED, L2/L3: SPEC ONLY                    │
 └────────────────────────┬────────────────────────────────────────┘
-                         │ Lowering Pass: ComputeToHardware
+                         │ Lowering Pass: StrategyToHardware
                          │ (Stage 3)
 ┌────────────────────────▼────────────────────────────────────────┐
 │                    Layer 2: Hardware IR                         │
@@ -129,21 +132,44 @@ Arke IR grows incrementally, replacing MLIR progressively:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 StrategyIR Position
+#### MLIR Lowering Targets
 
-`StrategyIR` is **orthogonal** to the layer stack — it does not sit in the lowering chain. Instead, it informs how Layers 4→3→2 are lowered:
+Arke IR lowers to MLIR standard dialects. Each layer maps to specific dialect families:
 
 ```
-SemanticIR (Layer 4)
-       +
-StrategyIR v1.0          ←── LLM Agent writes this
+Arke IR Layer              MLIR Standard Dialects          Specialized Targets (examples)
+─────────────────────────────────────────────────────────────────────────────────────────
+Layer 4: SemanticIR   ──►  linalg / tensor                  (correctness verification)
+Layer 3: StrategyIR   ──►  transform / scf / affine          │
+         L1 decisions ──►  transform.structured.*             │
+         L2 decisions ──►  scf.for / scf.forall / memref      ├──►  Triton TTIR
+         L3 decisions ──►  gpu.launch / gpu.thread_id         │     Triton TTGPUIR
+Layer 2: HardwareIR   ──►  gpu / nvvm / rocdl                 │     CUDA Tile IR
+Layer 1: InstructionIR──►  llvm (LLVM dialect)               (direct LLVM IR)
+─────────────────────────────────────────────────────────────────────────────────────────
+```
+
+> **Note:** The "Specialized Targets" column shows concrete MLIR-based compilation
+> targets that Arke may lower to. They are all MLIR dialects internally.
+> See §10.4 for detailed mapping examples.
+
+### 2.2 StrategyIR as Layer 3
+
+`StrategyIR` **is** Layer 3 in the lowering chain. It represents the optimization decisions that the LLM Agent makes — from high-level tiling/fusion (L1) through loop nest structure (L2) to hardware mapping (L3):
+
+```
+SemanticIR (Layer 4)  ←── "What to compute" (immutable after construction)
+       │
+       │ SemanticToStrategy pass
+       │ (LLM Agent drives decisions)
+       ▼
+StrategyIR (Layer 3)  ←── "How to optimize" (LLM explores this)
+  L1: tile / fuse / vectorize / place
+  L2: loop nests + memory hierarchy
+  L3: thread / block / warp mapping
        │
        ▼
-  Lowering Passes
-  (Strategy decisions guide how SemanticIR nodes map to ComputeIR)
-       │
-       ▼
-ComputeIR (Layer 3) → HardwareIR (Layer 2) → InstructionIR (Layer 1)
+HardwareIR (Layer 2) → InstructionIR (Layer 1)
 ```
 
 ### 2.3 JSON Roles by Layer
@@ -151,7 +177,7 @@ ComputeIR (Layer 3) → HardwareIR (Layer 2) → InstructionIR (Layer 1)
 | Layer | JSON Role | Used For |
 |-------|-----------|----------|
 | **Layer 4** | **Primary representation** | Agent API, serialization, debug, caching |
-| **Layer 3** | Optional dump | Debug inspection, LLM review of loop nests |
+| **Layer 3** | **Primary** (L1 decisions) / Optional (L2/L3) | LLM Agent API + debug inspection |
 | **Layer 2** | Optional dump | Debug only (hardware mapping details) |
 | **Layer 1** | **None** | Directly emit LLVM IR; no JSON intermediary |
 
@@ -161,12 +187,12 @@ ComputeIR (Layer 3) → HardwareIR (Layer 2) → InstructionIR (Layer 1)
 class LoweringPipeline:
     """Full IR lowering chain: Layer 4 → Layer 1."""
 
-    def lower_to_compute(
+    def lower_to_strategy(
         self, sem: SemanticIR, strategy: StrategyIR
-    ) -> ComputeIR: ...  # Stage 2
+    ) -> StrategyIR: ...  # Stage 1 (L1), Stage 2 (L2)
 
     def lower_to_hardware(
-        self, compute: ComputeIR, target: HWTarget
+        self, strategy: StrategyIR, target: HWTarget
     ) -> HardwareIR: ...  # Stage 3
 
     def lower_to_instruction(
@@ -888,28 +914,30 @@ class SSAVerifier:
 
 ---
 
-## 4. Layer 3: Compute IR Spec
+## 4. Layer 3: Strategy IR Spec
 
-> **Stage 1 status: SPEC ONLY — not implemented.**  
-> Implementation target: Stage 2.
+> **Stage 1 status: L1 IMPLEMENTED, L2/L3 SPEC ONLY.**  
+> L2 implementation target: Stage 2. L3 implementation target: Stage 3.
 
 ### 4.1 Purpose
 
-Layer 3 bridges the gap between operator semantics (Layer 4) and hardware resources (Layer 2). It represents the **loop nest + memory hierarchy** structure that a kernel implements — the "how loops are organized" layer.
+Layer 3 is the **Strategy IR** — it captures the full spectrum of optimization decisions that transform operator semantics (Layer 4) into hardware-executable code. StrategyIR is where the LLM Agent operates: exploring tiling, fusion, memory placement, loop nest structure, and hardware mapping.
 
-Key abstractions:
-- Explicit loop nests (`ForNode`, `IfNode`)
-- Memory tier placement (`global`, `shared`, `register`)
-- Compute primitives (`MAC`, `ReduceNode`)
-- Tile load/store operations (`LoadTile`, `StoreTile`)
+StrategyIR has three levels of depth:
 
-### 4.2 Relationship to StrategyIR
+| Level | Scope | LLM Role | Stage |
+|-------|-------|----------|-------|
+| **L1** | Operator-level decisions: tile, fuse, vectorize, place, launch_config | Primary decision maker | Stage 1 |
+| **L2** | Loop nest + memory hierarchy: explicit ForNode, LoadTile, MAC, memory tiers | Guided exploration | Stage 2-3 |
+| **L3** | Hardware mapping: thread/block/warp assignment, barrier, register allocation | Expert-level (optional) | Stage 3-4 |
+
+### 4.2 Relationship to SemanticIR
 
 ```
-SemanticIR (Layer 4) + StrategyIR decisions
+SemanticIR (Layer 4) + StrategyIR L1 decisions
               │
               ▼
-     SemanticToComputePass
+     SemanticToStrategy pass (L1 → L2 expansion)
               │
       tile(M=64) → ForNode("i_outer", range=M//64)
       tile(K=32) → ForNode("k_inner", range=K//32)
@@ -917,13 +945,15 @@ SemanticIR (Layer 4) + StrategyIR decisions
       parallel(i→block.x) → ForNode marked grid_dim=blockIdx.x
               │
               ▼
-       ComputeIR (Layer 3)
+       StrategyIR L2 (explicit loop nests + memory)
 ```
 
-### 4.3 Complete Python Schema
+### 4.3 L2 Compute Schema (Python)
+
+The following schema defines the L2 compute structures within StrategyIR — the explicit loop nests, memory hierarchy, and compute primitives that emerge from expanding L1 decisions.
 
 ```python
-# arke/ir/compute.py — ComputeIR v1.0 (Stage 1: spec only)
+# arke/ir/strategy_compute.py — StrategyIR L2 structures (Stage 1: spec only)
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Union
@@ -1031,14 +1061,14 @@ class ComputeOp:
 ComputeNode = Union[ForNode, IfNode, LoadTile, StoreTile, MAC, ReduceNode, ComputeOp]
 
 
-# ─── Top-Level ComputeIR ───────────────────────────────────────────────────
+# ─── Top-Level StrategyIR L2 Container ─────────────────────────────────────
 
 @dataclass
-class ComputeIR:
-    """Layer 3 of Arke IR — the Compute IR.
+class StrategyComputeIR:
+    """StrategyIR Level 2 — explicit loop nests + memory hierarchy.
 
-    Explicit loop nests + memory hierarchy.
-    Generated from SemanticIR + StrategyIR by SemanticToComputePass.
+
+    Generated from SemanticIR + StrategyIR L1 by SemanticToStrategy L2 pass.
     """
     version: str = "1.0.0"
     kernel_id: str = ""
@@ -1048,16 +1078,16 @@ class ComputeIR:
     metadata: dict[str, Any] = field(default_factory=dict)
 ```
 
-### 4.4 MLIR Mapping
+### 4.4 MLIR Mapping (L2 Structures)
 
-| ComputeIR Node | MLIR Equivalent | Notes |
-|----------------|-----------------|-------|
+| StrategyIR L2 Node | MLIR Standard Dialect | Notes |
+|--------------------|----------------------|-------|
 | `ForNode` (sequential) | `scf.for` | Loop variable and range map directly |
 | `ForNode` (grid_dim set) | `scf.forall` / `gpu.launch` | Parallel loop → GPU dimension |
 | `IfNode` | `scf.if` | Structured conditional |
 | `LoadTile` | `memref.copy` + `affine.load` | Tiled load with affine maps |
 | `StoreTile` | `affine.store` + `memref.copy` | Tiled store |
-| `MAC` | `linalg.matmul` (inner tile) or `nvgpu.warpgroup_mma` | Tensor core variant uses NVGPU dialect |
+| `MAC` | `linalg.matmul` (inner tile) | Tensor core variant via target-specific dialect |
 | `ReduceNode` | `linalg.reduce` | With appropriate combiner region |
 | `MemoryBuffer` (shared) | `memref` with `#gpu.address_space<workgroup>` | Shared SMEM buffer |
 | `MemoryBuffer` (register) | `memref` with `#gpu.address_space<private>` | Register buffer |
@@ -1167,8 +1197,8 @@ HWNode = Union[
 class HardwareIR:
     """Layer 2 of Arke IR — the Hardware IR.
 
-    Maps ComputeIR to concrete GPU execution model.
-    Generated from ComputeIR by ComputeToHardwarePass.
+    Maps StrategyIR L2/L3 to concrete GPU execution model.
+    Generated from StrategyIR by StrategyToHardwarePass.
     """
     version: str = "1.0.0"
     kernel_id: str = ""
@@ -1625,6 +1655,24 @@ class StrategyIR:
 }
 ```
 
+### 7.5 MLIR Lowering by Strategy Level
+
+Each StrategyIR level maps to specific MLIR dialect families:
+
+| Level | StrategyIR Decisions | MLIR Standard Dialects | Lowering Example |
+|-------|---------------------|----------------------|------------------|
+| **L1** | `tile`, `fuse`, `vectorize`, `place` | `transform` dialect | `tile(M, [64])` → `transform.structured.tile_using_for %op tile_sizes [64]` |
+| **L1** | `reorder` | `transform` dialect | `reorder([M,N,K])` → `transform.structured.interchange %op [0,1,2]` |
+| **L2** | `ForNode`, `LoadTile`, `MAC` | `scf` / `affine` / `memref` | `ForNode("k", 0, K, 32)` → `scf.for %k = 0 to %K step 32` |
+| **L2** | `MemoryBuffer(shared)` | `memref` + address spaces | `place(A, shared)` → `memref.alloc<workgroup>` |
+| **L3** | `parallel`, `launch_config` | `gpu` dialect | `parallel(M, blockIdx.x)` → `gpu.launch blocks(%M)` |
+| **L3** | `compute_resource` | `gpu` dialect | `num_warps=4` → `gpu.launch_func` params |
+
+The `@rationale` annotation is preserved at all levels:
+```mlir
+transform.annotate %tiled "arke.rationale" = "M-tile=64: aligned to L2 cache lines"
+```
+
 ---
 
 ## 8. Pass Infrastructure Design
@@ -1750,19 +1798,19 @@ class Pipeline:
 from typing import Protocol
 
 
-class SemanticToComputePass(Protocol):
-    """Lower SemanticIR + StrategyIR -> ComputeIR.  (Stage 2)"""
-    name = "semantic_to_compute"
-    def run(self, semantic: "SemanticIR", strategy: "StrategyIR") -> "ComputeIR": ...
+class SemanticToStrategyL2Pass(Protocol):
+    """Lower SemanticIR + StrategyIR L1 -> StrategyIR L2.  (Stage 2)"""
+    name = "semantic_to_strategy_l2"
+    def run(self, semantic: "SemanticIR", strategy: "StrategyIR") -> "StrategyComputeIR": ...
     def verify_pre(self, ir: "SemanticIR") -> list[str]: ...
-    def verify_post(self, ir: "ComputeIR") -> list[str]: ...
+    def verify_post(self, ir: "StrategyComputeIR") -> list[str]: ...
 
 
-class ComputeToHardwarePass(Protocol):
-    """Lower ComputeIR -> HardwareIR.  (Stage 3)"""
-    name = "compute_to_hardware"
-    def run(self, compute: "ComputeIR", target: str) -> "HardwareIR": ...
-    def verify_pre(self, ir: "ComputeIR") -> list[str]: ...
+class StrategyToHardwarePass(Protocol):
+    """Lower StrategyIR L2/L3 -> HardwareIR.  (Stage 3)"""
+    name = "strategy_to_hardware"
+    def run(self, strategy: "StrategyComputeIR", target: str) -> "HardwareIR": ...
+    def verify_pre(self, ir: "StrategyComputeIR") -> list[str]: ...
     def verify_post(self, ir: "HardwareIR") -> list[str]: ...
 
 
@@ -1902,51 +1950,104 @@ class StrategyIRInvariantChecker:
 
 ---
 
-## 10. MLIR Mapping & Replacement Roadmap
+## 10. MLIR Integration Design
 
-### 10.1 Current Mapping (Stage 1)
+### 10.1 Core Principle
+
+Arke IR lowers to **MLIR standard dialects** (`linalg`, `transform`, `scf`, `affine`, `gpu`, `memref`, `llvm`). The MLIR ecosystem provides battle-tested optimization passes and hardware backends; Arke IR provides the LLM-native interface layer above it.
+
+### 10.2 Layer-to-Dialect Mapping
 
 Full field-level mapping: `docs/spec/ir-mlir-mapping.md`. Summary:
 
-| Arke IR | MLIR Dialect | Notes |
-|---------|-------------|-------|
-| SemanticIR nodes | `linalg` / `tensor` | matmul -> `linalg.matmul`; relu -> `linalg.generic` |
-| StrategyIR decisions | `transform` | tile -> `transform.structured.tile_using_for` |
+| Arke IR Layer | MLIR Standard Dialects | Role |
+|---------------|----------------------|------|
+| SemanticIR (Layer 4) | `linalg` / `tensor` | Math semantics: matmul → `linalg.matmul`, relu → `linalg.generic` |
+| StrategyIR L1 decisions | `transform` | Optimization: tile → `transform.structured.tile_using_for` |
+| StrategyIR L2 structures | `scf` / `affine` / `memref` | Loop nests: ForNode → `scf.for`; memory: `memref` + address spaces |
+| StrategyIR L3 decisions | `gpu` | Hardware: `gpu.launch`, `gpu.thread_id`, block/warp mapping |
+| HardwareIR (Layer 2) | `gpu` / `nvvm` / `rocdl` | Target-specific: shared memory, barriers, MMA instructions |
+| InstructionIR (Layer 1) | `llvm` | Direct LLVM IR emission |
 | `@rationale` | `transform.annotate` | Preserved as `"arke.rationale"` attribute |
-| `FusionGroup` | `transform.structured.fuse_into_containing_op` | epilogue fusion |
-| ConditionalNode | `scf.if` | Stage 3 mapping |
-| ComputeIR ForNode | `scf.for` / `scf.forall` | Loop nests |
-| HardwareIR SharedAlloc | `memref` + workgroup address space | SMEM buffer |
+| `FusionGroup` | `transform.structured.fuse_into_containing_op` | Epilogue fusion |
 
-### 10.2 Stage-by-Stage MLIR Relationship
+### 10.3 Stage-by-Stage MLIR Integration
 
 ```
-Stage 1 -- No MLIR in path:
-  SemanticIR + StrategyIR -> Jinja2 templates -> Triton Python -> GPU
+Stage 1 ── MLIR framework + BL1 basic pathway:
+  Primary: SemanticIR + StrategyIR L1 → Jinja2 templates → Triton Python → GPU
+  MLIR:    MLIREmitter skeleton; BL1 ops (13) emit linalg/transform MLIR
+           for correctness cross-check (verify via mlir-opt)
 
-Stage 2 -- ComputeIR as optional MLIR bridge:
-  ComputeIR can emit scf/affine MLIR for validation/debug
-  Primary path: ComputeIR -> Triton
+Stage 2 ── Full MLIR integration:
+  StrategyIR L2 → scf/affine/memref MLIR
+  Both Triton and MLIR paths active; MLIR for validation + alternative codegen
 
-Stage 3 -- HardwareIR replaces MLIR gpu/nvvm:
-  HardwareIR -> LLVM IR (directly or via nvvm bridge)
-  MLIR becomes one optional backend
+Stage 3 ── Complete integration, deeper hardware control:
+  StrategyIR L3 + HardwareIR → gpu/nvvm/rocdl MLIR
+  MLIR becomes primary codegen path for multi-target (NVIDIA + Ascend)
 
-Stage 4 -- Full Arke IR, MLIR removed from default build:
-  InstructionIR -> llvmlite -> PTX -> cubin
+Stage 4 ── Direct LLVM IR, MLIR as optional target:
+  InstructionIR → LLVM IR directly
+  MLIR path remains available for targets where it is optimal
 ```
 
-### 10.3 Why Replace MLIR (Not Wrap It)
+### 10.4 Arke IR vs MLIR Comparison
 
-| Requirement | MLIR | Arke IR |
-|-------------|------|---------|
-| LLM legibility | Poor (C++ text IR) | First-class (JSON/Python) |
-| Agent action space | Unbounded | Bounded (structured decisions) |
+| Dimension | MLIR | Arke IR |
+|-----------|------|---------|
+| LLM legibility | Poor (C++ text IR, verbose) | First-class (JSON/Python) |
+| Agent action space | Unbounded (any dialect op) | Bounded (structured decisions) |
 | New op support | New C++ dialect | Row in `ops/catalog.py` |
 | `@rationale` capture | External tooling | First-class field |
 | Serialization | Custom text format | Standard JSON |
 | Learning signals | None | Trajectory JSONL with rationale |
 | Debugging | llvm-opt toolchain | Python `to_json()` |
+| Hardware backends | Extensive ecosystem | Leverages MLIR ecosystem via lowering |
+
+Arke IR and MLIR are complementary: Arke IR is the LLM-facing layer, MLIR is the compiler-facing layer. If future MLIR developments provide LLM-friendly interfaces, Arke can directly reuse them.
+
+### 10.5 Specialized Target Examples
+
+While Arke IR targets MLIR standard dialects, concrete compilation targets may involve specialized MLIR-based IRs. This section illustrates how Arke IR maps to them.
+
+#### Triton TTIR / TTGPUIR
+
+Triton's internal compilation pipeline uses MLIR dialects:
+- **TTIR** (`tt` dialect): tile-level operations (`tt.dot`, `tt.reduce`, `tt.load`/`tt.store`)
+- **TTGPUIR** (`triton_gpu` dialect): GPU-specific scheduling (coalesce, pipeline, accelerate_matmul)
+- **TTNVGPUIR** (`triton_nvidia_gpu` dialect): NVIDIA-specific (TMA, fence, CTA planning)
+
+```
+Arke Layer              MLIR Standard          Triton Specialized
+──────────────────────────────────────────────────────────────────────
+SemanticIR            linalg/tensor        →  tt.dot, tt.reduce
+StrategyIR L1         transform            →  (via Triton frontend)
+StrategyIR L2         scf/memref           →  TTGPUIR layout/pipeline
+StrategyIR L3         gpu                  →  TTNVGPUIR (TMA, CTA)
+```
+
+#### NVIDIA CUDA Tile IR (CuTe / CUTLASS)
+
+CUDA Tile IR (from CUTLASS/CuTe) describes tile-level data movement between memory hierarchies:
+- **Tile layouts**: describing how data tiles map from global → shared → register memory
+- **MMA descriptors**: mapping tile shapes to hardware MMA instructions (HMMA, IMMA)
+- **Copy atoms**: minimal data movement primitives between memory tiers
+
+```
+Arke Layer              MLIR Standard          CUDA Tile IR Concepts
+──────────────────────────────────────────────────────────────────────
+StrategyIR L2         memref/affine         →  Tile layouts, copy atoms
+  LoadTile            memref.copy           →  CuTe copy_async (G→S)
+  MAC                 linalg.matmul         →  CuTe MMA descriptor
+StrategyIR L3         gpu                   →  Warp-group scheduling
+  place(shared)       memref+workgroup      →  SMEM tile allocation
+HardwareIR            gpu/nvvm              →  HMMA/IMMA instruction selection
+```
+
+> These specialized mappings are **implementation details** of specific backends.
+> Arke IR's architecture is defined in terms of MLIR standard dialects;
+> backend implementations may leverage specialized dialects as optimization targets.
 
 ---
 
@@ -2025,21 +2126,22 @@ strategy = StrategyIR.from_json(old_json)
 | `Pass` protocol | IMPLEMENT | `arke/ir/passes/base.py` |
 | `Pipeline` skeleton | IMPLEMENT | `arke/ir/passes/pipeline.py` |
 | Lowering pass **interfaces** (protocols only) | SPEC ONLY | `arke/ir/passes/lowering.py` |
-| **ComputeIR full schema** | SPEC ONLY | `arke/ir/compute.py` (file exists, stub) |
+| **StrategyIR L2 schema** | SPEC ONLY | `arke/ir/strategy_compute.py` (StrategyIR L2 structures) |
 | **HardwareIR interface** | SPEC ONLY | `arke/ir/hardware.py` (file exists, stub) |
 | **InstructionIR interface** | SPEC ONLY | `arke/ir/instruction.py` (file exists, stub) |
-| `SemanticToComputePass` | SPEC ONLY | `arke/ir/passes/lowering.py` |
-| `ComputeToHardwarePass` | SPEC ONLY | `arke/ir/passes/lowering.py` |
-| `HardwareToInstructionPass` | SPEC ONLY | `arke/ir/passes/lowering.py` |
+| **MLIR framework** | IMPLEMENT | `arke/backend/mlir_emitter.py` (skeleton) |
+| **BL1 MLIR pathway** | IMPLEMENT | 13 BL1 ops → linalg/transform MLIR + mlir-opt verify |
+| `SemanticToStrategyL2Pass` | SPEC ONLY | `arke/ir/passes/lowering.py` |
+| `StrategyToHardwarePass` | SPEC ONLY | `arke/ir/passes/lowering.py` |
 
 ### 12.2 What Is Deferred to Later Stages
 
 | Component | Stage | Rationale |
 |-----------|-------|-----------|
-| `SemanticToComputePass` implementation | Stage 2 | Requires ComputeIR to be stable |
-| `ComputeToHardwarePass` implementation | Stage 3 | Requires HardwareIR design complete |
+| `SemanticToStrategyL2Pass` implementation | Stage 2 | Requires StrategyIR L2 schema stable |
+| `StrategyToHardwarePass` implementation | Stage 3 | Requires HardwareIR design complete |
 | `HardwareToInstructionPass` implementation | Stage 4 | Requires LLVM IR binding design |
-| MLIR backend (`arke/backend/mlir_backend.py`) | Stage 3 | Consumes HardwareIR |
+| Full MLIR codegen (beyond BL1 verify) | Stage 2-3 | Full integration after L2/L3 implemented |
 | InstructionIR full schema | Stage 4 | Depends on LLVM Python binding choice |
 | PTX/cubin direct emission | Stage 4 | Follows InstructionIR |
 | `torch.compile` Inductor backend | Stage 3+ | Follows MLIR backend |
@@ -2105,7 +2207,7 @@ arke/ir/
 ├── __init__.py
 ├── semantic.py          <- SemanticIR v1.0 (Layer 4)
 ├── strategy.py          <- StrategyIR v1.0
-├── compute.py           <- ComputeIR v1.0 (Layer 3) [Stage 1: stub]
+├── strategy_compute.py  <- StrategyIR L2 structures (Layer 3) [Stage 1: stub]
 ├── hardware.py          <- HardwareIR v1.0 (Layer 2) [Stage 1: stub]
 ├── instruction.py       <- InstructionIR v1.0 (Layer 1) [Stage 1: interface]
 ├── builder.py           <- IR builder utilities
