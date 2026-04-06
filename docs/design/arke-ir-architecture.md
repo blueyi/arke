@@ -42,16 +42,16 @@ Arke IR is the central intermediate representation of the Arke compiler toolchai
 | Dimension | MLIR | Arke IR |
 |-----------|------|---------|
 | Primary author | Human compiler engineer | LLM Agent |
-| Representation | Text/binary (C++ objects) | Python dataclasses + JSON |
-| Extensibility | New dialect in C++ | New op in `ops/catalog.py` |
-| LLM legibility | Poor (verbose, C++ centric) | First-class (JSON native) |
-| LLVM IR path | Through lowering pipelines | Direct emit (Stage 4 goal) |
-| Adoption barrier | High (MLIR expertise required) | Low (Python + JSON) |
+| Representation | C++ objects, text/binary format | Arke Lang syntax (`.ak`), serializable to JSON |
+| Extensibility | New dialect in C++ | Declarative op definition in op registry |
+| LLM legibility | Poor (verbose, C++ centric) | First-class (structured, minimal-token) |
+| LLVM IR path | Through lowering pipelines | Through MLIR or direct emit |
+| Adoption barrier | High (MLIR/C++ expertise required) | Low (Python + Arke Lang) |
 
 Arke IR focuses on LLM-optimized ergonomics for AI kernel optimization workloads where:
 - Control flow is structured (no arbitrary CFG needed at operator level)
 - The decision-maker is an LLM, not a human compiler author
-- JSON legibility enables agent introspection and learning
+- Structured representation enables agent introspection and learning
 
 Arke IR and MLIR are **complementary**: Arke IR provides the LLM-native interface; MLIR provides battle-tested compiler infrastructure. Arke IR lowers to MLIR standard dialects to leverage existing optimization passes and hardware backends.
 
@@ -72,7 +72,7 @@ Arke IR grows incrementally, with progressively deeper MLIR integration:
 
 **CFG lives downstream.** Arke IR uses structured conditional flow (`ConditionalNode`) at the operator level. Arbitrary control flow graphs appear only in MLIR lowering targets (e.g., `scf.if`, `scf.for`) or LLVM IR, where they belong.
 
-**JSON is not the IR.** JSON is the serialization format and the LLM Agent's API surface. The IR lives as Python dataclass objects in memory. JSON serialization is lossless but JSON is not where passes operate.
+**JSON is a serialization format, not the IR itself.** Arke IR has its own language syntax (`.ak` files, see `arke-lang-spec`). JSON is a lossless serialization used for LLM Agent communication, caching, and debugging. The IR lives as typed data structures in memory; passes operate on these structures, not on JSON text.
 
 **Semantic/Strategy separation.** `SemanticIR` (what to compute) and `StrategyIR` (how to optimize) are distinct objects. The LLM Agent explores `StrategyIR` decisions while `SemanticIR` remains immutable after construction. This separation is the core Arke architectural principle.
 
@@ -87,7 +87,7 @@ Arke IR grows incrementally, with progressively deeper MLIR integration:
 │                    Layer 4: Semantic IR                         │
 │                                                                 │
 │  Operator-level DAG. "What to compute."                        │
-│  Primary LLM Agent interface. JSON-first.                      │
+│  Primary LLM Agent interface. Serializable to JSON.              │
 │  SymbolicDim, ConditionalNode, MultiOutputNode                 │
 │  ─────────────────────────────────────────────────────────     │
 │  Python: arke/ir/semantic.py   JSON: SemanticIR v1.0           │
@@ -1996,13 +1996,13 @@ Stage 4 ── Direct LLVM IR, MLIR as optional target:
 
 | Dimension | MLIR | Arke IR |
 |-----------|------|---------|
-| LLM legibility | Poor (C++ text IR, verbose) | First-class (JSON/Python) |
+| LLM legibility | Poor (C++ text IR, verbose) | First-class (Arke Lang syntax, structured) |
 | Agent action space | Unbounded (any dialect op) | Bounded (structured decisions) |
-| New op support | New C++ dialect | Row in `ops/catalog.py` |
-| `@rationale` capture | External tooling | First-class field |
-| Serialization | Custom text format | Standard JSON |
+| New op support | New C++ dialect | Declarative op definition in op registry |
+| `@rationale` capture | External tooling | First-class language construct |
+| Serialization | Custom text format | Arke Lang (`.ak`) + JSON serialization |
 | Learning signals | None | Trajectory JSONL with rationale |
-| Debugging | llvm-opt toolchain | Python `to_json()` |
+| Debugging | llvm-opt toolchain | Arke toolchain (inspect, verify, dump) |
 | Hardware backends | Extensive ecosystem | Leverages MLIR ecosystem via lowering |
 
 Arke IR and MLIR are complementary: Arke IR is the LLM-facing layer, MLIR is the compiler-facing layer. If future MLIR developments provide LLM-friendly interfaces, Arke can directly reuse them.
