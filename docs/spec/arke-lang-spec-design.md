@@ -28,7 +28,7 @@
 
 ### 1.1 What Is Arke Language?
 
-The Arke Language (`.ak`) is the top-level human- and LLM-facing interface to the Arke compilation pipeline. It is the entry point to Arke IR's LLM-Native multi-layer architecture (see `arke-ir-architecture.md`). An `.ak` file describes:
+The Arke Language (`.ak`) is the top-level human- and LLM-facing interface to the Arke compilation pipeline. It is the entry point to Arke IR's LLM-Native multi-layer architecture (see `arke-ir-spec-design.md`). An `.ak` file describes:
 
 1. **What to compute** — a `kernel` block encoding operator-level semantics (maps to SemanticIR)
 2. **How to optimize** — an optional `strategy` block encoding optimization decisions (maps to StrategyIR)
@@ -82,7 +82,7 @@ LLVM IR / MLIR standard dialects
 
 The `.ak` kernel block maps directly to Layer 4 (SemanticIR). The `.ak` strategy block maps directly to Layer 3 (StrategyIR L1 decisions). v2.0’s symbolic shapes and `where` clause are first-class in Layer 4.
 
-Arke IR can lower through MLIR standard dialects (`linalg`, `transform`, `scf`, `gpu`) or directly to LLVM IR. See `arke-ir-architecture.md` §10 for MLIR integration details.
+Arke IR can lower through MLIR standard dialects (`linalg`, `transform`, `scf`, `gpu`) or directly to LLVM IR. See `arke-ir-spec-design.md` §10 for MLIR integration details.
 
 ---
 
@@ -272,7 +272,7 @@ All v1.0 directives remain valid. v2.0 adds backend-agnostic alternatives.
 
 #### v2.0 Backend-Agnostic Directives (new)
 
-**`compute`** — Backend-agnostic compute resource directive. Maps to StrategyIR L2 `compute_resource` decision kind (see `arke-ir-architecture.md` §7). Replaces Triton-specific `launch_config`:
+**`compute`** — Backend-agnostic compute resource directive. Maps to StrategyIR L2 `compute_resource` decision kind (see `arke-ir-spec-design.md` §7). Replaces Triton-specific `launch_config`:
 
 ```
 compute(parallelism=128, pipeline_depth=3)

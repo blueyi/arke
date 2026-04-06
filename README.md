@@ -195,8 +195,8 @@ achieves maximum hardware expression completeness and performance headroom.
 
 | Spec                                                     | Description                                            |
 | -------------------------------------------------------- | ------------------------------------------------------ |
-| [arke-lang-spec-v1.md](docs/spec/arke-lang-spec-v1.md) | Arke language spec — syntax, type system, built-in ops |
-| [arke-ir-spec-v1.md](docs/spec/arke-ir-spec-v1.md)             | Arke IR spec — Semantic IR / Strategy IR structure     |
+| [arke-lang-spec-design.md](docs/spec/arke-lang-spec-design.md) | Arke language spec v2.0 design |
+| [arke-ir-spec-design.md](docs/spec/arke-ir-spec-design.md)     | Arke IR spec — multi-layer architecture design         |
 
 
 ### Phase 1: Arke → Triton → GPU — Validate Hypothesis

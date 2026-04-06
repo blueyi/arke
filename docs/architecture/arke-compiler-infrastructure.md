@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-This document specifies the compiler infrastructure that serves Arke IR's **LLM-Native multi-layer architecture** (see `arke-ir-architecture.md`). The compiler pipeline transforms `.ak` source through SemanticIR and StrategyIR, lowering to multiple backends (Triton, MLIR, LLVM IR) via a composable pass system.
+This document specifies the compiler infrastructure that serves Arke IR's **LLM-Native multi-layer architecture** (see `arke-ir-spec-design.md` (in `docs/spec/`)). The compiler pipeline transforms `.ak` source through SemanticIR and StrategyIR, lowering to multiple backends (Triton, MLIR, LLVM IR) via a composable pass system.
 
 Arke's compiler has a structural problem: the knowledge about each of its 45 ops is scattered across **6 separate files** (~3000 lines of redundant code total). Adding one new op requires touching 6 files and writing ~100 lines. The fix is a single architectural change — a unified **OpRegistry as the Single Source of Truth** — combined with a **Pass Infrastructure** that organizes compilation into composable, testable stages.
 
