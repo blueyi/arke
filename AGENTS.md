@@ -37,9 +37,9 @@ checkpoint() / rollback() → Explore and backtrack safely
 
 ## Key References
 
-- `docs/design/e2e-flow.md` — Full optimization flow (Phase 1→4)
-- `docs/design/benchmark-design.md` — BL/OT/ST/L benchmark framework
-- `docs/design/stage1/stage1-gate-design.md` — Gate exit criteria
+- `docs/architecture/e2e-flow.md` — Full optimization flow (Phase 1→4)
+- `docs/benchmark/benchmark-design.md` — BL/OT/ST/L benchmark framework
+- `docs/phase1/gate-design.md` — Gate exit criteria
 - `docs/spec/arke-lang-spec-v1.md` — `.ak` language specification
 - `docs/spec/arke-ir-spec-v1.md` — Semantic IR + Strategy IR specification
 
@@ -65,7 +65,7 @@ benchmarks/       — Gate system, baselines
 - **OT3** Fused Compound (7): swiglu, geglu, rmsnorm_residual, fused_matmul_gelu...
 - **OT4** Attention (5): flash_attention, GQA, MLA, paged_attention...
 
-→ Full catalog: `docs/design/benchmark/benchmark-ops.md`
+→ Full catalog: `docs/benchmark/benchmark-ops.md`
 
 ---
 

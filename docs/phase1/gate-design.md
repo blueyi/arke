@@ -1,18 +1,18 @@
-# Arke Stage 1 — Gate Design
+# Arke Phase 1 — Gate Design
 
 > **Document purpose:** Using the BL/OT/ST/L layered system from `benchmark-design.md` as the sole
-> measurement standard, this document defines the exit criteria for all nine Stage 1 Gates (G0-G8),
+> measurement standard, this document defines the exit criteria for all nine Phase 1 Gates (G0-G8),
 > and back-derives the required capabilities and development items for each layer from the Gate exit conditions.
 >
-> 中文版：[stage1-gate-design.zh.md](stage1-gate-design.zh.md)
+> 中文版：[phase1-gate-design.zh.md](phase1-gate-design.zh.md)
 >
 > **Design principles:**
 > - Gate exit = a specific BL × L combination, directly verifiable via the `arke bench` command
 > - `benchmark-design.md` is the sole measurement Source of Truth; no custom metrics outside the BL system
 > - Back-derive from Gate exit → layer capability requirements → concrete development items (ready for task board)
-> - G6 = Lang/IR completeness (BL5×L1+L2); G7 = Arke Autonomous Engineering; G8 = Stage 1 final acceptance
+> - G6 = Lang/IR completeness (BL5×L1+L2); G7 = Arke Autonomous Engineering; G8 = Phase 1 final acceptance
 >
-> **Future reference:** Starting from Stage 2, create `stage2-gate-design.md` etc. in this format.
+> **Future reference:** Starting from Phase 2, create `phase2-gate-design.md` etc. in this format.
 >
 > *Created: 2026-04-05 | benchmark-design.md rev: 2026-04-05*
 
@@ -26,7 +26,7 @@
 4. [Part II — G5 (Passed, Standard Retrospective Rewrite)](#4-part-ii--g5-passed-standard-retrospective-rewrite)
 5. [G6 — BL5×L1+L2: Lang & IR Completeness (Current Target)](#5-g6--bl5l1l2-lang--ir-completeness-current-target)
 6. [G7 — Arke Autonomous Engineering](#6-g7--arke-autonomous-engineering)
-7. [G8 — Stage 1 Final Acceptance](#7-g8--stage-1-final-acceptance)
+7. [G8 — Phase 1 Final Acceptance](#7-g8--stage-1-final-acceptance)
 8. [Gate Dependency Chain](#8-gate-dependency-chain)
 9. [Development Items Appendix](#9-development-items-appendix)
 10. [Mapping to execution-plan.md](#10-mapping-to-execution-planmd)
@@ -105,7 +105,7 @@ L3 ≡ BL6  -    -    -    -    -    ✓     E2E model perf
 | **G5** | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | All basic ops + E2E correctness | Latency known-fail 1.71-2.20× | ✅ |
 | **G6** | BL5×L1+L2 | L1+L2 | **Lang & IR Completeness** | 45 ops all shapes | ⬜ |
 | **G7** | BL5 inherited + BL6×L3(LLaMA-2+DS-V2) | L1+L2+L3 | **Arke Autonomous Engineering** | Auto-gen + ≥3 iter rounds + 2 model E2E | ⬜ |
-| **G8** | BL6×L3(4 models) + BL5 regression | L1+L2+L3 | Stage 1 final acceptance | 4 models, Arke vs LLM-direct comparison | ⬜ |
+| **G8** | BL6×L3(4 models) + BL5 regression | L1+L2+L3 | Phase 1 final acceptance | 4 models, Arke vs LLM-direct comparison | ⬜ |
 
 ---
 
@@ -208,7 +208,7 @@ L3 ≡ BL6  -    -    -    -    -    ✓     E2E model perf
 | G4.4 | Arke correctness ≥ LLM-direct | ✅ 100% ≥ 83% |
 | G4.5 | Arke mean performance ≥ LLM-direct | ⚠️ 115.7% < 118.3% (fusion task gap, variance significantly smaller) |
 | G4.6 | Arke variance ≤ LLM-direct | ✅ (LLM-direct has high failure rate, large variance) |
-| G4.7 | Evaluation report generated | ✅ `benchmarks/results/stage1/EVALUATION_REPORT.md` |
+| G4.7 | Evaluation report generated | ✅ `benchmarks/results/phase1/EVALUATION_REPORT.md` |
 | G4.8 | Token efficiency comparison | ✅ Arke ≤60% LLM-direct token consumption |
 
 **Key data:** Arke/FlagGems geomean=0.991; correctness 100% vs 83%; token efficiency ≤0.7×.
@@ -256,7 +256,7 @@ arke bench --bl 6 --model gpt2      # GPT-2 Small E2E
 | E2E latency 1.7-2.3× eager | monkey-patch dispatch ~60µs/call × 49 calls accumulated | G7: torch.compile Inductor backend |
 | Single matmul: Arke 76µs vs cuBLAS 44µs | L1 single op OK, Python dispatch overhead accumulates | G6: unified BL5 measurement for comparison |
 
-> Detailed analysis report: `benchmarks/results/stage1/gates/G5/REPORT.md`
+> Detailed analysis report: `benchmarks/results/phase1/gates/G5/REPORT.md`
 
 **BL equivalent:** BL3×L1 (OT0-2, 33 ops correctness) + BL6/GPT-2×L3 (E2E correctness).
 
@@ -514,11 +514,11 @@ D7-E3(DS-V2) → [4]
 
 ---
 
-## 7. G8 — Stage 1 Final Acceptance
+## 7. G8 — Phase 1 Final Acceptance
 
-> **Core objective:** Stage 1 final Gate. Arke can autonomously generate complete kernel sets for 4 real LLMs,
+> **Core objective:** Phase 1 final Gate. Arke can autonomously generate complete kernel sets for 4 real LLMs,
 > all end-to-end performance meets production-ready thresholds, and quantitatively validates Arke vs LLM-direct advantages.
-> Simultaneously completes language implementation assessment (Python vs hybrid approach) and lays the foundation for Stage 2.
+> Simultaneously completes language implementation assessment (Python vs hybrid approach) and lays the foundation for Phase 2.
 
 ### Exit Criteria
 
@@ -562,7 +562,7 @@ arke bench --bl 5 --layer l1 l2     # BL5 regression (no regression)
 G8-Lang: Python vs hybrid approach data-driven evaluation
   Measurements: dispatch overhead (Python path vs Rust/C++ theoretical)
                 parse latency (.ak → IR), memory footprint, LLM API integration cost
-  Output: docs/design/language-decision.md (conclusion + data + Stage 2 migration strategy)
+  Output: docs/phase1/language-decision.md (conclusion + data + Phase 2 migration strategy)
 ```
 
 #### G8 PASS Combined Criteria
@@ -585,14 +585,14 @@ AND ALL:
 | D8-L1 | Qwen2.5 7B `.ak` example | BL6 Qwen2.5 L3 | `qwen25_forward.ak` (GQA+SwiGLU+RMSNorm complete description) |
 | D8-L2 | LLaMA-3 8B `.ak` example | BL6 LLaMA-3 L3 | `llama3_forward.ak` (GQA, rope, RMSNorm) |
 | D8-L3 | Arke I/O Spec document | G7-AE.3 multi-input types | `docs/spec/arke-io-spec.md` |
-| D8-L4 | Language Spec v1.0 freeze | Stage 1 completion milestone | `arke-lang-spec.md` update + tag v1.0 |
+| D8-L4 | Language Spec v1.0 freeze | Phase 1 completion milestone | `arke-lang-spec.md` update + tag v1.0 |
 
 #### Arke IR
 
 | ID | Capability Requirement | Basis | Development Item |
 |:---|:-----------------------|:------|:----------------|
-| D8-IR1 | IR Spec v1.0 freeze | Stage 1 completion milestone | `arke-ir-spec.md` update + tag v1.0 |
-| D8-IR2 | IR ↔ MLIR mapping document | Stage 2 preparation | `docs/spec/ir-mlir-mapping.md` |
+| D8-IR1 | IR Spec v1.0 freeze | Phase 1 completion milestone | `arke-ir-spec.md` update + tag v1.0 |
+| D8-IR2 | IR ↔ MLIR mapping document | Phase 2 preparation | `docs/spec/ir-mlir-mapping.md` |
 | D8-IR3 | Complete round-trip validation (all 45 ops × JSON) | IR Spec v1.0 | `test_ir_roundtrip.py` |
 
 #### Arke LLM Agent
@@ -602,7 +602,7 @@ AND ALL:
 | D8-A1 | Autonomous I/O contract (3 input types → Arke pipeline) | G7-AE.3/4 inherited | `arke optimize <input>` full support |
 | D8-A2 | LLM auto-strategy maturity validation | G8 BL5 no regression | All 45 ops batch agent validation (no human strategy) |
 | D8-A3 | ≥3 iterative optimization rounds (maturity) | G7-AE.2 inherited | iterative loop stable across 4 models |
-| D8-A4 | @rationale knowledge base (≥50 Stage 1 entries) | H3 explainability | `trajectory → rationale_kb.jsonl` distillation |
+| D8-A4 | @rationale knowledge base (≥50 Phase 1 entries) | H3 explainability | `trajectory → rationale_kb.jsonl` distillation |
 | D8-A5 | Arke vs LLM-direct automated comparison | G8 comparison metrics | `benchmarks/compare_arke_vs_direct.py` |
 
 #### Arke Engineering (Infrastructure)
@@ -614,7 +614,7 @@ AND ALL:
 | D8-E3 | GPT-2 ≤1.15× eager (fully fixed) | G5 known-fail final resolution | torch.compile backend E2E integration (depends on D7-E1) |
 | D8-E4 | BL5 full 45 ops regression suite (CI) | G8 BL5 no regression | `ci/regression_bl5.py` (runs BL5 L1 correctness each commit) |
 | D8-E5 | Language evaluation benchmark | language-decision.md | dispatch overhead measurement script + memory profiler |
-| D8-E6 | Stage 1 final evaluation report | Stage 1 completion milestone | `benchmarks/results/stage1/STAGE1_FINAL_REPORT.md` |
+| D8-E6 | Phase 1 final evaluation report | Phase 1 completion milestone | `benchmarks/results/phase1/STAGE1_FINAL_REPORT.md` |
 
 ---
 
@@ -628,9 +628,9 @@ G0(env) → G1(IR) → G2(Codegen) → G3(Agent) → G4(comparison) → G5(BL3+G
                                           G7(Arke Autonomous Engineering
                                                BL5 inherit + LLaMA-2/DS-V2 E2E)
                                                                        │
-                                               G8(BL6×4 models, Stage 1 Final)
+                                               G8(BL6×4 models, Phase 1 Final)
                                                                        │
-                                                          Stage 2 (Ascend)
+                                                          Phase 2 (Ascend)
 ```
 
 ### Critical Blockers per Gate
@@ -729,25 +729,25 @@ D6-IR1 → D6-E1(10 templates) → D6-E2(bench_l1) ─────────�
 | D8-L3 | Lang | `arke-io-spec.md` (I/O contract document) | P1 | M |
 | D8-L4 | Lang | Language Spec v1.0 freeze (document + tag) | P1 | M |
 | D8-IR1 | IR | IR Spec v1.0 freeze (document + tag) | P1 | M |
-| D8-IR2 | IR | `ir-mlir-mapping.md` (Stage 2 preparation) | P1 | M |
+| D8-IR2 | IR | `ir-mlir-mapping.md` (Phase 2 preparation) | P1 | M |
 | D8-IR3 | IR | `test_ir_roundtrip.py` (all 45 ops × JSON round-trip) | P1 | S |
 | D8-A1 | Agent | `arke optimize` unified entry with full 3-input-type support | P1 | L |
 | D8-A2 | Agent | LLM auto-strategy maturity validation (all 45 ops, no human strategy) | P1 | M |
 | D8-A3 | Agent | iterative loop stable operation across 4 models | P1 | M |
-| D8-A4 | Agent | @rationale knowledge base (≥50 Stage 1 entries) | P2 | M |
+| D8-A4 | Agent | @rationale knowledge base (≥50 Phase 1 entries) | P2 | M |
 | D8-A5 | Agent | Arke vs LLM-direct automated comparison (benchmarks/compare_arke_vs_direct.py) | P1 | M |
 | D8-E1 | Eng | LLaMA-3 8B integration + bench_l3 runner | **P0** | L |
 | D8-E2 | Eng | Qwen2.5 7B integration + bench_l3 runner | **P0** | L |
 | D8-E3 | Eng | GPT-2 torch.compile backend E2E (≤1.15× eager, depends on D7-E1) | **P0** | M |
 | D8-E4 | Eng | BL5 regression suite (CI): `ci/regression_bl5.py` | P1 | M |
 | D8-E5 | Eng | Language evaluation benchmark + `language-decision.md` | P1 | M |
-| D8-E6 | Eng | Stage 1 final evaluation report `STAGE1_FINAL_REPORT.md` | P1 | M |
+| D8-E6 | Eng | Phase 1 final evaluation report `STAGE1_FINAL_REPORT.md` | P1 | M |
 
 ---
 
 ## 10. Mapping to execution-plan.md
 
-| execution-plan Phase | stage1-gate-design Gate | Key Differences |
+| execution-plan Phase | phase1-gate-design Gate | Key Differences |
 |:---------------------|:------------------------|:----------------|
 | Phase 1.0 (Environment) | G0 | No difference, direct correspondence |
 | Phase 1.1 (IR+Validation) | G1 | No difference; G1.4 upgraded to full `.ak` file parsing (not ≥3/5) |

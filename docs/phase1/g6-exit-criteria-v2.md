@@ -5,7 +5,7 @@
 > **Gate:** G6 — Arke Lang & IR Completeness
 > **Author:** Arke Architecture Team
 > **Created:** 2026-04-06
-> **Status:** Active — supersedes G6 section in `stage1-gate-design.md`
+> **Status:** Active — supersedes G6 section in `phase1-gate-design.md`
 >
 > **Key change:** G6 now validates not just "can it run" but "is the foundation solid".
 > Performance/correctness bars are unchanged; architecture completeness is added as a new mandatory gate.
@@ -34,13 +34,13 @@ G0–G5 proved that Arke works: the pipeline runs, correctness is high, LLM agen
 
 **Because "passing" and "production-ready" are not the same thing.**
 
-The original G6 verified that Arke can handle all 45 ops across all shapes. What it did NOT verify is that Arke's internal architecture is clean enough to support the G7/G8 roadmap — autonomous engineering, multi-model E2E, and eventually multi-hardware (Stage 2). Specifically:
+The original G6 verified that Arke can handle all 45 ops across all shapes. What it did NOT verify is that Arke's internal architecture is clean enough to support the G7/G8 roadmap — autonomous engineering, multi-model E2E, and eventually multi-hardware (Phase 2). Specifically:
 
 | Problem | Impact |
 |:--------|:-------|
 | Op knowledge split across 6 files | Adding one op requires ~100-line changes in 6 files |
 | NumPy reference functions with inconsistent signatures | Fused graph validation is impossible without a unified interpreter |
-| Triton-specific concepts leaking into StrategyIR | `num_warps`/`num_stages` in IR breaks Stage 2 (Ascend) |
+| Triton-specific concepts leaking into StrategyIR | `num_warps`/`num_stages` in IR breaks Phase 2 (Ascend) |
 | No SSA guarantees in IR | LLM-generated IR can silently produce incorrect dataflow |
 | No Backend Protocol | Switching from Triton to MLIR requires rearchitecting the pipeline |
 | Static shapes only in `.ak` | G7 requires dynamic shape for real LLM inference; G6 must assess feasibility of Arke Lang/IR dynamic shape support |
@@ -49,12 +49,12 @@ The original G6 verified that Arke can handle all 45 ops across all shapes. What
 
 ### What G6 v2 Is NOT
 
-- G6-ARCH does **not** require full MLIR integration (implementation is Stage 2-3; G6 establishes framework + BL1 verification pathway)
+- G6-ARCH does **not** require full MLIR integration (implementation is Phase 2-3; G6 establishes framework + BL1 verification pathway)
 - G6-ARCH does **not** require dynamic shape JIT compilation or runtime dispatch, but **must** complete a feasibility assessment of Arke Lang and Arke IR's dynamic shape support (where clause design + symbolic dim IR representation + shape constraint propagation), producing an evaluation document
 - G6-ARCH does **not** raise performance/correctness bars (those are inherited unchanged)
 - G6-ARCH is **not** a full rewrite — it's surgical refactoring with full test coverage as the safety net
 
-### G6 v2 Positioning in the Stage 1 Roadmap
+### G6 v2 Positioning in the Phase 1 Roadmap
 
 ```
 G5 ✅  → Arke runs for all basic ops (OT0-2), GPT-2 E2E correct
@@ -68,7 +68,7 @@ G7 ⬜     → LLM Agent autonomously generates strategies, LLaMA-2 + DS-V2 E2E
            │   ↳ Depends on: dynamic shape (G6-ARCH.8 foundation),
            │     Pass Infra (G6-ARCH.4), Backend Abstraction (G6-ARCH.7)
            │
-G8 ⬜     → 4-model E2E, BL5 regression, Stage 1 Final
+G8 ⬜     → 4-model E2E, BL5 regression, Phase 1 Final
 ```
 
 ---
@@ -142,7 +142,7 @@ These are new additions based on architectural decisions made after the original
 
 **G6-LI.7 (symbolic shape):** G7 requires dynamic shape for real LLM inference. Without `where` clause support in G6, G7 would need to implement both the language feature and the optimization logic simultaneously — a high-risk parallel. G6 establishes the parse + IR representation layer; G7 adds the codegen + runtime layer.
 
-**G6-LI.8 (backend-agnostic strategy):** The StrategyIR currently contains `num_warps`, `num_stages`, and autotune configs that are Triton/NVIDIA-specific. Before G7 adds more strategy decisions, the core StrategyIR schema must be cleaned up so that Stage 2 (Ascend backend) can reuse the same IR without Triton pollution.
+**G6-LI.8 (backend-agnostic strategy):** The StrategyIR currently contains `num_warps`, `num_stages`, and autotune configs that are Triton/NVIDIA-specific. Before G7 adds more strategy decisions, the core StrategyIR schema must be cleaned up so that Phase 2 (Ascend backend) can reuse the same IR without Triton pollution.
 
 ---
 
@@ -178,7 +178,7 @@ Not all architecture items have equal urgency. They are classified by when they 
 
 **G6-ARCH.8 (Lang v2.0 implementation):** Full Arke Lang v2.0 implementation (multi-return, type inference, etc.) is substantial work. For G6, the MVP is: `where` clause syntax is parseable and produces `symbolic_dims` in SemanticIR. The remaining v2.0 features (multi-return, type inference, full backend-agnostic strategy) are design-complete in ARCH.1 spec, but implementation can extend into G7. Gate condition: ARCH.8 passes if `where` clause basic implementation works.
 
-**G6-ARCH.9 (StrategyIR L2/L3 + HardwareIR + InstructionIR spec):** StrategyIR L2/L3 (loop nests + hardware mapping), HardwareIR (Layer 2), and InstructionIR (Layer 1) are defined as spec-only in Stage 1. They need interface contracts and MLIR mapping documented for Stage 2 planning, but they do NOT need implementation in G6. Gate condition: ARCH.9 passes if the spec documents exist with interface definitions and MLIR dialect mapping.
+**G6-ARCH.9 (StrategyIR L2/L3 + HardwareIR + InstructionIR spec):** StrategyIR L2/L3 (loop nests + hardware mapping), HardwareIR (Layer 2), and InstructionIR (Layer 1) are defined as spec-only in Phase 1. They need interface contracts and MLIR mapping documented for Phase 2 planning, but they do NOT need implementation in G6. Gate condition: ARCH.9 passes if the spec documents exist with interface definitions and MLIR dialect mapping.
 
 ### G6-ARCH Detail Definitions
 
@@ -275,7 +275,7 @@ python -m pytest tests/test_ssa_validator.py -v
 
 #### G6-ARCH.7 — Backend Abstraction
 
-**Problem it solves:** `ArkePipeline.run()` hardcodes `from arke.backend.triton_backend import TritonBackend`. When Stage 2 adds an Ascend backend, this requires rearchitecting the pipeline instead of simply adding a new backend.
+**Problem it solves:** `ArkePipeline.run()` hardcodes `from arke.backend.triton_backend import TritonBackend`. When Phase 2 adds an Ascend backend, this requires rearchitecting the pipeline instead of simply adding a new backend.
 
 **Required outcome:**
 ```python
@@ -494,7 +494,7 @@ G7's core goal is **Autonomous Engineering**: LLM Agent generates strategies wit
 | **SemanticInterpreter** | 4-model E2E correctness check | G8 uses interpreter to validate correctness before running GPU benchmark |
 | **Pass Infrastructure** | Arke vs LLM-direct comparison | G8 comparison pipeline uses pass pipeline to normalize both Arke and LLM-direct outputs |
 | **SSA Validator** | IR Spec v1.0 freeze (D8-IR1) | G8 freezes IR spec only after SSA validator confirms all 45 ops produce valid IR |
-| **Backend Abstraction** | Stage 2 preparation | G8's language-decision.md assessment requires backend protocol to measure dispatch overhead |
+| **Backend Abstraction** | Phase 2 preparation | G8's language-decision.md assessment requires backend protocol to measure dispatch overhead |
 
 ### 6.3 Dynamic Shape: What G6 Must Establish for G7
 
@@ -583,7 +583,7 @@ Phase D ⬜  Spec documents + validation + non-regression        (NEW in v2)
 
 | Task | Description | Estimate (LLM Agent) | Priority |
 |:-----|:------------|:---------------------|:--------|
-| D0 | Dynamic Shape feasibility assessment (`docs/design/dynamic-shape-feasibility.md`) — ARCH.12 | 1d | P1 |
+| D0 | Dynamic Shape feasibility assessment (`docs/phase1/dynamic-shape-feasibility.md`) — ARCH.12 | 1d | P1 |
 | D1 | Write `docs/spec/arke-lang-spec-v2.md` | 1d | P1 |
 | D2 | Write `docs/spec/arke-ir-spec-v2.md` (Layer 4 upgraded, Layer 3/2/1 interfaces) | 1.5d | P1 |
 | D3 | Implement `where` clause in Lark grammar (depends on D0 assessment) | 0.5d | P2 |
@@ -690,16 +690,16 @@ The original G6 already PASSED under commit `fd2cbe0`. The risk introduced by v2
 | ID | Why Added in G6 v2 | Why NOT deferred to G7/G8 |
 |:---|:-------------------|:--------------------------|
 | ARCH.1 Lang Spec v2.0 | LLM Agent needs canonical spec to generate correct .ak files | Without spec, G7 agent generates inconsistent syntax |
-| ARCH.2 IR Multi-Layer Spec | Defines Layer 4/3/2/1 contracts needed for Stage 2 planning | G8 requires Stage 2 preparation (language-decision.md) |
+| ARCH.2 IR Multi-Layer Spec | Defines Layer 4/3/2/1 contracts needed for Phase 2 planning | G8 requires Phase 2 preparation (language-decision.md) |
 | ARCH.3 OpRegistry | Adding G7/G8 ops (MoE, paged_attn) would require 6-file changes | Each G7 new op multiplies tech debt |
 | ARCH.4 Pass Infra | G7 iterative loop IS a pass pipeline | Cannot build G7 optimization loop without this foundation |
 | ARCH.5 SemanticInterpreter | G7 agent correctness checks need unified interpreter | LLM-generated fused graphs cannot be validated with per-op NumPy |
 | ARCH.6 SSA Validator | LLM will generate invalid IR; must catch before GPU execution | Silent IR bugs in G7 are extremely hard to debug |
-| ARCH.7 Backend Abstraction | G8 requires Stage 2 backend planning; TritonBackend must be replaceable | Protocol retrofit at G8 time requires full pipeline retest |
+| ARCH.7 Backend Abstraction | G8 requires Phase 2 backend planning; TritonBackend must be replaceable | Protocol retrofit at G8 time requires full pipeline retest |
 | ARCH.8 (MVP) where clause | G7 needs dynamic shape; G6 must have IR layer ready | LLM cannot write dynamic-shape .ak if language doesn't support it |
-| ARCH.9 (MVP) Layer specs | Stage 2 planning (MLIR, LLVM) requires interface contracts | Without layer specs, Stage 2 is blank-page architecture |
+| ARCH.9 (MVP) Layer specs | Phase 2 planning (MLIR, LLVM) requires interface contracts | Without layer specs, Phase 2 is blank-page architecture |
 | ARCH.10 Non-regression | Refactoring without regression safety net is unacceptable | Obvious requirement; explicitly stated for gate verification |
-| ARCH.11 MLIR framework | MLIR integration starts at Stage 1; BL1 pathway validates architecture | Deferring MLIR entirely to Stage 2-3 risks late-discovery architecture issues |
+| ARCH.11 MLIR framework | MLIR integration starts at Phase 1; BL1 pathway validates architecture | Deferring MLIR entirely to Phase 2-3 risks late-discovery architecture issues |
 | ARCH.12 Dynamic Shape feasibility | G7 requires dynamic shape; G6 must assess if Arke Lang/IR design supports it | Starting G7 implementation without feasibility assessment risks fundamental redesign |
 
 ### 9.4 G6 Status Before vs After v2
@@ -722,6 +722,6 @@ The original G6 already PASSED under commit `fd2cbe0`. The risk introduced by v2
 
 ---
 
-*Document end. For implementation task board, see `docs/design/stage1/g6-task-board.md` (to be created).*
-*For original G6 section, see `docs/design/stage1/stage1-gate-design.md` §5.*
-*For architecture discussion reference, see `docs/design/stage1/g6-redesign-reference/`.*
+*Document end. For implementation task board, see `docs/phase1/g6-task-board.md` (to be created).*
+*For original G6 section, see `docs/phase1/gate-design.md` §5.*
+*For architecture discussion reference, see `docs/phase1/reference/`.*

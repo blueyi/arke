@@ -4,7 +4,7 @@
 """Parse benchmark-ops.md to extract the canonical operator catalog.
 
 This module is the **single source of truth** bridge: it reads the
-OT Summary table from ``docs/design/benchmark/benchmark-ops.md`` and
+OT Summary table from ``docs/benchmark/benchmark-ops.md`` and
 exposes structured data that ``benchmarks/cli.py``, ``benchmarks/shapes.py``,
 and all test files consume.
 

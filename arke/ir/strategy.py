@@ -8,7 +8,7 @@ Each decision carries an optional @rationale for explainability and learning.
 
 Terminology: "Strategy" (not "Schedule") — emphasizes that the LLM is making
 strategic optimization decisions, not writing execution schedules.
-See docs/design/naming-system.md for rationale.
+See docs/architecture/naming-system.md for rationale.
 """
 
 from __future__ import annotations

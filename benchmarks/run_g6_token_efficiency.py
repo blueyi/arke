@@ -4,7 +4,7 @@
 Measures: lines(.ak kernel+strategy) vs lines(generated Triton kernel)
 Goal: .ak code lines < Triton code lines at comparable performance.
 
-Output: benchmarks/results/stage1/g6_token_efficiency.csv + .md summary
+Output: benchmarks/results/phase1/g6_token_efficiency.csv + .md summary
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ def main():
     print(f"G6.4 criterion: .ak code lines < Triton code lines")
 
     # Write CSV
-    out_dir = Path("benchmarks/results/stage1")
+    out_dir = Path("benchmarks/results/phase1")
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / "g6_token_efficiency.csv"
 

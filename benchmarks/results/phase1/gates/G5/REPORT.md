@@ -28,7 +28,7 @@
 
 ## Root Cause Analysis
 
-### Why Stage 1 monkey-patch can't meet latency thresholds
+### Why Phase 1 monkey-patch can't meet latency thresholds
 
 **Three sources of overhead:**
 
@@ -55,7 +55,7 @@
 | Monkey-patch (current G5) | 1.75–2.31× | Python dispatch per module |
 | + `torch.inference_mode` | 2.13× | Marginal improvement |
 | + `torch.compile` on monkey-patched model | 1.63× | Compiler partially fuses Python overhead |
-| Custom ops (`torch.library`) + `torch.compile` | 1.49× | Best Stage 1 result, but still >1.15× |
+| Custom ops (`torch.library`) + `torch.compile` | 1.49× | Best Phase 1 result, but still >1.15× |
 
 ### Why individual kernels are fast but E2E is slow
 
@@ -66,7 +66,7 @@ Single matmul micro-benchmark:
 
 This per-kernel overhead is acceptable for isolated matmul (G4 showed Arke competitive/superior on larger shapes). But GPT-2 amplifies it through 49 sequential modules.
 
-## Stage 2 Resolution Path
+## Phase 2 Resolution Path
 
 ### torch.compile Backend Integration
 
@@ -78,7 +78,7 @@ def arke_matmul(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return _cache.matmul(a, b)
 ```
 
-**Stage 2 will integrate these ops into torch.compile's Inductor backend**, enabling:
+**Phase 2 will integrate these ops into torch.compile's Inductor backend**, enabling:
 
 1. **Graph-level fusion**: Inductor can fuse Arke matmul → bias-add → activation into a single GPU launch, eliminating 48 of 49 kernel launch boundaries
 
@@ -86,24 +86,24 @@ def arke_matmul(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 
 3. **Memory planning**: Inductor's memory planner can pre-allocate all intermediate buffers, eliminating per-call allocation overhead
 
-4. **Autotuning in context**: Rather than tuning each kernel in isolation, Stage 2 can autotune kernel configurations considering the full model graph
+4. **Autotuning in context**: Rather than tuning each kernel in isolation, Phase 2 can autotune kernel configurations considering the full model graph
 
 ### Expected Impact
 
-With custom_ops + torch.compile already at 1.49× (no additional optimization), Stage 2's full Inductor integration targeting:
+With custom_ops + torch.compile already at 1.49× (no additional optimization), Phase 2's full Inductor integration targeting:
 
 - **Graph fusion**: ~30% overhead reduction (eliminate 48 launch boundaries)
 - **Python elimination**: ~15% overhead reduction
 - **Combined target**: ≤1.15× for seq≥256, ≤1.25× for seq=128
 
-### Specific Stage 2 Milestones
+### Specific Phase 2 Milestones
 
 | Milestone | Description | Target |
 |-----------|-------------|--------|
-| S2-G1 | Register Arke as Triton codegen backend in `torch._inductor` | Arke ops visible to Inductor |
-| S2-G2 | Enable Inductor fusion across Arke custom ops | Fused subgraphs in compiled graph |
-| S2-G3 | E2E GPT-2 with full compile pipeline | ≤1.15× eager for seq≥256 |
+| P2-S1 | Register Arke as Triton codegen backend in `torch._inductor` | Arke ops visible to Inductor |
+| P2-S2 | Enable Inductor fusion across Arke custom ops | Fused subgraphs in compiled graph |
+| P2-S3 | E2E GPT-2 with full compile pipeline | ≤1.15× eager for seq≥256 |
 
 ## Conclusion
 
-G5 validates that Arke kernels produce **correct results** across all sequence lengths and batch sizes, with **efficient memory usage** (1.1GB / 6GB budget). The latency gap is a well-understood consequence of Stage 1's monkey-patch architecture, not a kernel quality issue. The path to resolution through torch.compile backend integration is already prototyped in `custom_ops.py`.
+G5 validates that Arke kernels produce **correct results** across all sequence lengths and batch sizes, with **efficient memory usage** (1.1GB / 6GB budget). The latency gap is a well-understood consequence of Phase 1's monkey-patch architecture, not a kernel quality issue. The path to resolution through torch.compile backend integration is already prototyped in `custom_ops.py`.

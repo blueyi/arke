@@ -4,7 +4,7 @@
 """Parse benchmark-shapes.md to extract the canonical shape catalog.
 
 This module is the **single source of truth** bridge for shapes: it reads
-all shape tables from ``docs/design/benchmark/benchmark-shapes.md`` and
+all shape tables from ``docs/benchmark/benchmark-shapes.md`` and
 exposes structured data that ``benchmarks/shapes.py`` and all test files
 consume.
 

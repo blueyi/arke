@@ -1,4 +1,4 @@
-# Arke Stage 1 — Final Evaluation Report
+# Arke Phase 1 — Final Evaluation Report
 
 **Date:** 2026-04-02  
 **Version:** Arke 0.1.0-dev (Phase 1.8 MVP)  
@@ -20,7 +20,7 @@
 | FlagGems | 5.0.0 |
 | Liger-Kernel | 0.7.0 |
 
-> **Note:** All benchmarks run on a laptop-class GPU. Production results on datacenter GPUs (A100, H100) are expected to differ substantially. The purpose of Stage 1 is to validate the architecture and correctness, not to achieve SOTA performance numbers.
+> **Note:** All benchmarks run on a laptop-class GPU. Production results on datacenter GPUs (A100, H100) are expected to differ substantially. The purpose of Phase 1 is to validate the architecture and correctness, not to achieve SOTA performance numbers.
 
 ---
 
@@ -129,7 +129,7 @@
 
 L2 measures Arke's code generation templates for fused operators against PyTorch separate-op baselines and torch.compile auto-fusion.
 
-> **Note:** Phase 1 L2 benchmarks use PyTorch separate ops and torch.compile as baselines (not Arke fused codegen). Arke fused kernel benchmarking will be added in Stage 2.
+> **Note:** Phase 1 L2 benchmarks use PyTorch separate ops and torch.compile as baselines (not Arke fused codegen). Arke fused kernel benchmarking will be added in Phase 2.
 
 ### Matmul+ReLU Baselines (representative shapes)
 
@@ -206,7 +206,7 @@ Token efficiency was measured during LLM-driven optimization sessions:
 
 ## Summary & Conclusions
 
-### Stage 1 Achievements
+### Phase 1 Achievements
 
 1. **Complete two-layer IR system** — Semantic IR (WHAT) + Strategy IR (HOW), cleanly separated
 2. **LLM-friendly environment** — 10 tools for analysis, optimization, validation, profiling
@@ -225,7 +225,7 @@ Token efficiency was measured during LLM-driven optimization sessions:
 4. **No autotuning integration** — Tile sizes are template defaults, not search-optimized
 5. **Single GPU target** — Only NVIDIA Ampere tested; Ascend backend is a stub
 
-### Stage 2 Roadmap
+### Phase 2 Roadmap
 
 | Phase | Focus | Goal |
 |:------|:------|:-----|

@@ -993,7 +993,7 @@ Arke 使用三维 benchmark 体系衡量验证完整度：
 
 ### Gate 系统
 
-Stage 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L 组合**定义：
+Phase 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L 组合**定义：
 
 | Gate | 出口 | 核心目标 | 状态 |
 |:----:|:-----|:---------|:----:|
@@ -1005,9 +1005,9 @@ Stage 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L �
 | G5 | BL3×L1 + BL6/GPT-2×L3 | 全基础算子 + E2E 正确性 | ✅ |
 | G6 | BL5×L1+L2 | **Lang & IR 完备性**（45 ops × 全 shape） | ⬜ |
 | G7 | BL5×L1+L2 + BL6×L3 | **Autonomous Engineering**（自主生成 + LLaMA-2/DS-V2） | ⬜ |
-| G8 | BL6×L3 (4模型) | **Stage 1 最终验收** | ⬜ |
+| G8 | BL6×L3 (4模型) | **Phase 1 最终验收** | ⬜ |
 
-→ 详见 [benchmark-design.md](benchmark-design.md) | [stage1-gate-design.md](stage1-gate-design.md)
+→ 详见 [benchmark-design.md](benchmark-design.md) | [phase1-gate-design.md](phase1-gate-design.md)
 
 
 ## 八、数据流总结
@@ -1046,7 +1046,7 @@ Strategy IR (JSON)                      ← "怎么优化"（LLM 构建，含 @r
 Triton 代码
   │
   ├── NVIDIA: triton.compile() → GPU Binary
-  └── Ascend:  triton-ascend → NPU Binary (Stage 2)
+  └── Ascend:  triton-ascend → NPU Binary (Phase 2)
   │
   ▼
 输出与集成
@@ -1068,7 +1068,7 @@ Benchmark 验证（BL×L 体系）
   │
   ▼
 Gate 出口判定（G0-G8）
-  └── Stage 1 完成 → Stage 2（MLIR Dialect + Ascend 后端）
+  └── Phase 1 完成 → Phase 2（MLIR Dialect + Ascend 后端）
 ```
 
 ---

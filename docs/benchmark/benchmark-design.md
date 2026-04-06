@@ -260,7 +260,7 @@ tests/conftest.py              ← pytest hook, runs on every test session
 
 | File | Role |
 |:-----|:-----|
-| `docs/design/benchmark/benchmark-ops.md` | **Edit this** — OT Summary table is the catalog |
+| `docs/benchmark/benchmark-ops.md` | **Edit this** — OT Summary table is the catalog |
 | `benchmarks/op_registry.py` | Parser + module-level singletons (`OT_OPS`, `OP_TIER`, `ALL_OPS`) |
 | `benchmarks/cli.py` | Imports `OT_OPS` from `op_registry` |
 | `benchmarks/shapes.py` | Imports `OP_TIER` from `op_registry`; routes all 45 ops to shape sets |
@@ -325,7 +325,7 @@ tests/conftest.py               ← pytest hook (after op catalog check)
 
 | File | Role |
 |:-----|:-----|
-| `docs/design/benchmark/benchmark-shapes.md` | **Edit this** — shape tables are the catalog (30 tables, ~358 shapes) |
+| `docs/benchmark/benchmark-shapes.md` | **Edit this** — shape tables are the catalog (30 tables, ~358 shapes) |
 | `benchmarks/shape_registry.py` | Parser + module-level singletons (`SHAPE_TABLES`, `SHAPES_BY_TIER`, `ALL_SHAPE_TAGS`) |
 | `benchmarks/shapes.py` | `get_shapes()` prefers registry → fallback to hardcoded; `_dict_to_shape()` converter |
 | `tests/conftest.py` | `pytest_configure` hook — detects shape catalog changes (tags_hash via SHA-256) |

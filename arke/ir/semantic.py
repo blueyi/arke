@@ -7,7 +7,7 @@ The Semantic IR describes WHAT to compute, not HOW to compute it.
 Each node represents an operator with explicit semantics, algebraic properties,
 and data flow information.
 
-See docs/spec/arke-ir-spec.md §2 for the full specification.
+See docs/spec/arke-ir-spec-v1.md §2 for the full specification.
 """
 
 from __future__ import annotations

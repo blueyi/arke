@@ -46,8 +46,8 @@ Below summarizes what was missing from the original 20-op catalog and why each a
 
 | Category                                | Examples                                     | Rationale                                                                                                                                                                                                 |
 | --------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sparse ops** (SpMM, sparse attention) | `sparse_matmul`, `block_sparse_attention`    | Sparse kernel patterns are architecturally distinct (index-driven memory access, load balancing); better as a separate OT5 in Stage 3 when sparse models (Mixtral top-k, Switch Transformer) are targeted |
-| **Convolution**                         | `conv1d`, `conv2d`                           | Minimal in decoder-only LLMs; relevant for vision encoders (VLM Stage 3)                                                                                                                                  |
+| **Sparse ops** (SpMM, sparse attention) | `sparse_matmul`, `block_sparse_attention`    | Sparse kernel patterns are architecturally distinct (index-driven memory access, load balancing); better as a separate OT5 in Phase 3 when sparse models (Mixtral top-k, Switch Transformer) are targeted |
+| **Convolution**                         | `conv1d`, `conv2d`                           | Minimal in decoder-only LLMs; relevant for vision encoders (VLM Phase 3)                                                                                                                                  |
 | **Communication**                       | `all_reduce`, `all_gather`, `reduce_scatter` | Distributed primitives, not kernel-level ops (NCCL/RCCL handles)                                                                                                                                          |
 | **DMA / explicit memory**               | `async_copy`, `prefetch`                     | These are hardware-level scheduling, not user-facing operators                                                                                                                                            |
 
@@ -757,7 +757,7 @@ Most complex operator tier.
 
 **Legend:** ✅ = Arke Triton template exists | ⬜ = in catalog, no template | 📋 = newly added
 
-### Deferred to Stage 3 (OT5 candidates)
+### Deferred to Phase 3 (OT5 candidates)
 
 
 | Category       | Operators                                                        | Rationale                                                           |

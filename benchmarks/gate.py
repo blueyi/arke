@@ -844,7 +844,7 @@ def archive_gate_result(
     summary: GateSummary,
     tier: int,
     project_root: Path,
-    stage: str = "stage1",
+    stage: str = "phase1",
 ) -> None:
     """Archive comprehensive gate results.
 
@@ -2281,15 +2281,15 @@ def run_g5(tier: int = 2) -> GateSummary:
             latency_ratios[seq] = float("inf")
             logger.warning("  arke seq=%d  ERROR: %s", seq, e)
 
-    # ── Known-fail root cause for Stage 1 latency ──
+    # ── Known-fail root cause for Phase 1 latency ──
     _KF_LATENCY = (
-        "Stage 1 monkey-patch overhead: "
+        "Phase 1 monkey-patch overhead: "
         "(1) Triton dispatch ~60µs/call vs cuBLAS ~14µs — 49 Conv1D per forward = "
         "~2.3ms cumulative overhead; "
         "(2) Python-level reshape/contiguous per patched module; "
         "(3) No graph-level fusion (each kernel dispatched individually). "
         "Measured: monkey-patch 1.75×, +torch.compile 1.63×, custom_ops+compile 1.49×. "
-        "Fix in Stage 2: torch.compile backend integration (custom_ops.py) eliminates "
+        "Fix in Phase 2: torch.compile backend integration (custom_ops.py) eliminates "
         "Python dispatch and enables Inductor graph fusion across Arke kernels."
     )
 
@@ -2382,8 +2382,8 @@ def main() -> None:
         help="Archive full gate results to benchmarks/results/<stage>/gates/G{N}/",
     )
     parser.add_argument(
-        "--stage", type=str, default="stage1",
-        help="Stage name for archive directory (default: stage1)",
+        "--stage", type=str, default="phase1",
+        help="Stage name for archive directory (default: phase1)",
     )
     parser.add_argument(
         "--live", action="store_true",

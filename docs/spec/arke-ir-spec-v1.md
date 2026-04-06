@@ -1,7 +1,7 @@
 # Arke IR Specification v1.0
 
 > **Version:** 1.0  
-> **Status:** Frozen (Stage 1 exit)  
+> **Status:** Frozen (Phase 1 exit)  
 > **Compatibility:** Arke compiler ≥ 0.1.0-dev  
 > **Implementation:** `arke/ir/semantic.py`, `arke/ir/strategy.py`
 
@@ -172,7 +172,7 @@ class Rationale:
 `@rationale` is **non-semantic** — it does not affect code generation. It serves:
 - Human + LLM explainability
 - Trajectory logging (Agent JSONL)
-- MLIR annotation preservation (Stage 3)
+- MLIR annotation preservation (Phase 3)
 
 ### 3.5 HardwareConstraints
 
@@ -253,7 +253,7 @@ GPU execution result
 ## 6. Versioning
 
 Both IR classes carry a `version` field:
-- **SemanticIR**: `"0.3.0"` — stable since Stage 1 G1
-- **StrategyIR**: `"0.2.0"` — stable since Stage 1 G2
+- **SemanticIR**: `"0.3.0"` — stable since Phase 1 G1
+- **StrategyIR**: `"0.2.0"` — stable since Phase 1 G2
 
 Version increments when schema fields are added/changed. The `from_dict()` methods handle forward compatibility by ignoring unknown fields.

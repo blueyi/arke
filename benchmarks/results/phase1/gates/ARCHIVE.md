@@ -8,7 +8,7 @@ Each archive is a self-contained snapshot for reproducibility.
 ```
 benchmarks/results/gates/
 ├── ARCHIVE.md                         # This file
-├── stage1/                            # Stage 1 archives
+├── phase1/                            # Phase 1 archives
 │   ├── G0/                            # Gate 0 (final exit state)
 │   │   ├── meta.json
 │   │   ├── summary.json
@@ -35,7 +35,7 @@ benchmarks/results/gates/
 │           ├── softmax_perf.csv
 │           ├── elementwise_perf.csv
 │           └── layernorm_perf.csv
-├── stage2/                            # Stage 2 archives (future)
+├── phase2/                            # Phase 2 archives (future)
 │   ├── G3/
 │   ├── G4/
 │   └── G5/
@@ -46,13 +46,13 @@ benchmarks/results/gates/
 
 ```bash
 # Archive with explicit stage
-python -m benchmarks.gate G0 G1 G2 --tier 2 --stage stage1 --archive
+python -m benchmarks.gate G0 G1 G2 --tier 2 --stage phase1 --archive
 
-# Default stage is "stage1"
+# Default stage is "phase1"
 python -m benchmarks.gate G2 --tier 2 --archive
 
 # Future stages
-python -m benchmarks.gate G3 G4 --tier 3 --stage stage2 --archive
+python -m benchmarks.gate G3 G4 --tier 3 --stage phase2 --archive
 ```
 
 ## CSV Format
@@ -71,12 +71,12 @@ shape_tag,op,M,N,K,arke_us,baseline_us,baseline_name,ratio,trials,warmup,reps
 ```json
 {
   "gate": "G2",
-  "stage": "stage1",
+  "stage": "phase1",
   "timestamp": "2026-04-03T09:00:00+08:00",
   "commit": "845c3fb",
-  "tag": "stage1-g2-exit",
+  "tag": "phase1-g2-exit",
   "tier": 2,
-  "command": "python -m benchmarks.gate G2 --tier 2 --stage stage1 --archive",
+  "command": "python -m benchmarks.gate G2 --tier 2 --stage phase1 --archive",
   "hardware": {
     "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
     "cuda": "12.4",
@@ -90,5 +90,5 @@ shape_tag,op,M,N,K,arke_us,baseline_us,baseline_name,ratio,trials,warmup,reps
 
 - Gate directory is **overwritten** on re-run (only final exit state kept per stage)
 - Each archive includes reproducibility info (commit, command)
-- Stages are independent — stage2 G3 doesn't overwrite stage1 G2
-- Tag format suggestion: `stage{N}-g{M}-exit` (e.g., `stage1-g2-exit`)
+- Stages are independent — phase2 G3 doesn't overwrite phase1 G2
+- Tag format suggestion: `stage{N}-g{M}-exit` (e.g., `phase1-g2-exit`)

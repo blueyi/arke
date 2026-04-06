@@ -203,7 +203,7 @@ examples/              示例
 
 benchmarks/            评估框架
 tests/                 测试
-docs/design/           设计文档
+docs/architecture/     架构设计文档
 ```
 
 **命名哲学：** 编译器领域的部分（ir, backend, lang, frontend）用编译器术语；AI 领域的部分（agent, learn）用 AI 术语。这反映了 Arke 的跨界本质。

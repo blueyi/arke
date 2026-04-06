@@ -1,4 +1,4 @@
-# Arke Stage 1 完成总结
+# Arke Phase 1 完成总结
 
 > **完成日期:** 2026-04-04
 > **历时:** ~4天 (2026-03-31 ~ 2026-04-04)
@@ -65,12 +65,12 @@
 
 ## 四个核心假设验证结果
 
-| 假设 | 内容 | Stage 1 结论 |
+| 假设 | 内容 | Phase 1 结论 |
 |------|------|-------------|
 | **H1 (正确性)** | 结构化协议让 LLM kernel 更正确 | ✅ **验证** — 100% vs 83% (LLM-direct) |
 | **H2 (性能)** | 结构化搜索让 LLM 优化更好 | ✅ **部分验证** — Agent 151% cuBLAS；Arke geomean 超 FlagGems 12% |
 | **H3 (可解释)** | @rationale 让决策可追溯 | ✅ **验证** — trajectory JSONL 完整记录所有决策和理由 |
-| **H4 (可迁移)** | 同一协议跨硬件 | ⏳ **待验证** — Stage 1 仅在 RTX 3060 验证 |
+| **H4 (可迁移)** | 同一协议跨硬件 | ⏳ **待验证** — Phase 1 仅在 RTX 3060 验证 |
 
 ---
 
@@ -86,7 +86,7 @@
 2. **Monkey-patch 架构在 E2E 场景天花板明显**
    - 49 个模块 × Python overhead = 无法达到 ≤1.15× 目标
    - `custom_ops.py` + torch.compile 已达 1.49×，仍不够
-   - Stage 2 必须从架构上解决（Inductor 集成）
+   - Phase 2 必须从架构上解决（Inductor 集成）
 
 3. **LLM Agent 在大 shape 上效果显著**
    - 2048² 151% cuBLAS：LLM 找到的 tiling 策略比模板更优
@@ -112,7 +112,7 @@
 
 ---
 
-## Stage 1 最终代码状态
+## Phase 1 最终代码状态
 
 ```
 tests:     305 passed, 6 skipped
@@ -128,15 +128,15 @@ coverage:  arke/ core modules ~85%
 - `arke/integration/` — KernelCache, gpt2_e2e, custom_ops
 - `benchmarks/` — gate system, baselines (cuBLAS/FlagGems/LLM-direct)
 
-Gate 结果 archive：`benchmarks/results/stage1/gates/G0-G5/`
+Gate 结果 archive：`benchmarks/results/phase1/gates/G0-G5/`
 
 最终 commit：`1992d5d` (G5 PASS)
 
 ---
 
-## 未解决的 Stage 1 遗留问题
+## 未解决的 Phase 1 遗留问题
 
-1. **G5 latency known-fail** — Stage 2 torch.compile backend 解决
-2. **H4 跨硬件假设** — Stage 2/3 多硬件验证
-3. **小 shape (M=128) 性能** — Triton 架构限制，Stage 2 通过 Inductor 改善
+1. **G5 latency known-fail** — Phase 2 torch.compile backend 解决
+2. **H4 跨硬件假设** — Phase 2/3 多硬件验证
+3. **小 shape (M=128) 性能** — Triton 架构限制，Phase 2 通过 Inductor 改善
 4. **LLM-direct baseline 数据不完整** — G4 仅有 6 shapes offline，需 live 模式补全

@@ -95,7 +95,7 @@ External Agent (OpenClaw / Claude Code / Cursor / ...)
         │
         ├── reads AGENTS.md         → understands role + tool protocol
         ├── reads TOOLS.md          → environment-specific configuration
-        ├── reads docs/design/      → architecture reference
+        ├── reads docs/architecture/ → architecture reference
         │
         ├── calls: arke optimize --kernel matmul --shape 1024,512,2048
         ├── calls: arke bench --bl 5 --layer l1

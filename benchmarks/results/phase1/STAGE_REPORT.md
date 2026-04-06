@@ -1,4 +1,4 @@
-# Stage 1: SIMT Feasibility (NVIDIA) — Report
+# Phase 1: SIMT Feasibility (NVIDIA) — Report
 
 > Generated: 2026-04-05
 > Hardware: RTX 3060 Laptop (6GB, Ampere, SM 8.6), CUDA 12.4
@@ -51,21 +51,21 @@
 | H1 (Correctness) | ✅ | Arke 100% vs LLM-direct 83% |
 | H2 (Performance) | ✅ | LLM Agent 151% cuBLAS; geomean 109% |
 | H3 (Explainability) | ✅ | @rationale in all agent decisions |
-| H4 (Cross-hardware) | ⬜ | Stage 2 (Ascend) |
+| H4 (Cross-hardware) | ⬜ | Phase 2 (Ascend) |
 
 ## Data Locations
 
 | Data | Path |
 |:-----|:-----|
-| Gate archives | `benchmarks/results/stage1/gates/G{0,2,3,5}/` |
-| L1 benchmarks | `benchmarks/results/stage1/L1/` |
-| L2 benchmarks | `benchmarks/results/stage1/L2/` |
-| L3 benchmarks | `benchmarks/results/stage1/L3/` |
-| Baseline comparisons | `benchmarks/results/stage1/baselines/` |
-| Agent trajectories | `benchmarks/results/stage1/trajectories/` |
-| G5 detailed report | `benchmarks/results/stage1/gates/G5/REPORT.md` |
-| Evaluation report | `benchmarks/results/stage1/EVALUATION_REPORT.md` |
+| Gate archives | `benchmarks/results/phase1/gates/G{0,2,3,5}/` |
+| L1 benchmarks | `benchmarks/results/phase1/L1/` |
+| L2 benchmarks | `benchmarks/results/phase1/L2/` |
+| L3 benchmarks | `benchmarks/results/phase1/L3/` |
+| Baseline comparisons | `benchmarks/results/phase1/baselines/` |
+| Agent trajectories | `benchmarks/results/phase1/trajectories/` |
+| G5 detailed report | `benchmarks/results/phase1/gates/G5/REPORT.md` |
+| Evaluation report | `benchmarks/results/phase1/EVALUATION_REPORT.md` |
 
 ---
 
-*This report will be finalized when G6/G7/G8 pass (Stage 1 complete).*
+*This report will be finalized when G6/G7/G8 pass (Phase 1 complete).*

@@ -6,9 +6,9 @@
 Usage:
     from benchmarks.perf_csv import PerfCSVWriter, PerfRow
 
-    writer = PerfCSVWriter("benchmarks/results/stage1/gates/G2/performance/perf_matmul.csv")
+    writer = PerfCSVWriter("benchmarks/results/phase1/gates/G2/performance/perf_matmul.csv")
     writer.write(PerfRow(
-        stage="stage1", gate="G2", run_id="2026-04-05_012345",
+        stage="phase1", gate="G2", run_id="2026-04-05_012345",
         operator="matmul", op_tier=2, category="A",
         shape_tag="square-1k", shape_tier=2,
         benchmark_level=2, eval_layer="L1",
@@ -18,7 +18,7 @@ Usage:
     ))
     writer.close()
 
-See docs/design/benchmark/benchmark-csv-spec.md for full column specification.
+See docs/benchmark/benchmark-csv-spec.md for full column specification.
 """
 
 from __future__ import annotations

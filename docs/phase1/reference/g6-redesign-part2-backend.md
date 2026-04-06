@@ -1,10 +1,10 @@
 # G6 重构方案二：多级后端扩展性设计
 
-> **文档目的：** 为 Arke 编译器提供清晰的多级后端抽象架构，使同一套 SemanticIR + StrategyIR 能路由到 Triton（Stage 1-2）、MLIR（Stage 2-3）、LLVM IR（Stage 3+）等不同后端，同时为 StrategyIR 建立后端无关的分层设计。
+> **文档目的：** 为 Arke 编译器提供清晰的多级后端抽象架构，使同一套 SemanticIR + StrategyIR 能路由到 Triton（Phase 1-2）、MLIR（Phase 2-3）、LLVM IR（Phase 3+）等不同后端，同时为 StrategyIR 建立后端无关的分层设计。
 >
 > **版本：** 1.0  
 > **日期：** 2026-04-06  
-> **关联：** G6 重构（g6-redesign-overview.md）、IR 规范（arke-ir-spec-v1.md）、IR-MLIR 映射（ir-mlir-mapping.md）、Stage 2/3 审视（stage2-3-review.md）
+> **关联：** G6 重构（g6-redesign-overview.md）、IR 规范（arke-ir-spec-v1.md）、IR-MLIR 映射（ir-mlir-mapping.md）、Phase 2/3 审视（phase2-3-review.md）
 
 ---
 
@@ -26,11 +26,11 @@
 
 ### 1.1 当前架构的限制
 
-Stage 1 已验证 Arke 的核心假设：结构化协议让 LLM kernel 更正确（100% vs 83%），@rationale 让决策可追溯。但当前架构存在几个关键限制：
+Phase 1 已验证 Arke 的核心假设：结构化协议让 LLM kernel 更正确（100% vs 83%），@rationale 让决策可追溯。但当前架构存在几个关键限制：
 
 **硬耦合问题：** `ArkePipeline.run()` 中，codegen 路径直接硬编码了 `from arke.backend.triton_backend import TritonBackend`，无法在不修改 pipeline 核心逻辑的情况下切换后端。
 
-**StrategyIR 的 Triton 污染：** `launch_config` 的 `num_warps`、`num_stages` 是 Triton/NVIDIA 特有概念，`autotune` 的 config 格式也是 Triton-specific 的。当 Stage 2 对接 MLIR 时，这些字段对其他后端毫无意义。
+**StrategyIR 的 Triton 污染：** `launch_config` 的 `num_warps`、`num_stages` 是 Triton/NVIDIA 特有概念，`autotune` 的 config 格式也是 Triton-specific 的。当 Phase 2 对接 MLIR 时，这些字段对其他后端毫无意义。
 
 **Template Engine 的角色模糊：** `TritonTemplateEngine` 既做了模板选择（策略层面的逻辑），又做了 Jinja2 渲染（实现层面的逻辑），两者没有清晰的边界，导致未来替换 lowering 策略时会牵一发而动全身。
 
@@ -56,18 +56,18 @@ Arke 通过 3 个 Stage 逐步下探这个栈：
 
 | Stage | 后端 | 切入层 | 价值 |
 |:-----:|:-----|:-------|:-----|
-| **Stage 1** | Triton → NVIDIA | Python 层 | 快速验证，LLM 友好 |
-| **Stage 2** | Triton → Ascend 或 MLIR | Triton/MLIR 层 | 摆脱 dispatch overhead，多硬件 |
-| **Stage 3** | MLIR → LLVM IR | LLVM 层 | 最大灵活性，LLM 控制 Level 2 决策 |
+| **Phase 1** | Triton → NVIDIA | Python 层 | 快速验证，LLM 友好 |
+| **Phase 2** | Triton → Ascend 或 MLIR | Triton/MLIR 层 | 摆脱 dispatch overhead，多硬件 |
+| **Phase 3** | MLIR → LLVM IR | LLVM 层 | 最大灵活性，LLM 控制 Level 2 决策 |
 
-G6 的重构必须在架构上为这个演进做好准备，而不是等到 Stage 3 再重构一次。**架构成本最低的时机是现在，因为代码库还较小，测试覆盖完整（397+ tests），有安全网。**
+G6 的重构必须在架构上为这个演进做好准备，而不是等到 Phase 3 再重构一次。**架构成本最低的时机是现在，因为代码库还较小，测试覆盖完整（397+ tests），有安全网。**
 
 ### 1.3 设计原则
 
 1. **SemanticIR 不变**：SemanticIR 已经是后端无关的（描述"计算什么"），不需要改动
 2. **StrategyIR 分层而非重写**：Level 1 决策保持兼容，Level 2/3 作为可选 extension sections
 3. **Backend Protocol 先行**：先定义接口，再把现有 TritonBackend 适配进去
-4. **渐进迁移**：Stage 1 的所有 .ak 文件和测试不能破坏
+4. **渐进迁移**：Phase 1 的所有 .ak 文件和测试不能破坏
 5. **显式路由**：`target_hw` 字段驱动后端选择，不靠运行时猜测
 
 ---
@@ -115,7 +115,7 @@ class TritonArtifact(BackendArtifact):
 class MLIRArtifact(BackendArtifact):
     """MLIR 后端的翻译产物：MLIR 文本表示（或 Python MLIR API 描述）。
     
-    Stage 2 预留。包含 linalg dialect 计算 + transform dialect 优化序列。
+    Phase 2 预留。包含 linalg dialect 计算 + transform dialect 优化序列。
     """
     mlir_module: str = ""            # MLIR textual form (mlir-print 格式)
     transform_sequence: str = ""     # transform dialect ops 序列
@@ -126,7 +126,7 @@ class MLIRArtifact(BackendArtifact):
 class LLVMArtifact(BackendArtifact):
     """LLVM IR 后端的翻译产物：LLVM IR 文本表示。
     
-    Stage 3 预留。由 Loop Nest IR 经 lowering passes 生成。
+    Phase 3 预留。由 Loop Nest IR 经 lowering passes 生成。
     """
     llvm_ir: str = ""                # LLVM IR textual form (.ll 文件格式)
     target_triple: str = ""          # e.g. "nvptx64-nvidia-cuda"
@@ -424,7 +424,7 @@ class BackendRegistry:
                 )
                 return backend
         
-        # 4. Fallback：triton（Stage 1 向后兼容）
+        # 4. Fallback：triton（Phase 1 向后兼容）
         if "triton" in cls._backends:
             logger.warning(
                 "No backend found for target_hw='%s'; falling back to triton",
@@ -484,7 +484,7 @@ def register_backend_fn(backend_id: str, backend_class: type) -> None:
 
 ### 2.4 当前三个后端的定位
 
-#### TritonBackend（Stage 1-2，当前实现）
+#### TritonBackend（Phase 1-2，当前实现）
 
 ```python
 # arke/backend/triton_backend.py  （适配现有实现）
@@ -503,7 +503,7 @@ _SUPPORTED_HW_PREFIXES = ("nvidia_", "amd_")
 
 @register_backend("triton")
 class TritonBackend:
-    """Triton 代码生成后端，支持 NVIDIA GPU（Stage 1）和 AMD GPU（Stage 2）。
+    """Triton 代码生成后端，支持 NVIDIA GPU（Phase 1）和 AMD GPU（Phase 2）。
     
     实现说明：
     - translate()：委托给 TritonTemplateEngine，生成 TritonArtifact
@@ -590,10 +590,10 @@ class TritonBackend:
         return any(target_hw.startswith(p) for p in _SUPPORTED_HW_PREFIXES)
 ```
 
-#### MLIRBackend（Stage 2，接口预留）
+#### MLIRBackend（Phase 2，接口预留）
 
 ```python
-# arke/backend/mlir_backend.py  （新增，Stage 2 骨架）
+# arke/backend/mlir_backend.py  （新增，Phase 2 骨架）
 
 from arke.backend.base import ArkeBackend
 from arke.backend.artifact import BackendArtifact, MLIRArtifact, CompiledKernel, ProfileResult
@@ -606,14 +606,14 @@ _SUPPORTED_HW_PREFIXES = ("nvidia_", "amd_", "ascend_")
 
 @register_backend("mlir")
 class MLIRBackend:
-    """MLIR 代码生成后端（Stage 2 预留）。
+    """MLIR 代码生成后端（Phase 2 预留）。
     
     实现路径：
     - translate()：SemanticIR → linalg dialect，StrategyIR → transform dialect
     - compile()：mlir-opt + mlir-translate → LLVM IR → PTX/cubin
     - execute()：加载 cubin，通过 CUDA driver API 执行
     
-    Stage 2 实现参考：ir-mlir-mapping.md §2-4
+    Phase 2 实现参考：ir-mlir-mapping.md §2-4
     """
     
     name = "mlir"
@@ -625,40 +625,40 @@ class MLIRBackend:
     ) -> MLIRArtifact:
         """SemanticIR + StrategyIR → MLIR module（linalg + transform dialect）。
         
-        Stage 2 实现步骤：
+        Phase 2 实现步骤：
         1. 遍历 semantic.nodes，按 ir-mlir-mapping.md §2.3 生成 linalg ops
         2. 遍历 strategy.decisions（Level 1 + Level 2），按 §3.1 生成 transform ops
         3. 处理 FusionGroup → transform.structured.fuse_into_containing_op
         4. @rationale → transform.annotate "arke.rationale"
         """
         raise NotImplementedError(
-            "MLIRBackend is reserved for Stage 2. "
+            "MLIRBackend is reserved for Phase 2. "
             "See docs/spec/ir-mlir-mapping.md for the implementation plan."
         )
     
     def compile(self, artifact: BackendArtifact) -> CompiledKernel:
         """MLIR module → 可执行 kernel。
         
-        Stage 2 实现步骤：
+        Phase 2 实现步骤：
         1. mlir-opt：linalg → scf → gpu → nvvm/rocdl/spirv
         2. mlir-translate：nvvm → LLVM IR
         3. llc / ptxas：LLVM IR → PTX → cubin
         4. CUDA driver API：加载 cubin，返回 CUfunction
         """
-        raise NotImplementedError("MLIRBackend.compile() reserved for Stage 2")
+        raise NotImplementedError("MLIRBackend.compile() reserved for Phase 2")
     
     def execute(self, kernel: CompiledKernel, inputs: dict) -> dict:
         """通过 CUDA driver API 执行编译后的 kernel。"""
-        raise NotImplementedError("MLIRBackend.execute() reserved for Stage 2")
+        raise NotImplementedError("MLIRBackend.execute() reserved for Phase 2")
     
     def supports(self, target_hw: str) -> bool:
         return any(target_hw.startswith(p) for p in _SUPPORTED_HW_PREFIXES)
 ```
 
-#### LLVMBackend（Stage 3，接口预留）
+#### LLVMBackend（Phase 3，接口预留）
 
 ```python
-# arke/backend/llvm_backend.py  （新增，Stage 3 骨架）
+# arke/backend/llvm_backend.py  （新增，Phase 3 骨架）
 
 from arke.backend.base import ArkeBackend
 from arke.backend.artifact import BackendArtifact, LLVMArtifact, CompiledKernel, ProfileResult
@@ -671,18 +671,18 @@ _SUPPORTED_HW_PREFIXES = ("nvidia_", "amd_", "ascend_", "cpu_")
 
 @register_backend("llvm")
 class LLVMBackend:
-    """LLVM IR 直接路径后端（Stage 3 预留）。"""
+    """LLVM IR 直接路径后端（Phase 3 预留）。"""
     
     name = "llvm"
     
     def translate(self, semantic, strategy):
-        raise NotImplementedError("LLVMBackend reserved for Stage 3")
+        raise NotImplementedError("LLVMBackend reserved for Phase 3")
     
     def compile(self, artifact):
-        raise NotImplementedError("LLVMBackend.compile() reserved for Stage 3")
+        raise NotImplementedError("LLVMBackend.compile() reserved for Phase 3")
     
     def execute(self, kernel, inputs):
-        raise NotImplementedError("LLVMBackend.execute() reserved for Stage 3")
+        raise NotImplementedError("LLVMBackend.execute() reserved for Phase 3")
     
     def supports(self, target_hw):
         return any(target_hw.startswith(p) for p in _SUPPORTED_HW_PREFIXES)
@@ -735,15 +735,15 @@ class Decision:
 ### 4.1 三层 Decision 模型
 
 ```
-Level 1 — Algorithm（算法层）[Stage 1 已有]
+Level 1 — Algorithm（算法层）[Phase 1 已有]
   → tile, fuse, algorithm, reorder
   → 后端无关，LLM Agent 主要操作的层
 
-Level 2 — Loop Nest（循环层）[Stage 2 引入]  
+Level 2 — Loop Nest（循环层）[Phase 2 引入]  
   → vectorize width, memory access pattern, prefetch distance
   → MLIR transform dialect 操作的层
 
-Level 3 — Hardware Mapping（硬件层）[Stage 3 引入]
+Level 3 — Hardware Mapping（硬件层）[Phase 3 引入]
   → register allocation hints, instruction selection, bank conflict avoidance
   → LLVM pass 操作的层
 ```
@@ -769,28 +769,28 @@ class Decision:
 | MLIR | ✅ | ✅ | 部分（GPU mapping） |
 | LLVM | ✅ | ✅ | ✅ |
 
-**向后兼容：** Stage 1 只生成 Level 1 decisions。Level 2/3 decisions 在 Stage 2/3 引入时，不影响 Triton backend。
+**向后兼容：** Phase 1 只生成 Level 1 decisions。Level 2/3 decisions 在 Phase 2/3 引入时，不影响 Triton backend。
 
 ---
 
 ## 5. Template Engine → Lowering Engine 演进路径
 
 ```
-Stage 1 (当前):
+Phase 1 (当前):
   SemanticIR + StrategyIR
     → TritonTemplateEngine._select_template()  [if/elif 路由]
     → Jinja2 render (template_hint from OpRegistry)
     → Triton Python source
     → triton.compile() + run()
 
-Stage 2 (MLIR):
+Phase 2 (MLIR):
   SemanticIR + StrategyIR
     → MLIREmitter.emit()  [SemanticIR → linalg/tensor dialect]
     → StrategyApplicator.apply()  [StrategyIR L1+L2 → transform dialect]
     → MLIR pass pipeline  [canonicalize → bufferize → gpu-mapping]
     → LLVM IR → PTX (via MLIR's gpu-to-nvvm)
 
-Stage 3 (LLVM):
+Phase 3 (LLVM):
   SemanticIR + StrategyIR
     → CustomLowering.lower()  [SemanticIR → Loop Nest IR]
     → ScheduleApplicator.apply()  [StrategyIR L1+L2+L3 → loop transforms]
@@ -858,8 +858,8 @@ strategy my_strategy for target("nvidia_ampere") {
 | `arke/backend/base.py` | **重写** | ArkeBackend Protocol + 辅助类 | 1d | P0 |
 | `arke/backend/registry.py` | **新增** | BackendRegistry（发现+注册+路由）| 1d | P0 |
 | `arke/backend/triton_backend.py` | **改造** | 适配 ArkeBackend Protocol | 1d | P0 |
-| `arke/backend/mlir_backend.py` | **新增** | Stage 2 骨架（NotImplementedError）| 0.5d | P2 |
-| `arke/backend/llvm_backend.py` | **新增** | Stage 3 骨架（NotImplementedError）| 0.5d | P3 |
+| `arke/backend/mlir_backend.py` | **新增** | Phase 2 骨架（NotImplementedError）| 0.5d | P2 |
+| `arke/backend/llvm_backend.py` | **新增** | Phase 3 骨架（NotImplementedError）| 0.5d | P3 |
 | `arke/ir/strategy.py` | **扩展** | Decision.backend_hints 字段 | 0.5d | P1 |
 | `arke/pipeline.py` | **改造** | 通过 BackendRegistry 路由后端 | 1d | P0 |
 | `arke/parser/parser.py` | **扩展** | @hint 注解解析 | 0.5d | P1 |
@@ -890,7 +890,7 @@ strategy my_strategy for target("nvidia_ampere") {
 | MLIR/LLVM backend 空壳增加维护成本 | 代码膨胀 | 骨架文件 <100 行，只定义接口 |
 | backend_hints 滥用导致策略不可移植 | 策略耦合后端 | 规范：Level 1 decisions 不应依赖 backend_hints |
 | BackendRegistry 引入 import-time 开销 | 启动变慢 | lazy import MLIR/LLVM backend |
-| 多后端测试矩阵指数增长 | CI 时间 | Stage 1 只测 Triton，Stage 2 加 MLIR |
+| 多后端测试矩阵指数增长 | CI 时间 | Phase 1 只测 Triton，Phase 2 加 MLIR |
 
 ---
 

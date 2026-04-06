@@ -18,7 +18,7 @@
 
 | # | Column | Type | Required | Description | Example |
 |---|--------|------|:--------:|-------------|---------|
-| 1 | `stage` | str | ✅ | Stage identifier | `stage1` |
+| 1 | `stage` | str | ✅ | Stage identifier | `phase1` |
 | 2 | `gate` | str | | Gate that produced this data (if applicable) | `G2`, `G6` |
 | 3 | `run_id` | str | ✅ | Unique run identifier (timestamp) | `2026-04-05_012345` |
 | 4 | `operator` | str | ✅ | Operator name | `matmul`, `flash_attention` |
@@ -95,7 +95,7 @@ This single file enables cross-gate, cross-operator Excel analysis:
 
 ```csv
 stage,gate,run_id,operator,op_tier,category,shape_tag,shape_tier,benchmark_level,eval_layer,M,N,K,batch,seq_len,num_heads,head_dim,dtype,backend,method,baseline_tier,latency_us,latency_min_us,latency_max_us,latency_std_us,tflops,bandwidth_gbps,correct,max_abs_err,max_rel_err,baseline_method,baseline_latency_us,ratio_vs_baseline,warmup_iters,bench_iters,gpu_name,gpu_mem_mb,cuda_version,triton_version,pytorch_version,notes
-stage1,G2,2026-04-02_134301,matmul,2,A,square-1k,2,2,L1,1024,1024,1024,,,,f16,nvidia,arke,,39.8,38.1,42.3,1.2,54.1,,TRUE,1.2e-4,2.3e-3,cublas,44.2,1.11,200,500,RTX 3060 Laptop,6144,12.4,3.2.0,2.6.0+cu124,
-stage1,G2,2026-04-02_134301,matmul,2,A,square-1k,2,2,L1,1024,1024,1024,,,,f16,nvidia,cublas,P0,44.2,43.0,46.1,0.8,48.7,,TRUE,,,,,,200,500,RTX 3060 Laptop,6144,12.4,,2.6.0+cu124,
-stage1,G2,2026-04-02_134301,matmul,2,A,square-4k,2,2,L1,4096,4096,4096,,,,f16,nvidia,arke,,2380.0,2350.0,2420.0,18.5,57.7,,TRUE,1.5e-4,1.8e-3,cublas,1486.0,0.62,200,500,RTX 3060 Laptop,6144,12.4,3.2.0,2.6.0+cu124,
+phase1,G2,2026-04-02_134301,matmul,2,A,square-1k,2,2,L1,1024,1024,1024,,,,f16,nvidia,arke,,39.8,38.1,42.3,1.2,54.1,,TRUE,1.2e-4,2.3e-3,cublas,44.2,1.11,200,500,RTX 3060 Laptop,6144,12.4,3.2.0,2.6.0+cu124,
+phase1,G2,2026-04-02_134301,matmul,2,A,square-1k,2,2,L1,1024,1024,1024,,,,f16,nvidia,cublas,P0,44.2,43.0,46.1,0.8,48.7,,TRUE,,,,,,200,500,RTX 3060 Laptop,6144,12.4,,2.6.0+cu124,
+phase1,G2,2026-04-02_134301,matmul,2,A,square-4k,2,2,L1,4096,4096,4096,,,,f16,nvidia,arke,,2380.0,2350.0,2420.0,18.5,57.7,,TRUE,1.5e-4,1.8e-3,cublas,1486.0,0.62,200,500,RTX 3060 Laptop,6144,12.4,3.2.0,2.6.0+cu124,
 ```

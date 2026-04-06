@@ -1,7 +1,7 @@
 # Arke — Execution Plan
 
-> Authoritative Gate exit criteria are defined in `stage1-gate-design.md` (and future stage-N series).
-> This document records execution history, Phase summaries, and long-term Stage 2-4 roadmap.
+> Authoritative Gate exit criteria are defined in `phase1-gate-design.md` (and future stage-N series).
+> This document records execution history, Phase summaries, and long-term Phase 2-4 roadmap.
 
 ## Design Principles
 
@@ -39,9 +39,9 @@
 - G5 ✅ (3 known-fail perf) — E2E GPT-2 integration
 - G6 ⬜ — BL5×L1+L2 — Lang & IR Completeness
 - G7 ⬜ — Arke Autonomous Engineering
-- G8 ⬜ — BL6×L3 (4 models) + Stage 1 Final Acceptance
+- G8 ⬜ — BL6×L3 (4 models) + Phase 1 Final Acceptance
 
-→ Details: [stage1-gate-design.md](stage1-gate-design.md)
+→ Details: [phase1-gate-design.md](phase1-gate-design.md)
 
 ---
 
@@ -59,7 +59,7 @@ Phase 1.7 ✅  Whole-model E2E (G5: 3 known-fail perf criteria)
 Phase 1.8 ✅  MVP release (v0.1.0)
 Phase 1.9 ⬜  Arke Lang & IR Completeness (Gate G6) ← CURRENT
 Phase 1.10 ⬜ Arke Autonomous Engineering (Gate G7)
-Phase 1.11 ⬜ Stage 1 Final Validation (Gate G8)
+Phase 1.11 ⬜ Phase 1 Final Validation (Gate G8)
 ```
 
 ---
@@ -118,7 +118,7 @@ Human-readable `.ak` syntax → Semantic IR; CLI parse/optimize/inspect.
 
 **Gate G5** | Replace kernels in real model; inference correctness verified.
 GPT-2 Small correctness ✅ | memory ≤6GB ✅ | latency ⚠️ known-fail (1.7-2.3× eager; root cause: Triton dispatch overhead, no graph fusion)
-Full analysis: `benchmarks/results/stage1/gates/G5/REPORT.md`
+Full analysis: `benchmarks/results/phase1/gates/G5/REPORT.md`
 
 ---
 
@@ -133,7 +133,7 @@ v0.1.0 — one-click setup, CI green (3 Python versions), complete docs, reprodu
 
 **Gate G6 — BL5×L1+L2** | Arke Lang & IR Completeness Validation
 
-→ Exit criteria, capability backtrack, and dev items: [stage1-gate-design.md §5](stage1-gate-design.md#5-g6--bl5l1l2-lang--ir-completeness-current-target)
+→ Exit criteria, capability backtrack, and dev items: [phase1-gate-design.md §5](phase1-gate-design.md#5-g6--bl5l1l2-lang--ir-completeness-current-target)
 
 ---
 
@@ -141,19 +141,19 @@ v0.1.0 — one-click setup, CI green (3 Python versions), complete docs, reprodu
 
 **Gate G7** | Autonomous kernel generation + model E2E validation
 
-→ Details: [stage1-gate-design.md §6](stage1-gate-design.md#6-g7--arke-autonomous-engineering)
+→ Details: [phase1-gate-design.md §6](phase1-gate-design.md#6-g7--arke-autonomous-engineering)
 
 ---
 
-## Phase 1.11: Stage 1 Final Validation (Gate G8) ⬜
+## Phase 1.11: Phase 1 Final Validation (Gate G8) ⬜
 
-**Gate G8 — BL6×L3 (4 models)** | Stage 1 Final Acceptance
+**Gate G8 — BL6×L3 (4 models)** | Phase 1 Final Acceptance
 
-→ Details: [stage1-gate-design.md §7](stage1-gate-design.md#7-g8--stage-1-final-acceptance)
+→ Details: [phase1-gate-design.md §7](phase1-gate-design.md#7-g8--stage-1-final-acceptance)
 
 ---
 
-## Stage 2: Ascend Backend — SIMD Architecture Validation
+## Phase 2: Ascend Backend — SIMD Architecture Validation
 
 > **Goal:** Verify Arke Lang/IR works on SIMD architecture (Ascend NPU) via Ascend Triton backend.
 > Arke-generated Ascend Triton kernels must outperform FlagGems on Ascend.
@@ -166,7 +166,7 @@ v0.1.0 — one-click setup, CI green (3 Python versions), complete docs, reprodu
 ### Phase 2.1: Ascend Environment + Arke Lang/IR Completeness
 
 **Objective:** Set up Ascend Triton environment; extend Arke Lang/IR to express Category B-E operators
-needed for Stage 2 Gate coverage.
+needed for Phase 2 Gate coverage.
 
 #### Completion Criteria
 | # | Criterion | Verification | Status |
@@ -190,7 +190,7 @@ needed for Stage 2 Gate coverage.
 | 2.2.3 | silu/swiglu correctness on Ascend | Tier 2 (5 shapes): 100% pass | ⬜ |
 | 2.2.4 | LLM decides SIMD-aware strategy | LLM chooses different tile/mapping for Ascend vs NVIDIA on same kernel | ⬜ |
 
-**Gate S2-G1:** matmul + rmsnorm + swiglu on Ascend — correctness 100% (Tier 2) + LLM SIMD decision verified
+**Gate P2-S1:** matmul + rmsnorm + swiglu on Ascend — correctness 100% (Tier 2) + LLM SIMD decision verified
 
 ### Phase 2.3: Ascend Performance vs FlagGems
 
@@ -203,7 +203,7 @@ needed for Stage 2 Gate coverage.
 | 2.3.2 | rmsnorm Arke/FlagGems ≥ 1.0× (Ascend Tier 2) | `bench_l1 --op rmsnorm --tier 2 --backend ascend` | ⬜ |
 | 2.3.3 | swiglu Arke/FlagGems ≥ 1.0× (Ascend Tier 4) | Tier 4 SwiGLU shapes (8 shapes) | ⬜ |
 
-**Gate S2-G2:** Cat A+C+D on Ascend — Arke geomean ≥ FlagGems (Tier 2)
+**Gate P2-S2:** Cat A+C+D on Ascend — Arke geomean ≥ FlagGems (Tier 2)
 
 ### Phase 2.4: Category B — FlashAttention + GQA
 
@@ -220,7 +220,7 @@ This is the first complex fused operator gate.
 | 2.4.5 | GQA correctness (NVIDIA) | Tier 4 GQA 6 shapes: 100% pass | ⬜ |
 | 2.4.6 | DeepSeek shapes included | ds-v2/v3 seq=512~16384 shapes pass | ⬜ |
 
-**Gate S2-G3:** FlashAttention (Cat B) — NVIDIA ≥12 shapes correct + ≥0.7× FA-2; Ascend ≥8 shapes correct
+**Gate P2-S3:** FlashAttention (Cat B) — NVIDIA ≥12 shapes correct + ≥0.7× FA-2; Ascend ≥8 shapes correct
 
 ### Phase 2.5: Category E — RoPE/YaRN + @rationale cross-arch
 
@@ -234,9 +234,9 @@ This is the first complex fused operator gate.
 | 2.5.3 | YaRN RoPE long-context | DeepSeek YaRN ds-v2-8k ~ ds-v2-32k correct | ⬜ |
 | 2.5.4 | @rationale cross-arch lift | With SIMD rationale > without: ≥10% perf lift on Ascend (Tier 2 matmul) | ⬜ |
 
-**Gate S2-G4:** RoPE/YaRN (Cat E) correctness + @rationale cross-arch effect verified
+**Gate P2-S4:** RoPE/YaRN (Cat E) correctness + @rationale cross-arch effect verified
 
-### Stage 2 Summary Gate: S2-G_FINAL
+### Phase 2 Summary Gate: P2-S_FINAL
 
 | Criterion | Requirement |
 |-----------|------------|
@@ -249,36 +249,36 @@ This is the first complex fused operator gate.
 
 ---
 
-## Stage 3: MLIR Backend — Complete Compiler Control
+## Phase 3: MLIR Backend — Complete Compiler Control
 
 > **Goal:** Replace Triton backend with Arke MLIR Dialect for both NVIDIA and Ascend.
 > MLIR removes Triton's abstraction ceiling, enabling finer-grained optimization and
-> more complete operator support. Performance must match or exceed Stage 2 Triton path.
+> more complete operator support. Performance must match or exceed Phase 2 Triton path.
 >
 > **Why MLIR after Triton:** Triton's Python abstraction is not AI-First — it constrains
 > LLM decisions to Triton's fixed optimization model. MLIR gives Arke full control over
 > the lowering pipeline, letting LLM decisions penetrate to loop nest and memory level.
 >
 > **Hardware target:** NVIDIA + Ascend (via NVVM dialect + AscendNPU IR)
-> **Benchmark baseline:** Stage 2 Triton path results
+> **Benchmark baseline:** Phase 2 Triton path results
 
 ### Phase 3.1: Arke MLIR Dialect Design
 
 **Objective:** Define `arke.kernel` + `arke.strategy` MLIR dialect ops that can represent
-all Stage 1+2 optimizations.
+all Phase 1+2 optimizations.
 
 #### Completion Criteria
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
-| 3.1.1 | `arke.kernel` dialect defined | All Stage 1 ops expressible in arke.kernel | ⬜ |
-| 3.1.2 | `arke.strategy` dialect defined | All Stage 1+2 decision kinds representable | ⬜ |
+| 3.1.1 | `arke.kernel` dialect defined | All Phase 1 ops expressible in arke.kernel | ⬜ |
+| 3.1.2 | `arke.strategy` dialect defined | All Phase 1+2 decision kinds representable | ⬜ |
 | 3.1.3 | Strategy IR → MLIR transform dialect | Decision kinds map to MLIR transform ops | ⬜ |
 | 3.1.4 | Strategy IR Level 2 fields added | loop_nest, memory_access_pattern, pipeline_stage fields in Strategy IR | ⬜ |
 | 3.1.5 | LLM can produce Level 2 decisions | LLM session generates ≥1 Level 2 decision in closed-loop | ⬜ |
 
 ### Phase 3.2: MLIR Path Correctness (NVIDIA)
 
-**Objective:** All Stage 1+2 operators pass correctness via MLIR path on NVIDIA.
+**Objective:** All Phase 1+2 operators pass correctness via MLIR path on NVIDIA.
 
 #### Completion Criteria
 | # | Criterion | Verification | Status |
@@ -289,20 +289,20 @@ all Stage 1+2 optimizations.
 | 3.2.4 | Cat B (FlashAttention) via MLIR | Tier 4 FA ≥12 shapes: 100% correct | ⬜ |
 | 3.2.5 | Cat E (RoPE) via MLIR | Tier 4 RoPE 9 shapes: 100% correct | ⬜ |
 
-**Gate S3-G1:** Cat A+C+D via MLIR — Tier 2+4 correctness 100%
+**Gate P3-S1:** Cat A+C+D via MLIR — Tier 2+4 correctness 100%
 
-### Phase 3.3: MLIR Path Performance ≥ Stage 2 Triton
+### Phase 3.3: MLIR Path Performance ≥ Phase 2 Triton
 
-**Objective:** MLIR path matches or exceeds Stage 2 Triton path on all categories.
+**Objective:** MLIR path matches or exceeds Phase 2 Triton path on all categories.
 
 #### Completion Criteria
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
-| 3.3.1 | matmul MLIR ≥ Triton path | Tier 2+4 geomean ≥ Stage 2 result | ⬜ |
-| 3.3.2 | FlashAttention MLIR ≥ Triton path | Tier 4 FA geomean ≥ Stage 2 result | ⬜ |
-| 3.3.3 | rmsnorm/swiglu MLIR ≥ Triton | Tier 2+4 geomean ≥ Stage 2 result | ⬜ |
+| 3.3.1 | matmul MLIR ≥ Triton path | Tier 2+4 geomean ≥ Phase 2 result | ⬜ |
+| 3.3.2 | FlashAttention MLIR ≥ Triton path | Tier 4 FA geomean ≥ Phase 2 result | ⬜ |
+| 3.3.3 | rmsnorm/swiglu MLIR ≥ Triton | Tier 2+4 geomean ≥ Phase 2 result | ⬜ |
 
-**Gate S3-G2:** All Cat A+B+C+D MLIR geomean ≥ Stage 2 Triton path
+**Gate P3-S2:** All Cat A+B+C+D MLIR geomean ≥ Phase 2 Triton path
 
 ### Phase 3.4: LLM Level-2 Decisions via MLIR
 
@@ -316,7 +316,7 @@ and MLIR path reflects these decisions with measurable performance benefit.
 | 3.4.2 | LLM Level 1+2 > Level 1 + default | Tier 2 matmul: LLM L1+2 ≥ LLM L1+default L2 by ≥15% | ⬜ |
 | 3.4.3 | FlashAttention Level 2 optimization | FA Tier 4: LLM Level 2 decisions improve vs default by ≥20% | ⬜ |
 
-**Gate S3-G3:** LLM Level-2 decision value verified (matmul ≥15%, FA ≥20%)
+**Gate P3-S3:** LLM Level-2 decision value verified (matmul ≥15%, FA ≥20%)
 
 ### Phase 3.5: Ascend via MLIR
 
@@ -326,23 +326,23 @@ and MLIR path reflects these decisions with measurable performance benefit.
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
 | 3.5.1 | MLIR → AscendNPU IR | matmul + rmsnorm correct on Ascend via MLIR path | ⬜ |
-| 3.5.2 | Ascend MLIR ≥ Ascend Triton path | Tier 2 geomean: MLIR path ≥ Stage 2 Triton result | ⬜ |
+| 3.5.2 | Ascend MLIR ≥ Ascend Triton path | Tier 2 geomean: MLIR path ≥ Phase 2 Triton result | ⬜ |
 
-**Gate S3-G4:** Ascend via MLIR correct + performance ≥ Stage 2
+**Gate P3-S4:** Ascend via MLIR correct + performance ≥ Phase 2
 
-### Stage 3 Summary Gate: S3-G_FINAL
+### Phase 3 Summary Gate: P3-S_FINAL
 
 | Criterion | Requirement |
 |-----------|------------|
 | Category coverage | A + B + C + D + E all via MLIR path |
 | Shape coverage | Tier 2 + Tier 4 across all categories |
-| Performance | MLIR path geomean ≥ Stage 2 Triton (NVIDIA + Ascend) |
+| Performance | MLIR path geomean ≥ Phase 2 Triton (NVIDIA + Ascend) |
 | LLM Level-2 | Verified benefit ≥15% on matmul, ≥20% on FlashAttention |
 | Multi-hardware | NVIDIA + Ascend both via MLIR |
 
 ---
 
-## Stage 4: LLVM IR Backend — 100% Hardware Completeness
+## Phase 4: LLVM IR Backend — 100% Hardware Completeness
 
 > **Goal:** Arke IR → LLVM IR direct emission, achieving 100% hardware expression completeness
 > and maximum performance headroom beyond what MLIR lowering allows.
@@ -352,7 +352,7 @@ and MLIR path reflects these decisions with measurable performance benefit.
 > instruction scheduling. This is where LLM Level-3 decisions become possible.
 >
 > **Hardware target:** NVIDIA + Ascend + AMD (≥3 backends via LLVM)
-> **Benchmark baseline:** Stage 3 MLIR path results
+> **Benchmark baseline:** Phase 3 MLIR path results
 
 ### Phase 4.1: LLVM IR Emission Foundation
 
@@ -366,19 +366,19 @@ and MLIR path reflects these decisions with measurable performance benefit.
 | 4.1.3 | Strategy IR Level 3 fields | register_hints, barrier_placement, instruction_scheduling fields defined | ⬜ |
 | 4.1.4 | LLVM path on ≥2 backends | matmul correct on NVIDIA (NVPTX) + AMD (AMDGCN) | ⬜ |
 
-**Gate S4-G1:** matmul via LLVM correct on ≥2 backends (Tier 2)
+**Gate P4-S1:** matmul via LLVM correct on ≥2 backends (Tier 2)
 
-### Phase 4.2: LLVM Path Performance ≥ Stage 3 MLIR
+### Phase 4.2: LLVM Path Performance ≥ Phase 3 MLIR
 
 **Objective:** LLVM path achieves better performance than MLIR path on Cat A+C+D.
 
 #### Completion Criteria
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
-| 4.2.1 | matmul LLVM ≥ MLIR + 5% | Tier 2+4 geomean: LLVM ≥ Stage 3 MLIR + 5% | ⬜ |
-| 4.2.2 | rmsnorm/swiglu LLVM ≥ MLIR | Tier 2+4 geomean: LLVM ≥ Stage 3 MLIR | ⬜ |
+| 4.2.1 | matmul LLVM ≥ MLIR + 5% | Tier 2+4 geomean: LLVM ≥ Phase 3 MLIR + 5% | ⬜ |
+| 4.2.2 | rmsnorm/swiglu LLVM ≥ MLIR | Tier 2+4 geomean: LLVM ≥ Phase 3 MLIR | ⬜ |
 
-**Gate S4-G2:** Cat A+C+D LLVM geomean ≥ MLIR + 5% (NVIDIA)
+**Gate P4-S2:** Cat A+C+D LLVM geomean ≥ MLIR + 5% (NVIDIA)
 
 ### Phase 4.3: LLM Level-3 Decisions
 
@@ -390,7 +390,7 @@ and MLIR path reflects these decisions with measurable performance benefit.
 | 4.3.1 | LLM produces Level 3 decisions | LLM session uses register_hints / barrier_placement in ≥3 shapes | ⬜ |
 | 4.3.2 | LLM L1+2+3 > L1+2+default L3 | Tier 2 matmul: LLM full stack ≥ L1+2+default by ≥5% | ⬜ |
 
-**Gate S4-G3:** LLM Level-3 decision value verified (≥5% over L1+2+default)
+**Gate P4-S3:** LLM Level-3 decision value verified (≥5% over L1+2+default)
 
 ### Phase 4.4: FlashAttention via LLVM + Multi-Hardware Parity
 
@@ -400,12 +400,12 @@ and MLIR path reflects these decisions with measurable performance benefit.
 | # | Criterion | Verification | Status |
 |---|-----------|-------------|:------:|
 | 4.4.1 | FlashAttention LLVM correct | Tier 4 FA ≥12 shapes on NVIDIA via LLVM: 100% | ⬜ |
-| 4.4.2 | FlashAttention LLVM performance | ≥0.85× flash-attn-2 baseline (better than Stage 2's 0.7×) | ⬜ |
+| 4.4.2 | FlashAttention LLVM performance | ≥0.85× flash-attn-2 baseline (better than Phase 2's 0.7×) | ⬜ |
 | 4.4.3 | MLA (DeepSeek) LLVM correct | Tier 4 MLA 8 shapes: 100% correct | ⬜ |
 | 4.4.4 | ≥3 hardware backends | NVIDIA + Ascend + AMD all pass Cat A correctness | ⬜ |
 | 4.4.5 | Multi-hardware perf within 90% vendor | Each backend: matmul geomean ≥90% of respective vendor lib | ⬜ |
 
-**Gate S4-G4:** FlashAttention + MLA via LLVM correct; multi-hardware ≥90% vendor parity
+**Gate P4-S4:** FlashAttention + MLA via LLVM correct; multi-hardware ≥90% vendor parity
 
 ### Phase 4.5: Production Release v1.0.0
 
@@ -419,15 +419,15 @@ and MLIR path reflects these decisions with measurable performance benefit.
 | 4.5.3 | @rationale knowledge base ≥200 entries | Covers Cat A-E across NVIDIA + Ascend + AMD | ⬜ |
 | 4.5.4 | v1.0.0 tag | `git tag v1.0.0` | ⬜ |
 
-**Gate S4-G_FINAL:** v1.0.0 — multi-hardware parity + @rationale KB + LLM Level 1-3 full stack
+**Gate P4-S_FINAL:** v1.0.0 — multi-hardware parity + @rationale KB + LLM Level 1-3 full stack
 
-### Stage 4 Summary Gate: S4-G_FINAL
+### Phase 4 Summary Gate: P4-S_FINAL
 
 | Criterion | Requirement |
 |-----------|------------|
 | Category coverage | A + B + C + D + E + F (lm_head/vocab) |
 | Shape coverage | Tier 2 + Tier 4 all categories incl. MLA/GQA/YaRN |
-| Performance vs Stage 3 | LLVM geomean ≥ MLIR + 5% (Cat A+C+D) |
+| Performance vs Phase 3 | LLVM geomean ≥ MLIR + 5% (Cat A+C+D) |
 | FlashAttention | ≥0.85× FA-2 baseline via LLVM |
 | Multi-hardware | ≥3 backends ≥90% respective vendor libs |
 | LLM Level-3 | Verified benefit ≥5% over L1+2+default |
@@ -438,20 +438,20 @@ and MLIR path reflects these decisions with measurable performance benefit.
 ## Stage Dependency Chain
 
 ```
-Stage 1 ✅  SIMT feasibility (NVIDIA Triton)      → proves H1/H2/H3
-    ↓ G5 PASS → Gate details: stage1-gate-design.md
-Stage 2     SIMD feasibility (Ascend Triton)      → proves H4 (cross-arch)
-    ↓ S2-G_FINAL PASS
-Stage 3     MLIR backend (full compiler control)  → deeper LLM decisions (Level 2)
-    ↓ S3-G_FINAL PASS
-Stage 4     LLVM IR backend (100% HW completeness)→ LLM Level 1-3 full stack
-    ↓ S4-G_FINAL PASS
+Phase 1 ✅  SIMT feasibility (NVIDIA Triton)      → proves H1/H2/H3
+    ↓ G5 PASS → Gate details: phase1-gate-design.md
+Phase 2     SIMD feasibility (Ascend Triton)      → proves H4 (cross-arch)
+    ↓ P2-S_FINAL PASS
+Phase 3     MLIR backend (full compiler control)  → deeper LLM decisions (Level 2)
+    ↓ P3-S_FINAL PASS
+Phase 4     LLVM IR backend (100% HW completeness)→ LLM Level 1-3 full stack
+    ↓ P4-S_FINAL PASS
   v1.0.0
 ```
 
-**Gate benchmark coverage requirement (Stage 2+):**
+**Gate benchmark coverage requirement (Phase 2+):**
 - Every Gate must cover ≥3 Operator Categories (A-G, see benchmark-design.md §2)
-- Shape coverage must include Tier 4 shapes from `docs/design/benchmark-design.md`
+- Shape coverage must include Tier 4 shapes from `docs/benchmark/benchmark-design.md`
 - DeepSeek shapes (seq=512~163840) must be included in FlashAttention + MLA Gates
 
 ---

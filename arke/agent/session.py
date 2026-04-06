@@ -248,7 +248,7 @@ class OptimizationSession:
         trials = params.get("trials", 3)
         result: dict[str, Any] = {"success": True}
 
-        # Stage 1: V1 numerical validation (Semantic IR math)
+        # Phase 1: V1 numerical validation (Semantic IR math)
         try:
             num_result = self.numerical_validator.validate(
                 self.semantic_ir, trials=trials
@@ -271,7 +271,7 @@ class OptimizationSession:
             result["errors"] = [f"V1 numerical check failed: {e}"]
             return result
 
-        # Stage 2: GPU correctness (compile kernel → run → compare vs NumPy)
+        # Phase 2: GPU correctness (compile kernel → run → compare vs NumPy)
         try:
             gpu_check = self._verify_gpu_correctness(trials=trials)
             result["gpu_correctness"] = gpu_check

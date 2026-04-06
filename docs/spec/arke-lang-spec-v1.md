@@ -1,7 +1,7 @@
 # Arke Language Specification v1.0
 
 > **Version:** 1.0  
-> **Status:** Frozen (Stage 1 exit)  
+> **Status:** Frozen (Phase 1 exit)  
 > **Compatibility:** Arke compiler ≥ 0.1.0-dev  
 > **Grammar file:** `arke/parser/arke.lark`
 
@@ -226,6 +226,6 @@ annotation     = "@" IDENT "(" STRING ")"
 
 ## 7. Versioning
 
-This document describes Arke Language **v1.0** as implemented in Stage 1 of the Arke project.  
+This document describes Arke Language **v1.0** as implemented in Phase 1 of the Arke project.  
 Grammar file: `arke/parser/arke.lark` (grammar version comment inside).  
-Changes to the language in Stage 2+ will increment the version and be documented in `CHANGELOG.md`.
+Changes to the language in Phase 2+ will increment the version and be documented in `CHANGELOG.md`.

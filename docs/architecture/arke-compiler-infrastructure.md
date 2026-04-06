@@ -89,10 +89,10 @@ parse_file() ──→ Program (AST) ──→ ast_to_ir()
                          │  Transform: FusionPass           │    source of
                          │             TilingPass           │    truth)
                          │  Lowering:                       │
-                         │    Stage 1: TritonCodegenPass ───┼── BackendRegistry
-                         │    Stage 1: MLIRCodegenPass  ────┼── (BL1 verify)
-                         │    Stage 2+: MLIRCodegenPass ────┼── (full codegen)
-                         │    Stage 4: LLVMCodegenPass  ────┼── (direct LLVM)
+                         │    Phase 1: TritonCodegenPass ───┼── BackendRegistry
+                         │    Phase 1: MLIRCodegenPass  ────┼── (BL1 verify)
+                         │    Phase 2+: MLIRCodegenPass ────┼── (full codegen)
+                         │    Phase 4: LLVMCodegenPass  ────┼── (direct LLVM)
                          │  Verify:    PostLowerCheckPass   │
                          └───────────────┬──────────────────┘
                                          │
@@ -104,7 +104,7 @@ parse_file() ──→ Program (AST) ──→ ast_to_ir()
                    Triton compile  MLIR verify   LLVM emit
                           │              │              │
                        GPU result   correctness   GPU result
-                       (Stage 1)    cross-check   (Stage 4)
+                       (Phase 1)    cross-check   (Phase 4)
 
 Validation path (replaces numerical_check.py):
   SemanticInterpreter ── executes IR graph via OpDef.reference_impl (PyTorch eager)
@@ -580,14 +580,14 @@ class Pipeline:
 
     @classmethod
     def default(cls, hardware: HardwareProfile | None = None) -> "Pipeline":
-        """Standard Stage 1 pipeline."""
+        """Standard Phase 1 pipeline."""
         from arke.compiler.passes.analysis import (
             SSAValidationPass, ShapeInferencePass, TypeCheckPass,
         )
         from arke.compiler.passes.transform import FusionPass
         from arke.compiler.passes.lowering import TritonCodegenPass
 
-        p = cls("stage1_default")
+        p = cls("phase1_default")
         if hardware:
             p.with_hardware(hardware)
         return (
@@ -718,9 +718,9 @@ class TritonCodegenPass:
 class MLIRCodegenPass:
     """Lower SemanticIR + StrategyIR to MLIR standard dialects.
 
-    Stage 1: BL1 basic pathway — emit linalg/transform MLIR for 13 ops,
+    Phase 1: BL1 basic pathway — emit linalg/transform MLIR for 13 ops,
              verify via mlir-opt (correctness cross-check, not primary codegen).
-    Stage 2+: Full codegen — emit complete MLIR for all ops, alternative
+    Phase 2+: Full codegen — emit complete MLIR for all ops, alternative
               compilation path alongside Triton.
     """
     name = "mlir_codegen"
@@ -739,7 +739,7 @@ class MLIRCodegenPass:
 
 
 class LLVMCodegenPass:
-    """Lower Arke IR directly to LLVM IR (Stage 4).
+    """Lower Arke IR directly to LLVM IR (Phase 4).
 
     Bypasses both Triton and MLIR. Requires HardwareIR + InstructionIR
     to be fully implemented.
@@ -747,8 +747,8 @@ class LLVMCodegenPass:
     name = "llvm_codegen"
 
     def run(self, ctx: PassContext) -> PassResult:
-        # Stage 4 stub — not implemented in Stage 1
-        raise NotImplementedError("LLVMCodegenPass requires Stage 4 InstructionIR")
+        # Phase 4 stub — not implemented in Phase 1
+        raise NotImplementedError("LLVMCodegenPass requires Phase 4 InstructionIR")
 ```
 
 ### 4.4 Pass Categories Reference
@@ -1184,11 +1184,11 @@ class CompiledKernel:
 class ArkeBackend(Protocol):
     """Protocol for Arke compilation backends.
 
-    Stage 1:   TritonBackend  (GPU via Triton)
-    Stage 1:   MLIRBackend   (framework + BL1 verify)
-    Stage 2:   TritonBackend  (Ascend via Triton) + MLIRBackend (full integration)
-    Stage 3:   MLIRBackend    (primary codegen, deeper hardware control)
-    Stage 4:   LLVMBackend    (direct LLVM IR emission)
+    Phase 1:   TritonBackend  (GPU via Triton)
+    Phase 1:   MLIRBackend   (framework + BL1 verify)
+    Phase 2:   TritonBackend  (Ascend via Triton) + MLIRBackend (full integration)
+    Phase 3:   MLIRBackend    (primary codegen, deeper hardware control)
+    Phase 4:   LLVMBackend    (direct LLVM IR emission)
     """
     name: str
 
@@ -1211,11 +1211,11 @@ class ArkeBackend(Protocol):
     ) -> dict[str, float]: ...
 
 
-# Stage 2-4 stubs (protocol only, no implementation required for Stage 1)
+# Phase 2-4 stubs (protocol only, no implementation required for Phase 1)
 
 @runtime_checkable
 class MLIRBackend(Protocol):
-    """MLIR backend — Stage 1: framework + BL1 verify; Stage 2-3: full integration."""
+    """MLIR backend — Phase 1: framework + BL1 verify; Phase 2-3: full integration."""
     name: str
     def lower(self, semantic: SemanticIR, strategy: StrategyIR) -> BackendArtifact: ...
     def compile(self, artifact: BackendArtifact) -> CompiledKernel: ...
@@ -1225,7 +1225,7 @@ class MLIRBackend(Protocol):
 
 @runtime_checkable
 class LLVMBackend(Protocol):
-    """Stage 4 backend via LLVM IR."""
+    """Phase 4 backend via LLVM IR."""
     name: str
     def lower(self, semantic: SemanticIR, strategy: StrategyIR) -> BackendArtifact: ...
     def compile(self, artifact: BackendArtifact) -> CompiledKernel: ...

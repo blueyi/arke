@@ -329,7 +329,7 @@ The benchmark is the **target state definition** for Arke development.
 **Summary:** 11/20 operators have working codegen (Triton template). 9 operators
 (reduce_sum/max, transpose, rmsnorm_residual, grouped_matmul, swiglu, geglu,
 flash_attention, GQA, MLA) have IR + numerical validation but no Triton
-template yet — this is the primary Stage 2 codegen gap.
+template yet — this is the primary Phase 2 codegen gap.
 
 ---
 

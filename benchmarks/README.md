@@ -3,8 +3,8 @@
 GPU operator benchmark framework with multi-tier baselines, automated provenance tracking,
 and a classification system based on Operator Tier (OT), Shape Tier (ST), and Benchmark Level (BL).
 
-> Design document: [`docs/design/benchmark-design.md`](../docs/design/benchmark-design.md)
-> Protocol: [`docs/design/benchmark/benchmark-protocol.md`](../../docs/design/benchmark/benchmark-protocol.md)
+> Design document: [`docs/benchmark/benchmark-design.md`](../docs/benchmark/benchmark-design.md)
+> Protocol: [`docs/benchmark/benchmark-protocol.md`](../../docs/benchmark/benchmark-protocol.md)
 
 ---
 
@@ -133,7 +133,7 @@ benchmarks/results/{run_id}/
 └── report.md            # Human-readable report
 ```
 
-CSV schema: [`docs/design/benchmark/benchmark-csv-spec.md`](../../docs/design/benchmark/benchmark-csv-spec.md)
+CSV schema: [`docs/benchmark/benchmark-csv-spec.md`](../../docs/benchmark/benchmark-csv-spec.md)
 
 ---
 

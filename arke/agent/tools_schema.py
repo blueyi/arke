@@ -6,7 +6,7 @@
 Defines all tools available to the LLM agent, in OpenAI function calling format.
 Compatible with Anthropic tool_use and other providers.
 
-See docs/spec/arke-ir-spec.md §9 and docs/design/detailed-design-v2.1.md §1.2.
+See docs/spec/arke-ir-spec-v1.md §9 and docs/deprecated/detailed-design-v2.1.md §1.2.
 """
 
 from __future__ import annotations

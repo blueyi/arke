@@ -346,7 +346,7 @@ Standalone-benchmarkable operators by source:
 
 ## Integration Plan
 
-### Phase 1: Consolidate Current Sources (Stage 1 immediate)
+### Phase 1: Consolidate Current Sources (Phase 1 immediate)
 
 Formalize runners for the 4 sources already in the benchmark:
 

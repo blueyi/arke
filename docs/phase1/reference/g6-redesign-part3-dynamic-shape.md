@@ -4,7 +4,7 @@
 >
 > **版本：** 1.0
 > **日期：** 2026-04-06
-> **关联：** arke-lang-spec-v1.md、arke-ir-spec-v1.md、stage1-gate-design.md (G7)
+> **关联：** arke-lang-spec-v1.md、arke-ir-spec-v1.md、phase1-gate-design.md (G7)
 
 ---
 
@@ -583,7 +583,7 @@ def {{ kernel_name }}(
     {% endfor %}
 ```
 
-### 7.3 MLIR 后端的动态 Shape（Stage 2 预留）
+### 7.3 MLIR 后端的动态 Shape（Phase 2 预留）
 
 ```mlir
 // 动态 shape → MLIR 的 ? 维度
@@ -878,11 +878,11 @@ G7 的 exit criteria 包含：
 
 ### G8 依赖
 
-G8 是 Stage 1 收尾（4 模型 E2E + 回归测试）。动态 shape 使 G8 的验证更高效——不需要为每个模型的每个 shape 单独编译。
+G8 是 Phase 1 收尾（4 模型 E2E + 回归测试）。动态 shape 使 G8 的验证更高效——不需要为每个模型的每个 shape 单独编译。
 
-### Stage 2 铺垫
+### Phase 2 铺垫
 
-动态 shape 的 SymbolicDim 设计直接映射到 MLIR 的 `?` 维度（`tensor<?x128xf16>`）。Stage 2 的 MLIR backend 可以直接消费 SemanticIR 的 symbolic_dims，无需额外转换。
+动态 shape 的 SymbolicDim 设计直接映射到 MLIR 的 `?` 维度（`tensor<?x128xf16>`）。Phase 2 的 MLIR backend 可以直接消费 SemanticIR 的 symbolic_dims，无需额外转换。
 
 ---
 

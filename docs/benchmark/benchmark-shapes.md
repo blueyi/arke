@@ -15,7 +15,7 @@ Full shape definitions for all operator tiers, organized by Shape Tier (ST1–ST
 | **ST1** | Micro | Small, power-of-2 aligned; launch-overhead dominated | Power-of-2 | Smoke test, <30s |
 | **ST2** | Standard | Medium scale + LLM production shapes (GPT-2, LLaMA-2 7B, LLaMA-3 8B, Qwen2.5 7B) | Mixed | Daily CI, ~5 min |
 | **ST3** | Stress | Non-power-of-2, off-by-one, extreme aspect ratios | Non-aligned | Gate validation |
-| **ST4** | Production | Full LLM production shapes (DeepSeek-V2/V3, LLaMA-3, Qwen2.5); long-context | Mixed | Stage 2+ Gates |
+| **ST4** | Production | Full LLM production shapes (DeepSeek-V2/V3, LLaMA-3, Qwen2.5); long-context | Mixed | Phase 2+ Gates |
 
 > **ST4 applies to OT2–OT4 only.** Elementwise and reduction ops at production scale
 > are covered by ST3 (their shapes don't differ qualitatively from ST2 at large scale).

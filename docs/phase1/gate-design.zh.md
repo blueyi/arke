@@ -1,15 +1,15 @@
-# Arke Stage 1 — Gate Design
+# Arke Phase 1 — Gate Design
 
 > **文档目的：** 以 `benchmark-design.md` 的 BL/OT/ST/L 分层体系为唯一度量标准，定义
-> Stage 1 全部九个 Gate（G0-G8）的出口条件，并从 Gate 出口能力反推各层必须具备的能力与开发项。
+> Phase 1 全部九个 Gate（G0-G8）的出口条件，并从 Gate 出口能力反推各层必须具备的能力与开发项。
 >
 > **设计原则：**
 > - Gate 出口 = BL × L 的具体组合，可被 `arke bench` 命令直接验证
 > - `benchmark-design.md` 为唯一度量 Source of Truth，不引入 BL 体系外的自定义度量
 > - 从 Gate 出口倒推 → 各层能力需求 → 具体开发项（可直接进任务板）
-> - G6 = Lang/IR 完备性（BL5×L1+L2）；G7 = Arke 自主工程能力；G8 = Stage 1 最终验收
+> - G6 = Lang/IR 完备性（BL5×L1+L2）；G7 = Arke 自主工程能力；G8 = Phase 1 最终验收
 >
-> **后续参考：** Stage 2 起，以此格式创建 `stage2-gate-design.md` 等文档。
+> **后续参考：** Phase 2 起，以此格式创建 `phase2-gate-design.md` 等文档。
 >
 > *Created: 2026-04-05 | benchmark-design.md rev: 2026-04-05*
 
@@ -23,7 +23,7 @@
 4. [Part II — G5（已通过，标准回顾性重写）](#4-part-ii--g5已通过标准回顾性重写)
 5. [G6 — BL5×L1+L2：Lang & IR 完备性（当前目标）](#5-g6--bl5l1l2lang--ir-完备性当前目标)
 6. [G7 — Arke Autonomous Engineering](#6-g7--arke-autonomous-engineering)
-7. [G8 — Stage 1 最终验收](#7-g8--stage-1-最终验收)
+7. [G8 — Phase 1 最终验收](#7-g8--stage-1-最终验收)
 8. [Gate 依赖链](#8-gate-依赖链)
 9. [开发项附录](#9-开发项附录)
 10. [与 execution-plan.md 的对应关系](#10-与-execution-planmd-的对应关系)
@@ -102,7 +102,7 @@ L3 ≡ BL6  -    -    -    -    -    ✓     E2E 模型性能
 | **G5** | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | 全基础算子+E2E 正确性 | 延迟 known-fail 1.71-2.20× | ✅ |
 | **G6** | BL5×L1+L2 | L1+L2 | **Lang & IR 完备性** | 45 ops 全形状 | ⬜ |
 | **G7** | BL5 继承 + BL6×L3(LLaMA-2+DS-V2) | L1+L2+L3 | **Arke Autonomous Engineering** | 自主生成+≥3轮迭代+2模型E2E | ⬜ |
-| **G8** | BL6×L3(4模型) + BL5 回归 | L1+L2+L3 | Stage 1 最终验收 | 4 模型, Arke vs LLM-direct 对比 | ⬜ |
+| **G8** | BL6×L3(4模型) + BL5 回归 | L1+L2+L3 | Phase 1 最终验收 | 4 模型, Arke vs LLM-direct 对比 | ⬜ |
 
 ---
 
@@ -205,7 +205,7 @@ L3 ≡ BL6  -    -    -    -    -    ✓     E2E 模型性能
 | G4.4 | Arke 正确率 ≥ LLM-direct | ✅ 100% ≥ 83% |
 | G4.5 | Arke 均值性能 ≥ LLM-direct | ⚠️ 115.7% < 118.3%（融合任务差距，方差显著更小）|
 | G4.6 | Arke 方差 ≤ LLM-direct | ✅（LLM-direct 失败率高，方差大）|
-| G4.7 | 评估报告生成 | ✅ `benchmarks/results/stage1/EVALUATION_REPORT.md` |
+| G4.7 | 评估报告生成 | ✅ `benchmarks/results/phase1/EVALUATION_REPORT.md` |
 | G4.8 | Token 效率对比 | ✅ Arke ≤60% LLM-direct token 消耗 |
 
 **关键数据：** Arke/FlagGems geomean=0.991；正确率 100% vs 83%；Token 效率 ≤0.7×。
@@ -253,7 +253,7 @@ arke bench --bl 6 --model gpt2      # GPT-2 Small E2E
 | E2E 延迟 1.7-2.3× eager | monkey-patch dispatch ~60µs/call × 49 次累积 | G7: torch.compile Inductor backend |
 | 单 matmul: Arke 76µs vs cuBLAS 44µs | L1 单算子OK，Python dispatch overhead 累积 | G6: BL5 统一度量后对比 |
 
-> 详细分析报告: `benchmarks/results/stage1/gates/G5/REPORT.md`
+> 详细分析报告: `benchmarks/results/phase1/gates/G5/REPORT.md`
 
 **BL 等价：** BL3×L1（OT0-2, 33 ops 正确性）+ BL6/GPT-2×L3（E2E 正确性）。
 
@@ -511,11 +511,11 @@ D7-E3(DS-V2) → [4]
 
 ---
 
-## 7. G8 — Stage 1 最终验收
+## 7. G8 — Phase 1 最终验收
 
-> **核心目标：** Stage 1 最终 Gate。Arke 能自主为 4 个真实 LLM 生成完整 kernel 集，
+> **核心目标：** Phase 1 最终 Gate。Arke 能自主为 4 个真实 LLM 生成完整 kernel 集，
 > 端到端性能全部满足生产可用阈值，并量化验证 Arke vs LLM-direct 的优势。
-> 同时完成语言实现评估（Python vs 混合方案）并为 Stage 2 奠定基础。
+> 同时完成语言实现评估（Python vs 混合方案）并为 Phase 2 奠定基础。
 
 ### 出口标准
 
@@ -559,7 +559,7 @@ arke bench --bl 5 --layer l1 l2     # BL5 回归（不退步）
 G8-Lang: Python vs 混合方案数据驱动评估
   测量项: dispatch overhead（Python 路径 vs Rust/C++ 理论）
           parse latency（.ak → IR），内存占用，LLM API 集成成本
-  产出: docs/design/language-decision.md（结论 + 数据 + Stage 2 迁移策略）
+  产出: docs/phase1/language-decision.md（结论 + 数据 + Phase 2 迁移策略）
 ```
 
 #### G8 PASS 综合条件
@@ -582,14 +582,14 @@ AND ALL:
 | D8-L1 | Qwen2.5 7B `.ak` 示例 | BL6 Qwen2.5 L3 | `qwen25_forward.ak`（GQA+SwiGLU+RMSNorm 完整描述）|
 | D8-L2 | LLaMA-3 8B `.ak` 示例 | BL6 LLaMA-3 L3 | `llama3_forward.ak`（GQA, rope, RMSNorm）|
 | D8-L3 | Arke I/O Spec 文档 | G7-AE.3 多输入类型 | `docs/spec/arke-io-spec.md` |
-| D8-L4 | 语言规范 v1.0 冻结 | Stage 1 完成标志 | `arke-lang-spec.md` 更新 + 标签 v1.0 |
+| D8-L4 | 语言规范 v1.0 冻结 | Phase 1 完成标志 | `arke-lang-spec.md` 更新 + 标签 v1.0 |
 
 #### Arke IR
 
 | ID | 能力需求 | 依据 | 开发项 |
 |:---|:---------|:-----|:-------|
-| D8-IR1 | IR 规范 v1.0 冻结 | Stage 1 完成标志 | `arke-ir-spec.md` 更新 + 标签 v1.0 |
-| D8-IR2 | IR ↔ MLIR 映射文档 | Stage 2 准备 | `docs/spec/ir-mlir-mapping.md` |
+| D8-IR1 | IR 规范 v1.0 冻结 | Phase 1 完成标志 | `arke-ir-spec.md` 更新 + 标签 v1.0 |
+| D8-IR2 | IR ↔ MLIR 映射文档 | Phase 2 准备 | `docs/spec/ir-mlir-mapping.md` |
 | D8-IR3 | 完整 round-trip 验证（全 45 ops × JSON）| IR Spec v1.0 | `test_ir_roundtrip.py` |
 
 #### Arke LLM Agent
@@ -599,7 +599,7 @@ AND ALL:
 | D8-A1 | 自主 I/O 合约（3 种输入 → Arke pipeline）| G7-AE.3/4 继承 | `arke optimize <input>` 完整支持 |
 | D8-A2 | LLM auto-strategy 成熟度验证 | G8 BL5 不退步 | 全 45 ops 批量 agent 验证（无人工 strategy）|
 | D8-A3 | ≥3 轮迭代优化（成熟度）| G7-AE.2 继承 | iterative loop 在 4 模型上稳定运行 |
-| D8-A4 | @rationale 知识库（≥50 条 Stage 1 条目）| H3 可解释性 | `trajectory → rationale_kb.jsonl` 蒸馏 |
+| D8-A4 | @rationale 知识库（≥50 条 Phase 1 条目）| H3 可解释性 | `trajectory → rationale_kb.jsonl` 蒸馏 |
 | D8-A5 | Arke vs LLM-direct 自动对比 | G8 对比指标 | `benchmarks/compare_arke_vs_direct.py` |
 
 #### Arke 工程（基础设施）
@@ -611,7 +611,7 @@ AND ALL:
 | D8-E3 | GPT-2 ≤1.15× eager（彻底修复）| G5 known-fail 最终解决 | torch.compile backend E2E 集成（依赖 D7-E1）|
 | D8-E4 | BL5 全 45 ops 回归套件（CI）| G8 BL5 不退步 | `ci/regression_bl5.py`（每次 commit 跑 BL5 L1 正确性）|
 | D8-E5 | 语言评估 benchmark | language-decision.md | dispatch overhead 测量脚本 + memory profiler |
-| D8-E6 | Stage 1 最终评估报告 | Stage 1 完成标志 | `benchmarks/results/stage1/STAGE1_FINAL_REPORT.md` |
+| D8-E6 | Phase 1 最终评估报告 | Phase 1 完成标志 | `benchmarks/results/phase1/STAGE1_FINAL_REPORT.md` |
 
 ---
 
@@ -625,9 +625,9 @@ G0(环境) → G1(IR) → G2(Codegen) → G3(Agent) → G4(对比) → G5(BL3+GP
                                          G7(Arke Autonomous Engineering
                                               BL5继承 + LLaMA-2/DS-V2 E2E)
                                                                   │
-                                              G8(BL6×4模型, Stage 1 Final)
+                                              G8(BL6×4模型, Phase 1 Final)
                                                                   │
-                                                         Stage 2 (Ascend)
+                                                         Phase 2 (Ascend)
 ```
 
 ### 各 Gate 关键阻塞项
@@ -726,25 +726,25 @@ D6-IR1 → D6-E1(10类模板) → D6-E2(bench_l1) ──────────
 | D8-L3 | Lang | `arke-io-spec.md`（I/O 合约文档）| P1 | M |
 | D8-L4 | Lang | Language Spec v1.0 冻结（文档 + 标签）| P1 | M |
 | D8-IR1 | IR | IR Spec v1.0 冻结（文档 + 标签）| P1 | M |
-| D8-IR2 | IR | `ir-mlir-mapping.md`（Stage 2 准备）| P1 | M |
+| D8-IR2 | IR | `ir-mlir-mapping.md`（Phase 2 准备）| P1 | M |
 | D8-IR3 | IR | `test_ir_roundtrip.py`（全 45 ops × JSON round-trip）| P1 | S |
 | D8-A1 | Agent | `arke optimize` 统一入口完整支持 3 种输入类型 | P1 | L |
 | D8-A2 | Agent | LLM auto-strategy 成熟度验证（全 45 ops 无人工 strategy）| P1 | M |
 | D8-A3 | Agent | iterative loop 在 4 模型上稳定运行验证 | P1 | M |
-| D8-A4 | Agent | @rationale 知识库（≥50 条 Stage 1 条目）| P2 | M |
+| D8-A4 | Agent | @rationale 知识库（≥50 条 Phase 1 条目）| P2 | M |
 | D8-A5 | Agent | Arke vs LLM-direct 自动对比（benchmarks/compare_arke_vs_direct.py）| P1 | M |
 | D8-E1 | Eng | LLaMA-3 8B 集成 + bench_l3 runner | **P0** | L |
 | D8-E2 | Eng | Qwen2.5 7B 集成 + bench_l3 runner | **P0** | L |
 | D8-E3 | Eng | GPT-2 torch.compile backend E2E（≤1.15× eager，依赖 D7-E1）| **P0** | M |
 | D8-E4 | Eng | BL5 回归套件（CI）：`ci/regression_bl5.py` | P1 | M |
 | D8-E5 | Eng | 语言评估 benchmark + `language-decision.md` | P1 | M |
-| D8-E6 | Eng | Stage 1 最终评估报告 `STAGE1_FINAL_REPORT.md` | P1 | M |
+| D8-E6 | Eng | Phase 1 最终评估报告 `STAGE1_FINAL_REPORT.md` | P1 | M |
 
 ---
 
 ## 10. 与 execution-plan.md 的对应关系
 
-| execution-plan Phase | stage1-gate-design Gate | 关键差异 |
+| execution-plan Phase | phase1-gate-design Gate | 关键差异 |
 |:----------------|:------------------------|:---------|
 | Phase 1.0（环境）| G0 | 无差异，直接对应 |
 | Phase 1.1（IR+验证）| G1 | 无差异，G1.4 已升级为全量 `.ak` 文件解析（非 ≥3/5）|
@@ -757,7 +757,7 @@ D6-IR1 → D6-E1(10类模板) → D6-E2(bench_l1) ──────────
 | Phase 1.8（MVP v0.1.0）| — | MVP 发布不设独立 Gate；包含在 G5 之后 |
 | Phase 1.9（G6: Lang&IR Completeness）| **G6** | **出口升级**：plan 为 G6.1-G6.9 定性条件；gate-design 改为 **BL5×L1+L2** 可量化验证；删除 G6.6 MLIR mapping（移至 G8 D8-IR2）；G6-LI 附加条件对应 G6.1/2/3/4/5/7 |
 | Phase 1.10（G7: Autonomous Kernel Gen）| **G7** | **定位重构**：plan 定位为"I/O 合约验证"；gate-design 重定位为 **Arke Autonomous Engineering**（自主策略生成、迭代闭环、多输入路由为核心）；L3 BL6 两个模型为验证载体；Agent 开发项为最大分组 |
-| Phase 1.11（G8: Language Assessment）| **G8** | **范围扩展**：plan 为单纯语言评估；gate-design 扩展为 Stage 1 最终验收（4模型+BL5回归+Arke对比+语言评估）；语言评估 language-decision.md 保留但并入综合验收 |
+| Phase 1.11（G8: Language Assessment）| **G8** | **范围扩展**：plan 为单纯语言评估；gate-design 扩展为 Phase 1 最终验收（4模型+BL5回归+Arke对比+语言评估）；语言评估 language-decision.md 保留但并入综合验收 |
 
 ### G6 出口升级说明
 

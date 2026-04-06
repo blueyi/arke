@@ -1,4 +1,4 @@
-# Arke Stage 1 — Operator Test Report
+# Arke Phase 1 — Operator Test Report
 
 **Date:** 2026-04-02
 **Hardware:** NVIDIA GeForce RTX 3060 Laptop GPU (6GB, Ampere, SM 8.6)
@@ -131,7 +131,7 @@ Arke has no standalone fused kernel yet. L2 measures baseline fusion quality.
 | llama-ffn | 16632.6 | **16580.4** | 16587.2 | torch.compile |
 | seq512 | 178.3 | 215.4 | **174.9** | FlagGems |
 
-**L2 Note:** Arke does not yet have fused kernel templates. These benchmarks establish the baseline targets for Stage 2 fusion development.
+**L2 Note:** Arke does not yet have fused kernel templates. These benchmarks establish the baseline targets for Phase 2 fusion development.
 
 ---
 
@@ -209,7 +209,7 @@ Arke has no standalone fused kernel yet. L2 measures baseline fusion quality.
 
 1. **Small-shape Triton overhead:** M=128 matmul: Arke 77.9μs vs cuBLAS 13.8μs (6× gap)
 2. **Single-row softmax:** wide-vocab (1×50257): Arke 1015μs vs cuDNN 32μs (32× gap)
-3. **No fused kernel templates:** L2 has no Arke runner — matmul+relu/gelu fusion is Stage 2
+3. **No fused kernel templates:** L2 has no Arke runner — matmul+relu/gelu fusion is Phase 2
 4. **E2E monkey-patch overhead:** Python dispatch adds ~4ms per forward pass
 5. **Operators without templates:** silu, layernorm, rmsnorm, rope, cross_entropy, batch_matmul
 

@@ -1,7 +1,7 @@
 # Arke IR Multi-Layer Architecture
 
 > **Version:** 1.0  
-> **Status:** Design Spec — Stage 1 foundation, Stage 2-4 roadmap  
+> **Status:** Design Spec — Phase 1 foundation, Phase 2-4 roadmap  
 > **Owner:** IR Architecture Team  
 > **Created:** 2026-04-06  
 > **Applies to:** `arke/ir/` module, all IR-touching subsystems
@@ -21,7 +21,7 @@
 9. [JSON Schema & Compact Format](#9-json-schema--compact-format)
 10. [MLIR Integration Design](#10-mlir-integration-design)
 11. [Backward Compatibility](#11-backward-compatibility)
-12. [Stage 1 Implementation Scope](#12-stage-1-implementation-scope)
+12. [Phase 1 Implementation Scope](#12-stage-1-implementation-scope)
 
 ---
 
@@ -101,10 +101,10 @@ Arke IR grows incrementally, with progressively deeper MLIR integration:
 
 | Stage | Arke IR Scope | MLIR Integration | Codegen Path |
 |-------|-------------|------------------|--------------|
-| **Stage 1** | Layer 4 + 3 (L1) | Framework + BL1 basic pathway | Via Triton |
-| **Stage 2** | + L2 | Full capability (NVIDIA + Ascend) | Via Triton + MLIR |
-| **Stage 3** | + L3 | Complete integration, deeper HW control | MLIR primary |
-| **Stage 4** | Full stack | Available as optional target | Direct LLVM IR |
+| **Phase 1** | Layer 4 + 3 (L1) | Framework + BL1 basic pathway | Via Triton |
+| **Phase 2** | + L2 | Full capability (NVIDIA + Ascend) | Via Triton + MLIR |
+| **Phase 3** | + L3 | Complete integration, deeper HW control | MLIR primary |
+| **Phase 4** | Full stack | Available as optional target | Direct LLVM IR |
 
 ### 1.4 Design Philosophy
 
@@ -262,10 +262,10 @@ entry:
 │  SymbolicDim, ConditionalNode, MultiOutputNode                 │
 │  ─────────────────────────────────────────────────────────     │
 │  Python: arke/ir/semantic.py   JSON: SemanticIR v1.0           │
-│  Stage 1: IMPLEMENTED                                           │
+│  Phase 1: IMPLEMENTED                                           │
 └────────────────────────┬────────────────────────────────────────┘
                          │ Lowering Pass: SemanticToStrategy
-                         │ (StrategyIR L1: Stage 1, L2: Stage 2)
+                         │ (StrategyIR L1: Phase 1, L2: Phase 2)
 ┌────────────────────────▼────────────────────────────────────────┐
 │                    Layer 3: Strategy IR                         │
 │                                                                 │
@@ -275,10 +275,10 @@ entry:
 │  L3: hardware mapping (thread/block/warp/vector assignment)    │
 │  ─────────────────────────────────────────────────────────     │
 │  Python: arke/ir/strategy.py   JSON: StrategyIR v1.0          │
-│  Stage 1: L1 IMPLEMENTED, L2/L3: SPEC ONLY                    │
+│  Phase 1: L1 IMPLEMENTED, L2/L3: SPEC ONLY                    │
 └────────────────────────┬────────────────────────────────────────┘
                          │ Lowering Pass: StrategyToHardware
-                         │ (Stage 3)
+                         │ (Phase 3)
 ┌────────────────────────▼────────────────────────────────────────┐
 │                    Layer 2: Hardware IR                         │
 │                                                                 │
@@ -287,10 +287,10 @@ entry:
 │  GlobalLoad, SharedLoad, WarpReduce                            │
 │  ─────────────────────────────────────────────────────────     │
 │  Python: arke/ir/hardware.py   JSON: debug dump only           │
-│  Stage 1: SPEC ONLY, Stage 3: IMPLEMENTED                      │
+│  Phase 1: SPEC ONLY, Phase 3: IMPLEMENTED                      │
 └────────────────────────┬────────────────────────────────────────┘
                          │ Lowering Pass: HardwareToInstruction
-                         │ (Stage 4)
+                         │ (Phase 4)
 ┌────────────────────────▼────────────────────────────────────────┐
 │                    Layer 1: Instruction IR                      │
 │                                                                 │
@@ -299,7 +299,7 @@ entry:
 │  Direct LLVM IR emission interface.                            │
 │  ─────────────────────────────────────────────────────────     │
 │  Python: arke/ir/instruction.py  JSON: none                    │
-│  Stage 1: INTERFACE ONLY, Stage 4: IMPLEMENTED                 │
+│  Phase 1: INTERFACE ONLY, Phase 4: IMPLEMENTED                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -360,19 +360,19 @@ class LoweringPipeline:
 
     def lower_to_strategy(
         self, sem: SemanticIR, strategy: StrategyIR
-    ) -> StrategyIR: ...  # Stage 1 (L1), Stage 2 (L2)
+    ) -> StrategyIR: ...  # Phase 1 (L1), Phase 2 (L2)
 
     def lower_to_hardware(
         self, strategy: StrategyIR, target: HWTarget
-    ) -> HardwareIR: ...  # Stage 3
+    ) -> HardwareIR: ...  # Phase 3
 
     def lower_to_instruction(
         self, hw: HardwareIR
-    ) -> InstructionIR: ...  # Stage 4
+    ) -> InstructionIR: ...  # Phase 4
 
     def emit_llvm(
         self, instr: InstructionIR
-    ) -> str: ...  # Stage 4, returns LLVM IR text
+    ) -> str: ...  # Phase 4, returns LLVM IR text
 ```
 
 ---
@@ -1087,8 +1087,8 @@ class SSAVerifier:
 
 ## 4. Layer 3: Strategy IR Spec
 
-> **Stage 1 status: L1 IMPLEMENTED, L2/L3 SPEC ONLY.**  
-> L2 implementation target: Stage 2. L3 implementation target: Stage 3.
+> **Phase 1 status: L1 IMPLEMENTED, L2/L3 SPEC ONLY.**  
+> L2 implementation target: Phase 2. L3 implementation target: Phase 3.
 
 ### 4.1 Purpose
 
@@ -1098,9 +1098,9 @@ StrategyIR has three levels of depth:
 
 | Level | Scope | LLM Role | Stage |
 |-------|-------|----------|-------|
-| **L1** | Operator-level decisions: tile, fuse, vectorize, place, launch_config | Primary decision maker | Stage 1 |
-| **L2** | Loop nest + memory hierarchy: explicit ForNode, LoadTile, MAC, memory tiers | Guided exploration | Stage 2-3 |
-| **L3** | Hardware mapping: thread/block/warp assignment, barrier, register allocation | Expert-level (optional) | Stage 3-4 |
+| **L1** | Operator-level decisions: tile, fuse, vectorize, place, launch_config | Primary decision maker | Phase 1 |
+| **L2** | Loop nest + memory hierarchy: explicit ForNode, LoadTile, MAC, memory tiers | Guided exploration | Phase 2-3 |
+| **L3** | Hardware mapping: thread/block/warp assignment, barrier, register allocation | Expert-level (optional) | Phase 3-4 |
 
 ### 4.2 Relationship to SemanticIR
 
@@ -1124,7 +1124,7 @@ SemanticIR (Layer 4) + StrategyIR L1 decisions
 The following schema defines the L2 compute structures within StrategyIR — the explicit loop nests, memory hierarchy, and compute primitives that emerge from expanding L1 decisions.
 
 ```python
-# arke/ir/strategy_compute.py — StrategyIR L2 structures (Stage 1: spec only)
+# arke/ir/strategy_compute.py — StrategyIR L2 structures (Phase 1: spec only)
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Union
@@ -1267,8 +1267,8 @@ class StrategyComputeIR:
 
 ## 5. Layer 2: Hardware IR Spec
 
-> **Stage 1 status: SPEC ONLY — not implemented.**  
-> Implementation target: Stage 3.
+> **Phase 1 status: SPEC ONLY — not implemented.**  
+> Implementation target: Phase 3.
 
 ### 5.1 Purpose
 
@@ -1277,7 +1277,7 @@ Layer 2 makes GPU execution explicit: thread blocks, warp organization, shared m
 ### 5.2 Interface Definition
 
 ```python
-# arke/ir/hardware.py — HardwareIR v1.0 (Stage 1: interface only)
+# arke/ir/hardware.py — HardwareIR v1.0 (Phase 1: interface only)
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Union
@@ -1396,8 +1396,8 @@ class HardwareIR:
 
 ## 6. Layer 1: Instruction IR
 
-> **Stage 1 status: INTERFACE ONLY.**  
-> Implementation target: Stage 4.
+> **Phase 1 status: INTERFACE ONLY.**  
+> Implementation target: Phase 4.
 
 ### 6.1 Purpose
 
@@ -1406,7 +1406,7 @@ Layer 1 is the final pre-LLVM IR abstraction. It is fully auto-generated — no 
 ### 6.2 Interface Definition
 
 ```python
-# arke/ir/instruction.py — InstructionIR v1.0 (Stage 1: interface only)
+# arke/ir/instruction.py — InstructionIR v1.0 (Phase 1: interface only)
 from __future__ import annotations
 from typing import Protocol, Any
 
@@ -1437,25 +1437,25 @@ class InstructionIR:
     Represents SSA values, basic blocks, and instructions
     at a level directly translatable to LLVM IR.
 
-    This class is a placeholder — the full implementation is Stage 4.
+    This class is a placeholder — the full implementation is Phase 4.
     """
     version: str = "1.0.0"
     kernel_id: str = ""
-    # Full schema TBD in Stage 4 design
-    _raw: Any = None  # Stage 4: will hold LLVM-Python bindings object
+    # Full schema TBD in Phase 4 design
+    _raw: Any = None  # Phase 4: will hold LLVM-Python bindings object
 
     def to_llvm_ir(self) -> str:
         """Emit LLVM IR module as text."""
-        raise NotImplementedError("Stage 4 only")
+        raise NotImplementedError("Phase 4 only")
 
     def to_ptx(self, sm: str = "sm_86") -> str:
         """Emit PTX assembly for target SM."""
-        raise NotImplementedError("Stage 4 only")
+        raise NotImplementedError("Phase 4 only")
 ```
 
 ### 6.3 LLVM IR Bridge Design
 
-At Stage 4, the LLVM IR bridge will use `llvmlite` or `llvm-project` Python bindings:
+At Phase 4, the LLVM IR bridge will use `llvmlite` or `llvm-project` Python bindings:
 
 ```
 HardwareIR
@@ -1502,7 +1502,7 @@ L1: Backend-agnostic strategy
 L2: Backend-specific refinement
     compute_resource (maps to num_warps etc.), cache_config, pipeline_stages
     ↓ Code Generation
-Triton / CUDA C / (Stage 4) LLVM IR
+Triton / CUDA C / (Phase 4) LLVM IR
 ```
 
 ### 7.3 Complete Python Schema
@@ -1965,12 +1965,12 @@ class Pipeline:
 ### 8.3 Lowering Pass Interfaces
 
 ```python
-# arke/ir/passes/lowering.py  (Stage 1: interface definitions only)
+# arke/ir/passes/lowering.py  (Phase 1: interface definitions only)
 from typing import Protocol
 
 
 class SemanticToStrategyL2Pass(Protocol):
-    """Lower SemanticIR + StrategyIR L1 -> StrategyIR L2.  (Stage 2)"""
+    """Lower SemanticIR + StrategyIR L1 -> StrategyIR L2.  (Phase 2)"""
     name = "semantic_to_strategy_l2"
     def run(self, semantic: "SemanticIR", strategy: "StrategyIR") -> "StrategyComputeIR": ...
     def verify_pre(self, ir: "SemanticIR") -> list[str]: ...
@@ -1978,7 +1978,7 @@ class SemanticToStrategyL2Pass(Protocol):
 
 
 class StrategyToHardwarePass(Protocol):
-    """Lower StrategyIR L2/L3 -> HardwareIR.  (Stage 3)"""
+    """Lower StrategyIR L2/L3 -> HardwareIR.  (Phase 3)"""
     name = "strategy_to_hardware"
     def run(self, strategy: "StrategyComputeIR", target: str) -> "HardwareIR": ...
     def verify_pre(self, ir: "StrategyComputeIR") -> list[str]: ...
@@ -1986,7 +1986,7 @@ class StrategyToHardwarePass(Protocol):
 
 
 class HardwareToInstructionPass(Protocol):
-    """Lower HardwareIR -> InstructionIR.  (Stage 4)"""
+    """Lower HardwareIR -> InstructionIR.  (Phase 4)"""
     name = "hardware_to_instruction"
     def run(self, hw: "HardwareIR") -> "InstructionIR": ...
     def verify_pre(self, ir: "HardwareIR") -> list[str]: ...
@@ -2145,20 +2145,20 @@ Full field-level mapping: `docs/spec/ir-mlir-mapping.md`. Summary:
 ### 10.3 Stage-by-Stage MLIR Integration
 
 ```
-Stage 1 ── MLIR framework + BL1 basic pathway:
+Phase 1 ── MLIR framework + BL1 basic pathway:
   Primary: SemanticIR + StrategyIR L1 → Jinja2 templates → Triton Python → GPU
   MLIR:    MLIREmitter skeleton; BL1 ops (13) emit linalg/transform MLIR
            for correctness cross-check (verify via mlir-opt)
 
-Stage 2 ── Full MLIR integration:
+Phase 2 ── Full MLIR integration:
   StrategyIR L2 → scf/affine/memref MLIR
   Both Triton and MLIR paths active; MLIR for validation + alternative codegen
 
-Stage 3 ── Complete integration, deeper hardware control:
+Phase 3 ── Complete integration, deeper hardware control:
   StrategyIR L3 + HardwareIR → gpu/nvvm/rocdl MLIR
   MLIR becomes primary codegen path for multi-target (NVIDIA + Ascend)
 
-Stage 4 ── Direct LLVM IR, MLIR as optional target:
+Phase 4 ── Direct LLVM IR, MLIR as optional target:
   InstructionIR → LLVM IR directly
   MLIR path remains available for targets where it is optimal
 ```
@@ -2275,9 +2275,9 @@ strategy = StrategyIR.from_json(old_json)
 
 ---
 
-## 12. Stage 1 Implementation Scope
+## 12. Phase 1 Implementation Scope
 
-### 12.1 What Gets Implemented in Stage 1
+### 12.1 What Gets Implemented in Phase 1
 
 | Component | Status | Location |
 |-----------|--------|----------|
@@ -2309,28 +2309,28 @@ strategy = StrategyIR.from_json(old_json)
 
 | Component | Stage | Rationale |
 |-----------|-------|-----------|
-| `SemanticToStrategyL2Pass` implementation | Stage 2 | Requires StrategyIR L2 schema stable |
-| `StrategyToHardwarePass` implementation | Stage 3 | Requires HardwareIR design complete |
-| `HardwareToInstructionPass` implementation | Stage 4 | Requires LLVM IR binding design |
-| Full MLIR codegen (beyond BL1 verify) | Stage 2-3 | Full integration after L2/L3 implemented |
-| InstructionIR full schema | Stage 4 | Depends on LLVM Python binding choice |
-| PTX/cubin direct emission | Stage 4 | Follows InstructionIR |
-| `torch.compile` Inductor backend | Stage 3+ | Follows MLIR backend |
+| `SemanticToStrategyL2Pass` implementation | Phase 2 | Requires StrategyIR L2 schema stable |
+| `StrategyToHardwarePass` implementation | Phase 3 | Requires HardwareIR design complete |
+| `HardwareToInstructionPass` implementation | Phase 4 | Requires LLVM IR binding design |
+| Full MLIR codegen (beyond BL1 verify) | Phase 2-3 | Full integration after L2/L3 implemented |
+| InstructionIR full schema | Phase 4 | Depends on LLVM Python binding choice |
+| PTX/cubin direct emission | Phase 4 | Follows InstructionIR |
+| `torch.compile` Inductor backend | Phase 3+ | Follows MLIR backend |
 
-### 12.3 Stage 1 Pass Pipeline (Triton Path)
+### 12.3 Phase 1 Pass Pipeline (Triton Path)
 
-In Stage 1, the lowering pipeline is:
+In Phase 1, the lowering pipeline is:
 
 ```
 SemanticIR (Layer 4)
     +
 StrategyIR v1.0
     |
-    | [SSAVerifyPass]            <- Stage 1: implemented
-    | [StrategyValidatePass]     <- Stage 1: implemented
+    | [SSAVerifyPass]            <- Phase 1: implemented
+    | [StrategyValidatePass]     <- Phase 1: implemented
     |
     v
-TritonCodegenPass               <- Stage 1: existing Jinja2 engine
+TritonCodegenPass               <- Phase 1: existing Jinja2 engine
     |
     v
 Triton Python code
@@ -2342,13 +2342,13 @@ triton.compile() -> GPU binary
 The `Pipeline` class registers these passes:
 
 ```python
-# Stage 1 pipeline (arke/compiler/pipeline.py)
+# Phase 1 pipeline (arke/compiler/pipeline.py)
 from arke.ir.passes.pipeline import Pipeline
 from arke.ir.passes.invariants import SemanticIRInvariantChecker, StrategyIRInvariantChecker
 from arke.backend.triton_backend import TritonCodegenPass
 
-def build_stage1_pipeline() -> Pipeline:
-    p = Pipeline("stage1_triton")
+def build_phase1_pipeline() -> Pipeline:
+    p = Pipeline("phase1_triton")
     p.register("ssa_verify", SemanticIRInvariantChecker())
     p.register("strategy_validate", StrategyIRInvariantChecker())
     p.register("triton_codegen", TritonCodegenPass(),
@@ -2378,9 +2378,9 @@ arke/ir/
 ├── __init__.py
 ├── semantic.py          <- SemanticIR v1.0 (Layer 4)
 ├── strategy.py          <- StrategyIR v1.0
-├── strategy_compute.py  <- StrategyIR L2 structures (Layer 3) [Stage 1: stub]
-├── hardware.py          <- HardwareIR v1.0 (Layer 2) [Stage 1: stub]
-├── instruction.py       <- InstructionIR v1.0 (Layer 1) [Stage 1: interface]
+├── strategy_compute.py  <- StrategyIR L2 structures (Layer 3) [Phase 1: stub]
+├── hardware.py          <- HardwareIR v1.0 (Layer 2) [Phase 1: stub]
+├── instruction.py       <- InstructionIR v1.0 (Layer 1) [Phase 1: interface]
 ├── builder.py           <- IR builder utilities
 ├── shape_inference.py   <- Shape propagation
 ├── ops/
@@ -2390,15 +2390,15 @@ arke/ir/
 │   ├── semantic_v1.json
 │   └── strategy_v1.json
 ├── targets/             <- Hardware target profiles
-└── passes/              <- Pass infrastructure [Stage 1: new]
+└── passes/              <- Pass infrastructure [Phase 1: new]
     ├── __init__.py
     ├── base.py          <- Pass protocol, PassResult, IRInvariantError
     ├── pipeline.py      <- Pipeline class
     ├── invariants.py    <- SemanticIR/StrategyIR invariant checkers
-    └── lowering.py      <- Lowering pass interfaces (Stage 2-4)
+    └── lowering.py      <- Lowering pass interfaces (Phase 2-4)
 ```
 
 ---
 
 *Document version: 1.0 | Created: 2026-04-06 | Status: Design Spec*
-*Applies to: Arke Stage 1 (foundation) + Stage 2-4 roadmap*
+*Applies to: Arke Phase 1 (foundation) + Phase 2-4 roadmap*

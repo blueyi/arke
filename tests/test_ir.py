@@ -214,7 +214,7 @@ def test_strategy_ir_summary():
 # ============================================================
 
 def test_op_catalog_completeness():
-    """Catalog should have all A+B+C+D operators (20 ops as of Stage 1 G6)."""
+    """Catalog should have all A+B+C+D operators (20 ops as of Phase 1 G6)."""
     assert len(OP_CATALOG) == 45
 
 

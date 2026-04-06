@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run comprehensive Stage 1 performance benchmark.
+"""Run comprehensive Phase 1 performance benchmark.
 
 Runs all G0-G5 operators at Tier 2 shapes, 5 trials each,
 removes outliers (>2σ), outputs unified CSV per operator.
@@ -10,7 +10,7 @@ Optimizations vs naive approach:
   - Progress printed per shape with running ratio
 
 Usage:
-    python -m benchmarks.run_stage1_perf [--trials 5] [--warmup 50] [--reps 200]
+    python -m benchmarks.run_phase1_perf [--trials 5] [--warmup 50] [--reps 200]
 """
 
 from __future__ import annotations
@@ -322,7 +322,7 @@ def main():
     args = parser.parse_args()
 
     run_id = time.strftime("%Y-%m-%d_%H%M%S")
-    out_dir = Path("benchmarks/results/stage1/perf_comprehensive") / run_id
+    out_dir = Path("benchmarks/results/phase1/perf_comprehensive") / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
     hw = _hw_collect()
@@ -381,7 +381,7 @@ def main():
 
                 write_shape_rows(
                     writer, lats, ci, tf,
-                    stage="stage1", gate="G0-G5", run_id=run_id,
+                    stage="phase1", gate="G0-G5", run_id=run_id,
                     operator=op_name, category=category,
                     shape_tag=tag, shape_tier=2, M=M, N=N, K=K,
                     dtype_str=dtype_str, backend="nvidia",
@@ -416,7 +416,7 @@ def main():
     # Merge into consolidated CSV
     from benchmarks.perf_csv import merge_stage_csvs
     merged = merge_stage_csvs(
-        Path("benchmarks/results/stage1"),
+        Path("benchmarks/results/phase1"),
         output="STAGE_PERF_ALL.csv",
     )
     total = time.time() - t_start
