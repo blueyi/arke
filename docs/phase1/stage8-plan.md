@@ -11,6 +11,41 @@
 
 ## Gate Criteria Breakdown
 
+**BL Exit:** BL5 inherited (no regression vs G7) + BL6×L3 (GPT-2, LLaMA-2, DeepSeek-V2).
+
+> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions; `docs/deprecated/phase1-gate-design.md` §6 for original G7 derivation.
+
+### Benchmark Requirements
+
+#### BL5 Inheritance (No Regression vs S7/G7)
+
+| Dimension | Requirement | Measurement |
+|:----------|:-----------|:------------|
+| L1 BL5 correctness | ≥ G7 result (no regression) | `arke bench --bl 5 --layer l1` |
+| L1 BL5 performance geomean | ≥ G7 result (no regression) | `arke bench --bl 5 --layer l1` |
+| L2 BL5 fusion coverage | ≥ G7 fusion combination count | `arke bench --bl 5 --layer l2` |
+
+#### L3 @ BL6 (3 Models) — Autonomous Generation Validation
+
+| Model | Correctness | Performance | Memory | seq Coverage | Measurement |
+|:------|:-----------|:------------|:-------|:------------|:------------|
+| **GPT-2 Small** | top-1 100% | ≤ **1.20×** eager | ≤ 6GB | 128/512/1024 | `arke bench --bl 6 --model gpt2` |
+| **LLaMA-2 7B** | top-1 100% | ≤ **1.30×** eager | ≤ 6GB | 512/2048/4096 | `arke bench --bl 6 --model llama2` |
+| **DeepSeek-V2 16B** | top-1 100% | ≤ **1.40×** eager (MoE overhead) | ≤ 6GB (seq≤512, quantized) | 512/2048 | `arke bench --bl 6 --model deepseek` |
+
+#### G8 Combined PASS Formula
+
+```
+G8 PASS = AND ALL:
+  [G7-AE] Autonomous Engineering: G7-AE.1~AE.5 all pass (see below)
+  [BL5]   BL5 inheritance: L1+L2 correctness and performance both ≥ G7 results
+  [BL6]   L3 BL6 GPT-2: correctness 100% + latency ≤1.20× eager
+  [BL6]   L3 BL6 LLaMA-2: correctness 100% + latency ≤1.30× eager
+  [BL6]   L3 BL6 DS-V2: correctness 100% + latency ≤1.40× eager
+```
+
+### Gate Criteria Detail
+
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
 | 1 | Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥80% cuBLAS | `arke optimize examples/matmul.ak --no-strategy` — auto-gen strategy, perf ≥80% cuBLAS |

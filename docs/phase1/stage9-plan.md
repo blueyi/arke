@@ -11,6 +11,51 @@
 
 ## Gate Criteria Breakdown
 
+**BL Exit:** BL6×L3 (4 models) + BL5 full regression (no regression vs G8).
+
+> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions; `docs/deprecated/phase1-gate-design.md` §7 for original G8 derivation.
+
+### Benchmark Requirements
+
+#### L3 @ BL6 (4 Models) — Phase 1 Final Acceptance
+
+| Model | Correctness | Performance | Memory | seq Coverage | Measurement |
+|:------|:-----------|:------------|:-------|:------------|:------------|
+| **GPT-2 Small** | top-1 100% | ≤ **1.15×** eager (G5 fully fixed) | ≤ 4GB | 128/512/1024 | `arke bench --bl 6 --model gpt2` |
+| **LLaMA-2 7B** | top-1 100% | ≤ **1.20×** eager | ≤ 6GB | 512/2048/4096 | `arke bench --bl 6 --model llama2` |
+| **LLaMA-3 8B** | top-1 100% | ≤ **1.20×** eager | ≤ 6GB | 512/2048/8192 | `arke bench --bl 6 --model llama3` |
+| **Qwen2.5 7B** | top-1 100% | ≤ **1.25×** eager (GQA 7:1 + wide FFN) | ≤ 6GB | 512/2048 | `arke bench --bl 6 --model qwen25` |
+
+#### BL5 Full Regression (Inherits G8, Must Not Regress)
+
+| Dimension | Requirement | Measurement |
+|:----------|:-----------|:------------|
+| L1 BL5 all 45 ops correctness | ≥ G8 standard, no regression | `arke bench --bl 5 --layer l1` |
+| L1 BL5 OT0-4 performance geomean | ≥ G8 result (±1% noise allowed) | `arke bench --bl 5 --layer l1` |
+| L2 BL5 fused op coverage | ≥ G8 coverage | `arke bench --bl 5 --layer l2` |
+
+#### Arke vs LLM-direct Comparison (G9 New Addition)
+
+| Metric | Arke Target | LLM-direct Baseline | Measurement |
+|:-------|:-----------|:--------------------|:------------|
+| Correctness | ≥ 98% (all ops) | Historical ~83% (P5) | `benchmarks/compare_arke_vs_direct.py` |
+| Performance geomean (BL5 L1) | ≥ 1.05× LLM-direct (P5) | — | same |
+| Performance variance (stddev) | ≤ 0.5× LLM-direct | — | same |
+| Token consumption/kernel | ≤ 0.70× LLM-direct | — | same |
+
+#### G9 Combined PASS Formula
+
+```
+G9 PASS = AND ALL:
+  [BL6]   4 model L3 BL6 correctness 100%
+  [BL6]   4 model E2E latency all ≤ threshold (GPT-2≤1.15×, LLaMA-2/3≤1.20×, Qwen2.5≤1.25×)
+  [P5]    Arke vs LLM-direct: correctness ≥1.15×, perf geomean ≥1.05×, token ≤0.7×
+  [BL5]   BL5 L1 all 45 ops no performance regression
+  [Doc]   Evaluation report + spec freeze + v1.0.0 tag
+```
+
+### Gate Criteria Detail
+
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
 | 1 | 4 models E2E: GPT-2 ≤1.15×, LLaMA-2 ≤1.30×, LLaMA-3 ≤1.30×, Qwen2.5 ≤1.30× (all top-1 correct) | `arke bench --bl 6 --model gpt2 llama2 llama3 qwen25` |

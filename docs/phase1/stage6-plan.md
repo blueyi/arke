@@ -11,6 +11,8 @@
 
 ## Gate Criteria Breakdown
 
+**BL Exit:** None (infrastructure gate). G6 has no BL/L performance requirements. Gate focuses on architectural refactoring with non-regression guarantee.
+
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
 | 1 | OpRegistry: single source of truth for all 45 ops (adding op ≤ 2 files) | `scripts/verify_op_registry.py` — adding op requires ≤2 file changes |

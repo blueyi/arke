@@ -8,6 +8,16 @@
 
 Roadmap > Phase > Stage > Feature > Task
 
+## Gate Governance
+
+> **Gates are the contract between design and development.**
+>
+> Gate exit criteria define verifiable acceptance standards for each Stage. Once a Phase/Stage's Gate criteria are finalized, they are **locked** — any adjustment requires explicit approval from the project lead.
+>
+> Development should be **Gate-driven**: work backward from Gate exit criteria to determine what Arke Lang, IR, Compiler, and Agent need to deliver. Gates drive design and implementation, not the other way around.
+>
+> All Gate criteria that involve operator-level performance or correctness **must** align to the BL/OT/ST/L benchmark system defined in `docs/benchmark/benchmark-design.md`. The Gate-Purpose Mapping below specifies which benchmark levels each Stage's Gate must satisfy.
+
 ---
 
 ## Phase 1: Arke → Triton → NVIDIA GPU (SIMT Validation)
@@ -27,19 +37,35 @@ Roadmap > Phase > Stage > Feature > Task
 
 ### Stage Summary
 
+| Stage | Gate | BL Exit | L Layer | Objective | Status |
+|:-----:|:----:|:--------|:-------:|:----------|:------:|
+| S0 | G0 | — | — | GPU Environment | ✅ |
+| S1 | G1 | — | — | IR + Validation | ✅ |
+| S2 | G2 | BL1×L1 (matmul) | L1 | Codegen + E2E Pipeline | ✅ |
+| S3 | G3 | BL1×L1 (matmul+softmax) | L1 | LLM Agent Closed Loop | ✅ |
+| S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
+| S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
+| S6 | G6 | — (infra, no BL) | — | Compiler Infrastructure | ⬜ ← CURRENT |
+| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v2 | ⬜ |
+| S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
+| S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
-| Stage | Gate | Objective               | Status      |
-| ----- | ---- | ----------------------- | ----------- |
-| S0    | G0   | GPU Environment         | ✅           |
-| S1    | G1   | IR + Validation         | ✅           |
-| S2    | G2   | Codegen + E2E Pipeline  | ✅           |
-| S3    | G3   | LLM Agent Closed Loop   | ✅           |
-| S4    | G4   | Arke vs LLM-direct      | ✅           |
-| S5    | G5   | Whole-Model E2E         | ✅           |
-| S6    | G6   | Compiler Infrastructure | ⬜ ← CURRENT |
-| S7    | G7   | Lang & IR v2            | ⬜           |
-| S8    | G8   | Agent Autonomy          | ⬜           |
-| S9    | G9   | Phase 1 Final           | ⬜           |
+### Gate-Purpose Mapping
+
+> Aligns each Gate to the BL/OT/ST/L benchmark system. See `docs/benchmark/benchmark-design.md` for definitions.
+
+| Gate | BL Exit | L Layer | Key Benchmark Requirement | Baselines |
+|:----:|:--------|:-------:|:--------------------------|:----------|
+| G0 | — | — | Environment prerequisite | — |
+| G1 | — | — | IR infrastructure prerequisite | — |
+| G2 | BL1×L1 | L1 | matmul ≥70% P0 (cuBLAS) | P0 |
+| G3 | BL1×L1 | L1 | LLM-driven matmul ≥100% P0 | P0 |
+| G4 | BL2×L1 | L1 | 6 tasks: Arke correctness ≥ LLM-direct, geomean ~P1 | P0, P1, P5 |
+| G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | OT0-2×ST1-3 correctness 100%; GPT-2 top-1 correct | P0, P3 |
+| **G6** | — | — | Infra-only gate (no BL requirement); non-regression ≥422 tests | — |
+| **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness + performance; fusion combinations | P0, P1, P3 |
+| **G8** | **BL5 inherit + BL6×L3** | **L1+L2+L3** | GPT-2 ≤1.20× eager; LLaMA-2 ≤1.30×; DS-V2 ≤1.40× | P0, P1, P3 |
+| **G9** | **BL6×L3 (4 models) + BL5 regression** | **L1+L2+L3** | 4 models E2E; Arke vs LLM-direct; perf ≥0.90× P5 | P0, P1, P5 |
 
 
 ---
@@ -78,6 +104,8 @@ GPT-2 Small E2E inference: top-1 token correctness 100%, 49/48 Conv1D replacemen
 
 **Why this comes first:** All subsequent stages (IR v2, Agent autonomy, multi-model E2E) depend on a solid compiler foundation. Without OpRegistry, adding ops requires touching 6 files. Without Pass infrastructure, IR transformations are ad-hoc. Without Backend abstraction, Triton is hardcoded everywhere.
 
+**BL Exit:** None (infrastructure gate — no BL/L requirements). Non-regression only.
+
 **Gate G6 PASS Criteria:**
 
 ```
@@ -99,6 +127,8 @@ AND ALL:
 **Objective:** Implement the multi-layer IR architecture (Layer 4/3/2/1), upgrade Arke Lang with where clause and backend-agnostic strategy, complete spec documents, assess dynamic shape feasibility, establish MLIR framework skeleton.
 
 **Why this follows S6:** Pass pipeline (from S6) is needed for IR layer transformations. Backend abstraction (from S6) is needed for backend-agnostic strategy validation. OpRegistry (from S6) is needed for spec completeness verification.
+
+**BL Exit:** BL5×L1+L2 — All 45 ops (OT0-4) × all shapes (ST1-4) correctness + performance at L1 single-op and L2 fused-op levels.
 
 **Gate G7 PASS Criteria:**
 
@@ -125,6 +155,8 @@ AND ALL:
 
 **Why this follows S7:** Agent needs the v2 IR/Lang (from S7) to generate backend-agnostic strategies. torch.compile integration needs Backend abstraction (from S6) and Pass pipeline (from S6). Multi-model E2E needs full operator coverage and MLIR skeleton (from S7).
 
+**BL Exit:** BL5 inherited (no regression) + BL6×L3 (GPT-2 + LLaMA-2 + DeepSeek-V2).
+
 **Gate G8 PASS Criteria:**
 
 ```
@@ -147,6 +179,8 @@ AND ALL:
 **Objective:** Final acceptance across 4 models. Automated Arke-vs-LLM-direct comparison. Spec freeze. Evaluation report. v1.0 release tag.
 
 **Why this is separate from S8:** S8 validates capability (can it work?). S9 validates maturity (is it reliable, competitive, documented?). Spec freeze requires all features to be stable. 4-model validation requires LLaMA-3 and Qwen2.5 in addition to S8's models.
+
+**BL Exit:** BL6×L3 (4 models) + BL5 regression (no regression).
 
 **Gate G9 PASS Criteria:**
 

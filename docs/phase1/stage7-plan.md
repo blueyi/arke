@@ -11,6 +11,48 @@
 
 ## Gate Criteria Breakdown
 
+**BL Exit:** BL5×L1+L2 — This is the first Gate requiring full benchmark coverage across all 45 ops and all shape tiers.
+
+> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions; `docs/deprecated/phase1-gate-design.md` §5 for original G6 BL5 derivation.
+
+### Benchmark Requirements (from Gate-Purpose Mapping)
+
+#### L1 @ BL5 (OT0-4, ST1-4) — Single Operator Performance
+
+| Op Group | Correctness Requirement | Performance Requirement | Baseline | Measurement |
+|:---------|:------------------------|:------------------------|:---------|:------------|
+| **OT0** Elementwise (12 ops) | 100%(ST1-3) + ≥95%(ST4) | geomean ≥ 0.90 P1 (FlagGems elem) | P1 | `arke bench --bl 5 --ot 0 --layer l1` |
+| **OT1** Reduction (10 ops) | 100%(ST1-3) + ≥95%(ST4) | geomean ≥ 0.85 P1 (FlagGems norm/softmax) | P1 | `arke bench --bl 5 --ot 1 --layer l1` |
+| **OT2** Compute-Dense (11 ops) | 100%(ST1-3) + ≥95%(ST4) | matmul geomean ≥ 0.90 P0; others ≥ P3 | P0, P3 | `arke bench --bl 5 --ot 2 --layer l1` |
+| **OT3** Gated Activation (7 ops) | 100%(ST1-3) + ≥95%(ST4) | swiglu/rope geomean ≥ 0.85 P1 (Liger/FlagGems) | P1 | `arke bench --bl 5 --ot 3 --layer l1` |
+| **OT4** Attention (5 ops) | 100%(ST1-4, excl. OOM) | FA geomean ≥ 0.80 P1 (FlashAttn-2); GQA ≥ 0.80 | P1 | `arke bench --bl 5 --ot 4 --layer l1` |
+
+> **ST4 OOM note:** OT4 may OOM on some large shapes with 6GB VRAM; mark `⚠️ OOM` and skip, not counted in correctness pass rate denominator.
+
+#### L2 @ BL5 — Fused Operator Performance
+
+| Fusion Combination | Requirement | Baseline | Measurement |
+|:-------------------|:------------|:---------|:------------|
+| matmul+relu, matmul+gelu | ≥ 1.05× unfused (fusion benefit verifiable) | P3 unfused | `arke bench --bl 5 --layer l2 --fusion matmul_relu,matmul_gelu` |
+| swiglu, geglu | ≥ 0.90× Liger | P1 | `arke bench --bl 5 --layer l2 --fusion swiglu,geglu` |
+| linear+cross_entropy | ≥ 1.05× unfused | P3 | `arke bench --bl 5 --layer l2 --fusion linear_ce` |
+| QKV+flash_attention | ≥ 0.80× FlashAttn-2 | P1 | `arke bench --bl 5 --layer l2 --fusion qkv_fa` |
+
+#### G7 Combined PASS Formula
+
+```
+G7 PASS = AND ALL:
+  [BL5-L1] L1 BL5 correctness: 100%(ST1-3) + ≥95%(ST4, excl. OOM) for OT0-OT4
+  [BL5-L1] L1 BL5 performance weighted_score ≥ 0.83
+           weighted_score = 0.25×score(OT0-1) + 0.30×score(OT2) + 0.20×score(OT3) + 0.25×score(OT4)
+  [BL5-L2] L2 BL5: ≥3/4 fusion combinations pass
+  [Spec]   Criteria [1]-[4] below (specs + docs)
+  [Lang]   Criteria [6]-[8] below (completeness + agnostic)
+  [Infra]  Criterion [9] below (non-regression)
+```
+
+### Gate Criteria Detail
+
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
 | 1 | Arke Lang Spec v2.0 document finalized | `docs/spec/arke-lang-spec-v2.md` exists and complete |

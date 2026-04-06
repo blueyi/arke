@@ -43,6 +43,14 @@ checkpoint() / rollback() → Explore and backtrack safely
 - `docs/spec/arke-lang-spec-design.md` — Arke language spec (v2.0 design)
 - `docs/spec/arke-ir-spec-design.md` — Arke IR spec (multi-layer architecture design)
 
+## Gate Governance
+
+> Gates are locked once finalized. **Do not** modify Gate exit criteria without explicit project lead approval.
+>
+> Development is **Gate-driven**: work backward from Gate exit criteria to determine what needs to be built.
+> All operator-level Gate criteria align to the BL/OT/ST/L benchmark system in `docs/benchmark/benchmark-design.md`.
+> See `docs/roadmap/plan.md` § Gate-Purpose Mapping for the full mapping.
+
 ## Architecture
 
 ```
