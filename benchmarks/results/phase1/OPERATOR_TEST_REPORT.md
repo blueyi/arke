@@ -180,7 +180,7 @@ Arke has no standalone fused kernel yet. L2 measures baseline fusion quality.
 
 ---
 
-## Gate v3 Compliance Check (against gate-redesign.md)
+## Gate v3 Compliance Check (against docs/deprecated/phase1-gate-design.md)
 
 ### G2: Codegen Quality
 | Criterion | Target | Actual | Status |

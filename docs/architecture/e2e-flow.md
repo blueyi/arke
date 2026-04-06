@@ -138,7 +138,7 @@ strategy fused_matmul_relu for target("nvidia_ampere") {
 
 > **路径 A 是 Arke 的 LLM-Native 特色**：用户无需了解算子细节或 .ak 语法，
 > LLM 引擎自动将自然语言意图转化为结构化的 kernel 描述和优化策略。
-> 这也是 G7（Autonomous Engineering）的核心验证目标之一。
+> 这也是 G8（Agent Autonomy）的核心验证目标之一。
 
 ### 2.2 Semantic IR 示例（matmul + relu 融合）
 
@@ -805,7 +805,7 @@ cache.register("matmul", shape=[1024, 1024], kernel_fn=optimized_matmul)
 output = cache.dispatch("matmul", A, B)
 ```
 
-**未来集成路径（G7/G8 目标）**：
+**未来集成路径（G8/G9 目标）**：
 - 通过 `torch.compile` Inductor backend 可消除 Python dispatch 开销
 - 实现图级 fusion + 缓存 kernel 的零开销调用
 - 支持 `torch.library.custom_op` 注册为原生算子
@@ -993,7 +993,7 @@ Arke 使用三维 benchmark 体系衡量验证完整度：
 
 ### Gate 系统
 
-Phase 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L 组合**定义：
+Phase 1 共 **10 个 Gate（G0-G9）**，每个 Gate 的出口条件由 **BL×L 组合**定义：
 
 | Gate | 出口 | 核心目标 | 状态 |
 |:----:|:-----|:---------|:----:|
@@ -1003,9 +1003,10 @@ Phase 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L �
 | G3 | BL1×L1 | LLM Agent 闭环优化 | ✅ |
 | G4 | BL2×L1 | Arke vs LLM-direct 对比 | ✅ |
 | G5 | BL3×L1 + BL6/GPT-2×L3 | 全基础算子 + E2E 正确性 | ✅ |
-| G6 | BL5×L1+L2 | **Lang & IR 完备性**（45 ops × 全 shape） | ⬜ |
-| G7 | BL5×L1+L2 + BL6×L3 | **Autonomous Engineering**（自主生成 + LLaMA-2/DS-V2） | ⬜ |
-| G8 | BL6×L3 (4模型) | **Phase 1 最终验收** | ⬜ |
+| G6 | BL5×L1+L2 | **Compiler Infrastructure**（编译器基础设施） | ⬜ |
+| G7 | BL5×L1+L2 | **Lang & IR v2**（语言与 IR 第二版） | ⬜ |
+| G8 | BL5×L1+L2 + BL6×L3 | **Agent Autonomy**（自主工程能力） | ⬜ |
+| G9 | BL6×L3 (4模型) | **Phase 1 最终验收** | ⬜ |
 
 → 详见 [benchmark-design.md](benchmark-design.md) | [plan.md](../../roadmap/plan.md)
 
@@ -1057,7 +1058,7 @@ Triton 代码
   │
   ├── KernelCache                       ← 缓存管理（自动 dispatch）
   ├── PyTorch custom op                 ← 整模型集成（当前）
-  └── torch.compile backend             ← 零开销集成（G7/G8）
+  └── torch.compile backend             ← 零开销集成（G8/G9）
   │
   ▼
 Benchmark 验证（BL×L 体系）
@@ -1067,7 +1068,7 @@ Benchmark 验证（BL×L 体系）
   └── L3: 模型端到端 benchmark          ← GPT-2, LLaMA-2/3, Qwen2.5, DS-V2
   │
   ▼
-Gate 出口判定（G0-G8）
+Gate 出口判定（G0-G9）
   └── Phase 1 完成 → Phase 2（MLIR Dialect + Ascend 后端）
 ```
 

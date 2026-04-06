@@ -14,9 +14,10 @@
 | G3 | ✅ PASS | 9/9 | 0 | LLM Agent 151.4% cuBLAS @ 2048² |
 | G4 | ✅ PASS | 6/6 | 0 | Arke/FlagGems geomean 0.991 |
 | G5 | ✅ PASS | 7/7 | 3 | E2E GPT-2 correct; latency 1.71-2.31× (known-fail) |
-| G6 | ⬜ | — | — | Lang & IR Completeness (in progress) |
-| G7 | ⬜ | — | — | E2E Autonomous Pipeline |
-| G8 | ⬜ | — | — | Language Assessment |
+| G6 | ⬜ | — | — | Compiler Infrastructure (in progress) |
+| G7 | ⬜ | — | — | Lang & IR v2 |
+| G8 | ⬜ | — | — | Agent Autonomy |
+| G9 | ⬜ | — | — | Phase 1 Final |
 
 ## Performance Highlights
 
