@@ -1,0 +1,1217 @@
+# Arke Language Specification v2.0 — Design Document
+
+> **Version:** 2.0-draft  
+> **Status:** Design / Pre-implementation  
+> **Based on:** Arke Language Spec v1.0 (frozen)  
+> **Author:** Kitty (Lead Engineer, Arke)  
+> **Date:** 2025-04-05
+
+---
+
+## Table of Contents
+
+1. [Overview & Design Philosophy](#1-overview--design-philosophy)
+2. [File Structure](#2-file-structure)
+3. [Kernel Block](#3-kernel-block)
+4. [Strategy Block](#4-strategy-block)
+5. [Where Clause](#5-where-clause)
+6. [Annotation System](#6-annotation-system)
+7. [Type System](#7-type-system)
+8. [Complete EBNF Grammar](#8-complete-ebnf-grammar)
+9. [Examples](#9-examples)
+10. [Backward Compatibility](#10-backward-compatibility)
+11. [Implementation Notes](#11-implementation-notes)
+
+---
+
+## 1. Overview & Design Philosophy
+
+### 1.1 What Is Arke Language?
+
+The Arke Language (`.ak`) is the top-level human- and LLM-facing interface to the Arke compilation pipeline. An `.ak` file describes:
+
+1. **What to compute** — a `kernel` block encoding operator-level semantics (maps to SemanticIR)
+2. **How to optimize** — an optional `strategy` block encoding optimization decisions (maps to StrategyIR)
+
+Arke is intentionally **not** a loop-nest language. It operates at the operator abstraction level. A kernel is a named composition of semantic operators; the compiler translates it to efficient code for a target backend.
+
+### 1.2 v2.0 Design Goals
+
+v2.0 is a **backward-compatible superset** of v1.0. Every valid v1.0 `.ak` file is a valid v2.0 `.ak` file. The new features are additive and optional.
+
+The key gaps in v1.0 that v2.0 addresses:
+
+| Gap | v1.0 Limitation | v2.0 Solution |
+|:----|:----------------|:--------------|
+| Shape generality | Shapes hardcoded: `Tensor<[1024,1024], f16>` | Symbolic shapes with `where` clause |
+| Multi-return ops | `topk` can't express `(values, indices)` | Tuple destructuring: `let (v, i) = topk(...)` |
+| Type verbosity | Every tensor needs full explicit type | Type inference: infer output shape/dtype from inputs |
+| Backend coupling | `launch_config(num_warps=4)` is Triton-specific | Backend-agnostic `compute(...)` directive |
+| Shape-regime conditionals | No conditional strategy selection | `when`/`otherwise` blocks in strategy |
+| Import system | Reserved but undefined | Defined module import syntax |
+
+### 1.3 Design Principles
+
+1. **Operator-level abstraction** — `.ak` never expresses loops, thread indices, or memory addresses. Those are the compiler's concern.
+2. **LLM-Native** — The grammar is regular, simple, and unambiguous. LLMs can read, understand, and generate `.ak` without context about compiler internals.
+3. **Token efficiency** — Shorter than equivalent Triton. New features (symbolic shapes, type inference) should *reduce* token count for most kernels.
+4. **Single source of truth** — `.ak` is the canonical source format. JSON IR is the serialization format for compiler internals and Agent API, never a format humans author directly.
+5. **@rationale everywhere** — Every optimization decision can carry a rationale annotation. This feeds the learning loop for the LLM Agent.
+6. **Incremental extensions** — No breaking changes. Grammar extensions are additive only.
+
+### 1.4 Relationship to IR Layers
+
+```
+.ak (v2.0)
+    │
+    ▼
+Layer 4 — SemanticIR     (operator graph + symbolic shapes)
+    │
+    ▼
+Layer 3 — StrategyIR     (loop structure + memory hierarchy decisions)
+    │
+    ▼
+Layer 2 — HardwareIR     (thread/block/warp/vector mapping)
+    │
+    ▼
+Layer 1 — InstructionIR  (≈ LLVM IR / MLIR low-level)
+```
+
+The `.ak` kernel block maps to Layer 4; the strategy block guides Layer 3 generation. v2.0's symbolic shapes are first-class in Layer 4.
+
+---
+
+## 2. File Structure
+
+```
+.ak file = (import_stmt | kernel_def | strategy_def)*
+```
+
+Unchanged from v1.0. A file may contain zero or more top-level items in any order. The typical pattern is one `kernel` + one optional `strategy`.
+
+### 2.1 Comments
+
+```
+// single-line comment
+/* multi-line
+   block comment */
+```
+
+### 2.2 Identifiers
+
+Identifiers are `[a-zA-Z_][a-zA-Z0-9_]*`. They are case-sensitive.
+
+### 2.3 String Literals
+
+Strings are double-quoted: `"text"`. Escape sequences: `\"`, `\\`, `\n`, `\t`.
+
+---
+
+## 3. Kernel Block
+
+### 3.1 Syntax
+
+```
+kernel <name>(<param_list>) -> <return_type_or_tuple> <where_clause>? {
+    <body>
+}
+```
+
+The `where` clause is new in v2.0 and is optional. It follows the return type and precedes the body.
+
+### 3.2 Parameters
+
+```
+param_list = param ("," param)*
+param      = <name> : <type>
+```
+
+Types are described in full in §7. The key addition in v2.0 is that dimension sizes can be symbolic names rather than integer literals:
+
+```
+// v1.0 (still valid)
+kernel relu_v1(X: Tensor<[1024, 768], f16>) -> Tensor<[1024, 768], f16> { ... }
+
+// v2.0 with symbolic shapes
+kernel relu_v2(X: Tensor<[B, S, D], f16>) -> Tensor<[B, S, D], f16>
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{ ... }
+```
+
+### 3.3 Return Type
+
+The return type can be:
+
+- A single tensor type: `-> Tensor<[B, S], f16>`
+- An inferred single type: `-> _` (compiler infers from body)
+- A tuple of types: `-> (Tensor<[B, K], f16>, Tensor<[B, K], i32>)`
+- A tuple with partial inference: `-> (_, _)` or omitted for fully-inferred multi-return
+
+**New in v2.0:** Tuple return types. If the return type uses symbolic names, those names must be declared in the `where` clause.
+
+### 3.4 Body
+
+The body is a sequence of `let` statements followed by a `return`:
+
+```
+body = let_stmt* return_stmt
+```
+
+**v1.0 let (still valid):**
+```
+let <var> = <op_call> ;
+```
+
+**v2.0 tuple destructuring (new):**
+```
+let (<var1>, <var2>) = <op_call> ;
+let (<var1>, <var2>, <var3>) = <op_call> ;
+```
+
+**v2.0 type inference (new):**
+
+In v1.0 the return type was always explicit. In v2.0 the return type may be `_` (a single underscore), signifying that the compiler should infer it from the body. The parser accepts `_` wherever a `tensor_type` is expected.
+
+**Return statement:**
+```
+// v1.0: single variable
+return <var> ;
+
+// v2.0: tuple return (new)
+return (<var1>, <var2>) ;
+```
+
+### 3.5 Operator Calls
+
+```
+op_call  = <op_name>(<arg_list>)
+arg_list = named_arg ("," named_arg)*
+named_arg = <name> = <value>
+```
+
+Values: variable name, integer literal, float literal, string literal, bool (`true`/`false`), array literal `[v1, v2, ...]`.
+
+**New ops in v2.0 catalog:**
+
+| Op | Category | Inputs | Returns | Description |
+|:---|:---------|:-------|:--------|:------------|
+| `topk` | E | X, k | `(values, indices)` | Top-k elements along last axis |
+| `flash_attention` | A | Q, K, V | output | Fused attention kernel |
+| `embedding` | A | X, weight | output | Token embedding lookup |
+| `concat` | A | inputs, dim | output | Tensor concatenation |
+| `slice` | A | X, dim, start, end | output | Tensor slice |
+| `cast` | D | X, dtype | output | Dtype cast |
+| `dropout` | D | X, p | output | Dropout |
+| `sigmoid` | D | X | output | Sigmoid activation |
+
+All v1.0 operators remain supported and unchanged.
+
+### 3.6 Annotations on Kernel (new in v2.0)
+
+A kernel block may carry annotations immediately before the `kernel` keyword:
+
+```
+@constraint(dtypes="f16|bf16|f32")
+@meta(category="OT4", fusion_hint="epilogue")
+@input_gen(dist="normal", range=[0, 1])
+kernel my_kernel(...) -> ... { ... }
+```
+
+See §6 for the full annotation system.
+
+---
+
+## 4. Strategy Block
+
+### 4.1 Syntax
+
+```
+strategy <name> for target("<hw_target>") {
+    <strategy_body>
+}
+```
+
+Unchanged structurally from v1.0. The changes are in the available directives and the addition of conditional blocks.
+
+### 4.2 Hardware Targets
+
+Defined target strings (case-insensitive):
+
+| String | Hardware |
+|:-------|:---------|
+| `"nvidia_ampere"` | NVIDIA Ampere (SM 8.x) |
+| `"nvidia_hopper"` | NVIDIA Hopper (SM 9.x) |
+| `"nvidia_volta"` | NVIDIA Volta (SM 7.0) |
+| `"ascend_910b"` | Huawei Ascend 910B |
+| `"amd_cdna2"` | AMD CDNA2 (MI200 series) |
+| `"cpu_generic"` | Generic CPU (AVX2 fallback) |
+
+### 4.3 Strategy Directives
+
+All v1.0 directives remain valid. v2.0 adds backend-agnostic alternatives.
+
+#### v1.0 Directives (preserved, still valid)
+
+| Directive | Parameters | Effect |
+|:----------|:-----------|:-------|
+| `tile` | `loop`, `factors` | Tile a loop |
+| `reorder` | `order` | Reorder loop nest |
+| `parallel` | `loops`, `mapping` | Map loops to HW threads |
+| `fuse` | `ops`, `fusion_type` | Operator fusion |
+| `vectorize` | `loop`, `width` | Vectorize a loop |
+| `place` | `tensor`, `memory` | Tensor memory placement |
+| `launch_config` | `num_warps`, `num_stages` | GPU launch params (Triton-specific) |
+| `unroll` | `loop`, `factor` | Loop unrolling |
+| `autotune` | `configs`, `key` | Mark for autotuning |
+| `algorithm` | `name` | Algorithm variant selection |
+
+#### v2.0 Backend-Agnostic Directives (new)
+
+**`compute`** — Replaces `launch_config` with backend-agnostic parameters:
+
+```
+compute(parallelism=128, pipeline_depth=3)
+    @rationale("128 parallel workers, 3-stage pipeline to hide memory latency");
+```
+
+| Parameter | Type | Description |
+|:----------|:-----|:------------|
+| `parallelism` | INT | Number of parallel execution units (maps to warps on NVIDIA, DMA blocks on Ascend, etc.) |
+| `pipeline_depth` | INT | Software pipeline stages for latency hiding |
+| `vector_width` | INT | SIMD vector width in elements (optional) |
+| `l1_cache_hint` | STRING | Cache usage hint: `"streaming"`, `"reuse"`, `"default"` |
+
+**`memory_layout`** — Backend-agnostic memory placement:
+
+```
+memory_layout(tensor="A", level="l1", access_pattern="sequential")
+    @rationale("A accessed sequentially; prefetch into L1 for bandwidth");
+```
+
+| Parameter | Type | Description |
+|:----------|:-----|:------------|
+| `tensor` | STRING | Tensor name |
+| `level` | STRING | Memory level: `"register"`, `"l1"`, `"l2"`, `"global"` |
+| `access_pattern` | STRING | `"sequential"`, `"strided"`, `"random"` |
+
+**`precision`** — Mixed-precision control:
+
+```
+precision(accumulate="f32", output="f16")
+    @rationale("accumulate in f32 for numerical stability, cast output to f16");
+```
+
+### 4.4 Conditional Strategy Blocks (new in v2.0)
+
+A strategy can contain `when`/`otherwise` blocks to select optimization parameters based on shape regime at **compile time** (when shapes are static or known ranges):
+
+```
+strategy flash_attn_strategy for target("nvidia_ampere") {
+    fuse(ops=["flash_attention"], fusion_type="triton_kernel")
+        @rationale("full fused attention — one kernel from Q/K/V to output");
+
+    when S <= 512 {
+        tile(loop="S", factors=[64])
+            @rationale("short seqlens: 64-tile fits query block in registers");
+        compute(parallelism=32, pipeline_depth=2)
+            @rationale("short seqlens saturate with fewer warps");
+    }
+    otherwise {
+        tile(loop="S", factors=[128])
+            @rationale("long seqlens: 128-tile amortizes memory overhead");
+        compute(parallelism=128, pipeline_depth=3)
+            @rationale("long seqlens need full pipeline to hide HBM latency");
+    }
+}
+```
+
+**Condition expressions:**
+
+```
+condition = IDENT ("<=" | "<" | ">=" | ">" | "==" | "!=") INT
+          | condition "and" condition
+          | condition "or" condition
+          | "(" condition ")"
+```
+
+Conditions may only reference dimension names declared in the kernel's `where` clause. Compound conditions with `and`/`or` are supported.
+
+**Semantics:**
+- `when <cond> { ... } otherwise { ... }` — mutually exclusive branches
+- `when <cond> { ... }` — optional branch with implicit no-op otherwise
+- Multiple `when` blocks without `otherwise` are evaluated in order; the first matching block wins (like a match/switch)
+- If a shape is `static`, the condition is resolved at parse time
+
+---
+
+## 5. Where Clause
+
+### 5.1 Purpose
+
+The `where` clause declares symbolic dimension names used in the kernel's tensor types. It replaces hardcoded integer dimensions and allows a single `.ak` file to describe a kernel for a family of shapes.
+
+### 5.2 Syntax
+
+```
+where_clause = "where" dim_decl ("," dim_decl)*
+dim_decl     = IDENT ":" dim_kind
+dim_kind     = "dynamic" "(" dynamic_opts ")"
+             | "static"
+             | "dynamic"
+
+dynamic_opts = dynamic_opt ("," dynamic_opt)*
+dynamic_opt  = "max" "=" INT
+             | "min" "=" INT
+             | "multiple_of" "=" INT
+             | "default" "=" INT
+```
+
+### 5.3 Dimension Kinds
+
+| Kind | Meaning | Compiler behavior |
+|:-----|:--------|:------------------|
+| `static` | Fixed at compile time, value unknown to `.ak` but constant per compilation | Enable static specialization |
+| `dynamic` | Value varies at runtime | Generate dynamic shapes code |
+| `dynamic(max=N)` | Dynamic, bounded by N | Enable range-based optimizations |
+| `dynamic(min=M, max=N)` | Dynamic, in range [M, N] | Full bounds information |
+| `dynamic(multiple_of=K)` | Dynamic, always a multiple of K | Enable alignment-based vectorization |
+| `dynamic(max=N, multiple_of=K)` | Combined constraints | Full information |
+
+### 5.4 Examples
+
+```ak
+// Batch-variable transformer attention
+kernel scaled_dot_product_attention(
+    Q: Tensor<[B, H, S, D], f16>,
+    K: Tensor<[B, H, S, D], f16>,
+    V: Tensor<[B, H, S, D], f16>
+) -> Tensor<[B, H, S, D], f16>
+where
+    B: dynamic(max=64),
+    H: static,
+    S: dynamic(max=8192, multiple_of=64),
+    D: static
+{ ... }
+```
+
+```ak
+// Fixed batch, variable sequence
+kernel decode_step(
+    X: Tensor<[1, S, D], f16>,
+    W: Tensor<[D, D], f16>
+) -> Tensor<[1, S, D], f16>
+where S: dynamic(max=4096), D: static
+{ ... }
+```
+
+### 5.5 Scope
+
+Symbolic dimension names are scoped to the `kernel` block that declares them. A strategy block references them in `when` conditions using the same names. The compiler matches kernel and strategy by name convention (`<kernel_name>_strategy` or explicit `for <kernel_name>`).
+
+### 5.6 No Where Clause → Legacy Static Shapes
+
+If no `where` clause is present, all dimension sizes in the tensor types must be integer literals (v1.0 behavior). This is fully backward-compatible.
+
+---
+
+## 6. Annotation System
+
+### 6.1 Overview
+
+Annotations are `@key(...)` markers attached to kernel definitions, strategy directives, or strategy blocks. They are **non-executable metadata** — they do not change compilation semantics, but are threaded through the pipeline for tooling, testing, and LLM agent guidance.
+
+### 6.2 Annotation Placement
+
+```
+// On kernel definition
+@constraint(dtypes="f16|bf16")
+@meta(category="OT4")
+kernel my_kernel(...) { ... }
+
+// On strategy directive
+tile(loop="M", factors=[32])
+    @rationale("M is small — 32-tile keeps register pressure low");
+
+// Multiple annotations on one directive
+fuse(ops=["matmul", "gelu"], fusion_type="epilogue")
+    @rationale("save global memory roundtrip")
+    @meta(perf_impact="high");
+```
+
+### 6.3 Standard Annotations
+
+#### `@rationale`
+
+**Purpose:** Human or LLM reasoning attached to an optimization decision.
+
+```
+@rationale("<text>")
+```
+
+- Present on strategy directives
+- Preserved in all IR layers, generated code comments, and trajectory logs
+- Required for any strategy generated by the LLM Agent (enforced by agent prompt)
+- Not required for human-authored strategies, but strongly encouraged
+
+#### `@constraint`
+
+**Purpose:** Data type constraints on the kernel.
+
+```
+@constraint(dtypes="f16|bf16|f32")
+@constraint(dtypes="f16|bf16", min_sm=80)
+```
+
+| Parameter | Type | Description |
+|:----------|:-----|:------------|
+| `dtypes` | STRING | Pipe-separated dtype names the kernel supports |
+| `min_sm` | INT | Minimum CUDA Streaming Multiprocessor version required |
+| `min_ascend` | STRING | Minimum Ascend version required |
+
+The compiler emits an error if a constraint is violated by the build target.
+
+#### `@meta`
+
+**Purpose:** Metadata tags for categorization, tooling, and documentation.
+
+```
+@meta(category="OT4", fusion_hint="epilogue")
+@meta(category="OT1", perf_impact="high", source="g6-redesign")
+```
+
+| Parameter | Type | Description |
+|:----------|:-----|:------------|
+| `category` | STRING | Op category code from benchmark framework (e.g., "OT1"-"OT5") |
+| `fusion_hint` | STRING | Fusion opportunity hint: `"prologue"`, `"epilogue"`, `"standalone"` |
+| `perf_impact` | STRING | Expected performance impact: `"low"`, `"medium"`, `"high"` |
+| `source` | STRING | Provenance identifier (e.g., which design doc or agent run) |
+
+#### `@input_gen`
+
+**Purpose:** Test data generation hints for the benchmark and correctness-check harness.
+
+```
+@input_gen(dist="normal", range=[0, 1])
+@input_gen(dist="uniform", range=[-1, 1], seed=42)
+@input_gen(dist="integer", range=[0, 50000])
+```
+
+| Parameter | Type | Description |
+|:----------|:-----|:------------|
+| `dist` | STRING | Distribution: `"normal"`, `"uniform"`, `"integer"`, `"zeros"`, `"ones"`, `"eye"` |
+| `range` | ARRAY | `[min, max]` for uniform/integer; `[mean, std]` for normal |
+| `seed` | INT | Random seed for reproducibility |
+
+This annotation is on the kernel definition and applies to all inputs unless overridden per-parameter (future feature).
+
+#### `@deprecated`
+
+**Purpose:** Mark a kernel or strategy as deprecated, with migration guidance.
+
+```
+@deprecated(since="2.0", replace_with="scaled_dot_product_attention_v2")
+kernel scaled_dot_product_attention_v1(...) { ... }
+```
+
+### 6.4 Custom Annotations
+
+Any `@key(...)` not in the standard list is a **custom annotation**. The parser accepts all well-formed annotations. Unrecognized annotations are preserved as opaque metadata in the JSON IR and do not cause parse errors. This allows tooling to extend the annotation system without modifying the language.
+
+---
+
+## 7. Type System
+
+### 7.1 Scalar Types
+
+| Type | Width | Description |
+|:-----|:------|:------------|
+| `f16` | 16-bit | IEEE half-precision float |
+| `bf16` | 16-bit | Brain float (1-sign, 8-exp, 7-mantissa) |
+| `f32` | 32-bit | IEEE single-precision float |
+| `f64` | 64-bit | IEEE double-precision float |
+| `i8` | 8-bit | Signed integer |
+| `i16` | 16-bit | Signed integer |
+| `i32` | 32-bit | Signed integer |
+| `i64` | 64-bit | Signed integer |
+| `u8` | 8-bit | Unsigned integer |
+| `u16` | 16-bit | Unsigned integer |
+| `u32` | 32-bit | Unsigned integer |
+| `u64` | 64-bit | Unsigned integer |
+| `bool` | 1-bit | Boolean |
+| `index` | arch | Platform-native index type |
+
+### 7.2 Tensor Types
+
+```
+tensor_type = "Tensor" "<" "[" dim_list "]" "," scalar_type ("," layout)? ">"
+            | "_"
+
+dim_list = dim ("," dim)*
+dim      = INT               // static integer dimension (v1.0)
+         | IDENT             // symbolic dimension (v2.0, must be in where clause)
+
+layout   = "row_major" | "col_major"   // default: row_major
+```
+
+**New in v2.0:** `dim` can be a symbolic name. The `_` type (inference hole) is also new.
+
+### 7.3 Tuple Types
+
+```
+tuple_type = "(" tensor_type ("," tensor_type)+ ")"
+```
+
+Used in multi-return kernels. Only appears in return type position; parameters are always individual named tensors.
+
+### 7.4 Type Inference Rules
+
+Type inference is a v2.0 feature. When a return type or intermediate binding uses `_`, the compiler infers the type according to these rules:
+
+| Situation | Rule |
+|:----------|:-----|
+| `let Y = relu(X=Z)` | Y gets same type as Z (elementwise passthrough) |
+| `let Y = gelu(X=Z)` | Y gets same type as Z |
+| `let Y = softmax(X=Z)` | Y gets same type as Z |
+| `let Y = add(A=X, B=W)` | Y gets type of X (X and W must match) |
+| `let Y = matmul(A=X, B=W)` | Y shape is `[X.dim[0], W.dim[1]]`, dtype from X |
+| `let (v,i) = topk(X=Z, k=K)` | v has same dtype as Z, shape `[..., K]`; i has dtype `i32`, same shape |
+| Return type `_` | Inferred from the variable returned |
+
+Inference is **shallow** — it follows operator-level rules, not full dataflow analysis. If inference is ambiguous or unsupported for a given operator, the compiler emits an error requiring an explicit type annotation.
+
+### 7.5 Symbolic Dimension Propagation
+
+When a tensor's dimension is symbolic, the compiler tracks the dimension name through the operator graph:
+
+- **Passthrough ops** (relu, gelu, softmax, etc.): output dimensions = input dimensions
+- **matmul(A, B)**: output dims = `[A.dim[0], B.dim[1]]`; inner dims must match
+- **topk(X, k)**: output dims = `[X.dim[0], ..., X.dim[-2], k]`
+- **transpose(X)**: output dims = reverse of input dims (2D only in v1.0/v2.0)
+
+If the compiler cannot symbolically determine output shape from inputs, a type annotation is required.
+
+---
+
+## 8. Complete EBNF Grammar
+
+The following grammar is a strict superset of the v1.0 grammar. All v1.0 constructs are valid v2.0 constructs.
+
+```ebnf
+(* ============================================================ *)
+(* Arke Language v2.0 — Complete EBNF                          *)
+(* ============================================================ *)
+
+start          = top_level_item*
+top_level_item = import_stmt
+               | annotation* kernel_def
+               | strategy_def
+
+(* ── Import ─────────────────────────────────────────────── *)
+import_stmt    = "import" STRING ("as" IDENT)? ";"
+
+(* ── Kernel Definition ───────────────────────────────────── *)
+kernel_def     = "kernel" IDENT "(" param_list? ")" "->" return_type
+                 where_clause?
+                 "{" kernel_body "}"
+
+param_list     = param ("," param)*
+param          = IDENT ":" tensor_type
+
+return_type    = tensor_type
+               | infer_type
+               | "(" tensor_type ("," tensor_type)+ ")"
+               | "(" infer_type  ("," infer_type )+  ")"
+
+infer_type     = "_"
+
+(* ── Where Clause ────────────────────────────────────────── *)
+where_clause   = "where" dim_decl ("," dim_decl)*
+dim_decl       = IDENT ":" dim_kind
+dim_kind       = "static"
+               | "dynamic"
+               | "dynamic" "(" dynamic_opts ")"
+
+dynamic_opts   = dynamic_opt ("," dynamic_opt)*
+dynamic_opt    = "max" "=" INT
+               | "min" "=" INT
+               | "multiple_of" "=" INT
+               | "default" "=" INT
+
+(* ── Type System ─────────────────────────────────────────── *)
+tensor_type    = "Tensor" "<" "[" dim_list "]" "," scalar_type ("," layout)? ">"
+
+dim_list       = dim ("," dim)*
+dim            = INT | IDENT
+
+layout         = "row_major" | "col_major"
+
+scalar_type    = "f16" | "bf16" | "f32" | "f64"
+               | "i8"  | "i16"  | "i32" | "i64"
+               | "u8"  | "u16"  | "u32" | "u64"
+               | "bool" | "index"
+
+(* ── Kernel Body ─────────────────────────────────────────── *)
+kernel_body    = let_stmt* return_stmt
+
+let_stmt       = "let" lhs "=" op_call ";"
+lhs            = IDENT
+               | "(" IDENT ("," IDENT)+ ")"
+
+return_stmt    = "return" return_expr ";"
+return_expr    = IDENT
+               | "(" IDENT ("," IDENT)+ ")"
+
+(* ── Operator Calls ──────────────────────────────────────── *)
+op_call        = IDENT "(" arg_list? ")"
+arg_list       = named_arg ("," named_arg)*
+named_arg      = IDENT "=" arg_value
+
+arg_value      = IDENT
+               | INT
+               | FLOAT
+               | STRING
+               | BOOL
+               | "[" (arg_value ("," arg_value)*)? "]"
+
+(* ── Strategy Definition ─────────────────────────────────── *)
+strategy_def   = "strategy" IDENT "for" "target" "(" STRING ")" "{" strategy_body "}"
+
+strategy_body  = strategy_item*
+strategy_item  = strategy_stmt
+               | when_block
+
+strategy_stmt  = IDENT "(" strategy_kwargs? ")" annotation* ";"?
+
+strategy_kwargs = strategy_kwarg ("," strategy_kwarg)*
+strategy_kwarg  = IDENT "=" strategy_value
+
+strategy_value = STRING | INT | FLOAT | BOOL | IDENT
+               | "[" (strategy_value ("," strategy_value)*)? "]"
+               | "{" (strategy_map_entry ("," strategy_map_entry)*)? "}"
+
+strategy_map_entry = (STRING | IDENT) ":" strategy_value
+
+(* ── Conditional Strategy (new in v2.0) ──────────────────── *)
+when_block     = when_arm+ otherwise_arm?
+when_arm       = "when" condition "{" strategy_body "}"
+otherwise_arm  = "otherwise" "{" strategy_body "}"
+
+condition      = condition "and" condition
+               | condition "or" condition
+               | "(" condition ")"
+               | IDENT cmp_op INT
+
+cmp_op         = "<=" | "<" | ">=" | ">" | "==" | "!="
+
+(* ── Annotations ─────────────────────────────────────────── *)
+annotation     = "@" IDENT "(" annotation_args? ")"
+annotation_args = annotation_arg ("," annotation_arg)*
+annotation_arg  = IDENT "=" annotation_value
+                | STRING
+
+annotation_value = STRING | INT | FLOAT | BOOL | IDENT
+                 | "[" (annotation_value ("," annotation_value)*)? "]"
+
+(* ── Lexical Tokens ──────────────────────────────────────── *)
+IDENT   = /[a-zA-Z_][a-zA-Z0-9_]*/
+INT     = /[0-9]+/
+FLOAT   = /[0-9]+\.[0-9]*/
+STRING  = /"([^"\\]|\\.)*"/
+BOOL    = "true" | "false"
+
+(* Line comments: // ...  Block comments: /* ... */ *)
+```
+
+---
+
+## 9. Examples
+
+### 9.1 Symbolic Shape MatMul + GeLU
+
+Demonstrates symbolic shapes, type inference, and backend-agnostic strategy.
+
+```ak
+@constraint(dtypes="f16|bf16|f32")
+@meta(category="OT1", fusion_hint="epilogue")
+kernel matmul_gelu(
+    X: Tensor<[M, K], f16>,
+    W: Tensor<[K, N], f16>
+) -> _
+where M: dynamic(max=4096), K: static, N: static
+{
+    let Z = matmul(A=X, B=W);
+    let Y = gelu(X=Z);
+    return Y;
+}
+
+strategy matmul_gelu_strategy for target("nvidia_ampere") {
+    fuse(ops=["matmul", "gelu"], fusion_type="epilogue")
+        @rationale("apply gelu in matmul epilogue — saves global memory roundtrip");
+
+    when M <= 128 {
+        tile(loop="M", factors=[32])
+            @rationale("M<=128: small M, 32-tile keeps register pressure low");
+        tile(loop="N", factors=[64])
+            @rationale("small regime: 64-tile N balances occupancy");
+        compute(parallelism=32, pipeline_depth=2)
+            @rationale("fewer warps sufficient for small M");
+    }
+    otherwise {
+        tile(loop="M", factors=[128])
+            @rationale("large M: 128-tile for better compute intensity");
+        tile(loop="N", factors=[128])
+            @rationale("128-tile N for large output");
+        compute(parallelism=128, pipeline_depth=3)
+            @rationale("3-stage pipeline hides HBM latency for large matmul");
+    }
+
+    tile(loop="K", factors=[32])
+        @rationale("K-tile=32: smem footprint 32*32*2*2=4KB fits in L1");
+    parallel(loops=["M", "N"], mapping={"M": "blockIdx.x", "N": "blockIdx.y"})
+        @rationale("each block owns one (M,N) tile");
+}
+```
+
+### 9.2 TopK with Multi-Return
+
+Demonstrates tuple return, multi-variable destructuring, and type inference.
+
+```ak
+@constraint(dtypes="f16|bf16|f32")
+@meta(category="OT4")
+@input_gen(dist="normal", range=[0, 1])
+kernel top_candidates(
+    scores: Tensor<[B, V], f16>
+) -> (_, _)
+where B: dynamic(max=512), V: static
+{
+    let (values, indices) = topk(X=scores, k=50);
+    return (values, indices);
+}
+
+strategy top_candidates_strategy for target("nvidia_ampere") {
+    tile(loop="B", factors=[32])
+        @rationale("batch over 32 rows per block");
+    compute(parallelism=64, pipeline_depth=2)
+        @rationale("topk is latency-bound; 2-stage pipeline adequate");
+    memory_layout(tensor="scores", level="l1", access_pattern="sequential")
+        @rationale("row-major access; sequential prefetch into L1");
+}
+```
+
+### 9.3 Transformer Attention with Symbolic Batch/Sequence
+
+Demonstrates multi-dimensional symbolic shapes, static dimensions, and shape-regime strategy.
+
+```ak
+@constraint(dtypes="f16|bf16", min_sm=80)
+@meta(category="OT3", fusion_hint="standalone")
+@input_gen(dist="normal", range=[0, 1])
+kernel scaled_dot_product_attention(
+    Q: Tensor<[B, H, S, D], f16>,
+    K: Tensor<[B, H, S, D], f16>,
+    V: Tensor<[B, H, S, D], f16>
+) -> Tensor<[B, H, S, D], f16>
+where
+    B: dynamic(max=64),
+    H: static,
+    S: dynamic(max=8192, multiple_of=64),
+    D: static
+{
+    let attn_out = flash_attention(Q=Q, K=K, V=V);
+    return attn_out;
+}
+
+strategy sdpa_strategy for target("nvidia_ampere") {
+    fuse(ops=["flash_attention"], fusion_type="triton_kernel")
+        @rationale("flash attention is a single fused triton kernel");
+
+    when S <= 512 {
+        tile(loop="S", factors=[64])
+            @rationale("short seqlen: 64-tile, query fits in registers");
+        compute(parallelism=32, pipeline_depth=2)
+            @rationale("short seqlens: fewer warps, no deep pipeline needed");
+    }
+    when S <= 2048 {
+        tile(loop="S", factors=[128])
+            @rationale("medium seqlen: 128-tile balances smem usage");
+        compute(parallelism=64, pipeline_depth=3)
+            @rationale("medium seqlens: standard 3-stage pipeline");
+    }
+    otherwise {
+        tile(loop="S", factors=[128])
+            @rationale("long seqlen: 128-tile amortizes memory overhead");
+        compute(parallelism=128, pipeline_depth=4)
+            @rationale("long seqlens: full pipeline to hide HBM latency");
+    }
+
+    parallel(loops=["B", "H"], mapping={"B": "blockIdx.x", "H": "blockIdx.y"})
+        @rationale("each block handles one (batch, head) pair");
+}
+```
+
+### 9.4 LayerNorm with Dtype Constraint and Input Gen
+
+Demonstrates per-kernel annotations and combined backend-agnostic strategy.
+
+```ak
+@constraint(dtypes="f16|bf16|f32")
+@meta(category="OT2")
+@input_gen(dist="normal", range=[0, 1])
+kernel layer_norm(
+    X:      Tensor<[B, S, H], f16>,
+    weight: Tensor<[H], f32>,
+    bias:   Tensor<[H], f32>
+) -> Tensor<[B, S, H], f16>
+where
+    B: dynamic(max=64),
+    S: dynamic(max=4096),
+    H: static
+{
+    let Y = layernorm(X=X, weight=weight, bias=bias, eps=1e-5);
+    return Y;
+}
+
+strategy layer_norm_strategy for target("nvidia_ampere") {
+    tile(loop="H", factors=[256])
+        @rationale("H-tile=256: process hidden dim in chunks for register reuse");
+    parallel(loops=["B", "S"], mapping={"B": "blockIdx.x", "S": "blockIdx.y"})
+        @rationale("each block handles one (batch, seq) row");
+    precision(accumulate="f32", output="f16")
+        @rationale("accumulate in f32 for numerical stability, cast back to f16");
+    compute(parallelism=32, pipeline_depth=2)
+        @rationale("layernorm is reduction-bound; 32 warps with 2-stage pipeline");
+}
+```
+
+### 9.5 Backward-Compatible v1.0 Kernel (No Changes Needed)
+
+A v1.0 `.ak` file works unchanged in v2.0. This is Example 3 from v1.0 spec.
+
+```ak
+// This is a valid v1.0 file and remains valid in v2.0 without modification
+kernel matmul_gelu_static(
+    X: Tensor<[128, 768], f16>,
+    W: Tensor<[768, 3072], f16>
+) -> Tensor<[128, 3072], f16> {
+    let Z = matmul(A=X, B=W);
+    let Y = gelu(X=Z);
+    return Y;
+}
+
+strategy matmul_gelu_static_strategy for target("nvidia_ampere") {
+    tile(loop="M", factors=[32])
+        @rationale("M=128 small — 32 tile keeps register pressure low");
+    tile(loop="N", factors=[128])
+        @rationale("N=3072: 128-tile, multiple blocks cover output columns");
+    tile(loop="K", factors=[32])
+        @rationale("K-tile=32: A+B smem = 32*32*2*2 = 4096B, fits in L1");
+    parallel(loops=["M", "N"], mapping={"M": "blockIdx.x", "N": "blockIdx.y"})
+        @rationale("each block owns one (M,N) tile");
+    fuse(ops=["matmul", "gelu"], fusion_type="epilogue")
+        @rationale("apply gelu in matmul epilogue — saves global memory roundtrip");
+    launch_config(num_warps=4, num_stages=3)
+        @rationale("3 pipeline stages hide global→shared latency for A/B prefetch");
+}
+```
+
+### 9.6 RMSNorm with Import
+
+Demonstrates the import system and a kernel using an op from an imported module.
+
+```ak
+import "arke://ops/normalization" as norm;
+
+@constraint(dtypes="f16|bf16|f32")
+@meta(category="OT2")
+kernel rms_norm(
+    X:      Tensor<[B, S, D], f16>,
+    weight: Tensor<[D], f32>
+) -> Tensor<[B, S, D], f16>
+where B: dynamic(max=64), S: dynamic(max=4096), D: static
+{
+    let Y = rmsnorm(X=X, weight=weight, eps=1e-6);
+    return Y;
+}
+
+strategy rms_norm_strategy for target("nvidia_ampere") {
+    tile(loop="D", factors=[128])
+        @rationale("D-tile=128 for register reuse during RMS accumulation");
+    parallel(loops=["B", "S"], mapping={"B": "blockIdx.x", "S": "blockIdx.y"})
+        @rationale("each block handles one row");
+    compute(parallelism=16, pipeline_depth=2)
+        @rationale("RMSNorm is lightweight; 16 warps sufficient");
+}
+```
+
+---
+
+## 10. Backward Compatibility
+
+### 10.1 Guarantee
+
+**All valid Arke Language v1.0 `.ak` files are valid Arke Language v2.0 `.ak` files.**
+
+The v2.0 grammar is a strict superset of the v1.0 grammar. No v1.0 syntax is removed or changed. Every v1.0 construct is present in the v2.0 grammar as a degenerate case of the more general form.
+
+### 10.2 Feature-by-Feature Migration
+
+| v1.0 Feature | v2.0 Status | Notes |
+|:-------------|:-----------|:------|
+| Static integer tensor dims | Unchanged | `Tensor<[1024, 768], f16>` still works |
+| `kernel name(...) -> T { }` | Unchanged | No migration needed |
+| `let x = op(...);` | Unchanged | No migration needed |
+| `return x;` | Unchanged | No migration needed |
+| `strategy ... for target(...) { }` | Unchanged | No migration needed |
+| All v1.0 strategy directives | Unchanged | `tile`, `parallel`, `fuse`, etc. all work |
+| `launch_config(num_warps=N)` | Deprecated (soft) | Still parses and works; prefer `compute(parallelism=...)` |
+| `@rationale("...")` | Unchanged | No migration needed |
+| `import "path" as alias;` | Enhanced | v1.0 import syntax remains valid; v2.0 adds `as` optional |
+
+### 10.3 Soft Deprecations
+
+`launch_config(num_warps=N, num_stages=M)` is **soft-deprecated** in v2.0:
+- The parser continues to accept it (no parse errors)
+- The compiler generates a warning: `[W001] launch_config is Triton-specific; consider compute(parallelism=..., pipeline_depth=...) for backend-agnostic strategies`
+- It will be removed in v3.0
+- Migration: `launch_config(num_warps=4, num_stages=3)` → `compute(parallelism=128, pipeline_depth=3)` (note: `parallelism` = `num_warps * 32` for Triton/NVIDIA)
+
+### 10.4 Migration Examples
+
+**Minimal migration (symbolic shapes only):**
+
+```ak
+// v1.0
+kernel softmax(
+    X: Tensor<[1024, 1024], f32>
+) -> Tensor<[1024, 1024], f32> {
+    let Y = softmax(X=X);
+    return Y;
+}
+
+// v2.0 equivalent — drop-in, no changes
+kernel softmax(
+    X: Tensor<[1024, 1024], f32>
+) -> Tensor<[1024, 1024], f32> {
+    let Y = softmax(X=X);
+    return Y;
+}
+
+// v2.0 generalized — now works for any M x N
+kernel softmax(
+    X: Tensor<[M, N], f32>
+) -> _
+where M: dynamic(max=4096), N: dynamic(max=65536)
+{
+    let Y = softmax(X=X);
+    return Y;
+}
+```
+
+**Launch config migration:**
+
+```ak
+// v1.0
+strategy my_strat for target("nvidia_ampere") {
+    launch_config(num_warps=4, num_stages=3)
+        @rationale("4 warps, 3 pipeline stages");
+}
+
+// v2.0 preferred
+strategy my_strat for target("nvidia_ampere") {
+    compute(parallelism=128, pipeline_depth=3)
+        @rationale("128 parallel workers (equiv. 4 warps), 3-stage pipeline");
+}
+```
+
+---
+
+## 11. Implementation Notes
+
+### 11.1 Parser Changes (arke/parser/arke.lark)
+
+The v1.0 parser uses Lark. The v2.0 grammar additions require the following changes to `arke.lark`:
+
+**1. Tensor dim rule — allow IDENT as dim:**
+
+```lark
+// v1.0
+dim_list: INT ("," INT)*
+
+// v2.0
+dim_list: dim ("," dim)*
+dim: INT | IDENT
+```
+
+**2. Optional where clause on kernel_def:**
+
+```lark
+kernel_def: "kernel" IDENT "(" param_list? ")" "->" return_type where_clause? "{" kernel_body "}"
+
+where_clause: "where" dim_decl ("," dim_decl)*
+dim_decl: IDENT ":" dim_kind
+dim_kind: "static"
+        | "dynamic"
+        | "dynamic" "(" dynamic_opts ")"
+dynamic_opts: dynamic_opt ("," dynamic_opt)*
+dynamic_opt: "max" "=" INT
+           | "min" "=" INT
+           | "multiple_of" "=" INT
+           | "default" "=" INT
+```
+
+**3. Tuple return type:**
+
+```lark
+return_type: tensor_type
+           | infer_type
+           | "(" tensor_type ("," tensor_type)+ ")"
+           | "(" infer_type  ("," infer_type )+ ")"
+infer_type: "_"
+```
+
+**4. Tuple LHS in let statements:**
+
+```lark
+let_stmt: "let" lhs "=" op_call ";"
+lhs: IDENT
+   | "(" IDENT ("," IDENT)+ ")"
+```
+
+**5. Tuple return expression:**
+
+```lark
+return_stmt: "return" return_expr ";"
+return_expr: IDENT
+           | "(" IDENT ("," IDENT)+ ")"
+```
+
+**6. Annotations on kernel:**
+
+```lark
+kernel_def: annotation* "kernel" IDENT ...
+```
+
+**7. when/otherwise blocks in strategy:**
+
+```lark
+strategy_item: strategy_stmt | when_block
+when_block: when_arm+ otherwise_arm?
+when_arm: "when" condition "{" strategy_body "}"
+otherwise_arm: "otherwise" "{" strategy_body "}"
+condition: IDENT CMP_OP INT
+         | condition "and" condition
+         | condition "or" condition
+         | "(" condition ")"
+CMP_OP: "<=" | "<" | ">=" | ">" | "==" | "!="
+```
+
+**8. New annotation arg types — support named `key=value` and positional string:**
+
+```lark
+annotation: "@" IDENT "(" annotation_args? ")"
+annotation_args: annotation_arg ("," annotation_arg)*
+annotation_arg: IDENT "=" annotation_value
+              | STRING
+annotation_value: STRING | INT | FLOAT | BOOL | IDENT
+                | "[" (annotation_value ("," annotation_value)*)? "]"
+```
+
+### 11.2 AST Node Changes
+
+| New AST Node | Fields | Notes |
+|:-------------|:-------|:------|
+| `WhereClause` | `dims: List[DimDecl]` | Attached to `KernelDef` |
+| `DimDecl` | `name: str`, `kind: DimKind` | |
+| `DimKind` | `tag: static/dynamic`, `constraints: Dict` | |
+| `TupleReturnType` | `elements: List[Type]` | |
+| `InferType` | (no fields) | Placeholder for inference |
+| `TupleLHS` | `names: List[str]` | LHS of tuple let |
+| `TupleReturn` | `names: List[str]` | |
+| `WhenBlock` | `arms: List[WhenArm]`, `otherwise: Optional[StrategyBody]` | |
+| `WhenArm` | `condition: Condition`, `body: StrategyBody` | |
+| `Condition` | `lhs: str`, `op: str`, `rhs: int` | Leaf condition |
+| `CompoundCondition` | `op: and/or`, `left: Condition`, `right: Condition` | |
+| `KernelAnnotation` | `name: str`, `args: Dict` | Attached to `KernelDef` |
+
+### 11.3 SemanticIR Changes
+
+v2.0 kernel → SemanticIR translation requires:
+
+1. **Symbolic shape propagation:** When a kernel uses symbolic dims, the SemanticIR nodes must carry symbolic shape information. The `TensorShape` type in SemanticIR should be extended from `List[int]` to `List[int | str]` where strings are symbolic dim names.
+
+2. **Where clause embedding:** The `KernelNode` in SemanticIR should carry the where clause as a `DimConstraints` field: `{"B": {"kind": "dynamic", "max": 64}, ...}`.
+
+3. **Multi-return ops:** Operators that return tuples (e.g., `topk`) need a `multi_output: bool` flag and `output_names: List[str]` in the SemanticIR op node.
+
+4. **Kernel annotations:** `KernelNode.metadata` should be extended to store all kernel-level annotations in a structured dict.
+
+### 11.4 StrategyIR Changes
+
+1. **Conditional blocks:** The StrategyIR JSON needs a new `when_blocks` field in the strategy node:
+
+```json
+{
+  "when_blocks": [
+    {
+      "condition": {"lhs": "S", "op": "<=", "rhs": 512},
+      "body": [ /* strategy actions */ ]
+    },
+    {
+      "condition": null,
+      "body": [ /* otherwise body */ ]
+    }
+  ]
+}
+```
+
+2. **Backend-agnostic directives:** `compute(...)` and `memory_layout(...)` should be stored in StrategyIR as first-class actions (not translated to `launch_config` at parse time). Backend-specific translation happens in the codegen phase.
+
+3. **`launch_config` deprecation:** The StrategyIR converter should emit a deprecation warning and internally convert `launch_config(num_warps=N, num_stages=M)` to `compute(parallelism=N*32, pipeline_depth=M)` for downstream use, while preserving the original in the `legacy` field.
+
+### 11.5 Converter / Migrator Tool
+
+A `arke convert-v1-to-v2` CLI subcommand should be provided:
+
+- **Input:** A v1.0 `.ak` file
+- **Output:** A v2.0 `.ak` file with:
+  - `launch_config` replaced by `compute(...)` with appropriate parameter mapping
+  - Optional: `--infer-shapes` flag extracts literal dims into a `where` clause with `static` annotation
+  - Existing `@rationale` annotations preserved unchanged
+- The converter is non-destructive: original file is not modified; output goes to stdout or `--out` path
+
+### 11.6 LLM Agent Prompt Updates
+
+The LLM Agent system prompt should be updated to:
+
+1. **Prefer symbolic shapes:** When generating `.ak` for a family of shapes, use `where` clauses.
+2. **Use `compute(...)` not `launch_config(...)`:** Explain the backend-agnostic semantics.
+3. **Use type inference where clear:** `-> _` for simple passthrough kernels.
+4. **Include `@meta` and `@constraint`:** Standard metadata for every generated kernel.
+5. **Shape regime conditions:** When generating strategies for variable-shape kernels, include `when`/`otherwise` blocks for regime-specific tuning.
+
+### 11.7 Backward Compatibility Test Requirements
+
+The existing v1.0 test suite must pass unchanged after v2.0 parser implementation. Specifically:
+
+- All `.ak` files in `examples/` must parse without errors
+- All SemanticIR roundtrip tests must pass
+- All StrategyIR roundtrip tests must pass
+- The grammar change must not introduce any ambiguities (validate with Lark's ambiguity checker)
+
+A new v2.0 test suite should be added in `tests/lang/test_v2_features.py` covering:
+- Symbolic shape parsing
+- Tuple return parsing
+- Type inference placeholder `_`
+- `where` clause parsing and all `dim_kind` variants
+- `when`/`otherwise` conditional blocks
+- All new annotation types
+- Mixed v1.0-and-v2.0 features in one file
+
+---
+
+*End of Arke Language Specification v2.0 Design Document*
+
+---
+
+> **Next steps:** Review with Leon → implement parser changes in `arke/parser/arke.lark` → update AST in `arke/lang/` → update SemanticIR converter → update StrategyIR converter → add v2.0 test suite.
