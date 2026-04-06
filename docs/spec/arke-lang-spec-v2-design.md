@@ -28,7 +28,7 @@
 
 ### 1.1 What Is Arke Language?
 
-The Arke Language (`.ak`) is the top-level human- and LLM-facing interface to the Arke compilation pipeline. An `.ak` file describes:
+The Arke Language (`.ak`) is the top-level human- and LLM-facing interface to the Arke compilation pipeline. It is the entry point to Arke IR's LLM-Native multi-layer architecture (see `arke-ir-architecture.md`). An `.ak` file describes:
 
 1. **What to compute** — a `kernel` block encoding operator-level semantics (maps to SemanticIR)
 2. **How to optimize** — an optional `strategy` block encoding optimization decisions (maps to StrategyIR)
@@ -65,19 +65,24 @@ The key gaps in v1.0 that v2.0 addresses:
 .ak (v2.0)
     │
     ▼
-Layer 4 — SemanticIR     (operator graph + symbolic shapes)
+Layer 4 — SemanticIR     (operator graph + symbolic shapes)     [LLM: primary author]
     │
     ▼
-Layer 3 — StrategyIR     (loop structure + memory hierarchy decisions)
+Layer 3 — StrategyIR     (optimization decisions, L1/L2/L3)    [LLM: decision-maker]
     │
     ▼
-Layer 2 — HardwareIR     (thread/block/warp/vector mapping)
+Layer 2 — HardwareIR     (thread/block/warp/vector mapping)    [LLM: review only]
     │
     ▼
-Layer 1 — InstructionIR  (≈ LLVM IR / MLIR low-level)
+Layer 1 — InstructionIR  (near-LLVM IR)                        [LLM: none]
+    │
+    ▼
+LLVM IR / MLIR standard dialects
 ```
 
-The `.ak` kernel block maps to Layer 4; the strategy block guides Layer 3 generation. v2.0's symbolic shapes are first-class in Layer 4.
+The `.ak` kernel block maps directly to Layer 4 (SemanticIR). The `.ak` strategy block maps directly to Layer 3 (StrategyIR L1 decisions). v2.0’s symbolic shapes and `where` clause are first-class in Layer 4.
+
+Arke IR can lower through MLIR standard dialects (`linalg`, `transform`, `scf`, `gpu`) or directly to LLVM IR. See `arke-ir-architecture.md` §10 for MLIR integration details.
 
 ---
 
@@ -267,7 +272,7 @@ All v1.0 directives remain valid. v2.0 adds backend-agnostic alternatives.
 
 #### v2.0 Backend-Agnostic Directives (new)
 
-**`compute`** — Replaces `launch_config` with backend-agnostic parameters:
+**`compute`** — Backend-agnostic compute resource directive. Maps to StrategyIR L2 `compute_resource` decision kind (see `arke-ir-architecture.md` §7). Replaces Triton-specific `launch_config`:
 
 ```
 compute(parallelism=128, pipeline_depth=3)
