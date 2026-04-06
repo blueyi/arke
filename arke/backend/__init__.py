@@ -1,11 +1,15 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke Backend — Code Generation (S6+ refactor).
+"""Arke Backend Package."""
 
-Old TritonBackend removed.
-New ArkeBackend protocol + TritonBackend will be implemented in S6.
-Templates preserved in triton_templates/.
-"""
+from arke.backend.protocol import (
+    ArkeBackend,
+    BackendArtifact,
+    BackendRegistry,
+    CompiledKernel,
+)
 
-# Placeholder for S6 refactor
+__all__ = [
+    "ArkeBackend", "BackendArtifact", "BackendRegistry", "CompiledKernel",
+]
