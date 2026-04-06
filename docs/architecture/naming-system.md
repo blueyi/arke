@@ -216,7 +216,7 @@ docs/architecture/     架构设计文档
 |:-----|:-----|:-----|
 | Python 模块 | `snake_case.py` | `semantic.py`, `legal_actions.py` |
 | .ak 源文件 | `snake_case.ak` | `matmul.ak`, `fused_matmul_relu.ak` |
-| Arke IR 文件 | `name.arke-ir.json` | `matmul.arke-ir.json` — SemanticIR + StrategyIR 组合 |
+| Arke IR 文件 | `name.akir` | `matmul.akir` — Arke IR 文本格式（多层架构） |
 | JSON Schema | `name.schema.json` | `semantic.schema.json` |
 | HW Profile | `vendor_arch.json` | `nvidia_ampere.json`, `ascend_a3.json` |
 | Jinja2 模板 | `pattern.py.j2` | `matmul.py.j2` |

@@ -7,7 +7,7 @@ Organized examples demonstrating Arke's capabilities from language syntax to IR 
 ```
 examples/
 ├── operators/     .ak operator definitions (46 files, OT0-OT4)
-├── ir/            Arke IR examples (SemanticIR + StrategyIR JSON)
+├── ir/            Arke IR examples (.akir) — TODO: generate after G6 v2
 ├── pipelines/     End-to-end walkthrough docs (NL → .ak → IR → GPU)
 └── README.md      This file
 ```
@@ -26,21 +26,7 @@ Arke Language (`.ak`) source files for all 46 operators across 5 categories:
 
 ## ir/
 
-Arke IR examples in `.arke-ir.json` format. Each file contains:
-- `semantic_ir` — What to compute (pure math, no optimization)
-- `strategy_ir` — How to optimize (tile, fuse, place decisions) — when a strategy block is defined
-
-Generated from `.ak` sources via `arke.parser` + `arke.compiler.ast_to_strategy`.
-
-| File | Category | Description |
-|:-----|:---------|:------------|
-| `matmul.arke-ir.json` | Cat A | Matrix multiplication — SemanticIR only (no strategy block in source) |
-| `softmax.arke-ir.json` | Cat C | Softmax normalization — SemanticIR + StrategyIR |
-| `matmul_gelu.arke-ir.json` | Fused | matmul + GELU — SemanticIR + StrategyIR (2-node fusion graph) |
-| `flash_attention.arke-ir.json` | Cat B | Flash Attention — SemanticIR + StrategyIR |
-| `swiglu.arke-ir.json` | Cat D | SwiGLU gated activation — SemanticIR + StrategyIR |
-| `rmsnorm.arke-ir.json` | Cat C | RMSNorm — SemanticIR + StrategyIR |
-| `rope.arke-ir.json` | Cat E | Rotary Position Embedding — SemanticIR + StrategyIR |
+> **TODO:** Arke IR examples (`.akir` format) will be generated after G6 v2 implementation completes the multi-layer IR architecture. See `docs/spec/arke-ir-spec-design.md` for the IR design.
 
 ## pipelines/
 
@@ -49,7 +35,3 @@ End-to-end walkthrough documents showing the complete Arke pipeline:
 | File | Description |
 |:-----|:------------|
 | `01_matmul.md` | Natural language → `.ak` → SemanticIR → StrategyIR → Triton kernel → GPU execution |
-
----
-
-*To regenerate IR examples: `python scripts/generate_ir_examples.py` (TODO)*
