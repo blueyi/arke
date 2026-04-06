@@ -21,7 +21,7 @@ from pathlib import Path
 
 _THIS_DIR = Path(__file__).resolve().parent          # benchmarks/
 _REPO_ROOT = _THIS_DIR.parent                         # arke repo root
-_OPS_MD = _REPO_ROOT / "docs" / "design" / "benchmark" / "benchmark-ops.md"
+_OPS_MD = _REPO_ROOT / "docs" / "benchmark" / "benchmark-ops.md"
 
 # ── Parser ───────────────────────────────────────────────────────────────
 
