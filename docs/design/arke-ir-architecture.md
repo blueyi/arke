@@ -31,11 +31,51 @@
 
 Arke IR is the central intermediate representation of the Arke compiler toolchain — the backbone through which an AI accelerator kernel travels from high-level mathematical description down to hardware-specific binary.
 
-**Core positioning:** Arke IR is an **LLM-Native, layered IR** with complete expressiveness for AI kernel optimization. It can lower to MLIR (leveraging its standard dialects such as `linalg`, `transform`, `scf`, `gpu`), and can also lower to LLVM IR directly when deeper hardware control is needed. If MLIR fully satisfies the optimization requirements, Arke IR serves as the LLM-friendly frontend to the MLIR ecosystem. Arke IR is designed for:
+**Core positioning:** Arke IR is an **LLM-Native, multi-layer IR** designed to be the core IR of the AI compilation stack. It occupies the same architectural position as MLIR but is designed from the ground up for LLM Agents as the primary decision-maker.
 
-- **LLM Agents** as the primary decision-making consumer (Layer 4)
-- **Structured optimization decisions** that LLMs can understand and manipulate (Layer 3)
-- **Flexible lowering targets**: MLIR dialects (Stage 1-3) or direct LLVM IR (Stage 4)
+In the traditional AI compilation stack:
+
+```
+PyTorch / JAX / TensorFlow    (framework layer)
+    ↓
+Triton / TVM / XLA              (high-level compilation)
+    ↓
+MLIR (multi-dialect)            (compiler IR infrastructure)
+    ↓
+LLVM IR                         (low-level, hardware-agnostic)
+    ↓
+PTX / ISA                       (hardware instructions)
+```
+
+Arke IR’s position:
+
+```
+LLM Agent ←→ Arke Lang (.ak)
+                ↓ parse
+            Arke IR (multi-layer, LLM-Native)
+              Layer 4: Semantic    ← "what to compute" (LLM primary interface)
+              Layer 3: Strategy    ← "how to optimize" (LLM-driven decisions)
+              Layer 2: Hardware    ← "hardware mapping" (mostly automated)
+              Layer 1: Instruction ← "near-LLVM" (fully automated)
+                ↓ emit
+            LLVM IR → PTX / ISA
+```
+
+Arke IR can lower through MLIR standard dialects (`linalg`, `transform`, `scf`, `gpu`) when leveraging existing MLIR infrastructure is beneficial. It can also lower directly to LLVM IR when deeper hardware control is needed. If MLIR developments provide LLM-friendly interfaces in the future, Arke can directly reuse them.
+
+#### Why LLM-Native, Not MLIR-Native
+
+MLIR is an excellent compiler infrastructure designed for human compiler engineers:
+- Dialect definitions require C++ / TableGen
+- Pass implementations require C++ pattern matching
+- Debugging requires understanding SSA, dominance, region semantics
+- Text format is human-readable but not LLM-structured
+
+If Arke’s vision is **LLM as the compiler’s decision-maker**, the IR must be something the LLM can directly understand and operate on:
+1. **LLM-readable representation** — Arke Lang syntax and JSON serialization, not C++ text IR
+2. **LLM-participatable lowering** — LLM drives optimization decisions at each layer through structured actions
+3. **Clear semantics at every layer** — each IR node/op has well-defined meaning the LLM can reason about
+4. **Complete lowering path** — Arke IR can lower all the way to LLVM IR without requiring MLIR as intermediary
 
 ### 1.2 Arke IR vs Traditional IRs
 
@@ -75,6 +115,137 @@ Arke IR grows incrementally, with progressively deeper MLIR integration:
 **JSON is a serialization format, not the IR itself.** Arke IR has its own language syntax (`.ak` files, see `arke-lang-spec`). JSON is a lossless serialization used for LLM Agent communication, caching, and debugging. The IR lives as typed data structures in memory; passes operate on these structures, not on JSON text.
 
 **Semantic/Strategy separation.** `SemanticIR` (what to compute) and `StrategyIR` (how to optimize) are distinct objects. The LLM Agent explores `StrategyIR` decisions while `SemanticIR` remains immutable after construction. This separation is the core Arke architectural principle.
+
+### 1.5 Layer-by-Layer Example: `matmul_gelu`
+
+A fused `matmul + gelu` kernel illustrates how the same computation is represented at each Arke IR layer, with progressively more detail.
+
+#### Layer 4: Semantic IR — "What to compute"
+
+Pure math. No tiling, no loops, no hardware. This is the LLM Agent’s primary interface and the single source of truth for correctness verification.
+
+```arke
+kernel matmul_gelu(
+    A: Tensor<[128, 768], f16>,
+    B: Tensor<[768, 3072], f16>
+) -> Tensor<[128, 3072], f16> {
+    let C = matmul(A, B);
+    let Y = gelu(C);
+    return Y;
+}
+```
+
+**LLM role:** Defines the computation. Immutable after construction.
+
+#### Layer 3: Strategy IR — "How to optimize"
+
+Optimization decisions that transform the semantic description into a concrete execution plan. The LLM Agent explores this layer — selecting tile sizes, fusion strategies, memory placement, and loop structure.
+
+**L1 — operator-level decisions** (LLM primary):
+
+```arke
+strategy matmul_gelu for target("nvidia_ampere") {
+    tile(loop="M", factors=[64])
+        @rationale("64 rows = L2 cache line aligned, good for 128-thread block");
+    tile(loop="N", factors=[128])
+        @rationale("128 cols = maximize memory coalescing for f16");
+    tile(loop="K", factors=[32])
+        @rationale("A+B tiles = 64*32*2 + 32*128*2 = 12KB ≤ smem/2");
+    fuse(ops=["matmul", "gelu"], type=epilogue)
+        @rationale("eliminate global memory round-trip between matmul and gelu");
+    place("A_tile", memory="shared");
+    place("B_tile", memory="shared");
+    launch_config(num_warps=4, num_stages=3);
+}
+```
+
+**L2 — loop nests + memory hierarchy** (expanded from L1, LLM can refine):
+
+```
+func @matmul_gelu(%A: tensor<128x768xf16>, %B: tensor<768x3072xf16>)
+    -> tensor<128x3072xf16> {
+  %C = alloc tensor<128x3072xf16>
+  for %i = 0 to 128 step 64 {           // M tile
+    for %j = 0 to 3072 step 128 {       // N tile
+      %acc = alloc tensor<64x128xf16> = 0.0
+      for %k = 0 to 768 step 32 {       // K tile
+        %a_tile = load %A[%i:%i+64, %k:%k+32] -> shared   // A tile in SMEM
+        %b_tile = load %B[%k:%k+32, %j:%j+128] -> shared  // B tile in SMEM
+        %acc = mac(%a_tile, %b_tile, %acc)                 // accumulate
+      }
+      %result = gelu(%acc)               // fused epilogue
+      store %result -> %C[%i:%i+64, %j:%j+128]
+    }
+  }
+  return %C
+}
+```
+
+**LLM role:** Drives L1 decisions directly. Can review and refine L2 loop structure.
+
+#### Layer 2: Hardware IR — "Hardware mapping"
+
+Concrete hardware execution model: thread blocks, shared memory allocation, barriers, pipeline stages. Mostly auto-generated from Strategy IR; LLM can intervene for extreme optimization.
+
+```
+func @matmul_gelu_kernel()
+    grid(2, 24) block(128, 1) {
+  %bid_x = blockIdx.x                // M tile index
+  %bid_y = blockIdx.y                // N tile index
+  %tid   = threadIdx.x
+
+  %smem_a = alloc shared<64x32xf16>  // 4 KB
+  %smem_b = alloc shared<32x128xf16> // 8 KB
+
+  // Pipeline stage 0: prefetch first K tile
+  %a_global = load global %A[%bid_x*64 : +64, 0:32]
+  store %a_global -> %smem_a
+  %b_global = load global %B[0:32, %bid_y*128 : +128]
+  store %b_global -> %smem_b
+  barrier()
+
+  // Accumulation loop with 3-stage software pipeline
+  %acc = alloc register<64x128xf16> = 0.0
+  for %k_stage = 0 to 24 {           // 768/32 = 24 iterations
+    %acc = mma(%smem_a, %smem_b, %acc)  // tensor core MMA
+    barrier()
+    // ... pipeline: async load next tile while computing ...
+  }
+
+  // Fused epilogue
+  %result = gelu(%acc)
+  store %result -> global %C[%bid_x*64 : +64, %bid_y*128 : +128]
+}
+```
+
+**LLM role:** Review only. May intervene for extreme optimization (register pressure, barrier placement).
+
+#### Layer 1: Instruction IR — "Near-LLVM"
+
+Direct instruction-level representation. Fully auto-generated. LLM does not participate.
+
+```
+// Near-LLVM IR (simplified)
+define void @matmul_gelu_kernel(ptr %A, ptr %B, ptr %C) {
+entry:
+  %bid.x = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x()
+  %tid.x = call i32 @llvm.nvvm.read.ptx.sreg.tid.x()
+  %smem  = alloca [12288 x i8], align 128, addrspace(3)
+  ; ... load, mma, gelu, store ...
+  ret void
+}
+```
+
+**LLM role:** None. Emitted directly to LLVM IR.
+
+#### JSON Role at Each Layer
+
+| Layer | LLM Involvement | Representation | JSON Role |
+|-------|----------------|----------------|----------|
+| Layer 4: Semantic | Primary author | Arke Lang (`.ak`) | Serialization, Agent API, caching |
+| Layer 3: Strategy | Decision-maker (L1), reviewer (L2) | Arke Lang strategy block + IR structures | Agent API, trajectory logging |
+| Layer 2: Hardware | Review only (extreme cases) | IR structures | Debug dump |
+| Layer 1: Instruction | None | IR structures | None (emit LLVM IR directly) |
 
 ---
 
@@ -172,14 +343,14 @@ StrategyIR (Layer 3)  ←── "How to optimize" (LLM explores this)
 HardwareIR (Layer 2) → InstructionIR (Layer 1)
 ```
 
-### 2.3 JSON Roles by Layer
+### 2.3 Representation & JSON Roles by Layer
 
-| Layer | JSON Role | Used For |
-|-------|-----------|----------|
-| **Layer 4** | **Primary representation** | Agent API, serialization, debug, caching |
-| **Layer 3** | **Primary** (L1 decisions) / Optional (L2/L3) | LLM Agent API + debug inspection |
-| **Layer 2** | Optional dump | Debug only (hardware mapping details) |
-| **Layer 1** | **None** | Directly emit LLVM IR; no JSON intermediary |
+| Layer | Primary Representation | JSON Role | LLM Involvement |
+|-------|----------------------|-----------|----------------|
+| **Layer 4: Semantic** | Arke Lang (`.ak`) kernel block | Serialization, Agent API, caching | Primary author |
+| **Layer 3: Strategy** | Arke Lang strategy block + IR structures | Agent API (L1), debug (L2/L3) | Decision-maker (L1), reviewer (L2) |
+| **Layer 2: Hardware** | IR structures | Debug dump only | Review (extreme cases) |
+| **Layer 1: Instruction** | IR structures | None | None (emit to LLVM IR) |
 
 ### 2.4 Lowering Pipeline Overview
 
