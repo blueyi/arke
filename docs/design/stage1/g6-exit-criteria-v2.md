@@ -178,7 +178,7 @@ Not all architecture items have equal urgency. They are classified by when they 
 
 **G6-ARCH.8 (Lang v2.0 implementation):** Full Arke Lang v2.0 implementation (multi-return, type inference, etc.) is substantial work. For G6, the MVP is: `where` clause syntax is parseable and produces `symbolic_dims` in SemanticIR. The remaining v2.0 features (multi-return, type inference, full backend-agnostic strategy) are design-complete in ARCH.1 spec, but implementation can extend into G7. Gate condition: ARCH.8 passes if `where` clause basic implementation works.
 
-**G6-ARCH.9 (Layer 3/2/1 spec):** Layer 3 (Compute IR), Layer 2 (Hardware IR), and Layer 1 (Instruction IR) are defined as spec-only in Stage 1. They need interface contracts and MLIR mapping documented for Stage 2 planning, but they do NOT need implementation in G6. Gate condition: ARCH.9 passes if the three spec documents exist with interface definitions.
+**G6-ARCH.9 (StrategyIR L2/L3 + HardwareIR + InstructionIR spec):** StrategyIR L2/L3 (loop nests + hardware mapping), HardwareIR (Layer 2), and InstructionIR (Layer 1) are defined as spec-only in Stage 1. They need interface contracts and MLIR mapping documented for Stage 2 planning, but they do NOT need implementation in G6. Gate condition: ARCH.9 passes if the spec documents exist with interface definitions and MLIR dialect mapping.
 
 ### G6-ARCH Detail Definitions
 
