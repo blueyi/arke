@@ -451,7 +451,7 @@ Stage 4     LLVM IR backend (100% HW completeness)→ LLM Level 1-3 full stack
 
 **Gate benchmark coverage requirement (Stage 2+):**
 - Every Gate must cover ≥3 Operator Categories (A-G, see benchmark-design.md §2)
-- Shape coverage must include Tier 4 shapes from `docs/design/benchmark-design.md`
+- Shape coverage must include Tier 4 shapes from `docs/design/stage1/benchmark-design.md`
 - DeepSeek shapes (seq=512~163840) must be included in FlashAttention + MLA Gates
 
 ---

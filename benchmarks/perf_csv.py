@@ -18,7 +18,7 @@ Usage:
     ))
     writer.close()
 
-See docs/design/benchmark/benchmark-csv-spec.md for full column specification.
+See docs/design/stage1/benchmark/benchmark-csv-spec.md for full column specification.
 """
 
 from __future__ import annotations

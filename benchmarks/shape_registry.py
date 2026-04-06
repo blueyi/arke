@@ -4,7 +4,7 @@
 """Parse benchmark-shapes.md to extract the canonical shape catalog.
 
 This module is the **single source of truth** bridge for shapes: it reads
-all shape tables from ``docs/design/benchmark/benchmark-shapes.md`` and
+all shape tables from ``docs/design/stage1/benchmark/benchmark-shapes.md`` and
 exposes structured data that ``benchmarks/shapes.py`` and all test files
 consume.
 
@@ -21,7 +21,7 @@ from pathlib import Path
 
 _THIS_DIR = Path(__file__).resolve().parent          # benchmarks/
 _REPO_ROOT = _THIS_DIR.parent                         # arke repo root
-_SHAPES_MD = _REPO_ROOT / "docs" / "design" / "benchmark" / "benchmark-shapes.md"
+_SHAPES_MD = _REPO_ROOT / "docs" / "design" / "stage1" / "benchmark" / "benchmark-shapes.md"
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
