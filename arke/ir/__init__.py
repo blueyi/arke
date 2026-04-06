@@ -1,26 +1,10 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — Semantic IR, Strategy IR, and supporting types."""
+"""Arke IR — Intermediate Representation (S6+ refactor).
 
-from arke.ir.semantic import (
-    Edge,
-    FusionGroup,
-    InputRef,
-    Node,
-    NodeRef,
-    Param,
-    ParamRef,
-    SemanticGraph,
-    SemanticIR,
-    Semantics,
-    TensorDesc,
-)
-from arke.ir.strategy import Decision, HardwareConstraints, Rationale, StrategyIR
+Old SemanticIR/StrategyIR removed.
+New multi-layer IR (Layer 4→3→2→1) will be implemented in S7.
+"""
 
-__all__ = [
-    "SemanticIR", "SemanticGraph",  # SemanticGraph is deprecated alias
-    "Node", "TensorDesc", "Semantics", "Edge", "FusionGroup",
-    "Param", "ParamRef", "NodeRef", "InputRef",
-    "StrategyIR", "Decision", "Rationale", "HardwareConstraints",
-]
+# Placeholder for S6-S9 refactor

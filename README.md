@@ -6,6 +6,13 @@
 
 **Arke** (*/ˈɑːrki/*) is an AI-native operator programming language and compiler toolchain for GPU/NPU tensor operators. The entire pipeline — from kernel definition through LLM-driven strategy search to peak performance — is designed for minimal token consumption, with optional `@rationale` annotations capturing expert knowledge to guide optimization. A single kernel definition targets NVIDIA, Ascend, and beyond, achieving vendor-library-level performance across hardware targets.
 
+> **⚠️ Phase 1 S6-S9 Refactor In Progress**
+>
+> The project is undergoing a major refactoring (S6-S9). Old IR implementation has been removed.
+> Backup of S0-S5 state: branch `phase1-s0s5-backup`.
+>
+> Current status: S6 (Compiler Infrastructure) — see `docs/roadmap/plan.md`.
+
 ## About the Name
 
 **Arke** (Ἄρκη) — a swift-footed messenger goddess in Greek mythology. Zeus later gave her iridescent wings to Thetis as a wedding gift, symbolizing speed and brilliance.
