@@ -29,9 +29,9 @@
 
 | Model | Correctness | Performance | Memory | seq Coverage | Measurement |
 |:------|:-----------|:------------|:-------|:------------|:------------|
-| **GPT-2 Small** | top-1 100% | ≤ **1.20×** eager | ≤ 6GB | 128/512/1024 | `arke bench --bl 6 --model gpt2` |
-| **LLaMA-2 7B** | top-1 100% | ≤ **1.30×** eager | ≤ 6GB | 512/2048/4096 | `arke bench --bl 6 --model llama2` |
-| **DeepSeek-V2 16B** | top-1 100% | ≤ **1.40×** eager (MoE overhead) | ≤ 6GB (seq≤512, quantized) | 512/2048 | `arke bench --bl 6 --model deepseek` |
+| **GPT-2 Small** | 100% | ≥ **0.95×** eager | ≤ 6GB | 128/512/1024 | `arke bench --bl 6 --model gpt2` |
+| **LLaMA-2 7B** | 100% | ≥ **0.90×** eager | ≤ 6GB | 512/2048/4096 | `arke bench --bl 6 --model llama2` |
+| **DeepSeek-V2 16B** | 100% | ≥ **0.85×** eager (MoE overhead) | ≤ 6GB (seq≤512, quantized) | 512/2048 | `arke bench --bl 6 --model deepseek` |
 
 #### G8 Combined PASS Formula
 
@@ -39,21 +39,21 @@
 G8 PASS = AND ALL:
   [G7-AE] Autonomous Engineering: G7-AE.1~AE.5 all pass (see below)
   [BL5]   BL5 inheritance: L1+L2 correctness and performance both ≥ G7 results
-  [BL6]   L3 BL6 GPT-2: correctness 100% + latency ≤1.20× eager
-  [BL6]   L3 BL6 LLaMA-2: correctness 100% + latency ≤1.30× eager
-  [BL6]   L3 BL6 DS-V2: correctness 100% + latency ≤1.40× eager
+  [BL6]   L3 BL6 GPT-2: correctness 100% + perf ≥0.95× eager
+  [BL6]   L3 BL6 LLaMA-2: correctness 100% + perf ≥0.90× eager
+  [BL6]   L3 BL6 DS-V2: correctness 100% + perf ≥0.85× eager
 ```
 
 ### Gate Criteria Detail
 
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
-| 1 | Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥80% cuBLAS | `arke optimize examples/matmul.ak --no-strategy` — auto-gen strategy, perf ≥80% cuBLAS |
+| 1 | Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥0.95× P0 (cuBLAS) | `arke optimize examples/matmul.ak --no-strategy` — auto-gen strategy, perf ≥0.95× cuBLAS |
 | 2 | Iterative optimization: ≥3 compile→profile→adjust cycles in trajectory | trajectory JSONL contains ≥3 complete `compile→profile→adjust` cycles |
 | 3 | Multi-input: .ak file + natural language + code snippet → all work E2E | ≥2 ops per input type validated E2E |
-| 4 | torch.compile backend: GPT-2 latency ≤1.20× eager (fixes S5 known-fail) | `arke bench --bl 6 --model gpt2` — latency ≤1.20× eager |
-| 5 | LLaMA-2 7B: top-1 correct + latency ≤1.30× eager | `arke bench --bl 6 --model llama2` — correct + ≤1.30× eager |
-| 6 | DeepSeek-V2 16B: top-1 correct + latency ≤1.40× eager (seq≤512, quantized) | `arke bench --bl 6 --model deepseek` — correct + ≤1.40× eager |
+| 4 | torch.compile backend: GPT-2 correctness 100% + perf ≥0.95× eager (fixes S5 known-fail) | `arke bench --bl 6 --model gpt2` — correctness 100% + perf ≥0.95× eager |
+| 5 | LLaMA-2 7B: correctness 100% + perf ≥0.90× eager | `arke bench --bl 6 --model llama2` — correct + ≥0.90× eager |
+| 6 | DeepSeek-V2 16B: correctness 100% + perf ≥0.85× eager (seq≤512, quantized) | `arke bench --bl 6 --model deepseek` — correct + ≥0.85× eager |
 | 7 | BL5 no regression: L1+L2 correctness and performance ≥ G7 results | `arke bench --bl 5 --layer l1 l2` — no regression vs G7 |
 
 ---
@@ -124,19 +124,11 @@ These are the core autonomy criteria that S8 must satisfy:
 
 | ID | Criterion | Verification |
 |:---|:----------|:------------|
-| G7-AE.1 | LLM auto-generates strategy (no human strategy block) | kernel-only `.ak` → LLM generates strategy → codegen → ≥80% cuBLAS |
+| G7-AE.1 | LLM auto-generates strategy (no human strategy block) | kernel-only `.ak` → LLM generates strategy → codegen → ≥0.95× P0 |
 | G7-AE.2 | Iterative optimization loop ≥3 rounds | trajectory JSONL contains ≥3 complete `compile→profile→adjust` cycles |
 | G7-AE.3 | Multi-input type support | `.ak` file, natural language, existing code snippet → ≥2 ops per type validated E2E |
 | G7-AE.4 | `arke optimize <input>` unified entry point | CLI single command: input → LLM optimize → Triton → GPU → benchmark report |
 | G7-AE.5 | E2E profile → kernel feedback loop | bottleneck op identification → re-optimize → latency improvement verifiable |
-
-## L3 @ BL6 Model Targets
-
-| Model | Correctness | Performance | Memory | seq Coverage |
-|:------|:-----------|:------------|:-------|:------------|
-| **GPT-2 Small** | top-1 token 100% | ≤ **1.20×** eager (torch.compile backend) | ≤ 6GB | 128/512/1024 |
-| **LLaMA-2 7B** | top-1 token 100% matches eager | ≤ **1.30×** eager (torch.compile backend) | ≤ 6GB | 512/2048/4096 |
-| **DeepSeek-V2 16B** | top-1 token 100% matches eager (seq∈{512,2048}) | ≤ **1.40×** eager (MoE dispatch overhead) | ≤ 6GB (seq≤512, quantized) | 512/2048 |
 
 ---
 
@@ -147,7 +139,7 @@ These are the core autonomy criteria that S8 must satisfy:
 | M1: torch.compile backend MVP | Track 4 (D7-E1) | Day 5 | G8[4] partial |
 | M2: Auto strategy generation | Track 1 (D7-A1, D7-A2) | Day 8 | G8[1], G8[2] |
 | M3: Multi-input support | Track 1 (D7-A3) | Day 10 | G8[3] |
-| M4: GPT-2 latency fixed | Track 4 (D7-E1) | Day 6 | G8[4] |
+| M4: GPT-2 perf ≥0.95× eager | Track 4 (D7-E1) | Day 6 | G8[4] |
 | M5: LLaMA-2 E2E | Track 4 (D7-E2, D7-E7) | Day 12 | G8[5] |
 | M6: DeepSeek-V2 E2E | Track 4 (D7-E3) | Day 15 | G8[6] |
 | M7: BL5 non-regression | — | Day 16 | G8[7] |

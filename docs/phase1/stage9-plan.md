@@ -21,10 +21,10 @@
 
 | Model | Correctness | Performance | Memory | seq Coverage | Measurement |
 |:------|:-----------|:------------|:-------|:------------|:------------|
-| **GPT-2 Small** | top-1 100% | ≤ **1.15×** eager (G5 fully fixed) | ≤ 4GB | 128/512/1024 | `arke bench --bl 6 --model gpt2` |
-| **LLaMA-2 7B** | top-1 100% | ≤ **1.20×** eager | ≤ 6GB | 512/2048/4096 | `arke bench --bl 6 --model llama2` |
-| **LLaMA-3 8B** | top-1 100% | ≤ **1.20×** eager | ≤ 6GB | 512/2048/8192 | `arke bench --bl 6 --model llama3` |
-| **Qwen2.5 7B** | top-1 100% | ≤ **1.25×** eager (GQA 7:1 + wide FFN) | ≤ 6GB | 512/2048 | `arke bench --bl 6 --model qwen25` |
+| **GPT-2 Small** | 100% | ≥ **1.00×** eager (zero overhead or faster) | ≤ 4GB | 128/512/1024 | `arke bench --bl 6 --model gpt2` |
+| **LLaMA-2 7B** | 100% | ≥ **0.95×** eager | ≤ 6GB | 512/2048/4096 | `arke bench --bl 6 --model llama2` |
+| **LLaMA-3 8B** | 100% | ≥ **0.95×** eager | ≤ 6GB | 512/2048/8192 | `arke bench --bl 6 --model llama3` |
+| **Qwen2.5 7B** | 100% | ≥ **0.90×** eager (GQA 7:1 + wide FFN) | ≤ 6GB | 512/2048 | `arke bench --bl 6 --model qwen25` |
 
 #### BL5 Full Regression (Inherits G8, Must Not Regress)
 
@@ -38,7 +38,7 @@
 
 | Metric | Arke Target | LLM-direct Baseline | Measurement |
 |:-------|:-----------|:--------------------|:------------|
-| Correctness | ≥ 98% (all ops) | Historical ~83% (P5) | `benchmarks/compare_arke_vs_direct.py` |
+| Correctness | 100% | Historical ~83% (P5) | `benchmarks/compare_arke_vs_direct.py` |
 | Performance geomean (BL5 L1) | ≥ 1.05× LLM-direct (P5) | — | same |
 | Performance variance (stddev) | ≤ 0.5× LLM-direct | — | same |
 | Token consumption/kernel | ≤ 0.70× LLM-direct | — | same |
@@ -48,8 +48,8 @@
 ```
 G9 PASS = AND ALL:
   [BL6]   4 model L3 BL6 correctness 100%
-  [BL6]   4 model E2E latency all ≤ threshold (GPT-2≤1.15×, LLaMA-2/3≤1.20×, Qwen2.5≤1.25×)
-  [P5]    Arke vs LLM-direct: correctness ≥1.15×, perf geomean ≥1.05×, token ≤0.7×
+  [BL6]   4 model E2E perf: GPT-2 ≥1.00×, LLaMA-2/3 ≥0.95×, Qwen2.5 ≥0.90× eager
+  [P5]    Arke vs LLM-direct: correctness 100%, perf geomean ≥1.05×, token ≤0.7×
   [BL5]   BL5 L1 all 45 ops no performance regression
   [Doc]   Evaluation report + spec freeze + v1.0.0 tag
 ```
@@ -58,8 +58,8 @@ G9 PASS = AND ALL:
 
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
-| 1 | 4 models E2E: GPT-2 ≤1.15×, LLaMA-2 ≤1.30×, LLaMA-3 ≤1.30×, Qwen2.5 ≤1.30× (all top-1 correct) | `arke bench --bl 6 --model gpt2 llama2 llama3 qwen25` |
-| 2 | Arke vs LLM-direct: correctness ≥ direct, tokens ≤ 0.70×, perf ≥ 0.90× | `benchmarks/compare_arke_vs_direct.py` |
+| 1 | 4 models E2E correctness 100%: GPT-2 ≥1.00×, LLaMA-2 ≥0.95×, LLaMA-3 ≥0.95×, Qwen2.5 ≥0.90× eager | `arke bench --bl 6 --model gpt2 llama2 llama3 qwen25` |
+| 2 | Arke vs LLM-direct: correctness 100%, tokens ≤ 0.70×, perf ≥ 1.05× P5 | `benchmarks/compare_arke_vs_direct.py` |
 | 3 | @rationale KB: ≥50 Phase 1 entries | `wc -l data/rationale_kb.jsonl` ≥ 50 |
 | 4 | Spec freeze: Lang v1.0 + IR v1.0 tagged | `git tag arke-lang-v1.0` + `git tag arke-ir-v1.0` exist |
 | 5 | Phase 1 evaluation report published | `PHASE1_FINAL_REPORT.md` exists and complete |
@@ -75,7 +75,7 @@ G9 PASS = AND ALL:
 |:---|:-----|:--------:|:--------:|:------:|
 | D8-E1 | LLaMA-3 8B integration + bench_l3 runner | P0 | L | ⬜ |
 | D8-E2 | Qwen2.5 7B integration + bench_l3 runner | P0 | L | ⬜ |
-| D8-E3 | GPT-2 torch.compile backend E2E (≤1.15× eager, depends on S8 D7-E1) | P0 | M | ⬜ |
+| D8-E3 | GPT-2 torch.compile backend E2E (≥1.00× eager, depends on S8 D7-E1) | P0 | M | ⬜ |
 
 ### Track 2: Lang Examples + Spec Freeze (P0)
 
@@ -111,25 +111,6 @@ G9 PASS = AND ALL:
 | D8-E4 | BL5 regression suite (CI): `ci/regression_bl5.py` | P1 | M | ⬜ |
 | D8-E5 | Language evaluation benchmark + `language-decision.md` | P1 | M | ⬜ |
 | D8-E6 | Phase 1 final evaluation report `PHASE1_FINAL_REPORT.md` | P0 | L | ⬜ |
-
----
-
-## L3 @ BL6 Model Targets (4 Models)
-
-| Model | Correctness | Performance | Memory | seq Coverage |
-|:------|:-----------|:------------|:-------|:------------|
-| **GPT-2 Small** | top-1 token 100% | ≤ **1.15×** eager (torch.compile backend) | ≤ 6GB | 128/512/1024 |
-| **LLaMA-2 7B** | top-1 token 100% | ≤ **1.30×** eager | ≤ 6GB | 512/2048/4096 |
-| **LLaMA-3 8B** | top-1 token 100% | ≤ **1.30×** eager | ≤ 6GB | 512/2048/4096 |
-| **Qwen2.5 7B** | top-1 token 100% | ≤ **1.30×** eager | ≤ 6GB | 512/2048/4096 |
-
-## Arke vs LLM-direct Comparison Criteria
-
-| Dimension | Requirement |
-|:----------|:-----------|
-| Correctness | Arke ≥ LLM-direct (100% vs ≤90%) |
-| Token efficiency | Arke ≤ 0.70× LLM-direct tokens |
-| Performance | Arke geomean ≥ 0.90× LLM-direct |
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Gate G7 exit criteria → [plan.md](../roadmap/plan.md#stage-7-g7-lang--ir-v2-)
 
-**Objective:** Implement the multi-layer IR architecture (Layer 4/3/2/1), upgrade Arke Lang with `where` clause and backend-agnostic strategy, complete spec documents, assess dynamic shape feasibility, establish MLIR framework skeleton.
+**Objective:** Implement the multi-layer IR architecture (Layer 4/3/2/1), upgrade Arke Lang with `where` clause and backend-agnostic strategy, complete spec documents, assess dynamic shape feasibility, establish MLIR framework skeleton. **Achieve BL5×L1+L2 full operator correctness and high performance.**
 
 **Depends on:** S6 (Pass pipeline, OpRegistry, Backend abstraction)
 **Blocks:** S8 (Agent Autonomy needs v2 IR/Lang, MLIR skeleton, full op coverage)
@@ -21,31 +21,32 @@
 
 | Op Group | Correctness Requirement | Performance Requirement | Baseline | Measurement |
 |:---------|:------------------------|:------------------------|:---------|:------------|
-| **OT0** Elementwise (12 ops) | 100%(ST1-3) + ≥95%(ST4) | geomean ≥ 0.90 P1 (FlagGems elem) | P1 | `arke bench --bl 5 --ot 0 --layer l1` |
-| **OT1** Reduction (10 ops) | 100%(ST1-3) + ≥95%(ST4) | geomean ≥ 0.85 P1 (FlagGems norm/softmax) | P1 | `arke bench --bl 5 --ot 1 --layer l1` |
-| **OT2** Compute-Dense (11 ops) | 100%(ST1-3) + ≥95%(ST4) | matmul geomean ≥ 0.90 P0; others ≥ P3 | P0, P3 | `arke bench --bl 5 --ot 2 --layer l1` |
-| **OT3** Gated Activation (7 ops) | 100%(ST1-3) + ≥95%(ST4) | swiglu/rope geomean ≥ 0.85 P1 (Liger/FlagGems) | P1 | `arke bench --bl 5 --ot 3 --layer l1` |
-| **OT4** Attention (5 ops) | 100%(ST1-4, excl. OOM) | FA geomean ≥ 0.80 P1 (FlashAttn-2); GQA ≥ 0.80 | P1 | `arke bench --bl 5 --ot 4 --layer l1` |
+| **OT0** Elementwise (12 ops) | 100%(ST1-4, excl. OOM) | geomean ≥ 1.05× P1 (FlagGems elem) | P1 | `arke bench --bl 5 --ot 0 --layer l1` |
+| **OT1** Reduction (10 ops) | 100%(ST1-4, excl. OOM) | geomean ≥ 0.95× P1 (FlagGems norm/softmax) | P1 | `arke bench --bl 5 --ot 1 --layer l1` |
+| **OT2** Compute-Dense (11 ops) | 100%(ST1-4, excl. OOM) | matmul geomean ≥ 1.00× P0 (cuBLAS); others ≥ 0.95× P1 | P0, P1 | `arke bench --bl 5 --ot 2 --layer l1` |
+| **OT3** Gated Activation (7 ops) | 100%(ST1-4, excl. OOM) | swiglu/rope geomean ≥ 0.95× P1 (Liger/FlagGems) | P1 | `arke bench --bl 5 --ot 3 --layer l1` |
+| **OT4** Attention (5 ops) | 100%(ST1-4, excl. OOM) | FA geomean ≥ 0.90× P1 (FlashAttn-2); GQA ≥ 0.90 | P1 | `arke bench --bl 5 --ot 4 --layer l1` |
 
-> **ST4 OOM note:** OT4 may OOM on some large shapes with 6GB VRAM; mark `⚠️ OOM` and skip, not counted in correctness pass rate denominator.
+> **OOM note:** OT4/OT2 may OOM on some large shapes with 6GB VRAM; mark `⚠️ OOM` and skip, not counted in correctness denominator.
 
 #### L2 @ BL5 — Fused Operator Performance
 
 | Fusion Combination | Requirement | Baseline | Measurement |
 |:-------------------|:------------|:---------|:------------|
-| matmul+relu, matmul+gelu | ≥ 1.05× unfused (fusion benefit verifiable) | P3 unfused | `arke bench --bl 5 --layer l2 --fusion matmul_relu,matmul_gelu` |
-| swiglu, geglu | ≥ 0.90× Liger | P1 | `arke bench --bl 5 --layer l2 --fusion swiglu,geglu` |
-| linear+cross_entropy | ≥ 1.05× unfused | P3 | `arke bench --bl 5 --layer l2 --fusion linear_ce` |
-| QKV+flash_attention | ≥ 0.80× FlashAttn-2 | P1 | `arke bench --bl 5 --layer l2 --fusion qkv_fa` |
+| matmul+relu, matmul+gelu | ≥ 1.10× unfused (fusion benefit verifiable) | P3 unfused | `arke bench --bl 5 --layer l2 --fusion matmul_relu,matmul_gelu` |
+| swiglu, geglu | ≥ 0.95× Liger | P1 | `arke bench --bl 5 --layer l2 --fusion swiglu,geglu` |
+| linear+cross_entropy | ≥ 1.10× unfused | P3 | `arke bench --bl 5 --layer l2 --fusion linear_ce` |
+| QKV+flash_attention | ≥ 0.85× FlashAttn-2 | P1 | `arke bench --bl 5 --layer l2 --fusion qkv_fa` |
 
 #### G7 Combined PASS Formula
 
 ```
 G7 PASS = AND ALL:
-  [BL5-L1] L1 BL5 correctness: 100%(ST1-3) + ≥95%(ST4, excl. OOM) for OT0-OT4
-  [BL5-L1] L1 BL5 performance weighted_score ≥ 0.83
+  [BL5-L1] L1 BL5 correctness: 100%(ST1-4, excl. OOM) for all OT0-OT4
+  [BL5-L1] L1 BL5 performance weighted_score ≥ 0.95
            weighted_score = 0.25×score(OT0-1) + 0.30×score(OT2) + 0.20×score(OT3) + 0.25×score(OT4)
-  [BL5-L2] L2 BL5: ≥3/4 fusion combinations pass
+           where score(OTn) = geomean pass rate for that OT group (0.0~1.0)
+  [BL5-L2] L2 BL5: 4/4 fusion combinations pass
   [Spec]   Criteria [1]-[4] below (specs + docs)
   [Lang]   Criteria [6]-[8] below (completeness + agnostic)
   [Infra]  Criterion [9] below (non-regression)
@@ -67,9 +68,9 @@ G7 PASS = AND ALL:
 
 ---
 
-## Context: Already Completed (from G6 v1)
+## Pre-Refactor Reference (from G6 v1)
 
-The following Lang/IR items were completed during the earlier G6 v1 pass and form the foundation for S7 work:
+> ⚠️ All items below were completed under the old architecture. After the Lang/IR/Compiler redesign, they need re-implementation and re-validation. Tasks that overlap with S7 scope are marked ⬜ Reset.
 
 | ID | Description | Status |
 |:---|:------------|:------:|
@@ -156,31 +157,6 @@ These items correspond to the G6-LI criteria that verify completeness and correc
 
 ---
 
-## BL5 Performance Targets (Inherited from original G6)
-
-S7 inherits the BL5 performance/correctness targets. These were fully satisfied in G6 v1 and must not regress:
-
-### L1 @ BL5 (OT0-4, ST1-4)
-
-| Op Group | Correctness | Performance |
-|:---------|:------------|:------------|
-| **OT0** Elementwise (12 ops) | 100%(ST1-3) + ≥95%(ST4) | geomean ≥ 0.90 P1 (FlagGems elem) |
-| **OT1** Reduction (10 ops) | 100%(ST1-3) + ≥95%(ST4) | geomean ≥ 0.85 P1 (FlagGems norm/softmax) |
-| **OT2** Compute-Dense (11 ops) | 100%(ST1-3) + ≥95%(ST4) | matmul geomean ≥ 0.90 P0; others ≥ P3 |
-| **OT3** Gated Activation (7 ops) | 100%(ST1-3) + ≥95%(ST4) | swiglu/rope geomean ≥ 0.85 P1 (Liger/FlagGems) |
-| **OT4** Attention (5 ops) | 100%(ST1-4, excl. OOM) | FA geomean ≥ 0.80 P1 (FlashAttn-2); GQA ≥ 0.80 |
-
-### L2 @ BL5 (Fused Operators)
-
-| Fusion | Requirement | Baseline |
-|:-------|:------------|:---------|
-| matmul+relu, matmul+gelu | ≥ 1.05× unfused | P3 unfused |
-| swiglu, geglu | ≥ 0.90× Liger | P1 |
-| linear+cross_entropy | ≥ 1.05× unfused | P3 |
-| QKV+flash_attention | ≥ 0.80× FlashAttn-2 | P1 |
-
----
-
 ## Key Milestones
 
 | Milestone | Tracks | Day Estimate | Gate Criteria |
@@ -190,9 +166,10 @@ S7 inherits the BL5 performance/correctness targets. These were fully satisfied 
 | M3: Full round-trip validated | Track 4 | Day 6 | G7[6], G7[7], G7[8] |
 | M4: where clause MVP | Track 2 | Day 8 | G7[3] |
 | M5: MLIR skeleton | Track 3 | Day 10 | G7[5] |
-| M6: Remaining items + regression | Track 5 | Day 12 | G7[9] |
+| M6: BL5 performance targets met | Track 5 | Day 12 | G7[9]-[11] |
+| M7: Non-regression + gate | — | Day 13 | G7[12] |
 
-**Critical path:** Spec documents → where clause feasibility → MLIR skeleton → non-regression
+**Critical path:** Spec documents → where clause feasibility → MLIR skeleton → BL5 perf → non-regression
 
 ---
 

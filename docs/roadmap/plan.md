@@ -45,7 +45,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S3 | G3 | BL1×L1 (matmul+softmax) | L1 | LLM Agent Closed Loop | ✅ |
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
-| S6 | G6 | — (infra, no BL) | — | Compiler Infrastructure | ⬜ ← CURRENT |
+| S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ⬜ ← CURRENT |
 | S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v2 | ⬜ |
 | S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
@@ -62,10 +62,10 @@ Roadmap > Phase > Stage > Feature > Task
 | G3 | BL1×L1 | L1 | LLM-driven matmul ≥100% P0 | P0 |
 | G4 | BL2×L1 | L1 | 6 tasks: Arke correctness ≥ LLM-direct, geomean ~P1 | P0, P1, P5 |
 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | OT0-2×ST1-3 correctness 100%; GPT-2 top-1 correct | P0, P3 |
-| **G6** | — | — | Infra-only gate (no BL requirement); non-regression ≥422 tests | — |
-| **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness + performance; fusion combinations | P0, P1, P3 |
-| **G8** | **BL5 inherit + BL6×L3** | **L1+L2+L3** | GPT-2 ≤1.20× eager; LLaMA-2 ≤1.30×; DS-V2 ≤1.40× | P0, P1, P3 |
-| **G9** | **BL6×L3 (4 models) + BL5 regression** | **L1+L2+L3** | 4 models E2E; Arke vs LLM-direct; perf ≥0.90× P5 | P0, P1, P5 |
+| **G6** | **BL4×L1** | **L1** | 45 ops correctness 100% via SemanticInterpreter; perf ≥1.00× P3 | P3 |
+| **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness 100%; OT0 ≥1.05 P1, matmul ≥1.00 P0; 4/4 fusions | P0, P1 |
+| **G8** | **BL5 inherit + BL6×L3** | **L1+L2+L3** | GPT-2 ≥0.95× eager; LLaMA-2 ≥0.90×; DS-V2 ≥0.85×; auto-strategy ≥0.95× P0 | P0, P1, P3 |
+| **G9** | **BL6×L3 (4 models) + BL5 regression** | **L1+L2+L3** | GPT-2 ≥1.00× eager; LLaMA-2/3 ≥0.95×; Qwen2.5 ≥0.90×; Arke ≥1.05× P5 | P0, P1, P5 |
 
 
 ---
@@ -104,18 +104,19 @@ GPT-2 Small E2E inference: top-1 token correctness 100%, 49/48 Conv1D replacemen
 
 **Why this comes first:** All subsequent stages (IR v2, Agent autonomy, multi-model E2E) depend on a solid compiler foundation. Without OpRegistry, adding ops requires touching 6 files. Without Pass infrastructure, IR transformations are ad-hoc. Without Backend abstraction, Triton is hardcoded everywhere.
 
-**BL Exit:** None (infrastructure gate — no BL/L requirements). Non-regression only.
+**BL Exit:** BL4×L1 — Full 45 ops correctness 100% via SemanticInterpreter + performance ≥1.00× P3 (eager).
 
 **Gate G6 PASS Criteria:**
 
 ```
 AND ALL:
   [1] OpRegistry: single source of truth for all 45 ops (adding op ≤ 2 files)
-  [2] SemanticInterpreter: PyTorch eager executor, all 45 ops correct
+  [2] SemanticInterpreter: PyTorch eager executor, 45 ops correctness 100%
   [3] Pass Infrastructure: ArkePass protocol + PassPipeline with ≥2 passes
   [4] SSA Validator: validates all 45 ops; rejects ≥5 invalid IR examples
   [5] Backend Abstraction: ArkeBackend protocol + TritonBackend implements it
-  [6] Non-regression: ≥422 tests passed, ≤6 skipped, 0 new failures
+  [6] Codegen + GPU execution: 45 ops via TritonBackend, correctness 100%, perf ≥1.00× P3
+  [7] Non-regression: ≥422 tests passed, ≤6 skipped, 0 new failures
 ```
 
 → Detailed plan: [docs/phase1/stage6-plan.md](../phase1/stage6-plan.md)
@@ -142,7 +143,10 @@ AND ALL:
   [6] All 45 ops: .ak → SemanticIR → StrategyIR full round-trip
   [7] Token efficiency: .ak lines < Triton lines for all OT0-OT4
   [8] Backend-agnostic strategy: 0 Triton-specific fields in StrategyIR core
-  [9] Non-regression: ≥422 tests, 0 new failures
+  [9] L1 BL5 correctness: 100%(ST1-4, excl. OOM) for all OT0-OT4
+  [10] L1 BL5 performance: OT0 ≥1.05 P1, OT1 ≥0.95 P1, OT2 matmul ≥1.00 P0, OT3 ≥0.95 P1, OT4 ≥0.90 P1
+  [11] L2 BL5: 4/4 fusion combinations pass
+  [12] Non-regression: ≥422 tests, 0 new failures
 ```
 
 → Detailed plan: [docs/phase1/stage7-plan.md](../phase1/stage7-plan.md)
@@ -161,12 +165,12 @@ AND ALL:
 
 ```
 AND ALL:
-  [1] Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥80% cuBLAS
+  [1] Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥0.95× P0 (cuBLAS)
   [2] Iterative optimization: ≥3 compile→profile→adjust cycles in trajectory
   [3] Multi-input: .ak file + natural language + code snippet → all work E2E
-  [4] torch.compile backend: GPT-2 latency ≤1.20× eager (fixes S5 known-fail)
-  [5] LLaMA-2 7B: top-1 correct + latency ≤1.30× eager
-  [6] DeepSeek-V2 16B: top-1 correct + latency ≤1.40× eager (seq≤512, quantized)
+  [4] torch.compile backend: GPT-2 correctness 100% + perf ≥0.95× eager (fixes S5 known-fail)
+  [5] LLaMA-2 7B: correctness 100% + perf ≥0.90× eager
+  [6] DeepSeek-V2 16B: correctness 100% + perf ≥0.85× eager (seq≤512, quantized)
   [7] BL5 no regression: L1+L2 correctness and performance ≥ G7 results
 ```
 
@@ -186,8 +190,8 @@ AND ALL:
 
 ```
 AND ALL:
-  [1] 4 models E2E: GPT-2 ≤1.15×, LLaMA-2 ≤1.30×, LLaMA-3 ≤1.30×, Qwen2.5 ≤1.30× (all top-1 correct)
-  [2] Arke vs LLM-direct: correctness ≥ direct, tokens ≤ 0.70×, perf ≥ 0.90×
+  [1] 4 models E2E correctness 100%: GPT-2 ≥1.00× eager, LLaMA-2 ≥0.95×, LLaMA-3 ≥0.95×, Qwen2.5 ≥0.90×
+  [2] Arke vs LLM-direct: correctness 100%, tokens ≤ 0.70×, perf ≥ 1.05× P5
   [3] @rationale KB: ≥50 Phase 1 entries
   [4] Spec freeze: Lang v1.0 + IR v1.0 tagged
   [5] Phase 1 evaluation report published
@@ -306,6 +310,22 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) 
 
 ---
 
+## Long-term TODOs
+
+> Items tracked for future optimization beyond Phase 1 Gate requirements.
+
+| ID | Category | Description | Target Phase |
+|:---|:---------|:-----------|:-------------|
+| LT-1 | Performance | Model integration overhead optimization — reduce torch.compile dispatch overhead toward zero | P2+ |
+| LT-2 | Performance | Graph-level fusion — cross-op fusion beyond L2 pairwise (e.g., full attention block fusion) | P2+ |
+| LT-3 | Performance | Memory optimization — activation checkpointing, KV cache compression for long-context | P2+ |
+| LT-4 | Toolchain | Profiling integration — automated bottleneck identification with roofline analysis | P2 |
+| LT-5 | Toolchain | CI/CD performance regression — automated nightly BL5 benchmark with alerting | P1-S9 |
+| LT-6 | Architecture | Multi-GPU support — tensor/pipeline parallelism for models > 6GB VRAM | P3+ |
+| LT-7 | Agent | @rationale knowledge base distillation — cross-hardware pattern extraction | P2+ |
+
+---
+
 ## Risk Matrix
 
 
@@ -324,4 +344,4 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) 
 
 ---
 
-*Last updated: 2026-04-06 (Phase 1 G0-G5 complete, S6 Compiler Infrastructure in progress)*
+*Last updated: 2026-04-06 (Gate criteria finalized with high performance targets; S6 Compiler Infrastructure in progress)*
