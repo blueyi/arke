@@ -166,7 +166,7 @@ print(result.trajectory)   # Full optimization trace
 Four phases from hypothesis validation to full compiler stack:
 
 ```
-Phase 1: Arke → Triton → NVIDIA GPU     SIMT MVP ✅; G6–G8 (lang/IR + autonomy) in progress
+Phase 1: Arke → Triton → NVIDIA GPU     SIMT MVP ✅; S6–S9 (compiler infra → v1.0) in progress
 Phase 2: Arke → Triton → Ascend NPU     SIMD feasibility     (next)
 Phase 3: Arke → MLIR Dialect            Full compiler control
 Phase 4: Arke → LLVM IR                 100% hardware completeness
@@ -199,18 +199,32 @@ achieves maximum hardware expression completeness and performance headroom.
 | [arke-ir-spec-design.md](docs/spec/arke-ir-spec-design.md)     | Arke IR spec — multi-layer architecture design         |
 
 
+| Stage Plan                                               | Description                                            |
+| -------------------------------------------------------- | ------------------------------------------------------ |
+| [stage6-plan.md](docs/phase1/stage6-plan.md) | S6 detailed plan — Compiler Infrastructure |
+| [stage7-plan.md](docs/phase1/stage7-plan.md) | S7 detailed plan — Lang & IR v2 |
+| [stage8-plan.md](docs/phase1/stage8-plan.md) | S8 detailed plan — Agent Autonomy |
+| [stage9-plan.md](docs/phase1/stage9-plan.md) | S9 detailed plan — Phase 1 Final |
+
+**Documentation structure:**
+- `docs/roadmap/plan.md` — Roadmap with Phase/Stage gate criteria (high-level)
+- `docs/phase1/stage{N}-plan.md` — Detailed gate breakdown + task lists per stage
+- `docs/architecture/` — Technical architecture and design documents
+- `docs/spec/` — Language and IR specifications
+
+
 ### Phase 1: Arke → Triton → GPU — Validate Hypothesis
 
 **Goal:** Prove LLM + structured IR + compiler verification produces correct, fast kernels.
 **Hardware:** NVIDIA Ampere (RTX 3060 Laptop, 6GB)
 
-| Gate | Status | Milestone |
-|:----:|:------:|:----------|
-| G0-G4 | ✅ | Environment, IR, Codegen, Agent, Evaluation |
-| G5 | ✅ | OT0-2 full shapes + GPT-2 E2E (correctness ✅, latency ⚠️ known-fail) |
-| G6 | ⬜ | **BL5×L1+L2 — Lang & IR completeness** (45 ops × all shapes) |
-| G7 | ⬜ | **Autonomous Engineering** — self-directed kernel gen + LLaMA-2/DS-V2 E2E |
-| G8 | ⬜ | **Phase 1 Final** — 4 model E2E + Arke vs LLM-direct |
+| Stage | Gate | Status | Milestone |
+|:-----:|:----:|:------:|:----------|
+| S0-S5 | G0-G5 | ✅ | Environment, IR, Codegen, Agent, Evaluation, GPT-2 E2E |
+| S6 | G6 | ⬜ | **Compiler Infrastructure** — OpRegistry, Pass Pipeline, Backend Abstraction |
+| S7 | G7 | ⬜ | **Lang & IR v2** — Multi-layer IR, where clause, Specs, MLIR skeleton |
+| S8 | G8 | ⬜ | **Agent Autonomy** — Auto strategy, torch.compile, LLaMA-2 + DS-V2 E2E |
+| S9 | G9 | ⬜ | **Phase 1 Final** — 4 model E2E, Arke vs LLM-direct, v1.0 release |
 
 → Development plan: [plan.md](docs/roadmap/plan.md)
 
