@@ -1,0 +1,164 @@
+// Arke Language v2.0 — Lark Grammar
+// Translated from EBNF in docs/spec/arke-lang-spec-design.md §8
+
+start: top_level_item*
+
+?top_level_item: import_stmt
+               | annotated_kernel_def
+               | strategy_def
+
+// ── Import ──────────────────────────────────────────────
+import_stmt: "import" STRING ("as" IDENT)? ";"
+
+// ── Annotated Kernel (annotations before kernel) ────────
+annotated_kernel_def: annotation* kernel_def
+
+// ── Kernel Definition ───────────────────────────────────
+kernel_def: "kernel" IDENT "(" param_list? ")" "->" return_type where_clause? "{" kernel_body "}"
+
+param_list: param ("," param)*
+param: IDENT ":" type_expr
+
+// Return type can be a single type, tuple type, or infer
+?return_type: type_expr
+            | tuple_return_type
+            | infer_type
+            | tuple_infer_type
+
+tuple_return_type: "(" type_expr ("," type_expr)+ ")"
+tuple_infer_type: "(" infer_type ("," infer_type)+ ")"
+infer_type: "_"
+
+// ── Where Clause ────────────────────────────────────────
+where_clause: "where" dim_decl ("," dim_decl)*
+dim_decl: IDENT ":" dim_kind
+?dim_kind: "static"                       -> dim_static
+         | "dynamic"                      -> dim_dynamic
+         | "dynamic" "(" dynamic_opts ")" -> dim_dynamic_opts
+
+dynamic_opts: dynamic_opt ("," dynamic_opt)*
+?dynamic_opt: "max" "=" INT      -> dopt_max
+            | "min" "=" INT      -> dopt_min
+            | "multiple_of" "=" INT -> dopt_multiple_of
+            | "default" "=" INT  -> dopt_default
+
+// ── Type System ─────────────────────────────────────────
+?type_expr: tensor_type
+
+tensor_type: "Tensor" "<" "[" dim_list "]" "," scalar_type ("," layout)? ">"
+
+dim_list: dim ("," dim)*
+?dim: INT  -> dim_int
+    | IDENT -> dim_sym
+
+?layout: "row_major" -> layout_row_major
+       | "col_major" -> layout_col_major
+
+?scalar_type: "f16"   -> scalar_f16
+            | "bf16"  -> scalar_bf16
+            | "f32"   -> scalar_f32
+            | "f64"   -> scalar_f64
+            | "i8"    -> scalar_i8
+            | "i16"   -> scalar_i16
+            | "i32"   -> scalar_i32
+            | "i64"   -> scalar_i64
+            | "u8"    -> scalar_u8
+            | "u16"   -> scalar_u16
+            | "u32"   -> scalar_u32
+            | "u64"   -> scalar_u64
+            | "bool"  -> scalar_bool
+            | "index" -> scalar_index
+
+// ── Kernel Body ─────────────────────────────────────────
+kernel_body: let_stmt* return_stmt
+
+let_stmt: "let" lhs "=" op_call ";"
+
+?lhs: IDENT                             -> lhs_single
+    | "(" IDENT ("," IDENT)+ ")"        -> lhs_tuple
+
+return_stmt: "return" return_expr ";"
+
+?return_expr: IDENT                              -> return_single
+            | "(" IDENT ("," IDENT)+ ")"         -> return_tuple
+
+// ── Operator Calls ──────────────────────────────────────
+op_call: IDENT "(" arg_list? ")"
+arg_list: named_arg ("," named_arg)*
+named_arg: IDENT "=" arg_value
+
+?arg_value: IDENT    -> arg_ident
+          | INT      -> arg_int
+          | "-" INT  -> arg_neg_int
+          | FLOAT    -> arg_float
+          | "-" FLOAT -> arg_neg_float
+          | STRING   -> arg_string
+          | BOOL     -> arg_bool
+          | "[" [arg_value ("," arg_value)*] "]" -> arg_list_val
+
+// ── Strategy Definition ─────────────────────────────────
+strategy_def: "strategy" IDENT "for" "target" "(" STRING ")" "{" strategy_body "}"
+
+strategy_body: strategy_item*
+?strategy_item: strategy_stmt
+              | when_block
+
+strategy_stmt: IDENT "(" strategy_kwargs? ")" annotation* ";"?
+
+strategy_kwargs: strategy_kwarg ("," strategy_kwarg)*
+strategy_kwarg: IDENT "=" strategy_value
+
+?strategy_value: STRING       -> sval_string
+               | INT          -> sval_int
+               | FLOAT        -> sval_float
+               | BOOL         -> sval_bool
+               | IDENT        -> sval_ident
+               | "[" [strategy_value ("," strategy_value)*] "]" -> sval_list
+               | "{" [strategy_map_entry ("," strategy_map_entry)*] "}" -> sval_map
+
+strategy_map_entry: (STRING | IDENT) ":" strategy_value
+
+// ── Conditional Strategy (v2.0) ─────────────────────────
+when_block: when_arm+ otherwise_arm?
+when_arm: "when" condition "{" strategy_body "}"
+otherwise_arm: "otherwise" "{" strategy_body "}"
+
+?condition: condition "and" condition -> cond_and
+          | condition "or" condition  -> cond_or
+          | "(" condition ")"         -> cond_paren
+          | IDENT CMP_OP INT          -> cond_compare
+
+CMP_OP: "<=" | ">=" | "!=" | "==" | "<" | ">"
+
+// ── Annotations ─────────────────────────────────────────
+annotation: "@" IDENT "(" annotation_args? ")"
+
+annotation_args: annotation_arg ("," annotation_arg)*
+?annotation_arg: IDENT "=" annotation_value -> ann_kwarg
+               | STRING                     -> ann_positional
+
+?annotation_value: STRING       -> annval_string
+                 | INT          -> annval_int
+                 | FLOAT        -> annval_float
+                 | BOOL         -> annval_bool
+                 | IDENT        -> annval_ident
+                 | "[" [annotation_value ("," annotation_value)*] "]" -> annval_list
+
+// ── Lexical Tokens ──────────────────────────────────────
+BOOL: "true" | "false"
+IDENT: /[a-zA-Z_][a-zA-Z0-9_]*/
+
+// Float must be before INT to match correctly
+// Support scientific notation (1e-5, 3.14e10, etc.)
+FLOAT: /[0-9]+\.[0-9]*([eE][+-]?[0-9]+)?/ | /[0-9]+[eE][+-]?[0-9]+/
+INT: /[0-9]+/
+
+STRING: /\"([^\"\\]|\\.)*\"/
+
+// Comments
+LINE_COMMENT: /\/\/[^\n]*/
+BLOCK_COMMENT: /\/\*[\s\S]*?\*\//
+
+%ignore LINE_COMMENT
+%ignore BLOCK_COMMENT
+%ignore /[\s]+/
