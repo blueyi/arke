@@ -39,14 +39,14 @@
 | D8-L1 | `qwen25_forward.ak` example (GQA+SwiGLU+RMSNorm) | P0 | M | ⬜ |
 | D8-L2 | `llama3_forward.ak` example (GQA, rope, RMSNorm) | P0 | M | ⬜ |
 | D8-L3 | `arke-io-spec.md` (I/O contract document) | P1 | M | ⬜ |
-| D8-L4 | Language Spec v1.0 freeze (document + tag) | P0 | — | ✅ Done |
+| D8-L4 | Language Spec v1.0 freeze (document + tag) | P0 | — | ⬜ Reset |
 
 ### Track 3: IR Finalization (P0)
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| D8-IR1 | IR Spec v1.0 freeze (document + tag) | P0 | — | ✅ Done |
-| D8-IR2 | `ir-mlir-mapping.md` (Phase 2 preparation) | P1 | — | ✅ Done |
+| D8-IR1 | IR Spec v1.0 freeze (document + tag) | P0 | — | ⬜ Reset |
+| D8-IR2 | `ir-mlir-mapping.md` (Phase 2 preparation) | P1 | — | ⬜ Reset |
 | D8-IR3 | `test_ir_roundtrip.py` (all 45 ops × JSON round-trip) | P0 | M | ⬜ |
 
 ### Track 4: Agent Maturity + Comparison (P0)

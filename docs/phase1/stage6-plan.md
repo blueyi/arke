@@ -22,20 +22,17 @@
 
 ---
 
-## Context: G6 v1 Deliverables (DONE — commit fd2cbe0)
+## Pre-Refactor Reference (G6 v1, commit fd2cbe0)
 
-The original G6 performance/correctness/Lang&IR completeness criteria were fully satisfied in the v1 pass:
+The following were completed under the **old architecture** before the Lang/IR/Compiler redesign. They serve as reference, but all features and tests need re-implementation and re-validation under the new architecture:
 
-- ✅ 46 `.ak` example files for all 45 ops (including `OT3_fused_linear_cross_entropy.ak` as bonus)
-- ✅ Grammar fixes: array literals `[2,3]`, float constants `0.125`, 4D tensor support
-- ✅ SemanticIR op catalog extended to 45 ops (OT3/OT4 all fields)
-- ✅ AttentionSemanticIR, RopeSemanticIR, QuantizeSemanticIR, MLA-specific fields
-- ✅ `ast_to_strategy()` converter: parser AST → StrategyIR
-- ✅ StrategyIR JSON round-trip for all 45 ops
-- ✅ 10 new Triton template classes (OT3/OT4 full coverage)
-- ✅ V1 validator extension: attention numerical tolerance, quantization precision
-- ✅ 422 tests passing (up from 237), 6 skipped
-- ✅ BL5×L1+L2 performance/correctness: 9/9 criteria pass, 46/46 E2E correct
+- 46 `.ak` example files, grammar fixes, 4D tensor support
+- SemanticIR op catalog 45 ops, Attention/Rope/Quantize/MLA fields
+- `ast_to_strategy()` converter, StrategyIR JSON round-trip
+- 10 Triton template classes, V1 validator extensions
+- 422 tests, BL5×L1+L2: 9/9 criteria, 46/46 E2E correct
+
+> ⚠️ All above are pre-refactor. Post-refactor re-implementation and re-validation required.
 
 ---
 

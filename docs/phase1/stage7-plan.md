@@ -31,21 +31,21 @@ The following Lang/IR items were completed during the earlier G6 v1 pass and for
 
 | ID | Description | Status |
 |:---|:------------|:------:|
-| D6-L1 | `.ak` 4D tensor syntax extension | ✅ Done |
-| D6-L2 | gather/scatter semantic nodes | ✅ Done |
-| D6-L3 | quantize primitive syntax | ✅ Done |
-| D6-L4 | paged memory semantic annotation (stub) | ✅ Done (stub) |
-| D6-L5 | grammar fix (array literal, float constant) | ✅ Done |
-| D6-L6 | `.ak` example files for all 45 ops | ✅ Done (46 files) |
-| D6-IR1 | SemanticIR op catalog → 45 ops | ✅ Done |
-| D6-IR2 | AttentionSemanticIR (mask_type, num_kv_heads, head_dim) | ✅ Done |
-| D6-IR3 | RopeSemanticIR (theta, base, rotary_dim) | ✅ Done |
-| D6-IR4 | QuantizeSemanticIR (scale_dtype, group_size, zero_point) | ✅ Done |
-| D6-IR5 | `ast_to_strategy()` converter | ✅ Done |
-| D6-IR6 | StrategyIR JSON round-trip (all 45 ops) | ✅ Done |
-| D6-IR7 | MLA-specific fields (latent_dim, kv_lora_rank) | ✅ Done |
-| D6-E1 | 10 Triton template classes (OT3/OT4 full) | ✅ Done |
-| D6-E6 | V1 validator extension (attention + quantization tolerance) | ✅ Done |
+| D6-L1 | `.ak` 4D tensor syntax extension | ⬜ Reset |
+| D6-L2 | gather/scatter semantic nodes | ⬜ Reset |
+| D6-L3 | quantize primitive syntax | ⬜ Reset |
+| D6-L4 | paged memory semantic annotation (stub) | ⬜ Reset |
+| D6-L5 | grammar fix (array literal, float constant) | ⬜ Reset |
+| D6-L6 | `.ak` example files for all 45 ops | ⬜ Reset |
+| D6-IR1 | SemanticIR op catalog → 45 ops | ⬜ Reset |
+| D6-IR2 | AttentionSemanticIR (mask_type, num_kv_heads, head_dim) | ⬜ Reset |
+| D6-IR3 | RopeSemanticIR (theta, base, rotary_dim) | ⬜ Reset |
+| D6-IR4 | QuantizeSemanticIR (scale_dtype, group_size, zero_point) | ⬜ Reset |
+| D6-IR5 | `ast_to_strategy()` converter | ⬜ Reset |
+| D6-IR6 | StrategyIR JSON round-trip (all 45 ops) | ⬜ Reset |
+| D6-IR7 | MLA-specific fields (latent_dim, kv_lora_rank) | ⬜ Reset |
+| D6-E1 | 10 Triton template classes (OT3/OT4 full) | ⬜ Reset |
+| D6-E6 | V1 validator extension (attention + quantization tolerance) | ⬜ Reset |
 
 ---
 
@@ -86,12 +86,12 @@ These items correspond to the G6-LI criteria that verify completeness and correc
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| G6-LI.1 | All 45 ops expressible and parseable in `.ak` | P0 | — | ✅ (v1) |
+| G6-LI.1 | All 45 ops expressible and parseable in `.ak` | P0 | — | ⬜ Reset |
 | G6-LI.2 | `.ak → SemanticIR → StrategyIR → Pass pipeline` full round-trip | P0 | 0.5d | ⬜ |
 | G6-LI.3 | `@rationale` annotations preserved through full pipeline | P1 | 0.5d | ⬜ |
 | G6-LI.4 | Token efficiency: `.ak` ≤ Triton line count (OT0-OT4) | P1 | 0.5d | ⬜ |
 | G6-LI.5 | Python interop IR round-trip (`pytest tests/test_ir_roundtrip.py`) | P0 | 0.5d | ⬜ |
-| G6-LI.6 | Grammar completeness: 0 parse failures (`arke parse examples/ --strict`) | P0 | — | ✅ (v1) |
+| G6-LI.6 | Grammar completeness: 0 parse failures (`arke parse examples/ --strict`) | P0 | — | ⬜ Reset |
 | G6-LI.7 | Symbolic shape `.ak` → SemanticIR with `where` clause | P2 | — | → Track 2 |
 | G6-LI.8 | Backend-agnostic strategy (no Triton-specific fields in StrategyIR core) | P1 | 0.5d | ⬜ |
 

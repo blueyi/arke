@@ -18,26 +18,29 @@ Roadmap > Phase > Stage > Feature > Task
 ### Design Principles
 
 1. **AI-First** — LLM agents make optimization decisions; compilers verify
-2. **Minimal-Token** — Minimize total token consumption across the full pipeline
-3. **Semantic/Strategy Separation** — *What to compute* and *how to optimize* are independent
-4. **Compiler-Verified** — Every decision validated by deterministic checks
+2. **Peak Performance** — Pursue maximum hardware utilization; every abstraction layer must justify its overhead
+3. **Minimal-Token** — Minimize total token consumption across the full pipeline
+4. **Semantic/Strategy Separation** — *What to compute* and *how to optimize* are independent
+5. **Compiler-Verified** — Every decision validated by deterministic checks
 
 ---
 
 ### Stage Summary
 
-| Stage | Gate | Objective | Status |
-|:-----:|:----:|:----------|:------:|
-| S0 | G0 | GPU Environment | ✅ |
-| S1 | G1 | IR + Validation | ✅ |
-| S2 | G2 | Codegen + E2E Pipeline | ✅ |
-| S3 | G3 | LLM Agent Closed Loop | ✅ |
-| S4 | G4 | Arke vs LLM-direct | ✅ |
-| S5 | G5 | Whole-Model E2E | ✅ |
-| S6 | G6 | Compiler Infrastructure | ⬜ ← CURRENT |
-| S7 | G7 | Lang & IR v2 | ⬜ |
-| S8 | G8 | Agent Autonomy | ⬜ |
-| S9 | G9 | Phase 1 Final | ⬜ |
+
+| Stage | Gate | Objective               | Status      |
+| ----- | ---- | ----------------------- | ----------- |
+| S0    | G0   | GPU Environment         | ✅           |
+| S1    | G1   | IR + Validation         | ✅           |
+| S2    | G2   | Codegen + E2E Pipeline  | ✅           |
+| S3    | G3   | LLM Agent Closed Loop   | ✅           |
+| S4    | G4   | Arke vs LLM-direct      | ✅           |
+| S5    | G5   | Whole-Model E2E         | ✅           |
+| S6    | G6   | Compiler Infrastructure | ⬜ ← CURRENT |
+| S7    | G7   | Lang & IR v2            | ⬜           |
+| S8    | G8   | Agent Autonomy          | ⬜           |
+| S9    | G9   | Phase 1 Final           | ⬜           |
+
 
 ---
 
@@ -169,7 +172,7 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) 
 
 ---
 
-## Phase 2: Arke → Triton/MLIR → Ascend NPU (SIMD Validation)
+## Phase 2: Arke → Triton-Ascend/MLIR → Ascend NPU (SIMD Validation)
 
 **Goal:** Verify Arke Lang/IR works on SIMD architecture (Ascend NPU) via Ascend Triton backend. Arke-generated Ascend Triton kernels must outperform FlagGems on Ascend. Simultaneously complete Arke Lang/IR to cover Category B-E operators.
 
@@ -179,27 +182,32 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) 
 
 ### Stage Structure
 
-| Stage | Milestone | Exit Criteria |
-|:-----:|:----------|:--------------|
-| **P2-S1** | Ascend Triton environment | matmul runs on 910B, ≥70% CANN cuBLAS |
-| **P2-S2** | Cat A+B ops on Ascend | 20 ops correct + ≥0.85× FlagGems |
-| **P2-S3** | Cat C+D ops on Ascend | 15 ops correct + ≥0.80× FlagGems |
-| **P2-S4** | LLaMA-2 on Ascend | E2E correct + ≤1.40× eager |
-| **P2-S_FINAL** | Phase 2 acceptance | H4 validated: same Arke IR → NVIDIA + Ascend |
+
+| Stage          | Milestone                 | Exit Criteria                                |
+| -------------- | ------------------------- | -------------------------------------------- |
+| **P2-S1**      | Ascend Triton environment | matmul runs on 910B, ≥70% CANN cuBLAS        |
+| **P2-S2**      | Cat A+B ops on Ascend     | 20 ops correct + ≥0.85× FlagGems             |
+| **P2-S3**      | Cat C+D ops on Ascend     | 15 ops correct + ≥0.80× FlagGems             |
+| **P2-S4**      | LLaMA-2 on Ascend         | E2E correct + ≤1.40× eager                   |
+| **P2-S_FINAL** | Phase 2 acceptance        | H4 validated: same Arke IR → NVIDIA + Ascend |
+
 
 ### Key Insights from phase2-3-review.md
 
 **What Phase 1 taught us:**
+
 - Triton dispatch overhead (~60µs) is real but not Arke's fault
 - Small-M performance gap is architectural, not IR design issue
 - E2E latency requires torch.compile backend (graph fusion + zero-overhead dispatch)
 
 **Phase 2 adjusted goals:**
+
 - Primary: Validate H4 (cross-architecture generalization) — same SemanticIR → NVIDIA Triton + Ascend Triton
 - Secondary: Expand operator coverage (Cat B-E)
 - Defer: Full MLIR integration to Phase 3 (Ascend Triton is sufficient for H4 validation)
 
 **Phase 2 does NOT need:**
+
 - Custom MLIR dialect (Ascend Triton backend is enough)
 - Performance parity with Phase 1 NVIDIA (SIMD vs SIMT architectural difference expected)
 - Full E2E latency optimization (torch.compile backend deferred to Phase 3)
@@ -215,14 +223,16 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) 
 
 ### Stage Structure
 
-| Stage | Milestone | Exit Criteria |
-|:-----:|:----------|:--------------|
-| **P3-S1** | MLIR lowering framework | SemanticIR → linalg + transform dialect, matmul correct |
-| **P3-S2** | Cat A+B+C via MLIR | 35 ops correct + geomean ≥ Phase 2 Triton |
-| **P3-S3** | MLIR performance ≥ Triton | All Cat A+B+C+D MLIR geomean ≥ Phase 2 Triton |
-| **P3-S4** | Ascend via MLIR | matmul+rmsnorm correct on Ascend via MLIR; perf ≥ Phase 2 |
-| **P3-S5** | LLM Level 2 decisions | StrategyIR L2 (loop nests) → MLIR transform dialect, verified on ≥3 ops |
-| **P3-S_FINAL** | Phase 3 acceptance | MLIR path performance ≥ Triton + multi-hardware via MLIR |
+
+| Stage          | Milestone                 | Exit Criteria                                                           |
+| -------------- | ------------------------- | ----------------------------------------------------------------------- |
+| **P3-S1**      | MLIR lowering framework   | SemanticIR → linalg + transform dialect, matmul correct                 |
+| **P3-S2**      | Cat A+B+C via MLIR        | 35 ops correct + geomean ≥ Phase 2 Triton                               |
+| **P3-S3**      | MLIR performance ≥ Triton | All Cat A+B+C+D MLIR geomean ≥ Phase 2 Triton                           |
+| **P3-S4**      | Ascend via MLIR           | matmul+rmsnorm correct on Ascend via MLIR; perf ≥ Phase 2               |
+| **P3-S5**      | LLM Level 2 decisions     | StrategyIR L2 (loop nests) → MLIR transform dialect, verified on ≥3 ops |
+| **P3-S_FINAL** | Phase 3 acceptance        | MLIR path performance ≥ Triton + multi-hardware via MLIR                |
+
 
 ### Key Design Points
 
@@ -242,14 +252,16 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) 
 
 ### Stage Structure
 
-| Stage | Milestone | Exit Criteria |
-|:-----:|:----------|:--------------|
-| **P4-S1** | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct |
-| **P4-S2** | Cat A-F via LLVM | All 60+ ops correct + geomean ≥ Phase 3 MLIR |
-| **P4-S3** | LLVM performance ≥ MLIR | LLVM geomean ≥ MLIR + 5% (Cat A+C+D) |
-| **P4-S4** | Multi-hardware LLVM | ≥3 backends ≥90% respective vendor libs |
-| **P4-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
-| **P4-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage |
+
+| Stage          | Milestone               | Exit Criteria                                                     |
+| -------------- | ----------------------- | ----------------------------------------------------------------- |
+| **P4-S1**      | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct                              |
+| **P4-S2**      | Cat A-F via LLVM        | All 60+ ops correct + geomean ≥ Phase 3 MLIR                      |
+| **P4-S3**      | LLVM performance ≥ MLIR | LLVM geomean ≥ MLIR + 5% (Cat A+C+D)                              |
+| **P4-S4**      | Multi-hardware LLVM     | ≥3 backends ≥90% respective vendor libs                           |
+| **P4-S5**      | LLM Level 3 decisions   | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
+| **P4-S_FINAL** | v1.0.0 release          | @rationale KB ≥200 entries, cross-hardware coverage               |
+
 
 ### Key Design Points
 
@@ -262,17 +274,19 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) 
 
 ## Risk Matrix
 
-| Risk | Affects | Mitigation |
-|------|:-------:|-----------|
-| LLM decisions don't map to Triton templates | Phase 1 S7-S8 | Expand template coverage + parameter adaptation layer |
-| compile_and_profile errors in LLM session | Phase 1 S8 | Better error messages + graceful degradation |
-| 6GB VRAM insufficient for large shapes | Phase 1 S5-S9 | Limit shapes to ≤2048; mark OOM as non-blocking |
-| Arke doesn't outperform direct Triton | Phase 1 S9 | Gate decision matrix: reliability + token efficiency win |
-| API timeout / rate limit | Phase 1 S7-S9 | Retry + fallback + prefer Sonnet over Opus |
-| Ascend Triton backend unavailable | Phase 2 | Fallback: validate H4 on AMD via ROCm Triton |
-| MLIR learning curve too steep | Phase 3 | Hire MLIR expert consultant; allocate 2× time buffer |
-| LLVM IR complexity explosion | Phase 4 | Incremental: start with matmul only, expand gradually |
-| torch.compile integration breaks | Phase 1 S8 | Maintain standalone CLI as fallback; Inductor backend is optional |
+
+| Risk                                        | Affects       | Mitigation                                                        |
+| ------------------------------------------- | ------------- | ----------------------------------------------------------------- |
+| LLM decisions don't map to Triton templates | Phase 1 S7-S8 | Expand template coverage + parameter adaptation layer             |
+| compile_and_profile errors in LLM session   | Phase 1 S8    | Better error messages + graceful degradation                      |
+| 6GB VRAM insufficient for large shapes      | Phase 1 S5-S9 | Limit shapes to ≤2048; mark OOM as non-blocking                   |
+| Arke doesn't outperform direct Triton       | Phase 1 S9    | Gate decision matrix: reliability + token efficiency win          |
+| API timeout / rate limit                    | Phase 1 S7-S9 | Retry + fallback + prefer Sonnet over Opus                        |
+| Ascend Triton backend unavailable           | Phase 2       | Fallback: validate H4 on AMD via ROCm Triton                      |
+| MLIR learning curve too steep               | Phase 3       | Hire MLIR expert consultant; allocate 2× time buffer              |
+| LLVM IR complexity explosion                | Phase 4       | Incremental: start with matmul only, expand gradually             |
+| torch.compile integration breaks            | Phase 1 S8    | Maintain standalone CLI as fallback; Inductor backend is optional |
+
 
 ---
 
