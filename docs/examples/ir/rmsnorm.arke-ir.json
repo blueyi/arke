@@ -1,0 +1,142 @@
+{
+  "_comment": "Category C: Normalization \u2014 RMSNorm",
+  "_source": "06_rmsnorm.ak",
+  "semantic_ir": {
+    "version": "0.2.0",
+    "kernel_id": "rmsnorm",
+    "params": [
+      {
+        "name": "X",
+        "shape": [
+          128,
+          4096
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      {
+        "name": "weight",
+        "shape": [
+          4096
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      }
+    ],
+    "return_type": {
+      "shape": [
+        128,
+        4096
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    "nodes": [
+      {
+        "id": "rmsnorm_0",
+        "op": "rmsnorm",
+        "inputs": {
+          "X": {
+            "ref": "param",
+            "name": "X"
+          },
+          "weight": {
+            "ref": "param",
+            "name": "weight"
+          }
+        },
+        "output": {
+          "shape": [
+            128,
+            4096
+          ],
+          "dtype": "f16",
+          "layout": "row_major"
+        },
+        "semantics": {
+          "computation": "Y[i,j] = X[i,j] / sqrt(mean(X[i,:]^2, axis=j) + eps) * W[j]",
+          "index_vars": [
+            "i",
+            "j"
+          ],
+          "reduction_axes": [
+            "j"
+          ],
+          "properties": [
+            "row-wise"
+          ]
+        }
+      }
+    ],
+    "edges": [],
+    "return_node": "rmsnorm_0",
+    "fusion_groups": []
+  },
+  "strategy_ir": {
+    "version": "0.2.0",
+    "kernel_id": "rmsnorm_strategy",
+    "target_hw": "nvidia_ampere",
+    "decisions": [
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "row",
+          "factors": [
+            1
+          ]
+        },
+        "rationale": {
+          "text": "one CTA per row \u2014 RMS reduction is row-local",
+          "lang": "en"
+        },
+        "step": 1,
+        "level": 1
+      },
+      {
+        "kind": "vectorize",
+        "params": {
+          "loop": "col",
+          "width": 8
+        },
+        "rationale": {
+          "text": "vec8 f16 for 128-bit loads \u2014 maximize bandwidth",
+          "lang": "en"
+        },
+        "step": 2,
+        "level": 1
+      },
+      {
+        "kind": "place",
+        "params": {
+          "tensor": "X_row",
+          "memory": "shared"
+        },
+        "rationale": {
+          "text": "cache in smem: need two passes (compute rms, then normalize)",
+          "lang": "en"
+        },
+        "step": 3,
+        "level": 1
+      },
+      {
+        "kind": "launch_config",
+        "params": {
+          "num_warps": 8,
+          "num_stages": 1
+        },
+        "rationale": {
+          "text": "4096/8/32=16 iters per warp \u2014 8 warps for good SM occupancy",
+          "lang": "en"
+        },
+        "step": 4,
+        "level": 1
+      }
+    ],
+    "constraints": {
+      "shared_memory_limit": 0,
+      "register_limit": 0,
+      "max_threads_per_block": 0,
+      "warp_size": 32
+    }
+  }
+}

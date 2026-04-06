@@ -1,0 +1,199 @@
+{
+  "_comment": "Category B: Attention \u2014 Flash Attention",
+  "_source": "15_flash_attention.ak",
+  "semantic_ir": {
+    "version": "0.2.0",
+    "kernel_id": "flash_attention_kernel",
+    "params": [
+      {
+        "name": "Q",
+        "shape": [
+          2,
+          12,
+          128,
+          64
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      {
+        "name": "K",
+        "shape": [
+          2,
+          12,
+          128,
+          64
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      {
+        "name": "V",
+        "shape": [
+          2,
+          12,
+          128,
+          64
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      }
+    ],
+    "return_type": {
+      "shape": [
+        2,
+        12,
+        128,
+        64
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    "nodes": [
+      {
+        "id": "flash_attention_0",
+        "op": "flash_attention",
+        "inputs": {
+          "Q": {
+            "ref": "param",
+            "name": "Q"
+          },
+          "K": {
+            "ref": "param",
+            "name": "K"
+          },
+          "V": {
+            "ref": "param",
+            "name": "V"
+          }
+        },
+        "output": {
+          "shape": [
+            2,
+            12,
+            128,
+            64
+          ],
+          "dtype": "f16",
+          "layout": "row_major"
+        },
+        "semantics": {
+          "computation": "O = softmax(Q @ K^T / sqrt(D)) @ V  (tiled, online softmax)",
+          "index_vars": [
+            "b",
+            "h",
+            "i",
+            "j",
+            "k"
+          ],
+          "reduction_axes": [
+            "j",
+            "k"
+          ],
+          "properties": [
+            "causal_mask_optional",
+            "online_softmax"
+          ]
+        }
+      }
+    ],
+    "edges": [],
+    "return_node": "flash_attention_0",
+    "fusion_groups": []
+  },
+  "strategy_ir": {
+    "version": "0.2.0",
+    "kernel_id": "flash_attention_kernel_strategy",
+    "target_hw": "nvidia_ampere",
+    "decisions": [
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "Br",
+          "factors": [
+            64
+          ]
+        },
+        "rationale": {
+          "text": "Br=64: query tile \u2014 64 rows fit in register file",
+          "lang": "en"
+        },
+        "step": 1,
+        "level": 1
+      },
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "Bc",
+          "factors": [
+            64
+          ]
+        },
+        "rationale": {
+          "text": "Bc=64: key/value tile \u2014 online softmax over KV blocks",
+          "lang": "en"
+        },
+        "step": 2,
+        "level": 1
+      },
+      {
+        "kind": "place",
+        "params": {
+          "tensor": "Q_tile",
+          "memory": "register"
+        },
+        "rationale": {
+          "text": "Q stays in registers; K/V stream from smem",
+          "lang": "en"
+        },
+        "step": 3,
+        "level": 1
+      },
+      {
+        "kind": "place",
+        "params": {
+          "tensor": "K_tile",
+          "memory": "shared"
+        },
+        "rationale": {
+          "text": "K block loaded to shared memory for softmax compute",
+          "lang": "en"
+        },
+        "step": 4,
+        "level": 1
+      },
+      {
+        "kind": "place",
+        "params": {
+          "tensor": "V_tile",
+          "memory": "shared"
+        },
+        "rationale": {
+          "text": "V block in smem, used after softmax to accumulate output",
+          "lang": "en"
+        },
+        "step": 5,
+        "level": 1
+      },
+      {
+        "kind": "launch_config",
+        "params": {
+          "num_warps": 4,
+          "num_stages": 2
+        },
+        "rationale": {
+          "text": "2-stage pipeline: prefetch next KV block while computing current",
+          "lang": "en"
+        },
+        "step": 6,
+        "level": 1
+      }
+    ],
+    "constraints": {
+      "shared_memory_limit": 0,
+      "register_limit": 0,
+      "max_threads_per_block": 0,
+      "warp_size": 32
+    }
+  }
+}

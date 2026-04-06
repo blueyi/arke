@@ -1,0 +1,132 @@
+{
+  "_comment": "Category E: Positional Encoding \u2014 Rotary Position Embedding",
+  "_source": "39_rope.ak",
+  "semantic_ir": {
+    "version": "0.2.0",
+    "kernel_id": "rope_kernel",
+    "params": [
+      {
+        "name": "X",
+        "shape": [
+          2,
+          12,
+          128,
+          64
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      {
+        "name": "Cos",
+        "shape": [
+          128,
+          64
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      },
+      {
+        "name": "Sin",
+        "shape": [
+          128,
+          64
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      }
+    ],
+    "return_type": {
+      "shape": [
+        2,
+        12,
+        128,
+        64
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    "nodes": [
+      {
+        "id": "rope_0",
+        "op": "rope",
+        "inputs": {
+          "X": {
+            "ref": "param",
+            "name": "X"
+          },
+          "Cos": {
+            "ref": "param",
+            "name": "Cos"
+          },
+          "Sin": {
+            "ref": "param",
+            "name": "Sin"
+          }
+        },
+        "output": {
+          "shape": [
+            2,
+            12,
+            128,
+            64
+          ],
+          "dtype": "f16",
+          "layout": "row_major"
+        },
+        "semantics": {
+          "computation": "Y = X * cos + rotate_half(X) * sin",
+          "index_vars": [],
+          "reduction_axes": [],
+          "properties": [
+            "elementwise",
+            "position_encoding"
+          ]
+        }
+      }
+    ],
+    "edges": [],
+    "return_node": "rope_0",
+    "fusion_groups": []
+  },
+  "strategy_ir": {
+    "version": "0.2.0",
+    "kernel_id": "rope_kernel_strategy",
+    "target_hw": "nvidia_ampere",
+    "decisions": [
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "row",
+          "factors": [
+            4
+          ]
+        },
+        "rationale": {
+          "text": "4 sequence positions per block \u2014 pair-wise rotation is elementwise-like",
+          "lang": "en"
+        },
+        "step": 1,
+        "level": 1
+      },
+      {
+        "kind": "launch_config",
+        "params": {
+          "num_warps": 4,
+          "num_stages": 1
+        },
+        "rationale": {
+          "text": "single-stage: elementwise mul+add with sin/cos broadcast, memory-bound",
+          "lang": "en"
+        },
+        "step": 2,
+        "level": 1
+      }
+    ],
+    "constraints": {
+      "shared_memory_limit": 0,
+      "register_limit": 0,
+      "max_threads_per_block": 0,
+      "warp_size": 32
+    }
+  }
+}

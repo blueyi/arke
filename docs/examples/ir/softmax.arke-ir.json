@@ -1,0 +1,130 @@
+{
+  "_comment": "Category C: Reduction \u2014 Softmax normalization",
+  "_source": "02_softmax.ak",
+  "semantic_ir": {
+    "version": "0.2.0",
+    "kernel_id": "softmax",
+    "params": [
+      {
+        "name": "X",
+        "shape": [
+          2048,
+          1024
+        ],
+        "dtype": "f16",
+        "layout": "row_major"
+      }
+    ],
+    "return_type": {
+      "shape": [
+        2048,
+        1024
+      ],
+      "dtype": "f16",
+      "layout": "row_major"
+    },
+    "nodes": [
+      {
+        "id": "softmax_0",
+        "op": "softmax",
+        "inputs": {
+          "X": {
+            "ref": "param",
+            "name": "X"
+          }
+        },
+        "output": {
+          "shape": [
+            2048,
+            1024
+          ],
+          "dtype": "f16",
+          "layout": "row_major"
+        },
+        "semantics": {
+          "computation": "Y[i,j] = exp(X[i,j]) / sum(exp(X[i,:]), axis=j)",
+          "index_vars": [
+            "i",
+            "j"
+          ],
+          "reduction_axes": [
+            "j"
+          ],
+          "properties": [
+            "row-wise"
+          ]
+        }
+      }
+    ],
+    "edges": [],
+    "return_node": "softmax_0",
+    "fusion_groups": []
+  },
+  "strategy_ir": {
+    "version": "0.2.0",
+    "kernel_id": "softmax_strategy",
+    "target_hw": "nvidia_ampere",
+    "decisions": [
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "row",
+          "factors": [
+            1
+          ]
+        },
+        "rationale": {
+          "text": "one block per row \u2014 each row is independent",
+          "lang": "en"
+        },
+        "step": 1,
+        "level": 1
+      },
+      {
+        "kind": "vectorize",
+        "params": {
+          "loop": "col",
+          "width": 8
+        },
+        "rationale": {
+          "text": "vec8 for f16 \u2014 128-bit load matches memory bus",
+          "lang": "en"
+        },
+        "step": 2,
+        "level": 1
+      },
+      {
+        "kind": "place",
+        "params": {
+          "tensor": "X_row",
+          "memory": "register"
+        },
+        "rationale": {
+          "text": "entire row fits in registers for 1024-width",
+          "lang": "en"
+        },
+        "step": 3,
+        "level": 1
+      },
+      {
+        "kind": "launch_config",
+        "params": {
+          "num_warps": 4,
+          "num_stages": 1
+        },
+        "rationale": {
+          "text": "4 warps * 32 threads = 128 threads/block, good occupancy",
+          "lang": "en"
+        },
+        "step": 4,
+        "level": 1
+      }
+    ],
+    "constraints": {
+      "shared_memory_limit": 0,
+      "register_limit": 0,
+      "max_threads_per_block": 0,
+      "warp_size": 32
+    }
+  }
+}
