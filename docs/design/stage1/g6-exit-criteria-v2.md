@@ -43,14 +43,14 @@ The original G6 verified that Arke can handle all 45 ops across all shapes. What
 | Triton-specific concepts leaking into StrategyIR | `num_warps`/`num_stages` in IR breaks Stage 2 (Ascend) |
 | No SSA guarantees in IR | LLM-generated IR can silently produce incorrect dataflow |
 | No Backend Protocol | Switching from Triton to MLIR requires rearchitecting the pipeline |
-| Static shapes only in `.ak` | G7 requires dynamic shape for real LLM inference (S=1 decode vs S=2048 prefill) |
+| Static shapes only in `.ak` | G7 requires dynamic shape for real LLM inference; G6 must assess feasibility of Arke Lang/IR dynamic shape support |
 
 **G6 v2 adds a new mandatory gate — G6-ARCH — that addresses these structural risks before they become G7/G8 blockers.**
 
 ### What G6 v2 Is NOT
 
-- G6-ARCH does **not** require full MLIR integration (that's Stage 2-3)
-- G6-ARCH does **not** require dynamic shape JIT compilation (that's G7-G8)
+- G6-ARCH does **not** require full MLIR integration (implementation is Stage 2-3; G6 establishes framework + BL1 verification pathway)
+- G6-ARCH does **not** require dynamic shape JIT compilation or runtime dispatch, but **must** complete a feasibility assessment of Arke Lang and Arke IR's dynamic shape support (where clause design + symbolic dim IR representation + shape constraint propagation), producing an evaluation document
 - G6-ARCH does **not** raise performance/correctness bars (those are inherited unchanged)
 - G6-ARCH is **not** a full rewrite — it's surgical refactoring with full test coverage as the safety net
 
@@ -94,7 +94,7 @@ AND ALL:
         (G6-LI.1~LI.6 retained; G6-LI.7 and G6-LI.8 are new additions)
 
   ── Architecture Completeness (new in v2) ────────────────────────────────────
-  [5] Architecture: G6-ARCH.1~ARCH.7 and ARCH.10 pass (ARCH.8, ARCH.9 are MVP-scoped)
+  [5] Architecture: G6-ARCH.1~ARCH.7, ARCH.10, ARCH.11, ARCH.12 pass (ARCH.8, ARCH.9 are MVP-scoped)
         See §4 for full definitions and MVP scope rationale
 ```
 
@@ -106,7 +106,7 @@ AND ALL:
 | [2] | Perf/Correctness | L1 BL5 performance | weighted_score ≥ 0.83 | Inherited ✅* |
 | [3] | Perf/Correctness | L2 BL5 fusion | ≥3/4 combinations | Inherited ✅* |
 | [4] | Lang & IR | G6-LI.1~LI.8 | All pass | Partially ✅, new items ⬜ |
-| [5] | Architecture | G6-ARCH.1~ARCH.7, ARCH.10 | All pass | ⬜ New |
+| [5] | Architecture | G6-ARCH.1~ARCH.7, ARCH.10, ARCH.11, ARCH.12 | All pass | ⬜ New |
 
 > *✅ Inherited: passed under original G6 commit `fd2cbe0`. Must not regress under v2 implementation.
 
@@ -498,31 +498,36 @@ G7's core goal is **Autonomous Engineering**: LLM Agent generates strategies wit
 
 ### 6.3 Dynamic Shape: What G6 Must Establish for G7
 
-Dynamic shape is a **G7 prerequisite** but G6 does the foundation work:
+Dynamic shape is a **G7 prerequisite**. G6's primary deliverable is a **feasibility assessment** (ARCH.12), not implementation.
 
 ```
-G6 (foundation layer):             G7 (execution layer):
-─────────────────────              ─────────────────────
-.ak where clause parse        →    LLM generates where clause for real ops
-SemanticIR symbolic_dims      →    Shape analysis pass runs on LLM-generated IR
-Shape constraint representation→    Constraint-driven strategy selection
+G6 (assessment + foundation):        G7 (execution layer):
+──────────────────────────           ─────────────────────
+ARCH.12: Feasibility assessment  →    Design validated, ready to implement
+  - where clause design              LLM generates where clause for real ops
+  - symbolic_dims IR representation   Shape analysis pass on LLM-generated IR
+  - shape constraint propagation      Constraint-driven strategy selection
+  - Triton/MLIR integration points    Backend codegen for symbolic shapes
+  - technical risk assessment         Risk-informed implementation plan
 
-G6 does NOT need:                  G7 adds:
-─────────────────────              ─────────────────────
-JIT compilation                →    Runtime bucket selection
-Shape-parametric codegen       →    Triton @triton.jit + tl.constexpr
-Runtime dispatch               →    KernelCache by shape bucket
+ARCH.8 MVP (if ARCH.12 passes):  →    G7 extends:
+  .ak where clause parse              Runtime bucket selection
+  SemanticIR symbolic_dims             Triton @triton.jit + tl.constexpr
+  IR round-trip preservation           KernelCache by shape bucket
 ```
 
-**G6 minimum for dynamic shape (G6-LI.7 + G6-ARCH.8 MVP):**
-1. `where` clause parses without error
-2. SemanticIR node has `symbolic_dims: {"M": {"dynamic": true, "range": [1, 4096]}}` or equivalent
-3. Shape inference pass propagates symbolic dims through matmul/attention compute graphs
-4. Round-trip: `.ak` → SemanticIR → JSON → SemanticIR preserves symbolic dims
+**G6 minimum for dynamic shape:**
+1. **ARCH.12 (required):** Feasibility assessment document covering all 5 areas
+2. **ARCH.8 MVP (if ARCH.12 assessment is positive):**
+   - `where` clause parses without error
+   - SemanticIR node has `symbolic_dims: {"M": {"dynamic": true, "range": [1, 4096]}}` or equivalent
+   - Shape inference pass propagates symbolic dims through matmul/attention compute graphs
+   - Round-trip: `.ak` → SemanticIR → JSON → SemanticIR preserves symbolic dims
 
 **What G6 does NOT need for dynamic shape:**
 - Triton codegen for symbolic shapes (that's G7)
 - Runtime JIT compilation (that's G7)
+- Runtime dispatch (that's G7)
 - LLM agent integration (that's G7)
 
 ---
@@ -578,9 +583,10 @@ Phase D ⬜  Spec documents + validation + non-regression        (NEW in v2)
 
 | Task | Description | Estimate (LLM Agent) | Priority |
 |:-----|:------------|:---------------------|:--------|
+| D0 | Dynamic Shape feasibility assessment (`docs/design/dynamic-shape-feasibility.md`) — ARCH.12 | 1d | P1 |
 | D1 | Write `docs/spec/arke-lang-spec-v2.md` | 1d | P1 |
 | D2 | Write `docs/spec/arke-ir-spec-v2.md` (Layer 4 upgraded, Layer 3/2/1 interfaces) | 1.5d | P1 |
-| D3 | Implement `where` clause in Lark grammar | 0.5d | P2 |
+| D3 | Implement `where` clause in Lark grammar (depends on D0 assessment) | 0.5d | P2 |
 | D4 | Add `symbolic_dims` field to SemanticIR + converter | 0.5d | P2 |
 | D5 | Add shape propagation for symbolic dims in ShapeInferencePass | 1d | P2 |
 | D6 | Write `tests/test_symbolic_shape.py` (G6-LI.7 verification) | 0.5d | P2 |
@@ -588,7 +594,7 @@ Phase D ⬜  Spec documents + validation + non-regression        (NEW in v2)
 | D8 | Full non-regression run, fix any regressions | 1d | P0 |
 | D9 | Update Layer 3/2/1 spec stubs (ARCH.9 MVP) | 1d | P2 |
 
-**Phase D total estimate:** ~7-8 days (LLM Agent, some parallelism possible)
+**Phase D total estimate:** ~8-9 days (LLM Agent, some parallelism possible)
 
 ### 7.4 Key Milestones
 
@@ -606,11 +612,12 @@ Phase D ⬜  Spec documents + validation + non-regression        (NEW in v2)
 
 ```
 Day 1-3:   [C1: OpRegistry + SemanticInterpreter] ║ [C3: Backend Abstraction]
-Day 3-5:   [C2: Pass Infra + SSA Validator]       ║ [D1: Lang Spec v2.0]
-Day 5-7:   [C2.5: Integrate passes into pipeline] ║ [D2: IR Spec v2.0]
-Day 7-9:   [D8: Non-regression + fixes]           ║ [D9: Layer spec stubs]
-Day 9-11:  [D3-D6: where clause MVP]              ║ [D7: backend-agnostic check]
-Day 11-15: [Final verification + gate check]
+Day 3-5:   [C2: Pass Infra + SSA Validator]       ║ [D0: Dynamic Shape feasibility]
+Day 5-7:   [C2.5: Integrate passes into pipeline] ║ [D1: Lang Spec v2.0]
+Day 7-9:   [D8: Non-regression + fixes]           ║ [D2: IR Spec v2.0]
+Day 9-11:  [D3-D6: where clause MVP (if D0 OK)]   ║ [D7: backend-agnostic check]
+Day 11-13: [D9: Layer spec stubs]                  ║ [Final verification]
+Day 13-15: [Gate check]
 ```
 
 ---
@@ -692,6 +699,8 @@ The original G6 already PASSED under commit `fd2cbe0`. The risk introduced by v2
 | ARCH.8 (MVP) where clause | G7 needs dynamic shape; G6 must have IR layer ready | LLM cannot write dynamic-shape .ak if language doesn't support it |
 | ARCH.9 (MVP) Layer specs | Stage 2 planning (MLIR, LLVM) requires interface contracts | Without layer specs, Stage 2 is blank-page architecture |
 | ARCH.10 Non-regression | Refactoring without regression safety net is unacceptable | Obvious requirement; explicitly stated for gate verification |
+| ARCH.11 MLIR framework | MLIR integration starts at Stage 1; BL1 pathway validates architecture | Deferring MLIR entirely to Stage 2-3 risks late-discovery architecture issues |
+| ARCH.12 Dynamic Shape feasibility | G7 requires dynamic shape; G6 must assess if Arke Lang/IR design supports it | Starting G7 implementation without feasibility assessment risks fundamental redesign |
 
 ### 9.4 G6 Status Before vs After v2
 
@@ -706,7 +715,8 @@ The original G6 already PASSED under commit `fd2cbe0`. The risk introduced by v2
 | Pass Infrastructure | ❌ Not present | ⬜ Pass protocol + pipeline |
 | SSA Validator | ❌ Not present | ⬜ Validates all IR round-trips |
 | Backend Abstraction | ❌ Hardcoded TritonBackend | ⬜ ArkeBackend protocol |
-| Dynamic Shape (.ak) | ❌ Static only | ⬜ where clause MVP |
+| Dynamic Shape (.ak) | ❌ Static only | ⬜ Feasibility assessment (ARCH.12) + where clause MVP (ARCH.8) |
+| MLIR framework | ❌ No MLIR path | ⬜ MLIREmitter skeleton + BL1 verify (ARCH.11) |
 | Lang Spec v2.0 | ❌ v1.0 (static shapes only) | ⬜ v2.0 (symbolic dims, backend-agnostic) |
 | IR Spec v2.0 | ❌ v1.0 (single-layer SemanticIR+StrategyIR) | ⬜ v2.0 (Layer 4/3/2/1 defined) |
 
