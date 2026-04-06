@@ -39,7 +39,7 @@ checkpoint() / rollback() → Explore and backtrack safely
 
 - `docs/architecture/e2e-flow.md` — Full optimization flow (Phase 1→4)
 - `docs/benchmark/benchmark-design.md` — BL/OT/ST/L benchmark framework
-- `docs/phase1/gate-design.md` — Gate exit criteria
+- `docs/roadmap/plan.md` — Development plan (phases, stages, tasks)
 - `docs/spec/arke-lang-spec-v1.md` — `.ak` language specification
 - `docs/spec/arke-ir-spec-v1.md` — Semantic IR + Strategy IR specification
 

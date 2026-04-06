@@ -5,7 +5,7 @@
 > **Gate:** G6 — Arke Lang & IR Completeness
 > **Author:** Arke Architecture Team
 > **Created:** 2026-04-06
-> **Status:** Active — supersedes G6 section in `phase1-gate-design.md`
+> **Status:** Active — G6 exit criteria are also summarized in [plan.md](../roadmap/plan.md)
 >
 > **Key change:** G6 now validates not just "can it run" but "is the foundation solid".
 > Performance/correctness bars are unchanged; architecture completeness is added as a new mandatory gate.
@@ -532,95 +532,8 @@ ARCH.8 MVP (if ARCH.12 passes):  →    G7 extends:
 
 ---
 
-## 7. Implementation Roadmap
 
-### 7.1 Phase Structure
-
-G6 v2 work is organized into 4 phases. Phases A and B (from original G6) are already complete. Phases C and D are the new architecture work.
-
-```
-Phase A ✅  .ak files for all 45 ops + grammar fixes           (DONE: commit fd2cbe0)
-Phase B ✅  OT3/OT4 Triton templates + E2E correctness         (DONE: 46/46 E2E correct)
-Phase C ⬜  Architecture refactoring                            (NEW in v2)
-Phase D ⬜  Spec documents + validation + non-regression        (NEW in v2)
-```
-
-### 7.2 Phase C — Architecture Refactoring
-
-**Goal:** Implement the infrastructure that makes G6-ARCH.3~ARCH.7 pass.
-
-**Can run in parallel:**
-- Track C1: OpRegistry + SemanticInterpreter (replaces 6-file pattern)
-- Track C2: Pass Infrastructure + SSA Validator (new pipeline layer)
-- Track C3: Backend Abstraction (wraps TritonBackend behind protocol)
-
-**Dependency:** C1 must complete before C2 can integrate the interpreter into passes. C3 is independent.
-
-| Task | Track | Description | Estimate (LLM Agent) | Priority |
-|:-----|:------|:------------|:---------------------|:--------|
-| C1.1 | C1 | Design OpSchema dataclass + OpRegistry class | 0.5d | P0 |
-| C1.2 | C1 | Migrate all 45 ops from catalog.py to OpRegistry | 1d | P0 |
-| C1.3 | C1 | Remove op-specific if/elif from shape_inference.py | 0.5d | P0 |
-| C1.4 | C1 | Implement SemanticInterpreter (PyTorch eager executor) | 1d | P0 |
-| C1.5 | C1 | Migrate numerical_check.py to use SemanticInterpreter | 0.5d | P0 |
-| C1.6 | C1 | Update kernel_cache.py to use parser instead of _build_ir() | 0.5d | P1 |
-| C1.7 | C1 | Update triton_template_engine.py to use registry lookup | 0.5d | P0 |
-| C2.1 | C2 | Define ArkePass protocol + PassContext + PassPipeline | 0.5d | P1 |
-| C2.2 | C2 | Implement ShapeInferencePass (wraps shape_inference.py) | 0.5d | P1 |
-| C2.3 | C2 | Implement SSAValidator + SSAValidationPass | 1d | P1 |
-| C2.4 | C2 | Implement RationalePreservationPass | 0.5d | P1 |
-| C2.5 | C2 | Integrate PassPipeline into ArkePipeline.run() | 0.5d | P1 |
-| C3.1 | C3 | Define ArkeBackend protocol + BackendArtifact hierarchy | 0.5d | P1 |
-| C3.2 | C3 | Wrap TritonBackend to implement ArkeBackend | 0.5d | P1 |
-| C3.3 | C3 | Update ArkePipeline to use backend via protocol | 0.5d | P1 |
-| C3.4 | C3 | Implement MockBackend for testing | 0.5d | P1 |
-
-**Phase C total estimate:** ~9-10 days (LLM Agent, parallelized to ~5-6 calendar days)
-
-### 7.3 Phase D — Spec Documents + where Clause + Validation
-
-**Goal:** Complete G6-ARCH.1, ARCH.2, ARCH.8 (MVP), ARCH.9 (MVP), G6-LI.7, G6-LI.8, and full non-regression.
-
-| Task | Description | Estimate (LLM Agent) | Priority |
-|:-----|:------------|:---------------------|:--------|
-| D0 | Dynamic Shape feasibility assessment (`docs/phase1/dynamic-shape-feasibility.md`) — ARCH.12 | 1d | P1 |
-| D1 | Write `docs/spec/arke-lang-spec-v2.md` | 1d | P1 |
-| D2 | Write `docs/spec/arke-ir-spec-v2.md` (Layer 4 upgraded, Layer 3/2/1 interfaces) | 1.5d | P1 |
-| D3 | Implement `where` clause in Lark grammar (depends on D0 assessment) | 0.5d | P2 |
-| D4 | Add `symbolic_dims` field to SemanticIR + converter | 0.5d | P2 |
-| D5 | Add shape propagation for symbolic dims in ShapeInferencePass | 1d | P2 |
-| D6 | Write `tests/test_symbolic_shape.py` (G6-LI.7 verification) | 0.5d | P2 |
-| D7 | Write `scripts/check_backend_agnostic.py` (G6-LI.8 verification) | 0.5d | P1 |
-| D8 | Full non-regression run, fix any regressions | 1d | P0 |
-| D9 | Update Layer 3/2/1 spec stubs (ARCH.9 MVP) | 1d | P2 |
-
-**Phase D total estimate:** ~8-9 days (LLM Agent, some parallelism possible)
-
-### 7.4 Key Milestones
-
-| Milestone | Completion Condition | Target (LLM Agent days) |
-|:----------|:--------------------|:-----------------------|
-| **M1: OpRegistry live** | C1.1-C1.5 done; `verify_op_registry.py` passes | Day 3 |
-| **M2: Pass Pipeline live** | C2.1-C2.5 done; `test_pass_infra.py` passes | Day 5 |
-| **M3: Backend Protocol live** | C3.1-C3.4 done; `test_backend_protocol.py` passes | Day 5 |
-| **M4: Non-regression confirmed** | 422+ tests pass after Phase C | Day 7 |
-| **M5: Spec documents done** | D1+D2 complete; peer review done | Day 9 |
-| **M6: where clause MVP** | D3-D6 done; `test_symbolic_shape.py` passes | Day 11 |
-| **M7: G6 v2 PASS** | All criteria verified; gate check passes | Day 13-15 |
-
-### 7.5 Parallelism Strategy
-
-```
-Day 1-3:   [C1: OpRegistry + SemanticInterpreter] ║ [C3: Backend Abstraction]
-Day 3-5:   [C2: Pass Infra + SSA Validator]       ║ [D0: Dynamic Shape feasibility]
-Day 5-7:   [C2.5: Integrate passes into pipeline] ║ [D1: Lang Spec v2.0]
-Day 7-9:   [D8: Non-regression + fixes]           ║ [D2: IR Spec v2.0]
-Day 9-11:  [D3-D6: where clause MVP (if D0 OK)]   ║ [D7: backend-agnostic check]
-Day 11-13: [D9: Layer spec stubs]                  ║ [Final verification]
-Day 13-15: [Gate check]
-```
-
----
+> **Development tasks and implementation roadmap** → [plan.md](../roadmap/plan.md)
 
 ## 8. Risk Assessment
 
@@ -723,5 +636,5 @@ The original G6 already PASSED under commit `fd2cbe0`. The risk introduced by v2
 ---
 
 *Document end. For implementation task board, see `docs/phase1/g6-task-board.md` (to be created).*
-*For original G6 section, see `docs/phase1/gate-design.md` §5.*
+*Original G6 section archived in `docs/deprecated/phase1-gate-design.md` §5.*
 *For architecture discussion reference, see `docs/phase1/reference/`.*

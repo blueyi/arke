@@ -1007,7 +1007,7 @@ Phase 1 共 **9 个 Gate（G0-G8）**，每个 Gate 的出口条件由 **BL×L �
 | G7 | BL5×L1+L2 + BL6×L3 | **Autonomous Engineering**（自主生成 + LLaMA-2/DS-V2） | ⬜ |
 | G8 | BL6×L3 (4模型) | **Phase 1 最终验收** | ⬜ |
 
-→ 详见 [benchmark-design.md](benchmark-design.md) | [phase1-gate-design.md](phase1-gate-design.md)
+→ 详见 [benchmark-design.md](benchmark-design.md) | [plan.md](../../roadmap/plan.md)
 
 
 ## 八、数据流总结

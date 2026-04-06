@@ -184,8 +184,8 @@ achieves maximum hardware expression completeness and performance headroom.
 
 | Document                                                                       | Description                                                                 |
 | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| [execution-plan.md](docs/roadmap/execution-plan.md)                             | Execution history + long-term roadmap                                       |
-| [gate-design.md](docs/phase1/gate-design.md)                     | Phase 1 Gate design — G0-G8 with BL metrics                                 |
+| [plan.md](docs/roadmap/plan.md)                                                  | Development plan — single source of truth for all phases/stages/tasks                                       |
+| [g6-exit-criteria-v2.md](docs/phase1/g6-exit-criteria-v2.md)                     | G6 v2 exit criteria — architecture completeness conditions                                 |
 | [benchmark-design.md](docs/benchmark/benchmark-design.md)                         | Complete benchmark reference — baselines, shapes, scoring, operator sources |
 | [e2e-flow.md](docs/architecture/e2e-flow.md)                                         | End-to-end flow — user input to GPU execution walkthrough                   |
 | [design-review.md](docs/phase1/design-review.md)                               | Design review — assumption validation, risk matrix                          |
@@ -212,8 +212,7 @@ achieves maximum hardware expression completeness and performance headroom.
 | G7 | ⬜ | **Autonomous Engineering** — self-directed kernel gen + LLaMA-2/DS-V2 E2E |
 | G8 | ⬜ | **Phase 1 Final** — 4 model E2E + Arke vs LLM-direct |
 
-→ Gate details: [gate-design.md](docs/phase1/gate-design.md)
-→ Execution history: [execution-plan.md](docs/roadmap/execution-plan.md)
+→ Development plan: [plan.md](docs/roadmap/plan.md)
 
 ---
 

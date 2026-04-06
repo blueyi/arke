@@ -481,74 +481,8 @@ optimization fails or is unavailable.
 
 ---
 
-## 6. Migration Roadmap from cc-inspired-update.md
 
-Seven engineering migrations identified from Claude Code's validated patterns,
-prioritized by Gate relevance:
-
-| # | Migration | Priority | Current Status | Gate | Notes |
-|---|---|---|---|---|---|
-| 1 | AsyncGenerator optimization loop | **P0** | Needs refactor (sync loop today) | G7 | Unblocks streaming CLI/API/Jupyter |
-| 2 | Declarative `ToolMeta` + `ArkeTool` ABC | **P0** | Partial (`TOOL_METADATA` dict exists) | G6 | Enables concurrent partitioning |
-| 3 | Segmented prompt cache | P1 | Not implemented | G7 | ~80% token cost reduction |
-| 4 | Context compact (predictive + reactive) | P1 | Not implemented | G7 | Required for 50-step sessions |
-| 5 | Large result delta compression | P2 | Partial (`list_legal_actions` has limit) | G7 | Token efficiency |
-| 6 | Provider fallback + retry chain | P1 | Partial (try/except with 3 retries) | G7 | Robustness for CI |
-| 7 | Cross-compact ground truth state | P2 | Not implemented | G7 | Correctness after compact |
-
-**P0 items (G6 gate)**:
-- Migration 2 (`ToolMeta`) is needed for G6 because G6 requires 45 operators across
-  all shape tiers — concurrent execution of read-only tools significantly reduces
-  optimization time.
-
-**P0/P1 items (G7 gate)**:
-- Migrations 1, 3, 4, 6, 7 together enable G7 "Autonomous Engineering" — long-running,
-  fully autonomous optimization sessions that must be token-efficient, resumable after
-  context limits, and robust to provider failures.
-
----
-
-## 7. Implementation Roadmap
-
-Ordered by Gate dependency:
-
-### Phase 1 — G6 (current target)
-1. **Declarative `ToolMeta` + `ArkeTool` ABC** (Migration 2)
-   - Introduce `arke/agent/tools/base.py` with `ToolMeta` dataclass and `ArkeTool` ABC
-   - Migrate existing `TOOL_METADATA` dict to per-tool class declarations
-   - Implement `partition_tool_calls()` in `arke/agent/tools/orchestrator.py`
-2. **CLI agent-readable output improvements**
-   - Structured `--json-log` output flag
-   - Consistent exit codes (0/1/2/3)
-   - `hint` field on all error responses
-
-### Phase 2 — G7 preparation
-3. **AsyncGenerator loop** (Migration 1)
-   - Refactor `LLMRunner.optimize()` into `async def optimization_stream() -> AsyncGenerator[OptimizationEvent, None]`
-   - Typed `OptimizationEvent` dataclass with `type` + `data`
-   - CLI, REST API, and Python API all consume the same generator
-4. **Segmented prompt cache** (Migration 3)
-   - Split `build_system_prompt()` into 4 segments with `cache_control`
-   - Benchmark token savings on a 50-step matmul session
-5. **Provider fallback chain** (Migration 6)
-   - Wrap `_try_fallback()` into `ResilientRunner` with full fallback chain
-   - Emit `provider_fallback` events into the optimization stream
-6. **Context compact** (Migration 4)
-   - `compact.py`: `compact_optimization_context()` + `should_compact()` + `reactive_compact()`
-   - Integrate into the AsyncGenerator loop at step boundaries
-7. **Cross-compact state** (Migration 7)
-   - `OptimizationState` class as ground truth, separate from messages
-   - `to_context_for_compact()` injects authoritative state into compact prompt
-8. **Large result delta compression** (Migration 5)
-   - `result_management.py`: `manage_tool_result()` with per-tool compression strategies
-   - `observe` delta mode for state inspection
-
-### Phase 3 — G7/G8 and beyond
-- MCP server wrapper exposing Arke's 10-tool interface
-- `torch.compile` Inductor backend integration (zero-overhead kernel dispatch)
-- Learning pipeline: `trajectory.jsonl` → fine-tuning data for optimization LLMs
-
----
+> **Implementation roadmap** → [plan.md](../../roadmap/plan.md)
 
 ## Appendix A: Current `arke/agent/` Code Structure
 
