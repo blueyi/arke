@@ -212,7 +212,7 @@ def run_g1() -> GateSummary:
     )
 
     # G1.4: .ak parse → IR
-    ak_files = glob.glob("examples/*.ak")
+    ak_files = glob.glob("examples/operators/*.ak")
     ak_pass = 0
     for f in ak_files:
         try:

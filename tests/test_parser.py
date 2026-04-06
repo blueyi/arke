@@ -285,33 +285,26 @@ class TestParseFiles:
     """Test parsing .ak example files."""
 
     def test_01_matmul(self):
-        prog = parse_file("examples/01_matmul.ak")
+        prog = parse_file("examples/operators/01_matmul.ak")
         ir = ast_to_ir(prog.kernels[0])
         assert ir.kernel_id == "matmul"
         assert len(ir.params) == 2
         assert ir.nodes[0].op == "matmul"
 
-    def test_02_matmul_relu(self):
-        prog = parse_file("examples/02_matmul_relu_fused.ak")
+    def test_02_softmax(self):
+        prog = parse_file("examples/operators/02_softmax.ak")
         ir = ast_to_ir(prog.kernels[0])
-        assert ir.kernel_id == "fused_matmul_relu"
-        assert [n.op for n in ir.nodes] == ["matmul", "relu"]
-
-    def test_03_softmax(self):
-        prog = parse_file("examples/03_softmax.ak")
-        ir = ast_to_ir(prog.kernels[0])
+        assert ir.kernel_id == "softmax"
         assert ir.nodes[0].op == "softmax"
 
-    def test_04_matmul_gelu(self):
-        prog = parse_file("examples/04_matmul_gelu.ak")
+    def test_05_matmul_gelu(self):
+        prog = parse_file("examples/operators/05_matmul_gelu.ak")
         ir = ast_to_ir(prog.kernels[0])
         assert [n.op for n in ir.nodes] == ["matmul", "gelu"]
 
-    def test_04_attention_keywords(self):
-        """Verify 04_attention.ak uses 'strategy' keyword (not 'schedule')."""
+    def test_15_flash_attention_keywords(self):
+        """Verify flash_attention.ak uses 'strategy' keyword (not 'schedule')."""
         import pathlib
-        src = pathlib.Path("examples/04_attention.ak").read_text()
-        # Must use 'strategy' keyword per arke-language-spec
-        assert "\nstrategy " in src, "04_attention.ak must use 'strategy' keyword, not 'schedule'"
-        assert "\nschedule " not in src, "04_attention.ak still uses deprecated 'schedule' keyword"
-        # Note: full parse test deferred until grammar supports array literals in kernel args
+        src = pathlib.Path("examples/operators/15_flash_attention.ak").read_text()
+        assert "\nstrategy " in src, "flash_attention.ak must use 'strategy' keyword, not 'schedule'"
+        assert "\nschedule " not in src, "flash_attention.ak still uses deprecated 'schedule' keyword"

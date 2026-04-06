@@ -317,7 +317,7 @@ pytest tests/ -q  # Run tests
 export ANTHROPIC_API_KEY=your-key-here
 
 # Run matmul optimization
-python examples/agent_matmul.py
+python examples/agents/agent_matmul.py
 ```
 
 ---

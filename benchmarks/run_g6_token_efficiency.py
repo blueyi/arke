@@ -102,7 +102,7 @@ def analyze_ak_file(ak_path: str) -> dict:
 
 
 def main():
-    ak_files = sorted(glob.glob("docs/examples/operators/*.ak"))
+    ak_files = sorted(glob.glob("examples/operators/*.ak"))
     print(f"G6.4 Token Efficiency Benchmark — {len(ak_files)} operators")
     print("=" * 72)
 

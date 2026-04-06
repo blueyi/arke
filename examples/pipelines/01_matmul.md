@@ -236,7 +236,7 @@ from arke.pipeline import ArkePipeline
 # 有 strategy 块：使用用户提供的
 # 无 strategy 块：自动生成
 result = ArkePipeline.from_ak_file(
-    "docs/examples/operators/01_matmul.ak",
+    "examples/operators/01_matmul.ak",
     target_hw="nvidia_ampere",
 )
 print(result.strategy_ir["_source"])  # → "auto-generated (no strategy block in 01_matmul.ak)"
@@ -283,7 +283,7 @@ source ~/.venvs/arke/bin/activate
 # Parse .ak → AST
 python -c "
 from arke.parser.parser import parse_file
-prog = parse_file('docs/examples/operators/01_matmul.ak')
+prog = parse_file('examples/operators/01_matmul.ak')
 print(f'Kernels: {len(prog.kernels)}, Strategies: {len(prog.strategies)}')
 "
 

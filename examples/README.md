@@ -26,7 +26,7 @@ Arke Language (`.ak`) source files for all 46 operators across 5 categories:
 
 ## ir/
 
-> **TODO:** Arke IR examples (`.akir` format) will be generated after G6 v2 implementation completes the multi-layer IR architecture. See `docs/spec/arke-ir-spec-design.md` for the IR design.
+> **TODO:** Arke IR examples (`.akir` format) will be generated after G6 v2 implementation completes the multi-layer IR architecture. See `../docs/spec/arke-ir-spec-design.md` for the IR design.
 
 ## pipelines/
 

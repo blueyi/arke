@@ -198,8 +198,10 @@ arkec/                 编译器 CLI 入口（arkec = arke compiler）
 └── ...
 
 examples/              示例
-├── *.ak               .ak 源文件
-└── *.py               Python API 示例
+├── operators/         .ak 算子定义
+├── ir/                .akir IR 示例（G6 v2 后生成）
+├── pipelines/         端到端 walkthrough
+└── agents/            Python Agent 示例
 
 benchmarks/            评估框架
 tests/                 测试

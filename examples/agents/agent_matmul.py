@@ -69,7 +69,7 @@ def main():
             print(f"  [{entry['step']}] {entry['tool']}({json.dumps(entry['params'], ensure_ascii=False)[:80]})")
 
     # Save full result
-    output_path = "examples/agent_matmul_result.json"
+    output_path = "examples/agents/agent_matmul_result.json"
     with open(output_path, "w") as f:
         json.dump({
             "model": result.model_used,
