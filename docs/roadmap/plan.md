@@ -456,7 +456,7 @@ AND ALL:
 
 ---
 
-## Phase 2: Arke → Triton → Ascend NPU (SIMD Validation)
+## Phase 2: Arke → Triton/MLIR → Ascend NPU (SIMD Validation)
 
 **Goal:** Verify Arke Lang/IR works on SIMD architecture (Ascend NPU) via Ascend Triton backend. Arke-generated Ascend Triton kernels must outperform FlagGems on Ascend. Simultaneously complete Arke Lang/IR to cover Category B-E operators.
 

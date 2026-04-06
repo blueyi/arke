@@ -185,7 +185,7 @@ achieves maximum hardware expression completeness and performance headroom.
 | Document                                                                       | Description                                                                 |
 | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
 | [plan.md](docs/roadmap/plan.md)                                                  | Development plan — single source of truth for all phases/stages/tasks                                       |
-| [g6-exit-criteria-v2.md](docs/phase1/g6-exit-criteria-v2.md)                     | G6 v2 exit criteria — architecture completeness conditions                                 |
+| [completion-summary.md](docs/phase1/completion-summary.md)                        | Phase 1 G0-G5 completion summary                                                          |
 | [benchmark-design.md](docs/benchmark/benchmark-design.md)                         | Complete benchmark reference — baselines, shapes, scoring, operator sources |
 | [e2e-flow.md](docs/architecture/e2e-flow.md)                                         | End-to-end flow — user input to GPU execution walkthrough                   |
 | [design-review.md](docs/phase1/design-review.md)                               | Design review — assumption validation, risk matrix                          |
@@ -216,7 +216,7 @@ achieves maximum hardware expression completeness and performance headroom.
 
 ---
 
-### Phase 2: Arke → Ascend Triton — SIMD Architecture Validation
+### Phase 2: Arke → Ascend Triton/AscendNPU IR — SIMD Architecture Validation
 
 **Goal:** Verify Arke Lang/IR works on SIMD architecture (Ascend NPU) via Ascend Triton backend.
 Arke-generated Ascend kernels must **outperform FlagGems on Ascend**.
