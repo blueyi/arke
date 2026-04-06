@@ -186,9 +186,9 @@ achieves maximum hardware expression completeness and performance headroom.
 | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
 | [execution-plan.md](docs/design/execution-plan.md)                             | Execution history + long-term roadmap                                       |
 | [stage1-gate-design.md](docs/design/stage1/stage1-gate-design.md)                     | Stage 1 Gate design — G0-G8 with BL metrics                                 |
-| [benchmark-design.md](docs/design/stage1/benchmark-design.md)                         | Complete benchmark reference — baselines, shapes, scoring, operator sources |
-| [e2e-flow.md](docs/design/stage1/e2e-flow.md)                                         | End-to-end flow — user input to GPU execution walkthrough                   |
-| [design-review.md](docs/design/stage1/design-review.md)                               | Design review — assumption validation, risk matrix                          |
+| [benchmark-design.md](docs/design/benchmark-design.md)                         | Complete benchmark reference — baselines, shapes, scoring, operator sources |
+| [e2e-flow.md](docs/design/e2e-flow.md)                                         | End-to-end flow — user input to GPU execution walkthrough                   |
+| [design-review.md](docs/design/design-review.md)                               | Design review — assumption validation, risk matrix                          |
 | [naming-system.md](docs/design/naming-system.md)                               | Naming conventions — global terminology rules                               |
 | [benchmarks/results/stage1/EVALUATION_REPORT.md](benchmarks/results/stage1/EVALUATION_REPORT.md) | Stage 1 Evaluation Report — all gates, L1/L2/L3 data, conclusions |
 

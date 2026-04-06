@@ -11,7 +11,7 @@ Entry points:
     arke bench history --op matmul          # Performance trend (stub)
     python -m benchmarks                    # Equivalent to arke bench
 
-See docs/design/stage1/benchmark/benchmark-protocol.md for full specification.
+See docs/design/benchmark/benchmark-protocol.md for full specification.
 """
 
 from __future__ import annotations
