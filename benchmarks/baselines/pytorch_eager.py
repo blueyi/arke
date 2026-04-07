@@ -32,6 +32,10 @@ _SUPPORTED_OPS = frozenset({
     "swiglu", "geglu", "cross_entropy", "fused_linear_cross_entropy",
     # OT4 Attention
     "flash_attention", "grouped_query_attention", "cross_attention",
+    # OT3 Quantization (new)
+    "quantize_per_token", "dequantize_per_channel",
+    # OT2 Special (new)
+    "rope", "grouped_matmul",
 })
 
 
@@ -313,6 +317,58 @@ class PyTorchEagerRunner(BaselineRunner):
             V = torch.randn(batch_heads, kv_len, head_dim,
                             device="cuda", dtype=dtype)
             return lambda: F.scaled_dot_product_attention(Q, K_, V)
+
+        # ── OT3 Quantization ────────────────────────────────────────
+        elif op == "quantize_per_token":
+            # Quantize: X (M, N) -> (M, N) int8 + scale (M,)
+            X = torch.randn(M, N, device="cuda", dtype=dtype)
+            def quantize_per_token():
+                # Per-token quantization: scale = max(abs(X)) / 127
+                scales = torch.amax(torch.abs(X), dim=1, keepdim=True)
+                scales = torch.clamp(scales, min=1e-8)
+                X_q = torch.round(X / scales * 127).to(torch.int8)
+                return X_q, scales.squeeze(1)
+            return quantize_per_token
+
+        elif op == "dequantize_per_channel":
+            # Dequantize: X_q (M, N) int8 + scale (N,) -> (M, N) fp
+            X_q = torch.randint(-128, 127, (M, N), device="cuda", dtype=torch.int8)
+            scale = torch.randn(N, device="cuda", dtype=dtype).abs() + 0.01
+            def dequantize_per_channel():
+                return X_q.to(dtype) * scale.unsqueeze(0)
+            return dequantize_per_channel
+
+        elif op == "rope":
+            # RoPE: apply rotary position embeddings
+            batch_size = M
+            seq_len = N
+            head_dim = max(K, 64)
+            X = torch.randn(batch_size, seq_len, head_dim, device="cuda", dtype=dtype)
+            def rope():
+                inv_freq = 1.0 / (10000 ** (torch.arange(0, head_dim, 2, device="cuda", dtype=dtype) / head_dim))
+                t = torch.arange(seq_len, device="cuda", dtype=dtype)
+                freqs = torch.einsum("i,j->ij", t, inv_freq)
+                emb = torch.cat([freqs, freqs], dim=-1)
+                cos_emb = torch.cos(emb).unsqueeze(0)
+                sin_emb = torch.sin(emb).unsqueeze(0)
+                x1 = X[..., :head_dim // 2]
+                x2 = X[..., head_dim // 2:]
+                rotated = torch.cat([-x2, x1], dim=-1)
+                return X * cos_emb + rotated * sin_emb
+            return rope
+
+        elif op == "grouped_matmul":
+            # Grouped matmul: multiple independent matmuls
+            # Simulate as: for each group, do a small matmul
+            num_groups = max(M // 4, 1)
+            group_size = M // num_groups
+            inner_dim = N
+            out_dim = K
+            As = [torch.randn(group_size, inner_dim, device="cuda", dtype=dtype) for _ in range(num_groups)]
+            Bs = [torch.randn(inner_dim, out_dim, device="cuda", dtype=dtype) for _ in range(num_groups)]
+            def grouped_matmul():
+                return torch.cat([A @ B for A, B in zip(As, Bs)], dim=0)
+            return grouped_matmul
 
         # ── Unsupported ─────────────────────────────────────────────
         return None
