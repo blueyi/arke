@@ -18,6 +18,9 @@ from typing import Any
 import torch
 
 from arke.compiler.validator import validate_semantic_ir
+from arke.ir.akir import akir_from_dict, akir_to_dict
+from arke.ir.akir import load_akir as _load_akir
+from arke.ir.akir import save_akir
 from arke.ir.converters import ast_to_semantic, ast_to_strategy
 from arke.ir.ops.interpreter import INTERPRETER
 from arke.ir.semantic import (
@@ -71,6 +74,20 @@ class CompilationResult:
     success: bool = False
     errors: list[str] = field(default_factory=list)
     kernel_name: str = ""
+
+    def save_akir(self, path: str, indent: int = 2) -> None:
+        """Save the compiled IR to a .akir JSON file.
+
+        Args:
+            path: Output file path.
+            indent: JSON indentation (default 2).
+
+        Raises:
+            ValueError: If compilation was not successful or semantic_ir is None.
+        """
+        if self.semantic_ir is None:
+            raise ValueError("Cannot save .akir: semantic_ir is None")
+        save_akir(self.semantic_ir, self.strategy_ir, path, indent=indent)
 
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
@@ -160,10 +177,19 @@ class ArkePipeline:
                 result.errors.append(f"StrategyIR conversion error: {e}")
                 # Non-fatal: strategy is optional
 
-        # Validate SemanticIR
-        validation_errors = validate_semantic_ir(result.semantic_ir)
-        result.errors.extend(validation_errors)
+        # Run semantic pass pipeline (SSA validation + shape inference)
+        from arke.compiler.semantic_passes import (
+            semantic_shape_inference_pass,
+            semantic_ssa_validation_pass,
+        )
+        from arke.compiler.semantic_pipeline import SemanticPassPipeline
 
+        sem_pipeline = SemanticPassPipeline("compile")
+        sem_pipeline.add_pass(semantic_ssa_validation_pass)
+        sem_pipeline.add_pass(semantic_shape_inference_pass)
+        pass_result = sem_pipeline.run(result.semantic_ir)
+
+        result.errors.extend(pass_result.errors)
         result.success = len(result.errors) == 0
         return result
 
@@ -247,3 +273,28 @@ class ArkePipeline:
             outputs["output"] = inputs[sir.return_node]
 
         return outputs
+
+    @staticmethod
+    def load_akir(path: str) -> CompilationResult:
+        """Load a .akir file and create a CompilationResult.
+
+        Args:
+            path: Path to the .akir file.
+
+        Returns:
+            CompilationResult with the loaded SemanticIR and StrategyIR.
+        """
+        result = CompilationResult()
+        try:
+            semantic_ir, strategy_ir = _load_akir(path)
+            result.semantic_ir = semantic_ir
+            result.strategy_ir = strategy_ir
+            result.kernel_name = semantic_ir.kernel_id
+
+            # Validate the loaded IR
+            validation_errors = validate_semantic_ir(semantic_ir)
+            result.errors.extend(validation_errors)
+            result.success = len(result.errors) == 0
+        except Exception as e:
+            result.errors.append(f"Failed to load .akir: {e}")
+        return result
