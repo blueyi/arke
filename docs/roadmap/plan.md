@@ -45,7 +45,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S3 | G3 | BL1×L1 (matmul+softmax) | L1 | LLM Agent Closed Loop | ✅ |
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
-| S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | 🟨 6/7 ← CURRENT |
+| S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
 | S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v2 | ⬜ |
 | S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
