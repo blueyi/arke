@@ -109,11 +109,17 @@ def run_g6(tier: int = 2) -> GateSummary:
 
     # ── G6.3: Pass Pipeline 实现并集成 ────────────────────────────────
     try:
-        from arke.compiler.passes import PassPipeline
+        from arke.compiler.semantic_pipeline import SemanticPassPipeline
+        from arke.compiler.semantic_passes import (
+            semantic_shape_inference_pass,
+            semantic_ssa_validation_pass,
+        )
         
-        pipeline = PassPipeline()
-        passes_registered = len(pipeline.passes) if hasattr(pipeline, 'passes') else 0
+        pipeline = SemanticPassPipeline()
+        pipeline.add_pass(semantic_shape_inference_pass)
+        pipeline.add_pass(semantic_ssa_validation_pass)
         
+        passes_registered = len(pipeline.passes)
         g6_3_pass = passes_registered >= 2  # At least ShapeInference + SSAValidation
         g6_3_details = f"{passes_registered} passes registered"
         
