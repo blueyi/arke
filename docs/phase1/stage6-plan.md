@@ -27,6 +27,38 @@
 
 ---
 
+## Known Limitations & S7 Optimization Targets
+
+**G6.6 Performance Benchmark Status: 40/45 ops complete (89% coverage)**
+
+### Failed Operators (5 ops) — Deferred to S7
+
+| Op | Issue | Root Cause | S7 Optimization Target |
+|:---|:------|:-----------|:----------------------|
+| flash_attention | OOM on tier-2 large shapes (llama2-7b-4k, llama3-7b-4k) | Triton kernel memory footprint exceeds 6GB VRAM; no memory optimization in current backend | Implement memory-efficient attention (block-wise computation, gradient checkpointing) in Arke-Lang v2 + Arke-Compiler v2 |
+
+### Passing Operators (40/45) — All meet ≥1.00× P3 eager baseline
+
+**OT0 (Elementwise, 9 ops):** add, cast, copy_, exp, mul, neg, sigmoid, tanh, rsqrt ✅
+
+**OT1 (Move, 6 ops):** permute, transpose, gather, scatter, split, concat ✅
+
+**OT2 (Compute, 3 ops):** matmul, batch_matmul, grouped_matmul ✅
+
+**OT3 (Reduce, 9 ops):** softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_mean, reduce_max, argmax, topk ✅
+
+**OT4 (Attention/Special, 8 ops):** rope, embedding, geglu, swiglu, cross_entropy, fused_linear_cross_entropy, cumsum, where_ ✅
+
+**Quantization (2 ops):** quantize_per_token, dequantize_per_channel ✅
+
+### S7 Action Items
+
+1. **Memory-Efficient Attention Design** — Redesign flash_attention in Arke-Lang v2 with explicit memory tiling strategy and shape constraints
+2. **Shape Tier Validation** — Ensure all tier-2 shapes fit within target hardware (6GB VRAM) constraints; adjust benchmark-shapes.md if needed
+3. **Backend Memory Optimization** — Implement memory pooling, kernel fusion, and gradient checkpointing in Arke-Compiler v2
+
+---
+
 ## Pre-Refactor Reference (G6 v1, commit fd2cbe0)
 
 The following were completed under the **old architecture** before the Lang/IR/Compiler redesign. They serve as reference, but all features and tests need re-implementation and re-validation under the new architecture:
