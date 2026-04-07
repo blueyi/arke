@@ -1,0 +1,66 @@
+2026-04-08 02:28:42,353 INFO Baseline Arke not available (deps missing)
+2026-04-08 02:28:42,354 INFO Baseline Sources:
+2026-04-08 02:28:42,354 INFO Baseline Arke not available (deps missing)
+2026-04-08 02:28:42,354 INFO   P0 cuBLAS/cuDNN: NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary)
+2026-04-08 02:28:42,354 INFO   P1 FlagGems: FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0
+2026-04-08 02:28:42,355 INFO   P1 Liger-Kernel: Liger-Kernel 0.7.0 (LinkedIn) | https://github.com/linkedin/Liger-Kernel | License: BSD-2-Clause
+2026-04-08 02:28:42,355 INFO   P2 Triton-Tutorial: Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT
+2026-04-08 02:28:42,355 INFO   P3 PyTorch-eager: PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause
+2026-04-08 02:28:42,355 INFO   P4 torch.compile: torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause
+2026-04-08 02:28:42,355 INFO 
+2026-04-08 02:28:42,355 INFO 
+============================================================
+2026-04-08 02:28:42,355 INFO L1 Benchmark: relu
+2026-04-08 02:28:42,355 INFO ============================================================
+2026-04-08 02:28:42,355 INFO Baseline Arke not available (deps missing)
+2026-04-08 02:28:42,355 INFO Benchmarking relu: 12 shapes × 4 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager, torch.compile)
+2026-04-08 02:28:42,598 INFO   micro-tiny      cuBLAS/cuDNN        12.9 μs
+2026-04-08 02:28:42,630 INFO   micro-tiny      PyTorch-eager       17.3 μs
+2026-04-08 02:28:46,816 INFO   micro-tiny      torch.compile      121.2 μs
+2026-04-08 02:28:46,848 INFO   micro-small     cuBLAS/cuDNN        11.9 μs
+2026-04-08 02:28:46,873 INFO   micro-small     PyTorch-eager       11.1 μs
+2026-04-08 02:28:47,737 INFO   micro-small     torch.compile      158.5 μs
+2026-04-08 02:28:47,767 INFO   gpt2-hidden     cuBLAS/cuDNN        15.1 μs
+2026-04-08 02:28:47,791 INFO   gpt2-hidden     PyTorch-eager       11.3 μs
+2026-04-08 02:28:48,112 INFO   gpt2-hidden     torch.compile      145.6 μs
+2026-04-08 02:28:48,137 INFO   gpt2-ffn        cuBLAS/cuDNN        12.7 μs
+2026-04-08 02:28:48,162 INFO   gpt2-ffn        PyTorch-eager       11.7 μs
+2026-04-08 02:28:48,486 INFO   gpt2-ffn        torch.compile      150.8 μs
+2026-04-08 02:28:48,515 INFO   square-1k       cuBLAS/cuDNN        15.5 μs
+2026-04-08 02:28:48,543 INFO   square-1k       PyTorch-eager       15.1 μs
+2026-04-08 02:28:48,903 INFO   square-1k       torch.compile      178.9 μs
+2026-04-08 02:28:49,025 INFO   llama-ffn       cuBLAS/cuDNN        88.8 μs
+2026-04-08 02:28:49,144 INFO   llama-ffn       PyTorch-eager       76.7 μs
+2026-04-08 02:28:49,552 INFO   llama-ffn       torch.compile      210.2 μs
+2026-04-08 02:28:49,607 INFO   llama-hidden    cuBLAS/cuDNN        32.2 μs
+2026-04-08 02:28:49,656 INFO   llama-hidden    PyTorch-eager       32.6 μs
+2026-04-08 02:28:49,981 INFO   llama-hidden    torch.compile      166.9 μs
+2026-04-08 02:28:50,289 INFO   llama-long      cuBLAS/cuDNN       216.9 μs
+2026-04-08 02:28:50,594 INFO   llama-long      PyTorch-eager      216.8 μs
+2026-04-08 02:28:51,339 INFO   llama-long      torch.compile      455.0 μs
+2026-04-08 02:28:51,463 INFO   ds-ffn          cuBLAS/cuDNN        84.4 μs
+2026-04-08 02:28:51,586 INFO   ds-ffn          PyTorch-eager       84.6 μs
+2026-04-08 02:28:51,984 INFO   ds-ffn          torch.compile      197.6 μs
+2026-04-08 02:28:52,163 INFO   ds-ffn-large    cuBLAS/cuDNN       124.3 μs
+2026-04-08 02:28:52,341 INFO   ds-ffn-large    PyTorch-eager      124.3 μs
+2026-04-08 02:28:52,837 INFO   ds-ffn-large    torch.compile      267.3 μs
+2026-04-08 02:28:53,021 INFO   qwen-ffn        cuBLAS/cuDNN       127.7 μs
+2026-04-08 02:28:53,203 INFO   qwen-ffn        PyTorch-eager      127.7 μs
+2026-04-08 02:28:53,703 INFO   qwen-ffn        torch.compile      273.3 μs
+2026-04-08 02:28:54,304 INFO   xlarge          cuBLAS/cuDNN       428.4 μs
+2026-04-08 02:28:54,902 INFO   xlarge          PyTorch-eager      428.3 μs
+2026-04-08 02:28:56,253 INFO   xlarge          torch.compile      902.6 μs
+/home/blueyi/.venvs/arke/lib/python3.10/site-packages/flag_gems/config.py:153: UserWarning: resolve_user_setting: no exclude ops found; returning empty list
+  warnings.warn(
+/home/blueyi/.venvs/arke/lib/python3.10/site-packages/torch/library.py:349: UserWarning: Warning only once for all operators,  other operators may also be overridden.
+  Overriding a previously registered kernel for the same operator and the same dispatch key
+  operator: aten::_flash_attention_forward(Tensor query, Tensor key, Tensor value, Tensor? cum_seq_q, Tensor? cum_seq_k, SymInt max_q, SymInt max_k, float dropout_p, bool is_causal, bool return_debug_mask, *, float? scale=None, SymInt? window_size_left=None, SymInt? window_size_right=None, Tensor? seqused_k=None, Tensor? alibi_slopes=None) -> (Tensor output, Tensor softmax_logsumexp, Tensor philox_seed, Tensor philox_offset, Tensor debug_attn_mask)
+    registered at /pytorch/build/aten/src/ATen/RegisterSchema.cpp:6
+  dispatch key: CUDA
+  previous kernel: registered at /pytorch/torch/csrc/autograd/generated/VariableType_0.cpp:18082
+       new kernel: registered at /dev/null:241 (Triggered internally at /pytorch/aten/src/ATen/core/dispatch/OperatorEntry.cpp:154.)
+  self.m.impl(
+2026-04-08 02:28:58,332 INFO   micro-tiny      FlagGems            98.4 μs
+2026-04-08 02:28:59,127 INFO   micro-small     FlagGems            93.4 μs
+2026-04-08 02:28:59,932 INFO   gpt2-hidden     FlagGems           102.7 μs
+2026-04-08 02:29:00,741 INFO   gpt2-ffn        FlagGems           104.2 μs

@@ -1,0 +1,19 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+batch_matmul,gpt2-attn-128,8,128,64,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),57.2,75.8,0.002
+batch_matmul,gpt2-attn-128,8,128,64,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,55.8,20.5,0.002
+batch_matmul,gpt2-attn-512,12,512,64,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),60.2,53.2,0.013
+batch_matmul,gpt2-attn-512,12,512,64,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,57.9,36.9,0.014
+batch_matmul,llama-attn-512,32,512,128,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),211.8,216.1,0.020
+batch_matmul,llama-attn-512,32,512,128,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,63.6,52.2,0.066
+batch_matmul,llama-attn-2k,32,2048,128,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),2289.2,2012.2,0.007
+batch_matmul,llama-attn-2k,32,2048,128,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,108.9,113.7,0.154
+batch_matmul,batched-8,8,64,64,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),59.2,63.5,0.001
+batch_matmul,batched-8,8,64,64,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,54.7,41.0,0.001
+batch_matmul,batched-32,32,128,128,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),58.7,73.7,0.018
+batch_matmul,batched-32,32,128,128,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,67.7,14.3,0.015
+batch_matmul,gpt2-attn-128,8,128,64,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,63.9,11.3,0.002
+batch_matmul,gpt2-attn-512,12,512,64,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,57.7,55.3,0.014
+batch_matmul,llama-attn-512,32,512,128,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,211.8,213.0,0.020
+batch_matmul,llama-attn-2k,32,2048,128,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,2275.0,2034.7,0.007
+batch_matmul,batched-8,8,64,64,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,62.4,32.8,0.001
+batch_matmul,batched-32,32,128,128,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,56.7,16.4,0.018

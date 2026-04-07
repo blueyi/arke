@@ -1,0 +1,7 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+scatter,tiny,64,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,145.5,138.4,
+scatter,moe-combine-top2,512,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,352.8,382.0,
+scatter,moe-combine-top4,512,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,353.5,355.3,
+scatter,kvcache-write-256,256,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,181.4,244.6,
+scatter,kvcache-write-2k,2048,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1211.6,1077.2,
+scatter,ds-moe-combine,512,5120,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,358.2,360.4,

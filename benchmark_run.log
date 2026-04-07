@@ -1581,3 +1581,4 @@ wide                      119.0     124.0( 96%)       0.8(15701%)
 2026-04-07 23:44:47,741 INFO   llama2-7b-2k    cuBLAS/cuDNN      2175.8 μs
 2026-04-07 23:45:19,586 INFO   llama2-7b-2k    PyTorch-eager    24474.5 μs
 2026-04-07 23:45:28,486 INFO   llama2-7b-4k    cuBLAS/cuDNN      6780.3 μs
+2026-04-08 00:04:54,967 INFO   llama2-7b-4k    PyTorch-eager   883665.2 μs

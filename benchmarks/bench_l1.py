@@ -263,10 +263,13 @@ def run_l1(
     warmup: int = 200,
     reps: int = 500,
     tier: int | None = None,
+    phase: int = 1,
+    stage: int = 6,
+    gate: str = "g6",
 ) -> dict[str, list[OpResult]]:
     """Run L1 benchmark suite."""
-    timestamp = time.strftime("%Y-%m-%d_%H%M%S")
-    base_dir = Path(output_dir) / "L1" / timestamp
+    # Use phase/stage/gate structure instead of timestamp
+    base_dir = Path(output_dir) / f"phase{phase}" / f"stage{stage}" / f"gate_{gate}" / "l1"
     base_dir.mkdir(parents=True, exist_ok=True)
 
     # Save hardware info
@@ -351,6 +354,18 @@ def main() -> None:
         help="Shape tier (1=fast, 2=standard, 3=full). Default: all shapes.",
     )
     parser.add_argument(
+        "--phase", type=int, default=1,
+        help="Phase number (default: 1)",
+    )
+    parser.add_argument(
+        "--stage", type=int, default=6,
+        help="Stage number (default: 6)",
+    )
+    parser.add_argument(
+        "--gate", type=str, default="g6",
+        help="Gate name (default: g6)",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true",
     )
     args = parser.parse_args()
@@ -369,7 +384,7 @@ def main() -> None:
 
     run_l1(
         ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps,
-        tier=args.tier,
+        tier=args.tier, phase=args.phase, stage=args.stage, gate=args.gate,
     )
 
 

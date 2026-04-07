@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-04-08_022744",
+  "ops": [
+    "quantize_per_token",
+    "dequantize_per_channel",
+    "rope",
+    "grouped_matmul"
+  ],
+  "warmup": 50,
+  "reps": 100,
+  "tier": 2
+}
