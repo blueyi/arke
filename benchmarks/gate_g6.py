@@ -213,7 +213,7 @@ def run_g6(tier: int = 2) -> GateSummary:
                 
                 ops_count = len(ops_found)
                 passing_count = len(ops_passing)
-                g6_6_pass = ops_count >= 40 and passing_count >= 40
+                g6_6_pass = ops_count >= 45 and passing_count >= 45
                 g6_6_details = f"{ops_count} ops with results, {passing_count} with eager baseline"
             else:
                 g6_6_details = "No CSV results found"
