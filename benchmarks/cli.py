@@ -53,9 +53,21 @@ def _parse_str_list(s: str) -> list[str]:
 
 # ── Config / Provenance ─────────────────────────────────────────────────
 
-def _generate_run_id() -> str:
-    """Generate a timestamped run ID."""
-    return datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+def _generate_run_id(bl: int = 2, layer: str = "L1") -> str:
+    """Generate a run ID based on Gate/BL/Layer.
+    
+    Format: phase1/stage{N}/g{N}_bl{BL}_{LAYER}
+    Example: phase1/stage6/g6_bl4_l1
+    """
+    # Map BL to Gate
+    bl_to_gate = {1: 2, 2: 2, 3: 3, 4: 6, 5: 7, 6: 9}
+    gate = bl_to_gate.get(bl, 6)
+    
+    # Map Gate to Stage
+    gate_to_stage = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9}
+    stage = gate_to_stage.get(gate, 6)
+    
+    return f"phase1/stage{stage}/g{gate}_bl{bl}_{layer.lower()}"
 
 
 def _write_config(run_dir: Path, config: dict) -> None:
@@ -411,7 +423,7 @@ def main() -> None:
     )
 
     # Create run directory
-    run_id = _generate_run_id()
+    run_id = _generate_run_id(bl=config["bl"], layer=config["layers"][0])
     run_dir = Path(args.output) / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
