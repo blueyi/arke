@@ -1,0 +1,4 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+grouped_matmul,moe-tiny,4,128,64,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,40.5,14.3,
+grouped_matmul,moe-small,8,256,256,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,50.6,25.6,
+grouped_matmul,moe-medium,16,3072,768,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,187.7,189.4,

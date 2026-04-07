@@ -1,0 +1,9 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
+dequantize_per_channel,tiny-int8,64,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,28.9,15.4,
+dequantize_per_channel,gpt2-int8,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,28.6,24.5,
+dequantize_per_channel,llama2-int4-ffn,512,11008,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,187.8,193.5,
+dequantize_per_channel,llama2-int8-hidden,512,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,79.9,74.8,
+dequantize_per_channel,llama3-int4-ffn,512,14336,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,244.6,247.8,
+dequantize_per_channel,ds-v2-int4,512,12288,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,211.9,215.0,
+dequantize_per_channel,ds-v3-int4,512,18432,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,319.9,318.5,
+dequantize_per_channel,qwen25-int4-ffn,512,18944,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,322.5,321.5,

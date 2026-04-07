@@ -265,11 +265,11 @@ def run_l1(
     tier: int | None = None,
     phase: int = 1,
     stage: int = 6,
-    gate: str = "g6",
+    track: int = 1,
 ) -> dict[str, list[OpResult]]:
     """Run L1 benchmark suite."""
     # Use phase/stage/gate structure instead of timestamp
-    base_dir = Path(output_dir) / f"phase{phase}" / f"stage{stage}" / f"gate_{gate}" / "l1"
+    base_dir = Path(output_dir) / f"phase{phase}" / f"stage{stage}" / f"track{track}" / "l1"
     base_dir.mkdir(parents=True, exist_ok=True)
 
     # Save hardware info
@@ -290,7 +290,7 @@ def run_l1(
 
     # Save config
     config = {
-        "timestamp": timestamp,
+        "timestamp": time.strftime("%Y-%m-%d_%H%M%S"),
         "ops": ops,
         "warmup": warmup,
         "reps": reps,
@@ -362,7 +362,7 @@ def main() -> None:
         help="Stage number (default: 6)",
     )
     parser.add_argument(
-        "--gate", type=str, default="g6",
+        "--track", type=str, default="g6",
         help="Gate name (default: g6)",
     )
     parser.add_argument(
@@ -384,7 +384,7 @@ def main() -> None:
 
     run_l1(
         ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps,
-        tier=args.tier, phase=args.phase, stage=args.stage, gate=args.gate,
+        tier=args.tier, phase=args.phase, stage=args.stage, track=args.track,
     )
 
 

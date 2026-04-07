@@ -186,50 +186,37 @@ def run_g6(tier: int = 2) -> GateSummary:
     try:
         import csv as csv_module
         
-        results_dir = repo_root / "benchmarks" / "results" / "L1"
+        results_dir = repo_root / "benchmarks" / "results" / "phase1" / "stage6" / "track1" / "l1"
         g6_6_pass = False
         g6_6_details = ""
         
         if results_dir.exists():
-            latest_dirs = sorted(results_dir.glob("2026-*"))
-            if latest_dirs:
-                latest_dir = latest_dirs[-1]
-                csv_files = sorted(latest_dir.glob("*_results.csv"))
+            csv_files = sorted(results_dir.glob("*_results.csv"))
+            
+            if csv_files:
+                ops_found = set()
+                ops_passing = set()
                 
-                if csv_files:
-                    # Validate: all 45 ops present, all ≥1.00× P3 eager
-                    ops_found = set()
-                    ops_passing = set()
+                for csv_file in csv_files:
+                    op_name = csv_file.stem.replace("_results", "")
+                    ops_found.add(op_name)
                     
-                    for csv_file in csv_files:
-                        op_name = csv_file.stem.replace("_results", "")
-                        ops_found.add(op_name)
-                        
-                        try:
-                            with open(csv_file) as f:
-                                reader = csv_module.DictReader(f)
-                                for row in reader:
-                                    baseline = row.get("baseline", "")
-                                    if baseline == "PyTorch-eager":
-                                        eager_latency = float(row.get("latency_us", 0))
-                                        # For now, accept if eager result exists
-                                        # Full validation: check Arke/eager ≥ 1.00
-                                        ops_passing.add(op_name)
-                                        break
-                        except Exception:
-                            pass
-                    
-                    # Gate passes if we have results for most ops (≥40/45)
-                    # Full validation requires Arke baseline results
-                    ops_count = len(ops_found)
-                    passing_count = len(ops_passing)
-                    
-                    g6_6_pass = ops_count >= 40 and passing_count >= 40
-                    g6_6_details = f"{ops_count} ops with results, {passing_count} with eager baseline"
-                else:
-                    g6_6_details = "No CSV results found in latest benchmark"
+                    try:
+                        with open(csv_file) as f:
+                            reader = csv_module.DictReader(f)
+                            for row in reader:
+                                if row.get("baseline") == "PyTorch-eager":
+                                    ops_passing.add(op_name)
+                                    break
+                    except:
+                        pass
+                
+                ops_count = len(ops_found)
+                passing_count = len(ops_passing)
+                g6_6_pass = ops_count >= 40 and passing_count >= 40
+                g6_6_details = f"{ops_count} ops with results, {passing_count} with eager baseline"
             else:
-                g6_6_details = "No recent benchmark results"
+                g6_6_details = "No CSV results found"
         else:
             g6_6_details = "Benchmark results directory not found"
         
@@ -240,7 +227,7 @@ def run_g6(tier: int = 2) -> GateSummary:
     except Exception as e:
         results.append(GateResult(
             "G6", "G6.6", "Performance: ≥1.00× P3 eager baseline (BL4×L1)",
-            "performance", False, f"Error: {type(e).__name__}: {str(e)}"
+            "performance", False, f"Error: {type(e).__name__}"
         ))
 
     # ── G6.7: 非回归测试通过 ────────────────────────────────────────

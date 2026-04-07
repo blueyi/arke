@@ -1,7 +1,0 @@
-shape_tag,op,M,N,K,arke_us,baseline_us,baseline,ratio,trials,warmup,reps
-small,gelu,128,768,,30.85,9.69,PyTorch,0.3142,3,200,500
-medium,gelu,128,3072,,57.02,22.54,PyTorch,0.3952,3,200,500
-large,gelu,4096,4096,,242.92,249.36,PyTorch,1.0265,3,200,500
-llama-ffn,gelu,4096,11008,,609.10,623.26,PyTorch,1.0233,3,200,500
-xlarge,gelu,8192,4096,,460.31,457.21,PyTorch,0.9933,3,200,500
-seq1k,gelu,1024,768,,28.84,15.48,PyTorch,0.5367,3,200,500
