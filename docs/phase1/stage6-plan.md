@@ -2,7 +2,7 @@
 
 > Gate G6 exit criteria → [plan.md](../roadmap/plan.md#stage-6-g6-compiler-infrastructure--%E2%AC%9C--current)
 
-**Status:** 6/7 criteria PASS (85.7%) — G6.6 performance benchmark 40/45 ops complete
+**Status:** ✅ 7/7 criteria PASS (100%) — Gate G6 PASSED
 
 **Objective:** Refactor the compiler toolchain into a clean, extensible architecture. OpRegistry as single source of truth, Pass pipeline for composable transformations, Backend abstraction for multi-target support. **Validated through full 45-op correctness and performance.**
 
