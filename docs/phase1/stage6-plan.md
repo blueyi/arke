@@ -2,6 +2,8 @@
 
 > Gate G6 exit criteria → [plan.md](../roadmap/plan.md#stage-6-g6-compiler-infrastructure--%E2%AC%9C--current)
 
+**Status:** 6/7 criteria PASS (85.7%) — G6.6 performance benchmark 40/45 ops complete
+
 **Objective:** Refactor the compiler toolchain into a clean, extensible architecture. OpRegistry as single source of truth, Pass pipeline for composable transformations, Backend abstraction for multi-target support. **Validated through full 45-op correctness and performance.**
 
 **Depends on:** S0-S5 (all passed)
@@ -45,13 +47,13 @@ The following were completed under the **old architecture** before the Lang/IR/C
 
 | ID | Task | Priority | Estimate | Operator Validation | Status |
 |:---|:-----|:--------:|:--------:|:-------------------|:------:|
-| C1.1 | Design `OpSchema` dataclass + `OpRegistry` class | P0 | 0.5d | Validate with `relu` (OT0) + `matmul` (OT2) — simplest ops | ⬜ |
-| C1.2 | Migrate all 45 ops from `catalog.py` to `OpRegistry` | P0 | 1d | All 45 ops registered; spot-check OT0-OT4 one each | ⬜ |
-| C1.3 | Remove op-specific if/elif from `shape_inference.py` | P0 | 0.5d | Shape inference correct for `matmul` (2D→2D), `softmax` (reduce), `flash_attention` (4D) | ⬜ |
-| C1.4 | Implement `SemanticInterpreter` (PyTorch eager executor) | P0 | 1d | Start with OT0 (12 elem ops), then OT1-OT4; correctness 100% | ⬜ |
-| C1.5 | Migrate `numerical_check.py` to use `SemanticInterpreter` | P0 | 0.5d | `matmul` + `softmax` + `layernorm` numerical check unchanged | ⬜ |
-| C1.6 | Update `kernel_cache.py` to use parser instead of `_build_ir()` | P1 | 0.5d | `matmul.ak` → parse → IR → cache round-trip | ⬜ |
-| C1.7 | Update `triton_template_engine.py` to use registry lookup | P0 | 0.5d | `matmul` + `relu` codegen via registry lookup matches old output | ⬜ |
+| C1.1 | Design `OpSchema` dataclass + `OpRegistry` class | P0 | 0.5d | Validate with `relu` (OT0) + `matmul` (OT2) — simplest ops | ✅ |
+| C1.2 | Migrate all 45 ops from `catalog.py` to `OpRegistry` | P0 | 1d | All 45 ops registered; spot-check OT0-OT4 one each | ✅ |
+| C1.3 | Remove op-specific if/elif from `shape_inference.py` | P0 | 0.5d | Shape inference correct for `matmul` (2D→2D), `softmax` (reduce), `flash_attention` (4D) | ✅ |
+| C1.4 | Implement `SemanticInterpreter` (PyTorch eager executor) | P0 | 1d | Start with OT0 (12 elem ops), then OT1-OT4; correctness 100% | ✅ |
+| C1.5 | Migrate `numerical_check.py` to use `SemanticInterpreter` | P0 | 0.5d | `matmul` + `softmax` + `layernorm` numerical check unchanged | ✅ |
+| C1.6 | Update `kernel_cache.py` to use parser instead of `_build_ir()` | P1 | 0.5d | `matmul.ak` → parse → IR → cache round-trip | ✅ |
+| C1.7 | Update `triton_template_engine.py` to use registry lookup | P0 | 0.5d | `matmul` + `relu` codegen via registry lookup matches old output | ✅ |
 
 **Design ref:** `docs/architecture/arke-compiler-infrastructure.md` §3 (OpRegistry), §5 (SemanticInterpreter)
 
@@ -59,11 +61,11 @@ The following were completed under the **old architecture** before the Lang/IR/C
 
 | ID | Task | Priority | Estimate | Operator Validation | Status |
 |:---|:-----|:--------:|:--------:|:-------------------|:------:|
-| C2.1 | Define `ArkePass` protocol + `PassContext` + `PassPipeline` | P1 | 0.5d | Pipeline runs on `matmul` IR (smoke test) | ⬜ |
-| C2.2 | Implement `ShapeInferencePass` (wraps `shape_inference.py`) | P1 | 0.5d | `matmul` (2D), `batch_matmul` (3D), `flash_attention` (4D) shape correct | ⬜ |
-| C2.3 | Implement `SSAValidator` + `SSAValidationPass` | P1 | 1d | All 45 ops pass; 5+ crafted invalid IR rejected (dup def, undefined use, shape mismatch, type mismatch, cycle) | ⬜ |
-| C2.4 | Implement `RationalePreservationPass` | P1 | 0.5d | `matmul.ak` with @rationale → IR → codegen comments preserved | ⬜ |
-| C2.5 | Integrate `PassPipeline` into `ArkePipeline.run()` | P1 | 0.5d | Full pipeline: `softmax.ak` → parse → passes → codegen → GPU correct | ⬜ |
+| C2.1 | Define `ArkePass` protocol + `PassContext` + `PassPipeline` | P1 | 0.5d | Pipeline runs on `matmul` IR (smoke test) | ✅ |
+| C2.2 | Implement `ShapeInferencePass` (wraps `shape_inference.py`) | P1 | 0.5d | `matmul` (2D), `batch_matmul` (3D), `flash_attention` (4D) shape correct | ✅ |
+| C2.3 | Implement `SSAValidator` + `SSAValidationPass` | P1 | 1d | All 45 ops pass; 5+ crafted invalid IR rejected (dup def, undefined use, shape mismatch, type mismatch, cycle) | ✅ |
+| C2.4 | Implement `RationalePreservationPass` | P1 | 0.5d | `matmul.ak` with @rationale → IR → codegen comments preserved | ✅ |
+| C2.5 | Integrate `PassPipeline` into `ArkePipeline.run()` | P1 | 0.5d | Full pipeline: `softmax.ak` → parse → passes → codegen → GPU correct | ✅ |
 
 **Design ref:** `docs/architecture/arke-compiler-infrastructure.md` §4 (Pass Infrastructure), §8 (SSA Validator)
 
@@ -71,10 +73,10 @@ The following were completed under the **old architecture** before the Lang/IR/C
 
 | ID | Task | Priority | Estimate | Operator Validation | Status |
 |:---|:-----|:--------:|:--------:|:-------------------|:------:|
-| C3.1 | Define `ArkeBackend` protocol + `BackendArtifact` hierarchy | P1 | 0.5d | Protocol compiles with `matmul` + `relu` backend artifacts | ⬜ |
-| C3.2 | Wrap `TritonBackend` to implement `ArkeBackend` | P1 | 0.5d | `matmul` + `softmax` + `layernorm` codegen via TritonBackend identical to old path | ⬜ |
-| C3.3 | Update `ArkePipeline` to use backend via protocol | P1 | 0.5d | Full E2E: `matmul.ak` → pipeline → TritonBackend → GPU → correct result | ⬜ |
-| C3.4 | Implement `MockBackend` for testing | P1 | 0.5d | MockBackend returns deterministic output for `relu`/`add` (OT0 smoke test) | ⬜ |
+| C3.1 | Define `ArkeBackend` protocol + `BackendArtifact` hierarchy | P1 | 0.5d | Protocol compiles with `matmul` + `relu` backend artifacts | ✅ |
+| C3.2 | Wrap `TritonBackend` to implement `ArkeBackend` | P1 | 0.5d | `matmul` + `softmax` + `layernorm` codegen via TritonBackend identical to old path | ✅ |
+| C3.3 | Update `ArkePipeline` to use backend via protocol | P1 | 0.5d | Full E2E: `matmul.ak` → pipeline → TritonBackend → GPU → correct result | ✅ |
+| C3.4 | Implement `MockBackend` for testing | P1 | 0.5d | MockBackend returns deterministic output for `relu`/`add` (OT0 smoke test) | ✅ |
 
 **Design ref:** `docs/architecture/arke-compiler-infrastructure.md` §7 (Backend Abstraction)
 
@@ -91,8 +93,8 @@ The following were completed under the **old architecture** before the Lang/IR/C
 
 | ID | Task | Priority | Estimate | Operator Validation | Status |
 |:---|:-----|:--------:|:--------:|:-------------------|:------:|
-| G6-BL4 | BL4×L1 full run: 45 ops × ST1-ST2, correctness 100%, perf ≥1.00× P3 | P0 | 2d | All OT0-OT4 GPU-verified; any failure blocks gate | ⬜ |
-| D8 | Full non-regression run + fix regressions (ARCH.10) | P0 | 1d | ≥422 tests, 0 new failures | ⬜ |
+| G6-BL4 | BL4×L1 full run: 45 ops × ST1-ST2, correctness 100%, perf ≥1.00× P3 | P0 | 2d | All OT0-OT4 GPU-verified; any failure blocks gate | 🟨 (40/45) |
+| D8 | Full non-regression run + fix regressions (ARCH.10) | P0 | 1d | ≥422 tests, 0 new failures | ✅ |
 
 ---
 

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-07_223434",
+  "timestamp": "2026-04-07_233550",
   "ops": [
     "relu",
     "gelu",
@@ -47,7 +47,7 @@
     "cross_attention",
     "paged_attention"
   ],
-  "warmup": 200,
-  "reps": 500,
-  "tier": null
+  "warmup": 100,
+  "reps": 300,
+  "tier": 2
 }

@@ -1,0 +1,1583 @@
+2026-04-07 23:35:50,138 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:35:50,140 INFO Baseline Sources:
+2026-04-07 23:35:50,140 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:35:50,140 INFO   P0 cuBLAS/cuDNN: NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary)
+2026-04-07 23:35:50,140 INFO   P1 FlagGems: FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0
+2026-04-07 23:35:50,141 INFO   P1 Liger-Kernel: Liger-Kernel 0.7.0 (LinkedIn) | https://github.com/linkedin/Liger-Kernel | License: BSD-2-Clause
+2026-04-07 23:35:50,141 INFO   P2 Triton-Tutorial: Triton Tutorial (triton-lang) | https://triton-lang.org/main/getting-started/tutorials/ | License: MIT
+2026-04-07 23:35:50,141 INFO   P3 PyTorch-eager: PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause
+2026-04-07 23:35:50,141 INFO   P4 torch.compile: torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause
+2026-04-07 23:35:50,141 INFO 
+2026-04-07 23:35:50,141 INFO 
+============================================================
+2026-04-07 23:35:50,141 INFO L1 Benchmark: relu
+2026-04-07 23:35:50,141 INFO ============================================================
+2026-04-07 23:35:50,142 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:35:50,142 INFO Benchmarking relu: 12 shapes × 4 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager, torch.compile)
+2026-04-07 23:35:50,393 INFO   micro-tiny      cuBLAS/cuDNN        12.7 μs
+2026-04-07 23:35:50,414 INFO   micro-tiny      PyTorch-eager       12.7 μs
+2026-04-07 23:35:53,843 INFO   micro-tiny      torch.compile      106.7 μs
+2026-04-07 23:35:53,863 INFO   micro-small     cuBLAS/cuDNN        11.1 μs
+2026-04-07 23:35:53,883 INFO   micro-small     PyTorch-eager       11.5 μs
+2026-04-07 23:35:54,338 INFO   micro-small     torch.compile      136.0 μs
+2026-04-07 23:35:54,360 INFO   gpt2-hidden     cuBLAS/cuDNN        12.0 μs
+2026-04-07 23:35:54,380 INFO   gpt2-hidden     PyTorch-eager       11.3 μs
+2026-04-07 23:35:54,669 INFO   gpt2-hidden     torch.compile      136.3 μs
+2026-04-07 23:35:54,692 INFO   gpt2-ffn        cuBLAS/cuDNN        11.3 μs
+2026-04-07 23:35:54,713 INFO   gpt2-ffn        PyTorch-eager       11.9 μs
+2026-04-07 23:35:55,003 INFO   gpt2-ffn        torch.compile      134.4 μs
+2026-04-07 23:35:55,033 INFO   square-1k       cuBLAS/cuDNN        17.0 μs
+2026-04-07 23:35:55,061 INFO   square-1k       PyTorch-eager       16.3 μs
+2026-04-07 23:35:55,353 INFO   square-1k       torch.compile      133.8 μs
+2026-04-07 23:35:55,458 INFO   llama-ffn       cuBLAS/cuDNN        75.4 μs
+2026-04-07 23:35:55,563 INFO   llama-ffn       PyTorch-eager       75.7 μs
+2026-04-07 23:35:55,903 INFO   llama-ffn       torch.compile      159.0 μs
+2026-04-07 23:35:55,949 INFO   llama-hidden    cuBLAS/cuDNN        30.9 μs
+2026-04-07 23:35:55,995 INFO   llama-hidden    PyTorch-eager       30.8 μs
+2026-04-07 23:35:56,287 INFO   llama-hidden    torch.compile      128.3 μs
+2026-04-07 23:35:56,581 INFO   llama-long      cuBLAS/cuDNN       217.1 μs
+2026-04-07 23:35:56,873 INFO   llama-long      PyTorch-eager      217.1 μs
+2026-04-07 23:35:57,601 INFO   llama-long      torch.compile      454.6 μs
+2026-04-07 23:35:57,718 INFO   ds-ffn          cuBLAS/cuDNN        84.6 μs
+2026-04-07 23:35:57,835 INFO   ds-ffn          PyTorch-eager       84.8 μs
+2026-04-07 23:35:58,214 INFO   ds-ffn          torch.compile      195.7 μs
+2026-04-07 23:35:58,385 INFO   ds-ffn-large    cuBLAS/cuDNN       124.6 μs
+2026-04-07 23:35:58,554 INFO   ds-ffn-large    PyTorch-eager      124.6 μs
+2026-04-07 23:35:59,024 INFO   ds-ffn-large    torch.compile      266.0 μs
+2026-04-07 23:35:59,198 INFO   qwen-ffn        cuBLAS/cuDNN       127.4 μs
+2026-04-07 23:35:59,372 INFO   qwen-ffn        PyTorch-eager      127.5 μs
+2026-04-07 23:35:59,854 INFO   qwen-ffn        torch.compile      273.3 μs
+2026-04-07 23:36:00,428 INFO   xlarge          cuBLAS/cuDNN       429.3 μs
+2026-04-07 23:36:00,995 INFO   xlarge          PyTorch-eager      429.4 μs
+2026-04-07 23:36:02,309 INFO   xlarge          torch.compile      907.0 μs
+/home/blueyi/.venvs/arke/lib/python3.10/site-packages/flag_gems/config.py:153: UserWarning: resolve_user_setting: no exclude ops found; returning empty list
+  warnings.warn(
+/home/blueyi/.venvs/arke/lib/python3.10/site-packages/torch/library.py:349: UserWarning: Warning only once for all operators,  other operators may also be overridden.
+  Overriding a previously registered kernel for the same operator and the same dispatch key
+  operator: aten::_flash_attention_forward(Tensor query, Tensor key, Tensor value, Tensor? cum_seq_q, Tensor? cum_seq_k, SymInt max_q, SymInt max_k, float dropout_p, bool is_causal, bool return_debug_mask, *, float? scale=None, SymInt? window_size_left=None, SymInt? window_size_right=None, Tensor? seqused_k=None, Tensor? alibi_slopes=None) -> (Tensor output, Tensor softmax_logsumexp, Tensor philox_seed, Tensor philox_offset, Tensor debug_attn_mask)
+    registered at /pytorch/build/aten/src/ATen/RegisterSchema.cpp:6
+  dispatch key: CUDA
+  previous kernel: registered at /pytorch/torch/csrc/autograd/generated/VariableType_0.cpp:18082
+       new kernel: registered at /dev/null:241 (Triggered internally at /pytorch/aten/src/ATen/core/dispatch/OperatorEntry.cpp:154.)
+  self.m.impl(
+2026-04-07 23:36:03,104 INFO   micro-tiny      FlagGems            72.5 μs
+2026-04-07 23:36:03,837 INFO   micro-small     FlagGems            75.6 μs
+2026-04-07 23:36:04,565 INFO   gpt2-hidden     FlagGems            76.2 μs
+2026-04-07 23:36:05,295 INFO   gpt2-ffn        FlagGems            73.5 μs
+2026-04-07 23:36:06,026 INFO   square-1k       FlagGems            75.1 μs
+2026-04-07 23:36:06,784 INFO   llama-ffn       FlagGems            76.3 μs
+2026-04-07 23:36:07,515 INFO   llama-hidden    FlagGems            68.3 μs
+2026-04-07 23:36:08,487 INFO   llama-long      FlagGems           218.5 μs
+2026-04-07 23:36:09,251 INFO   ds-ffn          FlagGems            84.4 μs
+2026-04-07 23:36:10,078 INFO   ds-ffn-large    FlagGems           124.3 μs
+2026-04-07 23:36:10,910 INFO   qwen-ffn        FlagGems           127.6 μs
+2026-04-07 23:36:12,183 INFO   xlarge          FlagGems           428.4 μs
+2026-04-07 23:36:12,183 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/relu_results.csv
+2026-04-07 23:36:12,184 INFO 
+============================================================
+2026-04-07 23:36:12,184 INFO L1 Benchmark: gelu
+2026-04-07 23:36:12,184 INFO ============================================================
+2026-04-07 23:36:12,184 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:36:12,184 INFO Benchmarking gelu: 12 shapes × 5 baselines (cuBLAS/cuDNN, FlagGems, Liger-Kernel, PyTorch-eager, torch.compile)
+2026-04-07 23:36:12,303 INFO   micro-tiny      cuBLAS/cuDNN        74.8 μs
+2026-04-07 23:36:13,657 INFO   micro-tiny      Liger-Kernel        95.9 μs
+2026-04-07 23:36:13,790 INFO   micro-tiny      PyTorch-eager       79.9 μs
+2026-04-07 23:36:14,367 INFO   micro-tiny      torch.compile      260.4 μs
+2026-04-07 23:36:14,471 INFO   micro-small     cuBLAS/cuDNN        75.3 μs
+2026-04-07 23:36:14,565 INFO   micro-small     Liger-Kernel        60.3 μs
+2026-04-07 23:36:14,691 INFO   micro-small     PyTorch-eager       74.3 μs
+2026-04-07 23:36:15,557 INFO   micro-small     torch.compile      501.7 μs
+2026-04-07 23:36:15,667 INFO   gpt2-hidden     cuBLAS/cuDNN        73.4 μs
+2026-04-07 23:36:15,769 INFO   gpt2-hidden     Liger-Kernel        61.1 μs
+2026-04-07 23:36:15,881 INFO   gpt2-hidden     PyTorch-eager       71.0 μs
+2026-04-07 23:36:16,379 INFO   gpt2-hidden     torch.compile      283.6 μs
+2026-04-07 23:36:16,489 INFO   gpt2-ffn        cuBLAS/cuDNN        73.1 μs
+2026-04-07 23:36:16,593 INFO   gpt2-ffn        Liger-Kernel        66.0 μs
+2026-04-07 23:36:16,703 INFO   gpt2-ffn        PyTorch-eager       72.0 μs
+2026-04-07 23:36:17,215 INFO   gpt2-ffn        torch.compile      291.1 μs
+2026-04-07 23:36:17,470 INFO   square-1k       cuBLAS/cuDNN       204.7 μs
+2026-04-07 23:36:17,566 INFO   square-1k       Liger-Kernel        62.8 μs
+2026-04-07 23:36:17,673 INFO   square-1k       PyTorch-eager       74.3 μs
+2026-04-07 23:36:18,185 INFO   square-1k       torch.compile      295.9 μs
+2026-04-07 23:36:18,323 INFO   llama-ffn       cuBLAS/cuDNN        95.2 μs
+2026-04-07 23:36:18,554 INFO   llama-ffn       Liger-Kernel       161.9 μs
+2026-04-07 23:36:18,691 INFO   llama-ffn       PyTorch-eager       93.3 μs
+2026-04-07 23:36:19,230 INFO   llama-ffn       torch.compile      290.1 μs
+2026-04-07 23:36:19,336 INFO   llama-hidden    cuBLAS/cuDNN        74.7 μs
+2026-04-07 23:36:19,434 INFO   llama-hidden    Liger-Kernel        63.0 μs
+2026-04-07 23:36:19,540 INFO   llama-hidden    PyTorch-eager       72.8 μs
+2026-04-07 23:36:20,047 INFO   llama-hidden    torch.compile      287.1 μs
+2026-04-07 23:36:20,419 INFO   llama-long      cuBLAS/cuDNN       272.8 μs
+2026-04-07 23:36:20,877 INFO   llama-long      Liger-Kernel       338.9 μs
+2026-04-07 23:36:21,253 INFO   llama-long      PyTorch-eager      267.1 μs
+2026-04-07 23:36:22,220 INFO   llama-long      torch.compile      639.8 μs
+2026-04-07 23:36:22,358 INFO   ds-ffn          cuBLAS/cuDNN        96.6 μs
+2026-04-07 23:36:22,576 INFO   ds-ffn          Liger-Kernel       154.2 μs
+2026-04-07 23:36:22,742 INFO   ds-ffn          PyTorch-eager      115.4 μs
+2026-04-07 23:36:23,240 INFO   ds-ffn          torch.compile      272.4 μs
+2026-04-07 23:36:23,454 INFO   ds-ffn-large    cuBLAS/cuDNN       152.3 μs
+2026-04-07 23:36:23,779 INFO   ds-ffn-large    Liger-Kernel       234.2 μs
+2026-04-07 23:36:23,992 INFO   ds-ffn-large    PyTorch-eager      152.1 μs
+2026-04-07 23:36:24,618 INFO   ds-ffn-large    torch.compile      374.6 μs
+2026-04-07 23:36:24,838 INFO   qwen-ffn        cuBLAS/cuDNN       157.4 μs
+2026-04-07 23:36:25,175 INFO   qwen-ffn        Liger-Kernel       242.0 μs
+2026-04-07 23:36:25,396 INFO   qwen-ffn        PyTorch-eager      155.4 μs
+2026-04-07 23:36:26,035 INFO   qwen-ffn        torch.compile      384.7 μs
+2026-04-07 23:36:26,760 INFO   xlarge          cuBLAS/cuDNN       544.2 μs
+2026-04-07 23:36:27,710 INFO   xlarge          Liger-Kernel       717.6 μs
+2026-04-07 23:36:28,425 INFO   xlarge          PyTorch-eager      536.3 μs
+2026-04-07 23:36:30,132 INFO   xlarge          torch.compile     1216.6 μs
+2026-04-07 23:36:30,236 INFO   micro-tiny      FlagGems            74.7 μs
+2026-04-07 23:36:30,344 INFO   micro-small     FlagGems            75.8 μs
+2026-04-07 23:36:30,487 INFO   gpt2-hidden     FlagGems           113.3 μs
+2026-04-07 23:36:30,596 INFO   gpt2-ffn        FlagGems            76.5 μs
+2026-04-07 23:36:30,709 INFO   square-1k       FlagGems            73.9 μs
+2026-04-07 23:36:30,876 INFO   llama-ffn       FlagGems           120.6 μs
+2026-04-07 23:36:30,984 INFO   llama-hidden    FlagGems            74.7 μs
+2026-04-07 23:36:31,357 INFO   llama-long      FlagGems           274.0 μs
+2026-04-07 23:36:31,510 INFO   ds-ffn          FlagGems           103.1 μs
+2026-04-07 23:36:31,724 INFO   ds-ffn-large    FlagGems           152.7 μs
+2026-04-07 23:36:31,942 INFO   qwen-ffn        FlagGems           157.4 μs
+2026-04-07 23:36:32,688 INFO   xlarge          FlagGems           561.2 μs
+2026-04-07 23:36:32,689 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/gelu_results.csv
+2026-04-07 23:36:32,689 INFO 
+============================================================
+2026-04-07 23:36:32,689 INFO L1 Benchmark: silu
+2026-04-07 23:36:32,689 INFO ============================================================
+2026-04-07 23:36:32,689 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:36:32,689 INFO Benchmarking silu: 12 shapes × 5 baselines (cuBLAS/cuDNN, FlagGems, Liger-Kernel, PyTorch-eager, torch.compile)
+2026-04-07 23:36:32,806 INFO   micro-tiny      cuBLAS/cuDNN        72.0 μs
+2026-04-07 23:36:32,912 INFO   micro-tiny      PyTorch-eager       72.7 μs
+2026-04-07 23:36:33,520 INFO   micro-tiny      torch.compile      326.8 μs
+2026-04-07 23:36:33,636 INFO   micro-small     cuBLAS/cuDNN        80.9 μs
+2026-04-07 23:36:33,744 INFO   micro-small     PyTorch-eager       71.5 μs
+2026-04-07 23:36:34,367 INFO   micro-small     torch.compile      299.1 μs
+2026-04-07 23:36:34,471 INFO   gpt2-hidden     cuBLAS/cuDNN        72.5 μs
+2026-04-07 23:36:34,573 INFO   gpt2-hidden     PyTorch-eager       69.5 μs
+2026-04-07 23:36:35,091 INFO   gpt2-hidden     torch.compile      292.8 μs
+2026-04-07 23:36:35,199 INFO   gpt2-ffn        cuBLAS/cuDNN        72.1 μs
+2026-04-07 23:36:35,318 INFO   gpt2-ffn        PyTorch-eager       77.9 μs
+2026-04-07 23:36:35,825 INFO   gpt2-ffn        torch.compile      287.8 μs
+2026-04-07 23:36:36,074 INFO   square-1k       cuBLAS/cuDNN       208.3 μs
+2026-04-07 23:36:36,180 INFO   square-1k       PyTorch-eager       72.5 μs
+2026-04-07 23:36:36,695 INFO   square-1k       torch.compile      295.0 μs
+2026-04-07 23:36:36,810 INFO   llama-ffn       cuBLAS/cuDNN        77.2 μs
+2026-04-07 23:36:36,922 INFO   llama-ffn       PyTorch-eager       76.9 μs
+2026-04-07 23:36:37,426 INFO   llama-ffn       torch.compile      278.2 μs
+2026-04-07 23:36:37,527 INFO   llama-hidden    cuBLAS/cuDNN        73.8 μs
+2026-04-07 23:36:37,627 INFO   llama-hidden    PyTorch-eager       72.0 μs
+2026-04-07 23:36:38,166 INFO   llama-hidden    torch.compile      286.4 μs
+2026-04-07 23:36:38,496 INFO   llama-long      cuBLAS/cuDNN       235.1 μs
+2026-04-07 23:36:38,794 INFO   llama-long      PyTorch-eager      218.2 μs
+2026-04-07 23:36:39,549 INFO   llama-long      torch.compile      479.0 μs
+2026-04-07 23:36:39,671 INFO   ds-ffn          cuBLAS/cuDNN        84.6 μs
+2026-04-07 23:36:39,794 INFO   ds-ffn          PyTorch-eager       84.7 μs
+2026-04-07 23:36:40,285 INFO   ds-ffn          torch.compile      282.7 μs
+2026-04-07 23:36:40,461 INFO   ds-ffn-large    cuBLAS/cuDNN       124.4 μs
+2026-04-07 23:36:40,636 INFO   ds-ffn-large    PyTorch-eager      124.5 μs
+2026-04-07 23:36:41,141 INFO   ds-ffn-large    torch.compile      279.4 μs
+2026-04-07 23:36:41,321 INFO   qwen-ffn        cuBLAS/cuDNN       127.9 μs
+2026-04-07 23:36:41,502 INFO   qwen-ffn        PyTorch-eager      127.9 μs
+2026-04-07 23:36:42,018 INFO   qwen-ffn        torch.compile      289.3 μs
+2026-04-07 23:36:42,660 INFO   xlarge          cuBLAS/cuDNN       488.2 μs
+2026-04-07 23:36:43,277 INFO   xlarge          PyTorch-eager      470.8 μs
+2026-04-07 23:36:44,657 INFO   xlarge          torch.compile      951.8 μs
+2026-04-07 23:36:44,766 INFO   micro-tiny      FlagGems            77.3 μs
+2026-04-07 23:36:44,872 INFO   micro-small     FlagGems            72.6 μs
+2026-04-07 23:36:44,979 INFO   gpt2-hidden     FlagGems            74.0 μs
+2026-04-07 23:36:45,084 INFO   gpt2-ffn        FlagGems            75.2 μs
+2026-04-07 23:36:45,182 INFO   square-1k       FlagGems            70.1 μs
+2026-04-07 23:36:45,295 INFO   llama-ffn       FlagGems            77.6 μs
+2026-04-07 23:36:45,396 INFO   llama-hidden    FlagGems            72.1 μs
+2026-04-07 23:36:45,718 INFO   llama-long      FlagGems           243.3 μs
+2026-04-07 23:36:45,842 INFO   ds-ffn          FlagGems            84.3 μs
+2026-04-07 23:36:46,019 INFO   ds-ffn-large    FlagGems           124.9 μs
+2026-04-07 23:36:46,202 INFO   qwen-ffn        FlagGems           130.8 μs
+2026-04-07 23:36:46,871 INFO   xlarge          FlagGems           492.6 μs
+2026-04-07 23:36:46,872 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/silu_results.csv
+2026-04-07 23:36:46,872 INFO 
+============================================================
+2026-04-07 23:36:46,872 INFO L1 Benchmark: tanh
+2026-04-07 23:36:46,872 INFO ============================================================
+2026-04-07 23:36:46,872 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:36:46,872 INFO Benchmarking tanh: 12 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:36:46,995 INFO   micro-tiny      cuBLAS/cuDNN        82.3 μs
+2026-04-07 23:36:47,096 INFO   micro-tiny      PyTorch-eager       70.5 μs
+2026-04-07 23:36:47,191 INFO   micro-small     cuBLAS/cuDNN        68.1 μs
+2026-04-07 23:36:47,297 INFO   micro-small     PyTorch-eager       77.0 μs
+2026-04-07 23:36:47,399 INFO   gpt2-hidden     cuBLAS/cuDNN        72.0 μs
+2026-04-07 23:36:47,504 INFO   gpt2-hidden     PyTorch-eager       73.1 μs
+2026-04-07 23:36:47,608 INFO   gpt2-ffn        cuBLAS/cuDNN        71.4 μs
+2026-04-07 23:36:47,709 INFO   gpt2-ffn        PyTorch-eager       71.1 μs
+2026-04-07 23:36:47,812 INFO   square-1k       cuBLAS/cuDNN        70.6 μs
+2026-04-07 23:36:47,911 INFO   square-1k       PyTorch-eager       69.9 μs
+2026-04-07 23:36:48,033 INFO   llama-ffn       cuBLAS/cuDNN        82.4 μs
+2026-04-07 23:36:48,168 INFO   llama-ffn       PyTorch-eager       91.7 μs
+2026-04-07 23:36:48,269 INFO   llama-hidden    cuBLAS/cuDNN        70.4 μs
+2026-04-07 23:36:48,372 INFO   llama-hidden    PyTorch-eager       70.9 μs
+2026-04-07 23:36:48,763 INFO   llama-long      cuBLAS/cuDNN       302.8 μs
+2026-04-07 23:36:49,131 INFO   llama-long      PyTorch-eager      277.0 μs
+2026-04-07 23:36:49,264 INFO   ds-ffn          cuBLAS/cuDNN        90.7 μs
+2026-04-07 23:36:49,414 INFO   ds-ffn          PyTorch-eager      101.4 μs
+2026-04-07 23:36:49,612 INFO   ds-ffn-large    cuBLAS/cuDNN       139.8 μs
+2026-04-07 23:36:49,810 INFO   ds-ffn-large    PyTorch-eager      136.6 μs
+2026-04-07 23:36:50,008 INFO   qwen-ffn        cuBLAS/cuDNN       140.0 μs
+2026-04-07 23:36:50,206 INFO   qwen-ffn        PyTorch-eager      139.2 μs
+2026-04-07 23:36:50,910 INFO   xlarge          cuBLAS/cuDNN       523.7 μs
+2026-04-07 23:36:51,548 INFO   xlarge          PyTorch-eager      492.1 μs
+2026-04-07 23:36:51,649 INFO   micro-tiny      FlagGems            73.5 μs
+2026-04-07 23:36:51,749 INFO   micro-small     FlagGems            72.3 μs
+2026-04-07 23:36:51,849 INFO   gpt2-hidden     FlagGems            71.6 μs
+2026-04-07 23:36:51,951 INFO   gpt2-ffn        FlagGems            70.3 μs
+2026-04-07 23:36:52,050 INFO   square-1k       FlagGems            71.7 μs
+2026-04-07 23:36:52,164 INFO   llama-ffn       FlagGems            78.3 μs
+2026-04-07 23:36:52,265 INFO   llama-hidden    FlagGems            72.5 μs
+2026-04-07 23:36:52,593 INFO   llama-long      FlagGems           243.3 μs
+2026-04-07 23:36:52,720 INFO   ds-ffn          FlagGems            87.1 μs
+2026-04-07 23:36:52,907 INFO   ds-ffn-large    FlagGems           131.2 μs
+2026-04-07 23:36:53,098 INFO   qwen-ffn        FlagGems           135.5 μs
+2026-04-07 23:36:53,764 INFO   xlarge          FlagGems           503.5 μs
+2026-04-07 23:36:53,765 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/tanh_results.csv
+2026-04-07 23:36:53,765 INFO 
+============================================================
+2026-04-07 23:36:53,765 INFO L1 Benchmark: sigmoid
+2026-04-07 23:36:53,765 INFO ============================================================
+2026-04-07 23:36:53,765 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:36:53,765 INFO Benchmarking sigmoid: 12 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:36:53,879 INFO   micro-tiny      cuBLAS/cuDNN        73.8 μs
+2026-04-07 23:36:53,981 INFO   micro-tiny      PyTorch-eager       72.5 μs
+2026-04-07 23:36:54,084 INFO   micro-small     cuBLAS/cuDNN        74.8 μs
+2026-04-07 23:36:54,187 INFO   micro-small     PyTorch-eager       76.3 μs
+2026-04-07 23:36:54,287 INFO   gpt2-hidden     cuBLAS/cuDNN        71.7 μs
+2026-04-07 23:36:54,389 INFO   gpt2-hidden     PyTorch-eager       75.2 μs
+2026-04-07 23:36:54,492 INFO   gpt2-ffn        cuBLAS/cuDNN        74.0 μs
+2026-04-07 23:36:54,596 INFO   gpt2-ffn        PyTorch-eager       76.4 μs
+2026-04-07 23:36:54,697 INFO   square-1k       cuBLAS/cuDNN        71.5 μs
+2026-04-07 23:36:54,795 INFO   square-1k       PyTorch-eager       70.3 μs
+2026-04-07 23:36:54,906 INFO   llama-ffn       cuBLAS/cuDNN        76.5 μs
+2026-04-07 23:36:55,019 INFO   llama-ffn       PyTorch-eager       77.0 μs
+2026-04-07 23:36:55,122 INFO   llama-hidden    cuBLAS/cuDNN        75.1 μs
+2026-04-07 23:36:55,223 INFO   llama-hidden    PyTorch-eager       72.2 μs
+2026-04-07 23:36:55,521 INFO   llama-long      cuBLAS/cuDNN       218.0 μs
+2026-04-07 23:36:55,825 INFO   llama-long      PyTorch-eager      220.5 μs
+2026-04-07 23:36:55,950 INFO   ds-ffn          cuBLAS/cuDNN        85.9 μs
+2026-04-07 23:36:56,071 INFO   ds-ffn          PyTorch-eager       84.7 μs
+2026-04-07 23:36:56,246 INFO   ds-ffn-large    cuBLAS/cuDNN       124.5 μs
+2026-04-07 23:36:56,420 INFO   ds-ffn-large    PyTorch-eager      124.5 μs
+2026-04-07 23:36:56,599 INFO   qwen-ffn        cuBLAS/cuDNN       127.7 μs
+2026-04-07 23:36:56,780 INFO   qwen-ffn        PyTorch-eager      128.2 μs
+2026-04-07 23:36:57,392 INFO   xlarge          cuBLAS/cuDNN       465.8 μs
+2026-04-07 23:36:57,977 INFO   xlarge          PyTorch-eager      438.8 μs
+2026-04-07 23:36:58,079 INFO   micro-tiny      FlagGems            72.0 μs
+2026-04-07 23:36:58,179 INFO   micro-small     FlagGems            70.6 μs
+2026-04-07 23:36:58,279 INFO   gpt2-hidden     FlagGems            72.2 μs
+2026-04-07 23:36:58,382 INFO   gpt2-ffn        FlagGems            73.3 μs
+2026-04-07 23:36:58,483 INFO   square-1k       FlagGems            71.9 μs
+2026-04-07 23:36:58,594 INFO   llama-ffn       FlagGems            76.5 μs
+2026-04-07 23:36:58,707 INFO   llama-hidden    FlagGems            79.5 μs
+2026-04-07 23:36:59,004 INFO   llama-long      FlagGems           217.9 μs
+2026-04-07 23:36:59,127 INFO   ds-ffn          FlagGems            84.7 μs
+2026-04-07 23:36:59,302 INFO   ds-ffn-large    FlagGems           124.5 μs
+2026-04-07 23:36:59,482 INFO   qwen-ffn        FlagGems           127.8 μs
+2026-04-07 23:37:00,096 INFO   xlarge          FlagGems           476.7 μs
+2026-04-07 23:37:00,097 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/sigmoid_results.csv
+2026-04-07 23:37:00,097 INFO 
+============================================================
+2026-04-07 23:37:00,097 INFO L1 Benchmark: add
+2026-04-07 23:37:00,097 INFO ============================================================
+2026-04-07 23:37:00,097 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:00,098 INFO Benchmarking add: 12 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:37:00,224 INFO   micro-tiny      cuBLAS/cuDNN        81.5 μs
+2026-04-07 23:37:00,341 INFO   micro-tiny      PyTorch-eager       83.9 μs
+2026-04-07 23:37:00,453 INFO   micro-small     cuBLAS/cuDNN        80.7 μs
+2026-04-07 23:37:00,565 INFO   micro-small     PyTorch-eager       81.1 μs
+2026-04-07 23:37:00,681 INFO   gpt2-hidden     cuBLAS/cuDNN        82.9 μs
+2026-04-07 23:37:00,794 INFO   gpt2-hidden     PyTorch-eager       82.3 μs
+2026-04-07 23:37:00,909 INFO   gpt2-ffn        cuBLAS/cuDNN        81.2 μs
+2026-04-07 23:37:01,024 INFO   gpt2-ffn        PyTorch-eager       83.9 μs
+2026-04-07 23:37:01,134 INFO   square-1k       cuBLAS/cuDNN        79.3 μs
+2026-04-07 23:37:01,246 INFO   square-1k       PyTorch-eager       78.9 μs
+2026-04-07 23:37:01,405 INFO   llama-ffn       cuBLAS/cuDNN       112.0 μs
+2026-04-07 23:37:01,565 INFO   llama-ffn       PyTorch-eager      112.4 μs
+2026-04-07 23:37:01,679 INFO   llama-hidden    cuBLAS/cuDNN        77.9 μs
+2026-04-07 23:37:01,794 INFO   llama-hidden    PyTorch-eager       82.2 μs
+2026-04-07 23:37:02,229 INFO   llama-long      cuBLAS/cuDNN       323.1 μs
+2026-04-07 23:37:02,663 INFO   llama-long      PyTorch-eager      322.6 μs
+2026-04-07 23:37:02,839 INFO   ds-ffn          cuBLAS/cuDNN       124.6 μs
+2026-04-07 23:37:03,016 INFO   ds-ffn          PyTorch-eager      124.9 μs
+2026-04-07 23:37:03,269 INFO   ds-ffn-large    cuBLAS/cuDNN       184.1 μs
+2026-04-07 23:37:03,522 INFO   ds-ffn-large    PyTorch-eager      184.3 μs
+2026-04-07 23:37:03,783 INFO   qwen-ffn        cuBLAS/cuDNN       189.5 μs
+2026-04-07 23:37:04,042 INFO   qwen-ffn        PyTorch-eager      189.2 μs
+2026-04-07 23:37:04,884 INFO   xlarge          cuBLAS/cuDNN       637.4 μs
+2026-04-07 23:37:05,729 INFO   xlarge          PyTorch-eager      637.4 μs
+2026-04-07 23:37:05,843 INFO   micro-tiny      FlagGems            79.5 μs
+2026-04-07 23:37:05,957 INFO   micro-small     FlagGems            82.0 μs
+2026-04-07 23:37:06,069 INFO   gpt2-hidden     FlagGems            80.2 μs
+2026-04-07 23:37:06,185 INFO   gpt2-ffn        FlagGems            82.1 μs
+2026-04-07 23:37:06,295 INFO   square-1k       FlagGems            79.2 μs
+2026-04-07 23:37:06,454 INFO   llama-ffn       FlagGems           112.3 μs
+2026-04-07 23:37:06,566 INFO   llama-hidden    FlagGems            79.1 μs
+2026-04-07 23:37:07,002 INFO   llama-long      FlagGems           323.1 μs
+2026-04-07 23:37:07,178 INFO   ds-ffn          FlagGems           125.0 μs
+2026-04-07 23:37:07,432 INFO   ds-ffn-large    FlagGems           185.4 μs
+2026-04-07 23:37:07,693 INFO   qwen-ffn        FlagGems           189.1 μs
+2026-04-07 23:37:08,535 INFO   xlarge          FlagGems           637.2 μs
+2026-04-07 23:37:08,536 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/add_results.csv
+2026-04-07 23:37:08,536 INFO 
+============================================================
+2026-04-07 23:37:08,536 INFO L1 Benchmark: mul
+2026-04-07 23:37:08,537 INFO ============================================================
+2026-04-07 23:37:08,537 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:08,537 INFO Benchmarking mul: 12 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:37:08,654 INFO   micro-tiny      cuBLAS/cuDNN        75.7 μs
+2026-04-07 23:37:08,765 INFO   micro-tiny      PyTorch-eager       80.5 μs
+2026-04-07 23:37:08,877 INFO   micro-small     cuBLAS/cuDNN        76.6 μs
+2026-04-07 23:37:08,988 INFO   micro-small     PyTorch-eager       79.8 μs
+2026-04-07 23:37:09,100 INFO   gpt2-hidden     cuBLAS/cuDNN        80.7 μs
+2026-04-07 23:37:09,210 INFO   gpt2-hidden     PyTorch-eager       77.2 μs
+2026-04-07 23:37:09,323 INFO   gpt2-ffn        cuBLAS/cuDNN        81.4 μs
+2026-04-07 23:37:09,436 INFO   gpt2-ffn        PyTorch-eager       80.9 μs
+2026-04-07 23:37:09,547 INFO   square-1k       cuBLAS/cuDNN        77.1 μs
+2026-04-07 23:37:09,658 INFO   square-1k       PyTorch-eager       80.4 μs
+2026-04-07 23:37:09,816 INFO   llama-ffn       cuBLAS/cuDNN       111.8 μs
+2026-04-07 23:37:09,974 INFO   llama-ffn       PyTorch-eager      112.5 μs
+2026-04-07 23:37:10,086 INFO   llama-hidden    cuBLAS/cuDNN        79.2 μs
+2026-04-07 23:37:10,196 INFO   llama-hidden    PyTorch-eager       78.5 μs
+2026-04-07 23:37:10,631 INFO   llama-long      cuBLAS/cuDNN       323.5 μs
+2026-04-07 23:37:11,065 INFO   llama-long      PyTorch-eager      322.3 μs
+2026-04-07 23:37:11,240 INFO   ds-ffn          cuBLAS/cuDNN       124.6 μs
+2026-04-07 23:37:11,417 INFO   ds-ffn          PyTorch-eager      124.9 μs
+2026-04-07 23:37:11,671 INFO   ds-ffn-large    cuBLAS/cuDNN       183.9 μs
+2026-04-07 23:37:11,925 INFO   ds-ffn-large    PyTorch-eager      184.4 μs
+2026-04-07 23:37:12,185 INFO   qwen-ffn        cuBLAS/cuDNN       189.2 μs
+2026-04-07 23:37:12,446 INFO   qwen-ffn        PyTorch-eager      188.9 μs
+2026-04-07 23:37:13,288 INFO   xlarge          cuBLAS/cuDNN       637.2 μs
+2026-04-07 23:37:14,129 INFO   xlarge          PyTorch-eager      637.3 μs
+2026-04-07 23:37:14,242 INFO   micro-tiny      FlagGems            77.3 μs
+2026-04-07 23:37:14,352 INFO   micro-small     FlagGems            78.5 μs
+2026-04-07 23:37:14,464 INFO   gpt2-hidden     FlagGems            81.2 μs
+2026-04-07 23:37:14,576 INFO   gpt2-ffn        FlagGems            81.0 μs
+2026-04-07 23:37:14,687 INFO   square-1k       FlagGems            77.2 μs
+2026-04-07 23:37:14,845 INFO   llama-ffn       FlagGems           112.0 μs
+2026-04-07 23:37:14,962 INFO   llama-hidden    FlagGems            82.6 μs
+2026-04-07 23:37:15,395 INFO   llama-long      FlagGems           322.8 μs
+2026-04-07 23:37:15,571 INFO   ds-ffn          FlagGems           124.8 μs
+2026-04-07 23:37:15,826 INFO   ds-ffn-large    FlagGems           184.1 μs
+2026-04-07 23:37:16,087 INFO   qwen-ffn        FlagGems           188.9 μs
+2026-04-07 23:37:16,932 INFO   xlarge          FlagGems           637.4 μs
+2026-04-07 23:37:16,933 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/mul_results.csv
+
+===============================================================================
+RELU Comparison (μs)
+===============================================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager   torch.compile
+-------------------------------------------------------------------------------
+micro-tiny                 12.7      72.5( 17%)      12.7(100%)     106.7( 12%)
+micro-small                11.1      75.6( 15%)      11.5( 97%)     136.0(  8%)
+gpt2-hidden                12.0      76.2( 16%)      11.3(107%)     136.3(  9%)
+gpt2-ffn                   11.3      73.5( 15%)      11.9( 95%)     134.4(  8%)
+square-1k                  17.0      75.1( 23%)      16.3(104%)     133.8( 13%)
+llama-ffn                  75.4      76.3( 99%)      75.7(100%)     159.0( 47%)
+llama-hidden               30.9      68.3( 45%)      30.8(100%)     128.3( 24%)
+llama-long                217.1     218.5( 99%)     217.1(100%)     454.6( 48%)
+ds-ffn                     84.6      84.4(100%)      84.8(100%)     195.7( 43%)
+ds-ffn-large              124.6     124.3(100%)     124.6(100%)     266.0( 47%)
+qwen-ffn                  127.4     127.6(100%)     127.5(100%)     273.3( 47%)
+xlarge                    429.3     428.4(100%)     429.4(100%)     907.0( 47%)
+===============================================================================
+
+===============================================================================================
+GELU Comparison (μs)
+===============================================================================================
+Shape              cuBLAS/cuDNN    Liger-Kernel        FlagGems   PyTorch-eager   torch.compile
+-----------------------------------------------------------------------------------------------
+micro-tiny                 74.8      95.9( 78%)      74.7(100%)      79.9( 94%)     260.4( 29%)
+micro-small                75.3      60.3(125%)      75.8( 99%)      74.3(101%)     501.7( 15%)
+gpt2-hidden                73.4      61.1(120%)     113.3( 65%)      71.0(103%)     283.6( 26%)
+gpt2-ffn                   73.1      66.0(111%)      76.5( 96%)      72.0(102%)     291.1( 25%)
+square-1k                 204.7      62.8(326%)      73.9(277%)      74.3(276%)     295.9( 69%)
+llama-ffn                  95.2     161.9( 59%)     120.6( 79%)      93.3(102%)     290.1( 33%)
+llama-hidden               74.7      63.0(119%)      74.7(100%)      72.8(103%)     287.1( 26%)
+llama-long                272.8     338.9( 80%)     274.0(100%)     267.1(102%)     639.8( 43%)
+ds-ffn                     96.6     154.2( 63%)     103.1( 94%)     115.4( 84%)     272.4( 35%)
+ds-ffn-large              152.3     234.2( 65%)     152.7(100%)     152.1(100%)     374.6( 41%)
+qwen-ffn                  157.4     242.0( 65%)     157.4(100%)     155.4(101%)     384.7( 41%)
+xlarge                    544.2     717.6( 76%)     561.2( 97%)     536.3(101%)    1216.6( 45%)
+===============================================================================================
+
+===============================================================================
+SILU Comparison (μs)
+===============================================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager   torch.compile
+-------------------------------------------------------------------------------
+micro-tiny                 72.0      77.3( 93%)      72.7( 99%)     326.8( 22%)
+micro-small                80.9      72.6(111%)      71.5(113%)     299.1( 27%)
+gpt2-hidden                72.5      74.0( 98%)      69.5(104%)     292.8( 25%)
+gpt2-ffn                   72.1      75.2( 96%)      77.9( 93%)     287.8( 25%)
+square-1k                 208.3      70.1(297%)      72.5(287%)     295.0( 71%)
+llama-ffn                  77.2      77.6( 99%)      76.9(100%)     278.2( 28%)
+llama-hidden               73.8      72.1(102%)      72.0(102%)     286.4( 26%)
+llama-long                235.1     243.3( 97%)     218.2(108%)     479.0( 49%)
+ds-ffn                     84.6      84.3(100%)      84.7(100%)     282.7( 30%)
+ds-ffn-large              124.4     124.9(100%)     124.5(100%)     279.4( 45%)
+qwen-ffn                  127.9     130.8( 98%)     127.9(100%)     289.3( 44%)
+xlarge                    488.2     492.6( 99%)     470.8(104%)     951.8( 51%)
+===============================================================================
+
+===============================================================
+TANH Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+micro-tiny                 82.3      73.5(112%)      70.5(117%)
+micro-small                68.1      72.3( 94%)      77.0( 89%)
+gpt2-hidden                72.0      71.6(101%)      73.1( 99%)
+gpt2-ffn                   71.4      70.3(102%)      71.1(100%)
+square-1k                  70.6      71.7( 99%)      69.9(101%)
+llama-ffn                  82.4      78.3(105%)      91.7( 90%)
+llama-hidden               70.4      72.5( 97%)      70.9( 99%)
+llama-long                302.8     243.3(124%)     277.0(109%)
+ds-ffn                     90.7      87.1(104%)     101.4( 89%)
+ds-ffn-large              139.8     131.2(107%)     136.6(102%)
+qwen-ffn                  140.0     135.5(103%)     139.2(101%)
+xlarge                    523.7     503.5(104%)     492.1(106%)
+===============================================================
+
+===============================================================
+SIGMOID Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+micro-tiny                 73.8      72.0(103%)      72.5(102%)
+micro-small                74.8      70.6(106%)      76.3( 98%)
+gpt2-hidden                71.7      72.2( 99%)      75.2( 95%)
+gpt2-ffn                   74.0      73.3(101%)      76.4( 97%)
+square-1k                  71.5      71.9( 99%)      70.3(102%)
+llama-ffn                  76.5      76.5(100%)      77.0( 99%)
+llama-hidden               75.1      79.5( 94%)      72.2(104%)
+llama-long                218.0     217.9(100%)     220.5( 99%)
+ds-ffn                     85.9      84.7(101%)      84.7(101%)
+ds-ffn-large              124.5     124.5(100%)     124.5(100%)
+qwen-ffn                  127.7     127.8(100%)     128.2(100%)
+xlarge                    465.8     476.7( 98%)     438.8(106%)
+===============================================================
+
+===============================================================
+ADD Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+micro-tiny                 81.5      79.5(103%)      83.9( 97%)
+micro-small                80.7      82.0( 98%)      81.1( 99%)
+gpt2-hidden                82.9      80.2(103%)      82.3(101%)
+gpt2-ffn                   81.2      82.1( 99%)      83.9( 97%)
+square-1k                  79.3      79.2(100%)      78.9(101%)
+llama-ffn                 112.0     112.3(100%)     112.4(100%)
+llama-hidden               77.9      79.1( 99%)      82.2( 95%)
+llama-long                323.1     323.1(100%)     322.6(100%)
+ds-ffn                    124.6     125.0(100%)     124.9(100%)
+ds-ffn-large              184.1     185.4( 99%)     184.3(100%)
+qwen-ffn                  189.5     189.1(100%)     189.2(100%)
+xlarge                    637.4     637.2(100%)     637.4(100%)
+===============================================================
+
+===============================================================
+MUL Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+micro-tiny                 75.7      77.3( 98%)      80.5( 94%)
+micro-small                76.6      78.5( 98%)      79.8( 96%)
+2026-04-07 23:37:16,933 INFO 
+============================================================
+2026-04-07 23:37:16,933 INFO L1 Benchmark: where_
+2026-04-07 23:37:16,933 INFO ============================================================
+2026-04-07 23:37:16,933 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:16,933 INFO Benchmarking where_: 12 shapes × 2 baselines (FlagGems, PyTorch-eager)
+2026-04-07 23:37:17,769 INFO   micro-tiny      PyTorch-eager       91.6 μs
+2026-04-07 23:37:18,526 INFO   micro-small     PyTorch-eager       94.3 μs
+2026-04-07 23:37:19,282 INFO   gpt2-hidden     PyTorch-eager       95.8 μs
+2026-04-07 23:37:20,042 INFO   gpt2-ffn        PyTorch-eager       96.0 μs
+2026-04-07 23:37:20,806 INFO   square-1k       PyTorch-eager       99.9 μs
+2026-04-07 23:37:21,631 INFO   llama-ffn       PyTorch-eager      128.1 μs
+2026-04-07 23:37:22,400 INFO   llama-hidden    PyTorch-eager       98.2 μs
+2026-04-07 23:37:23,581 INFO   llama-long      PyTorch-eager      371.6 μs
+2026-04-07 23:37:24,422 INFO   ds-ffn          PyTorch-eager      143.6 μs
+2026-04-07 23:37:25,361 INFO   ds-ffn-large    PyTorch-eager      211.3 μs
+2026-04-07 23:37:26,320 INFO   qwen-ffn        PyTorch-eager      216.7 μs
+2026-04-07 23:37:27,988 INFO   xlarge          PyTorch-eager      734.9 μs
+2026-04-07 23:37:28,122 INFO   micro-tiny      FlagGems            95.6 μs
+2026-04-07 23:37:28,254 INFO   micro-small     FlagGems            96.9 μs
+2026-04-07 23:37:28,387 INFO   gpt2-hidden     FlagGems            97.1 μs
+2026-04-07 23:37:28,520 INFO   gpt2-ffn        FlagGems            95.5 μs
+2026-04-07 23:37:28,656 INFO   square-1k       FlagGems            98.1 μs
+2026-04-07 23:37:28,838 INFO   llama-ffn       FlagGems           128.4 μs
+2026-04-07 23:37:28,980 INFO   llama-hidden    FlagGems            96.8 μs
+2026-04-07 23:37:29,482 INFO   llama-long      FlagGems           371.4 μs
+2026-04-07 23:37:29,685 INFO   ds-ffn          FlagGems           143.0 μs
+2026-04-07 23:37:29,978 INFO   ds-ffn-large    FlagGems           212.1 μs
+2026-04-07 23:37:30,276 INFO   qwen-ffn        FlagGems           217.0 μs
+2026-04-07 23:37:31,249 INFO   xlarge          FlagGems           735.4 μs
+2026-04-07 23:37:31,250 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/where__results.csv
+2026-04-07 23:37:31,250 INFO 
+============================================================
+2026-04-07 23:37:31,250 INFO L1 Benchmark: cast
+2026-04-07 23:37:31,250 INFO ============================================================
+2026-04-07 23:37:31,250 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:31,250 INFO Benchmarking cast: 12 shapes × 2 baselines (FlagGems, PyTorch-eager)
+2026-04-07 23:37:31,364 INFO   micro-tiny      PyTorch-eager       76.3 μs
+2026-04-07 23:37:31,467 INFO   micro-small     PyTorch-eager       74.5 μs
+2026-04-07 23:37:31,572 INFO   gpt2-hidden     PyTorch-eager       73.2 μs
+2026-04-07 23:37:31,676 INFO   gpt2-ffn        PyTorch-eager       72.5 μs
+2026-04-07 23:37:31,782 INFO   square-1k       PyTorch-eager       73.2 μs
+2026-04-07 23:37:31,940 INFO   llama-ffn       PyTorch-eager      112.2 μs
+2026-04-07 23:37:32,049 INFO   llama-hidden    PyTorch-eager       74.1 μs
+2026-04-07 23:37:32,482 INFO   llama-long      PyTorch-eager      322.4 μs
+2026-04-07 23:37:32,658 INFO   ds-ffn          PyTorch-eager      124.4 μs
+2026-04-07 23:37:32,912 INFO   ds-ffn-large    PyTorch-eager      184.7 μs
+2026-04-07 23:37:33,171 INFO   qwen-ffn        PyTorch-eager      188.9 μs
+2026-04-07 23:37:34,018 INFO   xlarge          PyTorch-eager      638.7 μs
+2026-04-07 23:37:34,123 INFO   micro-tiny      FlagGems            77.7 μs
+2026-04-07 23:37:34,230 INFO   micro-small     FlagGems            75.9 μs
+2026-04-07 23:37:34,335 INFO   gpt2-hidden     FlagGems            75.4 μs
+2026-04-07 23:37:34,441 INFO   gpt2-ffn        FlagGems            74.7 μs
+2026-04-07 23:37:34,549 INFO   square-1k       FlagGems            73.2 μs
+2026-04-07 23:37:34,707 INFO   llama-ffn       FlagGems           112.2 μs
+2026-04-07 23:37:34,812 INFO   llama-hidden    FlagGems            72.2 μs
+2026-04-07 23:37:35,247 INFO   llama-long      FlagGems           322.0 μs
+2026-04-07 23:37:35,422 INFO   ds-ffn          FlagGems           124.5 μs
+2026-04-07 23:37:35,676 INFO   ds-ffn-large    FlagGems           184.1 μs
+2026-04-07 23:37:35,937 INFO   qwen-ffn        FlagGems           189.4 μs
+2026-04-07 23:37:36,784 INFO   xlarge          FlagGems           638.7 μs
+2026-04-07 23:37:36,784 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/cast_results.csv
+2026-04-07 23:37:36,784 INFO 
+============================================================
+2026-04-07 23:37:36,784 INFO L1 Benchmark: neg
+2026-04-07 23:37:36,784 INFO ============================================================
+2026-04-07 23:37:36,785 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:36,785 INFO Benchmarking neg: 12 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:37:36,896 INFO   micro-tiny      cuBLAS/cuDNN        72.1 μs
+2026-04-07 23:37:36,998 INFO   micro-tiny      PyTorch-eager       73.4 μs
+2026-04-07 23:37:37,102 INFO   micro-small     cuBLAS/cuDNN        70.8 μs
+2026-04-07 23:37:37,199 INFO   micro-small     PyTorch-eager       70.0 μs
+2026-04-07 23:37:37,300 INFO   gpt2-hidden     cuBLAS/cuDNN        71.2 μs
+2026-04-07 23:37:37,400 INFO   gpt2-hidden     PyTorch-eager       71.7 μs
+2026-04-07 23:37:37,502 INFO   gpt2-ffn        cuBLAS/cuDNN        71.5 μs
+2026-04-07 23:37:37,602 INFO   gpt2-ffn        PyTorch-eager       69.8 μs
+2026-04-07 23:37:37,701 INFO   square-1k       cuBLAS/cuDNN        71.3 μs
+2026-04-07 23:37:37,802 INFO   square-1k       PyTorch-eager       70.9 μs
+2026-04-07 23:37:37,915 INFO   llama-ffn       cuBLAS/cuDNN        76.4 μs
+2026-04-07 23:37:38,027 INFO   llama-ffn       PyTorch-eager       76.5 μs
+2026-04-07 23:37:38,132 INFO   llama-hidden    cuBLAS/cuDNN        72.5 μs
+2026-04-07 23:37:38,231 INFO   llama-hidden    PyTorch-eager       71.0 μs
+2026-04-07 23:37:38,529 INFO   llama-long      cuBLAS/cuDNN       218.2 μs
+2026-04-07 23:37:38,827 INFO   llama-long      PyTorch-eager      218.3 μs
+2026-04-07 23:37:38,949 INFO   ds-ffn          cuBLAS/cuDNN        85.0 μs
+2026-04-07 23:37:39,071 INFO   ds-ffn          PyTorch-eager       84.7 μs
+2026-04-07 23:37:39,247 INFO   ds-ffn-large    cuBLAS/cuDNN       124.9 μs
+2026-04-07 23:37:39,423 INFO   ds-ffn-large    PyTorch-eager      124.6 μs
+2026-04-07 23:37:39,603 INFO   qwen-ffn        cuBLAS/cuDNN       128.1 μs
+2026-04-07 23:37:39,784 INFO   qwen-ffn        PyTorch-eager      128.1 μs
+2026-04-07 23:37:40,357 INFO   xlarge          cuBLAS/cuDNN       429.3 μs
+2026-04-07 23:37:40,930 INFO   xlarge          PyTorch-eager      429.1 μs
+2026-04-07 23:37:41,032 INFO   micro-tiny      FlagGems            74.1 μs
+2026-04-07 23:37:41,133 INFO   micro-small     FlagGems            71.6 μs
+2026-04-07 23:37:41,234 INFO   gpt2-hidden     FlagGems            70.2 μs
+2026-04-07 23:37:41,334 INFO   gpt2-ffn        FlagGems            72.9 μs
+2026-04-07 23:37:41,435 INFO   square-1k       FlagGems            70.6 μs
+2026-04-07 23:37:41,547 INFO   llama-ffn       FlagGems            76.6 μs
+2026-04-07 23:37:41,650 INFO   llama-hidden    FlagGems            72.8 μs
+2026-04-07 23:37:41,948 INFO   llama-long      FlagGems           218.4 μs
+2026-04-07 23:37:42,071 INFO   ds-ffn          FlagGems            84.9 μs
+2026-04-07 23:37:42,248 INFO   ds-ffn-large    FlagGems           124.8 μs
+2026-04-07 23:37:42,427 INFO   qwen-ffn        FlagGems           127.9 μs
+2026-04-07 23:37:43,001 INFO   xlarge          FlagGems           429.2 μs
+2026-04-07 23:37:43,001 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/neg_results.csv
+2026-04-07 23:37:43,001 INFO 
+============================================================
+2026-04-07 23:37:43,002 INFO L1 Benchmark: exp
+2026-04-07 23:37:43,002 INFO ============================================================
+2026-04-07 23:37:43,002 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:43,002 INFO Benchmarking exp: 12 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:37:43,119 INFO   micro-tiny      cuBLAS/cuDNN        71.6 μs
+2026-04-07 23:37:43,223 INFO   micro-tiny      PyTorch-eager       76.6 μs
+2026-04-07 23:37:43,324 INFO   micro-small     cuBLAS/cuDNN        71.7 μs
+2026-04-07 23:37:43,427 INFO   micro-small     PyTorch-eager       74.4 μs
+2026-04-07 23:37:43,529 INFO   gpt2-hidden     cuBLAS/cuDNN        74.6 μs
+2026-04-07 23:37:43,630 INFO   gpt2-hidden     PyTorch-eager       71.8 μs
+2026-04-07 23:37:43,731 INFO   gpt2-ffn        cuBLAS/cuDNN        73.8 μs
+2026-04-07 23:37:43,832 INFO   gpt2-ffn        PyTorch-eager       72.4 μs
+2026-04-07 23:37:43,935 INFO   square-1k       cuBLAS/cuDNN        73.9 μs
+2026-04-07 23:37:44,036 INFO   square-1k       PyTorch-eager       71.7 μs
+2026-04-07 23:37:44,149 INFO   llama-ffn       cuBLAS/cuDNN        76.9 μs
+2026-04-07 23:37:44,261 INFO   llama-ffn       PyTorch-eager       76.9 μs
+2026-04-07 23:37:44,361 INFO   llama-hidden    cuBLAS/cuDNN        71.8 μs
+2026-04-07 23:37:44,465 INFO   llama-hidden    PyTorch-eager       75.5 μs
+2026-04-07 23:37:44,761 INFO   llama-long      cuBLAS/cuDNN       218.1 μs
+2026-04-07 23:37:45,061 INFO   llama-long      PyTorch-eager      218.8 μs
+2026-04-07 23:37:45,185 INFO   ds-ffn          cuBLAS/cuDNN        85.0 μs
+2026-04-07 23:37:45,308 INFO   ds-ffn          PyTorch-eager       85.1 μs
+2026-04-07 23:37:45,483 INFO   ds-ffn-large    cuBLAS/cuDNN       124.8 μs
+2026-04-07 23:37:45,658 INFO   ds-ffn-large    PyTorch-eager      124.8 μs
+2026-04-07 23:37:45,837 INFO   qwen-ffn        cuBLAS/cuDNN       127.9 μs
+2026-04-07 23:37:46,016 INFO   qwen-ffn        PyTorch-eager      127.9 μs
+2026-04-07 23:37:46,589 INFO   xlarge          cuBLAS/cuDNN       429.3 μs
+2026-04-07 23:37:47,169 INFO   xlarge          PyTorch-eager      441.0 μs
+2026-04-07 23:37:47,273 INFO   micro-tiny      FlagGems            72.4 μs
+2026-04-07 23:37:47,376 INFO   micro-small     FlagGems            71.4 μs
+2026-04-07 23:37:47,478 INFO   gpt2-hidden     FlagGems            70.3 μs
+2026-04-07 23:37:47,579 INFO   gpt2-ffn        FlagGems            71.4 μs
+2026-04-07 23:37:47,681 INFO   square-1k       FlagGems            70.1 μs
+2026-04-07 23:37:47,795 INFO   llama-ffn       FlagGems            77.9 μs
+2026-04-07 23:37:47,897 INFO   llama-hidden    FlagGems            71.1 μs
+2026-04-07 23:37:48,193 INFO   llama-long      FlagGems           218.4 μs
+2026-04-07 23:37:48,318 INFO   ds-ffn          FlagGems            84.9 μs
+2026-04-07 23:37:48,493 INFO   ds-ffn-large    FlagGems           124.7 μs
+2026-04-07 23:37:48,671 INFO   qwen-ffn        FlagGems           128.0 μs
+2026-04-07 23:37:49,247 INFO   xlarge          FlagGems           429.0 μs
+2026-04-07 23:37:49,248 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/exp_results.csv
+2026-04-07 23:37:49,248 INFO 
+============================================================
+2026-04-07 23:37:49,248 INFO L1 Benchmark: rsqrt
+2026-04-07 23:37:49,248 INFO ============================================================
+2026-04-07 23:37:49,248 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:49,248 INFO Benchmarking rsqrt: 12 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:37:49,380 INFO   micro-tiny      cuBLAS/cuDNN        71.1 μs
+2026-04-07 23:37:49,479 INFO   micro-tiny      PyTorch-eager       69.6 μs
+2026-04-07 23:37:49,577 INFO   micro-small     cuBLAS/cuDNN        68.8 μs
+2026-04-07 23:37:49,678 INFO   micro-small     PyTorch-eager       70.6 μs
+2026-04-07 23:37:49,779 INFO   gpt2-hidden     cuBLAS/cuDNN        70.1 μs
+2026-04-07 23:37:49,882 INFO   gpt2-hidden     PyTorch-eager       69.6 μs
+2026-04-07 23:37:49,982 INFO   gpt2-ffn        cuBLAS/cuDNN        72.8 μs
+2026-04-07 23:37:50,084 INFO   gpt2-ffn        PyTorch-eager       75.1 μs
+2026-04-07 23:37:50,184 INFO   square-1k       cuBLAS/cuDNN        72.2 μs
+2026-04-07 23:37:50,284 INFO   square-1k       PyTorch-eager       70.9 μs
+2026-04-07 23:37:50,395 INFO   llama-ffn       cuBLAS/cuDNN        76.5 μs
+2026-04-07 23:37:50,510 INFO   llama-ffn       PyTorch-eager       78.3 μs
+2026-04-07 23:37:50,609 INFO   llama-hidden    cuBLAS/cuDNN        70.2 μs
+2026-04-07 23:37:50,706 INFO   llama-hidden    PyTorch-eager       68.4 μs
+2026-04-07 23:37:51,003 INFO   llama-long      cuBLAS/cuDNN       217.9 μs
+2026-04-07 23:37:51,299 INFO   llama-long      PyTorch-eager      217.7 μs
+2026-04-07 23:37:51,421 INFO   ds-ffn          cuBLAS/cuDNN        84.8 μs
+2026-04-07 23:37:51,544 INFO   ds-ffn          PyTorch-eager       84.9 μs
+2026-04-07 23:37:51,718 INFO   ds-ffn-large    cuBLAS/cuDNN       124.5 μs
+2026-04-07 23:37:51,894 INFO   ds-ffn-large    PyTorch-eager      124.5 μs
+2026-04-07 23:37:52,075 INFO   qwen-ffn        cuBLAS/cuDNN       127.9 μs
+2026-04-07 23:37:52,254 INFO   qwen-ffn        PyTorch-eager      128.0 μs
+2026-04-07 23:37:52,831 INFO   xlarge          cuBLAS/cuDNN       428.5 μs
+2026-04-07 23:37:53,417 INFO   xlarge          PyTorch-eager      434.0 μs
+2026-04-07 23:37:53,517 INFO   micro-tiny      FlagGems            71.3 μs
+2026-04-07 23:37:53,617 INFO   micro-small     FlagGems            71.5 μs
+2026-04-07 23:37:53,716 INFO   gpt2-hidden     FlagGems            69.6 μs
+2026-04-07 23:37:53,816 INFO   gpt2-ffn        FlagGems            71.7 μs
+2026-04-07 23:37:53,916 INFO   square-1k       FlagGems            71.4 μs
+2026-04-07 23:37:54,028 INFO   llama-ffn       FlagGems            76.5 μs
+2026-04-07 23:37:54,129 INFO   llama-hidden    FlagGems            71.6 μs
+2026-04-07 23:37:54,427 INFO   llama-long      FlagGems           218.3 μs
+2026-04-07 23:37:54,549 INFO   ds-ffn          FlagGems            84.8 μs
+2026-04-07 23:37:54,725 INFO   ds-ffn-large    FlagGems           124.6 μs
+2026-04-07 23:37:54,904 INFO   qwen-ffn        FlagGems           128.2 μs
+2026-04-07 23:37:55,499 INFO   xlarge          FlagGems           444.1 μs
+2026-04-07 23:37:55,500 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/rsqrt_results.csv
+2026-04-07 23:37:55,500 INFO 
+============================================================
+2026-04-07 23:37:55,500 INFO L1 Benchmark: softmax
+2026-04-07 23:37:55,500 INFO ============================================================
+2026-04-07 23:37:55,500 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:37:55,500 INFO Benchmarking softmax: 10 shapes × 5 baselines (cuBLAS/cuDNN, FlagGems, Triton-Tutorial, PyTorch-eager, torch.compile)
+2026-04-07 23:37:56,163 INFO   attn-gpt2-128   cuBLAS/cuDNN        40.5 μs
+2026-04-07 23:37:56,265 INFO   attn-gpt2-128   Triton-Tutorial     64.8 μs
+2026-04-07 23:37:56,323 INFO   attn-gpt2-128   PyTorch-eager       39.7 μs
+2026-04-07 23:37:56,902 INFO   attn-gpt2-128   torch.compile      258.7 μs
+2026-04-07 23:37:57,613 INFO   attn-gpt2-256   cuBLAS/cuDNN        42.2 μs
+2026-04-07 23:37:57,717 INFO   attn-gpt2-256   Triton-Tutorial     69.8 μs
+2026-04-07 23:37:57,777 INFO   attn-gpt2-256   PyTorch-eager       41.3 μs
+2026-04-07 23:37:58,456 INFO   attn-gpt2-256   torch.compile      314.4 μs
+2026-04-07 23:37:59,165 INFO   attn-gpt2-512   cuBLAS/cuDNN        42.2 μs
+2026-04-07 23:37:59,269 INFO   attn-gpt2-512   Triton-Tutorial     67.1 μs
+2026-04-07 23:37:59,335 INFO   attn-gpt2-512   PyTorch-eager       46.1 μs
+2026-04-07 23:37:59,851 INFO   attn-gpt2-512   torch.compile      290.8 μs
+2026-04-07 23:38:00,558 INFO   attn-llama-512  cuBLAS/cuDNN        40.5 μs
+2026-04-07 23:38:00,656 INFO   attn-llama-512  Triton-Tutorial     65.4 μs
+2026-04-07 23:38:00,715 INFO   attn-llama-512  PyTorch-eager       40.2 μs
+2026-04-07 23:38:01,358 INFO   attn-llama-512  torch.compile      287.9 μs
+2026-04-07 23:38:02,076 INFO   attn-llama-2k   cuBLAS/cuDNN        45.2 μs
+2026-04-07 23:38:02,176 INFO   attn-llama-2k   Triton-Tutorial     65.9 μs
+2026-04-07 23:38:02,238 INFO   attn-llama-2k   PyTorch-eager       42.6 μs
+2026-04-07 23:38:02,749 INFO   attn-llama-2k   torch.compile      293.1 μs
+2026-04-07 23:38:03,459 INFO   attn-llama-4k   cuBLAS/cuDNN        43.2 μs
+2026-04-07 23:38:03,556 INFO   attn-llama-4k   Triton-Tutorial     64.4 μs
+2026-04-07 23:38:03,617 INFO   attn-llama-4k   PyTorch-eager       39.5 μs
+2026-04-07 23:38:04,125 INFO   attn-llama-4k   torch.compile      288.1 μs
+2026-04-07 23:38:04,865 INFO   wide-vocab-gpt2 cuBLAS/cuDNN        44.4 μs
+2026-04-07 23:38:05,368 INFO   wide-vocab-gpt2 Triton-Tutorial    357.5 μs
+2026-04-07 23:38:05,438 INFO   wide-vocab-gpt2 PyTorch-eager       46.5 μs
+2026-04-07 23:38:06,124 INFO   wide-vocab-gpt2 torch.compile      299.6 μs
+2026-04-07 23:38:06,849 INFO   wide-vocab-llama3 cuBLAS/cuDNN        54.6 μs
+2026-04-07 23:38:06,854 WARNING   wide-vocab-llama3 Triton-Tutorial: FAILED (out of resource: shared memory, Required: 262176, Hardware limit: 101376. Reducing block sizes or `num_stages` may help.)
+2026-04-07 23:38:06,935 INFO   wide-vocab-llama3 PyTorch-eager       55.2 μs
+2026-04-07 23:38:07,448 INFO   wide-vocab-llama3 torch.compile      287.2 μs
+2026-04-07 23:38:08,154 INFO   batch-large     cuBLAS/cuDNN        44.8 μs
+2026-04-07 23:38:08,248 INFO   batch-large     Triton-Tutorial     66.8 μs
+2026-04-07 23:38:08,308 INFO   batch-large     PyTorch-eager       41.3 μs
+2026-04-07 23:38:08,828 INFO   batch-large     torch.compile      298.8 μs
+2026-04-07 23:38:09,167 INFO   square-4k       cuBLAS/cuDNN       255.4 μs
+2026-04-07 23:38:09,474 INFO   square-4k       Triton-Tutorial    225.5 μs
+2026-04-07 23:38:09,807 INFO   square-4k       PyTorch-eager      241.4 μs
+2026-04-07 23:38:10,775 INFO   square-4k       torch.compile      634.9 μs
+2026-04-07 23:38:10,840 INFO   attn-gpt2-128   FlagGems            45.8 μs
+2026-04-07 23:38:10,902 INFO   attn-gpt2-256   FlagGems            41.0 μs
+2026-04-07 23:38:10,962 INFO   attn-gpt2-512   FlagGems            40.9 μs
+2026-04-07 23:38:11,025 INFO   attn-llama-512  FlagGems            41.7 μs
+2026-04-07 23:38:11,084 INFO   attn-llama-2k   FlagGems            40.7 μs
+2026-04-07 23:38:11,144 INFO   attn-llama-4k   FlagGems            40.1 μs
+2026-04-07 23:38:11,206 INFO   wide-vocab-gpt2 FlagGems            42.8 μs
+2026-04-07 23:38:11,289 INFO   wide-vocab-llama3 FlagGems            57.2 μs
+2026-04-07 23:38:11,355 INFO   batch-large     FlagGems            43.1 μs
+2026-04-07 23:38:11,698 INFO   square-4k       FlagGems           255.7 μs
+2026-04-07 23:38:11,699 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/softmax_results.csv
+2026-04-07 23:38:11,699 INFO 
+============================================================
+2026-04-07 23:38:11,699 INFO L1 Benchmark: layernorm
+2026-04-07 23:38:11,699 INFO ============================================================
+2026-04-07 23:38:11,699 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:11,699 INFO Benchmarking layernorm: 9 shapes × 4 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager, torch.compile)
+2026-04-07 23:38:12,137 INFO   gpt2-small      cuBLAS/cuDNN        58.1 μs
+2026-04-07 23:38:12,218 INFO   gpt2-small      PyTorch-eager       56.1 μs
+2026-04-07 23:38:12,796 INFO   gpt2-small      torch.compile      262.7 μs
+2026-04-07 23:38:13,220 INFO   gpt2-ffn        cuBLAS/cuDNN        59.5 μs
+2026-04-07 23:38:13,303 INFO   gpt2-ffn        PyTorch-eager       57.1 μs
+2026-04-07 23:38:13,968 INFO   gpt2-ffn        torch.compile      297.8 μs
+2026-04-07 23:38:14,379 INFO   gpt2-medium     cuBLAS/cuDNN        61.8 μs
+2026-04-07 23:38:14,461 INFO   gpt2-medium     PyTorch-eager       56.4 μs
+2026-04-07 23:38:14,977 INFO   gpt2-medium     torch.compile      294.5 μs
+2026-04-07 23:38:15,389 INFO   llama-7b        cuBLAS/cuDNN        58.4 μs
+2026-04-07 23:38:15,471 INFO   llama-7b        PyTorch-eager       55.5 μs
+2026-04-07 23:38:15,988 INFO   llama-7b        torch.compile      296.6 μs
+2026-04-07 23:38:18,047 INFO   llama-13b       cuBLAS/cuDNN        57.9 μs
+2026-04-07 23:38:18,127 INFO   llama-13b       PyTorch-eager       54.5 μs
+2026-04-07 23:38:18,645 INFO   llama-13b       torch.compile      292.4 μs
+2026-04-07 23:38:19,810 INFO   llama-long      cuBLAS/cuDNN       111.3 μs
+2026-04-07 23:38:19,967 INFO   llama-long      PyTorch-eager      111.5 μs
+2026-04-07 23:38:20,901 INFO   llama-long      torch.compile      483.3 μs
+2026-04-07 23:38:20,986 INFO   ds-v2           cuBLAS/cuDNN        59.8 μs
+2026-04-07 23:38:21,064 INFO   ds-v2           PyTorch-eager       53.3 μs
+2026-04-07 23:38:21,592 INFO   ds-v2           torch.compile      308.7 μs
+2026-04-07 23:38:23,578 INFO   ds-v3           cuBLAS/cuDNN        58.0 μs
+2026-04-07 23:38:23,659 INFO   ds-v3           PyTorch-eager       55.8 μs
+2026-04-07 23:38:24,192 INFO   ds-v3           torch.compile      307.8 μs
+2026-04-07 23:38:26,191 INFO   mixtral-ffn     cuBLAS/cuDNN        58.5 μs
+2026-04-07 23:38:26,273 INFO   mixtral-ffn     PyTorch-eager       57.7 μs
+2026-04-07 23:38:26,796 INFO   mixtral-ffn     torch.compile      297.3 μs
+2026-04-07 23:38:26,879 INFO   gpt2-small      FlagGems            58.0 μs
+2026-04-07 23:38:26,959 INFO   gpt2-ffn        FlagGems            56.2 μs
+2026-04-07 23:38:27,043 INFO   gpt2-medium     FlagGems            61.4 μs
+2026-04-07 23:38:27,127 INFO   llama-7b        FlagGems            54.2 μs
+2026-04-07 23:38:27,207 INFO   llama-13b       FlagGems            56.2 μs
+2026-04-07 23:38:27,367 INFO   llama-long      FlagGems           113.1 μs
+2026-04-07 23:38:27,448 INFO   ds-v2           FlagGems            57.4 μs
+2026-04-07 23:38:27,532 INFO   ds-v3           FlagGems            55.5 μs
+2026-04-07 23:38:27,617 INFO   mixtral-ffn     FlagGems            55.9 μs
+2026-04-07 23:38:27,618 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/layernorm_results.csv
+gpt2-hidden                80.7      81.2( 99%)      77.2(105%)
+gpt2-ffn                   81.4      81.0(101%)      80.9(101%)
+square-1k                  77.1      77.2(100%)      80.4( 96%)
+llama-ffn                 111.8     112.0(100%)     112.5( 99%)
+llama-hidden               79.2      82.6( 96%)      78.5(101%)
+llama-long                323.5     322.8(100%)     322.3(100%)
+ds-ffn                    124.6     124.8(100%)     124.9(100%)
+ds-ffn-large              183.9     184.1(100%)     184.4(100%)
+qwen-ffn                  189.2     188.9(100%)     188.9(100%)
+xlarge                    637.2     637.4(100%)     637.3(100%)
+===============================================================
+
+===============================================
+WHERE_ Comparison (μs)
+===============================================
+Shape                  FlagGems   PyTorch-eager
+-----------------------------------------------
+micro-tiny                 95.6      91.6(104%)
+micro-small                96.9      94.3(103%)
+gpt2-hidden                97.1      95.8(101%)
+gpt2-ffn                   95.5      96.0( 99%)
+square-1k                  98.1      99.9( 98%)
+llama-ffn                 128.4     128.1(100%)
+llama-hidden               96.8      98.2( 99%)
+llama-long                371.4     371.6(100%)
+ds-ffn                    143.0     143.6(100%)
+ds-ffn-large              212.1     211.3(100%)
+qwen-ffn                  217.0     216.7(100%)
+xlarge                    735.4     734.9(100%)
+===============================================
+
+===============================================
+CAST Comparison (μs)
+===============================================
+Shape                  FlagGems   PyTorch-eager
+-----------------------------------------------
+micro-tiny                 77.7      76.3(102%)
+micro-small                75.9      74.5(102%)
+gpt2-hidden                75.4      73.2(103%)
+gpt2-ffn                   74.7      72.5(103%)
+square-1k                  73.2      73.2(100%)
+llama-ffn                 112.2     112.2(100%)
+llama-hidden               72.2      74.1( 97%)
+llama-long                322.0     322.4(100%)
+ds-ffn                    124.5     124.4(100%)
+ds-ffn-large              184.1     184.7(100%)
+qwen-ffn                  189.4     188.9(100%)
+xlarge                    638.7     638.7(100%)
+===============================================
+
+===============================================================
+NEG Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+micro-tiny                 72.1      74.1( 97%)      73.4( 98%)
+micro-small                70.8      71.6( 99%)      70.0(101%)
+gpt2-hidden                71.2      70.2(101%)      71.7( 99%)
+gpt2-ffn                   71.5      72.9( 98%)      69.8(102%)
+square-1k                  71.3      70.6(101%)      70.9(101%)
+llama-ffn                  76.4      76.6(100%)      76.5(100%)
+llama-hidden               72.5      72.8( 99%)      71.0(102%)
+llama-long                218.2     218.4(100%)     218.3(100%)
+ds-ffn                     85.0      84.9(100%)      84.7(100%)
+ds-ffn-large              124.9     124.8(100%)     124.6(100%)
+qwen-ffn                  128.1     127.9(100%)     128.1(100%)
+xlarge                    429.3     429.2(100%)     429.1(100%)
+===============================================================
+
+===============================================================
+EXP Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+micro-tiny                 71.6      72.4( 99%)      76.6( 93%)
+micro-small                71.7      71.4(100%)      74.4( 96%)
+gpt2-hidden                74.6      70.3(106%)      71.8(104%)
+gpt2-ffn                   73.8      71.4(103%)      72.4(102%)
+square-1k                  73.9      70.1(105%)      71.7(103%)
+llama-ffn                  76.9      77.9( 99%)      76.9(100%)
+llama-hidden               71.8      71.1(101%)      75.5( 95%)
+llama-long                218.1     218.4(100%)     218.8(100%)
+ds-ffn                     85.0      84.9(100%)      85.1(100%)
+ds-ffn-large              124.8     124.7(100%)     124.8(100%)
+qwen-ffn                  127.9     128.0(100%)     127.9(100%)
+xlarge                    429.3     429.0(100%)     441.0( 97%)
+===============================================================
+
+===============================================================
+RSQRT Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+micro-tiny                 71.1      71.3(100%)      69.6(102%)
+micro-small                68.8      71.5( 96%)      70.6( 98%)
+gpt2-hidden                70.1      69.6(101%)      69.6(101%)
+gpt2-ffn                   72.8      71.7(102%)      75.1( 97%)
+square-1k                  72.2      71.4(101%)      70.9(102%)
+llama-ffn                  76.5      76.5(100%)      78.3( 98%)
+llama-hidden               70.2      71.6( 98%)      68.4(103%)
+llama-long                217.9     218.3(100%)     217.7(100%)
+ds-ffn                     84.8      84.8(100%)      84.9(100%)
+ds-ffn-large              124.5     124.6(100%)     124.5(100%)
+qwen-ffn                  127.9     128.2(100%)     128.0(100%)
+xlarge                    428.5     444.1( 97%)     434.0( 99%)
+===============================================================
+
+===============================================================================================
+SOFTMAX Comparison (μs)
+===============================================================================================
+Shape              cuBLAS/cuDNN        FlagGems Triton-Tutorial   PyTorch-eager   torch.compile
+-----------------------------------------------------------------------------------------------
+attn-gpt2-128              40.5      45.8( 88%)      64.8( 62%)      39.7(102%)     258.7( 16%)
+attn-gpt2-256              42.2      41.0(103%)      69.8( 60%)      41.3(102%)     314.4( 13%)
+attn-gpt2-512              42.2      40.9(103%)      67.1( 63%)      46.1( 91%)     290.8( 14%)
+attn-llama-512             40.5      41.7( 97%)      65.4( 62%)      40.2(101%)     287.9( 14%)
+attn-llama-2k              45.2      40.7(111%)      65.9( 69%)      42.6(106%)     293.1( 15%)
+attn-llama-4k              43.2      40.1(108%)      64.4( 67%)      39.5(109%)     288.1( 15%)
+wide-vocab-gpt2            44.4      42.8(104%)     357.5( 12%)      46.5( 96%)     299.6( 15%)
+wide-vocab-llama3            54.6      57.2( 95%)             N/A      55.2( 99%)     287.2( 19%)
+batch-large                44.8      43.1(104%)      66.8( 67%)      41.3(108%)     298.8( 15%)
+square-4k                 255.4     255.7(100%)     225.5(113%)     241.4(106%)     634.9( 40%)
+===============================================================================================
+
+===============================================================================
+LAYERNORM Comparison (μs)
+===============================================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager   torch.compile
+-------------------------------------------------------------------------------
+gpt2-small                 58.1      58.0(100%)      56.1(103%)     262.7( 22%)
+gpt2-ffn                   59.5      56.2(106%)      57.1(104%)     297.8( 20%)
+gpt2-medium                61.8      61.4(101%)      56.4(110%)     294.5( 21%)
+llama-7b                   58.4      54.2(108%)      55.5(105%)     296.6( 20%)
+llama-13b                  57.9      56.2(103%)      54.5(106%)     292.4( 20%)
+llama-long                111.3     113.1( 98%)     111.5(100%)     483.3( 23%)
+ds-v2                      59.8      57.4(104%)      53.3(112%)     308.7( 19%)
+ds-v3                      58.0      55.5(104%)      55.8(104%)     307.8( 19%)
+2026-04-07 23:38:27,618 INFO 
+============================================================
+2026-04-07 23:38:27,618 INFO L1 Benchmark: rmsnorm
+2026-04-07 23:38:27,618 INFO ============================================================
+2026-04-07 23:38:27,618 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:27,618 INFO Benchmarking rmsnorm: 9 shapes × 3 baselines (FlagGems, Liger-Kernel, PyTorch-eager)
+2026-04-07 23:38:27,737 INFO   gpt2-small      Liger-Kernel        78.4 μs
+2026-04-07 23:38:28,486 INFO   gpt2-small      PyTorch-eager      541.9 μs
+2026-04-07 23:38:28,609 INFO   gpt2-ffn        Liger-Kernel        83.7 μs
+2026-04-07 23:38:29,335 INFO   gpt2-ffn        PyTorch-eager      548.0 μs
+2026-04-07 23:38:29,457 INFO   gpt2-medium     Liger-Kernel        87.7 μs
+2026-04-07 23:38:30,159 INFO   gpt2-medium     PyTorch-eager      530.0 μs
+2026-04-07 23:38:30,276 INFO   llama-7b        Liger-Kernel        82.9 μs
+2026-04-07 23:38:30,985 INFO   llama-7b        PyTorch-eager      539.4 μs
+2026-04-07 23:38:31,115 INFO   llama-13b       Liger-Kernel        81.9 μs
+2026-04-07 23:38:31,837 INFO   llama-13b       PyTorch-eager      551.7 μs
+2026-04-07 23:38:32,076 INFO   llama-long      Liger-Kernel       197.4 μs
+2026-04-07 23:38:32,921 INFO   llama-long      PyTorch-eager      641.6 μs
+2026-04-07 23:38:33,038 INFO   ds-v2           Liger-Kernel        83.1 μs
+2026-04-07 23:38:33,753 INFO   ds-v2           PyTorch-eager      547.9 μs
+2026-04-07 23:38:33,880 INFO   ds-v3           Liger-Kernel        91.4 μs
+2026-04-07 23:38:34,594 INFO   ds-v3           PyTorch-eager      548.1 μs
+2026-04-07 23:38:34,717 INFO   mixtral-ffn     Liger-Kernel        84.1 μs
+2026-04-07 23:38:35,422 INFO   mixtral-ffn     PyTorch-eager      534.1 μs
+2026-04-07 23:38:36,128 INFO   gpt2-small      FlagGems           537.5 μs
+2026-04-07 23:38:36,848 INFO   gpt2-ffn        FlagGems           552.0 μs
+2026-04-07 23:38:37,570 INFO   gpt2-medium     FlagGems           546.7 μs
+2026-04-07 23:38:38,287 INFO   llama-7b        FlagGems           545.8 μs
+2026-04-07 23:38:39,015 INFO   llama-13b       FlagGems           550.6 μs
+2026-04-07 23:38:40,016 INFO   llama-long      FlagGems           623.9 μs
+2026-04-07 23:38:40,733 INFO   ds-v2           FlagGems           545.9 μs
+2026-04-07 23:38:41,445 INFO   ds-v3           FlagGems           549.6 μs
+2026-04-07 23:38:42,168 INFO   mixtral-ffn     FlagGems           546.2 μs
+2026-04-07 23:38:42,169 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/rmsnorm_results.csv
+2026-04-07 23:38:42,169 INFO 
+============================================================
+2026-04-07 23:38:42,169 INFO L1 Benchmark: rmsnorm_residual
+2026-04-07 23:38:42,169 INFO ============================================================
+2026-04-07 23:38:42,169 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:42,169 INFO Benchmarking rmsnorm_residual: 9 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:38:43,136 INFO   gpt2-small      PyTorch-eager      734.3 μs
+2026-04-07 23:38:44,098 INFO   gpt2-ffn        PyTorch-eager      722.9 μs
+2026-04-07 23:38:45,054 INFO   gpt2-medium     PyTorch-eager      735.2 μs
+2026-04-07 23:38:46,024 INFO   llama-7b        PyTorch-eager      735.6 μs
+2026-04-07 23:38:46,973 INFO   llama-13b       PyTorch-eager      722.4 μs
+2026-04-07 23:38:48,242 INFO   llama-long      PyTorch-eager      974.9 μs
+2026-04-07 23:38:49,211 INFO   ds-v2           PyTorch-eager      730.7 μs
+2026-04-07 23:38:50,167 INFO   ds-v3           PyTorch-eager      741.9 μs
+2026-04-07 23:38:51,122 INFO   mixtral-ffn     PyTorch-eager      733.9 μs
+2026-04-07 23:38:51,122 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/rmsnorm_residual_results.csv
+2026-04-07 23:38:51,122 INFO 
+============================================================
+2026-04-07 23:38:51,122 INFO L1 Benchmark: reduce_sum
+2026-04-07 23:38:51,122 INFO ============================================================
+2026-04-07 23:38:51,122 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:51,123 INFO Benchmarking reduce_sum: 6 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:38:51,193 INFO   small           cuBLAS/cuDNN        46.0 μs
+2026-04-07 23:38:51,258 INFO   small           PyTorch-eager       44.6 μs
+2026-04-07 23:38:51,331 INFO   medium          cuBLAS/cuDNN        47.2 μs
+2026-04-07 23:38:51,400 INFO   medium          PyTorch-eager       47.3 μs
+2026-04-07 23:38:52,134 INFO   large           cuBLAS/cuDNN        49.6 μs
+2026-04-07 23:38:52,206 INFO   large           PyTorch-eager       48.8 μs
+2026-04-07 23:38:52,279 INFO   wide            cuBLAS/cuDNN        47.6 μs
+2026-04-07 23:38:52,351 INFO   wide            PyTorch-eager       53.4 μs
+2026-04-07 23:38:52,430 INFO   llama3-wide     cuBLAS/cuDNN        51.7 μs
+2026-04-07 23:38:52,500 INFO   llama3-wide     PyTorch-eager       46.5 μs
+2026-04-07 23:38:53,199 INFO   qwen25-wide     cuBLAS/cuDNN        48.1 μs
+2026-04-07 23:38:53,269 INFO   qwen25-wide     PyTorch-eager       48.7 μs
+2026-04-07 23:38:53,342 INFO   small           FlagGems            48.5 μs
+2026-04-07 23:38:53,412 INFO   medium          FlagGems            47.9 μs
+2026-04-07 23:38:53,480 INFO   large           FlagGems            44.9 μs
+2026-04-07 23:38:53,548 INFO   wide            FlagGems            47.1 μs
+2026-04-07 23:38:53,614 INFO   llama3-wide     FlagGems            44.2 μs
+2026-04-07 23:38:53,678 INFO   qwen25-wide     FlagGems            44.5 μs
+2026-04-07 23:38:53,679 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/reduce_sum_results.csv
+2026-04-07 23:38:53,679 INFO 
+============================================================
+2026-04-07 23:38:53,679 INFO L1 Benchmark: reduce_max
+2026-04-07 23:38:53,679 INFO ============================================================
+2026-04-07 23:38:53,679 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:53,679 INFO Benchmarking reduce_max: 6 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:38:53,881 INFO   small           cuBLAS/cuDNN       121.1 μs
+2026-04-07 23:38:54,041 INFO   small           PyTorch-eager      117.5 μs
+2026-04-07 23:38:54,205 INFO   medium          cuBLAS/cuDNN       120.9 μs
+2026-04-07 23:38:54,373 INFO   medium          PyTorch-eager      120.8 μs
+2026-04-07 23:38:54,536 INFO   large           cuBLAS/cuDNN       114.2 μs
+2026-04-07 23:38:54,699 INFO   large           PyTorch-eager      116.8 μs
+2026-04-07 23:38:54,871 INFO   wide            cuBLAS/cuDNN       121.5 μs
+2026-04-07 23:38:55,038 INFO   wide            PyTorch-eager      118.4 μs
+2026-04-07 23:38:55,252 INFO   llama3-wide     cuBLAS/cuDNN       148.7 μs
+2026-04-07 23:38:55,460 INFO   llama3-wide     PyTorch-eager      151.5 μs
+2026-04-07 23:38:55,708 INFO   qwen25-wide     cuBLAS/cuDNN       179.2 μs
+2026-04-07 23:38:55,955 INFO   qwen25-wide     PyTorch-eager      178.9 μs
+2026-04-07 23:38:56,118 INFO   small           FlagGems           120.1 μs
+2026-04-07 23:38:56,282 INFO   medium          FlagGems           120.5 μs
+2026-04-07 23:38:56,449 INFO   large           FlagGems           122.5 μs
+2026-04-07 23:38:56,617 INFO   wide            FlagGems           122.0 μs
+2026-04-07 23:38:56,826 INFO   llama3-wide     FlagGems           151.7 μs
+2026-04-07 23:38:57,071 INFO   qwen25-wide     FlagGems           179.1 μs
+2026-04-07 23:38:57,072 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/reduce_max_results.csv
+2026-04-07 23:38:57,072 INFO 
+============================================================
+2026-04-07 23:38:57,072 INFO L1 Benchmark: reduce_mean
+2026-04-07 23:38:57,072 INFO ============================================================
+2026-04-07 23:38:57,072 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:57,072 INFO Benchmarking reduce_mean: 6 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:38:57,145 INFO   small           cuBLAS/cuDNN        51.2 μs
+2026-04-07 23:38:57,215 INFO   small           PyTorch-eager       47.2 μs
+2026-04-07 23:38:57,284 INFO   medium          cuBLAS/cuDNN        46.9 μs
+2026-04-07 23:38:57,357 INFO   medium          PyTorch-eager       50.3 μs
+2026-04-07 23:38:57,427 INFO   large           cuBLAS/cuDNN        46.1 μs
+2026-04-07 23:38:57,498 INFO   large           PyTorch-eager       46.7 μs
+2026-04-07 23:38:57,570 INFO   wide            cuBLAS/cuDNN        47.6 μs
+2026-04-07 23:38:57,639 INFO   wide            PyTorch-eager       47.6 μs
+2026-04-07 23:38:57,715 INFO   llama3-wide     cuBLAS/cuDNN        46.8 μs
+2026-04-07 23:38:57,791 INFO   llama3-wide     PyTorch-eager       57.1 μs
+2026-04-07 23:38:57,862 INFO   qwen25-wide     cuBLAS/cuDNN        48.9 μs
+2026-04-07 23:38:57,931 INFO   qwen25-wide     PyTorch-eager       47.3 μs
+2026-04-07 23:38:58,002 INFO   small           FlagGems            48.7 μs
+2026-04-07 23:38:58,070 INFO   medium          FlagGems            46.0 μs
+2026-04-07 23:38:58,137 INFO   large           FlagGems            45.8 μs
+2026-04-07 23:38:58,207 INFO   wide            FlagGems            48.4 μs
+2026-04-07 23:38:58,280 INFO   llama3-wide     FlagGems            49.6 μs
+2026-04-07 23:38:58,353 INFO   qwen25-wide     FlagGems            49.9 μs
+2026-04-07 23:38:58,354 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/reduce_mean_results.csv
+2026-04-07 23:38:58,354 INFO 
+============================================================
+2026-04-07 23:38:58,354 INFO L1 Benchmark: argmax
+2026-04-07 23:38:58,354 INFO ============================================================
+2026-04-07 23:38:58,354 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:58,354 INFO Benchmarking argmax: 6 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:38:58,431 INFO   small           PyTorch-eager       48.2 μs
+2026-04-07 23:38:58,514 INFO   medium          PyTorch-eager       58.3 μs
+2026-04-07 23:38:58,588 INFO   large           PyTorch-eager       49.5 μs
+2026-04-07 23:38:58,670 INFO   wide            PyTorch-eager       53.7 μs
+2026-04-07 23:38:58,771 INFO   llama3-wide     PyTorch-eager       68.2 μs
+2026-04-07 23:38:58,885 INFO   qwen25-wide     PyTorch-eager       80.2 μs
+2026-04-07 23:38:58,885 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/argmax_results.csv
+2026-04-07 23:38:58,886 INFO 
+============================================================
+2026-04-07 23:38:58,886 INFO L1 Benchmark: topk
+2026-04-07 23:38:58,886 INFO ============================================================
+2026-04-07 23:38:58,886 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:38:58,886 INFO Benchmarking topk: 7 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:38:59,667 INFO   moe-top2-small  PyTorch-eager      110.8 μs
+2026-04-07 23:39:01,006 INFO   moe-top2-gpt2   PyTorch-eager     1010.3 μs
+2026-04-07 23:39:01,394 INFO   moe-top4-llama  PyTorch-eager      290.2 μs
+2026-04-07 23:39:01,782 INFO   moe-top2-ds     PyTorch-eager      284.5 μs
+2026-04-07 23:39:02,232 INFO   sampling-top50  PyTorch-eager      320.0 μs
+2026-04-07 23:39:03,803 INFO   sampling-top50-llama3 PyTorch-eager     1167.2 μs
+2026-04-07 23:39:05,272 INFO   sampling-top100-qwen PyTorch-eager     1111.5 μs
+2026-04-07 23:39:05,272 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/topk_results.csv
+2026-04-07 23:39:05,272 INFO 
+============================================================
+2026-04-07 23:39:05,272 INFO L1 Benchmark: cumsum
+2026-04-07 23:39:05,272 INFO ============================================================
+2026-04-07 23:39:05,272 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:39:05,272 INFO Benchmarking cumsum: 6 shapes × 2 baselines (FlagGems, PyTorch-eager)
+2026-04-07 23:39:05,352 INFO   small-row       PyTorch-eager       49.9 μs
+2026-04-07 23:39:05,428 INFO   gpt2-row        PyTorch-eager       52.6 μs
+2026-04-07 23:39:05,504 INFO   llama-row       PyTorch-eager       48.3 μs
+2026-04-07 23:39:05,577 INFO   llama-col       PyTorch-eager       47.8 μs
+2026-04-07 23:39:05,785 INFO   sampling-probs  PyTorch-eager      141.5 μs
+2026-04-07 23:39:05,983 INFO   sampling-probs-llama3 PyTorch-eager      141.9 μs
+2026-04-07 23:39:06,052 INFO   small-row       FlagGems            48.2 μs
+2026-04-07 23:39:06,123 INFO   gpt2-row        FlagGems            48.6 μs
+2026-04-07 23:39:06,197 INFO   llama-row       FlagGems            47.6 μs
+2026-04-07 23:39:06,267 INFO   llama-col       FlagGems            47.4 μs
+2026-04-07 23:39:06,452 INFO   sampling-probs  FlagGems           138.5 μs
+2026-04-07 23:39:06,637 INFO   sampling-probs-llama3 FlagGems           135.1 μs
+2026-04-07 23:39:06,638 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/cumsum_results.csv
+2026-04-07 23:39:06,638 INFO 
+============================================================
+2026-04-07 23:39:06,638 INFO L1 Benchmark: matmul
+2026-04-07 23:39:06,638 INFO ============================================================
+2026-04-07 23:39:06,638 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:39:06,638 INFO Benchmarking matmul: 12 shapes × 5 baselines (cuBLAS/cuDNN, FlagGems, Triton-Tutorial, PyTorch-eager, torch.compile)
+2026-04-07 23:39:06,755 INFO   tiny            cuBLAS/cuDNN        57.4 μs 0.07 TFLOPS
+2026-04-07 23:39:07,709 INFO   tiny            Triton-Tutorial     63.4 μs 0.07 TFLOPS
+2026-04-07 23:39:07,794 INFO   tiny            PyTorch-eager       54.7 μs 0.08 TFLOPS
+2026-04-07 23:39:08,321 INFO   tiny            torch.compile      265.3 μs 0.02 TFLOPS
+2026-04-07 23:39:09,055 INFO   gpt2-c_proj     cuBLAS/cuDNN        58.3 μs 2.59 TFLOPS
+2026-04-07 23:39:10,033 INFO   gpt2-c_proj     Triton-Tutorial    104.7 μs 1.44 TFLOPS
+2026-04-07 23:39:10,123 INFO   gpt2-c_proj     PyTorch-eager       56.7 μs 2.66 TFLOPS
+2026-04-07 23:39:10,878 INFO   gpt2-c_proj     torch.compile      436.7 μs 0.35 TFLOPS
+2026-04-07 23:39:11,627 INFO   gpt2-c_attn     cuBLAS/cuDNN        67.9 μs 6.67 TFLOPS
+2026-04-07 23:39:12,618 INFO   gpt2-c_attn     Triton-Tutorial    100.5 μs 4.51 TFLOPS
+2026-04-07 23:39:12,751 INFO   gpt2-c_attn     PyTorch-eager       91.3 μs 4.96 TFLOPS
+2026-04-07 23:39:13,473 INFO   gpt2-c_attn     torch.compile      382.4 μs 1.18 TFLOPS
+2026-04-07 23:39:13,784 INFO   square-1k       cuBLAS/cuDNN       223.5 μs 9.61 TFLOPS
+2026-04-07 23:39:14,927 INFO   square-1k       Triton-Tutorial    179.6 μs 11.95 TFLOPS
+2026-04-07 23:39:15,200 INFO   square-1k       PyTorch-eager      194.2 μs 11.06 TFLOPS
+2026-04-07 23:39:15,937 INFO   square-1k       torch.compile      393.7 μs 5.45 TFLOPS
+2026-04-07 23:39:17,732 INFO   square-2k       cuBLAS/cuDNN      1342.3 μs 12.80 TFLOPS
+2026-04-07 23:39:20,128 INFO   square-2k       Triton-Tutorial   1056.4 μs 16.26 TFLOPS
+2026-04-07 23:39:21,449 INFO   square-2k       PyTorch-eager     1013.6 μs 16.95 TFLOPS
+2026-04-07 23:39:23,543 INFO   square-2k       torch.compile     1466.7 μs 11.71 TFLOPS
+2026-04-07 23:39:31,936 INFO   square-4k       cuBLAS/cuDNN      6192.6 μs 22.19 TFLOPS
+2026-04-07 23:39:41,415 INFO   square-4k       Triton-Tutorial   6083.4 μs 22.59 TFLOPS
+2026-04-07 23:39:49,452 INFO   square-4k       PyTorch-eager     6210.6 μs 22.13 TFLOPS
+2026-04-07 23:39:59,127 INFO   square-4k       torch.compile     6714.1 μs 20.47 TFLOPS
+2026-04-07 23:39:59,723 INFO   rect-wide       cuBLAS/cuDNN       442.8 μs 19.40 TFLOPS
+2026-04-07 23:40:01,227 INFO   rect-wide       Triton-Tutorial    434.7 μs 19.76 TFLOPS
+2026-04-07 23:40:01,810 INFO   rect-wide       PyTorch-eager      440.2 μs 19.52 TFLOPS
+2026-04-07 23:40:03,171 INFO   rect-wide       torch.compile      875.7 μs 9.81 TFLOPS
+2026-04-07 23:40:04,185 INFO   rect-tall       cuBLAS/cuDNN       764.7 μs 11.23 TFLOPS
+2026-04-07 23:40:05,857 INFO   rect-tall       Triton-Tutorial    538.5 μs 15.95 TFLOPS
+2026-04-07 23:40:06,582 INFO   rect-tall       PyTorch-eager      546.4 μs 15.72 TFLOPS
+2026-04-07 23:40:07,943 INFO   rect-tall       torch.compile      873.2 μs 9.84 TFLOPS
+2026-04-07 23:40:10,060 INFO   lm-head-gpt2    cuBLAS/cuDNN      1039.1 μs 9.51 TFLOPS
+2026-04-07 23:40:12,338 INFO   lm-head-gpt2    Triton-Tutorial    926.6 μs 10.66 TFLOPS
+2026-04-07 23:40:13,541 INFO   lm-head-gpt2    PyTorch-eager      903.3 μs 10.94 TFLOPS
+2026-04-07 23:40:15,912 INFO   lm-head-gpt2    torch.compile     1695.5 μs 5.83 TFLOPS
+2026-04-07 23:40:24,149 INFO   llama-q         cuBLAS/cuDNN      6200.9 μs 22.16 TFLOPS
+2026-04-07 23:40:32,045 INFO   llama-q         Triton-Tutorial   6099.2 μs 22.53 TFLOPS
+2026-04-07 23:40:40,107 INFO   llama-q         PyTorch-eager     6230.1 μs 22.06 TFLOPS
+2026-04-07 23:40:48,797 INFO   llama-q         torch.compile     6704.5 μs 20.50 TFLOPS
+2026-04-07 23:41:10,430 INFO   llama-ffn       cuBLAS/cuDNN     16172.3 μs 22.84 TFLOPS
+2026-04-07 23:41:33,172 INFO   llama-ffn       Triton-Tutorial  15938.8 μs 23.17 TFLOPS
+2026-04-07 23:41:54,153 INFO   llama-ffn       PyTorch-eager    16201.6 μs 22.80 TFLOPS
+2026-04-07 23:42:17,370 INFO   llama-ffn       torch.compile    17084.1 μs 21.62 TFLOPS
+2026-04-07 23:42:17,511 INFO   seq512          cuBLAS/cuDNN        96.1 μs 18.86 TFLOPS
+2026-04-07 23:42:18,523 INFO   seq512          Triton-Tutorial     89.3 μs 20.28 TFLOPS
+2026-04-07 23:42:18,665 INFO   seq512          PyTorch-eager       98.4 μs 18.42 TFLOPS
+2026-04-07 23:42:19,292 INFO   seq512          torch.compile      297.0 μs 6.10 TFLOPS
+2026-04-07 23:42:19,371 INFO   tiny            FlagGems            54.9 μs 0.08 TFLOPS
+2026-04-07 23:42:19,454 INFO   gpt2-c_proj     FlagGems            58.6 μs 2.58 TFLOPS
+2026-04-07 23:42:19,550 INFO   gpt2-c_attn     FlagGems            64.4 μs 7.03 TFLOPS
+2026-04-07 23:42:19,853 INFO   square-1k       FlagGems           223.4 μs 9.61 TFLOPS
+2026-04-07 23:42:21,616 INFO   square-2k       FlagGems          1324.5 μs 12.97 TFLOPS
+2026-04-07 23:42:30,005 INFO   square-4k       FlagGems          6264.0 μs 21.94 TFLOPS
+2026-04-07 23:42:30,598 INFO   rect-wide       FlagGems           444.4 μs 19.33 TFLOPS
+2026-04-07 23:42:31,198 INFO   rect-tall       FlagGems           450.6 μs 19.06 TFLOPS
+2026-04-07 23:42:32,378 INFO   lm-head-gpt2    FlagGems           907.3 μs 10.89 TFLOPS
+2026-04-07 23:42:40,539 INFO   llama-q         FlagGems          6252.2 μs 21.98 TFLOPS
+2026-04-07 23:43:01,620 INFO   llama-ffn       FlagGems         16228.4 μs 22.76 TFLOPS
+2026-04-07 23:43:01,761 INFO   seq512          FlagGems            97.0 μs 18.68 TFLOPS
+2026-04-07 23:43:01,762 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/matmul_results.csv
+2026-04-07 23:43:01,763 INFO 
+============================================================
+2026-04-07 23:43:01,763 INFO L1 Benchmark: batch_matmul
+2026-04-07 23:43:01,763 INFO ============================================================
+2026-04-07 23:43:01,763 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:01,763 INFO Benchmarking batch_matmul: 6 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:43:01,888 INFO   gpt2-attn-128   cuBLAS/cuDNN        57.2 μs 0.00 TFLOPS
+2026-04-07 23:43:01,980 INFO   gpt2-attn-128   PyTorch-eager       55.8 μs 0.00 TFLOPS
+2026-04-07 23:43:02,071 INFO   gpt2-attn-512   cuBLAS/cuDNN        60.2 μs 0.01 TFLOPS
+2026-04-07 23:43:02,158 INFO   gpt2-attn-512   PyTorch-eager       57.9 μs 0.01 TFLOPS
+2026-04-07 23:43:02,453 INFO   llama-attn-512  cuBLAS/cuDNN       211.8 μs 0.02 TFLOPS
+2026-04-07 23:43:02,552 INFO   llama-attn-512  PyTorch-eager       63.6 μs 0.07 TFLOPS
+2026-04-07 23:43:05,755 INFO   llama-attn-2k   cuBLAS/cuDNN      2289.2 μs 0.01 TFLOPS
+2026-04-07 23:43:05,911 INFO   llama-attn-2k   PyTorch-eager      108.9 μs 0.15 TFLOPS
+2026-04-07 23:43:05,999 INFO   batched-8       cuBLAS/cuDNN        59.2 μs 0.00 TFLOPS
+2026-04-07 23:43:06,089 INFO   batched-8       PyTorch-eager       54.7 μs 0.00 TFLOPS
+2026-04-07 23:43:06,183 INFO   batched-32      cuBLAS/cuDNN        58.7 μs 0.02 TFLOPS
+2026-04-07 23:43:06,277 INFO   batched-32      PyTorch-eager       67.7 μs 0.02 TFLOPS
+2026-04-07 23:43:06,369 INFO   gpt2-attn-128   FlagGems            63.9 μs 0.00 TFLOPS
+2026-04-07 23:43:06,455 INFO   gpt2-attn-512   FlagGems            57.7 μs 0.01 TFLOPS
+2026-04-07 23:43:06,747 INFO   llama-attn-512  FlagGems           211.8 μs 0.02 TFLOPS
+2026-04-07 23:43:09,930 INFO   llama-attn-2k   FlagGems          2275.0 μs 0.01 TFLOPS
+2026-04-07 23:43:10,030 INFO   batched-8       FlagGems            62.4 μs 0.00 TFLOPS
+2026-04-07 23:43:10,114 INFO   batched-32      FlagGems            56.7 μs 0.02 TFLOPS
+2026-04-07 23:43:10,114 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/batch_matmul_results.csv
+2026-04-07 23:43:10,115 INFO 
+============================================================
+2026-04-07 23:43:10,115 INFO L1 Benchmark: grouped_matmul
+2026-04-07 23:43:10,115 INFO ============================================================
+2026-04-07 23:43:10,115 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:10,116 WARNING No baselines available for op 'grouped_matmul'
+2026-04-07 23:43:10,117 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/grouped_matmul_results.csv
+2026-04-07 23:43:10,117 INFO 
+============================================================
+2026-04-07 23:43:10,117 INFO L1 Benchmark: transpose
+2026-04-07 23:43:10,117 INFO ============================================================
+2026-04-07 23:43:10,117 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:10,118 INFO Benchmarking transpose: 4 shapes × 3 baselines (cuBLAS/cuDNN, FlagGems, PyTorch-eager)
+2026-04-07 23:43:10,249 INFO   small           cuBLAS/cuDNN        82.6 μs
+2026-04-07 23:43:10,255 INFO   small           PyTorch-eager        0.8 μs
+2026-04-07 23:43:10,412 INFO   square-1k       cuBLAS/cuDNN       120.8 μs
+2026-04-07 23:43:10,420 INFO   square-1k       PyTorch-eager        0.8 μs
+2026-04-07 23:43:10,691 INFO   llama-kv        cuBLAS/cuDNN       192.5 μs
+2026-04-07 23:43:10,704 INFO   llama-kv        PyTorch-eager        0.9 μs
+2026-04-07 23:43:10,879 INFO   wide            cuBLAS/cuDNN       119.0 μs
+2026-04-07 23:43:10,887 INFO   wide            PyTorch-eager        0.8 μs
+2026-04-07 23:43:11,018 INFO   small           FlagGems            85.2 μs
+2026-04-07 23:43:11,159 INFO   square-1k       FlagGems            87.3 μs
+2026-04-07 23:43:11,430 INFO   llama-kv        FlagGems           192.8 μs
+2026-04-07 23:43:11,596 INFO   wide            FlagGems           124.0 μs
+2026-04-07 23:43:11,597 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/transpose_results.csv
+mixtral-ffn                58.5      55.9(105%)      57.7(101%)     297.3( 20%)
+===============================================================================
+
+===============================================================
+RMSNORM Comparison (μs)
+===============================================================
+Shape                  FlagGems    Liger-Kernel   PyTorch-eager
+---------------------------------------------------------------
+gpt2-small                537.5      78.4(686%)     541.9( 99%)
+gpt2-ffn                  552.0      83.7(660%)     548.0(101%)
+gpt2-medium               546.7      87.7(623%)     530.0(103%)
+llama-7b                  545.8      82.9(659%)     539.4(101%)
+llama-13b                 550.6      81.9(673%)     551.7(100%)
+llama-long                623.9     197.4(316%)     641.6( 97%)
+ds-v2                     545.9      83.1(657%)     547.9(100%)
+ds-v3                     549.6      91.4(601%)     548.1(100%)
+mixtral-ffn               546.2      84.1(649%)     534.1(102%)
+===============================================================
+
+===============================
+RMSNORM_RESIDUAL Comparison (μs)
+===============================
+Shape             PyTorch-eager
+-------------------------------
+gpt2-small                734.3
+gpt2-ffn                  722.9
+gpt2-medium               735.2
+llama-7b                  735.6
+llama-13b                 722.4
+llama-long                974.9
+ds-v2                     730.7
+ds-v3                     741.9
+mixtral-ffn               733.9
+===============================
+
+===============================================================
+REDUCE_SUM Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+small                      46.0      48.5( 95%)      44.6(103%)
+medium                     47.2      47.9( 98%)      47.3(100%)
+large                      49.6      44.9(110%)      48.8(102%)
+wide                       47.6      47.1(101%)      53.4( 89%)
+llama3-wide                51.7      44.2(117%)      46.5(111%)
+qwen25-wide                48.1      44.5(108%)      48.7( 99%)
+===============================================================
+
+===============================================================
+REDUCE_MAX Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+small                     121.1     120.1(101%)     117.5(103%)
+medium                    120.9     120.5(100%)     120.8(100%)
+large                     114.2     122.5( 93%)     116.8( 98%)
+wide                      121.5     122.0(100%)     118.4(103%)
+llama3-wide               148.7     151.7( 98%)     151.5( 98%)
+qwen25-wide               179.2     179.1(100%)     178.9(100%)
+===============================================================
+
+===============================================================
+REDUCE_MEAN Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+small                      51.2      48.7(105%)      47.2(108%)
+medium                     46.9      46.0(102%)      50.3( 93%)
+large                      46.1      45.8(101%)      46.7( 99%)
+wide                       47.6      48.4( 98%)      47.6(100%)
+llama3-wide                46.8      49.6( 94%)      57.1( 82%)
+qwen25-wide                48.9      49.9( 98%)      47.3(103%)
+===============================================================
+
+===============================
+ARGMAX Comparison (μs)
+===============================
+Shape             PyTorch-eager
+-------------------------------
+small                      48.2
+medium                     58.3
+large                      49.5
+wide                       53.7
+llama3-wide                68.2
+qwen25-wide                80.2
+===============================
+
+===============================
+TOPK Comparison (μs)
+===============================
+Shape             PyTorch-eager
+-------------------------------
+moe-top2-small            110.8
+moe-top2-gpt2            1010.3
+moe-top4-llama            290.2
+moe-top2-ds               284.5
+sampling-top50            320.0
+sampling-top50-llama3          1167.2
+sampling-top100-qwen          1111.5
+===============================
+
+===============================================
+CUMSUM Comparison (μs)
+===============================================
+Shape                  FlagGems   PyTorch-eager
+-----------------------------------------------
+small-row                  48.2      49.9( 97%)
+gpt2-row                   48.6      52.6( 92%)
+llama-row                  47.6      48.3( 99%)
+llama-col                  47.4      47.8( 99%)
+sampling-probs            138.5     141.5( 98%)
+sampling-probs-llama3           135.1     141.9( 95%)
+===============================================
+
+===============================================================================================
+MATMUL Comparison (μs)
+===============================================================================================
+Shape              cuBLAS/cuDNN        FlagGems Triton-Tutorial   PyTorch-eager   torch.compile
+-----------------------------------------------------------------------------------------------
+tiny                       57.4      54.9(105%)      63.4( 91%)      54.7(105%)     265.3( 22%)
+gpt2-c_proj                58.3      58.6( 99%)     104.7( 56%)      56.7(103%)     436.7( 13%)
+gpt2-c_attn                67.9      64.4(105%)     100.5( 68%)      91.3( 74%)     382.4( 18%)
+square-1k                 223.5     223.4(100%)     179.6(124%)     194.2(115%)     393.7( 57%)
+square-2k                1342.3    1324.5(101%)    1056.4(127%)    1013.6(132%)    1466.7( 92%)
+square-4k                6192.6    6264.0( 99%)    6083.4(102%)    6210.6(100%)    6714.1( 92%)
+rect-wide                 442.8     444.4(100%)     434.7(102%)     440.2(101%)     875.7( 51%)
+rect-tall                 764.7     450.6(170%)     538.5(142%)     546.4(140%)     873.2( 88%)
+lm-head-gpt2             1039.1     907.3(115%)     926.6(112%)     903.3(115%)    1695.5( 61%)
+llama-q                  6200.9    6252.2( 99%)    6099.2(102%)    6230.1(100%)    6704.5( 92%)
+llama-ffn               16172.3   16228.4(100%)   15938.8(101%)   16201.6(100%)   17084.1( 95%)
+seq512                     96.1      97.0( 99%)      89.3(108%)      98.4( 98%)     297.0( 32%)
+===============================================================================================
+
+===============================================================
+BATCH_MATMUL Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+gpt2-attn-128              57.2      63.9( 90%)      55.8(103%)
+gpt2-attn-512              60.2      57.7(104%)      57.9(104%)
+llama-attn-512            211.8     211.8(100%)      63.6(333%)
+llama-attn-2k            2289.2    2275.0(101%)     108.9(2103%)
+batched-8                  59.2      62.4( 95%)      54.7(108%)
+batched-32                 58.7      56.7(104%)      67.7( 87%)
+===============================================================
+
+===============
+GROUPED_MATMUL Comparison (μs)
+===============
+Shape          
+---------------
+===============
+
+===============================================================
+TRANSPOSE Comparison (μs)
+===============================================================
+Shape              cuBLAS/cuDNN        FlagGems   PyTorch-eager
+---------------------------------------------------------------
+small                      82.6      85.2( 97%)       0.8(9917%)
+square-1k                 120.8      87.3(138%)       0.8(15946%)
+llama-kv                  192.5     192.8(100%)       0.9(20580%)
+wide                      119.0     124.0( 96%)       0.8(15701%)
+2026-04-07 23:43:11,598 INFO 
+============================================================
+2026-04-07 23:43:11,598 INFO L1 Benchmark: concat
+2026-04-07 23:43:11,598 INFO ============================================================
+2026-04-07 23:43:11,598 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:11,598 INFO Benchmarking concat: 7 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:12,323 INFO   tiny-2          PyTorch-eager       48.2 μs
+2026-04-07 23:43:12,399 INFO   gpt2-qkv-merge  PyTorch-eager       47.0 μs
+2026-04-07 23:43:12,474 INFO   llama-qkv-merge PyTorch-eager       50.2 μs
+2026-04-07 23:43:12,547 INFO   llama3-qkv-gqa  PyTorch-eager       49.2 μs
+2026-04-07 23:43:12,617 INFO   kvcache-append-512 PyTorch-eager       44.7 μs
+2026-04-07 23:43:12,694 INFO   kvcache-append-2k PyTorch-eager       48.8 μs
+2026-04-07 23:43:12,774 INFO   batch-concat-4  PyTorch-eager       48.5 μs
+2026-04-07 23:43:12,774 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/concat_results.csv
+2026-04-07 23:43:12,774 INFO 
+============================================================
+2026-04-07 23:43:12,775 INFO L1 Benchmark: split
+2026-04-07 23:43:12,775 INFO ============================================================
+2026-04-07 23:43:12,775 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:12,775 INFO Benchmarking split: 6 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:12,792 INFO   tiny-2          PyTorch-eager        4.3 μs
+2026-04-07 23:43:13,439 INFO   gpt2-qkv-split  PyTorch-eager        4.5 μs
+2026-04-07 23:43:13,452 INFO   llama-qkv-split PyTorch-eager        4.8 μs
+2026-04-07 23:43:14,103 INFO   llama3-qkv-gqa  PyTorch-eager        4.0 μs
+2026-04-07 23:43:14,754 INFO   qwen25-qkv-gqa  PyTorch-eager        4.2 μs
+2026-04-07 23:43:15,439 INFO   ffn-gate-up     PyTorch-eager        5.1 μs
+2026-04-07 23:43:15,439 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/split_results.csv
+2026-04-07 23:43:15,439 INFO 
+============================================================
+2026-04-07 23:43:15,439 INFO L1 Benchmark: gather
+2026-04-07 23:43:15,439 INFO ============================================================
+2026-04-07 23:43:15,439 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:15,439 INFO Benchmarking gather: 7 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:15,568 INFO   tiny            PyTorch-eager       72.6 μs
+2026-04-07 23:43:15,707 INFO   moe-dispatch-top2 PyTorch-eager       96.3 μs
+2026-04-07 23:43:15,842 INFO   moe-dispatch-top4 PyTorch-eager       95.6 μs
+2026-04-07 23:43:15,969 INFO   kvcache-read-256 PyTorch-eager       96.8 μs
+2026-04-07 23:43:16,474 INFO   kvcache-read-2k PyTorch-eager      388.7 μs
+2026-04-07 23:43:16,650 INFO   ds-moe-top2     PyTorch-eager      116.0 μs
+2026-04-07 23:43:22,607 INFO   embed-lookup-512 PyTorch-eager     3897.1 μs
+2026-04-07 23:43:22,608 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/gather_results.csv
+2026-04-07 23:43:22,608 INFO 
+============================================================
+2026-04-07 23:43:22,608 INFO L1 Benchmark: scatter
+2026-04-07 23:43:22,608 INFO ============================================================
+2026-04-07 23:43:22,608 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:22,608 INFO Benchmarking scatter: 6 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:22,827 INFO   tiny            PyTorch-eager      145.5 μs
+2026-04-07 23:43:23,315 INFO   moe-combine-top2 PyTorch-eager      352.8 μs
+2026-04-07 23:43:23,801 INFO   moe-combine-top4 PyTorch-eager      353.5 μs
+2026-04-07 23:43:24,056 INFO   kvcache-write-256 PyTorch-eager      181.4 μs
+2026-04-07 23:43:25,661 INFO   kvcache-write-2k PyTorch-eager     1211.6 μs
+2026-04-07 23:43:26,151 INFO   ds-moe-combine  PyTorch-eager      358.2 μs
+2026-04-07 23:43:26,151 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/scatter_results.csv
+2026-04-07 23:43:26,152 INFO 
+============================================================
+2026-04-07 23:43:26,152 INFO L1 Benchmark: embedding
+2026-04-07 23:43:26,152 INFO ============================================================
+2026-04-07 23:43:26,152 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:26,152 INFO Benchmarking embedding: 9 shapes × 2 baselines (FlagGems, PyTorch-eager)
+2026-04-07 23:43:26,885 INFO   tiny            PyTorch-eager       72.9 μs
+2026-04-07 23:43:27,063 INFO   gpt2-small      PyTorch-eager      131.6 μs
+2026-04-07 23:43:27,251 INFO   gpt2-medium     PyTorch-eager      131.6 μs
+2026-04-07 23:43:27,381 INFO   llama2-seq512   PyTorch-eager       86.9 μs
+2026-04-07 23:43:27,514 INFO   llama2-seq2k    PyTorch-eager       92.1 μs
+2026-04-07 23:43:27,951 INFO   llama3-seq512   PyTorch-eager      326.7 μs
+2026-04-07 23:43:28,387 INFO   llama3-seq2k    PyTorch-eager      322.7 μs
+2026-04-07 23:43:28,893 INFO   qwen25-seq512   PyTorch-eager      377.3 μs
+2026-04-07 23:43:29,698 INFO   batched-b4      PyTorch-eager      124.5 μs
+2026-04-07 23:43:30,427 INFO   tiny            FlagGems            65.5 μs
+2026-04-07 23:43:30,510 INFO   gpt2-small      FlagGems            44.1 μs
+2026-04-07 23:43:30,577 INFO   gpt2-medium     FlagGems            45.4 μs
+2026-04-07 23:43:31,331 INFO   llama2-seq512   FlagGems            84.7 μs
+2026-04-07 23:43:31,394 INFO   llama2-seq2k    FlagGems            41.9 μs
+2026-04-07 23:43:31,519 INFO   llama3-seq512   FlagGems            83.7 μs
+2026-04-07 23:43:31,634 INFO   llama3-seq2k    FlagGems            75.3 μs
+2026-04-07 23:43:31,769 INFO   qwen25-seq512   FlagGems            88.8 μs
+2026-04-07 23:43:32,499 INFO   batched-b4      FlagGems            78.1 μs
+2026-04-07 23:43:32,499 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/embedding_results.csv
+2026-04-07 23:43:32,499 INFO 
+============================================================
+2026-04-07 23:43:32,499 INFO L1 Benchmark: permute
+2026-04-07 23:43:32,499 INFO ============================================================
+2026-04-07 23:43:32,500 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:32,500 INFO Benchmarking permute: 9 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:32,511 INFO   small-3d        PyTorch-eager        1.4 μs
+2026-04-07 23:43:32,521 INFO   gpt2-bhsd       PyTorch-eager        1.1 μs
+2026-04-07 23:43:32,532 INFO   gpt2-bshd       PyTorch-eager        1.9 μs
+2026-04-07 23:43:32,542 INFO   llama-bhsd-512  PyTorch-eager        1.2 μs
+2026-04-07 23:43:32,550 INFO   llama-bhsd-2k   PyTorch-eager        1.7 μs
+2026-04-07 23:43:32,562 INFO   llama3-gqa-512  PyTorch-eager        1.0 μs
+2026-04-07 23:43:32,573 INFO   llama3-kv-512   PyTorch-eager        1.0 μs
+2026-04-07 23:43:32,586 INFO   qwen25-q        PyTorch-eager        1.3 μs
+2026-04-07 23:43:32,597 INFO   qwen25-kv       PyTorch-eager        1.2 μs
+2026-04-07 23:43:32,598 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/permute_results.csv
+2026-04-07 23:43:32,598 INFO 
+============================================================
+2026-04-07 23:43:32,598 INFO L1 Benchmark: copy_
+2026-04-07 23:43:32,598 INFO ============================================================
+2026-04-07 23:43:32,598 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:32,598 INFO Benchmarking copy_: 12 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:32,749 INFO   micro-tiny      PyTorch-eager      101.7 μs
+2026-04-07 23:43:32,892 INFO   micro-small     PyTorch-eager       87.3 μs
+2026-04-07 23:43:33,030 INFO   gpt2-hidden     PyTorch-eager       86.1 μs
+2026-04-07 23:43:33,130 INFO   gpt2-ffn        PyTorch-eager       71.0 μs
+2026-04-07 23:43:33,246 INFO   square-1k       PyTorch-eager       76.3 μs
+2026-04-07 23:43:33,404 INFO   llama-ffn       PyTorch-eager      117.8 μs
+2026-04-07 23:43:33,555 INFO   llama-hidden    PyTorch-eager      111.7 μs
+2026-04-07 23:43:33,879 INFO   llama-long      PyTorch-eager      242.2 μs
+2026-04-07 23:43:34,040 INFO   ds-ffn          PyTorch-eager      105.4 μs
+2026-04-07 23:43:34,221 INFO   ds-ffn-large    PyTorch-eager      128.4 μs
+2026-04-07 23:43:34,413 INFO   qwen-ffn        PyTorch-eager      131.3 μs
+2026-04-07 23:43:35,084 INFO   xlarge          PyTorch-eager      515.8 μs
+2026-04-07 23:43:35,084 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/copy__results.csv
+2026-04-07 23:43:35,084 INFO 
+============================================================
+2026-04-07 23:43:35,084 INFO L1 Benchmark: swiglu
+2026-04-07 23:43:35,084 INFO ============================================================
+2026-04-07 23:43:35,084 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:35,085 INFO Benchmarking swiglu: 4 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:35,152 INFO   gpt2-sm         PyTorch-eager       41.8 μs
+2026-04-07 23:43:35,228 INFO   llama-7b-512    PyTorch-eager       44.3 μs
+2026-04-07 23:43:35,304 INFO   llama-7b-2k     PyTorch-eager       44.7 μs
+2026-04-07 23:43:35,381 INFO   llama3-8b       PyTorch-eager       45.2 μs
+2026-04-07 23:43:35,382 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/swiglu_results.csv
+2026-04-07 23:43:35,382 INFO 
+============================================================
+2026-04-07 23:43:35,382 INFO L1 Benchmark: geglu
+2026-04-07 23:43:35,382 INFO ============================================================
+2026-04-07 23:43:35,382 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:35,382 INFO Benchmarking geglu: 4 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:35,456 INFO   gpt2-sm         PyTorch-eager       45.7 μs
+2026-04-07 23:43:35,532 INFO   llama-7b-512    PyTorch-eager       43.5 μs
+2026-04-07 23:43:35,608 INFO   llama-7b-2k     PyTorch-eager       45.4 μs
+2026-04-07 23:43:35,681 INFO   llama3-8b       PyTorch-eager       39.9 μs
+2026-04-07 23:43:35,681 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/geglu_results.csv
+2026-04-07 23:43:35,681 INFO 
+============================================================
+2026-04-07 23:43:35,681 INFO L1 Benchmark: rope
+2026-04-07 23:43:35,681 INFO ============================================================
+2026-04-07 23:43:35,681 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:35,681 INFO Benchmarking rope: 8 shapes × 1 baselines (Liger-Kernel)
+2026-04-07 23:43:36,315 WARNING   gpt2-sm-128 Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:36,938 WARNING   gpt2-sm-512 Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:37,564 WARNING   llama2-512 Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:38,188 WARNING   llama2-2k Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:38,189 WARNING   llama3-q-512 Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:39,447 WARNING   llama3-kv-512 Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:40,688 WARNING   qwen25-q-512 Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:41,316 WARNING   qwen25-kv-512 Liger-Kernel: FAILED (LigerRopeFunction.forward() missing 1 required positional argument: 'sin')
+2026-04-07 23:43:41,318 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/rope_results.csv
+2026-04-07 23:43:41,318 INFO 
+============================================================
+2026-04-07 23:43:41,318 INFO L1 Benchmark: fused_linear_cross_entropy
+2026-04-07 23:43:41,318 INFO ============================================================
+2026-04-07 23:43:41,318 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:41,318 INFO Benchmarking fused_linear_cross_entropy: 5 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:42,011 INFO   gpt2-seq128     PyTorch-eager      503.3 μs
+2026-04-07 23:43:42,688 INFO   gpt2-seq512     PyTorch-eager      509.5 μs
+2026-04-07 23:43:43,371 INFO   llama2-seq512   PyTorch-eager      497.6 μs
+2026-04-07 23:43:45,905 INFO   llama2-seq2k    PyTorch-eager     1423.9 μs
+2026-04-07 23:43:46,588 INFO   llama3-seq512   PyTorch-eager      502.5 μs
+2026-04-07 23:43:46,590 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/fused_linear_cross_entropy_results.csv
+2026-04-07 23:43:46,590 INFO 
+============================================================
+2026-04-07 23:43:46,590 INFO L1 Benchmark: cross_entropy
+2026-04-07 23:43:46,590 INFO ============================================================
+2026-04-07 23:43:46,591 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:43:46,591 INFO Benchmarking cross_entropy: 9 shapes × 1 baselines (PyTorch-eager)
+2026-04-07 23:43:47,492 INFO   tiny            PyTorch-eager      198.0 μs
+2026-04-07 23:43:48,847 INFO   gpt2-seq128     PyTorch-eager      521.0 μs
+2026-04-07 23:43:51,105 INFO   gpt2-seq512     PyTorch-eager     1194.6 μs
+2026-04-07 23:43:52,655 INFO   llama2-seq512   PyTorch-eager      660.6 μs
+2026-04-07 23:43:56,713 INFO   llama2-seq2k    PyTorch-eager     2561.2 μs
+2026-04-07 23:44:00,922 INFO   llama3-seq512   PyTorch-eager     2679.5 μs
+2026-04-07 23:44:05,652 INFO   qwen25-seq512   PyTorch-eager     3053.0 μs
+2026-04-07 23:44:09,047 INFO   ds-v2-seq512    PyTorch-eager     2052.4 μs
+2026-04-07 23:44:15,932 INFO   batch4-seq512   PyTorch-eager     4692.6 μs
+2026-04-07 23:44:15,932 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/cross_entropy_results.csv
+2026-04-07 23:44:15,932 INFO 
+============================================================
+2026-04-07 23:44:15,932 INFO L1 Benchmark: quantize_per_token
+2026-04-07 23:44:15,932 INFO ============================================================
+2026-04-07 23:44:15,932 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:44:15,933 WARNING No baselines available for op 'quantize_per_token'
+2026-04-07 23:44:15,933 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/quantize_per_token_results.csv
+2026-04-07 23:44:15,933 INFO 
+============================================================
+2026-04-07 23:44:15,933 INFO L1 Benchmark: dequantize_per_channel
+2026-04-07 23:44:15,933 INFO ============================================================
+2026-04-07 23:44:15,933 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:44:15,933 WARNING No baselines available for op 'dequantize_per_channel'
+2026-04-07 23:44:15,933 INFO   Saved: benchmarks/results/L1/2026-04-07_233550/dequantize_per_channel_results.csv
+2026-04-07 23:44:15,933 INFO 
+============================================================
+2026-04-07 23:44:15,933 INFO L1 Benchmark: flash_attention
+2026-04-07 23:44:15,933 INFO ============================================================
+2026-04-07 23:44:15,933 INFO   No tier ≤2 shapes for flash_attention, using all 16 shapes
+2026-04-07 23:44:15,933 INFO Baseline Arke not available (deps missing)
+2026-04-07 23:44:15,933 INFO Benchmarking flash_attention: 16 shapes × 2 baselines (cuBLAS/cuDNN, PyTorch-eager)
+2026-04-07 23:44:17,271 INFO   gpt2-sm-128     cuBLAS/cuDNN       167.3 μs
+2026-04-07 23:44:19,740 INFO   gpt2-sm-128     PyTorch-eager     1797.4 μs
+2026-04-07 23:44:20,009 INFO   gpt2-sm-512     cuBLAS/cuDNN       171.8 μs
+2026-04-07 23:44:22,366 INFO   gpt2-sm-512     PyTorch-eager     1786.4 μs
+2026-04-07 23:44:22,667 INFO   gpt2-sm-1k      cuBLAS/cuDNN       216.7 μs
+2026-04-07 23:44:25,918 INFO   gpt2-sm-1k      PyTorch-eager     2383.8 μs
+2026-04-07 23:44:27,907 INFO   gpt2-md-2k      cuBLAS/cuDNN       941.4 μs
+2026-04-07 23:44:40,564 INFO   gpt2-md-2k      PyTorch-eager     9360.8 μs
+2026-04-07 23:44:41,878 INFO   llama2-7b-512   cuBLAS/cuDNN       275.5 μs
+2026-04-07 23:44:44,762 INFO   llama2-7b-512   PyTorch-eager     2119.1 μs
+2026-04-07 23:44:47,741 INFO   llama2-7b-2k    cuBLAS/cuDNN      2175.8 μs
+2026-04-07 23:45:19,586 INFO   llama2-7b-2k    PyTorch-eager    24474.5 μs
+2026-04-07 23:45:28,486 INFO   llama2-7b-4k    cuBLAS/cuDNN      6780.3 μs
