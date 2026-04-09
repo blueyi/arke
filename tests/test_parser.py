@@ -233,6 +233,25 @@ def test_parse_when_otherwise_strategy_blocks() -> None:
     }
 
 
+def test_parse_v2_compute_directive() -> None:
+    source = """
+    strategy s for target("nvidia_ampere") {
+        compute(num_threads=256, num_stages=3, shared_memory=49152)
+            @rationale("3-stage pipeline for memory latency hiding");
+    }
+    """
+    program = parse_string(source)
+    stmt = program.strategies[0].body[0]
+    assert isinstance(stmt, StrategyStmt)
+    assert stmt.directive == "compute"
+    assert stmt.kwargs == {
+        "num_threads": 256,
+        "num_stages": 3,
+        "shared_memory": 49152,
+    }
+    assert stmt.annotations[0].name == "rationale"
+
+
 def test_parse_boolean_conditions() -> None:
     source = """
     strategy s for target("nvidia_ampere") {

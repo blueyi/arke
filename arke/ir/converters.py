@@ -437,20 +437,23 @@ def _strategy_stmt_to_decision(stmt: StrategyStmt) -> Decision:
     params = dict(stmt.kwargs)
     level = 1
 
-    # launch_config -> compute_resource migration
+    # Normalize resource directives to the v2 backend-agnostic `compute` form.
+    # Legacy compat: launch_config / compute_resource from earlier stages.
     if kind == "launch_config":
-        kind = "compute_resource"
-        level = 2
+        kind = "compute"
         new_params: dict[str, Any] = {}
         if "num_warps" in params or "warps" in params:
             new_params["warps"] = params.get("num_warps", params.get("warps"))
         if "num_stages" in params or "stages" in params:
-            new_params["stages"] = params.get("num_stages", params.get("stages"))
+            new_params["num_stages"] = params.get("num_stages", params.get("stages"))
         if "block_sizes" in params:
             new_params["block_sizes"] = params["block_sizes"]
         params = new_params
     elif kind == "compute_resource":
-        level = 2
+        kind = "compute"
+    elif kind == "compute":
+        # v2 canonical form stays L1/backend-agnostic
+        pass
 
     return Decision(
         kind=kind,

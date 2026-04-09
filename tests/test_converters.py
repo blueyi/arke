@@ -181,12 +181,12 @@ strategy relu_kernel_strategy for target("nvidia_ampere") {
         assert "4 rows" in d0.rationale.text
         assert d0.level == 1
 
-        # Second: launch_config migrated to compute_resource
+        # Second: launch_config normalized to v2 compute(...) form
         d1 = strat.decisions[1]
-        assert d1.kind == "compute_resource"
-        assert d1.level == 2
+        assert d1.kind == "compute"
+        assert d1.level == 1
         assert d1.params["warps"] == 4
-        assert d1.params["stages"] == 1
+        assert d1.params["num_stages"] == 1
 
     def test_rationale_preserved(self):
         """@rationale annotations should become Rationale objects."""
@@ -215,7 +215,7 @@ strategy s for target("nvidia_ampere") {
     tile(loop="M", factors=[64])
         @rationale("cache aligned");
     place(tensor="X_tile", memory="shared");
-    launch_config(num_warps=4, num_stages=2);
+    compute(num_threads=256, num_stages=2, shared_memory=49152);
 }
         ''')
         strat = ast_to_strategy(prog.strategies[0])
@@ -223,6 +223,25 @@ strategy s for target("nvidia_ampere") {
         strat2 = StrategyIR.from_json(j1)
         j2 = strat2.to_json()
         assert j1 == j2
+
+    def test_v2_compute_directive_preserved(self):
+        """Spec v2 compute(...) should remain canonical in StrategyIR."""
+        prog = parse_string("""
+strategy s for target("nvidia_ampere") {
+    compute(num_threads=256, num_stages=3, shared_memory=49152)
+        @rationale("3-stage pipeline for memory latency hiding");
+}
+        """)
+        strat = ast_to_strategy(prog.strategies[0])
+        d0 = strat.decisions[0]
+        assert d0.kind == "compute"
+        assert d0.level == 1
+        assert d0.params == {
+            "num_threads": 256,
+            "num_stages": 3,
+            "shared_memory": 49152,
+        }
+        assert d0.rationale is not None
 
     def test_multiple_decisions(self):
         """Strategy with many directives should preserve all decisions."""
@@ -239,7 +258,7 @@ strategy s for target("nvidia_ampere") {
     parallel(loops=["M", "N"], mapping={"M": "blockIdx.x", "N": "blockIdx.y"});
     place(tensor="A_tile", memory="shared");
     place(tensor="B_tile", memory="shared");
-    launch_config(num_warps=4, num_stages=2);
+    compute(num_threads=256, num_stages=2, shared_memory=49152);
 }
         ''')
         strat = ast_to_strategy(prog.strategies[0])
