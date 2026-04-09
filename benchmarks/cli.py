@@ -256,6 +256,8 @@ def _run_l1(config: dict, output_dir: str) -> None:
         output_dir=output_dir,
         warmup=config["warmup"],
         reps=config["reps"],
+        tier=config["max_st"],
+        shape_tags=config["shapes"],
     )
 
 
@@ -269,6 +271,7 @@ def _run_l2(config: dict, output_dir: str) -> None:
         output_dir=output_dir,
         warmup=config["warmup"],
         reps=config["reps"],
+        shape_tags=config["shapes"],
     )
 
 

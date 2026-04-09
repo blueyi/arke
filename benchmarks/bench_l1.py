@@ -86,10 +86,15 @@ def run_op(
     warmup: int = 200,
     reps: int = 500,
     tier: int | None = None,
+    shape_tags: list[str] | None = None,
 ) -> list[OpResult]:
     """Benchmark one operator across shapes and baselines."""
     if shapes is None:
         shapes = _get_shapes(op, tier=tier)
+
+    if shape_tags:
+        allowed = set(shape_tags)
+        shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
 
     runners = get_runners_for_op(op)
     if not runners:
@@ -266,6 +271,7 @@ def run_l1(
     phase: int = 1,
     stage: int = 6,
     track: int = 1,
+    shape_tags: list[str] | None = None,
 ) -> dict[str, list[OpResult]]:
     """Run L1 benchmark suite."""
     # Use phase/stage/gate structure instead of timestamp
@@ -295,6 +301,7 @@ def run_l1(
         "warmup": warmup,
         "reps": reps,
         "tier": tier,
+        "shape_tags": shape_tags,
     }
     with open(base_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
@@ -312,7 +319,7 @@ def run_l1(
         logger.info(f"L1 Benchmark: {op}")
         logger.info(f"{'='*60}")
 
-        results = run_op(op, warmup=warmup, reps=reps, tier=tier)
+        results = run_op(op, warmup=warmup, reps=reps, tier=tier, shape_tags=shape_tags)
         all_results[op] = results
 
         csv_path = save_results(results, base_dir, op)

@@ -170,10 +170,15 @@ def run_fused_op(
     shapes: list[MatmulShape] | None = None,
     warmup: int = 200,
     reps: int = 500,
+    shape_tags: list[str] | None = None,
 ) -> list[FusedResult]:
     """Benchmark one fused operator across shapes and approaches."""
     if shapes is None:
         shapes = FUSED_SHAPES
+
+    if shape_tags:
+        allowed = set(shape_tags)
+        shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
 
     # Parse op name: "matmul_relu" → activation = "relu"
     parts = op.split("_", 1)
@@ -342,6 +347,7 @@ def run_l2(
     output_dir: str = "benchmarks/results",
     warmup: int = 200,
     reps: int = 500,
+    shape_tags: list[str] | None = None,
 ) -> dict[str, list[FusedResult]]:
     """Run L2 fused operator benchmark suite."""
     timestamp = time.strftime("%Y-%m-%d_%H%M%S")
@@ -383,6 +389,7 @@ def run_l2(
         "warmup": warmup,
         "reps": reps,
         "layer": "L2",
+        "shape_tags": shape_tags,
     }
     with open(base_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
@@ -394,7 +401,7 @@ def run_l2(
         logger.info(f"L2 Benchmark: {op}")
         logger.info(f"{'='*60}")
 
-        results = run_fused_op(op, warmup=warmup, reps=reps)
+        results = run_fused_op(op, warmup=warmup, reps=reps, shape_tags=shape_tags)
         all_results[op] = results
 
         csv_path = save_results(results, base_dir, op)
