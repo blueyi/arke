@@ -20,6 +20,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy cross_entropy_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[1])
         @rationale("1 row per CTA — 32000-wide softmax+log needs full CTA cooperation");
-    launch_config(num_warps=8, num_stages=1)
+    compute(warps=8, num_stages=1)
         @rationale("8 warps: large vocab dim reduction needs parallelism within CTA");
 }

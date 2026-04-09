@@ -24,6 +24,6 @@ strategy layernorm_strategy for target("nvidia_ampere") {
         @rationale("vec8 for f16 to saturate load bandwidth");
     place(tensor="X_row", memory="shared")
         @rationale("cache row in shared mem to avoid 2x global reads (forward + variance pass)");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("768 elements / (128 threads * 8) = ~0.75 iterations/thread — good fit");
 }

@@ -21,6 +21,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy rmsnorm_residual_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[1])
         @rationale("one row per block: each thread block computes one token's norm");
-    launch_config(num_warps=8, num_stages=1)
+    compute(warps=8, num_stages=1)
         @rationale("8 warps for 768-dim: 8*32=256 threads, each handles 3 elements");
 }

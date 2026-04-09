@@ -33,6 +33,6 @@ strategy batch_matmul_strategy for target("nvidia_ampere") {
         @rationale("Q tile in smem for K-reduction reuse");
     place(tensor="K_T_tile", memory="shared")
         @rationale("K_T tile in smem for K-reduction reuse");
-    launch_config(num_warps=4, num_stages=2)
+    compute(warps=4, num_stages=2)
         @rationale("2 pipeline stages for Q/K_T prefetch during computation");
 }

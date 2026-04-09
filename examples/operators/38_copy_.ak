@@ -19,6 +19,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy copy_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[4])
         @rationale("4 rows per block — pure memcpy, maximize occupancy and bandwidth");
-    launch_config(num_warps=4, num_stages=2)
+    compute(warps=4, num_stages=2)
         @rationale("2-stage pipeline: overlap load and store for bandwidth saturation");
 }

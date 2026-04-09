@@ -28,6 +28,6 @@ strategy flash_attention_kernel_strategy for target("nvidia_ampere") {
         @rationale("K block loaded to shared memory for softmax compute");
     place(tensor="V_tile", memory="shared")
         @rationale("V block in smem, used after softmax to accumulate output");
-    launch_config(num_warps=4, num_stages=2)
+    compute(warps=4, num_stages=2)
         @rationale("2-stage pipeline: prefetch next KV block while computing current");
 }

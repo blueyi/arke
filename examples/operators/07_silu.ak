@@ -20,6 +20,6 @@ strategy silu_strategy for target("nvidia_ampere") {
         @rationale("flat 1D tiling — elementwise has no data dependency between rows");
     vectorize(loop="flat", width=8)
         @rationale("vec8 for f16: 128-bit load/store matches L2 cache line width");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("silu is memory-bound; 4 warps sufficient for bandwidth saturation");
 }

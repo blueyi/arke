@@ -19,6 +19,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy embedding_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[4])
         @rationale("4 tokens per block — each row is an independent lookup");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: random read from embedding table, no reuse");
 }

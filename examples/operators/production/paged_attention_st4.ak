@@ -28,6 +28,6 @@ strategy paged_attention_st4_strategy for target("nvidia_ampere") {
         @rationale("single-token query stays in registers");
     place(tensor="K_page", memory="shared")
         @rationale("paged KV blocks stream into shared memory through block table indirection");
-    compute(num_warps=4, num_stages=2, shared_memory=65536)
+    compute(warps=4, num_stages=2, shared_memory=65536)
         @rationale("paged attention needs explicit smem-aware execution planning for long-context serving");
 }

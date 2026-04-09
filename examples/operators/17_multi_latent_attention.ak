@@ -28,6 +28,6 @@ strategy mla_kernel_strategy for target("nvidia_ampere") {
         @rationale("fuse KV decompression with attention to avoid materializing full K/V");
     place(tensor="KV_compressed_tile", memory="shared")
         @rationale("compressed KV in smem: D_c=32 << D*H, saves bandwidth");
-    launch_config(num_warps=4, num_stages=2)
+    compute(warps=4, num_stages=2)
         @rationale("2-stage pipeline: prefetch next compressed KV block");
 }

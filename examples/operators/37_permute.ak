@@ -20,6 +20,6 @@ strategy permute_kernel_strategy for target("nvidia_ampere") {
         @rationale("32-row tile: coalesced read + shared memory staging");
     place(tensor="X_tile", memory="shared")
         @rationale("stage through shared mem to coalesce global writes after permute");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: bandwidth-bound layout transform");
 }

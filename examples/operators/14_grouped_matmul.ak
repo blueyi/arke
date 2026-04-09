@@ -24,6 +24,6 @@ strategy grouped_matmul_kernel_strategy for target("nvidia_ampere") {
         @rationale("128-col tile: covers 3072/128=24 blocks across output");
     tile(loop="K", factors=[32])
         @rationale("K-tile=32: A+W smem fits comfortably");
-    launch_config(num_warps=4, num_stages=3)
+    compute(warps=4, num_stages=3)
         @rationale("3 stages: hide global→shared latency for weight fetch");
 }

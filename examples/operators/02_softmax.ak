@@ -22,6 +22,6 @@ strategy softmax_strategy for target("nvidia_ampere") {
         @rationale("vec8 for f16 — 128-bit load matches memory bus");
     place(tensor="X_row", memory="register")
         @rationale("entire row fits in registers for 1024-width");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("4 warps * 32 threads = 128 threads/block, good occupancy");
 }

@@ -23,6 +23,6 @@ strategy fused_linear_cross_entropy_kernel_strategy for target("nvidia_ampere") 
         @rationale("1 row per CTA — each row computes partial logits + streaming CE");
     tile(loop="col", factors=[4096])
         @rationale("4096-col tile over vocab: chunked matmul avoids materializing full logits");
-    launch_config(num_warps=8, num_stages=2)
+    compute(warps=8, num_stages=2)
         @rationale("2-stage: overlap next weight chunk load with current matmul+softmax");
 }

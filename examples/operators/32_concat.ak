@@ -19,6 +19,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy concat_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[4])
         @rationale("4 rows per block — copy-based, maximize occupancy");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: pure memory copy, no compute to pipeline");
 }

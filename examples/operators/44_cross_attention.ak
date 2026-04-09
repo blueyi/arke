@@ -29,6 +29,6 @@ strategy cross_attention_kernel_strategy for target("nvidia_ampere") {
         @rationale("encoder K block in shared memory for dot product");
     place(tensor="V_tile", memory="shared")
         @rationale("encoder V block in smem, used after softmax");
-    launch_config(num_warps=4, num_stages=2)
+    compute(warps=4, num_stages=2)
         @rationale("2-stage: prefetch next encoder KV block while computing current");
 }

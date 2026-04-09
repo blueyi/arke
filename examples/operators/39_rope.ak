@@ -22,6 +22,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy rope_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[4])
         @rationale("4 sequence positions per block — pair-wise rotation is elementwise-like");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: elementwise mul+add with sin/cos broadcast, memory-bound");
 }

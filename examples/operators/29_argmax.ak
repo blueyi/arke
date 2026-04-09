@@ -18,6 +18,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy argmax_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[4])
         @rationale("4 rows per CTA — each warp tracks max+index per row");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: reduction with index tracking, memory-bound");
 }

@@ -23,6 +23,6 @@ strategy rmsnorm_strategy for target("nvidia_ampere") {
         @rationale("vec8 f16 for 128-bit loads — maximize bandwidth");
     place(tensor="X_row", memory="shared")
         @rationale("cache in smem: need two passes (compute rms, then normalize)");
-    launch_config(num_warps=8, num_stages=1)
+    compute(warps=8, num_stages=1)
         @rationale("4096/8/32=16 iters per warp — 8 warps for good SM occupancy");
 }

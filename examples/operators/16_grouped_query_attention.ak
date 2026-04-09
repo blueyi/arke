@@ -24,6 +24,6 @@ strategy gqa_kernel_strategy for target("nvidia_ampere") {
         @rationale("Bc=64: key/value block columns for online softmax");
     algorithm(name="kv_head_repeat_implicit")
         @rationale("implicit repeat: 4 Q heads index same KV head, no copy");
-    launch_config(num_warps=4, num_stages=2)
+    compute(warps=4, num_stages=2)
         @rationale("2-stage pipeline for KV prefetch");
 }

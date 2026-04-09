@@ -29,6 +29,6 @@ strategy paged_attention_kernel_strategy for target("nvidia_ampere") {
         @rationale("single query vector stays in registers");
     place(tensor="K_page", memory="shared")
         @rationale("load KV page to shared memory via block_table indirection");
-    launch_config(num_warps=4, num_stages=2)
+    compute(warps=4, num_stages=2)
         @rationale("2-stage: prefetch next KV page while computing current attention");
 }

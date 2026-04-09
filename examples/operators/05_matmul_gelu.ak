@@ -35,6 +35,6 @@ strategy matmul_gelu_strategy for target("nvidia_ampere") {
         @rationale("A tile cached in smem to reduce global loads during K-reduction");
     place(tensor="B_tile", memory="shared")
         @rationale("B tile cached in smem for same reason");
-    launch_config(num_warps=4, num_stages=3)
+    compute(warps=4, num_stages=3)
         @rationale("3 pipeline stages hide global→shared latency for A/B prefetch");
 }

@@ -21,6 +21,6 @@ strategy geglu_kernel_strategy for target("nvidia_ampere") {
         @rationale("4 rows per block — elementwise gated, maximize occupancy");
     tile(loop="col", factors=[256])
         @rationale("256-col tile: GELU more expensive than SiLU, smaller tile helps register");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: compute-light, memory-bound");
 }

@@ -27,6 +27,6 @@ strategy flash_attention_st4_strategy for target("nvidia_ampere") {
         @rationale("KV tiles stream through shared memory");
     place(tensor="V_tile", memory="shared")
         @rationale("value tiles follow K tiles for fused online accumulation");
-    compute(num_warps=8, num_stages=2, shared_memory=65536)
+    compute(warps=8, num_stages=2, shared_memory=65536)
         @rationale("long-context ST4 attention needs larger tiles and smem budget than ST2 examples");
 }

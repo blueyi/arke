@@ -21,6 +21,6 @@ strategy swiglu_kernel_strategy for target("nvidia_ampere") {
         @rationale("4 rows per block — elementwise gated op, maximize occupancy");
     tile(loop="col", factors=[256])
         @rationale("256-col tile: covers gate pairs together; half goes to silu, half to gate");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: memory-bound, no compute to pipeline");
 }

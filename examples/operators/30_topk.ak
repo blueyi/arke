@@ -19,6 +19,6 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 strategy topk_kernel_strategy for target("nvidia_ampere") {
     tile(loop="row", factors=[1])
         @rationale("1 row per CTA — topk over 32000 vocab needs full CTA cooperation");
-    launch_config(num_warps=8, num_stages=1)
+    compute(warps=8, num_stages=1)
         @rationale("8 warps: large reduction dim needs more parallelism within CTA");
 }

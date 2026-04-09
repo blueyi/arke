@@ -22,6 +22,6 @@ strategy transpose_kernel_strategy for target("nvidia_ampere") {
         @rationale("32-col tile: 32×32 smem block fits in 2KB, zero bank conflicts");
     place(tensor="X_tile", memory="shared")
         @rationale("stage through shared mem to coalesce global writes");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("single-stage: bandwidth-bound, no arithmetic to pipeline");
 }

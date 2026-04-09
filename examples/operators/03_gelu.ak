@@ -20,6 +20,6 @@ strategy gelu_strategy for target("nvidia_ampere") {
         @rationale("1D tiling — treat as flat array of n_elements");
     vectorize(loop="flat", width=8)
         @rationale("vec8 for f16 — maximise memory bandwidth utilization");
-    launch_config(num_warps=4, num_stages=1)
+    compute(warps=4, num_stages=1)
         @rationale("elementwise: memory-bound, 4 warps sufficient");
 }
