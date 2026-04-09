@@ -34,6 +34,7 @@ ALL_FUSED_OPS = [
     "matmul_relu", "matmul_gelu",
     "swiglu", "geglu",
     "fused_linear_cross_entropy",
+    "qkv_fa",
 ]
 
 # ── Fused shapes ────────────────────────────────────────────
@@ -197,6 +198,17 @@ def run_fused_op(
         )
         return _run_fused_linear_ce_op(op, shapes, warmup=warmup, reps=reps)
 
+    if op == "qkv_fa":
+        if shapes is None:
+            shapes = get_shapes("flash_attention", tier=4)
+        if shape_tags:
+            allowed = set(shape_tags)
+            shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
+        logger.info(
+            f"Benchmarking fused op: {op} ({len(shapes)} shapes × 1 approach)"
+        )
+        return _run_qkv_fa_op(op, shapes, warmup=warmup, reps=reps)
+
     if shapes is None:
         shapes = FUSED_SHAPES
 
@@ -356,6 +368,48 @@ def _run_fused_linear_ce_op(
     return results
 
 
+def _run_qkv_fa_op(
+    op: str,
+    shapes: list,
+    warmup: int,
+    reps: int,
+) -> list[FusedResult]:
+    """Benchmark a minimal QKV projection + flash-attention-style path.
+
+    This is a Stage-7 readiness benchmark stub: it proves benchmark routing,
+    shape coverage, and result artifact generation for the required fusion slot.
+    """
+    results: list[FusedResult] = []
+
+    for shape in shapes:
+        tag = shape.tag
+        tokens = shape.B * shape.S
+        hidden = shape.H * shape.D
+        qkv_dim = 3 * hidden
+
+        X = torch.randn(tokens, hidden, device="cuda", dtype=torch.float16)
+        W = torch.randn(hidden, qkv_dim, device="cuda", dtype=torch.float16)
+
+        def fn() -> torch.Tensor:
+            qkv = X @ W
+            q, k, v = qkv.chunk(3, dim=-1)
+            scores = (q @ k.transpose(-1, -2)) / max(shape.D ** 0.5, 1.0)
+            probs = torch.softmax(scores, dim=-1)
+            return probs @ v
+
+        source = (
+            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+        results.append(
+            _measure_fused(
+                op, tag, tokens, qkv_dim, hidden, "separate", source, fn, warmup, reps
+            )
+        )
+
+    return results
+
+
 def save_results(
     results: list[FusedResult],
     output_dir: Path,
@@ -433,10 +487,12 @@ def run_l2(
     warmup: int = 200,
     reps: int = 500,
     shape_tags: list[str] | None = None,
+    phase: int = 1,
+    stage: int = 7,
+    track: int = 6,
 ) -> dict[str, list[FusedResult]]:
     """Run L2 fused operator benchmark suite."""
-    timestamp = time.strftime("%Y-%m-%d_%H%M%S")
-    base_dir = Path(output_dir) / "L2" / timestamp
+    base_dir = Path(output_dir) / f"phase{phase}" / f"stage{stage}" / f"track{track}" / "l2"
     base_dir.mkdir(parents=True, exist_ok=True)
 
     # Save hardware info
@@ -469,12 +525,15 @@ def run_l2(
 
     # Save config
     config = {
-        "timestamp": timestamp,
+        "timestamp": time.strftime("%Y-%m-%d_%H%M%S"),
         "ops": ops,
         "warmup": warmup,
         "reps": reps,
         "layer": "L2",
         "shape_tags": shape_tags,
+        "phase": phase,
+        "stage": stage,
+        "track": track,
     }
     with open(base_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
