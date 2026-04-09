@@ -108,6 +108,27 @@ where B: dynamic(min=128, max=64, multiple_of=32, default=96)
         assert len(result.semantic_ir.params) > 0
         assert result.semantic_ir.return_node != ""
 
+    def test_compile_matmul_emits_mlir_skeleton(self, pipeline):
+        result = pipeline.compile_file(str(OPERATORS_DIR / "01_matmul.ak"))
+        assert result.success, result.errors
+        assert result.strategy_ir is None
+        assert result.mlir_module is not None
+        assert "module {" in result.mlir_module
+        assert "func.func @matmul" in result.mlir_module
+        assert "linalg.matmul" in result.mlir_module
+
+    def test_compile_strategy_kernel_emits_full_stack_mlir_skeleton(self, pipeline):
+        result = pipeline.compile_file(str(OPERATORS_DIR / "00_relu.ak"))
+        assert result.success, result.errors
+        assert result.strategy_ir is not None
+        assert result.schedule_ir is not None
+        assert result.instruction_ir is not None
+        assert result.mlir_module is not None
+        assert "module {" in result.mlir_module
+        assert "func.func @relu_kernel" in result.mlir_module
+        assert "arith.maximumf" in result.mlir_module
+        assert "instruction block" in result.mlir_module
+
 
 # ============================================================
 # Test Class: E2E Execution for Simple Ops

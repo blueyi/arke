@@ -75,6 +75,9 @@ def run_gate(gate_id: str, tier: int = 2) -> GateSummary:
     if gate_id == "G6":
         from benchmarks.gate_g6 import run_g6
         return run_g6(tier=tier)
+    elif gate_id == "G7":
+        from benchmarks.gate_g7 import run_g7
+        return run_g7(tier=tier)
     else:
         # Placeholder for other gates
         return GateSummary(

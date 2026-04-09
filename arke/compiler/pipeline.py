@@ -19,6 +19,7 @@ import torch
 
 from arke.compiler.validator import validate_semantic_ir
 from arke.compiler.lowering import lower_full_stack
+from arke.compiler.mlir_emitter import emit_mlir_skeleton
 from arke.ir.akir import akir_from_dict, akir_to_dict
 from arke.ir.akir import load_akir as _load_akir
 from arke.ir.akir import save_akir
@@ -74,6 +75,7 @@ class CompilationResult:
     strategy_ir: StrategyIR | None = None
     schedule_ir: Any | None = None
     instruction_ir: Any | None = None
+    mlir_module: str | None = None
     success: bool = False
     errors: list[str] = field(default_factory=list)
     kernel_name: str = ""
@@ -202,15 +204,21 @@ class ArkePipeline:
         result.errors.extend(pass_result.errors)
         result.success = len(result.errors) == 0
 
-        if result.success and result.semantic_ir is not None and result.strategy_ir is not None:
-            try:
-                result.schedule_ir, result.instruction_ir = lower_full_stack(
+        if result.success and result.semantic_ir is not None:
+            if result.strategy_ir is not None:
+                try:
+                    result.schedule_ir, result.instruction_ir = lower_full_stack(
+                        result.semantic_ir,
+                        result.strategy_ir,
+                    )
+                except Exception as e:
+                    result.errors.append(f"Lowering error: {e}")
+                    result.success = False
+            if result.success:
+                result.mlir_module = emit_mlir_skeleton(
                     result.semantic_ir,
-                    result.strategy_ir,
+                    result.instruction_ir,
                 )
-            except Exception as e:
-                result.errors.append(f"Lowering error: {e}")
-                result.success = False
 
         return result
 
@@ -313,6 +321,7 @@ class ArkePipeline:
             result.schedule_ir = schedule_ir
             result.instruction_ir = instruction_ir
             result.kernel_name = semantic_ir.kernel_id
+            result.mlir_module = emit_mlir_skeleton(semantic_ir, instruction_ir)
 
             # Validate the loaded IR
             validation_errors = validate_semantic_ir(semantic_ir)

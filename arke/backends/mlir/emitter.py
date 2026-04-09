@@ -1,96 +1,77 @@
-"""MLIR code emitter for Arke IR."""
+"""MLIR code emitter for the active Arke IR stack.
 
-from typing import List, Dict, Any
-from arke.ir.semantic import SemanticIR, Operation, Tensor
-from arke.ir.strategy import StrategyIR
+This backend is intentionally minimal in Stage 7: it emits a readable MLIR-like
+skeleton from SemanticIR, enough to verify the architectural seam required by
+G7 criterion [5].
+"""
+
+from __future__ import annotations
+
+from arke.ir.semantic import SemanticIR
 
 
 class MLIREmitter:
-    """Emits MLIR code from StrategyIR."""
-    
+    """Emit a minimal MLIR skeleton from SemanticIR."""
+
     def __init__(self):
-        self.ops_registry = {}
-        self.indent_level = 0
-    
-    def emit(self, strategy_ir: StrategyIR) -> str:
-        """Emit MLIR code from StrategyIR."""
-        lines = []
-        
-        # Module header
-        lines.append('module {')
-        self.indent_level += 1
-        
-        # Emit function
-        lines.append(self._emit_func(strategy_ir))
-        
-        self.indent_level -= 1
-        lines.append('}')
-        
-        return '\n'.join(lines)
-    
-    def _emit_func(self, strategy_ir: StrategyIR) -> str:
-        """Emit MLIR function."""
-        lines = []
-        indent = '  ' * self.indent_level
-        
-        # Function signature
-        func_name = strategy_ir.kernel_name
-        params = ', '.join([
-            f'%{p.name}: {self._mlir_type(p)}'
-            for p in strategy_ir.params
-        ])
-        return_type = self._mlir_type(strategy_ir.return_type)
-        
-        lines.append(f'{indent}func.func @{func_name}({params}) -> {return_type} {{')
-        self.indent_level += 1
-        
-        # Emit operations
-        for op in strategy_ir.ops:
-            lines.append(self._emit_op(op))
-        
-        # Return
-        lines.append(f'{"  " * self.indent_level}return %result : {return_type}')
-        
-        self.indent_level -= 1
-        lines.append(f'{indent}}}')
-        
-        return '\n'.join(lines)
-    
-    def _emit_op(self, op: Operation) -> str:
-        """Emit MLIR operation."""
-        indent = '  ' * self.indent_level
-        op_name = op.name.lower()
-        
-        # Get MLIR op mapping
-        if op_name not in self.ops_registry:
-            return f'{indent}// TODO: {op_name}'
-        
-        mlir_op = self.ops_registry[op_name]
-        return mlir_op.emit(op, indent)
-    
-    def _mlir_type(self, tensor: Tensor) -> str:
-        """Convert Arke tensor type to MLIR type."""
-        shape = ', '.join([
-            f'?'  # Dynamic dimensions
-            if hasattr(d, 'is_dynamic') and d.is_dynamic
-            else str(d)
-            for d in tensor.shape
-        ])
-        dtype = self._mlir_dtype(tensor.dtype)
-        return f'tensor<{shape}x{dtype}>'
-    
-    def _mlir_dtype(self, dtype: str) -> str:
-        """Convert Arke dtype to MLIR dtype."""
-        mapping = {
-            'f16': 'f16',
-            'f32': 'f32',
-            'f64': 'f64',
-            'i32': 'i32',
-            'i64': 'i64',
-            'bool': 'i1',
-        }
-        return mapping.get(dtype, dtype)
-    
-    def register_op(self, op_name: str, emitter):
-        """Register MLIR op emitter."""
+        self.ops_registry: dict[str, object] = {}
+
+    def emit(self, semantic_ir: SemanticIR) -> str:
+        lines: list[str] = ["module {"]
+        args = []
+        for idx, param in enumerate(semantic_ir.params):
+            args.append(f"%arg{idx}: {self._tensor_type(param.shape, param.dtype)}")
+        ret_type = self._infer_return_type(semantic_ir)
+        lines.append(
+            f"  func.func @{semantic_ir.kernel_id}({', '.join(args)}) -> {ret_type} {{"
+        )
+
+        value_map: dict[str, str] = {p.name: f"%arg{i}" for i, p in enumerate(semantic_ir.params)}
+        temp_idx = 0
+        for node in semantic_ir.nodes:
+            result_name = f"%v{temp_idx}"
+            temp_idx += 1
+            lines.append(f"    {self._emit_node(node.op, result_name, value_map, node.inputs, node.output.dtype)}")
+            value_map[node.id] = result_name
+
+        ret_value = value_map.get(semantic_ir.return_node, "%arg0")
+        lines.append(f"    return {ret_value} : {ret_type}")
+        lines.append("  }")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def register_op(self, op_name: str, emitter: object) -> None:
         self.ops_registry[op_name] = emitter
+
+    def _emit_node(self, op: str, result_name: str, value_map: dict[str, str], inputs: dict, dtype: str) -> str:
+        operands = []
+        for ref in inputs.values():
+            if hasattr(ref, "name"):
+                operands.append(value_map.get(ref.name, f"%{ref.name}"))
+            elif hasattr(ref, "id"):
+                operands.append(value_map.get(ref.id, f"%{ref.id}"))
+
+        if op == "matmul" and len(operands) >= 2:
+            return (
+                f"{result_name} = linalg.matmul ins({operands[0]}, {operands[1]}) "
+                f": tensor<*x{dtype}>"
+            )
+        if op == "relu" and operands:
+            return f"{result_name} = arith.maximumf {operands[0]}, %cst_zero : {dtype}"
+        if op == "softmax" and operands:
+            return f"{result_name} = \"arke.softmax\"({operands[0]}) : (tensor<*x{dtype}>) -> tensor<*x{dtype}>"
+        joined = ", ".join(operands)
+        return f"{result_name} = \"arke.{op}\"({joined}) : (tensor<*x{dtype}>) -> tensor<*x{dtype}>"
+
+    def _tensor_type(self, shape: list, dtype: str) -> str:
+        dims = "x".join("?" if not isinstance(d, int) else str(d) for d in shape)
+        return f"tensor<{dims}x{dtype}>"
+
+    def _infer_return_type(self, semantic_ir: SemanticIR) -> str:
+        for node in semantic_ir.nodes:
+            if node.id == semantic_ir.return_node:
+                return self._tensor_type(node.output.shape, node.output.dtype)
+        if semantic_ir.params:
+            p = semantic_ir.params[0]
+            return self._tensor_type(p.shape, p.dtype)
+        return "tensor<*xf32>"
