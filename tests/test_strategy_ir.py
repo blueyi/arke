@@ -231,6 +231,11 @@ class TestStrategyIRConvenience:
         assert cd.step == 1
         assert cd.predicate == "S <= 512"
 
+    def test_compute_can_be_l2_resource_decision(self):
+        d = Decision(kind="compute", params={"warps": 4, "num_stages": 2}, level=2)
+        assert d.kind == "compute"
+        assert d.level == 2
+
     def test_pop_decisions(self):
         ir = StrategyIR(kernel_id="test")
         ir.tile("M", [64])
