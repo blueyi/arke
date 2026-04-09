@@ -82,6 +82,37 @@ class TestBL5RegistryCoverage:
             assert 4 in tiers, f"{op} missing ST4 coverage in benchmark registry"
 
 
+class TestProductionShapeExamples:
+    def test_stage7_production_examples_parse_and_compile(self):
+        pipeline = ArkePipeline()
+        files = [
+            OPERATORS_DIR / "production" / "flash_attention_st4.ak",
+            OPERATORS_DIR / "production" / "fused_linear_cross_entropy_st4.ak",
+            OPERATORS_DIR / "production" / "paged_attention_st4.ak",
+        ]
+        for path in files:
+            program = parse_file(str(path))
+            assert program.kernels, f"No kernel parsed from {path.name}"
+            assert program.kernels[0].where_clause is not None, f"Missing where clause in {path.name}"
+            result = pipeline.compile_file(str(path))
+            assert result.success, f"Compile failed for {path.name}: {result.errors}"
+
+    def test_stage7_production_examples_encode_st4_style_constraints(self):
+        files = [
+            OPERATORS_DIR / "production" / "flash_attention_st4.ak",
+            OPERATORS_DIR / "production" / "fused_linear_cross_entropy_st4.ak",
+            OPERATORS_DIR / "production" / "paged_attention_st4.ak",
+        ]
+        for path in files:
+            result = ArkePipeline().compile_file(str(path))
+            assert result.success, result.errors
+            ir = result.semantic_ir
+            assert ir is not None
+            exprs = {sc.expr for sc in ir.shape_constraints}
+            assert any("default(" in expr for expr in exprs), f"No default() constraint in {path.name}"
+            assert any("%" in expr for expr in exprs), f"No multiple_of constraint in {path.name}"
+
+
 class TestExampleSyntaxStillParses:
     def test_symbolic_examples_parse(self):
         files = [
