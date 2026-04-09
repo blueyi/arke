@@ -251,38 +251,33 @@ Defined target strings (case-insensitive):
 
 ### 4.3 Strategy Directives
 
-All v1.0 directives remain valid. v2.0 adds backend-agnostic alternatives.
-
-#### v1.0 Directives (preserved, still valid)
+Active strategy directives in the Stage 7 mainline:
 
 | Directive | Parameters | Effect |
 |:----------|:-----------|:-------|
-| `tile` | `loop`, `factors` | Tile a loop |
+| `tile` | canonical loop/dim selector + factors | Tile a loop or semantic dimension |
 | `reorder` | `order` | Reorder loop nest |
-| `parallel` | `loops`, `mapping` | Map loops to HW threads |
+| `parallel` | `loops`, `mapping` | Map loops to HW threads/blocks |
 | `fuse` | `ops`, `fusion_type` | Operator fusion |
 | `vectorize` | `loop`, `width` | Vectorize a loop |
-| `place` | `tensor`, `memory` | Tensor memory placement |
-| `launch_config` | `num_warps`, `num_stages` | GPU launch params (Triton-specific) |
+| `place` / `memory_layout` | tensor placement params | Tensor memory placement / layout hints |
+| `compute` | `warps`, `num_stages`, `shared_memory` | Backend-agnostic resource directive surface |
 | `unroll` | `loop`, `factor` | Loop unrolling |
 | `autotune` | `configs`, `key` | Mark for autotuning |
 | `algorithm` | `name` | Algorithm variant selection |
 
-#### v2.0 Backend-Agnostic Directives (new)
-
-**`compute`** — Backend-agnostic compute resource directive. Maps to StrategyIR L2 `compute_resource` decision kind (see `arke-ir-spec-design.md` §7). Replaces Triton-specific `launch_config`:
+**`compute`** — canonical resource directive in the active language surface. It carries resource intent without exposing backend-specific directive names:
 
 ```
-compute(parallelism=128, pipeline_depth=3)
-    @rationale("128 parallel workers, 3-stage pipeline to hide memory latency");
+compute(warps=4, num_stages=3, shared_memory="auto")
+    @rationale("4 warps with a 3-stage pipeline balance occupancy and latency hiding");
 ```
 
 | Parameter | Type | Description |
 |:----------|:-----|:------------|
-| `parallelism` | INT | Number of parallel execution units (maps to warps on NVIDIA, DMA blocks on Ascend, etc.) |
-| `pipeline_depth` | INT | Software pipeline stages for latency hiding |
-| `vector_width` | INT | SIMD vector width in elements (optional) |
-| `l1_cache_hint` | STRING | Cache usage hint: `"streaming"`, `"reuse"`, `"default"` |
+| `warps` | INT | Canonical parallel worker count for SIMT backends |
+| `num_stages` | INT | Software pipeline stages for latency hiding |
+| `shared_memory` | STRING/INT | Shared-memory intent or explicit budget when supported |
 
 **`memory_layout`** — Backend-agnostic memory placement:
 
@@ -413,7 +408,7 @@ Symbolic dimension names are scoped to the `kernel` block that declares them. A 
 
 ### 5.6 No Where Clause → Legacy Static Shapes
 
-If no `where` clause is present, all dimension sizes in the tensor types must be integer literals (v1.0 behavior). This is fully backward-compatible.
+If no `where` clause is present, all dimension sizes in the tensor types must be integer literals. Symbolic dimensions require an explicit `where` clause in the active language surface.
 
 ---
 
@@ -509,7 +504,7 @@ This annotation is on the kernel definition and applies to all inputs unless ove
 
 #### `@deprecated`
 
-**Purpose:** Mark a kernel or strategy as deprecated, with migration guidance.
+**Purpose:** Mark a kernel or strategy as deprecated.
 
 ```
 @deprecated(since="2.0", replace_with="scaled_dot_product_attention_v2")
@@ -597,7 +592,7 @@ If the compiler cannot symbolically determine output shape from inputs, a type a
 
 ## 8. Complete EBNF Grammar
 
-The following grammar is a strict superset of the v1.0 grammar. All v1.0 constructs are valid v2.0 constructs.
+The following grammar sketch highlights the canonical v2 surface used by the active mainline.
 
 ```ebnf
 (* ============================================================ *)
@@ -887,38 +882,7 @@ strategy layer_norm_strategy for target("nvidia_ampere") {
 }
 ```
 
-### 9.5 Backward-Compatible v1.0 Kernel (No Changes Needed)
-
-A v1.0 `.ak` file works unchanged in v2.0. This is Example 3 from v1.0 spec.
-
-```ak
-// This is a valid v1.0 file and remains valid in v2.0 without modification
-kernel matmul_gelu_static(
-    X: Tensor<[128, 768], f16>,
-    W: Tensor<[768, 3072], f16>
-) -> Tensor<[128, 3072], f16> {
-    let Z = matmul(A=X, B=W);
-    let Y = gelu(X=Z);
-    return Y;
-}
-
-strategy matmul_gelu_static_strategy for target("nvidia_ampere") {
-    tile(loop="M", factors=[32])
-        @rationale("M=128 small — 32 tile keeps register pressure low");
-    tile(loop="N", factors=[128])
-        @rationale("N=3072: 128-tile, multiple blocks cover output columns");
-    tile(loop="K", factors=[32])
-        @rationale("K-tile=32: A+B smem = 32*32*2*2 = 4096B, fits in L1");
-    parallel(loops=["M", "N"], mapping={"M": "blockIdx.x", "N": "blockIdx.y"})
-        @rationale("each block owns one (M,N) tile");
-    fuse(ops=["matmul", "gelu"], fusion_type="epilogue")
-        @rationale("apply gelu in matmul epilogue — saves global memory roundtrip");
-    launch_config(num_warps=4, num_stages=3)
-        @rationale("3 pipeline stages hide global→shared latency for A/B prefetch");
-}
-```
-
-### 9.6 RMSNorm with Import
+### 9.5 RMSNorm with Import
 
 Demonstrates the import system and a kernel using an op from an imported module.
 

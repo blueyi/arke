@@ -15,7 +15,7 @@ Arke Language is designed from the ground up for **LLM-as-decision-maker** workf
 | **LLM Friendliness** | Poor (verbose, many edge cases) | Moderate (still requires manual tuning) | Excellent (structured, bounded, minimal) |
 | **Token Cost** | High (multi-line loops, complex logic) | Medium (still verbose) | Low (compact syntax, decision primitives) |
 | **Symbolic Shapes** | Limited (external libraries) | Minimal or absent | Native (first-class in language) |
-| **Strategy Expression** | Implicit (scattered in code) | Partial (launch_config only) | Explicit (dedicated strategy block) |
+| **Strategy Expression** | Implicit (scattered in code) | Low-level tuning embedded in kernel code | Explicit (dedicated strategy block) |
 | **Verification** | Manual testing | Manual testing | Automated V0/V1/V2 pipeline |
 | **Hardware Portability** | Library-dependent | NVIDIA-centric | Multi-target (single `.ak` → multiple backends) |
 | **Rationale Capture** | Comments only | Comments only | First-class `@rationale` annotations |
@@ -117,7 +117,7 @@ strategy matmul_strategy for target("nvidia_ampere") {
         @rationale("128 threads per block for occupancy");
     tile(dim="N", factors=[128])
         @rationale("Balanced M/N tiling");
-    compute(num_threads=256, num_stages=3)
+    compute(warps=8, num_stages=3)
         @rationale("3-stage pipeline for memory latency hiding");
 }
 ```
@@ -174,7 +174,7 @@ let C = matmul(A=A, B=B);
 strategy matmul_strategy for target("nvidia_ampere") {
     tile(dim="M", factors=[128])      // LLM chooses from legal tiling factors
     tile(dim="N", factors=[128])      // Compiler validates each decision
-    compute(num_threads=256, ...)     // Compiler checks resource constraints
+    compute(warps=8, ...)            // Compiler checks resource constraints
 }
 ```
 

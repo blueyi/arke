@@ -110,7 +110,7 @@ Validation path (replaces numerical_check.py):
   SemanticInterpreter ── executes IR graph via OpDef.reference_impl (PyTorch eager)
 ```
 
-**Impact after migration:**
+**Impact under the target architecture:**
 
 | Metric | Before | After | Change |
 |--------|--------|-------|--------|
@@ -1133,9 +1133,9 @@ class ShapeInferenceEngine:
             raise ValueError(f"Unknown ShapeRule kind: {k!r}")
 ```
 
-### 6.4 Backward Compatibility
+### 6.4 Incremental rollout behavior
 
-The engine falls back to the existing `infer_output_shape()` when `shape_rule` is `None`. This means all 45 ops continue working during incremental migration — only ops that have `shape_rule` populated use the new engine.
+During implementation rollout, the engine may fall back to the existing `infer_output_shape()` when `shape_rule` is `None`. This is an implementation bridge, not part of the active user-facing architecture contract.
 
 ---
 
@@ -1572,51 +1572,27 @@ Critical path: **T01 → T05 → T09 → T17 → T22 → T24** ≈ 11h sequentia
 
 ---
 
-## 12. Backward Compatibility
+## 12. Validation Discipline
 
 ### 12.1 Contract
 
-> **All 422 existing tests must pass at every phase boundary.**  
-> No test assertions may be modified to accommodate the new architecture.
+> **The active architecture rewrite is only acceptable if the validation slices stay green.**  
+> Active docs should describe the target architecture directly; implementation-bridge notes should be minimized and isolated.
 
-### 12.2 Compatibility Guarantees by Component
+### 12.2 Engineering discipline
 
-**`catalog.py` / `OpDefinition`**
-- New fields all `Optional` with `None` defaults — existing positional construction still works.
-- `OP_CATALOG`, `get_op()`, `is_fusable_epilogue()` unchanged.
+- keep public APIs stable only where the active mainline still uses them
+- remove dead compatibility shims once replacement paths are proven
+- prefer rewriting tests to canonical current behavior over preserving migration-only assertions
+- record validation checkpoints in Stage 7 planning docs when architecture-facing changes land
 
-**`shape_inference.py`**
-- Public API (`infer_output_shape`, `infer_output_dtype`, `validate_shapes`) preserved through Phase E.
-- After Phase E: becomes thin wrapper delegating to `ShapeInferenceEngine`.
-- After Phase F: deprecated but not deleted for one release.
-
-**`numerical_check.py`**
-- `NumericalChecker.check()` preserved as delegating shim calling `check_numerical()`.
-- 45 NumPy functions deleted only after T24 passes.
-
-**`triton_template_engine.py`**
-- `TritonTemplateEngine.translate()` preserved through Phase E.
-- `TritonBackend.translate()` delegates to `TemplateRouter` internally after T18, but external callers see the same signature.
-
-**`kernel_cache.py`**
-- Public API (`compile_op`, `run_op`, cache dict attributes) preserved.
-- `_build_ir()` internals replaced; external callers unaffected.
-
-**`ArkeBackend` ABC (`backend/base.py`)**
-- `translate()`, `compile()`, `run()`, `profile()` abstract methods preserved.
-- New `lower()` method added alongside (not replacing) `translate()`.
-
-### 12.3 Test Checkpoints
+### 12.3 Validation checkpoints
 
 ```bash
-# Run at the end of each phase:
 cd /home/blueyi/workspace/repos/arke
 source ~/.venvs/arke/bin/activate
 python -m pytest tests/ -x -q --tb=short 2>&1 | tail -5
-# Expected: "422 passed, 6 skipped"
 ```
-
-Stop and fix before advancing if any checkpoint fails.
 
 ---
 

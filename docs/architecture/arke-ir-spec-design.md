@@ -150,7 +150,7 @@ strategy matmul_gelu for target("nvidia_ampere") {
         @rationale("eliminate global memory round-trip between matmul and gelu");
     place("A_tile", memory="shared");
     place("B_tile", memory="shared");
-    launch_config(num_warps=4, num_stages=3);
+    compute(warps=4, num_stages=3);
 }
 ```
 
