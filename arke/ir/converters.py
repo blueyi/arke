@@ -268,6 +268,9 @@ def ast_to_semantic(kernel_def: KernelDef) -> SemanticIR:
                 name=dim_decl.name,
                 min=dim_decl.opts.get("min"),
                 max=dim_decl.opts.get("max"),
+                is_static=(dim_decl.kind == "static"),
+                multiple_of=dim_decl.opts.get("multiple_of"),
+                default=dim_decl.opts.get("default"),
             )
             ir.add_symbolic_dim(sd)
             sym_dim_set.add(dim_decl.name)

@@ -313,6 +313,28 @@ class TestParseAll46:
 # Where clause -> SymbolicDim propagation
 # ============================================================
 
+class TestWhereClauseSemantics:
+    def test_where_clause_preserves_static_multiple_of_default(self):
+        prog = parse_string('''
+kernel dynamic_kernel(
+    X: Tensor<[M, K], f16>
+) -> Tensor<[M, K], f16>
+where M: dynamic(max=4096), K: static, N: dynamic(min=64, multiple_of=32, default=128)
+{
+    let Y = relu(X=X);
+    return Y;
+}
+        ''')
+        sem = ast_to_semantic(prog.kernels[0])
+        dims = {sd.name: sd for sd in sem.symbolic_dims}
+        assert dims["M"].max == 4096
+        assert dims["M"].is_static is False
+        assert dims["K"].is_static is True
+        assert dims["N"].min == 64
+        assert dims["N"].multiple_of == 32
+        assert dims["N"].default == 128
+
+
 class TestWhereClausePropagation:
     def test_symbolic_dims_from_shape(self):
         """Symbolic dim names in param shapes should be collected."""

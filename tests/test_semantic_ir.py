@@ -45,10 +45,27 @@ class TestSymbolicDim:
         assert sd.min == 1
         assert sd.max == 65536
 
+    def test_static_and_alignment_metadata(self):
+        sd = SymbolicDim("K", is_static=True, multiple_of=32, default=128)
+        assert sd.is_static is True
+        assert sd.multiple_of == 32
+        assert sd.default == 128
+
     def test_to_dict(self):
         sd = SymbolicDim("H", min=1, max=128)
         d = sd.to_dict()
         assert d == {"sym": "H", "min": 1, "max": 128}
+
+    def test_to_dict_with_full_metadata(self):
+        sd = SymbolicDim("N", min=64, max=4096, is_static=False, multiple_of=32, default=128)
+        d = sd.to_dict()
+        assert d == {
+            "sym": "N",
+            "min": 64,
+            "max": 4096,
+            "multiple_of": 32,
+            "default": 128,
+        }
 
     def test_to_dict_no_bounds(self):
         sd = SymbolicDim("B")
@@ -62,6 +79,17 @@ class TestSymbolicDim:
         assert sd2.name == sd.name
         assert sd2.min == sd.min
         assert sd2.max == sd.max
+
+    def test_round_trip_full_metadata(self):
+        sd = SymbolicDim("K", min=32, max=8192, is_static=True, multiple_of=32, default=256)
+        d = sd.to_dict()
+        sd2 = SymbolicDim.from_dict(d)
+        assert sd2.name == sd.name
+        assert sd2.min == sd.min
+        assert sd2.max == sd.max
+        assert sd2.is_static == sd.is_static
+        assert sd2.multiple_of == sd.multiple_of
+        assert sd2.default == sd.default
 
 
 class TestDim:

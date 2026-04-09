@@ -30,16 +30,20 @@ VALID_DTYPES = frozenset({
 
 @dataclass
 class SymbolicDim:
-    """A named symbolic dimension (runtime variable).
+    """A named symbolic dimension (runtime variable or static symbolic dim).
 
     Examples:
         SymbolicDim("B")         # batch size
         SymbolicDim("S")         # sequence length
         SymbolicDim("H", min=1, max=128)  # bounded head count
+        SymbolicDim("K", is_static=True)  # compile-time constant symbolic dim
     """
     name: str
     min: int | None = None   # optional lower bound (for compiler hints)
     max: int | None = None   # optional upper bound (for compiler hints)
+    is_static: bool = False
+    multiple_of: int | None = None
+    default: int | None = None
 
     def to_dict(self) -> dict:
         d: dict = {"sym": self.name}
@@ -47,11 +51,24 @@ class SymbolicDim:
             d["min"] = self.min
         if self.max is not None:
             d["max"] = self.max
+        if self.is_static:
+            d["is_static"] = True
+        if self.multiple_of is not None:
+            d["multiple_of"] = self.multiple_of
+        if self.default is not None:
+            d["default"] = self.default
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> SymbolicDim:
-        return cls(name=d["sym"], min=d.get("min"), max=d.get("max"))
+        return cls(
+            name=d["sym"],
+            min=d.get("min"),
+            max=d.get("max"),
+            is_static=d.get("is_static", False),
+            multiple_of=d.get("multiple_of"),
+            default=d.get("default"),
+        )
 
 
 # A dimension can be a concrete int or a symbolic variable
