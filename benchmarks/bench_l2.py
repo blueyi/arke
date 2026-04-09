@@ -24,6 +24,7 @@ from pathlib import Path
 
 import torch
 
+from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l2, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
 from benchmarks.shapes import GATED_SHAPES, MATMUL_SHAPES, GatedShape, MatmulShape, Shape2D, get_shapes
@@ -549,9 +550,14 @@ def run_l2(
         all_results[op] = results
 
         csv_path = save_results(results, base_dir, op)
+        perf_path = write_perf_csv_from_l2(csv_path, base_dir / f"perf_{op}.csv")
         logger.info(f"  Saved: {csv_path}")
+        logger.info(f"  Perf : {perf_path}")
 
         print_comparison_table(results, op)
+
+    merge_perf_all(base_dir)
+    write_summary(base_dir)
 
     print(f"\nResults saved to: {base_dir}")
     return all_results

@@ -65,6 +65,28 @@ def _check_spec_docs() -> tuple[bool, str]:
     return True, "Lang spec, IR spec, and dynamic-shape feasibility doc present"
 
 
+def _check_benchmark_artifacts() -> tuple[bool, str]:
+    l1_dir = REPO_ROOT / "benchmarks" / "results" / "phase1" / "stage7" / "track6" / "l1"
+    l2_dir = REPO_ROOT / "benchmarks" / "results" / "phase1" / "stage7" / "track6" / "l2"
+
+    found = []
+    missing = []
+    for label, run_dir in (("L1", l1_dir), ("L2", l2_dir)):
+        if run_dir.exists():
+            summary = run_dir / "summary.json"
+            perf_all = run_dir / "PERF_ALL.csv"
+            if summary.exists() and perf_all.exists():
+                found.append(f"{label}:{run_dir.relative_to(REPO_ROOT)}")
+            else:
+                missing.append(f"{label}:{run_dir.relative_to(REPO_ROOT)} missing summary/PERF_ALL")
+        else:
+            missing.append(f"{label}:{run_dir.relative_to(REPO_ROOT)} absent")
+
+    if found:
+        return True, "; ".join(found + missing)
+    return False, "; ".join(missing)
+
+
 def run_g7(tier: int = 2) -> GateSummary:
     results: list[GateResult] = []
 
@@ -123,12 +145,20 @@ def run_g7(tier: int = 2) -> GateSummary:
     passed, details = _run_pytest([
         "tests/test_benchmark_l2.py",
         "tests/test_benchmark_l2_fused_ce.py",
+        "tests/test_benchmark_l2_qkv_fa.py",
+        "tests/test_benchmark_artifacts.py",
         "tests/test_benchmark_cli.py",
     ])
+    artifact_ok, artifact_detail = _check_benchmark_artifacts()
     results.append(GateResult(
         "G7", "G7.8",
         "StrategyIR/lowering surface can represent the BL5 L2 fusion set",
         "function", passed, details,
+    ))
+    results.append(GateResult(
+        "G7", "G7.8a",
+        "Stage 7 benchmark standard result directories are recognized by gate",
+        "function", artifact_ok, artifact_detail,
     ))
 
     passed, details = _run_pytest([

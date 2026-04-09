@@ -29,6 +29,7 @@ import benchmarks.baselines.liger  # noqa: F401
 import benchmarks.baselines.pytorch_eager  # noqa: F401
 import benchmarks.baselines.triton_tutorial  # noqa: F401
 from benchmarks.baselines.base import get_all_runners, get_runners_for_op
+from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l1, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
 from benchmarks.shapes import (
@@ -323,9 +324,14 @@ def run_l1(
         all_results[op] = results
 
         csv_path = save_results(results, base_dir, op)
+        perf_path = write_perf_csv_from_l1(csv_path, base_dir / f"perf_{op}.csv")
         logger.info(f"  Saved: {csv_path}")
+        logger.info(f"  Perf : {perf_path}")
 
         print_comparison_table(results, op)
+
+    merge_perf_all(base_dir)
+    write_summary(base_dir)
 
     # Summary
     print(f"\nResults saved to: {base_dir}")

@@ -220,6 +220,15 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 
 This is the practical closure track for S7. The architectural work is only complete if it enables full BL5 execution, including the required L2 fused/operator-composition paths.
 
+**Reverse-decomposition rule for Track 6:** treat `BL5 × (L1 + L2)` as the real contract, then derive the remaining Lang / IR / compiler / benchmark tasks backward from that target instead of forward from local implementation convenience.
+
+That means every unfinished task in S7 should be justified by one of these benchmark-facing needs:
+- **Coverage need:** every BL5 operator and every required shape family must be representable in Lang + IR and runnable by the benchmark harness.
+- **Fusion need:** the full BL5 L2 fusion set must exist as first-class compiler/lowering/benchmark paths, not just ad hoc eager tests.
+- **Artifact need:** every benchmark run needed by G7 must emit stable gate-readable artifacts (`perf_*.csv`, `PERF_ALL.csv`, `summary.json`, hardware/config/source manifests).
+- **Memory need:** 6GB-VRAM-blocked OT4 / large OT2 cases must be handled by memory-aware strategy selection, shape dispatch, or consistently recorded OOM policy compatible with the gate contract.
+- **Design need:** if a benchmark requirement cannot be expressed cleanly, the Lang / IR design must be strengthened rather than the benchmark target weakened.
+
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
 | T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | 🟨 |
@@ -229,6 +238,7 @@ This is the practical closure track for S7. The architectural work is only compl
 | T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | 🟨 |
 | T6.5 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM without reducing BL5 scope | P0 | 1d | ⬜ |
 | T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, summaries, standard result dirs) for gate verification | P1 | 0.5d | 🟨 |
+| T6.7 | Drive remaining Lang / IR / compiler refinements from BL5 benchmark gaps instead of local code convenience | P0 | continuous | 🟨 |
 
 ### Track 7: Non-Regression and Gate Closure (P0)
 
@@ -272,6 +282,7 @@ Rationale for this order:
 - MLIR skeleton should be architecturally correct, but not block earlier parser/IR convergence.
 - BL5 closure is the final proof that the S7 redesign solves the practical coverage problem left by S6.
 - “Support BL5” here means full operator coverage, full relevant shape coverage, and L2 fusion-capable Lang/IR/lowering — not just passing a subset of single-op demos.
+- Once Track 6 starts, **benchmark gaps become the task generator**: missing BL5 evidence should directly create Lang / IR / lowering / runtime work, rather than being treated as a separate downstream validation phase.
 
 ---
 
