@@ -98,8 +98,14 @@ class TestRationalePreservation:
 
         # Save → load .akir
         akir_path = str(tmp_path / f"{ak_file}.akir")
-        save_akir(result.semantic_ir, result.strategy_ir, akir_path)
-        _, loaded_strategy = load_akir(akir_path)
+        save_akir(
+            result.semantic_ir,
+            result.strategy_ir,
+            akir_path,
+            schedule_ir=result.schedule_ir,
+            instruction_ir=result.instruction_ir,
+        )
+        _, loaded_strategy, _, _ = load_akir(akir_path)
 
         assert loaded_strategy is not None, f"No StrategyIR after loading {akir_path}"
 
@@ -142,8 +148,14 @@ class TestRationaleAllFiles:
 
         # Round-trip through .akir
         akir_path = str(tmp_path / f"{ak_file.stem}.akir")
-        save_akir(result.semantic_ir, result.strategy_ir, akir_path)
-        _, loaded = load_akir(akir_path)
+        save_akir(
+            result.semantic_ir,
+            result.strategy_ir,
+            akir_path,
+            schedule_ir=result.schedule_ir,
+            instruction_ir=result.instruction_ir,
+        )
+        _, loaded, _, _ = load_akir(akir_path)
 
         assert loaded is not None
         rationales_after = _collect_rationales(loaded)

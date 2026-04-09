@@ -1,10 +1,26 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — Intermediate Representation (S6+ refactor).
+"""Arke IR package.
 
-Old SemanticIR/StrategyIR removed.
-New multi-layer IR (Layer 4→3→2→1) will be implemented in S7.
+Active multi-layer modules:
+- semantic.py      — SemanticIR (Layer 4)
+- strategy.py      — StrategyIR (Layer 3)
+- schedule.py      — ScheduleIR (Layer 2)
+- instruction.py   — InstructionIR (Layer 1)
+- akir.py          — combined serialization format
 """
 
-# Placeholder for S6-S9 refactor
+from arke.ir.instruction import Instruction, InstructionBlock, InstructionIR
+from arke.ir.schedule import ScheduleIR
+from arke.ir.semantic import SemanticIR
+from arke.ir.strategy import StrategyIR
+
+__all__ = [
+    "SemanticIR",
+    "StrategyIR",
+    "ScheduleIR",
+    "InstructionIR",
+    "Instruction",
+    "InstructionBlock",
+]

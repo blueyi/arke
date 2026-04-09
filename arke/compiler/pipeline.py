@@ -18,6 +18,7 @@ from typing import Any
 import torch
 
 from arke.compiler.validator import validate_semantic_ir
+from arke.compiler.lowering import lower_full_stack
 from arke.ir.akir import akir_from_dict, akir_to_dict
 from arke.ir.akir import load_akir as _load_akir
 from arke.ir.akir import save_akir
@@ -71,6 +72,8 @@ class CompilationResult:
     """
     semantic_ir: SemanticIR | None = None
     strategy_ir: StrategyIR | None = None
+    schedule_ir: Any | None = None
+    instruction_ir: Any | None = None
     success: bool = False
     errors: list[str] = field(default_factory=list)
     kernel_name: str = ""
@@ -87,7 +90,14 @@ class CompilationResult:
         """
         if self.semantic_ir is None:
             raise ValueError("Cannot save .akir: semantic_ir is None")
-        save_akir(self.semantic_ir, self.strategy_ir, path, indent=indent)
+        save_akir(
+            self.semantic_ir,
+            self.strategy_ir,
+            path,
+            indent=indent,
+            schedule_ir=self.schedule_ir,
+            instruction_ir=self.instruction_ir,
+        )
 
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
@@ -191,6 +201,17 @@ class ArkePipeline:
 
         result.errors.extend(pass_result.errors)
         result.success = len(result.errors) == 0
+
+        if result.success and result.semantic_ir is not None and result.strategy_ir is not None:
+            try:
+                result.schedule_ir, result.instruction_ir = lower_full_stack(
+                    result.semantic_ir,
+                    result.strategy_ir,
+                )
+            except Exception as e:
+                result.errors.append(f"Lowering error: {e}")
+                result.success = False
+
         return result
 
     def execute(
@@ -286,9 +307,11 @@ class ArkePipeline:
         """
         result = CompilationResult()
         try:
-            semantic_ir, strategy_ir = _load_akir(path)
+            semantic_ir, strategy_ir, schedule_ir, instruction_ir = _load_akir(path)
             result.semantic_ir = semantic_ir
             result.strategy_ir = strategy_ir
+            result.schedule_ir = schedule_ir
+            result.instruction_ir = instruction_ir
             result.kernel_name = semantic_ir.kernel_id
 
             # Validate the loaded IR

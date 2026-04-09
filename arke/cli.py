@@ -30,7 +30,12 @@ def _cmd_compile(args: argparse.Namespace) -> int:
         print(f"Compiled {args.input} -> {args.output}", file=sys.stderr)
     else:
         # Print JSON to stdout
-        combined = akir_to_dict(result.semantic_ir, result.strategy_ir)
+        combined = akir_to_dict(
+            result.semantic_ir,
+            result.strategy_ir,
+            schedule_ir=result.schedule_ir,
+            instruction_ir=result.instruction_ir,
+        )
         print(json.dumps(combined, indent=2))
 
     return 0

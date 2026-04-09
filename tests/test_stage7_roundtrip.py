@@ -46,8 +46,13 @@ class TestStage7RoundTrip:
             assert result.semantic_ir is not None
             assert result.strategy_ir is not None
 
-            payload = akir_to_dict(result.semantic_ir, result.strategy_ir)
-            sem2, strat2 = akir_from_dict(payload)
+            payload = akir_to_dict(
+                result.semantic_ir,
+                result.strategy_ir,
+                schedule_ir=result.schedule_ir,
+                instruction_ir=result.instruction_ir,
+            )
+            sem2, strat2, sched2, instr2 = akir_from_dict(payload)
 
             assert sem2.kernel_id == result.semantic_ir.kernel_id, ak_file.name
             assert len(sem2.nodes) == len(result.semantic_ir.nodes), ak_file.name
@@ -55,3 +60,5 @@ class TestStage7RoundTrip:
             assert strat2 is not None, ak_file.name
             assert strat2.kernel_id == result.strategy_ir.kernel_id, ak_file.name
             assert len(strat2.decisions) == len(result.strategy_ir.decisions), ak_file.name
+            assert sched2 is not None, ak_file.name
+            assert instr2 is not None, ak_file.name
