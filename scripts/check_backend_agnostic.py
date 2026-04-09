@@ -26,12 +26,16 @@ TRITON_SPECIFIC_FIELDS = {
     "num_warps",
     "num_stages",
     "num_ctas",
+    "warps",
+    "stages",
     "block_size",
     "BLOCK_SIZE",
     "BLOCK_SIZE_M",
     "BLOCK_SIZE_N",
     "BLOCK_SIZE_K",
     "grid",
+    "pipeline_depth",
+    "shared_memory",
 }
 
 # Triton-specific strings that MUST NOT appear in L1 param values
@@ -57,6 +61,24 @@ L1_ALLOWED_KINDS = {
     "vectorize",
     "unroll",
     "algorithm",
+}
+
+# Allowed L1 param keys (must remain backend-agnostic)
+L1_ALLOWED_PARAM_KEYS = {
+    "loop",
+    "factors",
+    "order",
+    "ops",
+    "type",
+    "fusion_type",
+    "loops",
+    "mapping",
+    "tensor",
+    "memory",
+    "width",
+    "factor",
+    "name",
+    "params",
 }
 
 
@@ -111,18 +133,21 @@ def _check_decision(d, filename: str) -> list[str]:
             f"{filename}: L1 decision has non-standard kind '{d.kind}'"
         )
 
-    # Check param keys for Triton-specific names
+    # Check param keys for Triton-specific names and unexpected backend leakage
     for key in d.params:
         if key in TRITON_SPECIFIC_FIELDS:
             violations.append(
                 f"{filename}: L1 decision '{d.kind}' has Triton-specific "
                 f"param key '{key}'"
             )
-        # Also check BLOCK_SIZE_* pattern
         if key.startswith("BLOCK_SIZE"):
             violations.append(
                 f"{filename}: L1 decision '{d.kind}' has Triton-specific "
                 f"param key '{key}'"
+            )
+        if key not in L1_ALLOWED_PARAM_KEYS:
+            violations.append(
+                f"{filename}: L1 decision '{d.kind}' has unexpected backend-bound param key '{key}'"
             )
 
     # Check param values for Triton-specific strings
@@ -143,7 +168,7 @@ def main() -> int:
     project_root = Path(__file__).resolve().parent.parent
     sys.path.insert(0, str(project_root))
 
-    ak_files = sorted(OPERATORS_DIR.glob("*.ak"))
+    ak_files = sorted(OPERATORS_DIR.rglob("*.ak"))
     if not ak_files:
         print("ERROR: No .ak files found in", OPERATORS_DIR)
         return 1

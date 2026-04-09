@@ -191,7 +191,7 @@ Layer 3 must remain LLM-facing and target-neutral. Any Triton-specific configura
 | T3.2 | Implement conditional strategy representation for `when` / `otherwise` | P0 | 0.5d | ✅ |
 | T3.3 | Preserve `@rationale` on all StrategyIR decisions through parse → IR → serialization | P0 | 0.5d | ✅ |
 | T3.4 | Eliminate Triton-specific fields from StrategyIR core and move them to lowering adapters | P0 | 0.5d | 🟨 |
-| T3.5 | Strengthen `scripts/check_backend_agnostic.py` to enforce the v2.0 boundary | P1 | 0.5d | ⬜ |
+| T3.5 | Strengthen `scripts/check_backend_agnostic.py` to enforce the v2.0 boundary | P1 | 0.5d | ✅ |
 
 ### Track 4: Layered Lowering + MLIR Skeleton (P1)
 
