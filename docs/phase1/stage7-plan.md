@@ -2,7 +2,7 @@
 
 > Gate G7 exit criteria → [plan.md](../roadmap/plan.md#stage-7-g7-lang--ir-v2-)
 
-**Objective:** Land the finalized Arke Lang v2.0 and Arke IR v2.0 architecture in code: `where` clause, symbolic dimensions, conditional/backend-agnostic StrategyIR, compiler round-trip for all 45 ops, and MLIR skeleton for future lowering. **Achieve BL5×L1+L2 full operator correctness and high performance on the Phase 1 hardware target.**
+**Objective:** Land the finalized Arke Lang v2.0 and Arke IR v2.0 architecture in code: `where` clause, symbolic dimensions, conditional/backend-agnostic StrategyIR, compiler round-trip for all 45 ops, and MLIR skeleton for future lowering. **Stage 7 must end with Lang + IR + compiler support sufficient for BL5 full operator coverage and full shape coverage, and that support must be strong enough to pass the required L2 fused benchmarks rather than only L1 single-op checks.**
 
 **Depends on:** S6 (Pass pipeline, OpRegistry, Backend abstraction)
 **Blocks:** S8 (Agent Autonomy needs v2 Lang/IR semantics, symbolic shapes, MLIR skeleton, and full op coverage)
@@ -15,13 +15,14 @@ S7 is the bridge from the S6 compiler-infrastructure baseline to the fully LLM-n
 
 This stage is no longer about drafting the design. The Arke Lang Spec v2.0 and Arke IR Spec v2.0 are already finalized. The work now is to **make the implementation and verification stack match the spec**.
 
-Concretely, S7 focuses on five outcomes:
+Concretely, S7 focuses on six outcomes:
 
 1. **Spec-to-code alignment** — parser, SemanticIR, StrategyIR, examples, and tests match the finalized v2.0 definitions.
-2. **Symbolic shape MVP** — `where` clause and `symbolic_dims` work end-to-end for representative operators.
+2. **Symbolic shape system, not just MVP syntax** — `where` clause and `symbolic_dims` work end-to-end in a way that can express and carry BL5 shape coverage requirements.
 3. **Backend-agnostic optimization semantics** — StrategyIR remains target-neutral in its core representation, with target-specific lowering pushed below Layer 3.
 4. **Layered compiler path** — explicit bridge from Layer 4/3 into MLIR-oriented Layer 2/1 skeleton.
-5. **BL5 readiness** — complete correctness/performance coverage for all 45 ops and required L2 fusion cases.
+5. **BL5 full-coverage enablement** — Lang + IR must be expressive enough for **all BL5 operators and all BL5 shapes**, not only representative subsets.
+6. **L2-capable implementation target** — the final Stage 7 implementation must support the fused/operator-composition requirements needed by BL5 L2, especially the benchmark-design.md fusion set.
 
 ---
 
@@ -56,11 +57,24 @@ From `docs/spec/arke-ir-spec-v2.md`, S7 implementation must establish:
 
 Track planning should treat the spec docs as **done artifacts** and move effort to parser/IR/compiler/test/benchmark convergence.
 
+More importantly, S7 planning must be evaluated against the benchmark system's real requirement surface:
+
+- **BL5 = OT0–OT4 × ST1–ST4 full coverage**
+- **ST4 applies to OT2–OT4 and carries the true production-shape pressure**
+- **L2 at BL5 is not optional decoration**; Stage 7 Lang/IR choices must support the fused benchmark set in `benchmark-design.md`
+- therefore, S7 cannot stop at “feature exists for sample ops” — it must establish a representation and lowering path that scales to the full BL5 matrix
+
 ---
 
 ## Gate Criteria Breakdown
 
 **BL Exit:** BL5×L1+L2 — This is the first Gate requiring full benchmark coverage across all 45 ops and all shape tiers.
+
+For S7 planning purposes, this means the final Lang/IR design must support:
+- OT0–OT4 full operator coverage
+- ST1–ST4 full shape coverage where defined by the benchmark system
+- OT2–OT4 production-shape support strong enough to reach BL5, not merely BL4-style standard-shape support
+- the L2 fusion set required by BL5 (`matmul+relu`, `matmul+gelu`, `swiglu`, `geglu`, `linear+cross_entropy`, `QKV+flash_attention`)
 
 > Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions; `docs/deprecated/phase1-gate-design.md` §5 for original G6 BL5 derivation.
 
@@ -106,13 +120,14 @@ G7 PASS = AND ALL:
 |:-:|:----------|:-------------|
 | 1 | Arke Lang Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-lang-spec-v2.md` exists and current implementation matches required surface syntax |
 | 2 | Arke IR Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-ir-spec-v2.md` exists and Layer 4/3/2/1 terminology maps to code |
-| 3 | `where` clause MVP: parses + SemanticIR `symbolic_dims` populated | `pytest tests/test_symbolic_shape.py` — ≥5 representative ops with `where` clause |
+| 3 | `where` clause + symbolic shape system supports BL5-relevant shape expression and propagation | `pytest tests/test_symbolic_shape.py` + BL5-oriented shape cases for OT2–OT4 |
 | 4 | Dynamic shape feasibility assessment complete | `docs/phase1/dynamic-shape-feasibility.md` exists |
 | 5 | MLIR framework skeleton exists with BL1 matmul path verified | MLIREmitter / lowering skeleton exists; BL1 matmul verified through skeleton path |
-| 6 | All 45 ops: `.ak → SemanticIR → StrategyIR` full round-trip passes | `python -m arke.compiler.pipeline --ak examples/<op>.ak --dry-run` passes all 45 ops |
-| 7 | Lang expressiveness matches v2.0 surface features used by examples | parse/round-trip tests cover `where`, tuple returns, `_`, conditional strategy |
-| 8 | Backend-agnostic StrategyIR core contains 0 Triton-specific fields | `scripts/check_backend_agnostic.py` passes against StrategyIR core |
-| 9 | Non-regression suite remains green | `pytest tests/ -q` — no new failures |
+| 6 | All 45 BL5 ops: `.ak → SemanticIR → StrategyIR` full round-trip passes | `python -m arke.compiler.pipeline --ak examples/<op>.ak --dry-run` passes all 45 ops |
+| 7 | Lang expressiveness covers the full BL5 operator/shape surface, not just demos | parse/round-trip tests cover `where`, tuple returns, `_`, conditional strategy, multi-output, attention-family, quantization-family, and BL5 production-shape examples |
+| 8 | StrategyIR / lowering surface can represent the BL5 L2 fusion set | dry-run / lowering tests cover `matmul+relu`, `matmul+gelu`, `swiglu`, `geglu`, `linear+cross_entropy`, `QKV+flash_attention` |
+| 9 | Backend-agnostic StrategyIR core contains 0 Triton-specific fields | `scripts/check_backend_agnostic.py` passes against StrategyIR core |
+| 10 | Non-regression suite remains green | `pytest tests/ -q` — no new failures |
 
 ---
 
@@ -153,17 +168,18 @@ This track converts the finalized v2.0 specs into executable implementation cont
 | T1.3 | Replace outdated v1/v1.5 terminology in code/docs/tests with Layer 4/3/2/1 naming where applicable | P1 | 0.5d | ⬜ |
 | T1.4 | Build a spec conformance checklist covering language features and IR structures used by all examples | P1 | 0.5d | ⬜ |
 
-### Track 2: Symbolic Shape MVP (`where` + `symbolic_dims`) (P0)
+### Track 2: Symbolic Shape System for BL5 (`where` + `symbolic_dims`) (P0)
 
-This is the core functional delta introduced by Lang/IR v2.0 and the primary unblocker for memory-aware operator coverage.
+This is the core functional delta introduced by Lang/IR v2.0 and the primary unblocker for full BL5 operator/shape coverage.
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
 | T2.1 | Implement `where` clause in grammar / parser / AST | P0 | 0.5d | ⬜ |
 | T2.2 | Lower `where` declarations into SemanticIR `symbolic_dims` and constraints | P0 | 0.5d | ⬜ |
 | T2.3 | Extend shape inference / validation to preserve symbolic constraints end-to-end | P0 | 1d | ⬜ |
-| T2.4 | Add representative `.ak` examples for dynamic-shape OT2/OT4 operators | P1 | 0.5d | ⬜ |
-| T2.5 | Add `tests/test_symbolic_shape.py` with ≥5 representative ops | P0 | 0.5d | ⬜ |
+| T2.4 | Add `.ak` examples covering BL5 production-shape OT2/OT4 operators, not only representative toy cases | P0 | 0.5d | ⬜ |
+| T2.5 | Add `tests/test_symbolic_shape.py` with BL5-oriented shape cases across OT2–OT4 | P0 | 0.5d | ⬜ |
+| T2.6 | Verify symbolic constraints are sufficient to encode the ST4 production-shape families used in BL5 | P0 | 0.5d | ⬜ |
 
 ### Track 3: StrategyIR v2 and Backend-Agnostic Decisions (P0)
 
@@ -188,28 +204,30 @@ The goal is not full MLIR functionality yet; it is to establish the architectura
 | T4.3 | Implement MLIREmitter / stub bridge from lower layers to MLIR-oriented output | P1 | 1d | ⬜ |
 | T4.4 | Add verification that BL1 matmul can traverse the new skeleton path without regressions | P1 | 0.5d | ⬜ |
 
-### Track 5: Full Op Round-Trip and Example Coverage (P0)
+### Track 5: Full BL5 Surface Coverage (P0)
 
-S7 must convert the spec-aligned representation into full operator coverage, not just feature demos.
+S7 must convert the spec-aligned representation into full BL5 coverage, not just feature demos or operator-only coverage.
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T5.1 | Refresh all 45 operator examples to valid v2.0 `.ak` surface syntax | P0 | 1d | ⬜ |
-| T5.2 | Verify all 45 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | ⬜ |
+| T5.1 | Refresh all 45 BL5 operator examples to valid v2.0 `.ak` surface syntax | P0 | 1d | ⬜ |
+| T5.2 | Verify all 45 BL5 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | ⬜ |
 | T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ⬜ |
-| T5.4 | Keep token-efficiency checks meaningful under new syntax features | P1 | 0.5d | ⬜ |
+| T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | ⬜ |
+| T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ⬜ |
 
-### Track 6: BL5 Benchmark and Memory-Readiness (P0)
+### Track 6: BL5 Benchmark, L2 Fusion, and Memory-Readiness (P0)
 
-This is the practical closure track for S7. The architectural work is only complete if it enables full benchmark execution.
+This is the practical closure track for S7. The architectural work is only complete if it enables full BL5 execution, including the required L2 fused/operator-composition paths.
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T6.1 | Extend benchmark routing to all 45 ops and BL5 shape registry | P0 | 1d | ⬜ |
-| T6.2 | Implement / adapt L2 fused benchmark runners for required fusion cases | P0 | 0.5d | ⬜ |
-| T6.3 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | ⬜ |
-| T6.4 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM | P0 | 1d | ⬜ |
-| T6.5 | Produce stable perf artifacts (`perf_{op}.csv`, summaries, standard result dirs) for gate verification | P1 | 0.5d | ⬜ |
+| T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | ⬜ |
+| T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | ⬜ |
+| T6.3 | Ensure Lang + IR + lowering can express the six BL5 L2 fusion cases end-to-end | P0 | 0.5d | ⬜ |
+| T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | ⬜ |
+| T6.5 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM without reducing BL5 scope | P0 | 1d | ⬜ |
+| T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, summaries, standard result dirs) for gate verification | P1 | 0.5d | ⬜ |
 
 ### Track 7: Non-Regression and Gate Closure (P0)
 
@@ -228,8 +246,8 @@ This is the practical closure track for S7. The architectural work is only compl
 | M1 | Track 1 complete | Spec terminology and required v2.0 features mapped to code |
 | M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end |
 | M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge |
-| M4 | Track 5 complete | All 45 ops pass v2.0 dry-run round-trip |
-| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with 6GB-aware execution strategy |
+| M4 | Track 5 complete | All 45 BL5 ops pass v2.0 dry-run round-trip and BL5 shape families are representable |
+| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy |
 | M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification |
 
 **Critical path:** Track 1 → Tracks 2/3 → Track 4 → Track 5 → Track 6 → Track 7
@@ -252,6 +270,7 @@ Rationale for this order:
 - Full operator round-trip must stabilize before benchmark closure work is trustworthy.
 - MLIR skeleton should be architecturally correct, but not block earlier parser/IR convergence.
 - BL5 closure is the final proof that the S7 redesign solves the practical coverage problem left by S6.
+- “Support BL5” here means full operator coverage, full relevant shape coverage, and L2 fusion-capable Lang/IR/lowering — not just passing a subset of single-op demos.
 
 ---
 
