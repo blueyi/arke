@@ -210,8 +210,8 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T5.1 | Refresh all 45 BL5 operator examples to valid v2.0 `.ak` surface syntax | P0 | 1d | ⬜ |
-| T5.2 | Verify all 45 BL5 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | ⬜ |
+| T5.1 | Refresh all 45 BL5 operator examples to valid v2.0 `.ak` surface syntax | P0 | 1d | 🟨 |
+| T5.2 | Verify all 45 BL5 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | 🟨 |
 | T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ⬜ |
 | T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | ⬜ |
 | T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ⬜ |
