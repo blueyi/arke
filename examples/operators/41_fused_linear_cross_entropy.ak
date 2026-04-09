@@ -11,7 +11,9 @@ kernel fused_linear_cross_entropy_kernel(
     Hidden: Tensor<[128, 4096], f16>,
     Weight: Tensor<[32000, 4096], f16>,
     Labels: Tensor<[128], i64>
-) -> Tensor<[128], f32> {
+) -> Tensor<[128], f32> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Loss = fused_linear_cross_entropy(Hidden=Hidden, Weight=Weight, Labels=Labels);
     return Loss;
 }

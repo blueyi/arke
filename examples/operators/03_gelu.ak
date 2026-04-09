@@ -8,7 +8,9 @@
 
 kernel gelu(
     X: Tensor<[1024, 4096], f16>
-) -> Tensor<[1024, 4096], f16> {
+) -> Tensor<[1024, 4096], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = gelu(X=X);
     return Y;
 }

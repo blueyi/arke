@@ -9,7 +9,9 @@
 kernel embedding_kernel(
     Token: Tensor<[128], i64>,
     Weight: Tensor<[32000, 4096], f16>
-) -> Tensor<[128, 4096], f16> {
+) -> Tensor<[128, 4096], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = embedding(Token=Token, Weight=Weight);
     return Y;
 }

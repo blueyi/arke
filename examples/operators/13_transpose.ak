@@ -8,7 +8,9 @@
 
 kernel transpose_kernel(
     X: Tensor<[512, 128], f16>
-) -> Tensor<[128, 512], f16> {
+) -> Tensor<[128, 512], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = transpose(X=X);
     return Y;
 }

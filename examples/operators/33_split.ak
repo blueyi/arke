@@ -9,7 +9,9 @@
 
 kernel split_kernel(
     X: Tensor<[128, 1024], f16>
-) -> Tensor<[128, 512], f16> {
+) -> Tensor<[128, 512], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = split(X=X, sections=2, dim=1);
     return Y;
 }

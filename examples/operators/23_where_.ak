@@ -7,10 +7,12 @@
 // Category: D (elementwise — conditional)
 
 kernel where_kernel(
-    Cond: Tensor<[128, 768], bool>,
-    X: Tensor<[128, 768], f16>,
-    Y: Tensor<[128, 768], f16>
-) -> Tensor<[128, 768], f16> {
+    Cond: Tensor<[B, S], bool>,
+    X: Tensor<[B, S], f16>,
+    Y: Tensor<[B, S], f16>
+) -> Tensor<[B, S], f16>
+where B: dynamic(max=64), S: dynamic(max=8192)
+{
     let Z = where_(Cond=Cond, X=X, Y=Y);
     return Z;
 }

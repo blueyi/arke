@@ -10,7 +10,9 @@ kernel scatter_kernel(
     X: Tensor<[128, 768], f16>,
     idx: Tensor<[128, 64], i64>,
     src: Tensor<[128, 64], f16>
-) -> Tensor<[128, 768], f16> {
+) -> Tensor<[128, 768], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = scatter(X=X, idx=idx, src=src);
     return Y;
 }

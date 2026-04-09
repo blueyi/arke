@@ -12,7 +12,9 @@ kernel rope_kernel(
     X: Tensor<[2, 12, 128, 64], f16>,
     Cos: Tensor<[128, 64], f16>,
     Sin: Tensor<[128, 64], f16>
-) -> Tensor<[2, 12, 128, 64], f16> {
+) -> Tensor<[2, 12, 128, 64], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = rope(X=X, Cos=Cos, Sin=Sin);
     return Y;
 }

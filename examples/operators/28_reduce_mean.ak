@@ -8,7 +8,9 @@
 
 kernel reduce_mean_kernel(
     X: Tensor<[128, 768], f16>
-) -> Tensor<[128], f16> {
+) -> Tensor<[128], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = reduce_mean(X=X);
     return Y;
 }

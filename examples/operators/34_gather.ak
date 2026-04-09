@@ -9,7 +9,9 @@
 kernel gather_kernel(
     X: Tensor<[128, 768], f16>,
     idx: Tensor<[128, 64], i64>
-) -> Tensor<[128, 64], f16> {
+) -> Tensor<[128, 64], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = gather(X=X, idx=idx);
     return Y;
 }

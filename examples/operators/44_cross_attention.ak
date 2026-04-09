@@ -11,7 +11,9 @@ kernel cross_attention_kernel(
     Q: Tensor<[2, 12, 128, 64], f16>,
     K: Tensor<[2, 12, 256, 64], f16>,
     V: Tensor<[2, 12, 256, 64], f16>
-) -> Tensor<[2, 12, 128, 64], f16> {
+) -> Tensor<[2, 12, 128, 64], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let O = cross_attention(Q=Q, K=K, V=V);
     return O;
 }

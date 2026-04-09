@@ -10,7 +10,9 @@
 kernel cross_entropy_kernel(
     Logits: Tensor<[128, 32000], f32>,
     Labels: Tensor<[128], i64>
-) -> Tensor<[128], f32> {
+) -> Tensor<[128], f32> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Loss = cross_entropy(Logits=Logits, Labels=Labels);
     return Loss;
 }

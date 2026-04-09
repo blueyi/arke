@@ -9,7 +9,9 @@
 
 kernel topk_kernel(
     X: Tensor<[128, 32000], f16>
-) -> Tensor<[128, 50], f16> {
+) -> Tensor<[128, 50], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = topk(X=X, k=50);
     return Y;
 }

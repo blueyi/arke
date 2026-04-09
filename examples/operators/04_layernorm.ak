@@ -10,7 +10,9 @@ kernel layernorm(
     X:      Tensor<[128, 768], f16>,
     weight: Tensor<[768], f16>,
     bias:   Tensor<[768], f16>
-) -> Tensor<[128, 768], f16> {
+) -> Tensor<[128, 768], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = layernorm(X=X, weight=weight, bias=bias, eps=0.000010);
     return Y;
 }

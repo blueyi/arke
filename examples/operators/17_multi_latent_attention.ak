@@ -12,7 +12,9 @@ kernel mla_kernel(
     KV_compressed: Tensor<[2, 128, 32], f16>,
     W_uk: Tensor<[32, 16, 64], f16>,
     W_uv: Tensor<[32, 16, 64], f16>
-) -> Tensor<[2, 16, 128, 64], f16> {
+) -> Tensor<[2, 16, 128, 64], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let O = multi_latent_attention(Q=Q, KV_compressed=KV_compressed, W_uk=W_uk, W_uv=W_uv);
     return O;
 }

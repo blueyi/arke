@@ -9,9 +9,9 @@
 // Category: A (compute — batch matmul)
 
 kernel batch_matmul(
-    Q:   Tensor<[8, 128, 64], f16>,
-    K_T: Tensor<[8, 64, 128], f16>
-) -> Tensor<[8, 128, 128], f16> {
+    Q:   Tensor<[B, S, D], f16>,
+    K_T: Tensor<[B, S, D], f16>
+) -> Tensor<[B, S, S], f16> {
     let S = batch_matmul(A=Q, B=K_T);
     return S;
 }

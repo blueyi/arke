@@ -10,7 +10,9 @@
 kernel dequantize_per_channel_kernel(
     Q: Tensor<[128, 4096], i8>,
     Scale: Tensor<[4096], f16>
-) -> Tensor<[128, 4096], f16> {
+) -> Tensor<[128, 4096], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = dequantize_per_channel(Q=Q, Scale=Scale);
     return Y;
 }

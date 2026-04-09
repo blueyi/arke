@@ -10,7 +10,9 @@
 kernel matmul_gelu(
     X: Tensor<[128, 768], f16>,
     W: Tensor<[768, 3072], f16>
-) -> Tensor<[128, 3072], f16> {
+) -> Tensor<[128, 3072], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Z = matmul(A=X, B=W);
     let Y = gelu(X=Z);
     return Y;

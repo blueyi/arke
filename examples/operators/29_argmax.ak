@@ -8,7 +8,9 @@
 
 kernel argmax_kernel(
     X: Tensor<[128, 768], f16>
-) -> Tensor<[128], i64> {
+) -> Tensor<[128], i64> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = argmax(X=X, dim=1);
     return Y;
 }

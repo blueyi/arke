@@ -11,7 +11,9 @@ kernel rmsnorm_residual_kernel(
     X: Tensor<[128, 768], f16>,
     residual: Tensor<[128, 768], f16>,
     W: Tensor<[768], f16>
-) -> Tensor<[128, 768], f16> {
+) -> Tensor<[128, 768], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = rmsnorm_residual(X=X, residual=residual, W=W);
     return Y;
 }

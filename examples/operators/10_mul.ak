@@ -9,7 +9,9 @@
 kernel mul_kernel(
     A: Tensor<[128, 768], f16>,
     B: Tensor<[128, 768], f16>
-) -> Tensor<[128, 768], f16> {
+) -> Tensor<[128, 768], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = mul(A=A, B=B);
     return Y;
 }

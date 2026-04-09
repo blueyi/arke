@@ -8,7 +8,9 @@
 
 kernel cast_kernel(
     X: Tensor<[128, 3072], f32>
-) -> Tensor<[128, 3072], f16> {
+) -> Tensor<[128, 3072], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = cast(X=X);
     return Y;
 }

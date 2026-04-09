@@ -14,7 +14,9 @@
 kernel matmul(
     A: Tensor<[1024, 1024], f16>,
     B: Tensor<[1024, 1024], f16>
-) -> Tensor<[1024, 1024], f16> {
+) -> Tensor<[1024, 1024], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let C = matmul(A=A, B=B);
     return C;
 }

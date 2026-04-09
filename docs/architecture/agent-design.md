@@ -571,5 +571,390 @@ picture of what has been decided.
 
 ---
 
-*Document version: v1.0 | Created: 2026-04-05*
-*References: e2e-flow.md, cc-inspired-update.md (deprecated), arke/agent/ source*
+---
+
+## 7. Claude as Arke Agent LLM Backend
+
+### 7.1 Overview
+
+Claude (by Anthropic) is the recommended primary LLM backend for Arke Agent. This section details integration, configuration, and best practices for using Claude as the decision-making engine for kernel optimization.
+
+### 7.2 Why Claude for Arke Agent
+
+| Capability | Claude | Benefit for Arke |
+|:---|:---|:---|
+| **Structured reasoning** | Excellent at JSON/IR parsing and generation | Handles SemanticIR, StrategyIR, @rationale annotations natively |
+| **Long context** | 200K tokens (Opus 4.6) | Supports full kernel context + optimization history |
+| **Tool use** | Native tool_use format | Direct integration with ArkeEnv tool definitions |
+| **Bounded reasoning** | Strong at constrained decision spaces | Excels at selecting from legal_actions enumerated by compiler |
+| **Transparency** | Thinking mode + detailed reasoning | Enables auditability and learning from optimization decisions |
+| **Multi-turn dialogue** | Excellent conversation management | Supports iterative refinement and rollback scenarios |
+| **Cost efficiency** | Competitive pricing | Minimal token overhead for IR-based optimization |
+
+### 7.3 Configuration
+
+#### 7.3.1 API Key Setup
+
+```bash
+# Set Anthropic API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Or add to .env
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
+```
+
+#### 7.3.2 arke.config.yaml
+
+```yaml
+# Primary LLM configuration
+llm:
+  primary: "anthropic/claude-opus-4-6"  # Recommended: Opus 4.6 for best reasoning
+  fallbacks:
+    - "anthropic/claude-sonnet-4-6"     # Fallback: Sonnet 4.6 (faster, cheaper)
+    - "openai/gpt-4o"                   # Last resort: GPT-4o
+
+# Provider configuration
+providers:
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    base_url: "https://api.anthropic.com/v1"
+    timeout_seconds: 300
+    max_retries: 3
+    retry_backoff_factor: 2.0
+
+# Agent-specific settings
+agent:
+  thinking_budget: 10000  # tokens for Claude thinking mode (Opus only)
+  use_thinking: true      # enable extended thinking for complex decisions
+  temperature: 0.3        # lower = more deterministic decisions
+  max_tokens: 16000       # max output tokens per call
+```
+
+#### 7.3.3 Model Selection Guide
+
+| Model | Use Case | Reasoning | Cost |
+|:---|:---|:---|:---|
+| **Claude Opus 4.6** | Complex kernels, novel optimizations | Best reasoning, extended thinking | Higher |
+| **Claude Sonnet 4.6** | Standard kernels, batch optimization | Good balance of speed/quality | Medium |
+| **Claude Haiku 3.5** | Simple ops, rapid iteration | Fast, minimal cost | Lower |
+
+**Recommendation:** Start with Sonnet 4.6 for production; use Opus 4.6 for research/novel kernels.
+
+### 7.4 Integration Flow
+
+#### 7.4.1 Initialization
+
+```python
+from arke.agent import LLMRunner, OptimizationSession
+from arke.env import ArkeEnv
+
+# Initialize LLM runner with Claude backend
+llm_runner = LLMRunner(
+    provider="anthropic",
+    model="claude-opus-4-6",
+    api_key=os.getenv("ANTHROPIC_API_KEY")
+)
+
+# Create optimization session
+session = OptimizationSession(
+    kernel_id="matmul_relu",
+    semantic_ir=semantic_ir,
+    target_hw="nvidia_ampere",
+    llm_runner=llm_runner
+)
+```
+
+#### 7.4.2 Optimization Loop
+
+```python
+# Run optimization with Claude as decision-maker
+result = session.optimize(
+    budget_tokens=50000,
+    max_iterations=20,
+    strategy="bounded_actions"  # LLM selects from legal_actions
+)
+
+# Result contains:
+# - decisions: list of optimization decisions with @rationale
+# - trajectory: JSONL of all LLM interactions
+# - best_strategy: highest-performing strategy found
+# - metrics: throughput, memory, compilation time
+```
+
+#### 7.4.3 Tool Invocation
+
+Claude calls Arke tools via native tool_use:
+
+```json
+{
+  "type": "tool_use",
+  "id": "toolu_01...",
+  "name": "get_legal_actions",
+  "input": {
+    "kernel_id": "matmul_relu",
+    "target_hw": "nvidia_ampere",
+    "current_strategy_ir": {...}
+  }
+}
+```
+
+ArkeEnv responds with:
+
+```json
+{
+  "legal_actions": [
+    {"kind": "tile", "dim": "M", "legal_factors": [64, 128, 256]},
+    {"kind": "fuse", "candidates": [["n1", "n2"]]},
+    {"kind": "compute", "legal_threads": [128, 256, 512]}
+  ],
+  "constraints": {...},
+  "hw_profile": {...}
+}
+```
+
+Claude selects an action and provides @rationale:
+
+```json
+{
+  "type": "tool_use",
+  "name": "apply_decision",
+  "input": {
+    "decision": {
+      "kind": "tile",
+      "dim": "M",
+      "factors": [128, 8],
+      "rationale": "128 aligns with tensor core 16x8x16 shape, 8 for warp size 32"
+    }
+  }
+}
+```
+
+### 7.5 Prompt Engineering for Claude
+
+#### 7.5.1 System Prompt Structure
+
+The system prompt is divided into 4 segments (as per §6.2):
+
+```python
+system_prompt = f"""
+{GLOBAL_KNOWLEDGE}  # Arke IR spec, Op Registry, optimization principles
+
+{HARDWARE_PROFILE}  # GPU specs, memory hierarchy, tensor core shapes
+
+{SEMANTIC_IR}       # Current kernel semantics, input/output shapes
+
+{OPTIMIZATION_STATE}  # Current strategy, decisions made, performance metrics
+"""
+```
+
+#### 7.5.2 Key Prompt Principles
+
+1. **Emphasize bounded action space**
+   ```
+   "You have access to legal_actions enumerated by the compiler.
+    Select from these actions only. Do not propose arbitrary transformations."
+   ```
+
+2. **Require @rationale for every decision**
+   ```
+   "Every decision must include a rationale field explaining:
+    - Why this decision improves performance
+    - How it respects hardware constraints
+    - What trade-offs it makes"
+   ```
+
+3. **Provide hardware context**
+   ```
+   "Target: NVIDIA Ampere (RTX 3060)
+    - Shared memory: 96 KB per block
+    - Max threads: 1024 per block
+    - Tensor cores: 16x8x16 (FP32)
+    - Warp size: 32"
+   ```
+
+4. **Show verification feedback**
+   ```
+   "Previous decision: tile(M, [256])
+    V0 validation: PASS (constraints satisfied)
+    V1 numerical: PASS (output matches reference)
+    V2 performance: 120 GFLOPS (target: 150 GFLOPS)
+    Suggestion: Increase parallelism or reduce memory pressure"
+   ```
+
+### 7.6 Extended Thinking (Opus Only)
+
+For complex optimization problems, enable Claude's extended thinking:
+
+```python
+session = OptimizationSession(
+    ...,
+    use_thinking=True,
+    thinking_budget=10000  # tokens for thinking
+)
+```
+
+Claude will use thinking to:
+- Analyze the optimization landscape
+- Reason about trade-offs
+- Plan multi-step strategies
+- Verify constraint satisfaction
+
+**Example thinking output:**
+```
+<thinking>
+Let me analyze this matmul optimization:
+1. Current bottleneck: memory bandwidth (40% utilization)
+2. Legal actions: tile(M, [64,128,256]), tile(N, [64,128,256]), compute(threads=[128,256,512])
+3. Strategy: Increase tile size to reduce memory pressure, then increase parallelism
+4. Constraint check: 256x256 tile requires 256*256*4 bytes = 256KB shared memory (available: 96KB) → FAIL
+5. Revised: 128x128 tile = 64KB (OK), then parallelize with 256 threads
+</thinking>
+```
+
+### 7.7 Learning & Trajectory Logging
+
+Every optimization run generates a trajectory JSONL for learning:
+
+```jsonl
+{"turn": 1, "llm_model": "claude-opus-4-6", "action": "get_legal_actions", "result": {...}}
+{"turn": 2, "llm_model": "claude-opus-4-6", "decision": {"kind": "tile", "dim": "M", "factors": [128, 8], "rationale": "..."}}
+{"turn": 3, "llm_model": "claude-opus-4-6", "verification": {"v0": "PASS", "v1": "PASS", "v2_gflops": 120}}
+{"turn": 4, "llm_model": "claude-opus-4-6", "decision": {"kind": "fuse", "nodes": ["n1", "n2"], "rationale": "..."}}
+```
+
+These trajectories enable:
+- **Supervised fine-tuning** — train Claude on successful optimization patterns
+- **Reinforcement learning** — reward high-performance decisions
+- **Knowledge transfer** — adapt strategies across kernels and hardware
+
+### 7.8 Error Handling & Fallback
+
+#### 7.8.1 Rate Limiting
+
+```python
+try:
+    response = llm_runner.call(messages, tools)
+except RateLimitError:
+    logger.warning("Claude rate limited, switching to fallback")
+    llm_runner.switch_to_fallback()  # → Sonnet 4.6
+    response = llm_runner.call(messages, tools)
+```
+
+#### 7.8.2 Invalid Decisions
+
+```python
+if not verify_decision(decision):
+    # V0 validation failed
+    feedback = f"Decision invalid: {error_message}. Legal actions: {legal_actions}"
+    messages.append({"role": "user", "content": feedback})
+    # Claude re-reasons and proposes new decision
+```
+
+#### 7.8.3 Timeout Handling
+
+```python
+try:
+    response = llm_runner.call(messages, tools, timeout=300)
+except TimeoutError:
+    logger.error("Claude call timed out")
+    # Use best strategy found so far
+    return result_with_best_strategy_so_far()
+```
+
+### 7.9 Cost Optimization
+
+#### 7.9.1 Token Budgeting
+
+```python
+# Estimate tokens before calling Claude
+estimated_tokens = estimate_tokens(
+    system_prompt=system_prompt,
+    messages=messages,
+    tools=tools
+)
+
+if estimated_tokens > 150000:  # 75% of 200K limit
+    compact_optimization_context()  # Reduce context size
+```
+
+#### 7.9.2 Prompt Caching
+
+Use Anthropic's prompt caching for repeated kernels:
+
+```python
+# System prompt is cached (rarely changes)
+system_prompt = {
+    "type": "text",
+    "text": GLOBAL_KNOWLEDGE + HARDWARE_PROFILE,
+    "cache_control": {"type": "ephemeral"}
+}
+
+# Semantic IR is cached per kernel
+semantic_ir_block = {
+    "type": "text",
+    "text": json.dumps(semantic_ir),
+    "cache_control": {"type": "ephemeral"}
+}
+```
+
+### 7.10 Example: End-to-End Optimization
+
+```python
+from arke.agent import LLMRunner, OptimizationSession
+from arke.ir import SemanticIR
+import json
+
+# 1. Load kernel
+with open("kernels/matmul_relu.json") as f:
+    semantic_ir = SemanticIR.from_json(json.load(f))
+
+# 2. Initialize Claude backend
+llm_runner = LLMRunner(
+    provider="anthropic",
+    model="claude-opus-4-6",
+    thinking_enabled=True
+)
+
+# 3. Create optimization session
+session = OptimizationSession(
+    kernel_id="matmul_relu",
+    semantic_ir=semantic_ir,
+    target_hw="nvidia_ampere",
+    llm_runner=llm_runner
+)
+
+# 4. Run optimization
+result = session.optimize(
+    budget_tokens=50000,
+    max_iterations=20
+)
+
+# 5. Inspect results
+print(f"Best throughput: {result.best_strategy.metrics.throughput_gflops} GFLOPS")
+print(f"Decisions made: {len(result.decisions)}")
+for decision in result.decisions:
+    print(f"  - {decision.kind}: {decision.rationale}")
+
+# 6. Save trajectory for learning
+with open("trajectory.jsonl", "w") as f:
+    for event in result.trajectory:
+        f.write(json.dumps(event) + "\n")
+```
+
+### 7.11 Best Practices
+
+1. **Start with Sonnet 4.6** for most kernels; use Opus 4.6 for novel/complex optimizations
+2. **Enable thinking mode** for kernels with >10 decision points
+3. **Log all trajectories** for offline analysis and learning
+4. **Use prompt caching** for repeated kernel families
+5. **Monitor token usage** and compact context when approaching limits
+6. **Provide hardware context** explicitly in system prompt
+7. **Require @rationale** for every decision (enables auditability)
+8. **Implement fallback chain** for production robustness
+9. **Test on reference hardware** before deploying optimized kernels
+10. **Collect feedback** from V2 performance profiling to improve future decisions
+
+---
+
+*Document version: v1.1 | Updated: 2026-04-09*
+*References: e2e-flow.md, op-registry-interface.md, arke-ir-spec-v2.md, arke/agent/ source*

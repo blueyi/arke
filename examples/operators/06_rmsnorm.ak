@@ -9,7 +9,9 @@
 kernel rmsnorm(
     X:      Tensor<[128, 4096], f16>,
     weight: Tensor<[4096], f16>
-) -> Tensor<[128, 4096], f16> {
+) -> Tensor<[128, 4096], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = rmsnorm(X=X, weight=weight, eps=0.000010);
     return Y;
 }

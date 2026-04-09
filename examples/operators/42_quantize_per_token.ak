@@ -9,7 +9,9 @@
 
 kernel quantize_per_token_kernel(
     X: Tensor<[128, 4096], f16>
-) -> Tensor<[128, 4096], i8> {
+) -> Tensor<[128, 4096], i8> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Q = quantize_per_token(X=X);
     return Q;
 }

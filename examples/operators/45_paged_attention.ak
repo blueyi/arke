@@ -13,7 +13,9 @@ kernel paged_attention_kernel(
     K_cache: Tensor<[64, 16, 12, 64], f16>,
     V_cache: Tensor<[64, 16, 12, 64], f16>,
     block_table: Tensor<[1, 64], i32>
-) -> Tensor<[1, 12, 1, 64], f16> {
+) -> Tensor<[1, 12, 1, 64], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let O = paged_attention(Q=Q, K_cache=K_cache, V_cache=V_cache, block_table=block_table);
     return O;
 }

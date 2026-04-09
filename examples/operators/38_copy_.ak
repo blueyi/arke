@@ -9,7 +9,9 @@
 kernel copy_kernel(
     Src: Tensor<[128, 4096], f16>,
     Dst: Tensor<[128, 4096], f16>
-) -> Tensor<[128, 4096], f16> {
+) -> Tensor<[128, 4096], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = copy_(Src=Src, Dst=Dst);
     return Y;
 }

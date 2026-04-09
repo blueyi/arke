@@ -8,7 +8,9 @@
 
 kernel softmax(
     X: Tensor<[2048, 1024], f16>
-) -> Tensor<[2048, 1024], f16> {
+) -> Tensor<[2048, 1024], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = softmax(X=X, axis=-1);
     return Y;
 }

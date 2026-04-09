@@ -8,7 +8,9 @@
 
 kernel permute_kernel(
     X: Tensor<[2, 12, 128, 64], f16>
-) -> Tensor<[2, 128, 12, 64], f16> {
+) -> Tensor<[2, 128, 12, 64], f16> 
+where B: dynamic(max=64), S: dynamic(max=8192), D: static
+{
     let Y = permute(X=X, dims=[0, 2, 1, 3]);
     return Y;
 }
