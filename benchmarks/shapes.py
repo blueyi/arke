@@ -332,7 +332,7 @@ except ImportError:
 
 # ── Extended get_shapes ─────────────────────────────────────────────────
 
-# Alias map for backward compatibility and flexible naming
+# Alias map for accepted benchmark CLI/operator shorthands
 _SHAPE_MAP: dict[str, str] = {
     "mm": "matmul", "gemm": "matmul",
     "bmm": "batch_matmul",

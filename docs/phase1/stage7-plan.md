@@ -166,7 +166,7 @@ This track converts the finalized v2.0 specs into executable implementation cont
 | T1.1 | Audit parser / AST / examples against Lang v2.0 (`where`, tuple returns, `_`, conditional strategy, imports) | P0 | 1d | ✅ |
 | T1.2 | Audit SemanticIR / StrategyIR data model against IR v2.0 layer vocabulary and required fields | P0 | 1d | ✅ |
 | T1.3 | Replace outdated v1/v1.5 terminology in code/docs/tests with Layer 4/3/2/1 naming where applicable | P1 | 0.5d | ✅ |
-| T1.4 | Build a spec conformance checklist covering language features and IR structures used by all examples | P1 | 0.5d | 🟨 |
+| T1.4 | Build a spec conformance checklist covering language features and IR structures used by all examples | P1 | 0.5d | 🟨 — Stage 7 tests now cover canonical v2 parser/IR/example behavior, but a single explicit checklist artifact is still not split out as its own document |
 
 ### Track 2: Symbolic Shape System for BL5 (`where` + `symbolic_dims`) (P0)
 
@@ -282,6 +282,7 @@ Rationale for this order:
   - `tests/test_rationale_e2e.py` has 1 skip for `01_matmul.ak`, because that file intentionally has no `@rationale` annotation.
 - **Benchmark/test harness status for the current active slices is green:** `tests/test_backend_agnostic_script.py`, `tests/test_rationale_e2e.py`, `tests/test_bench*.py`, `tests/test_benchmark*.py`, and `benchmarks/` slice pass, with the single documented skip above.
 - **Remaining non-green area is benchmark/gate readiness, not parser/IR correctness:** OT4 / large attention-family benchmark execution still hits 6GB VRAM limits in full gate runs, so any FAIL/SKIP there must be recorded in plan/status with the concrete operator and memory reason instead of being hidden as partial completion.
+- **Active spec/benchmark-interface cleanup was revalidated after removing compat wording/aliases:** `tests/test_benchmark_cli.py`, `tests/test_op_registry.py`, `tests/test_converters.py`, `tests/test_semantic_ir.py`, `tests/test_symbolic_shape.py`, and `tests/test_stage7_roundtrip.py` passed together (`109 passed`).
 
 ## Dependencies
 

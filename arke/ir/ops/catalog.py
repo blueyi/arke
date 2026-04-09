@@ -502,7 +502,7 @@ PAGED_ATTENTION = _register(OpSchema(name="paged_attention", category="attention
 ))
 
 # ============================================================
-# Lookup utilities (backward compatibility)
+# Lookup utilities
 # ============================================================
 
 def get_op(name: str) -> OpSchema:

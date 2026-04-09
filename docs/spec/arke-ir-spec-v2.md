@@ -23,7 +23,7 @@
 11. [Op Registry Interface](#11-op-registry-interface)
 12. [MLIR / LLVM IR Interoperability](#12-mlir--llvm-ir-interoperability)
 13. [JSON Serialization](#13-json-serialization)
-14. [Backward Compatibility](#14-backward-compatibility)
+14. [Versioning](#14-versioning)
 
 ---
 
@@ -822,17 +822,9 @@ All IR layers are serializable to JSON for:
 
 ---
 
-## 14. Backward Compatibility
+## 14. Versioning
 
-### 14.1 v1.0 → v2.0 Migration
-
-Arke IR v2.0 is backward compatible with v1.0:
-
-- v1.0 IR can be loaded and converted to v2.0 format
-- v2.0 features (symbolic dimensions, conditional strategies) are optional
-- Existing kernels continue to work without modification
-
-### 14.2 Version Tagging
+### 14.1 Canonical Version Tag
 
 All IR documents include version metadata:
 

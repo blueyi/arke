@@ -371,7 +371,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--all", action="store_true",
                         help="Run all layers (equivalent to --bl 6)")
     parser.add_argument("--report", action="store_true",
-                        help="Generate report (legacy, use 'arke bench report')")
+                        help="Generate report (deprecated shortcut; prefer 'arke bench report')")
     parser.add_argument("--results-dir", type=str, default="benchmarks/results")
     parser.add_argument("--output", type=str, default="benchmarks/results")
     parser.add_argument("--warmup", type=int, default=200)

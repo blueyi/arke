@@ -3,7 +3,7 @@
 > **Version:** 2.0.0  
 > **Status:** Final Specification  
 > **Date:** 2026-04-09  
-> **Based on:** Arke Language Spec v1.0 (frozen) + v2.0 Design Document  
+> **Scope:** Canonical v2.0 language surface for the active compiler pipeline  
 > **Philosophy:** Universal operator abstraction, LLM-native, zero algorithm-specific constructs
 
 ---
@@ -20,7 +20,7 @@
 8. [Annotation System](#8-annotation-system)
 9. [Decision Space](#9-decision-space)
 10. [Complete EBNF Grammar](#10-complete-ebnf-grammar)
-11. [Backward Compatibility](#11-backward-compatibility)
+11. [Versioning](#11-versioning)
 
 ---
 
@@ -66,7 +66,7 @@ Specific operators are registered via the **Op Registry** (see `op-registry-inte
 3. **Token efficient** — Shorter than equivalent Triton. Symbolic shapes and type inference reduce verbosity.
 4. **Single source of truth** — `.ak` is canonical; JSON IR is serialization only.
 5. **@rationale everywhere** — Every optimization decision carries rationale for LLM learning and knowledge transfer.
-6. **Incremental extensions** — No breaking changes. Grammar extensions are additive only.
+6. **Canonical surface** — This spec describes the current language only. Historical aliases and migration shims are intentionally out of scope.
 7. **Algorithm-agnostic** — Language defines universal constructs; specific operators are registered externally.
 
 ### 2.2 Relationship to IR Layers
@@ -240,14 +240,14 @@ tile(dim="M", factors=[128])
 #### 5.2.2 Compute Resource Specification
 
 ```
-compute(num_threads=<int>, num_stages=<int>, shared_memory=<int>)
+compute(warps=<int>, num_stages=<int>, shared_memory=<int>)
 ```
 
-Backend-agnostic specification of compute resources. The compiler translates this to backend-specific configs (e.g., Triton `launch_config`).
+Backend-agnostic specification of compute resources. The compiler lowers this to backend-specific launch/resource configuration.
 
 Example:
 ```ak
-compute(num_threads=256, num_stages=3, shared_memory=49152)
+compute(warps=8, num_stages=3, shared_memory=49152)
     @rationale("3-stage pipeline for memory latency hiding");
 ```
 
@@ -318,7 +318,7 @@ strategy matmul_strategy for target("nvidia_ampere") {
         @rationale("128 threads per block for occupancy");
     tile(dim="N", factors=[128])
         @rationale("Balanced M/N tiling");
-    compute(num_threads=256, num_stages=3)
+    compute(warps=8, num_stages=3)
         @rationale("3-stage pipeline for memory latency hiding");
     memory_layout(tensor="A", layout="row_major")
         @rationale("Coalesced memory access");
@@ -515,7 +515,7 @@ The strategy block expresses optimization decisions using universal decision typ
 | Decision Type | Purpose | Example |
 |:---|:---|:---|
 | `tile(...)` | Loop tiling | `tile(dim="M", factors=[128])` |
-| `compute(...)` | Compute resource allocation | `compute(num_threads=256, num_stages=3)` |
+| `compute(...)` | Compute resource allocation | `compute(warps=8, num_stages=3)` |
 | `fuse(...)` | Operation fusion | `fuse(ops=["matmul", "relu"])` |
 | `memory_layout(...)` | Tensor memory layout | `memory_layout(tensor="A", layout="row_major")` |
 | `compute_order(...)` | Operation execution order | `compute_order(ops=["load", "compute", "store"])` |
@@ -600,43 +600,27 @@ STRING = '"' [^"]* '"'
 
 ---
 
-## 11. Backward Compatibility
+## 11. Versioning
 
-### 11.1 v1.0 Compatibility
+### 11.1 Canonical Version Tag
 
-Every valid v1.0 `.ak` file is a valid v2.0 `.ak` file. v2.0 features are optional:
+Language-facing artifacts should identify the current schema version explicitly:
 
-- `where` clause is optional; omit it for static shapes
-- Tuple returns are optional; single returns work as before
-- Type inference (`_`) is optional; explicit types still work
-- Backend-agnostic directives are optional; Triton-specific directives still parse (deprecated)
-
-### 11.2 Migration Path
-
-To upgrade v1.0 code to v2.0:
-
-1. Add `where` clause for symbolic dimensions (optional)
-2. Replace `launch_config(...)` with `compute(...)` (optional)
-3. Use tuple destructuring for multi-output ops (optional)
-4. Add `@rationale` annotations (optional)
-
-Example v1.0 → v2.0:
-
-```ak
-// v1.0
-kernel matmul(A: Tensor<[1024, 512], f32>, B: Tensor<[512, 1024], f32>) -> Tensor<[1024, 1024], f32> {
-    let C = matmul(A=A, B=B);
-    return C;
-}
-
-// v2.0 (backward compatible, but with symbolic shapes)
-kernel matmul(A: Tensor<[M, K], f32>, B: Tensor<[K, N], f32>) -> Tensor<[M, N], f32>
-where M: dynamic(max=4096), K: static, N: dynamic(max=4096)
+```json
 {
-    let C = matmul(A=A, B=B);
-    return C;
+  "version": "2.0.0",
+  "schema": "arke-lang-v2.0"
 }
 ```
+
+### 11.2 Scope of This Specification
+
+This document defines the canonical v2.0 language surface used by the active compiler pipeline:
+
+- `compute(...)` is the resource directive surface
+- `where` clauses define symbolic dimensions
+- `when` / `otherwise` express conditional strategy branches
+- deprecated aliases and historical migration behavior are intentionally out of scope
 
 ---
 

@@ -10,7 +10,7 @@ Extends the existing OpDefinition with new fields for:
 - Test input generation rules (input_gen)
 - Runtime attributes (attrs)
 
-All new fields are optional (default None) for backward compatibility.
+Extended fields are optional so operators can declare only the metadata they need.
 """
 
 from __future__ import annotations
@@ -100,8 +100,7 @@ class InputGen:
 class OpSchema:
     """Extended operator definition — Single Source of Truth for OpRegistry.
 
-    Backward-compatible: all new fields default to None.
-    This extends the original OpDefinition with S6 infrastructure fields.
+    This extends the original catalog schema with S6 infrastructure fields.
     """
 
     # Original fields (from catalog.py OpDefinition)
@@ -116,7 +115,7 @@ class OpSchema:
     can_fuse_as: str | None = None  # "epilogue" | "prologue" | None
     numpy_ref: str = ""  # "np.matmul(A, B)"
 
-    # New S6 fields (all optional for backward compatibility)
+    # New S6 fields (optional per operator)
     shape_rule: ShapeRule | None = None
     template_hint: TemplateHint | None = None
     reference_impl: ReferenceImpl | None = None

@@ -29,7 +29,6 @@ from typing import Iterator
 
 from arke.ir.ops.catalog import OP_CATALOG
 from arke.ir.ops.schema import OpSchema
-OpDefinition = OpSchema  # backward compat alias
 
 
 class OpRegistry:
@@ -42,22 +41,22 @@ class OpRegistry:
     - Iteration and membership testing
     """
 
-    def __init__(self, catalog: dict[str, OpDefinition] | None = None) -> None:
+    def __init__(self, catalog: dict[str, OpSchema] | None = None) -> None:
         """Initialize registry from catalog.
 
         Args:
             catalog: Operator catalog dict. Defaults to OP_CATALOG.
         """
-        self._ops: dict[str, OpDefinition] = catalog if catalog is not None else OP_CATALOG
+        self._ops: dict[str, OpSchema] = catalog if catalog is not None else OP_CATALOG
 
-    def get(self, name: str) -> OpDefinition:
+    def get(self, name: str) -> OpSchema:
         """Get operator definition by name.
 
         Args:
             name: Operator name (e.g., "matmul", "relu")
 
         Returns:
-            OpDefinition for the operator
+            OpSchema for the operator
 
         Raises:
             KeyError: If operator not found
