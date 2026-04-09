@@ -1,0 +1,10 @@
+{
+  "overall_geomean": 0.4165,
+  "op_scores": {
+    "relu": 0.4165
+  },
+  "total_shapes": 4,
+  "operators": [
+    "relu"
+  ]
+}

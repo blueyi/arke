@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-04-10_014246",
+  "ops": [
+    "relu"
+  ],
+  "warmup": 1,
+  "reps": 1,
+  "tier": null,
+  "shape_tags": [
+    "square-1k"
+  ]
+}

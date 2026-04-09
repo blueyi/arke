@@ -1,0 +1,4 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops
+matmul_relu,square-1k,1024,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,321.5,219.1,6.679
+matmul_relu,square-1k,1024,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,354.3,341.0,6.061
+matmul_relu,square-1k,1024,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,259.9,118.8,8.263

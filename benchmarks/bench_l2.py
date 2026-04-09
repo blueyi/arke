@@ -588,6 +588,10 @@ def main() -> None:
         "--output", default="benchmarks/results",
     )
     parser.add_argument(
+        "--shapes", type=str, default=None,
+        help="Comma-separated shape tags to run",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true",
     )
     args = parser.parse_args()
@@ -604,7 +608,14 @@ def main() -> None:
     else:
         ops = ALL_FUSED_OPS
 
-    run_l2(ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps)
+    shape_tags = [s.strip() for s in args.shapes.split(",")] if args.shapes else None
+    run_l2(
+        ops=ops,
+        output_dir=args.output,
+        warmup=args.warmup,
+        reps=args.reps,
+        shape_tags=shape_tags,
+    )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,5 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline
+relu,square-1k,cuBLAS/cuDNN,31.7,26.6,,0.8391
+relu,square-1k,PyTorch-eager,26.6,25.6,,1.0000
+relu,square-1k,torch.compile,161.8,134.1,,0.1644
+relu,square-1k,FlagGems,121.9,102.5,,0.2182

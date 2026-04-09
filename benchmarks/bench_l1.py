@@ -363,6 +363,10 @@ def main() -> None:
         "--output", default="benchmarks/results",
     )
     parser.add_argument(
+        "--shapes", type=str, default=None,
+        help="Comma-separated shape tags to run",
+    )
+    parser.add_argument(
         "--tier", type=int, default=None,
         help="Shape tier (1=fast, 2=standard, 3=full). Default: all shapes.",
     )
@@ -395,9 +399,12 @@ def main() -> None:
     else:
         ops = ["matmul", "softmax"]
 
+    shape_tags = [s.strip() for s in args.shapes.split(",")] if args.shapes else None
+
     run_l1(
         ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps,
         tier=args.tier, phase=args.phase, stage=args.stage, track=args.track,
+        shape_tags=shape_tags,
     )
 
 
