@@ -5,13 +5,13 @@
 
 Gate criterion G6-LI.8: StrategyIR L1 (level=1) decisions must not contain
 any Triton-specific fields. L2 (level=2) decisions may have backend-specific
-content (e.g., compute_resource with warps/stages).
+content (e.g., compute with warps/num_stages).
 
 Verifies:
 1. All L1 decisions use only allowed param keys
 2. No Triton-specific strings in L1 decision param values
 3. L1 kinds are from the allowed set
-4. L2 decisions (compute_resource, cache_config, etc.) are correctly at level=2
+4. L2 decisions (compute, cache_config, etc.) are correctly at level=2
 """
 
 from __future__ import annotations
@@ -195,7 +195,7 @@ class TestL2BackendSpecific:
 
     @pytest.mark.parametrize("ak_file", ALL_AK_FILES, ids=lambda p: p.name)
     def test_l2_decisions_have_level_2(self, ak_file: Path, pipeline):
-        """Backend-specific decisions (compute_resource, etc.) are at level=2."""
+        """Backend/resource-bound decisions (compute, etc.) are at level=2."""
         result = pipeline.compile_file(str(ak_file))
         if not result.success or result.strategy_ir is None:
             pytest.skip(f"No StrategyIR for {ak_file.name}")
@@ -208,17 +208,16 @@ class TestL2BackendSpecific:
             )
 
     @pytest.mark.parametrize("ak_file", ALL_AK_FILES, ids=lambda p: p.name)
-    def test_launch_config_migrated_to_l2(self, ak_file: Path, pipeline):
-        """No launch_config decisions remain (should be compute_resource at L2)."""
+    def test_only_canonical_compute_used_for_l2_resources(self, ak_file: Path, pipeline):
+        """No legacy resource directives remain in StrategyIR."""
         result = pipeline.compile_file(str(ak_file))
         if not result.success or result.strategy_ir is None:
             pytest.skip(f"No StrategyIR for {ak_file.name}")
 
         for d in result.strategy_ir.decisions:
             if isinstance(d, Decision):
-                assert d.kind != "launch_config", (
-                    f"{ak_file.name}: launch_config not migrated to "
-                    f"compute_resource (L2)"
+                assert d.kind not in {"launch_config", "compute_resource"}, (
+                    f"{ak_file.name}: found legacy resource decision kind '{d.kind}'"
                 )
 
 

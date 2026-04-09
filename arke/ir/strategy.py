@@ -4,7 +4,7 @@
 """Arke IR — StrategyIR v1.0 (Layer 3).
 
 Optimization decisions: "how to optimize."
-L1 (backend-agnostic) and L2 (backend-specific) decision levels.
+L1 (backend-agnostic) and L2 (resource / backend-bound) decision levels.
 
 See docs/spec/arke-ir-spec-design.md §7.3 for the complete schema.
 """
@@ -39,10 +39,10 @@ class Decision:
         unroll       - Unroll a loop: {loop, factor}
         algorithm    - Algorithm variant: {name, params}
 
-    Kinds (L2 — backend-specific, set by backend specialization pass):
-        compute_resource  - {warps, stages, pipeline_depth}
-        cache_config      - {l1_size, l2_hint}
-        memory_fence      - {scope}
+    Kinds (L2 — resource / backend-bound, set by specialization passes):
+        compute       - {warps, num_stages, shared_memory, pipeline_depth}
+        cache_config  - {l1_size, l2_hint}
+        memory_fence  - {scope}
     """
     kind: str
     params: dict[str, Any]
@@ -90,7 +90,7 @@ def _decision_to_dict(d: AnyDecision) -> dict:
 
 
 def _parse_decision(d: dict) -> Decision:
-    """Parse a single decision dict. Handles v0.2.0 launch_config compat."""
+    """Parse a single decision dict in the current v2 format."""
     rat = None
     if d.get("rationale"):
         rat_data = d["rationale"]
@@ -98,23 +98,13 @@ def _parse_decision(d: dict) -> Decision:
             text=rat_data if isinstance(rat_data, str) else rat_data.get("text", ""),
             lang=rat_data.get("lang", "en") if isinstance(rat_data, dict) else "en",
         )
-    kind = d["kind"]
-    params = dict(d["params"])
-    level = d.get("level", 1)
-    # v0.2.0 compat: map launch_config -> compute_resource (L2)
-    if kind == "launch_config":
-        kind = "compute_resource"
-        level = 2
-        new_params: dict = {}
-        if "num_warps" in params or "warps" in params:
-            new_params["warps"] = params.get("num_warps", params.get("warps"))
-        if "num_stages" in params or "stages" in params:
-            new_params["stages"] = params.get("num_stages", params.get("stages"))
-        if "block_sizes" in params:
-            new_params["block_sizes"] = params["block_sizes"]
-        params = new_params
-    return Decision(kind=kind, params=params, rationale=rat,
-                    step=d.get("step", 0), level=level)
+    return Decision(
+        kind=d["kind"],
+        params=dict(d["params"]),
+        rationale=rat,
+        step=d.get("step", 0),
+        level=d.get("level", 1),
+    )
 
 
 @dataclass
@@ -138,12 +128,11 @@ class HardwareConstraints:
 class StrategyIR:
     """Optimization strategy IR v1.0.
 
-    v1.0 changes from v0.2.0:
+    Current v2-oriented structure:
     - decisions list accepts AnyDecision (Decision | ConditionalDecision)
     - shape_regimes: named profiles for shape-based dispatch
     - level field on each Decision (L1 vs L2)
-    - launch_config replaced by compute_resource (L2 decision)
-    - Backward compatible: v0.2.0 JSON loads via from_dict()
+    - compute is the canonical Layer-2 resource decision
     """
     version: str = "1.0.0"
     kernel_id: str = ""
@@ -201,17 +190,20 @@ class StrategyIR:
             rationale=Rationale(text=rationale) if rationale else None,
         ))
 
-    def compute_resource(self, warps: int | None = None,
-                         stages: int | None = None,
-                         rationale: str | None = None) -> Decision:
-        """L2 decision: backend resource config (replaces v0.2.0 launch_config)."""
+    def compute(self, warps: int | None = None,
+                num_stages: int | None = None,
+                shared_memory: int | None = None,
+                rationale: str | None = None) -> Decision:
+        """L2 decision: resource configuration in canonical v2 form."""
         params: dict = {}
         if warps is not None:
             params["warps"] = warps
-        if stages is not None:
-            params["stages"] = stages
+        if num_stages is not None:
+            params["num_stages"] = num_stages
+        if shared_memory is not None:
+            params["shared_memory"] = shared_memory
         return self.add_decision(Decision(
-            kind="compute_resource", params=params,
+            kind="compute", params=params,
             rationale=Rationale(text=rationale) if rationale else None,
             level=2,
         ))
@@ -266,9 +258,9 @@ class StrategyIR:
 
     @classmethod
     def from_dict(cls, data: dict) -> StrategyIR:
-        """Deserialize -- handles v0.2.0 and v1.0 JSON."""
+        """Deserialize StrategyIR from the current format."""
         ir = cls(
-            version=data.get("version", "0.2.0"),
+            version=data.get("version", "1.0.0"),
             kernel_id=data.get("kernel_id", ""),
             target_hw=data.get("target_hw", ""),
         )

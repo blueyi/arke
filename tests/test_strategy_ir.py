@@ -1,13 +1,11 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Tests for StrategyIR v1.0 (arke/ir/strategy.py)."""
+"""Tests for StrategyIR (arke/ir/strategy.py)."""
 
 import json
-import pytest
 
 from arke.ir.strategy import (
-    AnyDecision,
     ConditionalDecision,
     Decision,
     HardwareConstraints,
@@ -18,10 +16,6 @@ from arke.ir.strategy import (
     _parse_decision,
 )
 
-
-# ============================================================
-# Rationale
-# ============================================================
 
 class TestRationale:
     def test_basic(self):
@@ -34,10 +28,6 @@ class TestRationale:
         assert r.lang == "zh"
 
 
-# ============================================================
-# Decision
-# ============================================================
-
 class TestDecision:
     def test_tile(self):
         d = Decision(kind="tile", params={"loop": "M", "factors": [64]})
@@ -47,8 +37,8 @@ class TestDecision:
 
     def test_level_l2(self):
         d = Decision(
-            kind="compute_resource",
-            params={"warps": 4, "stages": 2},
+            kind="compute",
+            params={"warps": 4, "num_stages": 2},
             level=2,
         )
         assert d.level == 2
@@ -77,10 +67,6 @@ class TestDecision:
         assert result["level"] == 1
 
 
-# ============================================================
-# ConditionalDecision
-# ============================================================
-
 class TestConditionalDecision:
     def test_basic(self):
         cd = ConditionalDecision(
@@ -98,7 +84,7 @@ class TestConditionalDecision:
 
     def test_to_dict(self):
         cd = ConditionalDecision(
-            predicate='S <= 512',
+            predicate="S <= 512",
             true_decisions=[
                 Decision(kind="tile", params={"loop": "S", "factors": [256]})
             ],
@@ -113,10 +99,6 @@ class TestConditionalDecision:
         assert d["rationale"]["text"] == "small vs large sequence"
 
 
-# ============================================================
-# _parse_decision (v0.2.0 compat)
-# ============================================================
-
 class TestParseDecision:
     def test_normal(self):
         d = _parse_decision({
@@ -128,30 +110,7 @@ class TestParseDecision:
         assert d.kind == "tile"
         assert d.level == 1
 
-    def test_launch_config_migration(self):
-        """v0.2.0 launch_config should be migrated to compute_resource L2."""
-        d = _parse_decision({
-            "kind": "launch_config",
-            "params": {"num_warps": 4, "num_stages": 3},
-            "step": 5,
-        })
-        assert d.kind == "compute_resource"
-        assert d.level == 2
-        assert d.params["warps"] == 4
-        assert d.params["stages"] == 3
-
-    def test_launch_config_with_warps_key(self):
-        """v0.2.0 launch_config with 'warps' key (already migrated name)."""
-        d = _parse_decision({
-            "kind": "launch_config",
-            "params": {"warps": 8, "stages": 2},
-        })
-        assert d.kind == "compute_resource"
-        assert d.params["warps"] == 8
-        assert d.params["stages"] == 2
-
     def test_rationale_string(self):
-        """v0.2.0 might have rationale as plain string."""
         d = _parse_decision({
             "kind": "tile",
             "params": {"loop": "M", "factors": [64]},
@@ -169,10 +128,6 @@ class TestParseDecision:
         assert d.rationale.text == "good tile size"
         assert d.rationale.lang == "en"
 
-
-# ============================================================
-# StrategyIR convenience methods
-# ============================================================
 
 class TestStrategyIRConvenience:
     def test_tile(self):
@@ -212,17 +167,17 @@ class TestStrategyIRConvenience:
         assert d.kind == "place"
         assert d.params == {"tensor": "A_tile", "memory": "shared"}
 
-    def test_compute_resource(self):
+    def test_compute(self):
         ir = StrategyIR(kernel_id="test")
-        d = ir.compute_resource(warps=4, stages=3, rationale="good for Ampere")
-        assert d.kind == "compute_resource"
+        d = ir.compute(warps=4, num_stages=3, shared_memory=49152, rationale="good for Ampere")
+        assert d.kind == "compute"
         assert d.level == 2
-        assert d.params == {"warps": 4, "stages": 3}
+        assert d.params == {"warps": 4, "num_stages": 3, "shared_memory": 49152}
 
     def test_when(self):
         ir = StrategyIR(kernel_id="test")
         cd = ir.when(
-            'S <= 512',
+            "S <= 512",
             [Decision(kind="tile", params={"loop": "S", "factors": [256]})],
             [Decision(kind="tile", params={"loop": "S", "factors": [512]})],
             rationale="shape-dependent tiling",
@@ -230,11 +185,6 @@ class TestStrategyIRConvenience:
         assert isinstance(cd, ConditionalDecision)
         assert cd.step == 1
         assert cd.predicate == "S <= 512"
-
-    def test_compute_can_be_l2_resource_decision(self):
-        d = Decision(kind="compute", params={"warps": 4, "num_stages": 2}, level=2)
-        assert d.kind == "compute"
-        assert d.level == 2
 
     def test_pop_decisions(self):
         ir = StrategyIR(kernel_id="test")
@@ -250,7 +200,7 @@ class TestStrategyIRConvenience:
         ir = StrategyIR(kernel_id="test")
         d1 = ir.tile("M", [64])
         d2 = ir.tile("N", [128])
-        d3 = ir.compute_resource(warps=4)
+        d3 = ir.compute(warps=4)
         assert d1.step == 1
         assert d2.step == 2
         assert d3.step == 3
@@ -264,16 +214,12 @@ class TestStrategyIRConvenience:
         assert "tile" in s
 
 
-# ============================================================
-# StrategyIR JSON round-trip
-# ============================================================
-
 class TestStrategyIRSerialization:
     def test_basic_round_trip(self):
         ir = StrategyIR(kernel_id="matmul", target_hw="nvidia_ampere")
         ir.tile("M", [64], rationale="cache line")
         ir.tile("N", [128])
-        ir.compute_resource(warps=4, stages=3)
+        ir.compute(warps=4, num_stages=3)
 
         j1 = ir.to_json()
         ir2 = StrategyIR.from_json(j1)
@@ -283,54 +229,30 @@ class TestStrategyIRSerialization:
     def test_round_trip_with_conditional(self):
         ir = StrategyIR(kernel_id="softmax", target_hw="nvidia_ampere")
         ir.when(
-            'S <= 512',
+            "S <= 512",
             [Decision(kind="tile", params={"loop": "S", "factors": [256]})],
             [Decision(kind="tile", params={"loop": "S", "factors": [512]})],
             rationale="shape-dependent",
         )
-        ir.compute_resource(warps=4, stages=2)
+        ir.compute(warps=4, num_stages=2)
 
         j1 = ir.to_json()
         ir2 = StrategyIR.from_json(j1)
         j2 = ir2.to_json()
         assert j1 == j2
-
-        # Check conditional deserialized correctly
         assert isinstance(ir2.decisions[0], ConditionalDecision)
         assert ir2.decisions[0].predicate == "S <= 512"
-
-    def test_v020_compat_load(self):
-        """Loading a v0.2.0-style JSON with launch_config."""
-        v020_json = {
-            "version": "0.2.0",
-            "kernel_id": "old_kernel",
-            "target_hw": "nvidia_v100",
-            "decisions": [
-                {"kind": "tile", "params": {"loop": "M", "factors": [64]}, "step": 1},
-                {"kind": "launch_config", "params": {"num_warps": 4, "num_stages": 2}, "step": 2},
-            ],
-        }
-        ir = StrategyIR.from_dict(v020_json)
-        assert ir.version == "0.2.0"
-        assert ir.decision_count == 2
-        # launch_config should be migrated
-        d = ir.decisions[1]
-        assert d.kind == "compute_resource"
-        assert d.level == 2
-        assert d.params["warps"] == 4
-        assert d.params["stages"] == 2
 
     def test_l1_vs_l2_tagging(self):
         ir = StrategyIR(kernel_id="test")
         d1 = ir.tile("M", [64])
         d2 = ir.fuse(["a", "b"])
-        d3 = ir.compute_resource(warps=8)
+        d3 = ir.compute(warps=8)
 
         assert d1.level == 1
         assert d2.level == 1
         assert d3.level == 2
 
-        # Verify preserved in JSON
         data = ir.to_dict()
         assert data["decisions"][0]["level"] == 1
         assert data["decisions"][1]["level"] == 1
@@ -360,11 +282,17 @@ class TestStrategyIRSerialization:
         ir = StrategyIR(kernel_id="test", target_hw="nvidia_ampere")
         ir.shape_regimes = [
             ShapeRegime(
-                name="small",
+                name="short_seq",
                 predicate="S <= 512",
                 decisions=[Decision(kind="tile", params={"loop": "S", "factors": [256]})],
-            ),
+            )
         ]
-        d = ir.to_dict()
-        assert "shape_regimes" in d
-        assert d["shape_regimes"][0]["name"] == "small"
+        payload = ir.to_dict()
+        assert payload["shape_regimes"][0]["name"] == "short_seq"
+        assert payload["shape_regimes"][0]["predicate"] == "S <= 512"
+        assert payload["shape_regimes"][0]["decisions"][0]["kind"] == "tile"
+
+    def test_json_is_valid(self):
+        ir = StrategyIR(kernel_id="test")
+        ir.tile("M", [64])
+        json.loads(ir.to_json())

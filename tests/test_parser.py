@@ -77,8 +77,8 @@ def test_parse_strategy_with_annotations() -> None:
     strategy relu_kernel_strategy for target("nvidia_ampere") {
         tile(loop="row", factors=[4])
             @rationale("4 rows per block — fully memory-bound, maximize occupancy");
-        launch_config(num_warps=4, num_stages=1)
-            @meta(kind="launch")
+        compute(warps=4, num_stages=1, shared_memory=0)
+            @meta(kind="resource")
             @rationale("single-stage: pure elementwise, no arithmetic pipeline benefit");
     }
     """
@@ -100,8 +100,8 @@ def test_parse_strategy_with_annotations() -> None:
 
     stmt2 = strategy.body[1]
     assert isinstance(stmt2, StrategyStmt)
-    assert stmt2.directive == "launch_config"
-    assert stmt2.kwargs == {"num_warps": 4, "num_stages": 1}
+    assert stmt2.directive == "compute"
+    assert stmt2.kwargs == {"warps": 4, "num_stages": 1, "shared_memory": 0}
     assert [a.name for a in stmt2.annotations] == ["meta", "rationale"]
 
 
@@ -186,7 +186,7 @@ def test_parse_when_otherwise_strategy_blocks() -> None:
         when S <= 512 {
             tile(loop="S", factors=[64])
                 @rationale("short seqlen");
-            compute(parallelism=32, pipeline_depth=2);
+            compute(warps=4, num_stages=2, shared_memory=32768);
         }
         when S <= 2048 {
             tile(loop="S", factors=[128])
@@ -236,7 +236,7 @@ def test_parse_when_otherwise_strategy_blocks() -> None:
 def test_parse_v2_compute_directive() -> None:
     source = """
     strategy s for target("nvidia_ampere") {
-        compute(num_threads=256, num_stages=3, shared_memory=49152)
+        compute(warps=8, num_stages=3, shared_memory=49152)
             @rationale("3-stage pipeline for memory latency hiding");
     }
     """
@@ -245,7 +245,7 @@ def test_parse_v2_compute_directive() -> None:
     assert isinstance(stmt, StrategyStmt)
     assert stmt.directive == "compute"
     assert stmt.kwargs == {
-        "num_threads": 256,
+        "warps": 8,
         "num_stages": 3,
         "shared_memory": 49152,
     }

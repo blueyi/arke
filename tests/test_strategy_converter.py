@@ -35,7 +35,7 @@ strategy k_strategy for target("nvidia_ampere") {
         program = parse_string(
             '''
 strategy k_strategy for target("nvidia_ampere") {
-    compute(num_warps=4, num_stages=2, shared_memory=65536)
+    compute(warps=4, num_stages=2, shared_memory=65536)
         @rationale("resource planning");
 }
             '''
@@ -46,7 +46,7 @@ strategy k_strategy for target("nvidia_ampere") {
         assert isinstance(d, Decision)
         assert d.kind == "compute"
         assert d.level == 2
-        assert d.params["num_warps"] == 4
+        assert d.params["warps"] == 4
         assert d.params["num_stages"] == 2
         assert d.params["shared_memory"] == 65536
         assert d.rationale is not None

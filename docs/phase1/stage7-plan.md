@@ -2,7 +2,7 @@
 
 > Gate G7 exit criteria → [plan.md](../roadmap/plan.md#stage-7-g7-lang--ir-v2-)
 
-**Objective:** Land the finalized Arke Lang v2.0 and Arke IR v2.0 architecture in code: `where` clause, symbolic dimensions, conditional/backend-agnostic StrategyIR, compiler round-trip for all 45 ops, and MLIR skeleton for future lowering. **Stage 7 must end with Lang + IR + compiler support sufficient for BL5 full operator coverage and full shape coverage, and that support must be strong enough to pass the required L2 fused benchmarks rather than only L1 single-op checks.**
+**Objective:** Land the finalized Arke Lang v2.0 and Arke IR v2.0 architecture in code: `where` clause, symbolic dimensions, conditional/backend-agnostic StrategyIR, compiler round-trip for all 45 ops, and MLIR skeleton for future lowering. **Stage 7 is v2-only: do not preserve v1/v0.2 compatibility in code, tests, or examples. Remove legacy surface/tests instead of carrying migration shims. Stage 7 must end with Lang + IR + compiler support sufficient for BL5 full operator coverage and full shape coverage, and that support must be strong enough to pass the required L2 fused benchmarks rather than only L1 single-op checks.**
 
 **Depends on:** S6 (Pass pipeline, OpRegistry, Backend abstraction)
 **Blocks:** S8 (Agent Autonomy needs v2 Lang/IR semantics, symbolic shapes, MLIR skeleton, and full op coverage)
