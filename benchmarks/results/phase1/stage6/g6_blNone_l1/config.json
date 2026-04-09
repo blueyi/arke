@@ -1,0 +1,30 @@
+{
+  "run_id": "phase1/stage6/g6_blNone_l1",
+  "bl": null,
+  "ot_tiers": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "st_tiers": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "layers": [
+    "L1"
+  ],
+  "ops": [
+    "relu"
+  ],
+  "shapes": [
+    "square-1k"
+  ],
+  "baselines": null,
+  "warmup": 1,
+  "reps": 1,
+  "timestamp": "2026-04-09T15:17:46.488496"
+}

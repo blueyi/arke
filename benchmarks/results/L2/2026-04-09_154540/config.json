@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-04-09_154540",
+  "ops": [
+    "swiglu",
+    "geglu"
+  ],
+  "warmup": 1,
+  "reps": 1,
+  "layer": "L2",
+  "shape_tags": [
+    "gpt2-sm"
+  ]
+}

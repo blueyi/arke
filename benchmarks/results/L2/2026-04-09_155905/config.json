@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-04-09_155905",
+  "ops": [
+    "fused_linear_cross_entropy"
+  ],
+  "warmup": 1,
+  "reps": 1,
+  "layer": "L2",
+  "shape_tags": [
+    "gpt2-seq128"
+  ]
+}

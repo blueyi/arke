@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-04-09_151756",
+  "ops": [
+    "matmul_relu",
+    "matmul_gelu",
+    "swiglu",
+    "geglu"
+  ],
+  "warmup": 1,
+  "reps": 1,
+  "layer": "L2",
+  "shape_tags": [
+    "square-1k"
+  ]
+}

@@ -1,0 +1,2 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops
+swiglu,gpt2-sm,128,3072,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,135.4,112.6,

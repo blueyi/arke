@@ -1,0 +1,30 @@
+{
+  "run_id": "phase1/stage6/g6_blNone_l2",
+  "bl": null,
+  "ot_tiers": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "st_tiers": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "layers": [
+    "L2"
+  ],
+  "ops": [
+    "fused_linear_cross_entropy"
+  ],
+  "shapes": [
+    "gpt2-seq128"
+  ],
+  "baselines": null,
+  "warmup": 1,
+  "reps": 1,
+  "timestamp": "2026-04-09T15:59:03.249535"
+}
