@@ -32,6 +32,7 @@ from arke.ir.semantic import (
     ParamRef,
     SemanticIR,
     Semantics,
+    ShapeConstraint,
     SymbolicDim,
     TensorDesc,
 )
@@ -288,6 +289,15 @@ class TestSSAValidationPass:
         assert len(errors) >= 1
         assert any("min 128 > max 64" in e for e in errors)
         assert any("default 96 < min 128" in e for e in errors)
+
+    def test_invalid_shape_constraint_reference_detected(self):
+        """ShapeConstraint expressions should reference known symbolic dims only."""
+        ir = SemanticIR(kernel_id="test_bad_constraint_ref")
+        ir.add_symbolic_dim(SymbolicDim("M", min=1))
+        ir.add_shape_constraint(ShapeConstraint("N >= 64", "unknown dim"))
+        errors = semantic_ssa_validation_pass(ir)
+        assert len(errors) >= 1
+        assert any("unknown symbolic dim 'N'" in e for e in errors)
 
     def test_invalid_param_ref(self):
         """ParamRef to non-existent param should be caught."""

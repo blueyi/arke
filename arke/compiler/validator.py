@@ -20,6 +20,8 @@ from arke.ir.semantic import (
     SymbolicDim,
 )
 
+import re
+
 
 def validate_semantic_ir(ir: SemanticIR) -> list[str]:
     """Validate a SemanticIR for structural correctness.
@@ -114,6 +116,7 @@ def validate_semantic_ir(ir: SemanticIR) -> list[str]:
             )
 
     # 5. Check symbolic dim structural constraints
+    symbolic_dim_names = {sd.name for sd in ir.symbolic_dims}
     for sd in ir.symbolic_dims:
         if sd.min is not None and sd.max is not None and sd.min > sd.max:
             errors.append(
@@ -143,5 +146,17 @@ def validate_semantic_ir(ir: SemanticIR) -> list[str]:
             errors.append(
                 f"SymbolicDim {sd.name!r}: default {sd.default} is not a multiple of {sd.multiple_of}"
             )
+
+    # 6. Check shape constraint references are resolvable against declared symbolic dims
+    for sc in ir.shape_constraints:
+        for token in re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", sc.expr):
+            if token in {"is", "static", "default"}:
+                continue
+            if token in symbolic_dim_names:
+                continue
+            if token.isupper():
+                errors.append(
+                    f"ShapeConstraint {sc.expr!r}: references unknown symbolic dim {token!r}"
+                )
 
     return errors

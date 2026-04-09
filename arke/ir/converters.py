@@ -39,6 +39,7 @@ from arke.ir.semantic import (
     NodeRef,
     Semantics,
     SemanticIR,
+    ShapeConstraint,
     SymbolicDim,
     TensorDesc,
 )
@@ -274,6 +275,42 @@ def ast_to_semantic(kernel_def: KernelDef) -> SemanticIR:
             )
             ir.add_symbolic_dim(sd)
             sym_dim_set.add(dim_decl.name)
+
+            if dim_decl.kind == "static":
+                ir.add_shape_constraint(
+                    ShapeConstraint(
+                        expr=f"{dim_decl.name} is static",
+                        reason=f"where {dim_decl.name}: static",
+                    )
+                )
+            if "min" in dim_decl.opts:
+                ir.add_shape_constraint(
+                    ShapeConstraint(
+                        expr=f"{dim_decl.name} >= {dim_decl.opts['min']}",
+                        reason=f"where {dim_decl.name} min bound",
+                    )
+                )
+            if "max" in dim_decl.opts:
+                ir.add_shape_constraint(
+                    ShapeConstraint(
+                        expr=f"{dim_decl.name} <= {dim_decl.opts['max']}",
+                        reason=f"where {dim_decl.name} max bound",
+                    )
+                )
+            if "multiple_of" in dim_decl.opts:
+                ir.add_shape_constraint(
+                    ShapeConstraint(
+                        expr=f"{dim_decl.name} % {dim_decl.opts['multiple_of']} == 0",
+                        reason=f"where {dim_decl.name} alignment",
+                    )
+                )
+            if "default" in dim_decl.opts:
+                ir.add_shape_constraint(
+                    ShapeConstraint(
+                        expr=f"default({dim_decl.name}) == {dim_decl.opts['default']}",
+                        reason=f"where {dim_decl.name} default value",
+                    )
+                )
 
     # Process params
     for p in kernel_def.params:

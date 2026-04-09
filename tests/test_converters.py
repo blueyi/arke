@@ -335,6 +335,30 @@ where M: dynamic(max=4096), K: static, N: dynamic(min=64, multiple_of=32, defaul
         assert dims["N"].default == 128
 
 
+class TestWhereClauseConstraints:
+    def test_where_clause_generates_shape_constraints(self):
+        prog = parse_string('''
+kernel dynamic_kernel(
+    X: Tensor<[M, K], f16>
+) -> Tensor<[M, K], f16>
+where M: dynamic(min=64, max=4096, multiple_of=64, default=128), K: static
+{
+    let Y = relu(X=X);
+    return Y;
+}
+        ''')
+        sem = ast_to_semantic(prog.kernels[0])
+        exprs = {sc.expr for sc in sem.shape_constraints}
+        reasons = {sc.reason for sc in sem.shape_constraints}
+        assert "M >= 64" in exprs
+        assert "M <= 4096" in exprs
+        assert "M % 64 == 0" in exprs
+        assert "default(M) == 128" in exprs
+        assert "K is static" in exprs
+        assert "where M min bound" in reasons
+        assert "where K: static" in reasons
+
+
 class TestWhereClausePropagation:
     def test_symbolic_dims_from_shape(self):
         """Symbolic dim names in param shapes should be collected."""
