@@ -163,10 +163,10 @@ This track converts the finalized v2.0 specs into executable implementation cont
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T1.1 | Audit parser / AST / examples against Lang v2.0 (`where`, tuple returns, `_`, conditional strategy, imports) | P0 | 1d | ⬜ |
-| T1.2 | Audit SemanticIR / StrategyIR data model against IR v2.0 layer vocabulary and required fields | P0 | 1d | ⬜ |
-| T1.3 | Replace outdated v1/v1.5 terminology in code/docs/tests with Layer 4/3/2/1 naming where applicable | P1 | 0.5d | ⬜ |
-| T1.4 | Build a spec conformance checklist covering language features and IR structures used by all examples | P1 | 0.5d | ⬜ |
+| T1.1 | Audit parser / AST / examples against Lang v2.0 (`where`, tuple returns, `_`, conditional strategy, imports) | P0 | 1d | ✅ |
+| T1.2 | Audit SemanticIR / StrategyIR data model against IR v2.0 layer vocabulary and required fields | P0 | 1d | ✅ |
+| T1.3 | Replace outdated v1/v1.5 terminology in code/docs/tests with Layer 4/3/2/1 naming where applicable | P1 | 0.5d | ✅ |
+| T1.4 | Build a spec conformance checklist covering language features and IR structures used by all examples | P1 | 0.5d | 🟨 |
 
 ### Track 2: Symbolic Shape System for BL5 (`where` + `symbolic_dims`) (P0)
 
@@ -174,12 +174,12 @@ This is the core functional delta introduced by Lang/IR v2.0 and the primary unb
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T2.1 | Implement `where` clause in grammar / parser / AST | P0 | 0.5d | ⬜ |
-| T2.2 | Lower `where` declarations into SemanticIR `symbolic_dims` and constraints | P0 | 0.5d | ⬜ |
-| T2.3 | Extend shape inference / validation to preserve symbolic constraints end-to-end | P0 | 1d | ⬜ |
+| T2.1 | Implement `where` clause in grammar / parser / AST | P0 | 0.5d | ✅ |
+| T2.2 | Lower `where` declarations into SemanticIR `symbolic_dims` and constraints | P0 | 0.5d | ✅ |
+| T2.3 | Extend shape inference / validation to preserve symbolic constraints end-to-end | P0 | 1d | ✅ |
 | T2.4 | Add `.ak` examples covering BL5 production-shape OT2/OT4 operators, not only representative toy cases | P0 | 0.5d | ⬜ |
 | T2.5 | Add `tests/test_symbolic_shape.py` with BL5-oriented shape cases across OT2–OT4 | P0 | 0.5d | ⬜ |
-| T2.6 | Verify symbolic constraints are sufficient to encode the ST4 production-shape families used in BL5 | P0 | 0.5d | ⬜ |
+| T2.6 | Verify symbolic constraints are sufficient to encode the ST4 production-shape families used in BL5 | P0 | 0.5d | 🟨 |
 
 ### Track 3: StrategyIR v2 and Backend-Agnostic Decisions (P0)
 
@@ -222,12 +222,12 @@ This is the practical closure track for S7. The architectural work is only compl
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | ⬜ |
-| T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | ⬜ |
+| T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | 🟨 |
+| T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | 🟨 |
 | T6.3 | Ensure Lang + IR + lowering can express the six BL5 L2 fusion cases end-to-end | P0 | 0.5d | ⬜ |
-| T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | ⬜ |
+| T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | 🟨 |
 | T6.5 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM without reducing BL5 scope | P0 | 1d | ⬜ |
-| T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, summaries, standard result dirs) for gate verification | P1 | 0.5d | ⬜ |
+| T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, summaries, standard result dirs) for gate verification | P1 | 0.5d | 🟨 |
 
 ### Track 7: Non-Regression and Gate Closure (P0)
 
@@ -243,12 +243,12 @@ This is the practical closure track for S7. The architectural work is only compl
 
 | Milestone | Scope | Exit Signal |
 |:----------|:------|:------------|
-| M1 | Track 1 complete | Spec terminology and required v2.0 features mapped to code |
-| M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end |
-| M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge |
-| M4 | Track 5 complete | All 45 BL5 ops pass v2.0 dry-run round-trip and BL5 shape families are representable |
-| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy |
-| M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification |
+| M1 | Track 1 complete | Spec terminology and required v2.0 features mapped to code | ✅ |
+| M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end | 🟨 |
+| M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge | ⬜ |
+| M4 | Track 5 complete | All 45 BL5 ops pass v2.0 dry-run round-trip and BL5 shape families are representable | ⬜ |
+| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | 🟨 |
+| M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | ⬜ |
 
 **Critical path:** Track 1 → Tracks 2/3 → Track 4 → Track 5 → Track 6 → Track 7
 
