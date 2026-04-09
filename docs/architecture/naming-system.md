@@ -40,7 +40,7 @@ Arke 的核心抽象是将算子描述拆成两层，各自独立、各自演化
 
 | 层 | 全称 | 简称 | 代码名 | 问题域 |
 |:---|:-----|:-----|:-------|:-------|
-| 上层 | **Semantic IR** | SIR | `SemanticGraph` | What — 计算语义（纯数学，不含任何优化） |
+| 上层 | **Semantic IR** | SIR | `SemanticIR` | What — 计算语义（纯数学，不含任何优化） |
 | 下层 | **Strategy IR** | StrIR | `StrategyIR` | How — 优化策略（tile、fuse、place 等决策序列）|
 
 **为什么用 Strategy 而非 Schedule？**
@@ -272,4 +272,4 @@ docs/architecture/     架构设计文档
 
 ---
 
-*版本：v1.0 | 创建日期：2026-03-31*
+*版本：v2-only active naming | 创建日期：2026-03-31，更新：2026-04-09*

@@ -1,10 +1,9 @@
 # Arke Language Specification v2.0 — Design Document
 
-> **Version:** 2.0-draft  
-> **Status:** Design / Pre-implementation  
-> **Based on:** Arke Language Spec v1.0 (frozen)  
+> **Version:** v2-only design note  
+> **Status:** Active design reference (historical migration content removed)  
 > **Author:** Kitty (Lead Engineer, Arke)  
-> **Date:** 2025-04-05
+> **Date:** 2026-04-09
 
 ---
 
@@ -19,8 +18,7 @@
 7. [Type System](#7-type-system)
 8. [Complete EBNF Grammar](#8-complete-ebnf-grammar)
 9. [Examples](#9-examples)
-10. [Backward Compatibility](#10-backward-compatibility)
-11. [Implementation Notes](#11-implementation-notes)
+10. [Implementation Notes](#10-implementation-notes)
 
 ---
 
@@ -37,9 +35,9 @@ Arke is intentionally **not** a loop-nest language. It operates at the operator 
 
 ### 1.2 v2.0 Design Goals
 
-v2.0 is a **backward-compatible superset** of v1.0. Every valid v1.0 `.ak` file is a valid v2.0 `.ak` file. The new features are additive and optional.
+This document describes the **canonical v2 language design** used by the active Stage 7 implementation. Historical compatibility and migration behavior are intentionally out of scope.
 
-The key gaps in v1.0 that v2.0 addresses:
+The key design goals are:
 
 | Gap | v1.0 Limitation | v2.0 Solution |
 |:----|:----------------|:--------------|
@@ -57,7 +55,7 @@ The key gaps in v1.0 that v2.0 addresses:
 3. **Token efficiency** — Shorter than equivalent Triton. New features (symbolic shapes, type inference) should *reduce* token count for most kernels.
 4. **Single source of truth** — `.ak` is the canonical source format. JSON IR is the serialization format for compiler internals and Agent API, never a format humans author directly.
 5. **@rationale everywhere** — Every optimization decision can carry a rationale annotation. This feeds the learning loop for the LLM Agent.
-6. **Incremental extensions** — No breaking changes. Grammar extensions are additive only.
+6. **Canonical surface** — Active language design should describe the current surface directly, not preserve legacy aliases or migration shims.
 
 ### 1.4 Relationship to IR Layers
 
@@ -80,7 +78,7 @@ Layer 1 — InstructionIR  (near-LLVM IR)                        [LLM: none]
 LLVM IR / MLIR standard dialects
 ```
 
-The `.ak` kernel block maps directly to Layer 4 (SemanticIR). The `.ak` strategy block maps directly to Layer 3 (StrategyIR L1 decisions). v2.0’s symbolic shapes and `where` clause are first-class in Layer 4.
+The `.ak` kernel block maps directly to Layer 4 (SemanticIR). The `.ak` strategy block maps directly to Layer 3 (StrategyIR decisions). v2 symbolic shapes and `where` clauses are first-class in Layer 4.
 
 Arke IR can lower through MLIR standard dialects (`linalg`, `transform`, `scf`, `gpu`) or directly to LLVM IR. See `arke-ir-spec-design.md` §10 for MLIR integration details.
 
@@ -951,272 +949,18 @@ strategy rms_norm_strategy for target("nvidia_ampere") {
 
 ---
 
-## 10. Backward Compatibility
-
-### 10.1 Guarantee
-
-**All valid Arke Language v1.0 `.ak` files are valid Arke Language v2.0 `.ak` files.**
-
-The v2.0 grammar is a strict superset of the v1.0 grammar. No v1.0 syntax is removed or changed. Every v1.0 construct is present in the v2.0 grammar as a degenerate case of the more general form.
-
-### 10.2 Feature-by-Feature Migration
-
-| v1.0 Feature | v2.0 Status | Notes |
-|:-------------|:-----------|:------|
-| Static integer tensor dims | Unchanged | `Tensor<[1024, 768], f16>` still works |
-| `kernel name(...) -> T { }` | Unchanged | No migration needed |
-| `let x = op(...);` | Unchanged | No migration needed |
-| `return x;` | Unchanged | No migration needed |
-| `strategy ... for target(...) { }` | Unchanged | No migration needed |
-| All v1.0 strategy directives | Unchanged | `tile`, `parallel`, `fuse`, etc. all work |
-| `launch_config(num_warps=N)` | Deprecated (soft) | Still parses and works; prefer `compute(parallelism=...)` |
-| `@rationale("...")` | Unchanged | No migration needed |
-| `import "path" as alias;` | Enhanced | v1.0 import syntax remains valid; v2.0 adds `as` optional |
-
-### 10.3 Soft Deprecations
-
-`launch_config(num_warps=N, num_stages=M)` is **soft-deprecated** in v2.0:
-- The parser continues to accept it (no parse errors)
-- The compiler generates a warning: `[W001] launch_config is Triton-specific; consider compute(parallelism=..., pipeline_depth=...) for backend-agnostic strategies`
-- It will be removed in v3.0
-- Migration: `launch_config(num_warps=4, num_stages=3)` → `compute(parallelism=128, pipeline_depth=3)` (note: `parallelism` = `num_warps * 32` for Triton/NVIDIA)
-
-### 10.4 Migration Examples
-
-**Minimal migration (symbolic shapes only):**
-
-```ak
-// v1.0
-kernel softmax(
-    X: Tensor<[1024, 1024], f32>
-) -> Tensor<[1024, 1024], f32> {
-    let Y = softmax(X=X);
-    return Y;
-}
-
-// v2.0 equivalent — drop-in, no changes
-kernel softmax(
-    X: Tensor<[1024, 1024], f32>
-) -> Tensor<[1024, 1024], f32> {
-    let Y = softmax(X=X);
-    return Y;
-}
-
-// v2.0 generalized — now works for any M x N
-kernel softmax(
-    X: Tensor<[M, N], f32>
-) -> _
-where M: dynamic(max=4096), N: dynamic(max=65536)
-{
-    let Y = softmax(X=X);
-    return Y;
-}
-```
-
-**Launch config migration:**
-
-```ak
-// v1.0
-strategy my_strat for target("nvidia_ampere") {
-    launch_config(num_warps=4, num_stages=3)
-        @rationale("4 warps, 3 pipeline stages");
-}
-
-// v2.0 preferred
-strategy my_strat for target("nvidia_ampere") {
-    compute(parallelism=128, pipeline_depth=3)
-        @rationale("128 parallel workers (equiv. 4 warps), 3-stage pipeline");
-}
-```
-
 ---
 
-## 11. Implementation Notes
+## 10. Implementation Notes
 
-### 11.1 Parser Changes (arke/parser/arke.lark)
+This design document remains useful only as an **active architectural explanation** of the canonical v2 language surface.
 
-The v1.0 parser uses Lark. The v2.0 grammar additions require the following changes to `arke.lark`:
+Implementation rules for the current mainline:
 
-**1. Tensor dim rule — allow IDENT as dim:**
+1. `compute(...)` is the only active resource directive surface in strategy blocks.
+2. `launch_config(...)` and other Triton-specific directive names are not part of the active language contract.
+3. `where` clauses, tuple returns, conditional strategies, and `@rationale` are first-class language features.
+4. Tests and examples should be rewritten to canonical v2 syntax rather than preserved through migration shims.
+5. If a historical syntax note is still needed, it belongs in deprecated/historical docs, not in active design references.
 
-```lark
-// v1.0
-dim_list: INT ("," INT)*
-
-// v2.0
-dim_list: dim ("," dim)*
-dim: INT | IDENT
-```
-
-**2. Optional where clause on kernel_def:**
-
-```lark
-kernel_def: "kernel" IDENT "(" param_list? ")" "->" return_type where_clause? "{" kernel_body "}"
-
-where_clause: "where" dim_decl ("," dim_decl)*
-dim_decl: IDENT ":" dim_kind
-dim_kind: "static"
-        | "dynamic"
-        | "dynamic" "(" dynamic_opts ")"
-dynamic_opts: dynamic_opt ("," dynamic_opt)*
-dynamic_opt: "max" "=" INT
-           | "min" "=" INT
-           | "multiple_of" "=" INT
-           | "default" "=" INT
-```
-
-**3. Tuple return type:**
-
-```lark
-return_type: tensor_type
-           | infer_type
-           | "(" tensor_type ("," tensor_type)+ ")"
-           | "(" infer_type  ("," infer_type )+ ")"
-infer_type: "_"
-```
-
-**4. Tuple LHS in let statements:**
-
-```lark
-let_stmt: "let" lhs "=" op_call ";"
-lhs: IDENT
-   | "(" IDENT ("," IDENT)+ ")"
-```
-
-**5. Tuple return expression:**
-
-```lark
-return_stmt: "return" return_expr ";"
-return_expr: IDENT
-           | "(" IDENT ("," IDENT)+ ")"
-```
-
-**6. Annotations on kernel:**
-
-```lark
-kernel_def: annotation* "kernel" IDENT ...
-```
-
-**7. when/otherwise blocks in strategy:**
-
-```lark
-strategy_item: strategy_stmt | when_block
-when_block: when_arm+ otherwise_arm?
-when_arm: "when" condition "{" strategy_body "}"
-otherwise_arm: "otherwise" "{" strategy_body "}"
-condition: IDENT CMP_OP INT
-         | condition "and" condition
-         | condition "or" condition
-         | "(" condition ")"
-CMP_OP: "<=" | "<" | ">=" | ">" | "==" | "!="
-```
-
-**8. New annotation arg types — support named `key=value` and positional string:**
-
-```lark
-annotation: "@" IDENT "(" annotation_args? ")"
-annotation_args: annotation_arg ("," annotation_arg)*
-annotation_arg: IDENT "=" annotation_value
-              | STRING
-annotation_value: STRING | INT | FLOAT | BOOL | IDENT
-                | "[" (annotation_value ("," annotation_value)*)? "]"
-```
-
-### 11.2 AST Node Changes
-
-| New AST Node | Fields | Notes |
-|:-------------|:-------|:------|
-| `WhereClause` | `dims: List[DimDecl]` | Attached to `KernelDef` |
-| `DimDecl` | `name: str`, `kind: DimKind` | |
-| `DimKind` | `tag: static/dynamic`, `constraints: Dict` | |
-| `TupleReturnType` | `elements: List[Type]` | |
-| `InferType` | (no fields) | Placeholder for inference |
-| `TupleLHS` | `names: List[str]` | LHS of tuple let |
-| `TupleReturn` | `names: List[str]` | |
-| `WhenBlock` | `arms: List[WhenArm]`, `otherwise: Optional[StrategyBody]` | |
-| `WhenArm` | `condition: Condition`, `body: StrategyBody` | |
-| `Condition` | `lhs: str`, `op: str`, `rhs: int` | Leaf condition |
-| `CompoundCondition` | `op: and/or`, `left: Condition`, `right: Condition` | |
-| `KernelAnnotation` | `name: str`, `args: Dict` | Attached to `KernelDef` |
-
-### 11.3 SemanticIR Changes
-
-v2.0 kernel → SemanticIR translation requires:
-
-1. **Symbolic shape propagation:** When a kernel uses symbolic dims, the SemanticIR nodes must carry symbolic shape information. The `TensorShape` type in SemanticIR should be extended from `List[int]` to `List[int | str]` where strings are symbolic dim names.
-
-2. **Where clause embedding:** The `KernelNode` in SemanticIR should carry the where clause as a `DimConstraints` field: `{"B": {"kind": "dynamic", "max": 64}, ...}`.
-
-3. **Multi-return ops:** Operators that return tuples (e.g., `topk`) need a `multi_output: bool` flag and `output_names: List[str]` in the SemanticIR op node.
-
-4. **Kernel annotations:** `KernelNode.metadata` should be extended to store all kernel-level annotations in a structured dict.
-
-### 11.4 StrategyIR Changes
-
-1. **Conditional blocks:** The StrategyIR JSON needs a new `when_blocks` field in the strategy node:
-
-```json
-{
-  "when_blocks": [
-    {
-      "condition": {"lhs": "S", "op": "<=", "rhs": 512},
-      "body": [ /* strategy actions */ ]
-    },
-    {
-      "condition": null,
-      "body": [ /* otherwise body */ ]
-    }
-  ]
-}
-```
-
-2. **Backend-agnostic directives:** `compute(...)` and `memory_layout(...)` should be stored in StrategyIR as first-class actions (not translated to `launch_config` at parse time). Backend-specific translation happens in the codegen phase.
-
-3. **`launch_config` deprecation:** The StrategyIR converter should emit a deprecation warning and internally convert `launch_config(num_warps=N, num_stages=M)` to `compute(parallelism=N*32, pipeline_depth=M)` for downstream use, while preserving the original in the `legacy` field.
-
-### 11.5 Converter / Migrator Tool
-
-A `arke convert-v1-to-v2` CLI subcommand should be provided:
-
-- **Input:** A v1.0 `.ak` file
-- **Output:** A v2.0 `.ak` file with:
-  - `launch_config` replaced by `compute(...)` with appropriate parameter mapping
-  - Optional: `--infer-shapes` flag extracts literal dims into a `where` clause with `static` annotation
-  - Existing `@rationale` annotations preserved unchanged
-- The converter is non-destructive: original file is not modified; output goes to stdout or `--out` path
-
-### 11.6 LLM Agent Prompt Updates
-
-The LLM Agent system prompt should be updated to:
-
-1. **Prefer symbolic shapes:** When generating `.ak` for a family of shapes, use `where` clauses.
-2. **Use `compute(...)` not `launch_config(...)`:** Explain the backend-agnostic semantics.
-3. **Use type inference where clear:** `-> _` for simple passthrough kernels.
-4. **Include `@meta` and `@constraint`:** Standard metadata for every generated kernel.
-5. **Shape regime conditions:** When generating strategies for variable-shape kernels, include `when`/`otherwise` blocks for regime-specific tuning.
-
-### 11.7 Backward Compatibility Test Requirements
-
-The existing v1.0 test suite must pass unchanged after v2.0 parser implementation. Specifically:
-
-- All `.ak` files in `examples/` must parse without errors
-- All SemanticIR roundtrip tests must pass
-- All StrategyIR roundtrip tests must pass
-- The grammar change must not introduce any ambiguities (validate with Lark's ambiguity checker)
-
-A new v2.0 test suite should be added in `tests/lang/test_v2_features.py` covering:
-- Symbolic shape parsing
-- Tuple return parsing
-- Type inference placeholder `_`
-- `where` clause parsing and all `dim_kind` variants
-- `when`/`otherwise` conditional blocks
-- All new annotation types
-- Mixed v1.0-and-v2.0 features in one file
-
----
-
-*End of Arke Language Specification v2.0 Design Document*
-
----
-
-> **Next steps:** Review with Leon → implement parser changes in `arke/parser/arke.lark` → update AST in `arke/lang/` → update SemanticIR converter → update StrategyIR converter → add v2.0 test suite.
+For the normative language definition, see `docs/spec/arke-lang-spec-v2.md`.

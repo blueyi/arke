@@ -224,6 +224,7 @@ This is the practical closure track for S7. The architectural work is only compl
 |:---|:-----|:--------:|:--------:|:------:|
 | T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | 🟨 |
 | T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | 🟨 |
+| T6.3 | Rewrite active architecture design docs to canonical v2-only references (remove migration/backward-compat narrative from current docs) | P1 | 0.5d | ✅ |
 | T6.3 | Ensure Lang + IR + lowering can express the six BL5 L2 fusion cases end-to-end | P0 | 0.5d | ⬜ |
 | T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | 🟨 |
 | T6.5 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM without reducing BL5 scope | P0 | 1d | ⬜ |
@@ -283,6 +284,7 @@ Rationale for this order:
 - **Benchmark/test harness status for the current active slices is green:** `tests/test_backend_agnostic_script.py`, `tests/test_rationale_e2e.py`, `tests/test_bench*.py`, `tests/test_benchmark*.py`, and `benchmarks/` slice pass, with the single documented skip above.
 - **Remaining non-green area is benchmark/gate readiness, not parser/IR correctness:** OT4 / large attention-family benchmark execution still hits 6GB VRAM limits in full gate runs, so any FAIL/SKIP there must be recorded in plan/status with the concrete operator and memory reason instead of being hidden as partial completion.
 - **Active spec/benchmark-interface cleanup was revalidated after removing compat wording/aliases:** `tests/test_benchmark_cli.py`, `tests/test_op_registry.py`, `tests/test_converters.py`, `tests/test_semantic_ir.py`, `tests/test_symbolic_shape.py`, and `tests/test_stage7_roundtrip.py` passed together (`109 passed`).
+- **Active architecture docs were also rewritten as v2-only references:** `docs/architecture/arke-lang-spec-design.md`, `docs/architecture/arke-ir-spec-design.md`, `docs/architecture/arke-compiler-infrastructure.md`, and `docs/architecture/naming-system.md` no longer act as migration-preservation docs for the current mainline; related Stage 7 slice revalidated with `344 passed, 6 skipped`.
 
 ## Dependencies
 

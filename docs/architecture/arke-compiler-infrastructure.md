@@ -21,9 +21,9 @@ This document specifies:
 4. **ShapeInferenceEngine** — Declarative rule-based shape inference replacing the 401-line if/elif chain.
 5. **Backend Abstraction** — `ArkeBackend` protocol formalizing the existing ABC, plus `BackendRegistry` for target routing.
 6. **SSA Validator** — IR integrity checker for reference validity, type consistency, DAG structure, and symbolic dim consistency.
-7. **Migration Plan** — Incremental, backward-compatible migration path preserving all 422 tests.
+7. **Implementation Rollout Notes** — active compiler infrastructure evolution notes for the current mainline.
 
-**Target after migration:** Adding a new op requires editing **1 file** (`catalog.py` — add one `OpDef`) and **1 Triton template** (~10 lines total). No other files need modification.
+**Target architecture:** Adding a new op should require editing the canonical operator registry entry plus only the backend-specific implementation pieces that truly differ.
 
 ---
 
@@ -126,7 +126,7 @@ Validation path (replaces numerical_check.py):
 
 ### 3.1 Extended OpDef Schema
 
-All new fields are optional (`None` defaults) so the existing 45-op entries remain valid unchanged.
+Extended fields are optional so operators can declare only the metadata they need.
 
 ```python
 # arke/ir/ops/catalog.py  (new additions)
@@ -207,8 +207,6 @@ class InputGen:
 @dataclass(frozen=True)
 class OpDefinition:
     """Complete operator definition — Single Source of Truth.
-
-    Backward-compatible: all new fields default to None.
     """
     # existing fields (unchanged)
     name: str
@@ -1443,7 +1441,7 @@ class SSAValidator:
 
 ## 9. Migration Plan
 
-The migration is **incremental and backward-compatible**. Every phase ends with all 422 tests passing.
+Implementation should remain incremental, but active docs should describe the target architecture directly rather than preserving compatibility framing.
 
 ### Phase 0 — Foundation (no behavior change)
 
@@ -1672,7 +1670,7 @@ arke/backend/triton_template_engine.py — delegates to TemplateRouter
 
 ## Appendix B: Adding a New Op After Migration
 
-After migration, adding `gelu_approx`:
+Under the target architecture, adding `gelu_approx`:
 
 **Step 1: Add to `catalog.py` (~10 lines)**
 
