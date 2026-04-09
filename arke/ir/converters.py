@@ -17,7 +17,6 @@ from arke.lang.ast import (
     DimDecl,
     KernelDef,
     LetStmt,
-    LetBinding,
     OpCall,
     Parameter,
     ReturnStmt,
@@ -366,15 +365,10 @@ def ast_to_semantic(kernel_def: KernelDef) -> SemanticIR:
                         ir.return_node = val_str
             continue
 
-        # LetStmt or LetBinding
-        if isinstance(stmt, LetBinding):
-            lhs_name = stmt.name
-            op_call = stmt.value
-        elif isinstance(stmt, LetStmt):
-            lhs_name = stmt.lhs if isinstance(stmt.lhs, str) else "_".join(stmt.lhs)
-            op_call = stmt.op_call
-        else:
+        if not isinstance(stmt, LetStmt):
             continue
+        lhs_name = stmt.lhs if isinstance(stmt.lhs, str) else "_".join(stmt.lhs)
+        op_call = stmt.op_call
 
         # Build node
         node_id = f"{op_call.op}_{node_counter}"
@@ -396,7 +390,6 @@ def ast_to_semantic(kernel_def: KernelDef) -> SemanticIR:
                 # This is an attribute value (int, float, bool, string, list)
                 attrs[arg_name] = arg_val
 
-        # Also merge kwargs from OpCall (legacy path)
         for k, v in op_call.kwargs.items():
             if isinstance(v, str) and v in name_map:
                 src_type, src_id = name_map[v]

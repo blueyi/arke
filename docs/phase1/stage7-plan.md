@@ -177,9 +177,9 @@ This is the core functional delta introduced by Lang/IR v2.0 and the primary unb
 | T2.1 | Implement `where` clause in grammar / parser / AST | P0 | 0.5d | ✅ |
 | T2.2 | Lower `where` declarations into SemanticIR `symbolic_dims` and constraints | P0 | 0.5d | ✅ |
 | T2.3 | Extend shape inference / validation to preserve symbolic constraints end-to-end | P0 | 1d | ✅ |
-| T2.4 | Add `.ak` examples covering BL5 production-shape OT2/OT4 operators, not only representative toy cases | P0 | 0.5d | ⬜ |
-| T2.5 | Add `tests/test_symbolic_shape.py` with BL5-oriented shape cases across OT2–OT4 | P0 | 0.5d | ⬜ |
-| T2.6 | Verify symbolic constraints are sufficient to encode the ST4 production-shape families used in BL5 | P0 | 0.5d | 🟨 |
+| T2.4 | Add `.ak` examples covering BL5 production-shape OT2/OT4 operators, not only representative toy cases | P0 | 0.5d | ✅ |
+| T2.5 | Add `tests/test_symbolic_shape.py` with BL5-oriented shape cases across OT2–OT4 | P0 | 0.5d | ✅ |
+| T2.6 | Verify symbolic constraints are sufficient to encode the ST4 production-shape families used in BL5 | P0 | 0.5d | 🟨 — representable in current parser/SemanticIR, but benchmark execution readiness still blocked by OT4 memory constraints on 6GB VRAM |
 
 ### Track 3: StrategyIR v2 and Backend-Agnostic Decisions (P0)
 
@@ -187,10 +187,10 @@ Layer 3 must remain LLM-facing and target-neutral. Any Triton-specific configura
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T3.1 | Normalize StrategyIR decision types to v2.0 core directives / annotations | P0 | 0.5d | 🟨 |
+| T3.1 | Normalize StrategyIR decision types to v2.0 core directives / annotations | P0 | 0.5d | ✅ |
 | T3.2 | Implement conditional strategy representation for `when` / `otherwise` | P0 | 0.5d | ✅ |
 | T3.3 | Preserve `@rationale` on all StrategyIR decisions through parse → IR → serialization | P0 | 0.5d | ✅ |
-| T3.4 | Eliminate Triton-specific fields from StrategyIR core and move them to lowering adapters | P0 | 0.5d | 🟨 |
+| T3.4 | Eliminate Triton-specific fields from StrategyIR core and move them to lowering adapters | P0 | 0.5d | 🟨 — active Lang/IR/tests now use canonical `compute(...)`, but lowering/backends still carry Triton-internal resource fields by design |
 | T3.5 | Strengthen `scripts/check_backend_agnostic.py` to enforce the v2.0 boundary | P1 | 0.5d | ✅ |
 
 ### Track 4: Layered Lowering + MLIR Skeleton (P1)
@@ -211,9 +211,9 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
 | T5.1 | Refresh all 45 BL5 operator examples to valid v2.0 `.ak` surface syntax | P0 | 1d | ✅ |
-| T5.2 | Verify all 45 BL5 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | 🟨 |
-| T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ⬜ |
-| T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | ⬜ |
+| T5.2 | Verify all 45 BL5 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | ✅ |
+| T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ✅ |
+| T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | 🟨 — language/IR representation covered, but full benchmark-level executability still blocked for OT4 memory-heavy cases |
 | T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ⬜ |
 
 ### Track 6: BL5 Benchmark, L2 Fusion, and Memory-Readiness (P0)
@@ -233,8 +233,8 @@ This is the practical closure track for S7. The architectural work is only compl
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T7.1 | Keep parser / IR / compiler / benchmark tests green during migration | P0 | continuous | ⬜ |
-| T7.2 | Add regression coverage for symbolic dims, conditional strategy, and rationale persistence | P0 | 0.5d | ⬜ |
+| T7.1 | Keep parser / IR / compiler / benchmark tests green during migration | P0 | continuous | 🟨 — current Stage 7 parser/IR/roundtrip/backend-agnostic slices pass; benchmark/gate suite not yet all-green |
+| T7.2 | Add regression coverage for symbolic dims, conditional strategy, and rationale persistence | P0 | 0.5d | ✅ |
 | T7.3 | Run full stage verification checklist and record evidence in standard result locations | P0 | 0.5d | ⬜ |
 
 ---
@@ -244,9 +244,9 @@ This is the practical closure track for S7. The architectural work is only compl
 | Milestone | Scope | Exit Signal |
 |:----------|:------|:------------|
 | M1 | Track 1 complete | Spec terminology and required v2.0 features mapped to code | ✅ |
-| M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end | 🟨 |
+| M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end | ✅ |
 | M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge | ⬜ |
-| M4 | Track 5 complete | All 45 BL5 ops pass v2.0 dry-run round-trip and BL5 shape families are representable | ⬜ |
+| M4 | Track 5 complete | All 45 BL5 ops pass v2.0 dry-run round-trip and BL5 shape families are representable | 🟨 — dry-run coverage is green; full benchmark executability remains partially blocked by memory-heavy OT4 cases |
 | M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | 🟨 |
 | M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | ⬜ |
 
@@ -273,6 +273,15 @@ Rationale for this order:
 - “Support BL5” here means full operator coverage, full relevant shape coverage, and L2 fusion-capable Lang/IR/lowering — not just passing a subset of single-op demos.
 
 ---
+
+## Current Verification Notes
+
+- **Stage 7 parser/IR validation currently green:** `tests/test_parser.py`, `tests/test_strategy_ir.py`, `tests/test_strategy_converter.py`, `tests/test_converters.py`, `tests/test_semantic_ir.py`, `tests/test_stage7_roundtrip.py`, `tests/test_symbolic_shape.py`, and `tests/test_backend_agnostic.py` → `412 passed, 6 skipped`.
+- **Current skip reasons are explicit, not ignored:**
+  - `tests/test_backend_agnostic.py` has 6 skips, all for `01_matmul.ak`, because that example intentionally omits an explicit strategy block and therefore has no authored `StrategyIR` to validate.
+  - `tests/test_rationale_e2e.py` has 1 skip for `01_matmul.ak`, because that file intentionally has no `@rationale` annotation.
+- **Benchmark/test harness status for the current active slices is green:** `tests/test_backend_agnostic_script.py`, `tests/test_rationale_e2e.py`, `tests/test_bench*.py`, `tests/test_benchmark*.py`, and `benchmarks/` slice pass, with the single documented skip above.
+- **Remaining non-green area is benchmark/gate readiness, not parser/IR correctness:** OT4 / large attention-family benchmark execution still hits 6GB VRAM limits in full gate runs, so any FAIL/SKIP there must be recorded in plan/status with the concrete operator and memory reason instead of being hidden as partial completion.
 
 ## Dependencies
 

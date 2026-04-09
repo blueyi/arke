@@ -123,18 +123,7 @@ class OpCall:
     """
     op: str
     args: list[tuple[str, Any]]
-    # Legacy compatibility: kwargs as dict
     kwargs: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class LetBinding:
-    """let C = matmul(A=X, B=W);
-
-    Alias for LetStmt for backward compatibility.
-    """
-    name: str
-    value: OpCall
 
 
 @dataclass
@@ -173,7 +162,7 @@ class KernelDef:
     name: str
     params: list[Parameter]
     return_type: Union[TensorType, InferType, TupleType]
-    body: list[Union[LetStmt, LetBinding, ReturnStmt]]
+    body: list[Union[LetStmt, ReturnStmt]]
     where_clause: WhereClause | None = None
     annotations: list[Annotation] = field(default_factory=list)
 
@@ -190,21 +179,10 @@ class Rationale:
 
 
 @dataclass
-class StrategyDirective:
-    """A single strategy decision (tile, reorder, fuse, etc.).
-
-    Legacy node — kept for backward compatibility.
-    """
-    kind: str
-    params: dict[str, Any]
-    rationale: Rationale | None = None
-
-
-@dataclass
 class StrategyStmt:
     """Strategy statement: directive(kwargs) @annotation;
 
-    directive: str — the directive name (tile, fuse, launch_config, etc.)
+    directive: str — the directive name (tile, fuse, compute, etc.)
     kwargs: dict of keyword arguments
     annotations: list of annotations (e.g., @rationale)
     """
@@ -252,9 +230,7 @@ class StrategyDef:
     name: str
     target: str  # e.g., "nvidia_ampere"
     body: list[Union[StrategyStmt, WhenBlock]]
-    # Legacy compat
     kernel_name: str | None = None
-    directives: list[StrategyDirective] = field(default_factory=list)
 
 
 # ============================================================
@@ -268,9 +244,3 @@ class Program:
     kernels: list[KernelDef] = field(default_factory=list)
     strategies: list[StrategyDef] = field(default_factory=list)
 
-
-# ============================================================
-# Backward compatibility aliases (deprecated)
-# ============================================================
-
-ScheduleDirective = StrategyDirective

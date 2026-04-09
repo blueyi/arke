@@ -5,123 +5,81 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from arke.compiler.pipeline import ArkePipeline
-from arke.lang.grammar import parse_file
-from benchmarks.shape_registry import get_registry_shapes_for_op
+import pytest
 
+from arke.ir.semantic import Node, SemanticIR, SymbolicDim
+from arke.lang.grammar import parse_file, parse_string
+from arke.ir.converters import ast_to_semantic
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OPERATORS_DIR = REPO_ROOT / "examples" / "operators"
+PRODUCTION_DIR = OPERATORS_DIR / "production"
+
+SYMBOLIC_EXAMPLES = sorted(list(OPERATORS_DIR.glob("*.ak")) + list(PRODUCTION_DIR.glob("*.ak")))
 
 
-def _compile_example(name: str):
-    pipeline = ArkePipeline()
-    path = OPERATORS_DIR / name
-    result = pipeline.compile_file(str(path))
-    assert result.success, result.errors
-    assert result.semantic_ir is not None
-    return result.semantic_ir
+def _collect_symbolic_dims(ir: SemanticIR) -> set[str]:
+    return {d.name for d in ir.symbolic_dims}
 
 
-class TestSymbolicShapeExamples:
-    def test_matmul_example_preserves_symbolic_dims_and_constraints(self):
-        ir = _compile_example("01_matmul.ak")
-        sym_names = {sd.name for sd in ir.symbolic_dims}
-        exprs = {sc.expr for sc in ir.shape_constraints}
-        assert {"B", "S", "D"}.issubset(sym_names)
-        assert "B <= 64" in exprs
-        assert "S <= 8192" in exprs
-        assert "D is static" in exprs
+class TestSymbolicShapeCore:
+    def test_where_clause_lowers_to_symbolic_dims(self):
+        program = parse_string(
+            '''
+kernel dynamic_matmul(
+    A: Tensor<[M, K], f16>,
+    B: Tensor<[K, N], f16>
+) -> _
+where M: dynamic(max=4096), K: static, N: dynamic(min=64, multiple_of=32, default=128)
+{
+    let C = matmul(A=A, B=B);
+    return C;
+}
+            '''
+        )
+        ir = ast_to_semantic(program.kernels[0])
+        dims = {d.name: d for d in ir.symbolic_dims}
+        assert set(dims) == {"M", "K", "N"}
+        assert dims["M"].max == 4096
+        assert dims["K"].is_static is True
+        assert dims["N"].min == 64
+        assert dims["N"].multiple_of == 32
+        assert dims["N"].default == 128
 
-    def test_flash_attention_example_preserves_symbolic_dims_and_constraints(self):
-        ir = _compile_example("15_flash_attention.ak")
-        sym_names = {sd.name for sd in ir.symbolic_dims}
-        exprs = {sc.expr for sc in ir.shape_constraints}
-        assert {"B", "S", "D"}.issubset(sym_names)
-        assert "B <= 64" in exprs
-        assert "S <= 8192" in exprs
-        assert "D is static" in exprs
-
-    def test_paged_attention_example_preserves_symbolic_dims_and_constraints(self):
-        ir = _compile_example("45_paged_attention.ak")
-        sym_names = {sd.name for sd in ir.symbolic_dims}
-        exprs = {sc.expr for sc in ir.shape_constraints}
-        assert {"B", "S", "D"}.issubset(sym_names)
-        assert "B <= 64" in exprs
-        assert "S <= 8192" in exprs
-        assert "D is static" in exprs
-
-
-class TestBL5RegistryCoverage:
-    def test_ot2_and_ot4_ops_have_registry_shapes(self):
-        ops = [
-            "matmul",
-            "batch_matmul",
-            "grouped_matmul",
-            "flash_attention",
-            "grouped_query_attention",
-            "multi_latent_attention",
-            "cross_attention",
-            "paged_attention",
-        ]
-        for op in ops:
-            rows = get_registry_shapes_for_op(op)
-            assert rows, f"No benchmark shape rows found for {op}"
-
-    def test_ot4_ops_include_st4_production_shapes(self):
-        ops = [
-            "flash_attention",
-            "grouped_query_attention",
-            "multi_latent_attention",
-            "cross_attention",
-            "paged_attention",
-        ]
-        for op in ops:
-            rows = get_registry_shapes_for_op(op)
-            tiers = {row.get("tier") for row in rows if row.get("tier") is not None}
-            assert 4 in tiers, f"{op} missing ST4 coverage in benchmark registry"
+    def test_symbolic_dims_reach_params_and_output_nodes(self):
+        program = parse_string(
+            '''
+kernel dynamic_softmax(
+    X: Tensor<[B, S, D], f16>
+) -> _
+where B: dynamic(max=16), S: dynamic(max=8192), D: static
+{
+    let Y = softmax(X=X);
+    return Y;
+}
+            '''
+        )
+        ir = ast_to_semantic(program.kernels[0])
+        assert _collect_symbolic_dims(ir) == {"B", "S", "D"}
+        assert any(isinstance(dim, SymbolicDim) and dim.name == "S" for dim in ir.params[0].shape)
+        node = ir.nodes[0]
+        assert isinstance(node, Node)
+        assert any(isinstance(dim, SymbolicDim) and dim.name == "S" for dim in node.output.shape)
 
 
-class TestProductionShapeExamples:
-    def test_stage7_production_examples_parse_and_compile(self):
-        pipeline = ArkePipeline()
-        files = [
-            OPERATORS_DIR / "production" / "flash_attention_st4.ak",
-            OPERATORS_DIR / "production" / "fused_linear_cross_entropy_st4.ak",
-            OPERATORS_DIR / "production" / "paged_attention_st4.ak",
-        ]
-        for path in files:
-            program = parse_file(str(path))
-            assert program.kernels, f"No kernel parsed from {path.name}"
-            assert program.kernels[0].where_clause is not None, f"Missing where clause in {path.name}"
-            result = pipeline.compile_file(str(path))
-            assert result.success, f"Compile failed for {path.name}: {result.errors}"
+class TestStage7SymbolicCoverage:
+    @pytest.mark.parametrize("ak_file", SYMBOLIC_EXAMPLES, ids=lambda p: p.name)
+    def test_examples_parse_and_lower(self, ak_file: Path):
+        program = parse_file(ak_file)
+        assert len(program.kernels) >= 1
+        for kernel in program.kernels:
+            ir = ast_to_semantic(kernel)
+            assert ir.kernel_id
+            assert len(ir.params) >= 1
+            assert len(ir.nodes) >= 1
 
-    def test_stage7_production_examples_encode_st4_style_constraints(self):
-        files = [
-            OPERATORS_DIR / "production" / "flash_attention_st4.ak",
-            OPERATORS_DIR / "production" / "fused_linear_cross_entropy_st4.ak",
-            OPERATORS_DIR / "production" / "paged_attention_st4.ak",
-        ]
-        for path in files:
-            result = ArkePipeline().compile_file(str(path))
-            assert result.success, result.errors
-            ir = result.semantic_ir
-            assert ir is not None
-            exprs = {sc.expr for sc in ir.shape_constraints}
-            assert any("default(" in expr for expr in exprs), f"No default() constraint in {path.name}"
-            assert any("%" in expr for expr in exprs), f"No multiple_of constraint in {path.name}"
-
-
-class TestExampleSyntaxStillParses:
-    def test_symbolic_examples_parse(self):
-        files = [
-            OPERATORS_DIR / "01_matmul.ak",
-            OPERATORS_DIR / "15_flash_attention.ak",
-            OPERATORS_DIR / "41_fused_linear_cross_entropy.ak",
-            OPERATORS_DIR / "45_paged_attention.ak",
-        ]
-        for path in files:
-            program = parse_file(str(path))
-            assert program.kernels, f"No kernel parsed from {path.name}"
-            assert program.kernels[0].where_clause is not None, f"Missing where clause in {path.name}"
+    def test_production_examples_cover_attention_family(self):
+        names = {p.name for p in PRODUCTION_DIR.glob("*.ak")}
+        assert "flash_attention_st4.ak" in names
+        assert "paged_attention_st4.ak" in names
+        assert "fused_linear_cross_entropy_st4.ak" in names

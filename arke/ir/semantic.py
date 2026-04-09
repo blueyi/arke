@@ -1,7 +1,7 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — SemanticIR v1.0 (Layer 4).
+"""Arke IR — SemanticIR (Layer 4).
 
 Operator-level DAG: "what to compute."
 Primary LLM Agent interface. Serializable to JSON.
@@ -213,13 +213,8 @@ class NodeRef:
 InputRef = Union[ParamRef, NodeRef]
 
 
-def input_ref_from_dict(d: dict | str) -> InputRef:
-    """Parse InputRef from dict or legacy string format."""
-    if isinstance(d, str):
-        # Legacy v0.2.0: "@node_id" or "param_name"
-        if d.startswith("@"):
-            return NodeRef(id=d[1:])
-        return ParamRef(name=d)
+def input_ref_from_dict(d: dict) -> InputRef:
+    """Parse InputRef from current structured form."""
     ref_kind = d.get("ref")
     if ref_kind == "param":
         return ParamRef.from_dict(d)
@@ -247,10 +242,9 @@ class Semantics:
 class Node:
     """A single operator node in the SemanticIR DAG.
 
-    v1.0 additions:
     - attrs: op-specific attributes (eps, axis, k, groups, etc.)
-    - output is now a TensorDesc with Dim (may be symbolic)
-    - inputs have type info via enhanced InputRef
+    - output is a TensorDesc with Dim (may be symbolic)
+    - inputs use structured typed InputRef records
     """
     id: str
     op: str
@@ -397,25 +391,14 @@ class FusionGroup:
         )
 
 
-# ─── Top-Level SemanticIR v1.0 ─────────────────────────────────────────────
+# ─── Top-Level SemanticIR ──────────────────────────────────────────────────
 
 @dataclass
 class SemanticIR:
-    """Layer 4 of Arke IR — the Semantic IR (v1.0).
+    """Layer 4 of Arke IR — the Semantic IR.
 
     Describes computation at operator level. Immutable after construction.
     The LLM Agent reads this; StrategyIR is what the LLM writes.
-
-    v1.0 changes from v0.2.0:
-    - version bumped to "1.0.0"
-    - params.shape supports SymbolicDim
-    - nodes supports MultiOutputNode and ConditionalNode
-    - nodes (Node type) gains .attrs field
-    - InputRef gains .dtype and .shape (resolved at construction)
-    - edges use compact dict keys ("from", "to", "tensor")
-    - shape_constraints added
-    - symbolic_dims registry added
-    - return_type replaced by return_node + return_ports
     """
 
     version: str = "1.0.0"
@@ -500,19 +483,19 @@ class SemanticIR:
 
     @classmethod
     def from_dict(cls, data: dict) -> SemanticIR:
-        """Deserialize — handles both v0.2.0 and v1.0 JSON."""
+        """Deserialize SemanticIR from the current structured format."""
         ir = cls(
-            version=data.get("version", "0.2.0"),
+            version=data.get("version", "1.0.0"),
             kernel_id=data.get("kernel_id", ""),
             return_node=data.get("return_node", ""),
             return_ports=data.get("return_ports", []),
         )
 
-        # Symbolic dims (v1.0 only)
+        # Symbolic dims
         for sd in data.get("symbolic_dims", []):
             ir.add_symbolic_dim(SymbolicDim.from_dict(sd))
 
-        # Shape constraints (v1.0 only)
+        # Shape constraints
         for sc in data.get("shape_constraints", []):
             ir.add_shape_constraint(ShapeConstraint.from_dict(sc))
 
@@ -592,5 +575,3 @@ class SemanticIR:
             return cls.from_json(f.read())
 
 
-# Backward compatibility alias
-SemanticGraph = SemanticIR
