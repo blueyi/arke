@@ -26,14 +26,14 @@ import torch
 
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
-from benchmarks.shapes import GATED_SHAPES, MATMUL_SHAPES, GatedShape, MatmulShape
+from benchmarks.shapes import GATED_SHAPES, MATMUL_SHAPES, GatedShape, MatmulShape, Shape2D, get_shapes
 
 logger = logging.getLogger(__name__)
 
 ALL_FUSED_OPS = [
     "matmul_relu", "matmul_gelu",
     "swiglu", "geglu",
-    # Future: rmsnorm_residual, fused_linear_cross_entropy
+    "fused_linear_cross_entropy",
 ]
 
 # ── Fused shapes ────────────────────────────────────────────
@@ -186,6 +186,17 @@ def run_fused_op(
         )
         return _run_gated_fused_op(op, shapes, warmup=warmup, reps=reps)
 
+    if op == "fused_linear_cross_entropy":
+        if shapes is None:
+            shapes = get_shapes("fused_linear_cross_entropy", tier=4)
+        if shape_tags:
+            allowed = set(shape_tags)
+            shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
+        logger.info(
+            f"Benchmarking fused op: {op} ({len(shapes)} shapes × 1 approach)"
+        )
+        return _run_fused_linear_ce_op(op, shapes, warmup=warmup, reps=reps)
+
     if shapes is None:
         shapes = FUSED_SHAPES
 
@@ -304,6 +315,41 @@ def _run_gated_fused_op(
         results.append(
             _measure_fused(
                 op, tag, M, N // 2, 0, "separate", source, fn, warmup, reps
+            )
+        )
+
+    return results
+
+
+def _run_fused_linear_ce_op(
+    op: str,
+    shapes: list[Shape2D],
+    warmup: int,
+    reps: int,
+) -> list[FusedResult]:
+    """Benchmark fused linear + cross entropy using benchmark-defined shapes."""
+    results: list[FusedResult] = []
+
+    for shape in shapes:
+        tag, M, hidden = shape.tag, shape.M, shape.N
+        vocab = 50257 if "gpt2" in tag else 128256 if "llama3" in tag else 32000
+        X = torch.randn(M, hidden, device="cuda", dtype=torch.float16)
+        W = torch.randn(vocab, hidden, device="cuda", dtype=torch.float16)
+        labels = torch.randint(0, vocab, (M,), device="cuda")
+
+        def fn() -> torch.Tensor:
+            return torch.nn.functional.cross_entropy(
+                X.to(torch.float32) @ W.to(torch.float32).T,
+                labels,
+            )
+
+        source = (
+            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+        results.append(
+            _measure_fused(
+                op, tag, M, vocab, hidden, "separate", source, fn, warmup, reps
             )
         )
 
