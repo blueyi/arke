@@ -19,6 +19,7 @@ from arke.ir.ops.registry import REGISTRY
 from arke.ir.ops.shape_engine import SHAPE_ENGINE
 from arke.ir.semantic import (
     ConditionalNode,
+    Dim,
     MultiOutputNode,
     Node,
     NodeRef,
@@ -32,11 +33,10 @@ from arke.ir.strategy import ConditionalDecision, StrategyIR
 def semantic_shape_inference_pass(ir: SemanticIR) -> list[str]:
     """Walk SemanticIR nodes and infer output shapes using SHAPE_ENGINE.
 
-    For each Node/MultiOutputNode, collects concrete input shapes from params
-    or previously-computed nodes, calls SHAPE_ENGINE.infer(), and updates
-    node.output.shape (or node.outputs[port].shape for multi-output).
-
-    Nodes with symbolic dimensions are skipped (shape engine needs concrete ints).
+    For fully concrete shapes, use the existing ShapeInferenceEngine.
+    For symbolic shapes, preserve and propagate shape information for the
+    subset of rules that are structurally safe in Track 2 (same_as_input,
+    matmul_rule, batch_matmul_rule, attention_rule).
 
     Args:
         ir: The SemanticIR to process (mutated in place).
@@ -46,79 +46,64 @@ def semantic_shape_inference_pass(ir: SemanticIR) -> list[str]:
     """
     errors: list[str] = []
 
-    # Build a shape map: param_name -> concrete shape, node_id -> concrete shape
-    shape_map: dict[str, list[int]] = {}
+    # Build a shape map: param_name/node_id -> Dim list (concrete or symbolic)
+    shape_map: dict[str, list[Dim]] = {}
 
-    # Initialize from params (only concrete shapes)
     for param in ir.params:
-        concrete = _extract_concrete_shape(param.shape)
-        if concrete is not None:
-            shape_map[param.name] = concrete
+        shape_map[param.name] = list(param.shape)
 
-    # Walk nodes in order
     for node in ir.nodes:
         if isinstance(node, ConditionalNode):
-            # Skip conditional nodes — no shape inference needed
             continue
 
         if not isinstance(node, (Node, MultiOutputNode)):
             continue
 
-        # Collect input shapes
-        input_shapes: dict[str, list[int]] = {}
-        all_concrete = True
+        input_shapes: dict[str, list[Dim]] = {}
+        missing_input = False
 
         for input_name, ref in node.inputs.items():
             if isinstance(ref, ParamRef):
                 if ref.name in shape_map:
-                    input_shapes[input_name] = shape_map[ref.name]
+                    input_shapes[input_name] = list(shape_map[ref.name])
                 else:
-                    all_concrete = False
+                    missing_input = True
             elif isinstance(ref, NodeRef):
                 if ref.id in shape_map:
-                    input_shapes[input_name] = shape_map[ref.id]
+                    input_shapes[input_name] = list(shape_map[ref.id])
                 else:
-                    all_concrete = False
+                    missing_input = True
 
-        if not all_concrete or len(input_shapes) < len(node.inputs):
-            # Can't infer — might have symbolic dims or missing predecessors
+        if missing_input or len(input_shapes) < len(node.inputs):
             continue
 
-        # Check if op exists in registry
         if node.op not in REGISTRY:
-            continue  # Unknown ops are caught by SSA validation
+            continue
 
         op_schema = REGISTRY.get(node.op)
         if op_schema.shape_rule is None:
-            continue  # No shape rule defined
+            continue
 
         try:
-            output_shape = SHAPE_ENGINE.infer(node.op, input_shapes, node.attrs)
+            if _all_input_shapes_concrete(input_shapes):
+                output_shape = SHAPE_ENGINE.infer(node.op, input_shapes, node.attrs)
+            else:
+                output_shape = _infer_symbolic_shape(node.op, input_shapes, node.attrs)
 
             if isinstance(node, Node):
                 node.output.shape = output_shape
-                shape_map[node.id] = output_shape
+                shape_map[node.id] = list(output_shape)
             elif isinstance(node, MultiOutputNode):
-                # For multi-output, all outputs get the same inferred shape
-                # (shape engine returns one shape; individual ports may differ)
-                for port_name, td in node.outputs.items():
-                    td.shape = output_shape
-                shape_map[node.id] = output_shape
+                for _port_name, td in node.outputs.items():
+                    td.shape = list(output_shape)
+                shape_map[node.id] = list(output_shape)
         except Exception:
-            # Shape inference failure is non-fatal: the node already has
-            # a declared output shape from the .ak file. We just couldn't
-            # verify/update it. Carry forward the declared shape.
             if isinstance(node, Node):
-                declared = _extract_concrete_shape(node.output.shape)
-                if declared is not None:
-                    shape_map[node.id] = declared
+                shape_map[node.id] = list(node.output.shape)
             elif isinstance(node, MultiOutputNode):
-                # Use first output's declared shape
                 for td in node.outputs.values():
-                    declared = _extract_concrete_shape(td.shape)
-                    if declared is not None:
-                        shape_map[node.id] = declared
-                        break
+                    shape_map[node.id] = list(td.shape)
+                    break
 
     return errors
 
@@ -214,14 +199,54 @@ def _check_decision_refs(
             )
 
 
-def _extract_concrete_shape(shape: list) -> list[int] | None:
+def _extract_concrete_shape(shape: list[Dim]) -> list[int] | None:
     """Extract a concrete integer shape from a Dim list, or None if symbolic."""
     result = []
     for d in shape:
         if isinstance(d, int):
             result.append(d)
         elif isinstance(d, SymbolicDim):
-            return None  # Has symbolic dims — can't do concrete inference
+            return None
         else:
             return None
     return result
+
+
+def _all_input_shapes_concrete(input_shapes: dict[str, list[Dim]]) -> bool:
+    return all(_extract_concrete_shape(shape) is not None for shape in input_shapes.values())
+
+
+def _infer_symbolic_shape(
+    op_name: str,
+    input_shapes: dict[str, list[Dim]],
+    attrs: dict | None = None,
+) -> list[Dim]:
+    """Best-effort symbolic shape propagation for Track 2.
+
+    Supports the safe subset needed to stop dropping symbolic dims in the
+    semantic pipeline while keeping behavior conservative.
+    """
+    attrs = attrs or {}
+    op = REGISTRY.get(op_name)
+    if op.shape_rule is None:
+        raise ValueError(f"Operator {op_name!r} has no shape_rule defined")
+
+    kind = op.shape_rule.kind
+
+    if kind == "same_as_input":
+        key = op.shape_rule.input_key
+        if key not in input_shapes:
+            raise ValueError(f"Input {key!r} not found for symbolic shape inference")
+        return list(input_shapes[key])
+
+    if kind in {"matmul_rule", "batch_matmul_rule"}:
+        a = input_shapes.get("A", input_shapes.get("X", []))
+        b = input_shapes.get("B", input_shapes.get("W", []))
+        if len(a) < 2 or len(b) < 2:
+            raise ValueError(f"{op_name} requires 2D+ inputs, got A={a}, B={b}")
+        return list(a[:-1]) + [b[-1]]
+
+    if kind == "attention_rule":
+        return list(input_shapes.get("Q", []))
+
+    raise ValueError(f"Symbolic shape inference not yet implemented for rule kind {kind!r}")

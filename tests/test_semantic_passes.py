@@ -140,8 +140,8 @@ class TestShapeInferencePass:
         # relu: same_as_input -> [64,256]
         assert ir.nodes[1].output.shape == [64, 256]
 
-    def test_symbolic_dims_skipped(self):
-        """Nodes with symbolic dims should be skipped (no error)."""
+    def test_symbolic_dims_propagated_for_same_as_input(self):
+        """same_as_input rules should preserve symbolic dims through inference."""
         ir = SemanticIR(kernel_id="test_symbolic")
         ir.add_param(Param(
             name="X",
@@ -153,15 +153,37 @@ class TestShapeInferencePass:
             id="n0",
             op="relu",
             inputs={"X": ParamRef(name="X")},
-            output=TensorDesc(shape=[SymbolicDim("B"), 128], dtype="f32"),
+            output=TensorDesc(shape=[1, 1], dtype="f32"),
             semantics=Semantics(computation="relu(X)"),
         ))
         ir.return_node = "n0"
 
         errors = semantic_shape_inference_pass(ir)
         assert errors == []
-        # Shape should remain symbolic (not mutated)
         assert isinstance(ir.nodes[0].output.shape[0], SymbolicDim)
+        assert ir.nodes[0].output.shape[0].name == "B"
+        assert ir.nodes[0].output.shape[1] == 128
+
+    def test_symbolic_matmul_shape_inferred(self):
+        """matmul_rule should propagate symbolic batch/row dims."""
+        ir = SemanticIR(kernel_id="test_symbolic_matmul")
+        ir.add_param(Param(name="A", shape=[SymbolicDim("M"), 64], dtype="f32"))
+        ir.add_param(Param(name="B", shape=[64, 256], dtype="f32"))
+        ir.add_symbolic_dim(SymbolicDim("M", min=1, multiple_of=32, default=128))
+        ir.add_node(Node(
+            id="n0",
+            op="matmul",
+            inputs={"A": ParamRef(name="A"), "B": ParamRef(name="B")},
+            output=TensorDesc(shape=[1, 1], dtype="f32"),
+            semantics=Semantics(computation="A @ B"),
+        ))
+        ir.return_node = "n0"
+
+        errors = semantic_shape_inference_pass(ir)
+        assert errors == []
+        assert isinstance(ir.nodes[0].output.shape[0], SymbolicDim)
+        assert ir.nodes[0].output.shape[0].name == "M"
+        assert ir.nodes[0].output.shape[1] == 256
 
     def test_empty_ir_no_errors(self):
         """Empty IR should have no shape inference errors."""
@@ -257,6 +279,15 @@ class TestSSAValidationPass:
         errors = semantic_ssa_validation_pass(ir)
         assert len(errors) >= 1
         assert any("unknown op" in e for e in errors)
+
+    def test_invalid_symbolic_dim_constraints_detected(self):
+        """Structural SymbolicDim constraint errors should be reported."""
+        ir = SemanticIR(kernel_id="test_invalid_symbolic")
+        ir.add_symbolic_dim(SymbolicDim("N", min=128, max=64, multiple_of=32, default=96))
+        errors = semantic_ssa_validation_pass(ir)
+        assert len(errors) >= 1
+        assert any("min 128 > max 64" in e for e in errors)
+        assert any("default 96 < min 128" in e for e in errors)
 
     def test_invalid_param_ref(self):
         """ParamRef to non-existent param should be caught."""

@@ -55,6 +55,41 @@ def _diff(a: torch.Tensor, b: torch.Tensor) -> float:
 class TestCompileAll:
     """Test that all 46 .ak operator files compile without errors."""
 
+    def test_compile_symbolic_where_kernel(self, pipeline):
+        source = '''
+kernel symbolic_relu(
+    X: Tensor<[B, 128], f32>
+) -> Tensor<[B, 128], f32>
+where B: dynamic(min=32, multiple_of=32, default=128)
+{
+    let Y = relu(X=X);
+    return Y;
+}
+        '''
+        result = pipeline.compile_string(source)
+        assert result.success, result.errors
+        assert result.semantic_ir is not None
+        assert len(result.semantic_ir.symbolic_dims) == 1
+        assert result.semantic_ir.symbolic_dims[0].name == "B"
+        assert isinstance(result.semantic_ir.nodes[0].output.shape[0], SymbolicDim)
+        assert result.semantic_ir.nodes[0].output.shape[0].name == "B"
+
+    def test_compile_invalid_symbolic_where_kernel_fails(self, pipeline):
+        source = '''
+kernel bad_symbolic_relu(
+    X: Tensor<[B, 128], f32>
+) -> Tensor<[B, 128], f32>
+where B: dynamic(min=128, max=64, multiple_of=32, default=96)
+{
+    let Y = relu(X=X);
+    return Y;
+}
+        '''
+        result = pipeline.compile_string(source)
+        assert not result.success
+        assert any("min 128 > max 64" in e for e in result.errors)
+
+
     @pytest.mark.parametrize(
         "ak_file",
         ALL_AK_FILES,

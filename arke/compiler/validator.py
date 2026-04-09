@@ -17,6 +17,7 @@ from arke.ir.semantic import (
     NodeRef,
     ParamRef,
     SemanticIR,
+    SymbolicDim,
 )
 
 
@@ -110,6 +111,37 @@ def validate_semantic_ir(ir: SemanticIR) -> list[str]:
             errors.append(
                 f"return_node {ir.return_node!r} not found in "
                 f"defined nodes or params"
+            )
+
+    # 5. Check symbolic dim structural constraints
+    for sd in ir.symbolic_dims:
+        if sd.min is not None and sd.max is not None and sd.min > sd.max:
+            errors.append(
+                f"SymbolicDim {sd.name!r}: min {sd.min} > max {sd.max}"
+            )
+        if sd.multiple_of is not None and sd.multiple_of <= 0:
+            errors.append(
+                f"SymbolicDim {sd.name!r}: multiple_of must be > 0, got {sd.multiple_of}"
+            )
+        if sd.default is not None and sd.default <= 0:
+            errors.append(
+                f"SymbolicDim {sd.name!r}: default must be > 0, got {sd.default}"
+            )
+        if sd.default is not None and sd.min is not None and sd.default < sd.min:
+            errors.append(
+                f"SymbolicDim {sd.name!r}: default {sd.default} < min {sd.min}"
+            )
+        if sd.default is not None and sd.max is not None and sd.default > sd.max:
+            errors.append(
+                f"SymbolicDim {sd.name!r}: default {sd.default} > max {sd.max}"
+            )
+        if (
+            sd.default is not None
+            and sd.multiple_of is not None
+            and sd.default % sd.multiple_of != 0
+        ):
+            errors.append(
+                f"SymbolicDim {sd.name!r}: default {sd.default} is not a multiple of {sd.multiple_of}"
             )
 
     return errors
