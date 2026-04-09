@@ -26,7 +26,7 @@ import torch
 
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
-from benchmarks.shapes import MATMUL_SHAPES, MatmulShape
+from benchmarks.shapes import GATED_SHAPES, MATMUL_SHAPES, GatedShape, MatmulShape
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,10 @@ ALL_FUSED_OPS = [
     # Future: rmsnorm_residual, fused_linear_cross_entropy
 ]
 
-# ── Fused shapes — reuse matmul shapes ──────────────────────
+# ── Fused shapes ────────────────────────────────────────────
 
 FUSED_SHAPES: list[MatmulShape] = MATMUL_SHAPES
+GATED_FUSED_SHAPES: list[GatedShape] = GATED_SHAPES
 
 
 @dataclass
@@ -156,6 +157,7 @@ def _get_activation(name: str) -> callable:
     activations = {
         "relu": torch.nn.functional.relu,
         "gelu": torch.nn.functional.gelu,
+        "silu": torch.nn.functional.silu,
     }
     if name not in activations:
         raise ValueError(f"Unknown activation: {name}")
@@ -167,12 +169,23 @@ def _get_activation(name: str) -> callable:
 
 def run_fused_op(
     op: str,
-    shapes: list[MatmulShape] | None = None,
+    shapes: list[MatmulShape] | list[GatedShape] | None = None,
     warmup: int = 200,
     reps: int = 500,
     shape_tags: list[str] | None = None,
 ) -> list[FusedResult]:
     """Benchmark one fused operator across shapes and approaches."""
+    if op in ("swiglu", "geglu"):
+        if shapes is None:
+            shapes = GATED_FUSED_SHAPES
+        if shape_tags:
+            allowed = set(shape_tags)
+            shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
+        logger.info(
+            f"Benchmarking fused op: {op} ({len(shapes)} shapes × 1 approach)"
+        )
+        return _run_gated_fused_op(op, shapes, warmup=warmup, reps=reps)
+
     if shapes is None:
         shapes = FUSED_SHAPES
 
@@ -180,7 +193,6 @@ def run_fused_op(
         allowed = set(shape_tags)
         shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
 
-    # Parse op name: "matmul_relu" → activation = "relu"
     parts = op.split("_", 1)
     if len(parts) != 2 or parts[0] != "matmul":
         logger.warning(f"Unsupported fused op: {op}")
@@ -193,19 +205,15 @@ def run_fused_op(
 
     results: list[FusedResult] = []
 
-    # Run non-FlagGems approaches first, then FlagGems last
-    # (FlagGems.enable() is global and persistent)
     for shape in shapes:
         tag, M, N, K = shape.tag, shape.M, shape.N, shape.K
 
-        # 1. Separate ops (baseline)
         fn_sep, src_sep = _build_separate_fn(activation, M, N, K)
         results.append(
             _measure_fused(op, tag, M, N, K, "separate", src_sep, fn_sep,
                            warmup, reps)
         )
 
-        # 2. torch.compile auto-fusion
         fn_comp, src_comp = _build_compile_fn(activation, M, N, K)
         if fn_comp is not None:
             results.append(
@@ -213,7 +221,6 @@ def run_fused_op(
                                fn_comp, warmup, reps)
             )
 
-    # 3. FlagGems (run after all non-FG approaches)
     for shape in shapes:
         tag, M, N, K = shape.tag, shape.M, shape.N, shape.K
         fn_fg, src_fg = _build_flaggems_fn(activation, M, N, K)
@@ -269,6 +276,38 @@ def _measure_fused(
             latency_min_us=float("inf"),
             tflops=None,
         )
+
+
+def _run_gated_fused_op(
+    op: str,
+    shapes: list[GatedShape],
+    warmup: int,
+    reps: int,
+) -> list[FusedResult]:
+    """Benchmark SwiGLU/GeGLU using benchmark-defined gated shapes."""
+    activation = "silu" if op == "swiglu" else "gelu"
+    act_fn = _get_activation(activation)
+    results: list[FusedResult] = []
+
+    for shape in shapes:
+        tag, M, N = shape.tag, shape.seq, shape.ffn_x2
+        X = torch.randn(M, N, device="cuda", dtype=torch.float16)
+        x1, x2 = X.chunk(2, dim=-1)
+
+        def fn() -> torch.Tensor:
+            return act_fn(x1) * x2
+
+        source = (
+            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+        results.append(
+            _measure_fused(
+                op, tag, M, N // 2, 0, "separate", source, fn, warmup, reps
+            )
+        )
+
+    return results
 
 
 def save_results(

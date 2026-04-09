@@ -265,9 +265,14 @@ def _run_l2(config: dict, output_dir: str) -> None:
     """Run L2 fused operator benchmarks."""
     from benchmarks.bench_l2 import ALL_FUSED_OPS, run_l2
 
-    logger.info(f"Running L2: {ALL_FUSED_OPS}")
+    runnable = [op for op in config["ops"] if op in ALL_FUSED_OPS]
+    if not runnable:
+        logger.warning("L2: no runnable fused ops for current config")
+        return
+
+    logger.info(f"Running L2: {runnable}")
     run_l2(
-        ops=ALL_FUSED_OPS,
+        ops=runnable,
         output_dir=output_dir,
         warmup=config["warmup"],
         reps=config["reps"],
