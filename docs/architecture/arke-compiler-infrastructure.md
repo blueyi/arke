@@ -739,7 +739,7 @@ class MLIRCodegenPass:
 class LLVMCodegenPass:
     """Lower Arke IR directly to LLVM IR (Phase 4).
 
-    Bypasses both Triton and MLIR. Requires HardwareIR + InstructionIR
+    Bypasses both Triton and MLIR. Requires ScheduleIR + InstructionIR
     to be fully implemented.
     """
     name = "llvm_codegen"

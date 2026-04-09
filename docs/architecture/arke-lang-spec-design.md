@@ -69,7 +69,7 @@ Layer 4 — SemanticIR     (operator graph + symbolic shapes)     [LLM: primary 
 Layer 3 — StrategyIR     (optimization decisions, L1/L2/L3)    [LLM: decision-maker]
     │
     ▼
-Layer 2 — HardwareIR     (thread/block/warp/vector mapping)    [LLM: review only]
+Layer 2 — ScheduleIR     (thread/block/warp/vector mapping)    [LLM: review only]
     │
     ▼
 Layer 1 — InstructionIR  (near-LLVM IR)                        [LLM: none]

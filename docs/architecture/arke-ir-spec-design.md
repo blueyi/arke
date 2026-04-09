@@ -14,7 +14,7 @@
 2. [Multi-Layer Architecture Overview](#2-multi-layer-architecture-overview)
 3. [Layer 4: Semantic IR](#3-layer-4-semantic-ir)
 4. [Layer 3: Strategy IR](#4-layer-3-strategy-ir)
-5. [Layer 2: Hardware IR](#5-layer-2-hardware-ir)
+5. [Layer 2: Schedule IR](#5-layer-2-schedule-ir)
 6. [Layer 1: Instruction IR](#6-layer-1-instruction-ir)
 7. [Implementation Notes for Active Mainline](#7-implementation-notes-for-active-mainline)
 
@@ -50,7 +50,7 @@ LLM Agent ←→ Arke Lang (.ak)
             Arke IR (multi-layer, LLM-Native)
               Layer 4: Semantic    ← "what to compute" (LLM primary interface)
               Layer 3: Strategy    ← "how to optimize" (LLM-driven decisions)
-              Layer 2: Hardware    ← "hardware mapping" (mostly automated)
+              Layer 2: Schedule   ← "schedule mapping" (mostly automated)
               Layer 1: Instruction ← "near-LLVM" (fully automated)
                 ↓ emit
             LLVM IR → PTX / ISA
@@ -178,9 +178,9 @@ func @matmul_gelu(%A: tensor<128x768xf16>, %B: tensor<768x3072xf16>)
 
 **LLM role:** Drives L1 decisions directly. Can review and refine L2 loop structure.
 
-#### Layer 2: Hardware IR — "Hardware mapping"
+#### Layer 2: Schedule IR — "Schedule mapping"
 
-Concrete hardware execution model: thread blocks, shared memory allocation, barriers, pipeline stages. Mostly auto-generated from Strategy IR; LLM can intervene for extreme optimization.
+Concrete schedule and hardware execution model: loop nests, thread blocks, shared memory allocation, barriers, pipeline stages. Mostly auto-generated from Strategy IR; LLM can intervene for extreme optimization.
 
 ```
 func @matmul_gelu_kernel()
@@ -239,7 +239,7 @@ entry:
 |-------|----------------|----------------|----------|
 | Layer 4: Semantic | Primary author | Arke Lang (`.ak`) | Serialization, Agent API, caching |
 | Layer 3: Strategy | Decision-maker (L1), reviewer (L2) | Arke Lang strategy block + IR structures | Agent API, trajectory logging |
-| Layer 2: Hardware | Review only (extreme cases) | IR structures | Debug dump |
+| Layer 2: Schedule | Review only (extreme cases) | IR structures | Debug dump |
 | Layer 1: Instruction | None | IR structures | None (emit LLVM IR directly) |
 
 ---
@@ -250,7 +250,7 @@ Arke IR in the active mainline is organized as four conceptual layers:
 
 - **Layer 4 — SemanticIR:** immutable operator semantics and symbolic shape information
 - **Layer 3 — StrategyIR:** optimization decisions and rationale, expressed in canonical v2 decision kinds
-- **Layer 2 — HardwareIR / Schedule-oriented lowering:** compiler-generated hardware mapping layer
+- **Layer 2 — ScheduleIR:** compiler-generated schedule mapping and hardware-near lowering layer
 - **Layer 1 — InstructionIR:** compiler-generated low-level representation near the backend boundary
 
 ### Active V2-only rules
@@ -286,11 +286,11 @@ Design constraints:
 - no Triton-specific directive names in the active language/IR surface
 - rationale preserved through parse → IR → serialization
 
-## 5. Layer 2: Hardware IR
+## 5. Layer 2: Schedule IR
 
-Layer 2 captures compiler-generated mapping from StrategyIR into hardware-executable structure: loop nests, resource mapping, synchronization, memory hierarchy placement, and backend-facing launch structure.
+ScheduleIR captures compiler-generated mapping from StrategyIR into hardware-executable structure: loop nests, resource mapping, synchronization, memory hierarchy placement, and backend-facing launch structure.
 
-This layer is not the user-authored optimization surface.
+This layer is not the user-authored optimization surface. It represents the concrete schedule and hardware mapping decisions that bridge between the abstract StrategyIR and the low-level InstructionIR.
 
 ## 6. Layer 1: Instruction IR
 
@@ -306,4 +306,14 @@ Current rules:
 - remove migration shims from active code/tests/docs rather than preserving them in the mainline
 - keep historical compatibility discussion in deprecated documents only if needed
 
-For the normative current-format definition, see `docs/spec/arke-ir-spec-v2.md`.
+### Terminology note
+
+Active naming is:
+- Layer 4 = `SemanticIR`
+- Layer 3 = `StrategyIR`
+- Layer 2 = `ScheduleIR`
+- Layer 1 = `InstructionIR`
+
+`HardwareIR` is not an active single-layer name. If used at all, it should only appear as an informal umbrella term for the hardware-near backend stack below StrategyIR.
+
+For the normative current-format definition, see `docs/spec/arke-ir-spec-v2.md`. 

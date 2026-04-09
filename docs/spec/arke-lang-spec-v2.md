@@ -80,7 +80,7 @@ Specific operators are registered via the **Op Registry** (see `op-registry-inte
     └─ strategy block ─────────────────────────────────────────► Layer 3: StrategyIR
        (how to optimize, LLM decisions with @rationale)
        │
-       ├─ Layer 2: HardwareIR (thread/block/warp mapping, mostly automated)
+       ├─ Layer 2: ScheduleIR (thread/block/warp mapping, mostly automated)
        │
        └─ Layer 1: InstructionIR (near-LLVM IR, fully automated)
 ```

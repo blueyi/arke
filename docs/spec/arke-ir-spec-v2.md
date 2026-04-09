@@ -23,7 +23,8 @@
 11. [Op Registry Interface](#11-op-registry-interface)
 12. [MLIR / LLVM IR Interoperability](#12-mlir--llvm-ir-interoperability)
 13. [JSON Serialization](#13-json-serialization)
-14. [Versioning](#14-versioning)
+14. [Layered Lowering Flow & Terminology](#14-layered-lowering-flow--terminology)
+15. [Versioning](#15-versioning)
 
 ---
 
@@ -822,9 +823,101 @@ All IR layers are serializable to JSON for:
 
 ---
 
-## 14. Versioning
+## 14. Layered Lowering Flow & Terminology
 
-### 14.1 Canonical Version Tag
+### 14.1 Canonical Layered Flow
+
+The canonical active lowering path is:
+
+```text
+Arke Lang (.ak)
+    │
+    ├─ kernel block
+    │      ↓ parse / type resolution
+    │   Layer 4: SemanticIR
+    │   - operator DAG
+    │   - tensor types / symbolic dims
+    │   - correctness source of truth
+    │
+    └─ strategy block
+           ↓ decision parsing / validation
+        Layer 3: StrategyIR
+        - bounded optimization decisions
+        - rationale annotations
+        - conditional strategy regimes
+                ↓ deterministic lowering
+        Layer 2: ScheduleIR
+        - loop nests and tile structure
+        - thread/block/warp placement
+        - memory hierarchy + synchronization
+                ↓ instruction selection / backend shaping
+        Layer 1: InstructionIR
+        - backend-near instruction form
+        - explicit low-level execution intent
+                ↓ emission
+        MLIR dialects / Triton / LLVM IR
+                ↓ backend compilation
+        PTX / ISA / device binary
+```
+
+### 14.2 Responsibility Split by Layer
+
+| Layer | Canonical Name | Core Question | Primary Contents | Authorship |
+|:---|:---|:---|:---|:---|
+| 4 | `SemanticIR` | What to compute? | operator semantics, typed values, symbolic shape facts | human / LLM authored |
+| 3 | `StrategyIR` | How to optimize? | bounded decisions, rationale, conditional dispatch | LLM-guided + compiler validated |
+| 2 | `ScheduleIR` | How is work scheduled onto execution resources? | loop structure, resource mapping, memory/sync schedule | compiler-generated |
+| 1 | `InstructionIR` | What low-level instructions / backend ops are emitted? | backend-near execution form, explicit low-level intent | compiler-generated |
+
+### 14.3 Standard Terminology
+
+The following names are the canonical active terms for Stage 7+:
+
+- **Layer 4:** `SemanticIR`
+- **Layer 3:** `StrategyIR`
+- **Layer 2:** `ScheduleIR`
+- **Layer 1:** `InstructionIR`
+
+These names should be used consistently in:
+- active spec documents
+- architecture/design docs
+- code comments and APIs
+- tests and validation output
+
+### 14.4 `ScheduleIR` vs `HardwareIR`
+
+`HardwareIR` is **not** a canonical single-layer name in the active architecture.
+
+Use the terms as follows:
+
+| Term | Status | Meaning | Usage Rule |
+|:---|:---|:---|:---|
+| `ScheduleIR` | canonical | Layer 2 compiler-generated scheduling / hardware-near mapping layer | use for any reference to the Layer 2 IR |
+| `InstructionIR` | canonical | Layer 1 backend-near low-level IR | use for any reference to the Layer 1 IR |
+| `HardwareIR` | non-canonical umbrella term | informal shorthand for hardware-near IR below StrategyIR, usually Layer 2 + Layer 1 together | avoid as a layer name in active docs/code |
+
+Recommended wording:
+- ✅ "StrategyIR lowers to ScheduleIR, then to InstructionIR."
+- ✅ "ScheduleIR and InstructionIR together form Arke's hardware-near backend IR stack."
+- ❌ "Layer 2 is HardwareIR."
+- ❌ "HardwareIR lowers to InstructionIR" when the real meaning is specifically `ScheduleIR`.
+
+### 14.5 MLIR / C++ Integration Naming Guidance
+
+When discussing integration with a C++-implemented MLIR backend:
+
+- map **Arke Layer 2 (`ScheduleIR`)** to schedule/materialization-oriented MLIR constructs
+- map **Arke Layer 1 (`InstructionIR`)** to backend-near MLIR dialect ops or direct LLVM-oriented emission
+- avoid collapsing both layers into a single vague `HardwareIR` term unless the discussion is explicitly about the combined backend-facing region as a whole
+
+This naming discipline matters because the engineering boundary is different:
+- `StrategyIR → ScheduleIR` is primarily an Arke scheduling/lowering problem
+- `ScheduleIR → InstructionIR` is primarily an instruction-selection / backend-shaping problem
+- `InstructionIR → MLIR/LLVM` is primarily a backend emission problem
+
+## 15. Versioning
+
+### 15.1 Canonical Version Tag
 
 All IR documents include version metadata:
 
