@@ -27,6 +27,7 @@ import torch
 from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l2, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
+from benchmarks.memory_policy import attention_preflight
 from benchmarks.shapes import GATED_SHAPES, MATMUL_SHAPES, GatedShape, MatmulShape, Shape2D, get_shapes
 from benchmarks.status import classify_exception
 
@@ -219,7 +220,8 @@ def run_fused_op(
         logger.info(
             f"Benchmarking fused op: {op} ({len(shapes)} shapes × 1 approach)"
         )
-        return _run_qkv_fa_op(op, shapes, warmup=warmup, reps=reps)
+        hw = collect_hardware_info()
+        return _run_qkv_fa_op(op, shapes, warmup=warmup, reps=reps, hw=hw)
 
     if shapes is None:
         shapes = FUSED_SHAPES
@@ -389,6 +391,7 @@ def _run_qkv_fa_op(
     shapes: list,
     warmup: int,
     reps: int,
+    hw=None,
 ) -> list[FusedResult]:
     """Benchmark a minimal QKV projection + flash-attention-style path.
 
@@ -402,6 +405,35 @@ def _run_qkv_fa_op(
         tokens = shape.B * shape.S
         hidden = shape.H * shape.D
         qkv_dim = 3 * hidden
+
+        if hw is not None:
+            status, _estimate = attention_preflight(
+                hw,
+                batch=shape.B,
+                heads=shape.H,
+                seq=shape.S,
+                head_dim=shape.D,
+            )
+            if status.status != "ok":
+                results.append(FusedResult(
+                    op=op,
+                    shape_tag=tag,
+                    M=tokens,
+                    N=qkv_dim,
+                    K=hidden,
+                    approach="separate",
+                    source=(
+                        f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+                        "https://pytorch.org | License: BSD-3-Clause"
+                    ),
+                    latency_us=float("inf"),
+                    latency_min_us=float("inf"),
+                    tflops=None,
+                    status=status.status,
+                    reason=status.reason,
+                    retryable=status.retryable,
+                ))
+                continue
 
         X = torch.randn(tokens, hidden, device="cuda", dtype=torch.float16)
         W = torch.randn(hidden, qkv_dim, device="cuda", dtype=torch.float16)
