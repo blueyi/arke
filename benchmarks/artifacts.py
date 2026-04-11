@@ -26,7 +26,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "operator", "shape_tag", "baseline", "latency_us",
-        "latency_min_us", "tflops", "ratio_vs_baseline",
+        "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
     ]
     with out_csv.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -54,6 +54,9 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
                     "latency_min_us": row.get("latency_min_us", ""),
                     "tflops": row.get("tflops", ""),
                     "ratio_vs_baseline": f"{ratio:.4f}" if ratio is not None else "",
+                    "status": row.get("status", "ok"),
+                    "reason": row.get("reason", ""),
+                    "retryable": row.get("retryable", "false"),
                 })
     return out_csv
 
@@ -63,7 +66,7 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "operator", "shape_tag", "approach", "latency_us",
-        "latency_min_us", "tflops", "ratio_vs_baseline",
+        "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
     ]
     with out_csv.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -91,6 +94,9 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
                     "latency_min_us": row.get("latency_min_us", ""),
                     "tflops": row.get("tflops", ""),
                     "ratio_vs_baseline": f"{ratio:.4f}" if ratio is not None else "",
+                    "status": row.get("status", "ok"),
+                    "reason": row.get("reason", ""),
+                    "retryable": row.get("retryable", "false"),
                 })
     return out_csv
 
@@ -121,12 +127,18 @@ def write_summary(run_dir: Path) -> Path | None:
             ratios_by_operator.setdefault(operator, []).append(ratio)
     def geomean(vals: list[float]) -> float:
         return math.exp(sum(math.log(v) for v in vals) / len(vals)) if vals else 0.0
+    status_counts: dict[str, int] = {}
+    for row in csv.DictReader(perf_all.open()):
+        status = row.get("status", "ok")
+        status_counts[status] = status_counts.get(status, 0) + 1
+
     summary = {
         "overall_geomean": round(geomean([v for vals in ratios_by_operator.values() for v in vals]), 4)
         if ratios_by_operator else 0.0,
         "op_scores": {op: round(geomean(vals), 4) for op, vals in ratios_by_operator.items()},
         "total_shapes": sum(len(vals) for vals in ratios_by_operator.values()),
         "operators": sorted(ratios_by_operator.keys()),
+        "status_counts": status_counts,
     }
     out = run_dir / "summary.json"
     out.write_text(json.dumps(summary, indent=2))

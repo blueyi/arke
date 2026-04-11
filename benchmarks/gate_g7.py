@@ -82,9 +82,11 @@ def _check_benchmark_artifacts() -> tuple[bool, str]:
         else:
             missing.append(f"{label}:{run_dir.relative_to(REPO_ROOT)} absent")
 
-    if found:
-        return True, "; ".join(found + missing)
-    return False, "; ".join(missing)
+    l2_ok = any(item.startswith("L2:") for item in found)
+    detail = "; ".join(found + missing)
+    if l2_ok:
+        return True, detail
+    return False, detail
 
 
 def run_g7(tier: int = 2) -> GateSummary:
@@ -149,6 +151,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_benchmark_l2_qkv_fa.py",
         "tests/test_benchmark_artifacts.py",
         "tests/test_benchmark_cli.py",
+        "tests/test_benchmark_status.py",
     ])
     artifact_ok, artifact_detail = _check_benchmark_artifacts()
     results.append(GateResult(
@@ -189,6 +192,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_benchmark_l2_fused_ce.py",
         "tests/test_benchmark_l2_qkv_fa.py",
         "tests/test_benchmark_cli.py",
+        "tests/test_benchmark_status.py",
     ])
     results.append(GateResult(
         "G7", "G7.10",
