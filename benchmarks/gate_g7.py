@@ -102,6 +102,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_symbolic_shape.py",
         "tests/test_stage7_roundtrip.py",
         "tests/test_backend_agnostic.py",
+        "tests/test_stage7_memory_aware_strategy.py",
     ])
     results.append(GateResult(
         "G7", "G7.3",
@@ -138,6 +139,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_stage7_roundtrip.py",
         "tests/test_symbolic_shape.py",
         "tests/test_rationale_e2e.py",
+        "tests/test_stage7_memory_aware_strategy.py",
     ])
     results.append(GateResult(
         "G7", "G7.7",
@@ -185,6 +187,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_semantic_ir.py",
         "tests/test_stage7_roundtrip.py",
         "tests/test_symbolic_shape.py",
+        "tests/test_stage7_memory_aware_strategy.py",
         "tests/test_backend_agnostic.py",
         "tests/test_backend_agnostic_script.py",
         "tests/test_rationale_e2e.py",
