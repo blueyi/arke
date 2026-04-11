@@ -115,6 +115,7 @@ def run_g7(tier: int = 2) -> GateSummary:
 
     passed, details = _run_pytest([
         "tests/test_mlir_backend.py",
+        "tests/test_stage7_lowering.py",
         "tests/test_pipeline.py::TestCompileAll::test_compile_matmul_emits_mlir_skeleton",
         "tests/test_pipeline.py::TestCompileAll::test_compile_strategy_kernel_emits_full_stack_mlir_skeleton",
     ])
@@ -183,6 +184,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_backend_agnostic_script.py",
         "tests/test_rationale_e2e.py",
         "tests/test_mlir_backend.py",
+        "tests/test_stage7_lowering.py",
         "tests/test_benchmark_l2.py",
         "tests/test_benchmark_l2_fused_ce.py",
         "tests/test_benchmark_l2_qkv_fa.py",

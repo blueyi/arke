@@ -99,6 +99,8 @@ For S7 planning purposes, this means the final Lang/IR design must support:
 | matmul+relu, matmul+gelu | ≥ 1.10× unfused (fusion benefit verifiable) | P3 unfused | `arke bench --bl 5 --layer l2 --fusion matmul_relu,matmul_gelu` |
 | swiglu, geglu | ≥ 0.95× Liger | P1 | `arke bench --bl 5 --layer l2 --fusion swiglu,geglu` |
 | linear+cross_entropy | ≥ 1.10× unfused | P3 | `arke bench --bl 5 --layer l2 --fusion linear_ce` |
+
+> **Naming note:** the Stage 7 canonical L2 fusion slot name is `linear_ce`. Historical/internal code paths may still mention `fused_linear_cross_entropy`, but Gate/G7-facing benchmark selection should use `linear_ce` consistently.
 | QKV+flash_attention | ≥ 0.85× FlashAttn-2 | P1 | `arke bench --bl 5 --layer l2 --fusion qkv_fa` |
 
 #### G7 Combined PASS Formula

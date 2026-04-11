@@ -34,9 +34,14 @@ logger = logging.getLogger(__name__)
 ALL_FUSED_OPS = [
     "matmul_relu", "matmul_gelu",
     "swiglu", "geglu",
-    "fused_linear_cross_entropy",
+    "linear_ce",
     "qkv_fa",
 ]
+
+FUSED_OP_ALIASES = {
+    "fused_linear_cross_entropy": "linear_ce",
+    "linear_ce": "linear_ce",
+}
 
 # ── Fused shapes ────────────────────────────────────────────
 
@@ -177,6 +182,8 @@ def run_fused_op(
     shape_tags: list[str] | None = None,
 ) -> list[FusedResult]:
     """Benchmark one fused operator across shapes and approaches."""
+    op = FUSED_OP_ALIASES.get(op, op)
+
     if op in ("swiglu", "geglu"):
         if shapes is None:
             shapes = GATED_FUSED_SHAPES
@@ -188,7 +195,7 @@ def run_fused_op(
         )
         return _run_gated_fused_op(op, shapes, warmup=warmup, reps=reps)
 
-    if op == "fused_linear_cross_entropy":
+    if op == "linear_ce":
         if shapes is None:
             shapes = get_shapes("fused_linear_cross_entropy", tier=4)
         if shape_tags:
