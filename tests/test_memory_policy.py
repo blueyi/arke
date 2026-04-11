@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 from benchmarks.hardware import HardwareInfo
-from benchmarks.memory_policy import attention_preflight, estimate_attention_bytes
+from benchmarks.memory_policy import attention_preflight, estimate_attention_bytes, maybe_attention_preflight
+from benchmarks.shapes import AttentionShape
 
 
 class TestMemoryPolicy:
@@ -37,3 +38,10 @@ class TestMemoryPolicy:
         small = estimate_attention_bytes(batch=1, heads=8, seq=512, head_dim=64)
         large = estimate_attention_bytes(batch=1, heads=8, seq=4096, head_dim=64)
         assert large > small * 10
+
+    def test_maybe_attention_preflight_handles_attention_family(self):
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        shape = AttentionShape(tag="st4-long-32k", B=4, H=32, S=32768, D=128)
+        status = maybe_attention_preflight(hw, "paged_attention", shape)
+        assert status is not None
+        assert status.status == "skipped"

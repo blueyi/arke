@@ -19,6 +19,17 @@ from benchmarks.hardware import HardwareInfo
 from benchmarks.status import BenchmarkStatus
 
 
+ATTENTION_FAMILY_OPS = {
+    "flash_attention",
+    "grouped_query_attention",
+    "multi_latent_attention",
+    "cross_attention",
+    "paged_attention",
+    "qkv_fa",
+    "rope",
+}
+
+
 @dataclass(frozen=True)
 class MemoryEstimate:
     bytes_required: int
@@ -78,3 +89,18 @@ def attention_preflight(
             estimate,
         )
     return BenchmarkStatus(status="ok"), estimate
+
+
+def maybe_attention_preflight(hw: HardwareInfo, op: str, shape) -> BenchmarkStatus | None:
+    if op not in ATTENTION_FAMILY_OPS:
+        return None
+    if not (hasattr(shape, "B") and hasattr(shape, "H") and hasattr(shape, "S")):
+        return None
+    status, _estimate = attention_preflight(
+        hw,
+        batch=getattr(shape, "B"),
+        heads=getattr(shape, "H"),
+        seq=getattr(shape, "S"),
+        head_dim=getattr(shape, "D", 64),
+    )
+    return status

@@ -32,6 +32,7 @@ from benchmarks.baselines.base import get_all_runners, get_runners_for_op
 from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l1, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
+from benchmarks.memory_policy import maybe_attention_preflight
 from benchmarks.status import classify_exception
 from benchmarks.shapes import (
     MatmulShape,
@@ -102,6 +103,7 @@ def run_op(
         shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
 
     runners = get_runners_for_op(op)
+    hw = collect_hardware_info()
     if not runners:
         logger.warning(f"No baselines available for op '{op}'")
         return []
@@ -140,6 +142,26 @@ def run_op(
                 pass  # M, N already set
 
             for runner in runner_group:
+                preflight = maybe_attention_preflight(hw, op, shape)
+                if preflight is not None and preflight.status != "ok":
+                    results.append(OpResult(
+                        op=op,
+                        shape_tag=tag,
+                        M=M,
+                        N=N,
+                        K=K,
+                        baseline=runner.name,
+                        priority=runner.priority,
+                        source=runner.source,
+                        latency_us=float("inf"),
+                        latency_min_us=float("inf"),
+                        tflops=None,
+                        status=preflight.status,
+                        reason=preflight.reason,
+                        retryable=preflight.retryable,
+                    ))
+                    continue
+
                 fn = runner.get_fn(op, M, N, K)
                 if fn is None:
                     logger.debug(
