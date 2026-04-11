@@ -33,7 +33,7 @@ from arke.ir.semantic import (
     SemanticIR,
     SymbolicDim,
 )
-from arke.ir.strategy import StrategyIR
+from arke.ir.strategy import ConditionalDecision, Decision, Rationale, StrategyIR
 from arke.lang.grammar import parse_file, parse_string
 
 
@@ -103,6 +103,38 @@ class CompilationResult:
 
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
+
+def _synthesize_strategy_from_compile_advice(
+    semantic_ir: SemanticIR,
+    strategy_ir: StrategyIR,
+) -> None:
+    advice = strategy_ir.metadata.get("compile_advice")
+    if not advice or advice.get("allow_compile", True):
+        return
+    if strategy_ir.decisions:
+        return
+
+    node_ops = {getattr(node, "op", "") for node in semantic_ir.nodes}
+    dim_names = {dim.name for dim in semantic_ir.symbolic_dims}
+    is_attention = bool(node_ops & {"flash_attention", "grouped_query_attention", "multi_latent_attention", "cross_attention", "paged_attention", "rope"})
+    if not (is_attention and "S" in dim_names):
+        return
+
+    strategy_ir.when(
+        "S <= 4096",
+        [
+            Decision(kind="tile", params={"loop": "Br", "factors": [128]}, rationale=Rationale(text="synthesized from compile advice: short-context branch")),
+            Decision(kind="tile", params={"loop": "Bc", "factors": [128]}, rationale=Rationale(text="synthesized from compile advice: short-context branch")),
+            Decision(kind="compute", params={"warps": 8, "num_stages": 2, "shared_memory": 65536}, rationale=Rationale(text="synthesized from compile advice: short-context resources"), level=2),
+        ],
+        [
+            Decision(kind="tile", params={"loop": "Br", "factors": [64]}, rationale=Rationale(text="synthesized from compile advice: long-context guard")),
+            Decision(kind="tile", params={"loop": "Bc", "factors": [64]}, rationale=Rationale(text="synthesized from compile advice: long-context guard")),
+            Decision(kind="compute", params={"warps": 4, "num_stages": 2, "shared_memory": 32768}, rationale=Rationale(text="synthesized from compile advice: long-context resources"), level=2),
+        ],
+        rationale="auto-synthesized conditional strategy from compile advice",
+    )
+
 
 class ArkePipeline:
     """Full Arke compilation pipeline: .ak → SemanticIR → StrategyIR → execution.
@@ -206,6 +238,7 @@ class ArkePipeline:
 
         if result.success and result.semantic_ir is not None:
             if result.strategy_ir is not None:
+                _synthesize_strategy_from_compile_advice(result.semantic_ir, result.strategy_ir)
                 try:
                     result.schedule_ir, result.instruction_ir = lower_full_stack(
                         result.semantic_ir,
