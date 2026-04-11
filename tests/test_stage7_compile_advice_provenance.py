@@ -26,3 +26,20 @@ class TestStage7CompileAdviceProvenance:
         assert schedule.metadata["compile_advice"]["allow_compile"] is False
         assert any(r.source_kind == "advice" for r in schedule.provenance)
         assert any("compile_advice:False" == r.effect for r in schedule.provenance)
+
+    def test_non_attention_advice_does_not_force_long_context_tiles(self):
+        semantic = SemanticIR(kernel_id="relu_kernel")
+        strategy = StrategyIR(
+            kernel_id="relu_kernel",
+            target_hw="nvidia_ampere",
+            metadata={
+                "compile_advice": {
+                    "allow_compile": False,
+                    "reason": "generic pressure",
+                    "strategy_hint": "be conservative",
+                }
+            },
+        )
+        schedule = strategy_to_schedule(semantic, strategy)
+        assert schedule.get_loop("Br") is None
+        assert schedule.get_loop("Bc") is None

@@ -16,7 +16,7 @@ from __future__ import annotations
 from arke.ir.instruction import Instruction, InstructionIR
 from arke.ir.schedule import ScheduleDecisionRecord, ScheduleIR
 from arke.ir.semantic import SemanticIR
-from arke.ir.strategy import ConditionalDecision, Decision, StrategyIR
+from arke.ir.strategy import ConditionalDecision, Decision, Rationale, StrategyIR
 
 
 class LoweringError(RuntimeError):
@@ -43,6 +43,7 @@ def strategy_to_schedule(
             effect=f"compile_advice:{advice.get('allow_compile')}",
             rationale=None,
         ))
+        _materialize_advice_hints(schedule, semantic_ir, advice)
 
     for dec in strategy_ir.decisions:
         if isinstance(dec, ConditionalDecision):
@@ -119,6 +120,50 @@ def lower_full_stack(
     schedule = strategy_to_schedule(semantic_ir, strategy_ir)
     instruction = schedule_to_instruction(semantic_ir, schedule)
     return schedule, instruction
+
+
+def _materialize_advice_hints(
+    schedule: ScheduleIR,
+    semantic_ir: SemanticIR,
+    advice: dict,
+) -> None:
+    if advice.get("allow_compile", True):
+        return
+
+    node_ops = {getattr(node, "op", "") for node in semantic_ir.nodes}
+    dim_names = {dim.name for dim in semantic_ir.symbolic_dims}
+    is_attention = bool(node_ops & {"flash_attention", "grouped_query_attention", "multi_latent_attention", "cross_attention", "paged_attention", "rope"})
+    has_long_seq = "S" in dim_names
+
+    if is_attention and has_long_seq:
+        if schedule.get_loop("Br") is None:
+            schedule.apply_decision(Decision(
+                kind="tile",
+                params={"loop": "Br", "factors": [64]},
+                rationale=Rationale(text="materialized from compile advice for long-context attention"),
+                step=0,
+            ))
+        if schedule.get_loop("Bc") is None:
+            schedule.apply_decision(Decision(
+                kind="tile",
+                params={"loop": "Bc", "factors": [64]},
+                rationale=Rationale(text="materialized from compile advice for long-context attention"),
+                step=0,
+            ))
+        if schedule.resources.shared_memory is None:
+            schedule.apply_decision(Decision(
+                kind="compute",
+                params={"warps": 4, "num_stages": 2, "shared_memory": 32768},
+                rationale=Rationale(text="materialized conservative resource hint from compile advice"),
+                step=0,
+                level=2,
+            ))
+        schedule.provenance.append(ScheduleDecisionRecord(
+            source_kind="advice",
+            source_step=0,
+            effect="materialized:long-context-attention-guard",
+            rationale=Rationale(text=str(advice.get("strategy_hint", "compile advice"))),
+        ))
 
 
 def _apply_conditional(schedule: ScheduleIR, decision: ConditionalDecision) -> None:
