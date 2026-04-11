@@ -11,6 +11,9 @@ from collections.abc import Callable
 import torch
 
 from benchmarks.baselines.base import BaselineRunner, register_baseline
+from benchmarks.compiler_advice import compile_advice_for_op
+from benchmarks.hardware import collect_hardware_info
+from benchmarks.shapes import AttentionShape
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +243,12 @@ class ArkeRunner(BaselineRunner):
     ) -> Callable[[], torch.Tensor] | None:
         """Generic path using KernelCache.run_op for ops without specialized paths."""
         try:
+            hw = collect_hardware_info()
+            shape = AttentionShape(tag=f"{op}-{M}x{N}x{K}", B=max(1, M // max(N, 1)), H=max(1, M // max(max(1, M // max(N, 1)), 1)), S=N, D=max(K, 64))
+            advice = compile_advice_for_op(hw, op, shape)
+            if not advice.allow_compile:
+                logger.info(f"Arke generic {op}: compile suppressed by advice: {advice.reason}")
+                return None
             # Build test inputs
             tensors = self._build_test_inputs(op, M, N, K, dtype)
             if tensors is None:
@@ -309,7 +318,7 @@ class ArkeRunner(BaselineRunner):
             X = torch.randn(M, N * 2, device=device, dtype=dtype)  # 2N input
             return (X,)
         # Attention
-        if op in ("flash_attention", "grouped_query_attention", "cross_attention"):
+        if op in ("flash_attention", "grouped_query_attention", "cross_attention", "multi_latent_attention", "paged_attention", "rope"):
             # M=B*H, N=S, K=D from bench_l1 shape mapping
             B_dim = max(1, M // max(N, 1))  # approximate B
             H_dim = max(1, M // max(B_dim, 1))
