@@ -32,7 +32,17 @@ def strategy_to_schedule(
         kernel_id=strategy_ir.kernel_id or semantic_ir.kernel_id,
         target_hw=strategy_ir.target_hw,
         constraints=strategy_ir.constraints,
+        metadata=dict(strategy_ir.metadata),
     )
+
+    if strategy_ir.metadata.get("compile_advice"):
+        advice = strategy_ir.metadata["compile_advice"]
+        schedule.provenance.append(ScheduleDecisionRecord(
+            source_kind="advice",
+            source_step=0,
+            effect=f"compile_advice:{advice.get('allow_compile')}",
+            rationale=None,
+        ))
 
     for dec in strategy_ir.decisions:
         if isinstance(dec, ConditionalDecision):

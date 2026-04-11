@@ -226,6 +226,16 @@ class TestStrategyIRSerialization:
         j2 = ir2.to_json()
         assert j1 == j2
 
+    def test_round_trip_preserves_metadata(self):
+        ir = StrategyIR(
+            kernel_id="flash_attention",
+            target_hw="nvidia_ampere",
+            metadata={"compile_advice": {"allow_compile": False, "reason": "oom risk"}},
+        )
+        j1 = ir.to_json()
+        ir2 = StrategyIR.from_json(j1)
+        assert ir2.metadata["compile_advice"]["allow_compile"] is False
+
     def test_round_trip_with_conditional(self):
         ir = StrategyIR(kernel_id="softmax", target_hw="nvidia_ampere")
         ir.when(

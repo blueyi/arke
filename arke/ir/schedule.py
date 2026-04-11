@@ -158,6 +158,7 @@ class ScheduleIR:
     resources: ResourceBinding = field(default_factory=ResourceBinding)
     constraints: HardwareConstraints = field(default_factory=HardwareConstraints)
     provenance: list[ScheduleDecisionRecord] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_loop(self, loop: str) -> LoopNest:
         existing = self.get_loop(loop)
@@ -263,6 +264,8 @@ class ScheduleIR:
             "resources": self.resources.to_dict(),
             "provenance": [x.to_dict() for x in self.provenance],
         }
+        if self.metadata:
+            d["metadata"] = dict(self.metadata)
         c = self.constraints
         constraints = {
             "shared_memory_limit": c.shared_memory_limit,
@@ -290,6 +293,7 @@ class ScheduleIR:
             resources=ResourceBinding.from_dict(data.get("resources", {})),
             constraints=constraints,
             provenance=[ScheduleDecisionRecord.from_dict(x) for x in data.get("provenance", [])],
+            metadata=dict(data.get("metadata", {})),
         )
 
     @classmethod

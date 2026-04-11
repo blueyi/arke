@@ -140,6 +140,7 @@ class StrategyIR:
     decisions: list[AnyDecision] = field(default_factory=list)
     shape_regimes: list[ShapeRegime] = field(default_factory=list)
     constraints: HardwareConstraints = field(default_factory=HardwareConstraints)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def decision_count(self) -> int:
@@ -237,6 +238,8 @@ class StrategyIR:
             "target_hw": self.target_hw,
             "decisions": [_decision_to_dict(dec) for dec in self.decisions],
         }
+        if self.metadata:
+            d["metadata"] = dict(self.metadata)
         if self.shape_regimes:
             d["shape_regimes"] = [
                 {"name": r.name, "predicate": r.predicate,
@@ -263,6 +266,7 @@ class StrategyIR:
             version=data.get("version", "1.0.0"),
             kernel_id=data.get("kernel_id", ""),
             target_hw=data.get("target_hw", ""),
+            metadata=dict(data.get("metadata", {})),
         )
         for d in data.get("decisions", []):
             if d.get("kind") == "__conditional__":
