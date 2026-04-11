@@ -32,6 +32,7 @@ from benchmarks.baselines.base import get_all_runners, get_runners_for_op
 from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l1, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
+from benchmarks.status import classify_exception
 from benchmarks.shapes import (
     MatmulShape,
     Shape2D,
@@ -64,6 +65,9 @@ class OpResult:
     latency_us: float
     latency_min_us: float
     tflops: float | None = None
+    status: str = "ok"
+    reason: str = ""
+    retryable: bool = False
 
 
 def _get_shapes(
@@ -172,7 +176,24 @@ def run_op(
                         f"{bench_result.latency_us:8.1f} μs{tflops_str}"
                     )
                 except Exception as e:
+                    status = classify_exception(e)
                     logger.warning(f"  {tag} {runner.name}: FAILED ({e})")
+                    results.append(OpResult(
+                        op=op,
+                        shape_tag=tag,
+                        M=M,
+                        N=N,
+                        K=K,
+                        baseline=runner.name,
+                        priority=runner.priority,
+                        source=runner.source,
+                        latency_us=float("inf"),
+                        latency_min_us=float("inf"),
+                        tflops=None,
+                        status=status.status,
+                        reason=status.reason,
+                        retryable=status.retryable,
+                    ))
 
     return results
 
@@ -188,7 +209,7 @@ def save_results(
 
     fieldnames = [
         "op", "shape_tag", "M", "N", "K", "baseline", "priority", "source",
-        "latency_us", "latency_min_us", "tflops",
+        "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
     ]
 
     with open(csv_path, "w", newline="") as f:
@@ -207,6 +228,9 @@ def save_results(
                 "latency_us": f"{r.latency_us:.1f}",
                 "latency_min_us": f"{r.latency_min_us:.1f}",
                 "tflops": f"{r.tflops:.3f}" if r.tflops else "",
+                "status": r.status,
+                "reason": r.reason,
+                "retryable": "true" if r.retryable else "false",
             })
 
     return csv_path

@@ -28,6 +28,7 @@ from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l2, write_s
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
 from benchmarks.shapes import GATED_SHAPES, MATMUL_SHAPES, GatedShape, MatmulShape, Shape2D, get_shapes
+from benchmarks.status import classify_exception
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,9 @@ class FusedResult:
     latency_us: float
     latency_min_us: float
     tflops: float | None = None
+    status: str = "ok"
+    reason: str = ""
+    retryable: bool = False
 
 
 # ── Approach builders ───────────────────────────────────────
@@ -296,6 +300,7 @@ def _measure_fused(
             tflops=tflops,
         )
     except Exception as e:
+        status = classify_exception(e)
         logger.warning(f"  {tag} {approach}: FAILED ({e})")
         return FusedResult(
             op=op,
@@ -306,6 +311,9 @@ def _measure_fused(
             latency_us=float("inf"),
             latency_min_us=float("inf"),
             tflops=None,
+            status=status.status,
+            reason=status.reason,
+            retryable=status.retryable,
         )
 
 
@@ -429,7 +437,7 @@ def save_results(
 
     fieldnames = [
         "op", "shape_tag", "M", "N", "K", "approach", "source",
-        "latency_us", "latency_min_us", "tflops",
+        "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
     ]
 
     with open(csv_path, "w", newline="") as f:
@@ -447,6 +455,9 @@ def save_results(
                 "latency_us": f"{r.latency_us:.1f}",
                 "latency_min_us": f"{r.latency_min_us:.1f}",
                 "tflops": f"{r.tflops:.3f}" if r.tflops else "",
+                "status": r.status,
+                "reason": r.reason,
+                "retryable": "true" if r.retryable else "false",
             })
 
     return csv_path
