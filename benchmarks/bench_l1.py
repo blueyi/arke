@@ -23,7 +23,6 @@ from pathlib import Path
 
 import benchmarks.baselines.arke_runner  # noqa: F401
 import benchmarks.baselines.cublas  # noqa: F401
-import benchmarks.baselines.flaggems  # noqa: F401
 import benchmarks.baselines.inductor  # noqa: F401
 import benchmarks.baselines.liger  # noqa: F401
 import benchmarks.baselines.pytorch_eager  # noqa: F401
@@ -41,6 +40,16 @@ from benchmarks.shapes import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _maybe_register_optional_baselines() -> None:
+    try:
+        import benchmarks.baselines.flaggems  # noqa: F401
+    except Exception as e:
+        logger.info(f"Optional baseline FlagGems unavailable during import: {e}")
+
+
+_maybe_register_optional_baselines()
 
 from benchmarks.op_registry import ALL_OPS as _REGISTRY_OPS
 

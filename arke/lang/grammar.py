@@ -381,6 +381,12 @@ class ArkeTransformer(Transformer):
         return body
 
     # ── Conditions ───────────────────────────────────────
+    def cond_lhs_ident(self, ident):
+        return str(ident)
+
+    def cond_lhs_dim(self, ident):
+        return _strip_quotes(ident)
+
     def cond_compare(self, ident, op, value):
         return CompareCondition(ident=str(ident), op=str(op), value=int(value))
 

@@ -29,7 +29,7 @@ strategy relu_kernel_strategy for target("nvidia_ampere") {
 }
         ''')
         strat = ast_to_strategy(prog.strategies[0])
-        assert strat.kernel_id == "relu_kernel_strategy"
+        assert strat.kernel_id == "relu_kernel"
         assert strat.target_hw == "nvidia_ampere"
         assert strat.decision_count == 2
 

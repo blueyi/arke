@@ -126,7 +126,10 @@ otherwise_arm: "otherwise" "{" strategy_body "}"
 ?condition: condition "and" condition -> cond_and
           | condition "or" condition  -> cond_or
           | "(" condition ")"         -> cond_paren
-          | IDENT CMP_OP INT          -> cond_compare
+          | condition_lhs CMP_OP INT   -> cond_compare
+
+?condition_lhs: IDENT                 -> cond_lhs_ident
+              | "dim" "(" STRING ")" -> cond_lhs_dim
 
 CMP_OP: "<=" | ">=" | "!=" | "==" | "<" | ">"
 

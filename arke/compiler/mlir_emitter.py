@@ -32,6 +32,8 @@ def emit_mlir_skeleton(
     - generic placeholder emission for unsupported ops
     """
     kernel_name = semantic_ir.kernel_id or "anonymous_kernel"
+    if instruction_ir is not None and not kernel_name.endswith("_kernel"):
+        kernel_name = f"{kernel_name}_kernel"
     lines: list[str] = ["module {"]
 
     args = []

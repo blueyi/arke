@@ -468,6 +468,8 @@ def _strategy_stmt_to_decision(stmt: StrategyStmt) -> Decision:
 
     kind = stmt.directive
     params = dict(stmt.kwargs)
+    if kind == "tile" and "loop" not in params and "dim" in params:
+        params["loop"] = params.pop("dim")
     level = 1
 
     # In v2, `compute(...)` is the only canonical resource-bearing directive.
@@ -522,8 +524,12 @@ def ast_to_strategy(strategy_def: StrategyDef) -> StrategyIR:
     Returns:
         StrategyIR v1.0 representation.
     """
+    kernel_id = strategy_def.name
+    if kernel_id.endswith("_strategy"):
+        kernel_id = kernel_id[: -len("_strategy")]
+
     ir = StrategyIR(
-        kernel_id=strategy_def.name,
+        kernel_id=kernel_id,
         target_hw=strategy_def.target,
     )
 
