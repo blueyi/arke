@@ -41,13 +41,9 @@ class CuBLASRunner(BaselineRunner):
         return op in (
             "matmul", "batch_matmul", "softmax", "layernorm",
             "relu", "gelu", "silu", "dropout",
-            # OT0 extensions (cuDNN dispatch)
             "tanh", "sigmoid", "add", "mul", "neg", "exp", "rsqrt",
-            # OT1 extensions
             "reduce_sum", "reduce_max", "reduce_mean",
-            # OT2 extensions
             "transpose",
-            # OT4 (cuDNN flash attention)
             "flash_attention",
         )
 
@@ -65,7 +61,6 @@ class CuBLASRunner(BaselineRunner):
             return lambda: torch.matmul(A, B)
 
         elif op == "batch_matmul":
-            # M = batch, N = seq, K = hidden
             A = torch.randn(M, N, K, device="cuda", dtype=dtype)
             B = torch.randn(M, K, N, device="cuda", dtype=dtype)
             return lambda: torch.bmm(A, B)
@@ -78,9 +73,7 @@ class CuBLASRunner(BaselineRunner):
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             weight = torch.ones(N, device="cuda", dtype=dtype)
             bias = torch.zeros(N, device="cuda", dtype=dtype)
-            return lambda: torch.nn.functional.layer_norm(
-                X, [N], weight, bias
-            )
+            return lambda: torch.nn.functional.layer_norm(X, [N], weight, bias)
 
         elif op == "relu":
             X = torch.randn(M, N, device="cuda", dtype=dtype)
@@ -98,7 +91,6 @@ class CuBLASRunner(BaselineRunner):
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             return lambda: torch.nn.functional.dropout(X, p=0.1, training=True)
 
-        # ── OT0 Elementwise extensions ──
         elif op == "tanh":
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             return lambda: torch.tanh(X)
@@ -123,7 +115,6 @@ class CuBLASRunner(BaselineRunner):
             X = torch.randn(M, N, device="cuda", dtype=dtype).abs() + 1e-6
             return lambda: torch.rsqrt(X)
 
-        # ── OT1 Reduction extensions ──
         elif op == "reduce_sum":
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             return lambda: X.sum(dim=-1)
@@ -134,23 +125,41 @@ class CuBLASRunner(BaselineRunner):
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             return lambda: X.mean(dim=-1)
 
-        # ── OT2 extensions ──
         elif op == "transpose":
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             return lambda: X.T.contiguous()
 
-        # ── OT4 cuDNN flash attention ──
         elif op == "flash_attention":
-            # M=batch*heads, N=seq_len, K=head_dim
-            B_size = max(1, M // 8)  # assume 8 heads
+            B_size = max(1, M // 8)
             H = 8
             S = N
             D = max(K, 64)
             Q = torch.randn(B_size, H, S, D, device="cuda", dtype=dtype)
             Kk = torch.randn(B_size, H, S, D, device="cuda", dtype=dtype)
             V = torch.randn(B_size, H, S, D, device="cuda", dtype=dtype)
-            return lambda: torch.nn.functional.scaled_dot_product_attention(
-                Q, Kk, V, is_causal=True
-            )
+            return lambda: torch.nn.functional.scaled_dot_product_attention(Q, Kk, V, is_causal=True)
 
+        return None
+
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        if op == "relu" and len(inputs) == 1:
+            return torch.nn.functional.relu(inputs[0])
+        if op == "gelu" and len(inputs) == 1:
+            return torch.nn.functional.gelu(inputs[0])
+        if op == "silu" and len(inputs) == 1:
+            return torch.nn.functional.silu(inputs[0])
+        if op == "softmax" and len(inputs) == 1:
+            return torch.nn.functional.softmax(inputs[0], dim=-1)
+        if op == "layernorm" and len(inputs) == 1:
+            x = inputs[0]
+            w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
+            return torch.nn.functional.layer_norm(x, [x.shape[-1]], w, b)
+        if op == "matmul" and len(inputs) == 2:
+            return torch.matmul(inputs[0], inputs[1])
         return None

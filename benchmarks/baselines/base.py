@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from typing import Any
 
 import torch
 
@@ -70,6 +71,22 @@ class BaselineRunner(ABC):
             dtype: Data type
         """
 
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs: Any,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        """Optional correctness-oriented execution hook.
+
+        This hook lets benchmarks feed fixed inputs into a runner so
+        correctness can be measured independently of the zero-arg timing API.
+
+        Default behavior is opt-out: return ``None`` to indicate unsupported.
+        Existing performance benchmarks continue using ``get_fn()`` unchanged.
+        """
+        return None
+
     def __repr__(self) -> str:
         return f"{self.name}(P{self.priority})"
 
@@ -97,7 +114,6 @@ def get_all_runners() -> list[BaselineRunner]:
                 logger.info(f"Baseline {runner.name} not available (deps missing)")
         except Exception as e:
             logger.warning(f"Failed to instantiate {cls.__name__}: {e}")
-    # Sort by priority (P0 first)
     runners.sort(key=lambda r: r.priority)
     return runners
 

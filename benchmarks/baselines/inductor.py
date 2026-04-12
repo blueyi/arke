@@ -55,7 +55,6 @@ class InductorRunner(BaselineRunner):
             def fn(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
                 return torch.matmul(a, b)
 
-            # Trigger compilation
             fn(A, B)
             torch.cuda.synchronize()
             return lambda: fn(A, B)
@@ -77,9 +76,7 @@ class InductorRunner(BaselineRunner):
             b = torch.zeros(N, device="cuda", dtype=dtype)
 
             @torch.compile(mode="reduce-overhead")
-            def fn(
-                x: torch.Tensor, ww: torch.Tensor, bb: torch.Tensor
-            ) -> torch.Tensor:
+            def fn(x: torch.Tensor, ww: torch.Tensor, bb: torch.Tensor) -> torch.Tensor:
                 return torch.nn.functional.layer_norm(x, [ww.shape[0]], ww, bb)
 
             fn(X, w, b)
@@ -119,4 +116,56 @@ class InductorRunner(BaselineRunner):
             torch.cuda.synchronize()
             return lambda: fn(X)
 
+        return None
+
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        if op == "matmul" and len(inputs) == 2:
+            @torch.compile(mode="reduce-overhead")
+            def fn(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+                return torch.matmul(a, b)
+            out = fn(inputs[0], inputs[1])
+            torch.cuda.synchronize()
+            return out
+        if op == "softmax" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.nn.functional.softmax(x, dim=-1)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "layernorm" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+                b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
+                return torch.nn.functional.layer_norm(x, [x.shape[-1]], w, b)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "relu" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.nn.functional.relu(x)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "gelu" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.nn.functional.gelu(x)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "silu" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.nn.functional.silu(x)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
         return None

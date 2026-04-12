@@ -21,6 +21,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+import torch
+
 import benchmarks.baselines.arke_runner  # noqa: F401
 import benchmarks.baselines.cublas  # noqa: F401
 import benchmarks.baselines.inductor  # noqa: F401
@@ -78,6 +80,13 @@ class OpResult:
     status: str = "ok"
     reason: str = ""
     retryable: bool = False
+    allclose: bool | None = None
+    max_abs_diff: float | None = None
+    mean_abs_diff: float | None = None
+    rtol: float | None = None
+    atol: float | None = None
+    correctness_status: str = "unknown"
+    correctness_reason: str = ""
 
 
 def _get_shapes(
@@ -93,6 +102,115 @@ def _get_shapes(
         return shapes
     except ValueError:
         return []
+
+
+def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tuple[float, float]:
+    if dtype == torch.float16:
+        if op in {"softmax", "layernorm", "rmsnorm", "rmsnorm_residual"}:
+            return 5e-3, 5e-3
+        if op in {"matmul", "batch_matmul", "grouped_matmul", "cross_entropy", "fused_linear_cross_entropy"}:
+            return 1e-2, 1e-2
+        return 1e-3, 1e-3
+    return 1e-5, 1e-6
+
+
+def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dtype = torch.float16) -> tuple[torch.Tensor, ...]:
+    if op == "matmul" and K > 0:
+        return (
+            torch.randn(M, K, device="cuda", dtype=dtype),
+            torch.randn(K, N, device="cuda", dtype=dtype),
+        )
+    return (torch.randn(M, N, device="cuda", dtype=dtype),)
+
+
+def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor:
+    if op == "relu":
+        return torch.nn.functional.relu(inputs[0])
+    if op == "gelu":
+        return torch.nn.functional.gelu(inputs[0])
+    if op == "silu":
+        return torch.nn.functional.silu(inputs[0])
+    if op == "softmax":
+        return torch.nn.functional.softmax(inputs[0], dim=-1)
+    if op == "layernorm":
+        x = inputs[0]
+        w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+        b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
+        return torch.nn.functional.layer_norm(x, [x.shape[-1]], w, b)
+    if op == "matmul" and len(inputs) == 2:
+        return torch.matmul(inputs[0], inputs[1])
+    raise NotImplementedError(f"No correctness reference for L1 op: {op}")
+
+
+def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torch.dtype = torch.float16) -> dict[str, object]:
+    rtol, atol = _correctness_tolerances(op, dtype)
+    try:
+        inputs = _make_l1_correctness_inputs(op, M, N, K, dtype)
+        ref = _eval_l1_reference(op, inputs)
+        cand = runner.run_with_inputs(op, *inputs)
+        if cand is None:
+            return {
+                "allclose": None,
+                "max_abs_diff": None,
+                "mean_abs_diff": None,
+                "rtol": rtol,
+                "atol": atol,
+                "correctness_status": "unsupported",
+                "correctness_reason": f"runner {runner.name} does not implement run_with_inputs for {op}",
+            }
+        if not isinstance(cand, torch.Tensor):
+            return {
+                "allclose": None,
+                "max_abs_diff": None,
+                "mean_abs_diff": None,
+                "rtol": rtol,
+                "atol": atol,
+                "correctness_status": "unsupported",
+                "correctness_reason": f"runner {runner.name} returned non-tensor correctness output for {op}",
+            }
+        ref32 = ref.detach().to(torch.float32)
+        cand32 = cand.detach().to(torch.float32)
+        if ref32.shape != cand32.shape:
+            return {
+                "allclose": False,
+                "max_abs_diff": None,
+                "mean_abs_diff": None,
+                "rtol": rtol,
+                "atol": atol,
+                "correctness_status": "mismatch",
+                "correctness_reason": f"shape mismatch: ref={tuple(ref32.shape)} cand={tuple(cand32.shape)}",
+            }
+        diff = (cand32 - ref32).abs()
+        ok = torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
+        return {
+            "allclose": bool(ok),
+            "max_abs_diff": float(diff.max().item()) if diff.numel() else 0.0,
+            "mean_abs_diff": float(diff.mean().item()) if diff.numel() else 0.0,
+            "rtol": rtol,
+            "atol": atol,
+            "correctness_status": "ok" if ok else "mismatch",
+            "correctness_reason": "",
+        }
+    except NotImplementedError as e:
+        return {
+            "allclose": None,
+            "max_abs_diff": None,
+            "mean_abs_diff": None,
+            "rtol": rtol,
+            "atol": atol,
+            "correctness_status": "unsupported",
+            "correctness_reason": str(e),
+        }
+    except Exception as e:
+        return {
+            "allclose": None,
+            "max_abs_diff": None,
+            "mean_abs_diff": None,
+            "rtol": rtol,
+            "atol": atol,
+            "correctness_status": "error",
+            "correctness_reason": str(e),
+        }
 
 
 def run_op(
@@ -187,6 +305,7 @@ def run_op(
                             M, N, K, bench_result.latency_us
                         )
 
+                    correctness = _measure_l1_correctness(runner, op, M, N, K)
                     result = OpResult(
                         op=op,
                         shape_tag=tag,
@@ -199,6 +318,13 @@ def run_op(
                         latency_us=bench_result.latency_us,
                         latency_min_us=bench_result.latency_min_us,
                         tflops=tflops,
+                        allclose=correctness["allclose"],
+                        max_abs_diff=correctness["max_abs_diff"],
+                        mean_abs_diff=correctness["mean_abs_diff"],
+                        rtol=correctness["rtol"],
+                        atol=correctness["atol"],
+                        correctness_status=correctness["correctness_status"],
+                        correctness_reason=correctness["correctness_reason"],
                     )
                     results.append(result)
                     tflops_str = f" {tflops:.2f} TFLOPS" if tflops else ""
@@ -241,6 +367,8 @@ def save_results(
     fieldnames = [
         "op", "shape_tag", "M", "N", "K", "baseline", "priority", "source",
         "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
+        "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
+        "correctness_status", "correctness_reason",
     ]
 
     with open(csv_path, "w", newline="") as f:
@@ -262,6 +390,13 @@ def save_results(
                 "status": r.status,
                 "reason": r.reason,
                 "retryable": "true" if r.retryable else "false",
+                "allclose": "" if r.allclose is None else ("true" if r.allclose else "false"),
+                "max_abs_diff": "" if r.max_abs_diff is None else f"{r.max_abs_diff:.6g}",
+                "mean_abs_diff": "" if r.mean_abs_diff is None else f"{r.mean_abs_diff:.6g}",
+                "rtol": "" if r.rtol is None else f"{r.rtol:.6g}",
+                "atol": "" if r.atol is None else f"{r.atol:.6g}",
+                "correctness_status": r.correctness_status,
+                "correctness_reason": r.correctness_reason,
             })
 
     return csv_path

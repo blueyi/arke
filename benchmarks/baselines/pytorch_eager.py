@@ -66,6 +66,29 @@ class PyTorchEagerRunner(BaselineRunner):
     def supports(self, op: str) -> bool:
         return op in _SUPPORTED_OPS
 
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        if op == "relu" and len(inputs) == 1:
+            return F.relu(inputs[0])
+        if op == "gelu" and len(inputs) == 1:
+            return F.gelu(inputs[0])
+        if op == "silu" and len(inputs) == 1:
+            return F.silu(inputs[0])
+        if op == "softmax" and len(inputs) == 1:
+            return F.softmax(inputs[0], dim=-1)
+        if op == "layernorm" and len(inputs) == 1:
+            x = inputs[0]
+            w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
+            return F.layer_norm(x, [x.shape[-1]], w, b)
+        if op == "matmul" and len(inputs) == 2:
+            return torch.matmul(inputs[0], inputs[1])
+        return None
+
     def get_fn(
         self,
         op: str,

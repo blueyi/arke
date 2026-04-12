@@ -27,6 +27,8 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
     fieldnames = [
         "operator", "shape_tag", "baseline", "latency_us",
         "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
+        "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
+        "correctness_status", "correctness_reason",
     ]
     with out_csv.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -57,6 +59,13 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
                     "status": row.get("status", "ok"),
                     "reason": row.get("reason", ""),
                     "retryable": row.get("retryable", "false"),
+                    "allclose": row.get("allclose", ""),
+                    "max_abs_diff": row.get("max_abs_diff", ""),
+                    "mean_abs_diff": row.get("mean_abs_diff", ""),
+                    "rtol": row.get("rtol", ""),
+                    "atol": row.get("atol", ""),
+                    "correctness_status": row.get("correctness_status", "unknown"),
+                    "correctness_reason": row.get("correctness_reason", ""),
                 })
     return out_csv
 
@@ -67,6 +76,8 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
     fieldnames = [
         "operator", "shape_tag", "approach", "latency_us",
         "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
+        "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
+        "correctness_status", "correctness_reason",
     ]
     with out_csv.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -97,6 +108,13 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
                     "status": row.get("status", "ok"),
                     "reason": row.get("reason", ""),
                     "retryable": row.get("retryable", "false"),
+                    "allclose": row.get("allclose", ""),
+                    "max_abs_diff": row.get("max_abs_diff", ""),
+                    "mean_abs_diff": row.get("mean_abs_diff", ""),
+                    "rtol": row.get("rtol", ""),
+                    "atol": row.get("atol", ""),
+                    "correctness_status": row.get("correctness_status", "unknown"),
+                    "correctness_reason": row.get("correctness_reason", ""),
                 })
     return out_csv
 
@@ -119,18 +137,24 @@ def write_summary(run_dir: Path) -> Path | None:
     perf_all = run_dir / "PERF_ALL.csv"
     if not perf_all.exists():
         return None
+    perf_rows = list(csv.DictReader(perf_all.open()))
     ratios_by_operator: dict[str, list[float]] = {}
-    for row in csv.DictReader(perf_all.open()):
+    for row in perf_rows:
         operator = row.get("operator", "unknown")
         ratio = _safe_float(row.get("ratio_vs_baseline"))
         if ratio is not None and ratio > 0:
             ratios_by_operator.setdefault(operator, []).append(ratio)
+
     def geomean(vals: list[float]) -> float:
         return math.exp(sum(math.log(v) for v in vals) / len(vals)) if vals else 0.0
+
     status_counts: dict[str, int] = {}
-    for row in csv.DictReader(perf_all.open()):
+    correctness_counts: dict[str, int] = {}
+    for row in perf_rows:
         status = row.get("status", "ok")
         status_counts[status] = status_counts.get(status, 0) + 1
+        correctness = row.get("correctness_status", "unknown")
+        correctness_counts[correctness] = correctness_counts.get(correctness, 0) + 1
 
     summary = {
         "overall_geomean": round(geomean([v for vals in ratios_by_operator.values() for v in vals]), 4)
@@ -139,6 +163,7 @@ def write_summary(run_dir: Path) -> Path | None:
         "total_shapes": sum(len(vals) for vals in ratios_by_operator.values()),
         "operators": sorted(ratios_by_operator.keys()),
         "status_counts": status_counts,
+        "correctness_counts": correctness_counts,
     }
     out = run_dir / "summary.json"
     out.write_text(json.dumps(summary, indent=2))

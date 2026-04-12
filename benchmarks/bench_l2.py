@@ -68,6 +68,13 @@ class FusedResult:
     status: str = "ok"
     reason: str = ""
     retryable: bool = False
+    allclose: bool | None = None
+    max_abs_diff: float | None = None
+    mean_abs_diff: float | None = None
+    rtol: float | None = None
+    atol: float | None = None
+    correctness_status: str = "unknown"
+    correctness_reason: str = ""
 
 
 # ── Approach builders ───────────────────────────────────────
@@ -270,6 +277,74 @@ def run_fused_op(
     return results
 
 
+def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tuple[float, float]:
+    if dtype == torch.float16:
+        if op in {"matmul_relu", "matmul_gelu", "swiglu", "geglu"}:
+            return 1e-2, 1e-2
+        return 5e-3, 5e-3
+    return 1e-5, 1e-6
+
+
+def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, dtype: torch.dtype = torch.float16) -> dict[str, object]:
+    try:
+        rtol, atol = _correctness_tolerances(op, dtype)
+        if op in {"matmul_relu", "matmul_gelu"}:
+            activation = op.split("_", 1)[1]
+            act_fn = _get_activation(activation)
+            a = torch.randn(M, K, device="cuda", dtype=dtype)
+            b = torch.randn(K, N, device="cuda", dtype=dtype)
+            ref = act_fn(torch.matmul(a, b))
+            if approach == "separate":
+                cand = act_fn(torch.matmul(a, b))
+            elif approach == "torch.compile":
+                @torch.compile(mode="reduce-overhead")
+                def compiled(x, y):
+                    return act_fn(torch.matmul(x, y))
+                cand = compiled(a, b)
+                torch.cuda.synchronize()
+            elif approach == "FlagGems":
+                from benchmarks.baselines.flaggems import _ensure_enabled
+                _ensure_enabled()
+                cand = act_fn(torch.matmul(a, b))
+            else:
+                raise NotImplementedError(f"Unknown fused approach: {approach}")
+        else:
+            raise NotImplementedError(f"No correctness probe for fused op: {op}")
+        ref32 = ref.detach().to(torch.float32)
+        cand32 = cand.detach().to(torch.float32)
+        diff = (cand32 - ref32).abs()
+        ok = torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
+        return {
+            "allclose": bool(ok),
+            "max_abs_diff": float(diff.max().item()) if diff.numel() else 0.0,
+            "mean_abs_diff": float(diff.mean().item()) if diff.numel() else 0.0,
+            "rtol": rtol,
+            "atol": atol,
+            "correctness_status": "ok" if ok else "mismatch",
+            "correctness_reason": "",
+        }
+    except NotImplementedError as e:
+        return {
+            "allclose": None,
+            "max_abs_diff": None,
+            "mean_abs_diff": None,
+            "rtol": None,
+            "atol": None,
+            "correctness_status": "unsupported",
+            "correctness_reason": str(e),
+        }
+    except Exception as e:
+        return {
+            "allclose": None,
+            "max_abs_diff": None,
+            "mean_abs_diff": None,
+            "rtol": None,
+            "atol": None,
+            "correctness_status": "error",
+            "correctness_reason": str(e),
+        }
+
+
 def _measure_fused(
     op: str,
     tag: str,
@@ -291,6 +366,7 @@ def _measure_fused(
             f"  {tag:15s} {approach:15s} "
             f"{result.latency_us:8.1f} μs{tflops_str}"
         )
+        correctness = _measure_fused_correctness(op, approach, M, N, K)
         return FusedResult(
             op=op,
             shape_tag=tag,
@@ -300,6 +376,13 @@ def _measure_fused(
             latency_us=result.latency_us,
             latency_min_us=result.latency_min_us,
             tflops=tflops,
+            allclose=correctness["allclose"],
+            max_abs_diff=correctness["max_abs_diff"],
+            mean_abs_diff=correctness["mean_abs_diff"],
+            rtol=correctness["rtol"],
+            atol=correctness["atol"],
+            correctness_status=correctness["correctness_status"],
+            correctness_reason=correctness["correctness_reason"],
         )
     except Exception as e:
         status = classify_exception(e)
@@ -470,6 +553,8 @@ def save_results(
     fieldnames = [
         "op", "shape_tag", "M", "N", "K", "approach", "source",
         "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
+        "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
+        "correctness_status", "correctness_reason",
     ]
 
     with open(csv_path, "w", newline="") as f:
@@ -490,6 +575,13 @@ def save_results(
                 "status": r.status,
                 "reason": r.reason,
                 "retryable": "true" if r.retryable else "false",
+                "allclose": "" if r.allclose is None else ("true" if r.allclose else "false"),
+                "max_abs_diff": "" if r.max_abs_diff is None else f"{r.max_abs_diff:.6g}",
+                "mean_abs_diff": "" if r.mean_abs_diff is None else f"{r.mean_abs_diff:.6g}",
+                "rtol": "" if r.rtol is None else f"{r.rtol:.6g}",
+                "atol": "" if r.atol is None else f"{r.atol:.6g}",
+                "correctness_status": r.correctness_status,
+                "correctness_reason": r.correctness_reason,
             })
 
     return csv_path
@@ -568,8 +660,8 @@ def run_l2(
             "description": "FlagGems ATen dispatch",
             "source": f"FlagGems {v}",
         }
-    except ImportError:
-        pass
+    except Exception as e:
+        logger.info(f"Optional FlagGems unavailable while building L2 sources manifest: {e}")
 
     with open(base_dir / "sources.json", "w") as f:
         json.dump(sources_manifest, f, indent=2)
