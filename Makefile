@@ -1,4 +1,4 @@
-.PHONY: help setup setup-cpu setup-gpu setup-bench install dev test test-gpu lint format check bench clean
+.PHONY: help setup setup-cpu setup-gpu setup-bench git-setup-defaults install dev test test-gpu lint format check bench clean
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
@@ -18,6 +18,9 @@ setup-gpu:  ## Create a fresh GPU/dev environment in $(VENV)
 
 setup-bench:  ## Create a fresh benchmark environment in $(VENV)
 	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh bench
+
+git-setup-defaults:  ## Configure repo-local git push defaults for current branch
+	scripts/git_setup_defaults.sh
 
 install:  ## Install arke package
 	pip install -e .

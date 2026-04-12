@@ -52,11 +52,16 @@ scripts/bootstrap_env.sh bench
 
 ## Configure a Custom venv Path
 
-By default, Arke uses:
+If the user does **not** specify a virtual environment path, Arke automatically creates the environment in the **project root** as:
 
 ```bash
 .venv
 ```
+
+This path is the default for both:
+
+- `scripts/bootstrap_env.sh`
+- `make setup-*`
 
 You can override it with `ARKE_VENV`:
 
@@ -141,6 +146,37 @@ make setup-gpu
 ```bash
 make setup-bench
 ```
+
+## Git Ignore Behavior
+
+The default project-local environment directory is:
+
+```bash
+.venv/
+```
+
+This path must remain ignored by git so local environments are never committed.
+The repository `.gitignore` already includes `.venv/`.
+
+## Repository Git Push Defaults
+
+For repository-local git defaults, Arke provides:
+
+```bash
+make git-setup-defaults
+# or
+scripts/git_setup_defaults.sh
+```
+
+This configures the current repository to:
+
+- prefer pushing the current branch by default
+- auto-setup upstream for new branches when possible
+- provide helpful aliases:
+  - `git pub` → `git push -u origin HEAD`
+  - `git sync` → `git pull --rebase --autostash && git push`
+
+This does **not** force global user git behavior; it only sets repo-local defaults.
 
 ## Notes
 

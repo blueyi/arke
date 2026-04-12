@@ -171,12 +171,26 @@ scripts/bootstrap_env.sh gpu-dev
 scripts/bootstrap_env.sh bench
 ```
 
+If you do not specify a venv path, Arke creates a project-local environment at:
+
+```bash
+.venv
+```
+
+This directory is ignored by git.
+
 To use a custom venv path:
 
 ```bash
 make setup-gpu VENV=~/.venvs/arke
 # or
 ARKE_VENV=~/.venvs/arke scripts/bootstrap_env.sh gpu-dev
+```
+
+Repository-local git defaults can also be configured with:
+
+```bash
+make git-setup-defaults
 ```
 
 Full guide:
