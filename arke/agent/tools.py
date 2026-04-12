@@ -16,6 +16,7 @@ import json
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
 
@@ -232,6 +233,47 @@ class AnalyzeComputeTool(ArkeTool):
                 "op_name": {"type": "string", "description": "Operator name"},
             },
             "required": ["op_name"],
+        }
+
+
+class BenchmarkAdviceSummaryTool(ArkeTool):
+    """Summarize benchmark artifact rows into agent-consumable guidance."""
+
+    @property
+    def name(self) -> str:
+        return "benchmark_advice_summary"
+
+    @property
+    def description(self) -> str:
+        return "Summarize benchmark CSV rows into structured advice for agent planning and Stage 7 triage"
+
+    @property
+    def meta(self) -> ToolMeta:
+        return ToolMeta(
+            concurrent_safe=True, idempotent=True,
+            budget_type=BudgetType.FREE, cost=CostLevel.CHEAP,
+        )
+
+    def execute(self, params: dict[str, Any]) -> ToolResult:
+        import csv
+        from benchmarks.advice import build_agent_advice_summary
+
+        csv_path = Path(params.get("csv_path", ""))
+        gpu_memory_mb = int(params.get("gpu_memory_mb", 0))
+        if not csv_path.exists():
+            return ToolResult(success=False, error=f"CSV not found: {csv_path}")
+        rows = list(csv.DictReader(csv_path.open()))
+        summary = build_agent_advice_summary(rows, gpu_memory_mb=gpu_memory_mb)
+        return ToolResult(success=True, data=summary)
+
+    def parameters_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "csv_path": {"type": "string", "description": "Path to PERF_ALL.csv or perf_*.csv"},
+                "gpu_memory_mb": {"type": "integer", "description": "GPU memory in MB for context"},
+            },
+            "required": ["csv_path", "gpu_memory_mb"],
         }
 
 
@@ -475,6 +517,7 @@ class ToolRegistry:
         reg = cls()
         reg.register(GetHWProfileTool())
         reg.register(AnalyzeComputeTool())
+        reg.register(BenchmarkAdviceSummaryTool())
         reg.register(CompileAndProfileTool())
         return reg
 

@@ -1,0 +1,26 @@
+{
+  "l1": {
+    "relu": {
+      "shape_count": 1,
+      "shape_tags": [
+        "square-1k"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    }
+  },
+  "l2": {
+    "matmul_relu": {
+      "shape_count": 1,
+      "shape_tags": [
+        "square-1k"
+      ],
+      "rows": 3,
+      "status_counts": {
+        "ok": 3
+      }
+    }
+  }
+}
