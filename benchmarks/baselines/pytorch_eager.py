@@ -168,6 +168,9 @@ class PyTorchEagerRunner(BaselineRunner):
             return x_q, scales.squeeze(1)
         if op == "dequantize_per_channel" and len(inputs) == 2:
             return inputs[0].to(inputs[1].dtype) * inputs[1].unsqueeze(0)
+        if op == "grouped_matmul" and len(inputs) == 2:
+            a_groups, b_groups = inputs
+            return torch.cat([a @ b for a, b in zip(a_groups, b_groups, strict=False)], dim=0)
         if op == "flash_attention" and len(inputs) == 3:
             return F.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2], is_causal=True)
         if op == "cross_attention" and len(inputs) == 3:

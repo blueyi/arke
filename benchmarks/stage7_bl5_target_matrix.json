@@ -1327,20 +1327,23 @@
         "ds-v3-moe",
         "non-align-1"
       ],
-      "shape_tags_observed": [],
-      "coverage_required_shapes_observed": [],
+      "shape_tags_observed": [
+        "moe-small"
+      ],
+      "coverage_required_shapes_observed": [
+        "moe-small"
+      ],
       "coverage_missing_shape_tags": [
-        "ds-moe-2k",
-        "ds-moe-512",
-        "ds-v3-moe",
-        "moe-medium",
-        "moe-small",
         "moe-tiny",
+        "moe-medium",
+        "ds-moe-512",
+        "ds-moe-2k",
+        "ds-v3-moe",
         "non-align-1"
       ],
-      "has_track6_result": false,
-      "correctness_evidence_present": false,
-      "performance_evidence_present": false
+      "has_track6_result": true,
+      "correctness_evidence_present": true,
+      "performance_evidence_present": true
     },
     {
       "op": "transpose",

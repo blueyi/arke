@@ -126,6 +126,12 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
             torch.randn(batch, M, N, device="cuda", dtype=dtype),
             torch.randn(batch, N, M, device="cuda", dtype=dtype),
         )
+    if op == "grouped_matmul":
+        num_groups = max(M // 4, 1)
+        group_size = max(M // num_groups, 1)
+        a_groups = torch.randn(num_groups, group_size, N, device="cuda", dtype=dtype)
+        b_groups = torch.randn(num_groups, N, max(K, 1), device="cuda", dtype=dtype)
+        return (a_groups, b_groups)
     if op in {"add", "mul", "rmsnorm_residual", "concat"}:
         return (
             torch.randn(M, N, device="cuda", dtype=dtype),
@@ -262,6 +268,9 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
         return torch.matmul(inputs[0], inputs[1])
     if op == "batch_matmul" and len(inputs) == 2:
         return torch.bmm(inputs[0], inputs[1])
+    if op == "grouped_matmul" and len(inputs) == 2:
+        a_groups, b_groups = inputs
+        return torch.cat([a @ b for a, b in zip(a_groups, b_groups, strict=False)], dim=0)
     if op == "transpose":
         return inputs[0].T
     if op == "concat" and len(inputs) == 2:
