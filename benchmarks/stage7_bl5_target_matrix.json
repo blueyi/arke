@@ -1689,25 +1689,29 @@
         "non-align-1",
         "non-align-2"
       ],
-      "shape_tags_observed": [],
-      "coverage_required_shapes_observed": [],
-      "coverage_missing_shape_tags": [
-        "ds-v2-2k",
-        "ds-v2-512",
-        "ds-v3-2k",
-        "ds-v3-512",
-        "gpt2-sm",
-        "llama-7b-2k",
-        "llama-7b-512",
-        "llama3-8b",
-        "non-align-1",
-        "non-align-2",
-        "qwen25-7b",
-        "qwen25-7b-2k"
+      "shape_tags_observed": [
+        "gpt2-ffn"
       ],
-      "has_track6_result": false,
-      "correctness_evidence_present": false,
-      "performance_evidence_present": false
+      "coverage_required_shapes_observed": [
+        "gpt2-ffn"
+      ],
+      "coverage_missing_shape_tags": [
+        "gpt2-sm",
+        "llama-7b-512",
+        "llama-7b-2k",
+        "llama3-8b",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v3-512",
+        "ds-v3-2k",
+        "qwen25-7b",
+        "qwen25-7b-2k",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "has_track6_result": true,
+      "correctness_evidence_present": true,
+      "performance_evidence_present": true
     },
     {
       "op": "geglu",
@@ -1728,25 +1732,29 @@
         "non-align-1",
         "non-align-2"
       ],
-      "shape_tags_observed": [],
-      "coverage_required_shapes_observed": [],
-      "coverage_missing_shape_tags": [
-        "ds-v2-2k",
-        "ds-v2-512",
-        "ds-v3-2k",
-        "ds-v3-512",
-        "gpt2-sm",
-        "llama-7b-2k",
-        "llama-7b-512",
-        "llama3-8b",
-        "non-align-1",
-        "non-align-2",
-        "qwen25-7b",
-        "qwen25-7b-2k"
+      "shape_tags_observed": [
+        "gpt2-ffn"
       ],
-      "has_track6_result": false,
-      "correctness_evidence_present": false,
-      "performance_evidence_present": false
+      "coverage_required_shapes_observed": [
+        "gpt2-ffn"
+      ],
+      "coverage_missing_shape_tags": [
+        "gpt2-sm",
+        "llama-7b-512",
+        "llama-7b-2k",
+        "llama3-8b",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v3-512",
+        "ds-v3-2k",
+        "qwen25-7b",
+        "qwen25-7b-2k",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "has_track6_result": true,
+      "correctness_evidence_present": true,
+      "performance_evidence_present": true
     },
     {
       "op": "rope",

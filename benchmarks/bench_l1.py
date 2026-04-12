@@ -120,16 +120,95 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
             torch.randn(M, K, device="cuda", dtype=dtype),
             torch.randn(K, N, device="cuda", dtype=dtype),
         )
+    if op == "batch_matmul":
+        batch = max(K, 4)
+        return (
+            torch.randn(batch, M, N, device="cuda", dtype=dtype),
+            torch.randn(batch, N, M, device="cuda", dtype=dtype),
+        )
+    if op in {"add", "mul", "rmsnorm_residual", "concat"}:
+        return (
+            torch.randn(M, N, device="cuda", dtype=dtype),
+            torch.randn(M, N, device="cuda", dtype=dtype),
+        )
+    if op == "where_":
+        mask = torch.randn(M, N, device="cuda", dtype=torch.float32) > 0
+        return (
+            mask,
+            torch.randn(M, N, device="cuda", dtype=dtype),
+            torch.randn(M, N, device="cuda", dtype=dtype),
+        )
+    if op == "gather":
+        x = torch.randn(M, N, device="cuda", dtype=dtype)
+        idx = torch.randint(0, N, (M, N), device="cuda")
+        return (x, idx)
+    if op == "scatter":
+        x = torch.randn(M, N, device="cuda", dtype=dtype)
+        idx = torch.stack([torch.randperm(N, device="cuda") for _ in range(M)], dim=0)
+        src = torch.randn(M, N, device="cuda", dtype=dtype)
+        return (x, idx, src)
+    if op == "embedding":
+        vocab_size = max(N, 16)
+        seq_len = max(M, 1)
+        emb_dim = max(K, 128)
+        indices = torch.randint(0, vocab_size, (seq_len,), device="cuda")
+        weight = torch.randn(vocab_size, emb_dim, device="cuda", dtype=dtype)
+        return (indices, weight)
+    if op in {"swiglu", "geglu"}:
+        return (torch.randn(M, 2 * N, device="cuda", dtype=dtype),)
+    if op == "permute":
+        dim2 = max(K, 64)
+        return (torch.randn(M, N, dim2, device="cuda", dtype=dtype),)
+    if op == "flash_attention":
+        return (
+            torch.randn(M, N, max(K, 64), device="cuda", dtype=dtype),
+            torch.randn(M, N, max(K, 64), device="cuda", dtype=dtype),
+            torch.randn(M, N, max(K, 64), device="cuda", dtype=dtype),
+        )
+    if op == "grouped_query_attention":
+        head_dim = max(K, 64)
+        num_kv_groups = max(M // 4, 1)
+        return (
+            torch.randn(M, N, head_dim, device="cuda", dtype=dtype),
+            torch.randn(num_kv_groups, N, head_dim, device="cuda", dtype=dtype),
+            torch.randn(num_kv_groups, N, head_dim, device="cuda", dtype=dtype),
+        )
+    if op == "cross_attention":
+        q_len = max(N // 2, 1)
+        head_dim = max(K, 64)
+        return (
+            torch.randn(M, q_len, head_dim, device="cuda", dtype=dtype),
+            torch.randn(M, N, head_dim, device="cuda", dtype=dtype),
+            torch.randn(M, N, head_dim, device="cuda", dtype=dtype),
+        )
+    if op == "quantize_per_token":
+        return (torch.randn(M, N, device="cuda", dtype=dtype),)
+    if op == "dequantize_per_channel":
+        x_q = torch.randint(-128, 128, (M, N), device="cuda", dtype=torch.int8)
+        scale = torch.randn(N, device="cuda", dtype=dtype).abs() + 0.01
+        return (x_q, scale)
+    if op == "rsqrt":
+        return (torch.randn(M, N, device="cuda", dtype=dtype).abs() + 1e-6,)
     return (torch.randn(M, N, device="cuda", dtype=dtype),)
 
 
-def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor:
+def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor | tuple[torch.Tensor, ...]:
     if op == "relu":
         return torch.nn.functional.relu(inputs[0])
     if op == "gelu":
         return torch.nn.functional.gelu(inputs[0])
     if op == "silu":
         return torch.nn.functional.silu(inputs[0])
+    if op == "tanh":
+        return torch.tanh(inputs[0])
+    if op == "sigmoid":
+        return torch.sigmoid(inputs[0])
+    if op == "neg":
+        return -inputs[0]
+    if op == "exp":
+        return torch.exp(inputs[0])
+    if op == "rsqrt":
+        return torch.rsqrt(inputs[0])
     if op == "softmax":
         return torch.nn.functional.softmax(inputs[0], dim=-1)
     if op == "layernorm":
@@ -137,8 +216,83 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
         w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
         b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
         return torch.nn.functional.layer_norm(x, [x.shape[-1]], w, b)
+    if op == "rmsnorm":
+        x = inputs[0]
+        w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+        eps = 1e-6
+        return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps)) * w
+    if op == "rmsnorm_residual":
+        x, residual = inputs
+        w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+        eps = 1e-6
+        y = x + residual
+        return (y * torch.rsqrt(y.pow(2).mean(-1, keepdim=True) + eps)) * w
+    if op == "add" and len(inputs) == 2:
+        return inputs[0] + inputs[1]
+    if op == "mul" and len(inputs) == 2:
+        return inputs[0] * inputs[1]
+    if op == "where_" and len(inputs) == 3:
+        return torch.where(inputs[0].bool(), inputs[1], inputs[2])
+    if op == "cast":
+        return inputs[0].to(torch.float32)
+    if op == "reduce_sum":
+        return torch.sum(inputs[0], dim=-1)
+    if op == "reduce_max":
+        return torch.max(inputs[0], dim=-1).values
+    if op == "reduce_mean":
+        return torch.mean(inputs[0], dim=-1)
+    if op == "argmax":
+        return torch.argmax(inputs[0], dim=-1)
+    if op == "cumsum":
+        return torch.cumsum(inputs[0], dim=-1)
+    if op == "topk":
+        k = min(4, inputs[0].shape[-1])
+        return torch.topk(inputs[0], k=k, dim=-1).values
     if op == "matmul" and len(inputs) == 2:
         return torch.matmul(inputs[0], inputs[1])
+    if op == "batch_matmul" and len(inputs) == 2:
+        return torch.bmm(inputs[0], inputs[1])
+    if op == "transpose":
+        return inputs[0].T
+    if op == "concat" and len(inputs) == 2:
+        return torch.cat([inputs[0], inputs[1]], dim=-1)
+    if op == "split":
+        split_size = max(inputs[0].shape[-1] // 2, 1)
+        return torch.split(inputs[0], split_size, dim=-1)
+    if op == "gather" and len(inputs) == 2:
+        return torch.gather(inputs[0], 1, inputs[1].long())
+    if op == "scatter" and len(inputs) == 3:
+        return torch.zeros_like(inputs[0]).scatter_(1, inputs[1].long(), inputs[2])
+    if op == "embedding" and len(inputs) == 2:
+        return torch.nn.functional.embedding(inputs[0].long(), inputs[1])
+    if op == "permute":
+        return inputs[0].permute(0, 2, 1)
+    if op == "copy_":
+        return inputs[0].clone()
+    if op == "swiglu":
+        x1, x2 = inputs[0].chunk(2, dim=-1)
+        return torch.nn.functional.silu(x1) * x2
+    if op == "geglu":
+        x1, x2 = inputs[0].chunk(2, dim=-1)
+        return torch.nn.functional.gelu(x1) * x2
+    if op == "quantize_per_token":
+        x = inputs[0]
+        scales = torch.amax(torch.abs(x), dim=1, keepdim=True)
+        scales = torch.clamp(scales, min=1e-8)
+        x_q = torch.round(x / scales * 127).to(torch.int8)
+        return x_q, scales.squeeze(1)
+    if op == "dequantize_per_channel" and len(inputs) == 2:
+        return inputs[0].to(inputs[1].dtype) * inputs[1].unsqueeze(0)
+    if op == "flash_attention" and len(inputs) == 3:
+        return torch.nn.functional.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2], is_causal=True)
+    if op == "grouped_query_attention" and len(inputs) == 3:
+        q, k, v = inputs
+        repeats = q.shape[0] // max(k.shape[0], 1)
+        k_exp = k.repeat_interleave(repeats, dim=0)
+        v_exp = v.repeat_interleave(repeats, dim=0)
+        return torch.nn.functional.scaled_dot_product_attention(q, k_exp, v_exp, is_causal=True)
+    if op == "cross_attention" and len(inputs) == 3:
+        return torch.nn.functional.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2])
     raise NotImplementedError(f"No correctness reference for L1 op: {op}")
 
 
@@ -158,7 +312,57 @@ def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torc
                 "correctness_status": "unsupported",
                 "correctness_reason": f"runner {runner.name} does not implement run_with_inputs for {op}",
             }
-        if not isinstance(cand, torch.Tensor):
+        if isinstance(ref, tuple) and isinstance(cand, tuple):
+            if len(ref) != len(cand):
+                return {
+                    "allclose": False,
+                    "max_abs_diff": None,
+                    "mean_abs_diff": None,
+                    "rtol": rtol,
+                    "atol": atol,
+                    "correctness_status": "mismatch",
+                    "correctness_reason": f"tuple length mismatch: ref={len(ref)} cand={len(cand)}",
+                }
+            max_diff = 0.0
+            mean_diffs: list[float] = []
+            ok = True
+            for ref_i, cand_i in zip(ref, cand, strict=False):
+                if not isinstance(ref_i, torch.Tensor) or not isinstance(cand_i, torch.Tensor):
+                    return {
+                        "allclose": None,
+                        "max_abs_diff": None,
+                        "mean_abs_diff": None,
+                        "rtol": rtol,
+                        "atol": atol,
+                        "correctness_status": "unsupported",
+                        "correctness_reason": f"runner {runner.name} returned non-tensor tuple correctness output for {op}",
+                    }
+                ref32 = ref_i.detach().to(torch.float32)
+                cand32 = cand_i.detach().to(torch.float32)
+                if ref32.shape != cand32.shape:
+                    return {
+                        "allclose": False,
+                        "max_abs_diff": None,
+                        "mean_abs_diff": None,
+                        "rtol": rtol,
+                        "atol": atol,
+                        "correctness_status": "mismatch",
+                        "correctness_reason": f"shape mismatch in tuple element: ref={tuple(ref32.shape)} cand={tuple(cand32.shape)}",
+                    }
+                diff = (cand32 - ref32).abs()
+                max_diff = max(max_diff, float(diff.max().item()) if diff.numel() else 0.0)
+                mean_diffs.append(float(diff.mean().item()) if diff.numel() else 0.0)
+                ok = ok and torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
+            return {
+                "allclose": bool(ok),
+                "max_abs_diff": max_diff,
+                "mean_abs_diff": (sum(mean_diffs) / len(mean_diffs)) if mean_diffs else 0.0,
+                "rtol": rtol,
+                "atol": atol,
+                "correctness_status": "ok" if ok else "mismatch",
+                "correctness_reason": "",
+            }
+        if not isinstance(cand, torch.Tensor) or not isinstance(ref, torch.Tensor):
             return {
                 "allclose": None,
                 "max_abs_diff": None,

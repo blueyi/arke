@@ -78,6 +78,16 @@ class PyTorchEagerRunner(BaselineRunner):
             return F.gelu(inputs[0])
         if op == "silu" and len(inputs) == 1:
             return F.silu(inputs[0])
+        if op == "tanh" and len(inputs) == 1:
+            return torch.tanh(inputs[0])
+        if op == "sigmoid" and len(inputs) == 1:
+            return torch.sigmoid(inputs[0])
+        if op == "neg" and len(inputs) == 1:
+            return -inputs[0]
+        if op == "exp" and len(inputs) == 1:
+            return torch.exp(inputs[0])
+        if op == "rsqrt" and len(inputs) == 1:
+            return torch.rsqrt(inputs[0])
         if op == "softmax" and len(inputs) == 1:
             return F.softmax(inputs[0], dim=-1)
         if op == "layernorm" and len(inputs) == 1:
@@ -85,8 +95,83 @@ class PyTorchEagerRunner(BaselineRunner):
             w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
             b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
             return F.layer_norm(x, [x.shape[-1]], w, b)
+        if op == "rmsnorm" and len(inputs) == 1:
+            x = inputs[0]
+            w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            eps = 1e-6
+            return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps)) * w
+        if op == "rmsnorm_residual" and len(inputs) == 2:
+            x, residual = inputs
+            w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            eps = 1e-6
+            y = x + residual
+            return (y * torch.rsqrt(y.pow(2).mean(-1, keepdim=True) + eps)) * w
+        if op == "add" and len(inputs) == 2:
+            return inputs[0] + inputs[1]
+        if op == "mul" and len(inputs) == 2:
+            return inputs[0] * inputs[1]
+        if op == "where_" and len(inputs) == 3:
+            return torch.where(inputs[0].bool(), inputs[1], inputs[2])
+        if op == "cast" and len(inputs) == 1:
+            return inputs[0].to(torch.float32)
+        if op == "reduce_sum" and len(inputs) == 1:
+            return torch.sum(inputs[0], dim=-1)
+        if op == "reduce_max" and len(inputs) == 1:
+            return torch.max(inputs[0], dim=-1).values
+        if op == "reduce_mean" and len(inputs) == 1:
+            return torch.mean(inputs[0], dim=-1)
+        if op == "argmax" and len(inputs) == 1:
+            return torch.argmax(inputs[0], dim=-1)
+        if op == "cumsum" and len(inputs) == 1:
+            return torch.cumsum(inputs[0], dim=-1)
+        if op == "topk" and len(inputs) == 1:
+            k = min(kwargs.get('k', 4), inputs[0].shape[-1])
+            return torch.topk(inputs[0], k=k, dim=-1).values
         if op == "matmul" and len(inputs) == 2:
             return torch.matmul(inputs[0], inputs[1])
+        if op == "batch_matmul" and len(inputs) == 2:
+            return torch.bmm(inputs[0], inputs[1])
+        if op == "transpose" and len(inputs) == 1:
+            return inputs[0].T
+        if op == "concat" and len(inputs) == 2:
+            return torch.cat([inputs[0], inputs[1]], dim=-1)
+        if op == "split" and len(inputs) == 1:
+            split_size = max(inputs[0].shape[-1] // 2, 1)
+            return torch.split(inputs[0], split_size, dim=-1)
+        if op == "gather" and len(inputs) == 2:
+            return torch.gather(inputs[0], 1, inputs[1].long())
+        if op == "scatter" and len(inputs) == 3:
+            return torch.zeros_like(inputs[0]).scatter_(1, inputs[1].long(), inputs[2])
+        if op == "embedding" and len(inputs) == 2:
+            return F.embedding(inputs[0].long(), inputs[1])
+        if op == "permute" and len(inputs) == 1:
+            return inputs[0].permute(0, 2, 1)
+        if op == "copy_" and len(inputs) == 1:
+            return inputs[0].clone()
+        if op == "swiglu" and len(inputs) == 1:
+            x1, x2 = inputs[0].chunk(2, dim=-1)
+            return F.silu(x1) * x2
+        if op == "geglu" and len(inputs) == 1:
+            x1, x2 = inputs[0].chunk(2, dim=-1)
+            return F.gelu(x1) * x2
+        if op == "quantize_per_token" and len(inputs) == 1:
+            x = inputs[0]
+            scales = torch.amax(torch.abs(x), dim=1, keepdim=True)
+            scales = torch.clamp(scales, min=1e-8)
+            x_q = torch.round(x / scales * 127).to(torch.int8)
+            return x_q, scales.squeeze(1)
+        if op == "dequantize_per_channel" and len(inputs) == 2:
+            return inputs[0].to(inputs[1].dtype) * inputs[1].unsqueeze(0)
+        if op == "flash_attention" and len(inputs) == 3:
+            return F.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2], is_causal=True)
+        if op == "cross_attention" and len(inputs) == 3:
+            return F.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2])
+        if op == "grouped_query_attention" and len(inputs) == 3:
+            q, k, v = inputs
+            repeats = q.shape[0] // max(k.shape[0], 1)
+            k_exp = k.repeat_interleave(repeats, dim=0)
+            v_exp = v.repeat_interleave(repeats, dim=0)
+            return F.scaled_dot_product_attention(q, k_exp, v_exp, is_causal=True)
         return None
 
     def get_fn(
