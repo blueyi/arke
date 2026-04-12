@@ -57,3 +57,21 @@ def summarize_status_rows(rows: list[dict], gpu_memory_mb: int) -> list[Advice]:
             ),
         ))
     return advice
+
+
+def build_agent_advice_summary(rows: list[dict], gpu_memory_mb: int) -> dict:
+    advice = summarize_status_rows(rows, gpu_memory_mb)
+    return {
+        "gpu_memory_mb": gpu_memory_mb,
+        "counts": {
+            "rows": len(rows),
+            "skipped": sum(1 for r in rows if r.get("status") == "skipped"),
+            "oom": sum(1 for r in rows if r.get("status") == "oom"),
+            "ok": sum(1 for r in rows if r.get("status") == "ok"),
+        },
+        "advice": [
+            {"kind": a.kind, "severity": a.severity, "message": a.message}
+            for a in advice
+        ],
+        "recommended_focus": [a.kind for a in advice],
+    }

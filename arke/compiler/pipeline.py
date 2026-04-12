@@ -149,6 +149,38 @@ def _synthesize_strategy_from_compile_advice(
         )
         return
 
+    if "cross_attention" in node_ops and {"S_q", "S_kv"}.issubset(dim_names):
+        strategy_ir.when(
+            "S_kv <= 4096",
+            [
+                Decision(kind="tile", params={"loop": "S_q", "factors": [128]}, rationale=Rationale(text="synthesized from compile advice: shorter KV branch")),
+                Decision(kind="tile", params={"loop": "S_kv", "factors": [128]}, rationale=Rationale(text="synthesized from compile advice: symmetric query/kv window")),
+                Decision(kind="compute", params={"warps": 4, "num_stages": 2, "shared_memory": 32768}, rationale=Rationale(text="synthesized from compile advice: cross-attention balanced resources"), level=2),
+            ],
+            [
+                Decision(kind="tile", params={"loop": "S_q", "factors": [128]}, rationale=Rationale(text="synthesized from compile advice: keep query tile stable")),
+                Decision(kind="tile", params={"loop": "S_kv", "factors": [64]}, rationale=Rationale(text="synthesized from compile advice: reduce KV tile under long KV context")),
+                Decision(kind="compute", params={"warps": 2, "num_stages": 2, "shared_memory": 16384}, rationale=Rationale(text="synthesized from compile advice: cross-attention KV-heavy guard"), level=2),
+            ],
+            rationale="auto-synthesized cross-attention strategy from compile advice",
+        )
+        return
+
+    if "rope" in node_ops and "D" in dim_names:
+        strategy_ir.when(
+            "D <= 128",
+            [
+                Decision(kind="tile", params={"loop": "D", "factors": [64]}, rationale=Rationale(text="synthesized from compile advice: vector-friendly rope branch")),
+                Decision(kind="compute", params={"warps": 4, "num_stages": 2, "shared_memory": 16384}, rationale=Rationale(text="synthesized from compile advice: rope compact-dim resources"), level=2),
+            ],
+            [
+                Decision(kind="tile", params={"loop": "D", "factors": [32]}, rationale=Rationale(text="synthesized from compile advice: narrower rope vector width guard")),
+                Decision(kind="compute", params={"warps": 2, "num_stages": 2, "shared_memory": 8192}, rationale=Rationale(text="synthesized from compile advice: rope high-dim low-memory guard"), level=2),
+            ],
+            rationale="auto-synthesized rope strategy from compile advice",
+        )
+        return
+
     is_attention = bool(node_ops & {"flash_attention", "grouped_query_attention", "multi_latent_attention", "cross_attention", "paged_attention", "rope"})
     if not (is_attention and "S" in dim_names):
         return
