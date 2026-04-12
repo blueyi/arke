@@ -22,11 +22,11 @@ It is intended to be the machine-readable planning substrate for Stage 7 closure
 From the generated matrix:
 
 - **L1 total ops required:** 45
-- **L1 ops with Stage 7 track6 results:** 39
-- **L1 op coverage ratio:** 0.8667
+- **L1 ops with Stage 7 track6 results:** 41
+- **L1 op coverage ratio:** 0.9111
 - **L1 required shapes total:** 685
-- **L1 required shapes observed:** 39
-- **L1 shape coverage ratio:** 0.0569
+- **L1 required shapes observed:** 41
+- **L1 shape coverage ratio:** 0.0599
 
 - **L2 total fusions required:** 6
 - **L2 fusions with Stage 7 track6 results:** 1
@@ -36,13 +36,13 @@ From the generated matrix:
 - **L2 shape coverage ratio:** 0.0083
 
 - **Performance artifacts present:** yes
-- **Correctness / accuracy artifacts present:** yes (currently partial; verified live for L2 `matmul_relu` and a growing L1 subset including dense linear algebra, elementwise, reduction, normalization, activations, gated fused activations, batched GEMM, data-movement/indexing, quantization, and attention; `matmul`, `gelu`, `silu`, `swiglu`, `geglu`, `softmax`, and `layernorm` now also have live correctness evidence across representative required shapes, alongside `cross_attention`, `flash_attention`, and `grouped_query_attention`)
+- **Correctness / accuracy artifacts present:** yes (currently partial; verified live for L2 `matmul_relu` and a growing L1 subset including dense linear algebra, elementwise, reduction, normalization, activations, gated fused activations, loss ops, batched GEMM, data-movement/indexing, quantization, and attention; `matmul`, `gelu`, `silu`, `swiglu`, `geglu`, `softmax`, `layernorm`, `cross_entropy`, and `fused_linear_cross_entropy` now also have live correctness evidence across representative required shapes, alongside `cross_attention`, `flash_attention`, and `grouped_query_attention`)
 
 ## What is currently verified
 
 Current Stage 7 track6 artifacts currently provide benchmark evidence for:
 
-- **L1:** `matmul` on dense GEMM shapes such as `square-1k`; `relu`, `gelu`, `silu`, `tanh`, `sigmoid`, `add`, `mul`, `neg`, `exp`, `rsqrt`, `where_`, `cast`, `copy_`, and `transpose` on representative square/2D or FFN shapes such as `gpt2-ffn`; `swiglu` and `geglu` on gated-FFN shapes such as `gpt2-ffn`; `softmax` on attention/logit shapes such as `attn-gpt2-128`; `layernorm`, `rmsnorm`, and `rmsnorm_residual` on normalization shapes such as `gpt2-small`; `reduce_sum`, `reduce_max`, `reduce_mean`, and `argmax` on reduction shapes such as `small`; `cumsum` on row/column cumulative shapes such as `gpt2-row`; `topk` on routing/sampling shapes such as `moe-top2-small`; `batch_matmul` on `gpt2-attn-128`; `concat` / `split` on QKV-merge/split shapes such as `gpt2-qkv-merge` and `gpt2-qkv-split`; `gather` on dispatch/cache-read shapes such as `moe-dispatch-top2`; `scatter` on combine/cache-write shapes such as `moe-combine-top2`; `permute` on attention layout shapes such as `gpt2-bhsd`; `embedding` on vocab/sequence shapes such as `gpt2-small`; `quantize_per_token` and `dequantize_per_channel` on quantization shapes such as `gpt2-int8`; `cross_attention` on encoder/decoder attention shapes such as `whisper-enc-dec`; `flash_attention` on causal self-attention shapes such as `gpt2-sm-128`; `grouped_query_attention` on grouped-KV attention shapes such as `llama3-8b-512`
+- **L1:** `matmul` on dense GEMM shapes such as `square-1k`; `relu`, `gelu`, `silu`, `tanh`, `sigmoid`, `add`, `mul`, `neg`, `exp`, `rsqrt`, `where_`, `cast`, `copy_`, and `transpose` on representative square/2D or FFN shapes such as `gpt2-ffn`; `swiglu` and `geglu` on gated-FFN shapes such as `gpt2-ffn`; `cross_entropy` on classifier/logit shapes such as `tiny`; `fused_linear_cross_entropy` on fused projection+loss shapes such as `gpt2-seq128`; `softmax` on attention/logit shapes such as `attn-gpt2-128`; `layernorm`, `rmsnorm`, and `rmsnorm_residual` on normalization shapes such as `gpt2-small`; `reduce_sum`, `reduce_max`, `reduce_mean`, and `argmax` on reduction shapes such as `small`; `cumsum` on row/column cumulative shapes such as `gpt2-row`; `topk` on routing/sampling shapes such as `moe-top2-small`; `batch_matmul` on `gpt2-attn-128`; `concat` / `split` on QKV-merge/split shapes such as `gpt2-qkv-merge` and `gpt2-qkv-split`; `gather` on dispatch/cache-read shapes such as `moe-dispatch-top2`; `scatter` on combine/cache-write shapes such as `moe-combine-top2`; `permute` on attention layout shapes such as `gpt2-bhsd`; `embedding` on vocab/sequence shapes such as `gpt2-small`; `quantize_per_token` and `dequantize_per_channel` on quantization shapes such as `gpt2-int8`; `cross_attention` on encoder/decoder attention shapes such as `whisper-enc-dec`; `flash_attention` on causal self-attention shapes such as `gpt2-sm-128`; `grouped_query_attention` on grouped-KV attention shapes such as `llama3-8b-512`
 - **L2:** `matmul_relu` on `square-1k`
 
 This is enough to prove that the harness and artifact path are alive, but it is far from proving BL5 closure.

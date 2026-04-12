@@ -156,6 +156,16 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
         return (indices, weight)
     if op in {"swiglu", "geglu"}:
         return (torch.randn(M, 2 * N, device="cuda", dtype=dtype),)
+    if op == "cross_entropy":
+        logits = torch.randn(M, N, device="cuda", dtype=torch.float32)
+        labels = torch.randint(0, N, (M,), device="cuda")
+        return (logits, labels)
+    if op == "fused_linear_cross_entropy":
+        hidden = max(N, 128)
+        x = torch.randn(M, hidden, device="cuda", dtype=dtype)
+        w = torch.randn(N, hidden, device="cuda", dtype=dtype)
+        labels = torch.randint(0, N, (M,), device="cuda")
+        return (x, w, labels)
     if op == "permute":
         dim2 = max(K, 64)
         return (torch.randn(M, N, dim2, device="cuda", dtype=dtype),)
@@ -275,6 +285,12 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
     if op == "geglu":
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.gelu(x1) * x2
+    if op == "cross_entropy" and len(inputs) == 2:
+        return torch.nn.functional.cross_entropy(inputs[0].to(torch.float32), inputs[1].long())
+    if op == "fused_linear_cross_entropy" and len(inputs) == 3:
+        x, w, labels = inputs
+        logits = x.to(torch.float32) @ w.to(torch.float32).T
+        return torch.nn.functional.cross_entropy(logits, labels.long())
     if op == "quantize_per_token":
         x = inputs[0]
         scales = torch.amax(torch.abs(x), dim=1, keepdim=True)

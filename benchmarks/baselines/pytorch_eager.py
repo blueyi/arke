@@ -154,6 +154,12 @@ class PyTorchEagerRunner(BaselineRunner):
         if op == "geglu" and len(inputs) == 1:
             x1, x2 = inputs[0].chunk(2, dim=-1)
             return F.gelu(x1) * x2
+        if op == "cross_entropy" and len(inputs) == 2:
+            return F.cross_entropy(inputs[0].to(torch.float32), inputs[1].long())
+        if op == "fused_linear_cross_entropy" and len(inputs) == 3:
+            x, w, labels = inputs
+            logits = x.to(torch.float32) @ w.to(torch.float32).T
+            return F.cross_entropy(logits, labels.long())
         if op == "quantize_per_token" and len(inputs) == 1:
             x = inputs[0]
             scales = torch.amax(torch.abs(x), dim=1, keepdim=True)

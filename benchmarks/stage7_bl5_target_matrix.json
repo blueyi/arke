@@ -1822,25 +1822,28 @@
         "non-align-2",
         "extreme-large-vocab"
       ],
-      "shape_tags_observed": [],
-      "coverage_required_shapes_observed": [],
+      "shape_tags_observed": [
+        "gpt2-seq128"
+      ],
+      "coverage_required_shapes_observed": [
+        "gpt2-seq128"
+      ],
       "coverage_missing_shape_tags": [
-        "ds-v2-seq512",
-        "extreme-large-vocab",
-        "gpt2-seq128",
         "gpt2-seq512",
-        "llama2-seq2k",
         "llama2-seq512",
-        "llama3-seq2k",
+        "llama2-seq2k",
         "llama3-seq512",
+        "llama3-seq2k",
+        "qwen25-seq512",
+        "qwen25-seq2k",
+        "ds-v2-seq512",
         "non-align-1",
         "non-align-2",
-        "qwen25-seq2k",
-        "qwen25-seq512"
+        "extreme-large-vocab"
       ],
-      "has_track6_result": false,
-      "correctness_evidence_present": false,
-      "performance_evidence_present": false
+      "has_track6_result": true,
+      "correctness_evidence_present": true,
+      "performance_evidence_present": true
     },
     {
       "op": "cross_entropy",
@@ -1862,26 +1865,29 @@
         "extreme-large-vocab",
         "extreme-large-bs"
       ],
-      "shape_tags_observed": [],
-      "coverage_required_shapes_observed": [],
-      "coverage_missing_shape_tags": [
-        "batch4-seq512",
-        "ds-v2-seq512",
-        "extreme-large-bs",
-        "extreme-large-vocab",
-        "gpt2-seq128",
-        "gpt2-seq512",
-        "llama2-seq2k",
-        "llama2-seq512",
-        "llama3-seq512",
-        "non-align-1",
-        "non-align-2",
-        "qwen25-seq512",
+      "shape_tags_observed": [
         "tiny"
       ],
-      "has_track6_result": false,
-      "correctness_evidence_present": false,
-      "performance_evidence_present": false
+      "coverage_required_shapes_observed": [
+        "tiny"
+      ],
+      "coverage_missing_shape_tags": [
+        "gpt2-seq128",
+        "gpt2-seq512",
+        "llama2-seq512",
+        "llama2-seq2k",
+        "llama3-seq512",
+        "qwen25-seq512",
+        "ds-v2-seq512",
+        "batch4-seq512",
+        "non-align-1",
+        "non-align-2",
+        "extreme-large-vocab",
+        "extreme-large-bs"
+      ],
+      "has_track6_result": true,
+      "correctness_evidence_present": true,
+      "performance_evidence_present": true
     },
     {
       "op": "quantize_per_token",
