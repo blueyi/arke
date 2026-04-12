@@ -15,7 +15,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import torch
+try:
+    import torch
+except ModuleNotFoundError:  # pragma: no cover - env-dependent import guard
+    torch = None
 
 from arke.compiler.validator import validate_semantic_ir
 from arke.compiler.lowering import lower_full_stack
@@ -39,22 +42,27 @@ from arke.lang.grammar import parse_file, parse_string
 
 # ─── Dtype Mapping ──────────────────────────────────────────────────────────
 
-_DTYPE_MAP: dict[str, torch.dtype] = {
-    "f16": torch.float16,
-    "bf16": torch.bfloat16,
-    "f32": torch.float32,
-    "f64": torch.float64,
-    "i8": torch.int8,
-    "i16": torch.int16,
-    "i32": torch.int32,
-    "i64": torch.int64,
-    "u8": torch.uint8,
-    "bool": torch.bool,
-}
+if torch is not None:
+    _DTYPE_MAP: dict[str, Any] = {
+        "f16": torch.float16,
+        "bf16": torch.bfloat16,
+        "f32": torch.float32,
+        "f64": torch.float64,
+        "i8": torch.int8,
+        "i16": torch.int16,
+        "i32": torch.int32,
+        "i64": torch.int64,
+        "u8": torch.uint8,
+        "bool": torch.bool,
+    }
+else:
+    _DTYPE_MAP = {}
 
 
-def _arke_dtype_to_torch(dtype_str: str) -> torch.dtype:
-    """Convert Arke dtype string to PyTorch dtype."""
+def _arke_dtype_to_torch(dtype_str: str) -> Any:
+    """Convert Arke dtype string to PyTorch dtype when torch is available."""
+    if torch is None:
+        raise ModuleNotFoundError("torch is required for execution dtype conversion")
     return _DTYPE_MAP.get(dtype_str, torch.float32)
 
 
@@ -323,8 +331,8 @@ class ArkePipeline:
     def execute(
         self,
         result: CompilationResult,
-        inputs: dict[str, torch.Tensor],
-    ) -> dict[str, torch.Tensor]:
+        inputs: dict[str, Any],
+    ) -> dict[str, Any]:
         """Execute a compiled kernel with the given inputs.
 
         Walks semantic_ir.nodes in order, resolving inputs from params or
@@ -344,6 +352,8 @@ class ArkePipeline:
             KeyError: If a required input parameter is missing.
             RuntimeError: If execution fails.
         """
+        if torch is None:
+            raise ModuleNotFoundError("torch is required to execute compiled kernels")
         if not result.success or result.semantic_ir is None:
             raise ValueError(
                 f"Cannot execute: compilation failed with errors: "
