@@ -116,6 +116,39 @@ def _synthesize_strategy_from_compile_advice(
 
     node_ops = {getattr(node, "op", "") for node in semantic_ir.nodes}
     dim_names = {dim.name for dim in semantic_ir.symbolic_dims}
+
+    if "paged_attention" in node_ops and {"NB", "MB"}.issubset(dim_names):
+        strategy_ir.when(
+            "NB <= 1024 and MB <= 128",
+            [
+                Decision(kind="tile", params={"loop": "NB", "factors": [128]}, rationale=Rationale(text="synthesized from compile advice: smaller page table working set")),
+                Decision(kind="tile", params={"loop": "MB", "factors": [64]}, rationale=Rationale(text="synthesized from compile advice: smaller block-table slice")),
+                Decision(kind="compute", params={"warps": 4, "num_stages": 2, "shared_memory": 32768}, rationale=Rationale(text="synthesized from compile advice: paged attention conservative resources"), level=2),
+            ],
+            [
+                Decision(kind="tile", params={"loop": "NB", "factors": [64]}, rationale=Rationale(text="synthesized from compile advice: larger page regime guard")),
+                Decision(kind="tile", params={"loop": "MB", "factors": [32]}, rationale=Rationale(text="synthesized from compile advice: narrower block-table guard")),
+                Decision(kind="compute", params={"warps": 2, "num_stages": 2, "shared_memory": 16384}, rationale=Rationale(text="synthesized from compile advice: paged attention low-memory guard"), level=2),
+            ],
+            rationale="auto-synthesized paged-attention strategy from compile advice",
+        )
+        return
+
+    if "multi_latent_attention" in node_ops and "D_c" in dim_names:
+        strategy_ir.when(
+            "D_c <= 64",
+            [
+                Decision(kind="tile", params={"loop": "D_c", "factors": [64]}, rationale=Rationale(text="synthesized from compile advice: compact KV branch")),
+                Decision(kind="compute", params={"warps": 4, "num_stages": 2, "shared_memory": 32768}, rationale=Rationale(text="synthesized from compile advice: compact-KV resources"), level=2),
+            ],
+            [
+                Decision(kind="tile", params={"loop": "D_c", "factors": [32]}, rationale=Rationale(text="synthesized from compile advice: larger compressed-KV guard")),
+                Decision(kind="compute", params={"warps": 2, "num_stages": 2, "shared_memory": 16384}, rationale=Rationale(text="synthesized from compile advice: compressed-KV low-memory guard"), level=2),
+            ],
+            rationale="auto-synthesized MLA strategy from compile advice",
+        )
+        return
+
     is_attention = bool(node_ops & {"flash_attention", "grouped_query_attention", "multi_latent_attention", "cross_attention", "paged_attention", "rope"})
     if not (is_attention and "S" in dim_names):
         return

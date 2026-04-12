@@ -164,6 +164,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_stage7_compile_advice_provenance.py",
         "tests/test_stage7_advice_materialization.py",
         "tests/test_stage7_strategy_synthesis.py",
+        "tests/test_stage7_specialized_strategy_synthesis.py",
     ])
     artifact_ok, artifact_detail = _check_benchmark_artifacts()
     results.append(GateResult(
@@ -216,6 +217,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_stage7_compile_advice_provenance.py",
         "tests/test_stage7_advice_materialization.py",
         "tests/test_stage7_strategy_synthesis.py",
+        "tests/test_stage7_specialized_strategy_synthesis.py",
     ])
     results.append(GateResult(
         "G7", "G7.10",
