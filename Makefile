@@ -1,6 +1,6 @@
-.PHONY: help setup install dev test test-gpu lint format check bench clean
+.PHONY: help setup setup-cpu setup-gpu setup-bench install dev test test-gpu lint format check bench clean
 
-VENV := .venv
+VENV ?= .venv
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
@@ -8,19 +8,16 @@ help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-setup:  ## One-click environment setup (venv + deps + GPU verification)
-	@echo "==> Creating virtual environment..."
-	python3 -m venv $(VENV)
-	@echo "==> Installing PyTorch + Triton + Arke..."
-	$(PIP) install --upgrade pip
-	$(PIP) install -e ".[dev]"
-	@echo "==> Verifying GPU..."
-	@$(PYTHON) -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'; print(f'  GPU: {torch.cuda.get_device_name(0)}')"
-	@$(PYTHON) -c "import triton; print(f'  Triton: {triton.__version__}')"
-	@echo "==> Running smoke test..."
-	$(PYTHON) -m pytest tests/ -q --tb=line -x 2>/dev/null && echo "  Tests: PASS" || echo "  Tests: FAIL (run 'make test' for details)"
-	@echo ""
-	@echo "Setup complete. Activate with: source $(VENV)/bin/activate"
+setup: setup-gpu  ## Default one-click environment setup (GPU/dev profile)
+
+setup-cpu:  ## Create a fresh CPU/dev environment in $(VENV)
+	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh cpu-dev
+
+setup-gpu:  ## Create a fresh GPU/dev environment in $(VENV)
+	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh gpu-dev
+
+setup-bench:  ## Create a fresh benchmark environment in $(VENV)
+	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh bench
 
 install:  ## Install arke package
 	pip install -e .

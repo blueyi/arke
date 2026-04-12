@@ -150,6 +150,38 @@ Arke minimizes token consumption across the full optimization pipeline — not j
 
 The result: LLMs reach peak-performance kernels spending a fraction of the tokens that direct code generation requires.
 
+## Environment Setup
+
+Arke now includes a **one-click Python environment bootstrap** for fresh machines.
+
+### Quick start
+
+```bash
+make setup        # default GPU/dev profile
+make setup-cpu    # CPU/dev profile
+make setup-gpu    # GPU/dev profile
+make setup-bench  # full benchmark profile
+```
+
+You can also use the bootstrap script directly:
+
+```bash
+scripts/bootstrap_env.sh cpu-dev
+scripts/bootstrap_env.sh gpu-dev
+scripts/bootstrap_env.sh bench
+```
+
+To use a custom venv path:
+
+```bash
+make setup-gpu VENV=~/.venvs/arke
+# or
+ARKE_VENV=~/.venvs/arke scripts/bootstrap_env.sh gpu-dev
+```
+
+Full guide:
+- [Python environment setup](docs/architecture/python-environment-setup.md)
+
 ## Python API
 
 ```python
@@ -195,6 +227,7 @@ achieves maximum hardware expression completeness and performance headroom.
 | [completion-summary.md](docs/phase1/completion-summary.md)                        | Phase 1 G0-G5 completion summary                                                          |
 | [benchmark-design.md](docs/benchmark/benchmark-design.md)                         | Complete benchmark reference — baselines, shapes, scoring, operator sources |
 | [e2e-flow.md](docs/architecture/e2e-flow.md)                                         | End-to-end flow — user input to GPU execution walkthrough                   |
+| [python-environment-setup.md](docs/architecture/python-environment-setup.md)         | Python environment bootstrap — one-click setup for fresh Arke machines      |
 | [design-review.md](docs/phase1/design-review.md)                               | Design review — assumption validation, risk matrix                          |
 | [naming-system.md](docs/architecture/naming-system.md)                               | Naming conventions — global terminology rules                               |
 | [benchmarks/results/phase1/EVALUATION_REPORT.md](benchmarks/results/phase1/EVALUATION_REPORT.md) | Phase 1 Evaluation Report — all gates, L1/L2/L3 data, conclusions |
