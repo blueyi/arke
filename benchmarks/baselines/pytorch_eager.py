@@ -171,6 +171,22 @@ class PyTorchEagerRunner(BaselineRunner):
         if op == "grouped_matmul" and len(inputs) == 2:
             a_groups, b_groups = inputs
             return torch.cat([a @ b for a, b in zip(a_groups, b_groups, strict=False)], dim=0)
+        if op == "rope" and len(inputs) == 1:
+            x = inputs[0]
+            head_dim = x.shape[-1]
+            seq_len = x.shape[1]
+            freqs = torch.einsum(
+                "i,j->ij",
+                torch.arange(seq_len, device=x.device, dtype=x.dtype),
+                1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=x.dtype) / head_dim)),
+            )
+            emb = torch.cat([freqs, freqs], dim=-1)
+            cos_emb = torch.cos(emb).unsqueeze(0)
+            sin_emb = torch.sin(emb).unsqueeze(0)
+            x1 = x[..., : head_dim // 2]
+            x2 = x[..., head_dim // 2 :]
+            rotated = torch.cat([-x2, x1], dim=-1)
+            return x * cos_emb + rotated * sin_emb
         if op == "flash_attention" and len(inputs) == 3:
             return F.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2], is_causal=True)
         if op == "cross_attention" and len(inputs) == 3:

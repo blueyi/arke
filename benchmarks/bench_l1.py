@@ -189,6 +189,8 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
             torch.randn(num_kv_groups, N, head_dim, device="cuda", dtype=dtype),
             torch.randn(num_kv_groups, N, head_dim, device="cuda", dtype=dtype),
         )
+    if op == "rope":
+        return (torch.randn(M, N, max(K, 64), device="cuda", dtype=dtype),)
     if op == "cross_attention":
         q_len = max(N // 2, 1)
         head_dim = max(K, 64)
@@ -316,6 +318,22 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
         k_exp = k.repeat_interleave(repeats, dim=0)
         v_exp = v.repeat_interleave(repeats, dim=0)
         return torch.nn.functional.scaled_dot_product_attention(q, k_exp, v_exp, is_causal=True)
+    if op == "rope" and len(inputs) == 1:
+        x = inputs[0]
+        head_dim = x.shape[-1]
+        seq_len = x.shape[1]
+        freqs = torch.einsum(
+            "i,j->ij",
+            torch.arange(seq_len, device=x.device, dtype=x.dtype),
+            1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=x.dtype) / head_dim)),
+        )
+        emb = torch.cat([freqs, freqs], dim=-1)
+        cos_emb = torch.cos(emb).unsqueeze(0)
+        sin_emb = torch.sin(emb).unsqueeze(0)
+        x1 = x[..., : head_dim // 2]
+        x2 = x[..., head_dim // 2 :]
+        rotated = torch.cat([-x2, x1], dim=-1)
+        return x * cos_emb + rotated * sin_emb
     if op == "cross_attention" and len(inputs) == 3:
         return torch.nn.functional.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2])
     raise NotImplementedError(f"No correctness reference for L1 op: {op}")

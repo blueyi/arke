@@ -1782,29 +1782,32 @@
         "extreme-long",
         "extreme-batch"
       ],
-      "shape_tags_observed": [],
-      "coverage_required_shapes_observed": [],
+      "shape_tags_observed": [
+        "gpt2-sm-128"
+      ],
+      "coverage_required_shapes_observed": [
+        "gpt2-sm-128"
+      ],
       "coverage_missing_shape_tags": [
+        "gpt2-sm-512",
+        "llama2-512",
+        "llama2-2k",
+        "llama3-q-512",
+        "llama3-kv-512",
+        "qwen25-q-512",
+        "qwen25-kv-512",
         "ds-v2-512",
         "ds-v3-2k",
-        "extreme-batch",
-        "extreme-long",
-        "gpt2-sm-128",
-        "gpt2-sm-512",
-        "llama2-2k",
-        "llama2-512",
         "llama3-8k",
-        "llama3-kv-512",
-        "llama3-q-512",
+        "qwen25-32k",
         "non-align-1",
         "non-align-2",
-        "qwen25-32k",
-        "qwen25-kv-512",
-        "qwen25-q-512"
+        "extreme-long",
+        "extreme-batch"
       ],
-      "has_track6_result": false,
-      "correctness_evidence_present": false,
-      "performance_evidence_present": false
+      "has_track6_result": true,
+      "correctness_evidence_present": true,
+      "performance_evidence_present": true
     },
     {
       "op": "fused_linear_cross_entropy",
