@@ -1,44 +1,48 @@
 # Arke
 
-> **Let LLMs write the kernels. Let compilers check the math.**
+> **Let LLMs write the kernels and choose the optimizations. Let compilers verify the result.**
 
 ---
 
-**Arke** (*/ˈɑːrki/*) is an AI-native operator programming language and compiler toolchain for GPU/NPU tensor operators. The entire pipeline — from kernel definition through LLM-driven strategy search to peak performance — is designed for minimal token consumption, with optional `@rationale` annotations capturing expert knowledge to guide optimization. A single kernel definition targets NVIDIA, Ascend, and beyond, achieving vendor-library-level performance across hardware targets.
+## Current Status
 
-> **⚠️ Phase 1 S6-S9 Refactor In Progress**
->
-> The project is undergoing a major refactoring (S6-S9). Old IR implementation has been removed.
-> Backup of S0-S5 state: branch `phase1-s0s5-backup`.
->
-> Current status: S6 (Compiler Infrastructure) — see `docs/roadmap/plan.md`.
-
-## About the Name
-
-**Arke** (Ἄρκη) — a swift-footed messenger goddess in Greek mythology. Zeus later gave her iridescent wings to Thetis as a wedding gift, symbolizing speed and brilliance.
-
-In our context, Arke is the messenger between two worlds — translating **what to compute** (semantic intent) into **how to compute it** (hardware-specific strategy), through rapid, iterative AI-driven optimization cycles.
+Arke is a native LLM programming language, IR, compiler toolchain, and agent engineering system for GPU/NPU kernels. It combines benchmark systems to drive LLM for extreme kernel of operator functionality and performance generalization. 
 
 ## Key Features
 
-### LLM-Native Language
+### Project-Level Features
 
-- **Semantic/Strategy Separation** — "What to compute" (immutable math) and "how to optimize" (searchable decisions) are independent layers, enabling LLMs to explore strategies without risking correctness
-- **Minimal-Token End-to-End** — The entire pipeline — definition, search, verification, iteration — consumes an order of magnitude fewer tokens than direct code generation
-- **Bounded Action Space** — LLMs select from compiler-enumerated legal actions, not free-form code — turning optimization into navigating a decision tree
-- **`@rationale` Annotations** — Every optimization decision carries a natural language explanation, preserved in IR as a first-class construct for auditability and cross-hardware knowledge transfer
+- **AI-First Design** — Arke treats LLMs as optimization decision makers, not just code generators.
+- **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are represented independently, enabling safe and reversible strategy exploration.
+- **Minimal-Token Efficiency** — The path from kernel definition through optimization and verification is designed to minimize token consumption.
+- **Compiler-Verified Optimization** — Optimization decisions are validated through deterministic checks, from static legality to numerical correctness and performance.
+- **`@rationale` as a First-Class Artifact** — Decisions carry natural-language explanations that make optimization trajectories auditable, reusable, and learnable.
+- **Cross-Hardware Performance Ambition** — A single semantic definition can lower toward multiple hardware targets while preserving a consistent optimization model.
 
-### LLM-Native Compiler Toolchain
+### The LLM-Native Stack
 
-- **Compiler-as-Verifier** — The compiler does not optimize; it verifies every LLM decision through progressive checks: V0 Static (<1ms) → V1 Numerical → V2 Performance
-- **Structured LLM-Compiler Protocol** — LLM and compiler interact through a closed-loop tool-use API (analyze → decide → verify → iterate), not free-text generation
-- **Safe Exploration** — Checkpoint/rollback with correctness-first gating (Function > Accuracy > Performance); LLMs explore boldly because invalid decisions are caught at V0 in under 1ms
-- **Multi-Hardware** — Single kernel definition targets NVIDIA, Ascend, and beyond; strategy adapts per hardware, semantics stay fixed
+#### LLM-Native Language
 
-## Architecture
+Arke's `.ak` language is a compact operator description surface for both humans and LLMs. It separates `kernel` semantics from `strategy` decisions so the mathematical definition remains stable while optimization policy evolves independently.
 
-```
-      Python │ Triton │ CUDA │ Natural Language │ ...
+#### LLM-Native IR
+
+Arke IR makes the split explicit: `Semantic IR` captures what to compute, while `Strategy IR` captures how to optimize. This separation is the foundation for bounded action spaces, staged verification, rollback, and multi-backend lowering.
+
+#### LLM-Native Compiler Toolchain
+
+The compiler is more than code generation. It enumerates legal actions, checks IR validity, lowers to backend-specific representations, and measures correctness and performance under a structured verification flow.
+
+#### AI Agent System
+
+Arke's agent layer drives the optimization loop itself: analyze the kernel, choose legal actions, apply decisions with `@rationale`, verify outcomes, rollback when necessary, and iterate under compiler-enforced constraints.
+
+## Architecture At A Glance
+
+At a high level: `Semantic IR` defines **what** to compute, `Strategy IR` defines **how** to optimize, the compiler validates and lowers, and the agent iterates within that structured space.
+
+```text
+  Natural language │ Python/Triton | CUDA/Ascend C │ .ak source │ Benchmarks │ ...
                              │
                              │ LLM translates
                              ▼
@@ -50,11 +54,13 @@ In our context, Arke is the messenger between two worlds — translating **what 
                                ▼
   ┌────────────────────────────────────────────────────────────┐
   │            Semantic IR — WHAT to compute                   │
-  │         (immutable computation graph, pure math)           │
+  │         (immutable math, graph structure, correctness)     │
   └────────────────────────────┬───────────────────────────────┘
                                │
   ┌────────────────────────────▼───────────────────────────────┐
-  │         LLM ◄══ Structured Protocol ══► Compiler           │
+  │   LLM(Agent loop) ◄══ Structured Protocol ══► Compiler     │
+  │                                                            │
+  │   analyze → choose → apply → verify → rollback → iterate   │
   │                                                            │
   │  LLM Agent (Decides)       ArkeEnv (Verifies)              │
   │  ┌──────────────────┐      ┌─────────────────────────────┐ │
@@ -62,11 +68,12 @@ In our context, Arke is the messenger between two worlds — translating **what 
   │  │ select action    │◄─────│ (bounded decision space)    │ │
   │  │ apply @rationale │─────►│ validate: V0(<1ms)→V1→V2    │ │
   │  │ iterate / stop   │◄─────│ checkpoint / rollback       │ │
-  │  └──────────────────┘      └──────────────┬──────────────┘ │
+  │  └──────────────────┘      └───────────────┬─────────────┘ │
   │                                            │               │
-  │  ┌─────────────────────────────────────────▼──────────────┐│
-  │  │  Strategy IR — HOW to optimize (decision-by-decision)  ││
-  │  └────────────────────────────────────────────────────────┘│
+  │  ┌─────────────────────────────────────────▼─────────────┐ │
+  │  │           Strategy IR — HOW to optimize               │ │
+  │  |    explicit decisions, rationale, backend-aware flow  | │
+  │  └───────────────────────────────────────────────────────┘ │
   └────────────────────────────┬───────────────────────────────┘
                                │
   ┌────────────────────────────▼───────────────────────────────┐
@@ -83,84 +90,82 @@ In our context, Arke is the messenger between two worlds — translating **what 
   └────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Example
+- `Semantic IR` is the source of truth for correctness-oriented reasoning.
+- `Strategy IR` keeps optimization decisions explicit instead of burying them in free-form backend code.
+- The compiler owns legality, validation, lowering, and measurement.
+- The agent operates inside a bounded, inspectable optimization loop instead of an open-ended code generation loop.
 
-Arke separates **what to compute** from **how to optimize** — the kernel author declares pure math, and the optimization strategy is a separate, machine-searchable artifact that an LLM agent can explore and refine.
+## Minimal Example
+
+Arke separates pure computation from optimization policy. The `kernel` block says what to compute; the `strategy` block says how to optimize it for a target.
 
 ```arke
-// ─── Semantic Layer: WHAT to compute ───
-// Pure math declaration. No tiling, no thread mapping, no hardware details.
-// This is the single source of truth for correctness verification.
 kernel fused_matmul_relu(
     A: Tensor<[1024, 512], f16>,
     B: Tensor<[512, 2048], f16>
 ) -> Tensor<[1024, 2048], f16> {
-    let C = matmul(A, B);    // Matrix multiplication
-    let Y = relu(C);          // Elementwise activation
+    let C = matmul(A=A, B=B);
+    let Y = relu(X=C);
     return Y;
 }
 
-// ─── Strategy Layer: HOW to optimize ───
-// Separate from the kernel — can be searched, modified, or regenerated
-// without changing the computation semantics.
-// Each decision is a discrete, reversible action the LLM agent can explore.
 strategy fused_matmul_relu for target("nvidia_ampere") {
-    // Tile the i-loop into 64×16 blocks
-    // → 64 maps to L2 cache lines, 16 maps to warp size
     tile(loop="i", factors=[64, 16])
-        @rationale("L2 cache line = 64, warp size = 16");
-
-    // Tile the j-loop for memory coalescing
+        @rationale("align tiles with the target's execution structure");
     tile(loop="j", factors=[128, 8])
-        @rationale("maximize memory coalescing");
-
-    // Fuse relu into matmul as an epilogue
-    // → eliminates one global memory round-trip
-    fuse(ops=["matmul", "relu"], type=epilogue);
+        @rationale("improve memory coalescing on the output path");
+    fuse(ops=["matmul", "relu"], type=epilogue)
+        @rationale("remove an intermediate write to global memory");
 }
 ```
 
-**Why this design:**
+## Why This Design Works
 
-- **Correctness is verifiable** — the semantic layer is pure math, checkable against a NumPy reference
-- **Strategy is searchable** — each decision (tile size, fusion, placement) is a discrete action an LLM can enumerate, apply, and rollback
-- `**@rationale` is auditable** — every optimization carries a natural language explanation, making LLM reasoning transparent
+- **Verifiable** — semantics stay separate from optimization, so correctness can be checked against a stable computation definition.
+- **Searchable** — optimization is expressed as explicit decisions rather than hidden inside handwritten backend code.
+- **LLM-friendly** — the language and IR reduce token-heavy boilerplate while preserving enough structure for planning and validation.
+- **Portable** — semantics remain stable while lowering and strategy specialization adapt to hardware targets.
 
-### Token Efficiency
+## Token Efficiency
 
-Arke minimizes token consumption across the full optimization pipeline — not just the kernel definition, but the entire path from specification to peak performance.
+Arke is designed to reduce token usage across the full optimization loop, not just the surface syntax of a kernel definition.
 
-**Representation cost** (GPT-4 tokenizer, fused matmul+relu):
+| Representation                      | Tokens | Ratio  |
+| ----------------------------------- | ------ | ------ |
+| **Arke `.ak`** (kernel only)        | 72     | **1x** |
+| **Arke `.ak`** (kernel + strategy)  | 160    | 2x     |
+| LLM direct-write Triton             | 563    | 8x     |
+| Triton (autotuned, hand-written)    | 1,102  | 15x    |
 
+- **Definition** — semantic intent is represented directly instead of backend boilerplate.
+- **Search** — optimization steps become compact actions, not whole-program rewrites.
+- **Verification** — deterministic checks replace long back-and-forth debugging loops.
+- **Iteration** — invalid strategies rollback cleanly without regenerating everything.
 
-| Representation                     | Tokens | Ratio  |
-| ---------------------------------- | ------ | ------ |
-| **Arke `.ak`** (kernel only)       | 72     | **1×** |
-| **Arke `.ak`** (kernel + strategy) | 160    | 2×     |
-| LLM direct-write Triton            | 563    | 8×     |
-| Triton (autotuned, hand-written)   | 1,102  | 15×    |
+For a deeper analysis, see [docs/architecture/token-efficiency-analysis.md](docs/architecture/token-efficiency-analysis.md).
 
+## Quick Start
 
-**End-to-end optimization cost** — beyond representation, Arke reduces tokens at every stage:
+### Prerequisites
 
-- **Kernel definition**: Semantic IR captures intent; no tiling/masking/memory boilerplate
-- **Strategy search**: Each optimization decision is a structured action (~~10 tokens), not a full code rewrite (~~500 tokens)
-- **Verification**: Compiler checks correctness deterministically — no multi-turn "fix this bug" debugging loops
-- **Iteration**: Failed strategies roll back cleanly; the LLM tries the next option without regenerating the whole kernel
+- Linux (tested on Ubuntu / WSL2)
+- Python 3.10+
+- NVIDIA GPU and CUDA for the GPU-oriented setup paths
 
-The result: LLMs reach peak-performance kernels spending a fraction of the tokens that direct code generation requires.
-
-## Environment Setup
-
-Arke now includes a **one-click Python environment bootstrap** for fresh machines.
-
-### Quick start
+### One-Click Setup
 
 ```bash
-make setup        # default GPU/dev profile
-make setup-cpu    # CPU/dev profile
-make setup-gpu    # GPU/dev profile
-make setup-bench  # full benchmark profile
+git clone https://github.com/arke-lang/arke.git
+cd arke
+make setup
+```
+
+Other setup profiles:
+
+```bash
+make setup-cpu
+make setup-gpu
+make setup-bench
 ```
 
 You can also use the bootstrap script directly:
@@ -171,287 +176,113 @@ scripts/bootstrap_env.sh gpu-dev
 scripts/bootstrap_env.sh bench
 ```
 
-If you do not specify a venv path, Arke creates a project-local environment at:
-
-```bash
-.venv
-```
-
-This directory is ignored by git.
-
-To use a custom venv path:
-
-```bash
-make setup-gpu VENV=~/.venvs/arke
-# or
-ARKE_VENV=~/.venvs/arke scripts/bootstrap_env.sh gpu-dev
-```
-
-If a usable venv already exists on the machine (e.g. `~/.venvs/arke`),
-you can reuse it directly without re-bootstrapping:
-
-```bash
-~/.venvs/arke/bin/python -m pytest tests/ -q
-```
-
-Only re-run `make setup-*` if a required dependency is missing.
-
-Repository-local git defaults can also be configured with:
-
-```bash
-make git-setup-defaults
-```
-
-Full guide:
-- [Python environment setup](docs/architecture/python-environment-setup.md)
-
-## Python API
-
-```python
-import arke
-
-result = arke.optimize(
-    kernel="matmul",
-    shape=[1024, 512, 2048],
-    target="nvidia_ampere",
-    llm="anthropic"
-)
-
-print(result.performance)  # vs vendor library baseline
-print(result.trajectory)   # Full optimization trace
-```
-
----
-
-## 🗺️ Roadmap
-
-Four phases from hypothesis validation to full compiler stack:
-
-```
-Phase 1: Arke → Triton → NVIDIA GPU     SIMT MVP ✅; S6–S9 (compiler infra → v1.0) in progress
-Phase 2: Arke → Triton → Ascend NPU     SIMD feasibility     (next)
-Phase 3: Arke → MLIR Dialect            Full compiler control
-Phase 4: Arke → LLVM IR                 100% hardware completeness
-```
-
-**Core principle:** Each Phase validates Arke's capabilities on a new architectural dimension.
-NVIDIA (Phase 1) proves SIMT feasibility. Ascend (Phase 2) proves cross-architecture
-generalization. MLIR (Phase 3) removes Triton's abstraction ceiling. LLVM IR (Phase 4)
-achieves maximum hardware expression completeness and performance headroom.
-
----
-
-## Documentation
-
-
-| Document                                                                       | Description                                                                 |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| [plan.md](docs/roadmap/plan.md)                                                  | Development plan — single source of truth for all phases/stages/tasks                                       |
-| [completion-summary.md](docs/phase1/completion-summary.md)                        | Phase 1 G0-G5 completion summary                                                          |
-| [benchmark-design.md](docs/benchmark/benchmark-design.md)                         | Complete benchmark reference — baselines, shapes, scoring, operator sources |
-| [e2e-flow.md](docs/architecture/e2e-flow.md)                                         | End-to-end flow — user input to GPU execution walkthrough                   |
-| [python-environment-setup.md](docs/architecture/python-environment-setup.md)         | Python environment bootstrap — one-click setup for fresh Arke machines      |
-| [design-review.md](docs/phase1/design-review.md)                               | Design review — assumption validation, risk matrix                          |
-| [naming-system.md](docs/architecture/naming-system.md)                               | Naming conventions — global terminology rules                               |
-| [benchmarks/results/phase1/EVALUATION_REPORT.md](benchmarks/results/phase1/EVALUATION_REPORT.md) | Phase 1 Evaluation Report — all gates, L1/L2/L3 data, conclusions |
-
-
-| Spec                                                     | Description                                            |
-| -------------------------------------------------------- | ------------------------------------------------------ |
-| [arke-lang-spec-design.md](docs/spec/arke-lang-spec-design.md) | Arke language spec v2.0 design |
-| [arke-ir-spec-design.md](docs/spec/arke-ir-spec-design.md)     | Arke IR spec — multi-layer architecture design         |
-
-
-| Stage Plan                                               | Description                                            |
-| -------------------------------------------------------- | ------------------------------------------------------ |
-| [stage6-plan.md](docs/phase1/stage6-plan.md) | S6 detailed plan — Compiler Infrastructure |
-| [stage7-plan.md](docs/phase1/stage7-plan.md) | S7 detailed plan — Lang & IR v2 |
-| [stage8-plan.md](docs/phase1/stage8-plan.md) | S8 detailed plan — Agent Autonomy |
-| [stage9-plan.md](docs/phase1/stage9-plan.md) | S9 detailed plan — Phase 1 Final |
-
-**Documentation structure:**
-- `docs/roadmap/plan.md` — Roadmap with Phase/Stage gate criteria (high-level)
-- `docs/phase1/stage{N}-plan.md` — Detailed gate breakdown + task lists per stage
-- `docs/architecture/` — Technical architecture and design documents
-- `docs/spec/` — Language and IR specifications
-
-
-### Phase 1: Arke → Triton → GPU — Validate Hypothesis
-
-**Goal:** Prove LLM + structured IR + compiler verification produces correct, fast kernels.
-**Hardware:** NVIDIA Ampere (RTX 3060 Laptop, 6GB)
-
-| Stage | Gate | Status | Milestone |
-|:-----:|:----:|:------:|:----------|
-| S0-S5 | G0-G5 | ✅ | Environment, IR, Codegen, Agent, Evaluation, GPT-2 E2E |
-| S6 | G6 | ⬜ | **Compiler Infrastructure** — OpRegistry, Pass Pipeline, Backend Abstraction |
-| S7 | G7 | ⬜ | **Lang & IR v2** — Multi-layer IR, where clause, Specs, MLIR skeleton |
-| S8 | G8 | ⬜ | **Agent Autonomy** — Auto strategy, torch.compile, LLaMA-2 + DS-V2 E2E |
-| S9 | G9 | ⬜ | **Phase 1 Final** — 4 model E2E, Arke vs LLM-direct, v1.0 release |
-
-→ Development plan: [plan.md](docs/roadmap/plan.md)
-
----
-
-### Phase 2: Arke → Ascend Triton/AscendNPU IR — SIMD Architecture Validation
-
-**Goal:** Verify Arke Lang/IR works on SIMD architecture (Ascend NPU) via Ascend Triton backend.
-Arke-generated Ascend kernels must **outperform FlagGems on Ascend**.
-Complete Arke Lang/IR to cover Operator Categories B–E (Attention, Norm, Activation, Positional Encoding).
-
-**Hardware target:** Huawei Ascend 910B
-
-
-| Phase   | Objective                      | Gate  | Key Criteria                                                                                               |
-| ------- | ------------------------------ | ----- | ---------------------------------------------------------------------------------------------------------- |
-| **2.1** | Ascend env + IR completeness   | —     | Ascend Triton smoke test; Cat B/D/E ops in OP_CATALOG; SIMD decision kinds in Strategy IR                  |
-| **2.2** | Ascend Triton codegen          | P2-S1 | Cat A+C+D correctness 100% (Tier 2); LLM makes SIMD-aware decisions                                        |
-| **2.3** | Ascend performance vs FlagGems | P2-S2 | matmul+rmsnorm+swiglu geomean ≥ FlagGems/Ascend                                                            |
-| **2.4** | FlashAttention + GQA           | P2-S3 | FA Tier 4 ≥12 shapes correct on NVIDIA (≥0.7× FA-2); ≥8 shapes correct on Ascend; DeepSeek shapes included |
-| **2.5** | RoPE/YaRN + @rationale         | P2-S4 | RoPE/YaRN correctness incl. DeepSeek 8K-32K; @rationale ≥10% cross-arch lift                               |
-
-
-**Phase 2 Summary Gate (P2-S_FINAL):**
-Cat A+B+C+D+E all passing • Tier 2 + Tier 4 shapes • Ascend perf ≥ FlagGems • H4 (cross-hardware) verified
-
----
-
-### Phase 3: Arke → MLIR Dialect — Full Compiler Control
-
-**Goal:** Replace Triton backend with Arke MLIR Dialect for NVIDIA + Ascend.
-MLIR removes Triton's abstraction ceiling, enabling deeper LLM decisions (Level 2: loop nest, memory access)
-and more complete operator support. Performance must **match or exceed Phase 2 Triton path**.
-
-**Hardware target:** NVIDIA + Ascend (via NVVM dialect + AscendNPU IR)
-
-
-| Phase   | Objective                 | Gate  | Key Criteria                                                                                           |
-| ------- | ------------------------- | ----- | ------------------------------------------------------------------------------------------------------ |
-| **3.1** | Arke MLIR Dialect design  | —     | `arke.kernel` + `arke.strategy` dialect; Strategy IR Level 2 fields (loop_nest, memory_access_pattern) |
-| **3.2** | MLIR correctness (NVIDIA) | P3-S1 | Cat A+C+D via MLIR: Tier 2+4 100% correct                                                              |
-| **3.3** | MLIR performance ≥ Triton | P3-S2 | All Cat A+B+C+D MLIR geomean ≥ Phase 2 Triton                                                          |
-| **3.4** | LLM Level-2 decisions     | P3-S3 | LLM L1+2 ≥ L1+default L2 by ≥15% (matmul), ≥20% (FA)                                                   |
-| **3.5** | Ascend via MLIR           | P3-S4 | matmul+rmsnorm correct on Ascend via MLIR; perf ≥ Phase 2                                              |
-
-
-**Phase 3 Summary Gate (P3-S_FINAL):**
-Cat A+B+C+D+E via MLIR • Tier 2+Tier 4 • MLIR ≥ Triton (NVIDIA+Ascend) • LLM Level-2 value verified
-
----
-
-### Phase 4: Arke → LLVM IR — 100% Hardware Completeness
-
-**Goal:** Full compiler stack emitting LLVM IR directly, achieving **100% hardware expression completeness**
-and performance headroom beyond MLIR. Supports ≥3 hardware backends (NVIDIA + Ascend + AMD).
-LLM Level-3 decisions (register, barrier, instruction scheduling) become possible.
-
-**Hardware target:** NVIDIA + Ascend + AMD (≥3 backends)
-
-
-| Phase   | Objective                     | Gate       | Key Criteria                                                  |
-| ------- | ----------------------------- | ---------- | ------------------------------------------------------------- |
-| **4.1** | LLVM IR emission              | P4-S1      | matmul via LLVM correct on ≥2 backends (Tier 2)               |
-| **4.2** | LLVM performance ≥ MLIR       | P4-S2      | Cat A+C+D LLVM geomean ≥ MLIR + 5%                            |
-| **4.3** | LLM Level-3 decisions         | P4-S3      | LLM L1+2+3 ≥ L1+2+default L3 by ≥5%                           |
-| **4.4** | FlashAttention/MLA + multi-HW | P4-S4      | FA via LLVM ≥0.85× FA-2; MLA correct; ≥3 backends ≥90% vendor |
-| **4.5** | Production release v1.0.0     | P4-S_FINAL | pip package; ≥3 platforms; @rationale KB ≥200 entries         |
-
-
-**Phase 4 Summary Gate (P4-S_FINAL):**
-Cat A+B+C+D+E+F via LLVM • ≥3 backends ≥90% vendor • LLM Level 1-3 full stack • v1.0.0
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Linux (tested on Ubuntu 22.04 / WSL2)
-- NVIDIA GPU with CUDA ≥ 12.1 (tested on RTX 3060)
-- Python 3.10+
-
-### One-Click Setup
-
-```bash
-git clone https://github.com/arke-lang/arke.git
-cd arke
-make setup    # Creates venv, installs PyTorch + Triton + deps, verifies GPU
-```
-
 ### Manual Setup
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
-python -c "import torch; print(torch.cuda.is_available())"  # Should print True
-pytest tests/ -q  # Run tests
+python -m pytest tests/ -q
 ```
 
-### Run LLM Optimization Demo
+### First Verified Command
+
+The current top-level CLI entry point exposed by the package is `arke compile`:
 
 ```bash
-# Set LLM provider (Anthropic example)
-export ANTHROPIC_API_KEY=your-key-here
-
-# Run matmul optimization
-python examples/agents/agent_matmul.py
+arke compile examples/operators/01_matmul.ak
 ```
 
----
+To write the resulting `.akir` JSON to a file:
 
-## 🧰 Project Structure
-
+```bash
+arke compile examples/operators/01_matmul.ak -o /tmp/matmul.akir
 ```
-arke/
-├── ir/                        # IR Layer
-│   ├── semantic.py            # Semantic IR (what to compute)
-│   ├── strategy.py            # Strategy IR (how to optimize)
-│   ├── builder.py             # Python → IR builder
-│   ├── ops/                   # Operator catalog (10 ops)
-│   ├── schemas/               # JSON Schemas
-│   └── targets/               # HW profiles (nvidia_ampere)
-├── engine/                    # Core Engine
-│   ├── env.py                 # ArkeEnv (LLM ↔ compiler interface)
-│   ├── legal_actions.py       # Legal action enumeration
-│   ├── validator.py           # V0 static validation
-│   ├── numerical_check.py     # V1 numerical validation
-│   ├── accuracy.py            # Accuracy benchmark framework
-│   └── reference_sources.py   # Pluggable reference sources
-├── agent/                     # LLM Agent Runtime
-│   ├── runner.py              # LLM optimization loop
-│   ├── session.py             # Session lifecycle + GPU verification
-│   ├── prompts.py             # System prompt builder
-│   ├── llm_config.py          # LLM provider config
-│   └── tools_schema.py        # 10 tool definitions
-├── backend/                   # Code Generation
-│   ├── triton_backend.py      # Triton backend (translate + compile + run)
-│   ├── triton_template_engine.py
-│   └── base.py                # Backend ABC
-├── learn/                     # Learning System
-│   └── trajectory.py          # JSONL trajectory export
-├── lang/                      # Language Frontend (Phase 1.6)
-│   └── ast.py                 # AST node definitions
-├── pipeline.py                # E2E pipeline
-└── examples/
-    └── agent_matmul.py        # LLM agent optimization demo
 
-benchmarks/                    # Benchmark System
-├── baselines/                 # Baseline runners (P0-P5)
-│   ├── cublas.py              # P0: cuBLAS/cuDNN via PyTorch
-│   ├── flaggems.py            # P1: FlagGems (200+ Triton ops)
-│   ├── liger.py               # P1: Liger-Kernel
-│   ├── pytorch_eager.py       # P3: PyTorch eager
-│   ├── inductor.py            # P4: torch.compile
-│   └── arke_runner.py         # P5: Arke KernelCache
-├── bench_l1.py                # L1: Single operator benchmarks
-├── bench_l2.py                # L2: Fused operator benchmarks
-├── bench_l3.py                # L3: E2E model benchmarks
-├── cli.py                     # Unified CLI entry point
-├── report.py                  # Markdown report generator
-├── shapes.py                  # Shape matrix definitions
-├── measure.py                 # CUDA event measurement utils
-└── results/                   # Archived benchmark results
+For environment details and custom venv paths, see [docs/architecture/python-environment-setup.md](docs/architecture/python-environment-setup.md).
+
+## Current CLI
+
+Today, the documented stable package entry point is the compiler-facing CLI:
+
+- `arke compile <file.ak>` — compile `.ak` source into Arke IR / `.akir` JSON
+
+Design documents describe richer optimization flows and agent-driven workflows, but those should be read as architecture and roadmap material unless a specific interface is documented here and implemented in the package entry points.
+
+## Roadmap Snapshot
+
+Arke is developed in four phases:
+
+- **Phase 1** — Arke -> Triton -> NVIDIA GPU: validate the SIMT path, language/IR, compiler infrastructure, and benchmark system
+- **Phase 2** — Arke -> Triton -> Ascend NPU: validate cross-architecture generalization on SIMD hardware
+- **Phase 3** — Arke -> MLIR Dialect: gain deeper compiler control beyond Triton's abstraction boundary
+- **Phase 4** — Arke -> LLVM IR: pursue lower-level backend completeness and broader hardware coverage
+
+The active roadmap, Gate criteria, and stage details live in [docs/roadmap/plan.md](docs/roadmap/plan.md).
+
+## Documentation Guide
+
+### Start Here
+
+The roadmap, Gate definitions, and benchmark terminology are maintained in the following docs:
+- [docs/roadmap/plan.md](docs/roadmap/plan.md) — development roadmap, stages, Gates, and project-level status
+- [docs/benchmark/benchmark-design.md](docs/benchmark/benchmark-design.md) — benchmark model and the `BL` / `OT` / `ST` / `L` terminology used throughout the project
+- [docs/architecture/e2e-flow.md](docs/architecture/e2e-flow.md) — end-to-end system walkthrough
+
+### Active Specs
+
+- [docs/spec/arke-lang-spec-v2.md](docs/spec/arke-lang-spec-v2.md) — active Arke language specification
+- [docs/spec/arke-ir-spec-v2.md](docs/spec/arke-ir-spec-v2.md) — active multi-layer IR specification
+- [docs/spec/symbolic-dimension-spec.md](docs/spec/symbolic-dimension-spec.md) — symbolic dimension model
+- [docs/spec/pass-infrastructure-spec.md](docs/spec/pass-infrastructure-spec.md) — pass system specification
+- [docs/spec/op-registry-interface.md](docs/spec/op-registry-interface.md) — operator registry contract
+
+### Architecture And Design
+
+- [docs/architecture/arke-lang-spec-design.md](docs/architecture/arke-lang-spec-design.md) — language design rationale
+- [docs/architecture/arke-ir-spec-design.md](docs/architecture/arke-ir-spec-design.md) — IR design rationale
+- [docs/architecture/arke-compiler-infrastructure.md](docs/architecture/arke-compiler-infrastructure.md) — compiler infrastructure design
+- [docs/architecture/agent-design.md](docs/architecture/agent-design.md) — agent architecture and integration modes
+- [docs/architecture/naming-system.md](docs/architecture/naming-system.md) — canonical terminology and naming
+- [docs/architecture/python-environment-setup.md](docs/architecture/python-environment-setup.md) — environment bootstrap details
+- [docs/architecture/token-efficiency-analysis.md](docs/architecture/token-efficiency-analysis.md) — token-cost analysis
+
+### Benchmark System
+
+- [docs/benchmark/benchmark-design.md](docs/benchmark/benchmark-design.md) — benchmark overview
+- [docs/benchmark/benchmark-ops.md](docs/benchmark/benchmark-ops.md) — operator tiers and catalog
+- [docs/benchmark/benchmark-shapes.md](docs/benchmark/benchmark-shapes.md) — shape tiers and matrices
+- [docs/benchmark/benchmark-protocol.md](docs/benchmark/benchmark-protocol.md) — measurement and scoring protocol
+- [docs/benchmark/benchmark-csv-spec.md](docs/benchmark/benchmark-csv-spec.md) — benchmark result schema
+- [docs/benchmark/operator-source-registry.md](docs/benchmark/operator-source-registry.md) — baseline source registry
+
+### Stage Plans
+
+- [docs/phase1/stage6-plan.md](docs/phase1/stage6-plan.md) — compiler infrastructure
+- [docs/phase1/stage7-plan.md](docs/phase1/stage7-plan.md) — Lang and IR v2
+- [docs/phase1/stage8-plan.md](docs/phase1/stage8-plan.md) — agent autonomy
+- [docs/phase1/stage9-plan.md](docs/phase1/stage9-plan.md) — Phase 1 finalization
+- [docs/phase1/design-review.md](docs/phase1/design-review.md) — design review and risk analysis
+- [docs/phase1/completion-summary.md](docs/phase1/completion-summary.md) — completed Phase 1 summary for earlier stages
+
+### Historical / Deprecated
+
+Historical design material is kept under [`docs/deprecated/`](docs/deprecated/) for reference. It should not be treated as the active specification or roadmap unless a newer document explicitly points back to it.
+
+## Project Structure
+
+```text
+arke/         core language, IR, compiler, backend, and agent packages
+benchmarks/   benchmark runners, baselines, reports, and result artifacts
+docs/         roadmap, specs, architecture notes, and stage plans
+examples/     example `.ak` operators and walkthrough materials
+tests/        automated coverage for language, compiler, benchmarks, and agent-adjacent flows
+scripts/      bootstrap and project utility scripts
 ```
+
+## About The Name
+
+**Arke** (Ἄρκη) is named after the swift-footed messenger of Greek mythology. In the context of this project, the name reflects a bridge between semantic intent and hardware-specific execution strategy.
 
 ## License
 
