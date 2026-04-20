@@ -187,6 +187,15 @@ make setup-gpu VENV=~/.venvs/arke
 ARKE_VENV=~/.venvs/arke scripts/bootstrap_env.sh gpu-dev
 ```
 
+If a usable venv already exists on the machine (e.g. `~/.venvs/arke`),
+you can reuse it directly without re-bootstrapping:
+
+```bash
+~/.venvs/arke/bin/python -m pytest tests/ -q
+```
+
+Only re-run `make setup-*` if a required dependency is missing.
+
 Repository-local git defaults can also be configured with:
 
 ```bash

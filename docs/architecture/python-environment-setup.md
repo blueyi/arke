@@ -85,6 +85,25 @@ Override it with `ARKE_PYTHON`:
 ARKE_PYTHON=python3.10 scripts/bootstrap_env.sh gpu-dev
 ```
 
+## Reusing a Pre-existing venv
+
+If a usable virtual environment already exists on the machine (for example
+a shared one at `~/.venvs/arke` previously created by `make setup-gpu` or
+`make setup-bench`), you do **not** need to re-run the bootstrap script.
+You can use it directly:
+
+```bash
+~/.venvs/arke/bin/python -c "import arke, torch; print(torch.__version__, torch.cuda.is_available())"
+~/.venvs/arke/bin/python -m pytest tests/ -q
+ARKE_GPU_TESTS=1 ~/.venvs/arke/bin/python -m pytest tests/test_benchmark_correctness_probe.py -q
+```
+
+Only re-bootstrap (`make setup-gpu VENV=~/.venvs/arke`) if imports fail
+or a required dependency (e.g. `torch`, `triton`, `arke` editable install)
+is missing or outdated. This is the recommended default for day-to-day
+development and CI-style local runs on machines that already have the
+environment provisioned.
+
 ## What the Bootstrap Script Does
 
 The bootstrap flow is:
