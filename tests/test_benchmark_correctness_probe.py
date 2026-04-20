@@ -21,6 +21,13 @@ from benchmarks.bench_l1 import _measure_l1_correctness
         (InductorRunner, "relu", (128, 128, 0)),
         (CuBLASRunner, "matmul", (64, 64, 64)),
         (PyTorchEagerRunner, "matmul", (64, 64, 64)),
+        (CuBLASRunner, "tanh", (128, 128, 0)),
+        (PyTorchEagerRunner, "sigmoid", (128, 128, 0)),
+        (CuBLASRunner, "add", (128, 128, 0)),
+        (PyTorchEagerRunner, "mul", (128, 128, 0)),
+        (CuBLASRunner, "neg", (128, 128, 0)),
+        (PyTorchEagerRunner, "exp", (128, 128, 0)),
+        (CuBLASRunner, "rsqrt", (128, 128, 0)),
     ],
 )
 def test_l1_correctness_probe_ok_for_supported_runners(runner_cls, op, shape):
