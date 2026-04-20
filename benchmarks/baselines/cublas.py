@@ -153,6 +153,16 @@ class CuBLASRunner(BaselineRunner):
             return torch.nn.functional.gelu(inputs[0])
         if op == "silu" and len(inputs) == 1:
             return torch.nn.functional.silu(inputs[0])
+        if op == "tanh" and len(inputs) == 1:
+            return torch.tanh(inputs[0])
+        if op == "sigmoid" and len(inputs) == 1:
+            return torch.sigmoid(inputs[0])
+        if op == "neg" and len(inputs) == 1:
+            return -inputs[0]
+        if op == "exp" and len(inputs) == 1:
+            return torch.exp(inputs[0])
+        if op == "rsqrt" and len(inputs) == 1:
+            return torch.rsqrt(inputs[0])
         if op == "softmax" and len(inputs) == 1:
             return torch.nn.functional.softmax(inputs[0], dim=-1)
         if op == "layernorm" and len(inputs) == 1:
@@ -160,6 +170,33 @@ class CuBLASRunner(BaselineRunner):
             w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
             b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
             return torch.nn.functional.layer_norm(x, [x.shape[-1]], w, b)
+        if op == "rmsnorm" and len(inputs) == 1:
+            x = inputs[0]
+            w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            eps = 1e-6
+            return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps)) * w
+        if op == "rmsnorm_residual" and len(inputs) == 2:
+            x, residual = inputs
+            w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            eps = 1e-6
+            y = x + residual
+            return (y * torch.rsqrt(y.pow(2).mean(-1, keepdim=True) + eps)) * w
+        if op == "add" and len(inputs) == 2:
+            return inputs[0] + inputs[1]
+        if op == "mul" and len(inputs) == 2:
+            return inputs[0] * inputs[1]
+        if op == "reduce_sum" and len(inputs) == 1:
+            return torch.sum(inputs[0], dim=-1)
+        if op == "reduce_max" and len(inputs) == 1:
+            return torch.max(inputs[0], dim=-1).values
+        if op == "reduce_mean" and len(inputs) == 1:
+            return torch.mean(inputs[0], dim=-1)
         if op == "matmul" and len(inputs) == 2:
             return torch.matmul(inputs[0], inputs[1])
+        if op == "batch_matmul" and len(inputs) == 2:
+            return torch.bmm(inputs[0], inputs[1])
+        if op == "transpose" and len(inputs) == 1:
+            return inputs[0].T
+        if op == "flash_attention" and len(inputs) == 3:
+            return torch.nn.functional.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2], is_causal=True)
         return None

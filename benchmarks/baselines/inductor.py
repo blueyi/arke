@@ -131,6 +131,13 @@ class InductorRunner(BaselineRunner):
             out = fn(inputs[0], inputs[1])
             torch.cuda.synchronize()
             return out
+        if op == "batch_matmul" and len(inputs) == 2:
+            @torch.compile(mode="reduce-overhead")
+            def fn(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+                return torch.bmm(a, b)
+            out = fn(inputs[0], inputs[1])
+            torch.cuda.synchronize()
+            return out
         if op == "softmax" and len(inputs) == 1:
             @torch.compile(mode="reduce-overhead")
             def fn(x: torch.Tensor) -> torch.Tensor:
@@ -145,6 +152,25 @@ class InductorRunner(BaselineRunner):
                 b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
                 return torch.nn.functional.layer_norm(x, [x.shape[-1]], w, b)
             out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "rmsnorm" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+                eps = 1e-6
+                return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps)) * w
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "rmsnorm_residual" and len(inputs) == 2:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor, residual: torch.Tensor) -> torch.Tensor:
+                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+                eps = 1e-6
+                y = x + residual
+                return (y * torch.rsqrt(y.pow(2).mean(-1, keepdim=True) + eps)) * w
+            out = fn(inputs[0], inputs[1])
             torch.cuda.synchronize()
             return out
         if op == "relu" and len(inputs) == 1:
@@ -166,6 +192,55 @@ class InductorRunner(BaselineRunner):
             def fn(x: torch.Tensor) -> torch.Tensor:
                 return torch.nn.functional.silu(x)
             out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "tanh" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.tanh(x)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "sigmoid" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.sigmoid(x)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "neg" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return -x
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "exp" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.exp(x)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "rsqrt" and len(inputs) == 1:
+            @torch.compile(mode="reduce-overhead")
+            def fn(x: torch.Tensor) -> torch.Tensor:
+                return torch.rsqrt(x)
+            out = fn(inputs[0])
+            torch.cuda.synchronize()
+            return out
+        if op == "add" and len(inputs) == 2:
+            @torch.compile(mode="reduce-overhead")
+            def fn(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+                return a + b
+            out = fn(inputs[0], inputs[1])
+            torch.cuda.synchronize()
+            return out
+        if op == "mul" and len(inputs) == 2:
+            @torch.compile(mode="reduce-overhead")
+            def fn(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+                return a * b
+            out = fn(inputs[0], inputs[1])
             torch.cuda.synchronize()
             return out
         return None
