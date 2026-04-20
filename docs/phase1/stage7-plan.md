@@ -245,7 +245,7 @@ That means every unfinished task in S7 should be justified by one of these bench
 | T6.7 | Drive remaining Lang / IR / compiler refinements from BL5 benchmark gaps instead of local code convenience | P0 | continuous | 🟨 |
 | T6.8 | Persist correctness metrics & tolerances across benchmark artifacts (`PERF_ALL.csv`, summaries, per-op files) | P0 | 0.5d | ✅ |
 | T6.9 | Persist performance target evaluation fields (`perf_target`, `perf_actual`, `perf_pass`, `perf_gap`) across artifacts | P0 | 0.5d | ⬜ |
-| T6.10 | Build automation script to compute L1/L2 coverage gaps from `stage7_bl5_target_matrix.json` | P0 | 0.5d | ⬜ |
+| T6.10 | Build automation script to compute L1/L2 coverage gaps from `stage7_bl5_target_matrix.json` | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_coverage_gap` |
 | T6.11 | Generate machine-readable coverage dashboards / reports from automation outputs | P1 | 0.5d | ⬜ |
 | T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | ⬜ |
 
@@ -347,7 +347,7 @@ Remaining BL5 work is tracked under four component lenses, each feeding existing
 1. Continue extending `run_with_inputs(...)` / reference coverage from the current verified L1 subset into the remaining unsupported BL5 operators (drives T5.6–T5.8, T6.1).
 2. Audit write/index ops for probe-semantics pitfalls (e.g. repeated-index nondeterminism) before counting mismatches as implementation bugs (drives T6.7).
 3. Extend artifact writing so performance pass/fail is preserved in `PERF_ALL.csv` and summaries alongside the new correctness fields (T6.9).
-4. Generate a coverage-oriented report that highlights missing BL5 ops / shape tags directly from the target matrix (T6.10 → T6.11).
+4. Wire the coverage gap automation (`python -m benchmarks.stage7_coverage_gap`, written by T6.10) into Stage 7 dashboards and gate verification (drives T6.11 → T6.12). A first snapshot is already persisted at `benchmarks/results/phase1/stage7/track6/coverage_gap.json`.
 
 ## Dependencies
 
