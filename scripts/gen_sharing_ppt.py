@@ -34,7 +34,7 @@ FONT_MONO = "Consolas"
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
 
-TOTAL = 22
+TOTAL = 32
 
 # ------------------------------------------------------------------ helpers
 
@@ -220,22 +220,29 @@ def make_agenda(prs):
 
     items = [
         ("01", "背景：AI 编程编译的范式迁移", "为什么「四件套」不是可选项"),
-        ("02", "件套一 · Language：AI-Native DSL", "构建策略 / 必要性 / 技术讨论点"),
-        ("03", "件套二 · IR：多层 LLM-Native 中间表示", "L4 Semantic → L1 Instruction 的职责解耦"),
-        ("04", "件套三 · Compiler Toolchain", "OpRegistry × Pass Pipeline × 三级验证器"),
-        ("05", "件套四 · Agent Engineering", "有界动作空间 × 工具协议 × Rationale"),
-        ("06", "贯通：四件套如何协同", "Benchmark 驱动 · 跨硬件泛化 · 开放讨论"),
+        ("02–06", "四件套分述：Language / IR / Compiler / Agent",
+         "必要性 · 构建策略 · 技术讨论点"),
+        ("07", "业界技术洞察与方案全景",
+         "LLM-for-Code · Autotune · MLIR · Agentic Infra 四条主线"),
+        ("08", "AI 原生编译栈的 6 个必备特征 (T1–T6)",
+         "由业界洞察抽取，作为方案评估基线"),
+        ("09", "方案对比  ·  本方案 vs 业界",
+         "T1–T6 六维度对比表 + 优势简述"),
+        ("10", "整体技术架构  +  四件套各自架构图",
+         "Arke 总图 · Language · IR · Compiler · Agent"),
+        ("15", "贯通：职责矩阵 · 验证 · Benchmark · Token · 路线图 · Q&A",
+         "把架构锁到可度量的坐标上"),
     ]
-    top = Inches(2.0)
-    row_h = Inches(0.75)
+    top = Inches(1.85)
+    row_h = Inches(0.72)
     for i, (no, title, sub) in enumerate(items):
         y = top + i * row_h
-        panel(slide, Inches(0.9), y, Inches(11.5), Inches(0.65), BG_PANEL)
-        add_text(slide, Inches(1.05), y + Inches(0.12), Inches(0.9), Inches(0.45),
-                 no, size=18, bold=True, color=ACCENT, font=FONT_MONO)
-        add_text(slide, Inches(1.95), y + Inches(0.08), Inches(6.5), Inches(0.32),
-                 title, size=15, bold=True, color=FG)
-        add_text(slide, Inches(1.95), y + Inches(0.36), Inches(9.5), Inches(0.28),
+        panel(slide, Inches(0.9), y, Inches(11.5), Inches(0.62), BG_PANEL)
+        add_text(slide, Inches(1.05), y + Inches(0.12), Inches(1.3), Inches(0.42),
+                 no, size=15, bold=True, color=ACCENT, font=FONT_MONO)
+        add_text(slide, Inches(2.35), y + Inches(0.07), Inches(7.0), Inches(0.3),
+                 title, size=14, bold=True, color=FG)
+        add_text(slide, Inches(2.35), y + Inches(0.34), Inches(9.1), Inches(0.28),
                  sub, size=11, color=FG_MUTED)
     footer(slide, 2)
 
@@ -433,7 +440,7 @@ def make_discussion(prs, kicker, title, questions, page, accent=ACCENT):
 def make_integration(prs, page):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(slide)
-    slide_header(slide, "06 · 贯通", "四件套如何协同 —— 一张职责矩阵")
+    slide_header(slide, "15 · 贯通", "四件套如何协同 —— 一张职责矩阵")
 
     rows = [
         ("Language", ".ak v2 · where · tuple · @rationale",
@@ -485,7 +492,7 @@ def make_integration(prs, page):
 def make_verification(prs, page):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(slide)
-    slide_header(slide, "06 · 贯通", "三级验证 V0 / V1 / V2 在四件套中的归属")
+    slide_header(slide, "15 · 贯通", "三级验证 V0 / V1 / V2 在四件套中的归属")
 
     layers = [
         ("V0  静态验证  <1ms",
@@ -530,7 +537,7 @@ def make_verification(prs, page):
 def make_benchmark(prs, page):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(slide)
-    slide_header(slide, "06 · 贯通", "Benchmark 驱动 · Gate 把架构锁到可度量的坐标上")
+    slide_header(slide, "15 · 贯通", "Benchmark 驱动 · Gate 把架构锁到可度量的坐标上")
 
     add_text(slide, Inches(0.9), Inches(1.9), Inches(12), Inches(0.5),
              "OT × ST → BL × L  坐标", size=14, bold=True, color=ACCENT)
@@ -573,7 +580,7 @@ def make_benchmark(prs, page):
 def make_token_economics(prs, page):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(slide)
-    slide_header(slide, "06 · 贯通",
+    slide_header(slide, "15 · 贯通",
                  "Token 经济学  ·  为什么「让 LLM 做决策」比「让 LLM 写代码」便宜一个量级")
 
     data = [
@@ -617,7 +624,7 @@ def make_token_economics(prs, page):
 def make_roadmap(prs, page):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(slide)
-    slide_header(slide, "06 · 贯通", "路线图  ·  四件套与多后端同步演进")
+    slide_header(slide, "15 · 贯通", "路线图  ·  四件套与多后端同步演进")
 
     phases = [
         ("Phase 1", "Arke → Triton → NVIDIA GPU",
@@ -648,6 +655,726 @@ def make_roadmap(prs, page):
                  milestone, size=11, color=FG_MUTED, anchor=MSO_ANCHOR.TOP)
         add_text(slide, Inches(2.8), y + Inches(0.55), Inches(9.5), Inches(0.4),
                  f"→  {impact}", size=12, color=ACCENT)
+    footer(slide, page)
+
+
+# ------------------------------------------------------------------ new blocks
+# Industry insights · Required traits · Comparison · Architecture diagrams
+
+
+def _arrow(slide, x1, y1, x2, y2, color=ACCENT, width_pt=1.5):
+    """Draw a simple arrow between two points."""
+    line = slide.shapes.add_connector(1, x1, y1, x2, y2)  # 1 = STRAIGHT
+    line.line.color.rgb = color
+    line.line.width = Pt(width_pt)
+    # arrow head
+    ln = line.line._get_or_add_ln()
+    from pptx.oxml.ns import qn
+    from lxml import etree
+    tail = etree.SubElement(ln, qn("a:tailEnd"))
+    tail.set("type", "triangle")
+    tail.set("w", "med")
+    tail.set("h", "med")
+    return line
+
+
+def _box(slide, left, top, width, height, text, *,
+         fill=BG_PANEL, stroke=ACCENT, text_color=FG,
+         size=12, bold=True, align=PP_ALIGN.CENTER,
+         shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, stroke_pt=1.0):
+    shp = slide.shapes.add_shape(shape_type, left, top, width, height)
+    if shape_type == MSO_SHAPE.ROUNDED_RECTANGLE:
+        shp.adjustments[0] = 0.15
+    _set_fill(shp, fill)
+    _set_line(shp, stroke, stroke_pt)
+    tf = shp.text_frame
+    tf.word_wrap = True
+    tf.margin_left = Inches(0.05)
+    tf.margin_right = Inches(0.05)
+    tf.margin_top = Inches(0.03)
+    tf.margin_bottom = Inches(0.03)
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    p = tf.paragraphs[0]
+    p.alignment = align
+    run = p.add_run()
+    run.text = text
+    run.font.name = FONT_BODY
+    run.font.size = Pt(size)
+    run.font.bold = bold
+    run.font.color.rgb = text_color
+    return shp
+
+
+def _small_label(slide, left, top, width, text, *, color=FG_MUTED, size=10, bold=False):
+    add_text(slide, left, top, width, Inches(0.25), text,
+             size=size, bold=bold, color=color, align=PP_ALIGN.CENTER)
+
+
+def make_industry_insight_1(prs, page):
+    """Slide 1/2 of 业界技术洞察：四条主线趋势."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "07 · 业界洞察", "AI 编程编译前沿 · 四条主线正在交汇")
+
+    items = [
+        ("LLM-for-Code 的再定位", ACCENT, [
+            "GPT-4 / Claude / Gemini 直写 CUDA / Triton 已可用但不稳定",
+            "Meta CodeCompose · DeepMind AlphaCode · KernelBench 正基准化能力",
+            "共识：LLM 作为「代码生成器」→「决策者 + 验证器」组合",
+        ]),
+        ("编译器自动调优的极限", ACCENT_ALT, [
+            "Triton autotune · TVM MetaSchedule · AKG · Ansor 靠搜索空间",
+            "搜索空间爆炸 · 启发式难泛化 · 无专家知识表达能力",
+            "共识：需要把「人/LLM 的先验」接回调优循环",
+        ]),
+        ("MLIR 生态的繁荣与门槛", ACCENT_BLUE, [
+            "NVIDIA Triton · IREE · torch-mlir · XLA · Modular Mojo 持续扩张",
+            "dialect 爆炸 · C++/TableGen 门槛 · LLM 不可读",
+            "共识：MLIR 是底座，但需要一层「LLM-facing」中间层",
+        ]),
+        ("Agentic AI Infra 范式成型", ACCENT_RED, [
+            "Cursor · Claude Code · Devin · OpenClaw 验证 Tool-Use 范式",
+            "MCP / OpenAI Tools / Anthropic Tool Use 协议趋同",
+            "共识：结构化工具协议 + 预算 + Trajectory 成为 AI 系统标配",
+        ]),
+    ]
+    card_w = Inches(5.9)
+    card_h = Inches(2.35)
+    positions = [
+        (Inches(0.6), Inches(1.9)),
+        (Inches(6.7), Inches(1.9)),
+        (Inches(0.6), Inches(4.4)),
+        (Inches(6.7), Inches(4.4)),
+    ]
+    for (x, y), (title, col, lines) in zip(positions, items):
+        panel(slide, x, y, card_w, card_h, BG_PANEL)
+        accent_bar(slide, x, y, width=Inches(0.12), height=card_h, color=col)
+        add_text(slide, x + Inches(0.3), y + Inches(0.15), card_w - Inches(0.4),
+                 Inches(0.4), title, size=15, bold=True, color=col)
+        add_bullets(slide, x + Inches(0.3), y + Inches(0.55),
+                    card_w - Inches(0.4), card_h - Inches(0.7),
+                    lines, size=11, bullet_color=col, line_spacing=1.18)
+    footer(slide, page)
+
+
+def make_industry_insight_2(prs, page):
+    """Slide 2/2: 业界方案矩阵."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "07 · 业界洞察", "业界方案全景 · 各自解决一部分问题，但缺「AI-Native」整体性")
+
+    rows = [
+        ("Triton (OpenAI/NVIDIA)", "GPU Python DSL + autotune",
+         "门槛低 · 生态广", "抽象天花板 · LLM 不友好 · 人写人调"),
+        ("TVM / Ansor / MetaSchedule", "搜索 + cost model + schedule",
+         "搜索泛化 · 多后端", "搜索空间大 · 专家知识难注入"),
+        ("MLIR + Linalg / Transform", "多 dialect · 可组合 lowering",
+         "工业级编译基础设施", "C++ / TableGen 门槛 · 非 LLM-Native"),
+        ("FlagGems / Liger-Kernel", "Triton 算子库（200+）",
+         "现成高性能实现 · 模型可直用", "手写维护 · 无决策/验证协议"),
+        ("torch.compile / Inductor", "PyTorch 内置图编译 + Triton",
+         "易集成 · 自动化", "黑盒 · 难定制 · 硬件扩展受限"),
+        ("Mojo / Hidet", "新语言 / 新图编译",
+         "可控性强 · 性能好", "生态新 · 缺 LLM-Native 协议"),
+        ("Agent 框架 (Cursor · CC · Devin)", "Tool-Use + Context 工程",
+         "闭环成熟 · token 工程化", "通用 agent · 非编译专用"),
+    ]
+    col_xs = [Inches(0.9), Inches(4.4), Inches(7.7), Inches(10.4)]
+    col_ws = [Inches(3.4), Inches(3.2), Inches(2.6), Inches(2.4)]
+    headers = ["方案 / 代表", "定位", "优势", "局限（从 AI-Native 视角）"]
+
+    panel(slide, Inches(0.9), Inches(1.9), Inches(11.5), Inches(0.45), BG_PANEL_ALT)
+    for x, w, h in zip(col_xs, col_ws, headers):
+        add_text(slide, x, Inches(1.94), w, Inches(0.36),
+                 h, size=11, bold=True, color=ACCENT, anchor=MSO_ANCHOR.MIDDLE)
+
+    row_h = Inches(0.61)
+    for i, row in enumerate(rows):
+        y = Inches(2.4) + i * row_h
+        bg = BG_PANEL if i % 2 == 0 else BG_PANEL_ALT
+        panel(slide, Inches(0.9), y, Inches(11.5), row_h - Inches(0.05), bg)
+        for j, cell in enumerate(row):
+            color = FG if j == 0 else (FG_MUTED if j == 3 else FG)
+            bold = j == 0
+            add_text(slide, col_xs[j], y + Inches(0.12), col_ws[j], Inches(0.4),
+                     cell, size=10, bold=bold, color=color,
+                     anchor=MSO_ANCHOR.MIDDLE)
+
+    panel(slide, Inches(0.9), Inches(6.7), Inches(11.5), Inches(0.5), BG_PANEL_ALT)
+    add_text(slide, Inches(1.1), Inches(6.75), Inches(11), Inches(0.4),
+             "结论 · 没有任何现有方案同时具备：LLM-Native 入口 + 多层 IR + 决策验证闭环 + 跨硬件泛化",
+             size=12, bold=True, color=ACCENT_ALT, anchor=MSO_ANCHOR.MIDDLE)
+    footer(slide, page)
+
+
+def make_required_traits(prs, page):
+    """应有特征：六条."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "08 · 应有特征", "AI 原生算子编译栈的 6 个必备特征")
+
+    traits = [
+        ("T1", "LLM-Native 入口", ACCENT,
+         "人 / LLM 共同可读可写的算子级语言，算法无关、token 最小化"),
+        ("T2", "语义 / 策略解耦", ACCENT_ALT,
+         "What 与 How 独立演化，正确性与性能分别验证"),
+        ("T3", "多层 IR · 按参与度分层", ACCENT_BLUE,
+         "从 Semantic 到 Instruction，每层 LLM 参与粒度清晰"),
+        ("T4", "有界动作空间 + 结构化协议", ACCENT_RED,
+         "LLM 做选择不写代码 · 编译器枚举合法动作 · Tool-Use API"),
+        ("T5", "Compiler-as-Verifier 三级闭环", ACCENT,
+         "V0 静态 / V1 数值 / V2 性能 · checkpoint / rollback 安全探索"),
+        ("T6", "多硬件可泛化 + 知识可迁移", ACCENT_ALT,
+         "单一 Semantic 对多后端 · @rationale 跨架构可复用"),
+    ]
+    card_w = Inches(5.95)
+    card_h = Inches(1.6)
+    positions = [(i % 2, i // 2) for i in range(6)]
+    for i, (tag, title, col, desc) in enumerate(traits):
+        cx, cy = positions[i]
+        x = Inches(0.6) + cx * Inches(6.2)
+        y = Inches(1.95) + cy * Inches(1.72)
+        panel(slide, x, y, card_w, card_h, BG_PANEL)
+        accent_bar(slide, x, y, width=Inches(0.12), height=card_h, color=col)
+        add_text(slide, x + Inches(0.3), y + Inches(0.1), Inches(1.0), Inches(0.4),
+                 tag, size=16, bold=True, color=col, font=FONT_MONO)
+        add_text(slide, x + Inches(1.25), y + Inches(0.1), card_w - Inches(1.4),
+                 Inches(0.45), title, size=15, bold=True, color=FG)
+        add_text(slide, x + Inches(0.3), y + Inches(0.7), card_w - Inches(0.45),
+                 Inches(0.85), desc, size=11, color=FG_MUTED)
+
+    panel(slide, Inches(0.6), Inches(7.02), Inches(12.15), Inches(0.0), BG_PANEL_ALT)
+    footer(slide, page)
+
+
+def make_comparison(prs, page):
+    """方案对比表：在 T1–T6 六个维度上对比各方案."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "09 · 方案对比", "在 6 个维度上 · 本方案 vs 业界代表方案")
+
+    traits_short = ["T1 入口", "T2 语义/策略", "T3 多层 IR", "T4 有界动作", "T5 三级验证", "T6 跨硬件"]
+    #  '●' 完全满足   '◐' 部分满足   '○' 不满足
+    FULL, PART, NONE = "●", "◐", "○"
+    rows = [
+        ("本方案 · Arke",               [FULL, FULL, FULL, FULL, FULL, FULL], ACCENT),
+        ("Triton + autotune",          [PART, NONE, NONE, NONE, PART, PART], FG_MUTED),
+        ("TVM / Ansor",                [NONE, PART, PART, NONE, PART, FULL], FG_MUTED),
+        ("MLIR + Linalg / Transform",  [NONE, PART, FULL, NONE, PART, FULL], FG_MUTED),
+        ("FlagGems / Liger",           [NONE, NONE, NONE, NONE, NONE, PART], FG_MUTED),
+        ("torch.compile / Inductor",   [NONE, NONE, PART, NONE, PART, PART], FG_MUTED),
+        ("LLM 直写 Triton",            [PART, NONE, NONE, NONE, NONE, NONE], FG_MUTED),
+        ("Cursor / CC 通用 Agent",     [NONE, NONE, NONE, PART, NONE, NONE], FG_MUTED),
+    ]
+
+    # header row
+    col_name_w = Inches(3.2)
+    cell_w = Inches(1.35)
+    start_x = Inches(0.8)
+    header_y = Inches(1.95)
+    panel(slide, start_x, header_y, col_name_w + cell_w * 6 + Inches(0.2),
+          Inches(0.45), BG_PANEL_ALT)
+    add_text(slide, start_x + Inches(0.1), header_y + Inches(0.05), col_name_w,
+             Inches(0.35), "方案 / 维度", size=11, bold=True, color=ACCENT,
+             anchor=MSO_ANCHOR.MIDDLE)
+    for j, th in enumerate(traits_short):
+        x = start_x + col_name_w + j * cell_w
+        add_text(slide, x, header_y + Inches(0.05), cell_w, Inches(0.35),
+                 th, size=10, bold=True, color=ACCENT,
+                 anchor=MSO_ANCHOR.MIDDLE, align=PP_ALIGN.CENTER)
+
+    # rows
+    row_h = Inches(0.48)
+    for i, (name, marks, _) in enumerate(rows):
+        y = header_y + Inches(0.5) + i * row_h
+        highlight = i == 0
+        bg = BG_PANEL if not highlight else BG_PANEL_ALT
+        panel(slide, start_x, y, col_name_w + cell_w * 6 + Inches(0.2),
+              row_h - Inches(0.05), bg)
+        if highlight:
+            accent_bar(slide, start_x, y, width=Inches(0.1),
+                       height=row_h - Inches(0.05), color=ACCENT)
+        add_text(slide, start_x + Inches(0.2), y + Inches(0.06), col_name_w,
+                 Inches(0.35), name, size=11,
+                 bold=highlight, color=ACCENT if highlight else FG,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        for j, m in enumerate(marks):
+            x = start_x + col_name_w + j * cell_w
+            color = {FULL: ACCENT, PART: ACCENT_ALT, NONE: ACCENT_RED}[m]
+            add_text(slide, x, y + Inches(0.06), cell_w, Inches(0.35),
+                     m, size=18, bold=True, color=color,
+                     align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
+                     font=FONT_MONO)
+
+    # legend
+    lg_y = Inches(6.55)
+    legend = [("●", ACCENT, "完全满足"), ("◐", ACCENT_ALT, "部分满足"),
+              ("○", ACCENT_RED, "不满足")]
+    lx = Inches(0.8)
+    for sym, col, txt in legend:
+        add_text(slide, lx, lg_y, Inches(0.3), Inches(0.3),
+                 sym, size=16, bold=True, color=col, font=FONT_MONO)
+        add_text(slide, lx + Inches(0.35), lg_y + Inches(0.04), Inches(1.2),
+                 Inches(0.3), txt, size=10, color=FG_MUTED)
+        lx += Inches(1.6)
+    footer(slide, page)
+
+
+def make_advantage_detail(prs, page):
+    """六条优势详解（配套对比表使用）."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "09 · 方案对比", "六个维度上的优势简述 —— 为什么能在所有维度上「完全满足」")
+
+    items = [
+        ("T1 · LLM-Native 入口", ACCENT,
+         ".ak 语言算子级抽象 · 算法无关 · 72–160 tokens · 人 / LLM 共同可写",
+         "业界多数方案以 Python 或 C++ 为入口，LLM 需兼顾语义 + 硬件细节"),
+        ("T2 · 语义 / 策略解耦", ACCENT_ALT,
+         "kernel (semantics) ↔ strategy (@rationale decisions) 句法级分离",
+         "Triton / CUDA 策略与实现混写；TVM 通过 schedule 部分分离但仍耦合"),
+        ("T3 · 多层 IR 按参与度分层", ACCENT_BLUE,
+         "Semantic → Strategy → Schedule → Instruction · 每层 LLM 参与度明确",
+         "MLIR 多 dialect 但非按 LLM 参与度切；LLVM / Triton IR 单层密集"),
+        ("T4 · 有界动作空间 + 结构化协议", ACCENT_RED,
+         "compiler 枚举 legal_actions · Agent 选择 · tool-use 闭环",
+         "业界 agent 方案多为自由文本生成，缺编译器先验约束"),
+        ("T5 · Compiler-as-Verifier 三级闭环", ACCENT,
+         "V0 <1ms · V1 对参考 · V2 HW profile · checkpoint / rollback",
+         "autotune 只验证性能；直写方案事后对拍；均不具备 V0 即时剪枝"),
+        ("T6 · 多硬件可泛化 + 知识可迁移", ACCENT_ALT,
+         "单 Semantic 对多后端 · @rationale 以自然语言跨架构迁移",
+         "FlagGems 每硬件一份实现；TVM 跨架构但知识不显式"),
+    ]
+    card_w = Inches(5.95)
+    card_h = Inches(1.58)
+    for i, (title, col, pro, vs) in enumerate(items):
+        cx, cy = i % 2, i // 2
+        x = Inches(0.6) + cx * Inches(6.2)
+        y = Inches(1.95) + cy * Inches(1.68)
+        panel(slide, x, y, card_w, card_h, BG_PANEL)
+        accent_bar(slide, x, y, width=Inches(0.12), height=card_h, color=col)
+        add_text(slide, x + Inches(0.3), y + Inches(0.08), card_w - Inches(0.4),
+                 Inches(0.35), title, size=13, bold=True, color=col)
+        add_text(slide, x + Inches(0.3), y + Inches(0.5), card_w - Inches(0.4),
+                 Inches(0.5), "▸ " + pro, size=10, color=FG)
+        add_text(slide, x + Inches(0.3), y + Inches(1.02), card_w - Inches(0.4),
+                 Inches(0.5), "⋯ vs " + vs, size=10, color=FG_MUTED)
+    footer(slide, page)
+
+
+def make_overall_arch(prs, page):
+    """Arke 整体技术架构图."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 整体架构", "Arke 整体技术架构 · 从用户入口到硬件执行")
+
+    # layer backdrops
+    layers = [
+        ("用户入口层", ACCENT, Inches(0.7), Inches(1.9), Inches(0.6)),
+        ("Language 层", ACCENT, Inches(0.7), Inches(2.6), Inches(0.6)),
+        ("IR 层（四层）", ACCENT_ALT, Inches(0.7), Inches(3.3), Inches(1.35)),
+        ("Agent & Compiler Toolchain 层", ACCENT_BLUE,
+         Inches(0.7), Inches(4.75), Inches(1.3)),
+        ("Backend 层", ACCENT_RED, Inches(0.7), Inches(6.15), Inches(0.55)),
+        ("硬件执行层", ACCENT_RED, Inches(0.7), Inches(6.78), Inches(0.45)),
+    ]
+    for name, col, x, y, h in layers:
+        p = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y, Inches(1.8), h)
+        _set_fill(p, BG_PANEL_ALT)
+        _set_line(p, col, 1.0)
+        add_text(slide, x, y, Inches(1.8), h, name,
+                 size=10, bold=True, color=col,
+                 align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+
+    content_x = Inches(2.7)
+    content_w = Inches(10.0)
+
+    # 用户入口层
+    entries = [".ak 文件", "自然语言", "CLI 参数", "Python API"]
+    ew = (content_w - Inches(0.3)) / 4
+    for i, e in enumerate(entries):
+        x = content_x + i * (ew + Inches(0.1))
+        _box(slide, x, Inches(1.95), ew, Inches(0.5), e,
+             fill=BG_PANEL, stroke=ACCENT, size=11, text_color=FG)
+
+    # Language 层
+    _box(slide, content_x, Inches(2.65), content_w, Inches(0.5),
+         "Arke Language v2  ·  kernel { semantics }  +  strategy { @rationale decisions }  ·  where 符号维度",
+         fill=BG_PANEL, stroke=ACCENT, size=11)
+
+    # IR 层 — 四个横向框
+    ir_layers = [
+        ("L4  SemanticIR", "what to compute", ACCENT_ALT),
+        ("L3  StrategyIR", "how to optimize", ACCENT_ALT),
+        ("L2  ScheduleIR", "schedule mapping", ACCENT_ALT),
+        ("L1  InstructionIR", "near-LLVM IR", ACCENT_ALT),
+    ]
+    iw = (content_w - Inches(0.3)) / 4
+    for i, (t, sub, col) in enumerate(ir_layers):
+        x = content_x + i * (iw + Inches(0.1))
+        _box(slide, x, Inches(3.4), iw, Inches(0.55), t,
+             fill=BG_PANEL, stroke=col, size=11)
+        add_text(slide, x, Inches(3.98), iw, Inches(0.3), sub,
+                 size=9, color=FG_MUTED, align=PP_ALIGN.CENTER)
+    # LLM 参与度 bar
+    add_text(slide, content_x, Inches(4.28), content_w, Inches(0.28),
+             "← LLM 参与度：主作者  /  主决策者  /  review only  /  不参与 →",
+             size=9, color=FG_MUTED, align=PP_ALIGN.CENTER)
+
+    # Agent & Compiler 层
+    agent_w = content_w * 0.45
+    comp_w = content_w - agent_w - Inches(0.2)
+    # Agent block
+    _box(slide, content_x, Inches(4.85), agent_w, Inches(1.1),
+         "Agent  ·  Bounded Action Space\nTool-Use API · Budget · Trajectory · @rationale",
+         fill=BG_PANEL, stroke=ACCENT_BLUE, size=10)
+    # Compiler block
+    cx = content_x + agent_w + Inches(0.2)
+    _box(slide, cx, Inches(4.85), comp_w, Inches(1.1),
+         "Compiler Toolchain  ·  OpRegistry · Pass Pipeline · BackendRegistry\nV0 静态 · V1 数值 · V2 性能  三级验证",
+         fill=BG_PANEL, stroke=ACCENT_BLUE, size=10)
+
+    # Backend 层
+    backends = ["Triton  (Phase 1–2)", "MLIR Dialect  (Phase 3)", "LLVM IR  (Phase 4)"]
+    bw = (content_w - Inches(0.2)) / 3
+    for i, b in enumerate(backends):
+        x = content_x + i * (bw + Inches(0.1))
+        _box(slide, x, Inches(6.2), bw, Inches(0.45), b,
+             fill=BG_PANEL, stroke=ACCENT_RED, size=10)
+
+    # Hardware 层
+    hws = ["NVIDIA GPU", "Huawei Ascend NPU", "AMD GPU", "未来 NPU / DSA"]
+    hw_w = (content_w - Inches(0.3)) / 4
+    for i, h in enumerate(hws):
+        x = content_x + i * (hw_w + Inches(0.1))
+        _box(slide, x, Inches(6.8), hw_w, Inches(0.4), h,
+             fill=BG_PANEL_ALT, stroke=ACCENT_RED, size=10, bold=False)
+
+    footer(slide, page)
+
+
+def make_lang_arch(prs, page):
+    """Language 件套流程图."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "11 · 件套架构 · Language", ".ak 源文件  →  Parser  →  AST  →  SemanticIR / StrategyIR")
+
+    y0 = Inches(2.0)
+    stages = [
+        (".ak 源文件", "kernel { ... }\nstrategy { @rationale ... }", ACCENT),
+        ("Lexer + Parser", "EBNF 文法  ·  正则词法\n歧义 0 · token 最小化", ACCENT),
+        ("AST", "kernel_def · strategy_def\nwhere_clause · @rationale", ACCENT),
+        ("Resolver", "Op Registry 查表\n符号维度求解 · 类型推断", ACCENT),
+        ("Layer 4\nSemanticIR", "纯数学 DAG\nSSA by construction", ACCENT_ALT),
+        ("Layer 3\nStrategyIR", "决策列表 + @rationale\n可枚举 · 可回滚", ACCENT_ALT),
+    ]
+    w = Inches(1.9)
+    h = Inches(1.6)
+    gap = Inches(0.12)
+    start_x = (SLIDE_W - (w * 6 + gap * 5)) / 2
+    prev_right = None
+    for i, (title, body, col) in enumerate(stages):
+        x = start_x + i * (w + gap)
+        panel(slide, x, y0, w, h, BG_PANEL)
+        accent_bar(slide, x, y0, width=w, height=Inches(0.08), color=col)
+        add_text(slide, x + Inches(0.1), y0 + Inches(0.15), w - Inches(0.2),
+                 Inches(0.5), title, size=12, bold=True, color=col,
+                 align=PP_ALIGN.CENTER)
+        add_text(slide, x + Inches(0.1), y0 + Inches(0.65), w - Inches(0.2),
+                 h - Inches(0.7), body, size=9, color=FG_MUTED,
+                 align=PP_ALIGN.CENTER)
+        if prev_right is not None:
+            mid_y = y0 + h / 2
+            _arrow(slide, prev_right, mid_y, x, mid_y, color=ACCENT, width_pt=1.25)
+        prev_right = x + w
+
+    # bottom: core design
+    panel(slide, Inches(0.7), Inches(4.1), Inches(11.9), Inches(2.8), BG_PANEL)
+    add_text(slide, Inches(0.95), Inches(4.25), Inches(11.5), Inches(0.4),
+             "核心设计要素", size=13, bold=True, color=ACCENT)
+    design = [
+        ("算子级抽象", "不暴露 loop / thread / memory"),
+        ("语义 / 策略双段式", "kernel vs strategy 句法级切开"),
+        ("Universal Op", "语言不枚举算子 · Op Registry 注入"),
+        ("符号维度", "where B: dynamic(max=64) 一等公民"),
+        ("@rationale", "每决策强制带自然语言理由"),
+        ("Token 最小化", "`.ak` 72 tokens · Triton 1102 tokens"),
+    ]
+    card_w = Inches(3.75)
+    card_h = Inches(0.95)
+    for i, (k, v) in enumerate(design):
+        cx, cy = i % 3, i // 3
+        x = Inches(0.95) + cx * (card_w + Inches(0.15))
+        y = Inches(4.75) + cy * (card_h + Inches(0.15))
+        panel(slide, x, y, card_w, card_h, BG_PANEL_ALT)
+        accent_bar(slide, x, y, width=Inches(0.08), height=card_h, color=ACCENT)
+        add_text(slide, x + Inches(0.2), y + Inches(0.08), card_w - Inches(0.3),
+                 Inches(0.35), k, size=11, bold=True, color=ACCENT)
+        add_text(slide, x + Inches(0.2), y + Inches(0.42), card_w - Inches(0.3),
+                 Inches(0.5), v, size=10, color=FG_MUTED)
+
+    footer(slide, page)
+
+
+def make_ir_arch(prs, page):
+    """IR 件套架构图."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "12 · 件套架构 · IR", "多层 IR · 职责 × LLM 参与度 × 验证点")
+
+    layers = [
+        ("Layer 4 · SemanticIR",   "什么",   "纯数学 DAG · SSA 不可变",          "LLM 主作者", "V1 数值参考", ACCENT),
+        ("Layer 3 · StrategyIR",   "怎么优化", "决策列表 · @rationale · 可回滚",   "LLM 主决策者", "V0 静态", ACCENT_ALT),
+        ("Layer 2 · ScheduleIR",   "怎么映射", "thread / block / warp / vector",  "LLM review", "V0+V2", ACCENT_BLUE),
+        ("Layer 1 · InstructionIR", "怎么成指令", "近 LLVM IR",                 "LLM 不参与", "V2 性能", ACCENT_RED),
+    ]
+
+    col_xs = [Inches(0.7), Inches(4.1), Inches(5.4), Inches(8.6), Inches(10.4), Inches(12.1)]
+    col_ws = [Inches(3.35), Inches(1.25), Inches(3.15), Inches(1.75), Inches(1.65)]
+    headers = ["IR 层", "职责", "承载内容", "LLM 参与度", "主验证级"]
+
+    panel(slide, Inches(0.7), Inches(1.9), Inches(11.95), Inches(0.45), BG_PANEL_ALT)
+    for x, w, h in zip(col_xs, col_ws, headers):
+        add_text(slide, x, Inches(1.95), w, Inches(0.36),
+                 h, size=11, bold=True, color=ACCENT, anchor=MSO_ANCHOR.MIDDLE)
+
+    row_h = Inches(0.78)
+    for i, (name, duty, body, llm, v, col) in enumerate(layers):
+        y = Inches(2.4) + i * row_h
+        panel(slide, Inches(0.7), y, Inches(11.95), row_h - Inches(0.08), BG_PANEL)
+        accent_bar(slide, Inches(0.7), y, width=Inches(0.12),
+                   height=row_h - Inches(0.08), color=col)
+        vals = [name, duty, body, llm, v]
+        for j, (x, w, val) in enumerate(zip(col_xs, col_ws, vals)):
+            align = PP_ALIGN.LEFT
+            size = 12 if j == 0 else (11 if j == 2 else 11)
+            bold = j == 0
+            color = col if j == 0 else FG
+            add_text(slide, x + Inches(0.08), y + Inches(0.18), w, Inches(0.45),
+                     val, size=size, bold=bold, color=color,
+                     anchor=MSO_ANCHOR.MIDDLE)
+
+    # side arrow: LLM 参与度渐退
+    add_text(slide, Inches(0.7), Inches(5.7), Inches(11.95), Inches(0.3),
+             "↓  lowering 方向  ↓     LLM 参与度递减      V0→V1→V2 验证递进",
+             size=11, bold=True, color=FG_MUTED, align=PP_ALIGN.CENTER)
+
+    # bottom: 下接 MLIR / LLVM IR
+    _box(slide, Inches(0.7), Inches(6.15), Inches(5.8), Inches(0.55),
+         "下接  ·  MLIR Standard Dialects (linalg / transform / scf / gpu)",
+         fill=BG_PANEL_ALT, stroke=ACCENT_BLUE, size=11)
+    _box(slide, Inches(6.85), Inches(6.15), Inches(5.8), Inches(0.55),
+         "下接  ·  LLVM IR  →  PTX / ISA",
+         fill=BG_PANEL_ALT, stroke=ACCENT_RED, size=11)
+    footer(slide, page)
+
+
+def make_compiler_arch(prs, page):
+    """Compiler Toolchain 架构图."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "13 · 件套架构 · Compiler Toolchain",
+                 "OpRegistry（SSOT）× Pass Pipeline × BackendRegistry × 三级验证器")
+
+    # Central: Pass Pipeline horizontal chain
+    chain = [
+        ("Parse",            ACCENT),
+        ("ShapeInference",   ACCENT),
+        ("SemanticVerify",   ACCENT),
+        ("StrategyLower",    ACCENT_ALT),
+        ("Schedule",         ACCENT_ALT),
+        ("Codegen",          ACCENT_BLUE),
+        ("Profile",          ACCENT_RED),
+    ]
+    chain_y = Inches(3.3)
+    w = Inches(1.55)
+    h = Inches(0.75)
+    gap = Inches(0.1)
+    start_x = (SLIDE_W - (w * len(chain) + gap * (len(chain) - 1))) / 2
+    prev_right = None
+    for i, (label, col) in enumerate(chain):
+        x = start_x + i * (w + gap)
+        _box(slide, x, chain_y, w, h, label, fill=BG_PANEL, stroke=col, size=11)
+        if prev_right is not None:
+            _arrow(slide, prev_right, chain_y + h / 2, x, chain_y + h / 2,
+                   color=FG_MUTED, width_pt=1.2)
+        prev_right = x + w
+
+    add_text(slide, start_x, chain_y - Inches(0.4),
+             w * len(chain) + gap * (len(chain) - 1), Inches(0.3),
+             "Pass Pipeline  ·  Analysis  /  Transform  /  Verification 三族 · 可组合 · 可替换",
+             size=11, bold=True, color=ACCENT, align=PP_ALIGN.CENTER)
+
+    # Above: OpRegistry SSOT
+    reg_y = Inches(1.9)
+    reg_w = Inches(11.9)
+    reg_h = Inches(0.95)
+    panel(slide, Inches(0.7), reg_y, reg_w, reg_h, BG_PANEL)
+    accent_bar(slide, Inches(0.7), reg_y, width=reg_w, height=Inches(0.08),
+               color=ACCENT)
+    add_text(slide, Inches(0.9), reg_y + Inches(0.13), reg_w - Inches(0.3),
+             Inches(0.35), "OpRegistry  ·  Single Source of Truth",
+             size=13, bold=True, color=ACCENT)
+    add_text(slide, Inches(0.9), reg_y + Inches(0.48), reg_w - Inches(0.3),
+             Inches(0.45),
+             "signature · shape_rule · template_hint · reference_impl · input_gen · attrs · strategy_space · hw_variants",
+             size=10, color=FG_MUTED)
+
+    # arrows from SSOT down to each pipeline stage that consumes it
+    for i in (0, 1, 2, 4, 5):  # Parse/ShapeInf/SemV/Schedule/Codegen 都依赖 Registry
+        x = start_x + i * (w + gap) + w / 2
+        _arrow(slide, x, reg_y + reg_h, x, chain_y, color=ACCENT, width_pt=0.9)
+
+    # Below: BackendRegistry
+    bx_y = Inches(4.4)
+    bx_h = Inches(0.8)
+    panel(slide, Inches(0.7), bx_y, reg_w, bx_h, BG_PANEL)
+    accent_bar(slide, Inches(0.7), bx_y, width=Inches(0.12),
+               height=bx_h, color=ACCENT_BLUE)
+    add_text(slide, Inches(0.9), bx_y + Inches(0.1), Inches(4),
+             Inches(0.35), "BackendRegistry",
+             size=13, bold=True, color=ACCENT_BLUE)
+    # three backends inside
+    bk_x0 = Inches(4.8)
+    bk_w = Inches(2.5)
+    for i, b in enumerate(["Triton Backend", "MLIR Backend", "LLVM IR Backend"]):
+        x = bk_x0 + i * (bk_w + Inches(0.1))
+        _box(slide, x, bx_y + Inches(0.2), bk_w, Inches(0.42),
+             b, fill=BG_PANEL_ALT, stroke=ACCENT_BLUE, size=10)
+
+    # Verifier row (three cards)
+    v_y = Inches(5.4)
+    v_w = Inches(3.85)
+    verifiers = [
+        ("V0  静态 · <1ms",
+         "类型 / Shape / SSA / HW constraint", ACCENT),
+        ("V1  数值",
+         "SemanticInterpreter + 参考对拍", ACCENT_ALT),
+        ("V2  性能",
+         "compile + profile + P0~P5 baseline", ACCENT_RED),
+    ]
+    for i, (t, b, col) in enumerate(verifiers):
+        x = Inches(0.7) + i * (v_w + Inches(0.15))
+        panel(slide, x, v_y, v_w, Inches(1.0), BG_PANEL)
+        accent_bar(slide, x, v_y, width=Inches(0.1), height=Inches(1.0), color=col)
+        add_text(slide, x + Inches(0.25), v_y + Inches(0.1), v_w - Inches(0.3),
+                 Inches(0.35), t, size=12, bold=True, color=col)
+        add_text(slide, x + Inches(0.25), v_y + Inches(0.45), v_w - Inches(0.3),
+                 Inches(0.5), b, size=10, color=FG_MUTED)
+
+    # bottom band
+    panel(slide, Inches(0.7), Inches(6.55), Inches(11.95), Inches(0.45), BG_PANEL_ALT)
+    add_text(slide, Inches(0.9), Inches(6.58), Inches(11.6), Inches(0.4),
+             "门禁顺序  ·  Function ▸ Accuracy ▸ Performance    /    Checkpoint · Rollback · 让 LLM 「大胆试、安全退」",
+             size=11, bold=True, color=FG, anchor=MSO_ANCHOR.MIDDLE)
+    footer(slide, page)
+
+
+def make_agent_arch(prs, page):
+    """Agent 件套架构图."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "14 · 件套架构 · Agent Engineering",
+                 "LLM ↔ ArkeEnv 结构化闭环  ·  Tool-Use × Budget × Trajectory")
+
+    # Left: LLM Agent box
+    lx = Inches(0.7)
+    ly = Inches(2.0)
+    lw = Inches(3.2)
+    lh = Inches(4.5)
+    panel(slide, lx, ly, lw, lh, BG_PANEL)
+    accent_bar(slide, lx, ly, width=Inches(0.12), height=lh, color=ACCENT_RED)
+    add_text(slide, lx + Inches(0.25), ly + Inches(0.15), lw - Inches(0.3),
+             Inches(0.4), "LLM Agent", size=15, bold=True, color=ACCENT_RED)
+    add_text(slide, lx + Inches(0.25), ly + Inches(0.55), lw - Inches(0.3),
+             Inches(0.35), "Decides (not generates code)",
+             size=10, color=FG_MUTED)
+    # inside items
+    steps = [
+        ("1", "analyze kernel  ·  read HW profile"),
+        ("2", "list_legal_actions()"),
+        ("3", "apply_decision(... @rationale)"),
+        ("4", "verify → compile → profile"),
+        ("5", "iterate  /  rollback  /  done"),
+    ]
+    for i, (n, t) in enumerate(steps):
+        y = ly + Inches(1.1) + i * Inches(0.6)
+        panel(slide, lx + Inches(0.25), y, lw - Inches(0.5), Inches(0.5), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.35), y + Inches(0.08), Inches(0.3),
+                 Inches(0.35), n, size=11, bold=True, color=ACCENT_RED,
+                 font=FONT_MONO)
+        add_text(slide, lx + Inches(0.7), y + Inches(0.08),
+                 lw - Inches(1.0), Inches(0.35), t,
+                 size=10, color=FG)
+
+    # Right: ArkeEnv box
+    rx = Inches(9.3)
+    rw = Inches(3.4)
+    ry = ly
+    rh = lh
+    panel(slide, rx, ry, rw, rh, BG_PANEL)
+    accent_bar(slide, rx, ry, width=Inches(0.12), height=rh, color=ACCENT_BLUE)
+    add_text(slide, rx + Inches(0.25), ry + Inches(0.15), rw - Inches(0.3),
+             Inches(0.4), "ArkeEnv", size=15, bold=True, color=ACCENT_BLUE)
+    add_text(slide, rx + Inches(0.25), ry + Inches(0.55), rw - Inches(0.3),
+             Inches(0.35), "Verifies + Executes", size=10, color=FG_MUTED)
+    tools = [
+        "analyze_compute / get_hw_profile",
+        "list_legal_actions",
+        "apply_decision",
+        "verify_correctness  (V1)",
+        "compile_and_profile (V2)",
+        "checkpoint / rollback",
+    ]
+    for i, t in enumerate(tools):
+        y = ry + Inches(1.1) + i * Inches(0.5)
+        panel(slide, rx + Inches(0.25), y, rw - Inches(0.5), Inches(0.42), BG_PANEL_ALT)
+        add_text(slide, rx + Inches(0.35), y + Inches(0.05),
+                 rw - Inches(0.7), Inches(0.35), t,
+                 size=10, color=FG, font=FONT_MONO)
+
+    # Middle arrows (two directions, annotated)
+    mid_y1 = Inches(3.2)
+    mid_y2 = Inches(4.6)
+    _arrow(slide, lx + lw, mid_y1, rx, mid_y1, color=ACCENT_RED, width_pt=1.5)
+    _arrow(slide, rx, mid_y2, lx + lw, mid_y2, color=ACCENT_BLUE, width_pt=1.5)
+    add_text(slide, lx + lw, mid_y1 - Inches(0.32),
+             rx - (lx + lw), Inches(0.3),
+             "tool_use  (structured API)",
+             size=11, bold=True, color=ACCENT_RED, align=PP_ALIGN.CENTER)
+    add_text(slide, lx + lw, mid_y2 + Inches(0.02),
+             rx - (lx + lw), Inches(0.3),
+             "tool_result (legal actions · verification · profile)",
+             size=11, bold=True, color=ACCENT_BLUE, align=PP_ALIGN.CENTER)
+
+    # Middle bottom: Trajectory + Budget + Prompt Cache
+    mx = lx + lw + Inches(0.2)
+    mw = rx - mx - Inches(0.2)
+    my = Inches(5.3)
+    mh = Inches(1.1)
+    panel(slide, mx, my, mw, mh, BG_PANEL_ALT)
+    add_text(slide, mx + Inches(0.2), my + Inches(0.08), mw - Inches(0.4),
+             Inches(0.35),
+             "Optimization State  ·  Ground Truth 不被压缩",
+             size=11, bold=True, color=ACCENT, align=PP_ALIGN.CENTER)
+    sub = [
+        ("Strategy IR", ACCENT),
+        ("Compile Results", ACCENT_ALT),
+        ("Decision Log + @rationale", ACCENT_BLUE),
+        ("Budget  (decisions / compiles)", ACCENT_RED),
+    ]
+    ssw = (mw - Inches(0.5)) / 4
+    for i, (t, col) in enumerate(sub):
+        sx = mx + Inches(0.15) + i * (ssw + Inches(0.1))
+        _box(slide, sx, my + Inches(0.5), ssw, Inches(0.45),
+             t, fill=BG_PANEL, stroke=col, size=9)
+
+    # Bottom: dual mode integration + trajectory
+    panel(slide, Inches(0.7), Inches(6.55), Inches(11.95), Inches(0.45), BG_PANEL_ALT)
+    add_text(slide, Inches(0.9), Inches(6.58), Inches(11.6), Inches(0.4),
+             "双模集成  ·  Mode A 内置 (CLI / Python API)    /    Mode B 外部 (Cursor · Claude Code · OpenClaw)    ·    Trajectory JSONL 全量落盘",
+             size=11, bold=True, color=FG, anchor=MSO_ANCHOR.MIDDLE)
     footer(slide, page)
 
 
@@ -848,12 +1575,27 @@ def build(out_path: Path) -> None:
     make_discussion(prs, "05 · Agent", "技术讨论点",
                     AGENT_DISCUSSION, page=16, accent=ACCENT_RED)  # 16
 
-    make_integration(prs, page=17)                            # 17
-    make_verification(prs, page=18)                           # 18
-    make_benchmark(prs, page=19)                              # 19
-    make_token_economics(prs, page=20)                        # 20
-    make_roadmap(prs, page=21)                                # 21
-    make_closing(prs, page=22)                                # 22
+    # 业界洞察 / 应有特征 / 方案对比
+    make_industry_insight_1(prs, page=17)                     # 17
+    make_industry_insight_2(prs, page=18)                     # 18
+    make_required_traits(prs, page=19)                        # 19
+    make_comparison(prs, page=20)                             # 20
+    make_advantage_detail(prs, page=21)                       # 21
+
+    # 架构图
+    make_overall_arch(prs, page=22)                           # 22
+    make_lang_arch(prs, page=23)                              # 23
+    make_ir_arch(prs, page=24)                                # 24
+    make_compiler_arch(prs, page=25)                          # 25
+    make_agent_arch(prs, page=26)                             # 26
+
+    # 贯通 + 收尾
+    make_integration(prs, page=27)                            # 27
+    make_verification(prs, page=28)                           # 28
+    make_benchmark(prs, page=29)                              # 29
+    make_token_economics(prs, page=30)                        # 30
+    make_roadmap(prs, page=31)                                # 31
+    make_closing(prs, page=32)                                # 32
 
     prs.save(out_path)
     print(f"wrote: {out_path}")
