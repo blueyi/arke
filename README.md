@@ -4,36 +4,36 @@
 
 ---
 
-## Current Status
+## Overview
 
-Arke is a native LLM programming language, IR, compiler toolchain, and agent engineering system for GPU/NPU kernels. It combines benchmark systems to drive LLM for extreme kernel of operator functionality and performance generalization. 
+Arke is a native LLM programming language, IR, compiler toolchain, and agent engineering system for GPU/NPU kernels. It combines benchmark systems to drive LLM for extreme kernel of operator functionality and performance generalization.
 
 ## Key Features
 
 ### Project-Level Features
 
-- **AI-First Design** — Arke treats LLMs as optimization decision makers, not just code generators.
-- **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are represented independently, enabling safe and reversible strategy exploration.
-- **Minimal-Token Efficiency** — The path from kernel definition through optimization and verification is designed to minimize token consumption.
-- **Compiler-Verified Optimization** — Optimization decisions are validated through deterministic checks, from static legality to numerical correctness and performance.
-- **`@rationale` as a First-Class Artifact** — Decisions carry natural-language explanations that make optimization trajectories auditable, reusable, and learnable.
-- **Cross-Hardware Performance Ambition** — A single semantic definition can lower toward multiple hardware targets while preserving a consistent optimization model.
+- 🤖 **AI-First Design** — Arke treats LLMs as optimization decision makers, not just code generators.
+- 🔗 **Semantic/Strategy Separation** — "What to compute" and "how to optimize" are represented independently, enabling safe and reversible strategy exploration.
+- 🪙 **Minimal-Token Efficiency** — The path from kernel definition through optimization and verification is designed to minimize token consumption.
+- 🛡️ **Compiler-Verified Optimization** — Optimization decisions are validated through deterministic checks, from static legality to numerical correctness and performance.
+- 💬 **`@rationale` as a First-Class Artifact** — Decisions carry natural-language explanations that make optimization trajectories auditable, reusable, and learnable.
+- ⚡ **Cross-Hardware Performance Ambition** — A single semantic definition can lower toward multiple hardware targets while preserving a consistent optimization model.
 
 ### The LLM-Native Stack
 
-#### LLM-Native Language
+#### 📝 LLM-Native Language
 
 Arke's `.ak` language is a compact operator description surface for both humans and LLMs. It separates `kernel` semantics from `strategy` decisions so the mathematical definition remains stable while optimization policy evolves independently.
 
-#### LLM-Native IR
+#### 🧬 LLM-Native IR
 
 Arke IR makes the split explicit: `Semantic IR` captures what to compute, while `Strategy IR` captures how to optimize. This separation is the foundation for bounded action spaces, staged verification, rollback, and multi-backend lowering.
 
-#### LLM-Native Compiler Toolchain
+#### 🧰 LLM-Native Compiler Toolchain
 
 The compiler is more than code generation. It enumerates legal actions, checks IR validity, lowers to backend-specific representations, and measures correctness and performance under a structured verification flow.
 
-#### AI Agent System
+#### 🤖 AI Agent System
 
 Arke's agent layer drives the optimization loop itself: analyze the kernel, choose legal actions, apply decisions with `@rationale`, verify outcomes, rollback when necessary, and iterate under compiler-enforced constraints.
 
