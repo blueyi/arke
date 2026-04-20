@@ -217,6 +217,9 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 | T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ✅ |
 | T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | 🟨 — language/IR representation covered, but full benchmark-level executability still blocked for OT4 memory-heavy cases |
 | T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ⬜ |
+| T5.6 | Audit every BL5 operator / shape family against Stage 7 Lang surface (`where`, conditional strategy) and log unsupported cases | P0 | 0.5d | ⬜ |
+| T5.7 | Add or update `.ak` examples for any patterns uncovered by the audit | P0 | 0.5d | ⬜ |
+| T5.8 | Maintain machine-readable coverage ledger linking BL5 targets to `.ak` artefacts (feeds Track 6 automation) | P0 | 0.5d | ⬜ |
 
 ### Track 6: BL5 Benchmark, L2 Fusion, and Memory-Readiness (P0)
 
@@ -235,12 +238,16 @@ That means every unfinished task in S7 should be justified by one of these bench
 |:---|:-----|:--------:|:--------:|:------:|
 | T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | 🟨 |
 | T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | 🟨 |
-| T6.3 | Rewrite active architecture design docs to canonical v2-only references (remove migration/backward-compat narrative from current docs) | P1 | 0.5d | ✅ |
 | T6.3 | Ensure Lang + IR + lowering can express the six BL5 L2 fusion cases end-to-end | P0 | 0.5d | ⬜ |
 | T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | 🟨 |
 | T6.5 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM without reducing BL5 scope | P0 | 1d | ⬜ |
-| T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, summaries, standard result dirs) for gate verification | P1 | 0.5d | 🟨 |
+| T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, `PERF_ALL.csv`, `summary.json`, manifests) for gate verification | P1 | 0.5d | 🟨 |
 | T6.7 | Drive remaining Lang / IR / compiler refinements from BL5 benchmark gaps instead of local code convenience | P0 | continuous | 🟨 |
+| T6.8 | Persist correctness metrics & tolerances across benchmark artifacts (`PERF_ALL.csv`, summaries, per-op files) | P0 | 0.5d | ✅ |
+| T6.9 | Persist performance target evaluation fields (`perf_target`, `perf_actual`, `perf_pass`, `perf_gap`) across artifacts | P0 | 0.5d | ⬜ |
+| T6.10 | Build automation script to compute L1/L2 coverage gaps from `stage7_bl5_target_matrix.json` | P0 | 0.5d | ⬜ |
+| T6.11 | Generate machine-readable coverage dashboards / reports from automation outputs | P1 | 0.5d | ⬜ |
+| T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | ⬜ |
 
 ### Track 7: Non-Regression and Gate Closure (P0)
 
@@ -299,6 +306,48 @@ Rationale for this order:
 - **Active spec/benchmark-interface cleanup was revalidated after removing compat wording/aliases:** `tests/test_benchmark_cli.py`, `tests/test_op_registry.py`, `tests/test_converters.py`, `tests/test_semantic_ir.py`, `tests/test_symbolic_shape.py`, and `tests/test_stage7_roundtrip.py` passed together (`109 passed`).
 - **Active architecture docs were also rewritten as v2-only references:** `docs/architecture/arke-lang-spec-design.md`, `docs/architecture/arke-ir-spec-design.md`, `docs/architecture/arke-compiler-infrastructure.md`, and `docs/architecture/naming-system.md` no longer act as migration-preservation docs for the current mainline; related Stage 7 slice revalidated with `344 passed, 6 skipped`.
 - **Residual wording cleanup completed after the architecture rewrite:** `docs/spec/arke-lang-vs-python-triton.md` and remaining legacy examples/phrasing inside architecture docs were aligned to canonical `compute(...)` / v2-only wording, with the same Stage 7 validation slice staying green (`344 passed, 6 skipped`).
+
+## BL5 Gap Snapshot & Phased Closure
+
+> Absorbed from the former `stage7-bl5-gap-report.md` (now retired). The machine-readable source of truth remains `benchmarks/stage7_bl5_target_matrix.json`; the numbers below are the last-recorded snapshot and are expected to move as Track 5/6 progresses.
+
+### Coverage snapshot (reference)
+
+| Dimension | Required | Observed | Ratio |
+|:----------|---------:|---------:|------:|
+| L1 ops | 45 | 43 | 0.9556 |
+| L1 required shapes | 685 | 43 | 0.0628 |
+| L2 fusions | 6 | 1 | 0.1667 |
+| L2 required shapes | 120 | 1 | 0.0083 |
+
+- **Performance artifacts present:** yes
+- **Correctness / accuracy artifacts present:** yes (partial; live for L2 `matmul_relu` and a growing L1 subset across dense linear algebra, elementwise, reduction, normalization, activations, gated fused activations, loss ops, batched/grouped GEMM, positional encoding, data-movement/indexing, quantization, and attention — including `matmul`, `grouped_matmul`, `gelu`, `silu`, `swiglu`, `geglu`, `softmax`, `layernorm`, `cross_entropy`, `fused_linear_cross_entropy`, `rope`, `cross_attention`, `flash_attention`, `grouped_query_attention`; `Liger-Kernel` `rope` remains correctness-unsupported because it has no `run_with_inputs(...)` hook).
+
+### Reverse decomposition into the Arke 4-piece suite
+
+Remaining BL5 work is tracked under four component lenses, each feeding existing tracks:
+
+- **A. Lang / Parser** → feeds Track 2 / Track 5. Audit every BL5 op-family against current surface syntax, add `.ak` examples for any unsupported benchmark-driven patterns, and keep a coverage audit linking BL5 targets to parseable examples (T5.6–T5.8).
+- **B. SemanticIR / StrategyIR** → feeds Track 3 / Track 5. Validate every target-matrix op against SemanticIR / StrategyIR generation, add metadata hooks needed for benchmark evidence/diagnosability, and ensure fusion cases are represented canonically (T5.3, T6.3).
+- **C. Lowering / Compiler pipeline** → feeds Track 4 / Track 6. Build a per-op / per-fusion lowering compatibility audit from the target matrix, classify failures by stage (parse / semantic / strategy / lowering / emitter / runtime), and drive remaining lowering fixes directly from benchmark gaps (T6.1–T6.3, T6.7).
+- **D. Benchmark / Gate / Evidence** → feeds Track 6 / Track 7. Persist correctness and performance fields into all artifacts, generate coverage dashboards from the target matrix, and promote these checks into formal gate criteria (T6.8–T6.12, T7.3).
+
+### Phased closure roadmap
+
+| Phase | Deliverables | Success condition |
+|:------|:-------------|:------------------|
+| **S7-A** Target matrix & gap accounting | `benchmarks/stage7_bl5_target_matrix.json`, coverage snapshot above | Every required L1 op and L2 fusion has a machine-readable required-shape inventory; observed coverage is measurable, not anecdotal |
+| **S7-B** Correctness-first artifact schema | Benchmark runners write correctness metrics/tolerances; `PERF_ALL.csv` and per-op files include correctness fields; summaries aggregate correctness pass/fail | Every benchmark point has machine-readable correctness evidence (T6.8 ✅) |
+| **S7-C** Coverage closure | Stage 7 benchmark routing covers all BL5 L1 ops and all Stage 7 L2 fusions; missing points surfaced automatically | Required operator coverage = 100%; required shape coverage = 100% (with explicit OOM-policy evidence where applicable) |
+| **S7-D** Performance contract enforcement | Point-wise performance targets persisted in artifacts (T6.9); group/fusion pass logic implemented (T6.10–T6.12); gate-readable summaries expose coverage + correctness + performance status | Stage 7 can machine-check the BL5 performance contract, not just log raw latency |
+| **S7-E** Final BL5 exit | — | Full required coverage achieved; correctness pass for all required benchmark points; performance targets satisfied at group/fusion level; Stage 7 has gate-level evidence strong enough to claim BL5 closure |
+
+### Immediate next actions (carried over from gap report)
+
+1. Continue extending `run_with_inputs(...)` / reference coverage from the current verified L1 subset into the remaining unsupported BL5 operators (drives T5.6–T5.8, T6.1).
+2. Audit write/index ops for probe-semantics pitfalls (e.g. repeated-index nondeterminism) before counting mismatches as implementation bugs (drives T6.7).
+3. Extend artifact writing so performance pass/fail is preserved in `PERF_ALL.csv` and summaries alongside the new correctness fields (T6.9).
+4. Generate a coverage-oriented report that highlights missing BL5 ops / shape tags directly from the target matrix (T6.10 → T6.11).
 
 ## Dependencies
 
