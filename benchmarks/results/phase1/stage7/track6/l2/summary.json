@@ -6,5 +6,21 @@
   "total_shapes": 3,
   "operators": [
     "matmul_relu"
-  ]
+  ],
+  "status_counts": {
+    "ok": 3
+  },
+  "correctness_counts": {
+    "unknown": 3
+  },
+  "perf_target_counts": {
+    "with_target": 0,
+    "without_target": 3
+  },
+  "perf_pass_counts": {
+    "unknown": 3
+  },
+  "perf_targets": {},
+  "perf_actuals": {},
+  "perf_gaps": {}
 }

@@ -1,4 +1,4 @@
-operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline
-matmul_relu,square-1k,separate,321.5,219.1,6.679,1.0000
-matmul_relu,square-1k,torch.compile,354.3,341.0,6.061,0.9074
-matmul_relu,square-1k,FlagGems,259.9,118.8,8.263,1.2370
+operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+matmul_relu,square-1k,separate,321.5,219.1,6.679,1.0000,ok,,false,,,,,,unknown,,,,,
+matmul_relu,square-1k,torch.compile,354.3,341.0,6.061,0.9074,ok,,false,,,,,,unknown,,,,,
+matmul_relu,square-1k,FlagGems,259.9,118.8,8.263,1.2370,ok,,false,,,,,,unknown,,,,,

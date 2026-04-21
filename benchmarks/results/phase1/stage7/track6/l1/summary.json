@@ -6,5 +6,21 @@
   "total_shapes": 4,
   "operators": [
     "relu"
-  ]
+  ],
+  "status_counts": {
+    "ok": 4
+  },
+  "correctness_counts": {
+    "unknown": 4
+  },
+  "perf_target_counts": {
+    "with_target": 0,
+    "without_target": 4
+  },
+  "perf_pass_counts": {
+    "unknown": 4
+  },
+  "perf_targets": {},
+  "perf_actuals": {},
+  "perf_gaps": {}
 }
