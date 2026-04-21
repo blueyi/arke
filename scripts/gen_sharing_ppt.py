@@ -34,7 +34,7 @@ FONT_MONO = "Consolas"
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
 
-TOTAL = 32
+TOTAL = 42
 
 # ------------------------------------------------------------------ helpers
 
@@ -222,28 +222,30 @@ def make_agenda(prs):
         ("01", "背景：AI 编程编译的范式迁移", "为什么「四件套」不是可选项"),
         ("02–06", "四件套分述：Language / IR / Compiler / Agent",
          "必要性 · 构建策略 · 技术讨论点"),
-        ("07", "业界技术洞察与方案全景",
-         "LLM-for-Code · Autotune · MLIR · Agentic Infra 四条主线"),
-        ("08", "AI 原生编译栈的 6 个必备特征 (T1–T6)",
-         "由业界洞察抽取，作为方案评估基线"),
-        ("09", "方案对比  ·  本方案 vs 业界",
-         "T1–T6 六维度对比表 + 优势简述"),
-        ("10", "整体技术架构  +  四件套各自架构图",
+        ("07", "业界洞察：四条主线 + 方案全景",
+         "LLM-for-Code · Autotune · MLIR · Agentic Infra"),
+        ("10", "LLM-Driven Kernel Generation 7 大代表方案深度洞察",
+         "KernelEvolve · KernelFalcon/Agent · KernelGen · AutoKernel · K-Search · AVO · CuTeGen"),
+        ("11–12", "汇总对比 + 演进趋势",
+         "9 维特征矩阵 · 优劣速览 · 目标态趋势 · 呼应 Arke 规划"),
+        ("13", "6 项必备特征 T1–T6 + 方案对比",
+         "本方案 vs 业界 · 六维度优势"),
+        ("14", "整体技术架构 + 四件套各自架构图",
          "Arke 总图 · Language · IR · Compiler · Agent"),
-        ("15", "贯通：职责矩阵 · 验证 · Benchmark · Token · 路线图 · Q&A",
-         "把架构锁到可度量的坐标上"),
+        ("15", "贯通 + Q&A",
+         "职责矩阵 · 验证 · Benchmark · Token · Q&A"),
     ]
-    top = Inches(1.85)
-    row_h = Inches(0.72)
+    top = Inches(1.75)
+    row_h = Inches(0.65)
     for i, (no, title, sub) in enumerate(items):
         y = top + i * row_h
-        panel(slide, Inches(0.9), y, Inches(11.5), Inches(0.62), BG_PANEL)
-        add_text(slide, Inches(1.05), y + Inches(0.12), Inches(1.3), Inches(0.42),
-                 no, size=15, bold=True, color=ACCENT, font=FONT_MONO)
-        add_text(slide, Inches(2.35), y + Inches(0.07), Inches(7.0), Inches(0.3),
-                 title, size=14, bold=True, color=FG)
-        add_text(slide, Inches(2.35), y + Inches(0.34), Inches(9.1), Inches(0.28),
-                 sub, size=11, color=FG_MUTED)
+        panel(slide, Inches(0.9), y, Inches(11.5), Inches(0.56), BG_PANEL)
+        add_text(slide, Inches(1.05), y + Inches(0.1), Inches(1.4), Inches(0.4),
+                 no, size=14, bold=True, color=ACCENT, font=FONT_MONO)
+        add_text(slide, Inches(2.45), y + Inches(0.06), Inches(7.0), Inches(0.28),
+                 title, size=13, bold=True, color=FG)
+        add_text(slide, Inches(2.45), y + Inches(0.3), Inches(9.0), Inches(0.26),
+                 sub, size=10, color=FG_MUTED)
     footer(slide, 2)
 
 
@@ -1378,6 +1380,762 @@ def make_agent_arch(prs, page):
     footer(slide, page)
 
 
+# ------------------------------------------------------------------ industry deep-dive (LLM-driven kernel generation 7 方案)
+
+
+def _method_card(slide, x, y, w, h, title, color):
+    panel(slide, x, y, w, h, BG_PANEL)
+    accent_bar(slide, x, y, width=Inches(0.12), height=h, color=color)
+    add_text(slide, x + Inches(0.3), y + Inches(0.1),
+             w - Inches(0.4), Inches(0.4),
+             title, size=13, bold=True, color=color)
+    return x + Inches(0.3), y + Inches(0.55), w - Inches(0.4), h - Inches(0.65)
+
+
+def _method_intro(slide, meta):
+    """Top strip showing team · date · venue · link."""
+    panel(slide, Inches(0.6), Inches(1.9), Inches(12.1), Inches(0.55), BG_PANEL_ALT)
+    add_text(slide, Inches(0.8), Inches(1.98),
+             Inches(11.8), Inches(0.4),
+             meta, size=11, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+
+def make_industry_section_intro(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界深度洞察",
+                 "LLM-Driven Kernel Generation · 7 大代表方案分述")
+
+    items = [
+        ("KernelEvolve (Meta, ISCA'26)", "Triton / CuTe / MTIA C++ · 生产级 · 异构",
+         ACCENT),
+        ("KernelFalcon + KernelAgent (Meta PyTorch)",
+         "Deep Agents · Multi-Agent · KernelBench 100%", ACCENT_ALT),
+        ("AscendKernelGen / KernelGen-LM (PCL)",
+         "NPU · AscendC · SFT+RL · 领域模型", ACCENT_BLUE),
+        ("AutoKernel (RightNow AI)", "Triton + CUDA C++ · 6-tier Playbook · H100",
+         ACCENT_RED),
+        ("K-Search (UC Berkeley)", "Co-Evolving World Model · 树搜索 · FlashInfer",
+         ACCENT),
+        ("AVO (NVIDIA)", "Agentic Variation Operators · Blackwell · FA-4+",
+         ACCENT_ALT),
+        ("CuTeGen (UofT)", "CuTe 抽象层 · 单 kernel 渐进精炼 · Generate-Test-Refine",
+         ACCENT_BLUE),
+    ]
+    top = Inches(2.25)
+    row_h = Inches(0.66)
+    for i, (n, t, c) in enumerate(items):
+        y = top + i * row_h
+        panel(slide, Inches(0.9), y, Inches(11.5), row_h - Inches(0.1), BG_PANEL)
+        accent_bar(slide, Inches(0.9), y, width=Inches(0.12),
+                   height=row_h - Inches(0.1), color=c)
+        add_text(slide, Inches(1.15), y + Inches(0.13), Inches(0.7),
+                 Inches(0.35), f"0{i+1}", size=16, bold=True, color=c,
+                 font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, Inches(1.95), y + Inches(0.1), Inches(5.0),
+                 Inches(0.4), n, size=13, bold=True, color=FG,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, Inches(7.0), y + Inches(0.1), Inches(5.2),
+                 Inches(0.4), t, size=11, color=FG_MUTED,
+                 anchor=MSO_ANCHOR.MIDDLE)
+    footer(slide, page)
+
+
+def make_kernelevolve(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界方案 · 01 / 07",
+                 "KernelEvolve  ·  Meta 生产级异构 Agent Kernel 编写（ISCA 2026）")
+    _method_intro(slide,
+        "Meta Platforms  ·  arXiv 2512.23236  ·  ISCA 2026  ·  生产部署 · "
+        "KernelBench 250/250 PASS · ATen 160 ops × 3 HW · 最高 17× vs PyTorch")
+
+    # Left: architecture pipeline
+    lx, ly, lw, lh = _method_card(slide, Inches(0.6), Inches(2.65),
+                                  Inches(6.5), Inches(4.3),
+                                  "技术架构  ·  六组件 Agentic 流水", ACCENT)
+    stages = [
+        ("Hardware Knowledge Base",
+         "RAG 注入硬件手册 / ISA / 优化模板（含 MTIA 专有架构）"),
+        ("LLM Synthesizer",
+         "多 DSL 候选生成：Triton · CuTe DSL · FlyDSL · CUDA · HIP · MTIA C++"),
+        ("Tree Search + State Machine",
+         "把 kernel 优化视为搜索问题，维护 self-improving state"),
+        ("Job Harness",
+         "规模化并行 compile + profile + benchmark"),
+        ("Retrieval-Augmented Prompt Synthesis",
+         "运行时上下文 → 动态 prompt 合成"),
+        ("Deployment Loop",
+         "生产化入链 · Ads/DLRM 推理吞吐 +60%"),
+    ]
+    for i, (h, d) in enumerate(stages):
+        y = ly + i * Inches(0.6)
+        panel(slide, lx, y, lw, Inches(0.52), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.15), y + Inches(0.05),
+                 Inches(2.6), Inches(0.42), h, size=10, bold=True,
+                 color=ACCENT, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, lx + Inches(2.85), y + Inches(0.05),
+                 lw - Inches(2.95), Inches(0.42), d,
+                 size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+    # Right: key features
+    rx, ry, rw, rh = _method_card(slide, Inches(7.35), Inches(2.65),
+                                  Inches(5.4), Inches(4.3),
+                                  "关键技术特征  ·  与 Arke 的对照点", ACCENT_ALT)
+    feats = [
+        "把 kernel 优化定义为 search problem ·  非 one-shot",
+        "覆盖全编程栈  ·  Triton / CuTe / CUDA / HIP / MTIA C++",
+        "RAG 硬件知识库   ·  显式注入 ISA / 架构手册",
+        "异构 × 大规模  ·  NVIDIA · AMD · MTIA · CPU 生产化",
+        "KernelBench 全 250 100% · ATen 160 ops × 3 HW 100% 正确",
+        "",
+        "⇌ 对照 Arke  ·  搜索思路一致，但决策空间是自由代码",
+        "⇌ 对照 Arke  ·  DSL 是 Triton/CuTe/etc，不是 LLM-Native IR",
+        "⇌ 对照 Arke  ·  无 @rationale 作为一等知识载体",
+    ]
+    add_bullets(slide, rx, ry, rw, rh, feats, size=10,
+                bullet_color=ACCENT_ALT, line_spacing=1.2)
+    footer(slide, page)
+
+
+def make_kernelfalcon_agent(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界方案 · 02 / 07",
+                 "KernelFalcon + KernelAgent  ·  PyTorch Team Deep Agents")
+    _method_intro(slide,
+        "Meta PyTorch Team  ·  github.com/meta-pytorch/KernelAgent  ·  Apache-2.0  ·  "
+        "KernelBench L1/L2/L3 250/250 · 1.56× vs torch.compile · 89% H100 roofline")
+
+    lx, ly, lw, lh = _method_card(slide, Inches(0.6), Inches(2.65),
+                                  Inches(6.5), Inches(4.3),
+                                  "技术架构  ·  Deep Agent 分层编排", ACCENT_ALT)
+    stages = [
+        ("Orchestrator (Deterministic)",
+         "Python 控制流 · LLM 不做编排决策"),
+        ("FuserAgent",
+         "Code-to-code 融合  ·  保持 PyTorch 语义"),
+        ("ExtractorAgent",
+         "子图边界 + shape contract 抽取为 JSON 合同"),
+        ("Dispatcher + KernelAgent (×N workers)",
+         "并行 Triton kernel 合成 + 严格 runtime 验证"),
+        ("Hardware-Guided Opt Loop",
+         "ProfilerAgent (NCU) + JudgeAgent (roofline) + AnalyzeAgent"),
+        ("Composer",
+         "用合成 kernel 重建原 forward · 端到端替换"),
+    ]
+    for i, (h, d) in enumerate(stages):
+        y = ly + i * Inches(0.6)
+        panel(slide, lx, y, lw, Inches(0.52), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.15), y + Inches(0.05),
+                 Inches(2.8), Inches(0.42), h, size=10, bold=True,
+                 color=ACCENT_ALT, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, lx + Inches(3.1), y + Inches(0.05),
+                 lw - Inches(3.2), Inches(0.42), d,
+                 size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+    rx, ry, rw, rh = _method_card(slide, Inches(7.35), Inches(2.65),
+                                  Inches(5.4), Inches(4.3),
+                                  "关键技术特征", ACCENT_BLUE)
+    feats = [
+        "Hierarchical delegation  ·  任务分解到精确子问题",
+        "Deterministic control plane  ·  编排交 Python，认知交 LLM",
+        "Grounded tool use  ·  每步经编译器 + 硬件验证",
+        "Parallel exploration + early-win  ·  多 worker 竞速",
+        "Verifier-first  ·  compile + 数值 + 性能三级 gate",
+        "NCU roofline + LLM bottleneck diagnosis · 硬件信号驱动",
+        "",
+        "⇌ 对照 Arke  ·  「编排交确定性代码、认知交 LLM」理念高度一致",
+        "⇌ 对照 Arke  ·  子图合同 ≈ SemanticIR，但无策略层单独表达",
+        "⇌ 对照 Arke  ·  输出仍是 Triton 代码 ·  无多层 IR",
+    ]
+    add_bullets(slide, rx, ry, rw, rh, feats, size=10,
+                bullet_color=ACCENT_BLUE, line_spacing=1.18)
+    footer(slide, page)
+
+
+def make_kernelgen_ascend(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界方案 · 03 / 07",
+                 "AscendKernelGen  ·  KernelGen-LM  ·  面向 NPU 的领域模型（PCL, 2026）")
+    _method_intro(slide,
+        "PCL / 鹏城实验室 · 中山大学 · 华为  ·  arXiv 2601.07160  ·  "
+        "Ascend NPU · AscendC DSL · L2 编译成功率 0% → 95.5% (Pass@10)")
+
+    lx, ly, lw, lh = _method_card(slide, Inches(0.6), Inches(2.65),
+                                  Inches(6.5), Inches(4.3),
+                                  "技术架构  ·  生成 × 评测 × 训练三位一体", ACCENT_BLUE)
+    stages = [
+        ("Ascend-CoT 数据集",
+         "从真实 AscendC kernel 抽取 CoT · 文档 + 代码 + 一般推理"),
+        ("KernelGen-LM  (1.7B / 8B)",
+         "Qwen3 backbone · SFT 预热 · 含硬件约束的专用权重"),
+        ("RL with Execution Feedback",
+         "奖励 = compile OK + 数值 OK + 速度增益 · 反事实保留"),
+        ("NPUKernelBench",
+         "编译 × 正确性 × 性能三级打分 · L1 / L2 / L3 难度分层"),
+        ("Generate-Evaluate Loop",
+         "候选 → NPU 硬件执行 → 反馈 → 再生成"),
+        ("Open Artifacts",
+         "HuggingFace 开放模型 + 数据集 + Benchmark"),
+    ]
+    for i, (h, d) in enumerate(stages):
+        y = ly + i * Inches(0.6)
+        panel(slide, lx, y, lw, Inches(0.52), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.15), y + Inches(0.05),
+                 Inches(2.4), Inches(0.42), h, size=10, bold=True,
+                 color=ACCENT_BLUE, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, lx + Inches(2.65), y + Inches(0.05),
+                 lw - Inches(2.75), Inches(0.42), d,
+                 size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+    rx, ry, rw, rh = _method_card(slide, Inches(7.35), Inches(2.65),
+                                  Inches(5.4), Inches(4.3),
+                                  "关键技术特征", ACCENT)
+    feats = [
+        "选择「训一个领域 LLM」而非「调一个通用 LLM」",
+        "把 NPU DSL 的缺数据痛点用 CoT + RLEF 补齐",
+        "强耦合单一硬件  ·  AscendC / 昇腾  ·  非跨架构",
+        "Benchmark 内置：编译 / 正确性 / 延迟三维打分",
+        "开源数据 + 权重 + 评测  ·  社区可复现",
+        "",
+        "⇌ 对照 Arke  ·  Arke 不依赖专训模型  ·  用结构化协议约束通用 LLM",
+        "⇌ 对照 Arke  ·  Arke 把知识沉到 @rationale 而非模型权重",
+        "⇌ 对照 Arke  ·  Arke 跨架构；KernelGen 单架构深度最优",
+    ]
+    add_bullets(slide, rx, ry, rw, rh, feats, size=10,
+                bullet_color=ACCENT, line_spacing=1.18)
+    footer(slide, page)
+
+
+def make_autokernel(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界方案 · 04 / 07",
+                 "AutoKernel  ·  Autoresearch for GPU Kernels (RightNow AI, 2026)")
+    _method_intro(slide,
+        "Jaber & Jaber  ·  arXiv 2603.21331  ·  github.com/RightNow-AI/autokernel  ·  "
+        "H100 · RMSNorm 5.29× / softmax 2.82× / cross-entropy 2.21× vs eager · vectorsum_v2 B200 leaderboard 第一")
+
+    lx, ly, lw, lh = _method_card(slide, Inches(0.6), Inches(2.65),
+                                  Inches(6.5), Inches(4.3),
+                                  "技术架构  ·  三阶段  Amdahl 驱动", ACCENT_RED)
+    stages = [
+        ("Phase A · Profile",
+         "torch.profiler 定位 bottleneck  ·  按 Amdahl law 排序"),
+        ("Phase B · Extract",
+         "bottleneck → 独立 Triton / CUDA C++ kernel 文件"),
+        ("Phase C · Optimize Loop",
+         "agent 改一个 kernel.py · bench.py 跑 fixed 评测 · keep / revert"),
+        ("Dual Backend",
+         "Triton（迭代速度）+ CUDA C++（tensor core / wmma 深度）"),
+        ("5-Stage Correctness Harness",
+         "smoke / shape sweep / numerical / gradient / end-to-end"),
+        ("6-Tier Playbook (program.md 909 行)",
+         "专家优化规则 encode 成 agent instruction"),
+    ]
+    for i, (h, d) in enumerate(stages):
+        y = ly + i * Inches(0.6)
+        panel(slide, lx, y, lw, Inches(0.52), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.15), y + Inches(0.05),
+                 Inches(2.5), Inches(0.42), h, size=10, bold=True,
+                 color=ACCENT_RED, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, lx + Inches(2.75), y + Inches(0.05),
+                 lw - Inches(2.85), Inches(0.42), d,
+                 size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+    rx, ry, rw, rh = _method_card(slide, Inches(7.35), Inches(2.65),
+                                  Inches(5.4), Inches(4.3),
+                                  "关键技术特征", ACCENT)
+    feats = [
+        "受 Karpathy autoresearch 启发  ·  过夜自主搜索",
+        "编排极简  ·  agent edits 1 file · fixed bench · keep/revert",
+        "Amdahl 优先级  ·  先啃大头 kernel",
+        "双后端  ·  Triton 快迭代 / CUDA C++ 触达极限",
+        "9 类 kernel × 18 starter implementations · 复现友好",
+        "",
+        "⇌ 对照 Arke  ·  6-tier playbook ≈ @rationale knowledge base",
+        "⇌ 对照 Arke  ·  Arke 是「枚举动作」而非「自由编辑文件」",
+        "⇌ 对照 Arke  ·  Arke 在 IR 层回滚而非 kernel 文件层回滚",
+    ]
+    add_bullets(slide, rx, ry, rw, rh, feats, size=10,
+                bullet_color=ACCENT, line_spacing=1.18)
+    footer(slide, page)
+
+
+def make_ksearch(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界方案 · 05 / 07",
+                 "K-Search  ·  Co-Evolving Intrinsic World Model (UC Berkeley, 2026)")
+    _method_intro(slide,
+        "Shiyi Cao et al. · UC Berkeley · arXiv 2602.19128  ·  github.com/caoshiyi/K-Search  ·  "
+        "FlashInfer GQA/MLA/MoE · 平均 2.10× / MoE 最高 14.3× / GPUMode TriMul H100 SOTA 1030μs")
+
+    lx, ly, lw, lh = _method_card(slide, Inches(0.6), Inches(2.65),
+                                  Inches(6.5), Inches(4.3),
+                                  "技术架构  ·  World Model-Guided Search", ACCENT)
+    stages = [
+        ("Problem → Search Tree",
+         "kernel 生成 = 规划问题 · 状态树由 LLM World Model 维护"),
+        ("Intrinsic World Model",
+         "LLM 扮演 P_model(S_{t+1}|S_t, a_t) · 用 domain prior 指导"),
+        ("High-Level Planning ↔ Low-Level Codegen",
+         "显式解耦策略与实现 · 策略正确但实现错可恢复"),
+        ("Co-Evolving",
+         "World Model 随搜索更新：action 优先级 / 节点价值 / 断点"),
+        ("Stagnation-Aware Action Switch",
+         "K 轮无 improvement 自动切换 action 类型"),
+        ("Execution Feedback → WM Update",
+         "profile 观测 → 更新 WM 对各优化意图的 priority score"),
+    ]
+    for i, (h, d) in enumerate(stages):
+        y = ly + i * Inches(0.6)
+        panel(slide, lx, y, lw, Inches(0.52), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.15), y + Inches(0.05),
+                 Inches(2.7), Inches(0.42), h, size=10, bold=True,
+                 color=ACCENT, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, lx + Inches(2.95), y + Inches(0.05),
+                 lw - Inches(3.05), Inches(0.42), d,
+                 size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+    rx, ry, rw, rh = _method_card(slide, Inches(7.35), Inches(2.65),
+                                  Inches(5.4), Inches(4.3),
+                                  "关键技术特征", ACCENT_ALT)
+    feats = [
+        "核心贡献  ·  把 LLM 从「代码生成器」升级为「World Model」",
+        "策略 / 实现解耦  ·  非单调搜索路径可行",
+        "对临时 bug 有弹性  ·  好策略不会因编译失败被丢弃",
+        "树搜索显式记录 hypothesis + design alternatives",
+        "复杂 kernel 表现突出  ·  MoE 14.3× / MLA / GQA",
+        "",
+        "⇌ 对照 Arke  ·  「策略 / 实现解耦」与 Arke 语义/策略分离异曲同工",
+        "⇌ 对照 Arke  ·  WM 在 LLM 内部隐式 vs Arke 的显式 Strategy IR",
+        "⇌ 对照 Arke  ·  Arke 的 @rationale 可作为 WM 的跨 session 持久化",
+    ]
+    add_bullets(slide, rx, ry, rw, rh, feats, size=10,
+                bullet_color=ACCENT_ALT, line_spacing=1.18)
+    footer(slide, page)
+
+
+def make_avo(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界方案 · 06 / 07",
+                 "AVO  ·  Agentic Variation Operators (NVIDIA, 2026)")
+    _method_intro(slide,
+        "Terry Chen et al. · NVIDIA · arXiv 2603.24517  ·  Blackwell B200  ·  "
+        "MHA 7 天连续演化 · 超 cuDNN 3.5% / 超 FlashAttention-4 10.5% · GQA 迁移 30 min")
+
+    lx, ly, lw, lh = _method_card(slide, Inches(0.6), Inches(2.65),
+                                  Inches(6.5), Inches(4.3),
+                                  "技术架构  ·  Agent-as-Variation-Operator", ACCENT_ALT)
+    stages = [
+        ("Evolutionary Search Skeleton",
+         "维护 population P  ·  x_{t+1} = Vary(P_t)"),
+        ("Replace Vary() with Agent",
+         "Vary(P) = Agent(P, Knowledge, Feedback)  ·  不是固定 mutation"),
+        ("Self-Directed Agent Loop",
+         "propose → repair → critique → verify  ·  持续编辑实现"),
+        ("Domain Knowledge Base",
+         "Blackwell 架构规约  ·  FA-4 源码 / CUTLASS / warp primitives"),
+        ("Execution Feedback Integration",
+         "profile 结果驱动 agent 的下一轮变异"),
+        ("Single-Lineage Ablation",
+         "显式隔离「变异操作是代码 agent」这一因子的贡献"),
+    ]
+    for i, (h, d) in enumerate(stages):
+        y = ly + i * Inches(0.6)
+        panel(slide, lx, y, lw, Inches(0.52), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.15), y + Inches(0.05),
+                 Inches(2.7), Inches(0.42), h, size=10, bold=True,
+                 color=ACCENT_ALT, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, lx + Inches(2.95), y + Inches(0.05),
+                 lw - Inches(3.05), Inches(0.42), d,
+                 size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+    rx, ry, rw, rh = _method_card(slide, Inches(7.35), Inches(2.65),
+                                  Inches(5.4), Inches(4.3),
+                                  "关键技术特征", ACCENT_RED)
+    feats = [
+        "把「变异算子」从固定启发式升级为「自主编码 agent」",
+        "首次在 attention 上做到「超 expert-engineered」",
+        "1668 TFLOPS BF16 · 发现 SRAM→寄存器搬运等微架构优化",
+        "长周期（7 天）连续自主演化 · 跨 kernel 迁移",
+        "方法与 kernel target 解耦  ·  可迁移到其他 performance-critical 系统",
+        "",
+        "⇌ 对照 Arke  ·  AVO 的 agent 是「自由文本 variation」，Arke 是「枚举动作变异」",
+        "⇌ 对照 Arke  ·  两者都引入 Knowledge Base · Arke 用 @rationale",
+        "⇌ 对照 Arke  ·  AVO 结果最优但 token 成本高；Arke 结构化节省 token",
+    ]
+    add_bullets(slide, rx, ry, rw, rh, feats, size=10,
+                bullet_color=ACCENT_RED, line_spacing=1.18)
+    footer(slide, page)
+
+
+def make_cutegen(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "10 · 业界方案 · 07 / 07",
+                 "CuTeGen  ·  LLM × CuTe 抽象层（U. Toronto, 2026）")
+    _method_intro(slide,
+        "Tara Saba et al. · University of Toronto / Standard Kernel  ·  arXiv 2604.01489  ·  "
+        "CUTLASS v4.3 · 12 matmul + 14 activation kernels · 渐进 refinement · library-level perf")
+
+    lx, ly, lw, lh = _method_card(slide, Inches(0.6), Inches(2.65),
+                                  Inches(6.5), Inches(4.3),
+                                  "技术架构  ·  Generate–Test–Refine", ACCENT_BLUE)
+    stages = [
+        ("Initial Synthesis Prompt",
+         "PyTorch reference + CuTe 示例 kernel → 初始候选"),
+        ("Progressive Single-Kernel Refinement",
+         "不做大规模搜索  ·  只精炼一个进化中的 kernel"),
+        ("Execution-Based Validation",
+         "每次改动后 compile + 数值对比 PyTorch reference"),
+        ("Structured Debugging",
+         "失败走结构化 prompt 模板  ·  非自由报错粘贴"),
+        ("Staged Optimization",
+         "分阶段加压：先正确性 → 再 baseline → 再 profile 反馈"),
+        ("Delayed Profiling Integration",
+         "profile 反馈滞后注入  ·  避免早期噪声误导"),
+    ]
+    for i, (h, d) in enumerate(stages):
+        y = ly + i * Inches(0.6)
+        panel(slide, lx, y, lw, Inches(0.52), BG_PANEL_ALT)
+        add_text(slide, lx + Inches(0.15), y + Inches(0.05),
+                 Inches(2.7), Inches(0.42), h, size=10, bold=True,
+                 color=ACCENT_BLUE, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, lx + Inches(2.95), y + Inches(0.05),
+                 lw - Inches(3.05), Inches(0.42), d,
+                 size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+
+    rx, ry, rw, rh = _method_card(slide, Inches(7.35), Inches(2.65),
+                                  Inches(5.4), Inches(4.3),
+                                  "关键技术特征", ACCENT)
+    feats = [
+        "关键设计选择  ·  目标语言用 CuTe（CUTLASS C++ 模板抽象）",
+        "CuTe 暴露 tiling / data movement  ·  比 CUDA 稳定可迭代",
+        "单 kernel 渐进进化  ·  非多候选搜索  ·  token 成本低",
+        "Workload-aware prompt  ·  按 workload 注入不同优化策略",
+        "Delayed profiling  ·  晚期注入 profile 反馈防止过拟合噪声",
+        "",
+        "⇌ 对照 Arke  ·  「选择稳定抽象层」的直觉与 Arke IR 分层一致",
+        "⇌ 对照 Arke  ·  CuTe 仍是 C++ 模板 · Arke 是 LLM-Native",
+        "⇌ 对照 Arke  ·  CuTeGen 单 kernel 精炼 ≈ Arke 单次 optimize session",
+    ]
+    add_bullets(slide, rx, ry, rw, rh, feats, size=10,
+                bullet_color=ACCENT, line_spacing=1.18)
+    footer(slide, page)
+
+
+def make_landscape_matrix(prs, page):
+    """汇总对比 7 方案在 9 大维度上的特征。"""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "11 · 汇总对比",
+                 "7 方案  ×  9 维度特征矩阵  ·  基于 LLM 的算子生态全景")
+
+    # Rows = methods; Columns = dimensions
+    dims = [
+        "优化范式",
+        "搜索结构",
+        "LLM 角色",
+        "知识注入",
+        "验证机制",
+        "目标语言",
+        "硬件覆盖",
+        "知识沉淀",
+        "典型成果",
+    ]
+    rows = [
+        ("Arke (本方案)", ACCENT, [
+            "Decision-based",
+            "Bounded Action Space",
+            "决策者",
+            "@rationale KB",
+            "V0/V1/V2 三级",
+            ".ak → 多后端",
+            "NVIDIA→Ascend→+",
+            "trajectory + IR",
+            "规划中",
+        ]),
+        ("KernelEvolve", ACCENT_ALT, [
+            "Search-based",
+            "Tree search + State",
+            "代码生成器",
+            "RAG HW Manual",
+            "job-harness 验证",
+            "Triton / CuTe / HIP / MTIA",
+            "NVIDIA / AMD / MTIA / CPU",
+            "RAG 知识库",
+            "17× vs PyTorch · 生产",
+        ]),
+        ("KernelFalcon +\nKernelAgent", ACCENT_BLUE, [
+            "Decomposition-based",
+            "Deep Agents 分层",
+            "多 agent 协作",
+            "Profile + roofline",
+            "编译 + 数值 + 性能 gate",
+            "Triton",
+            "NVIDIA H100",
+            "Prompt template",
+            "KernelBench 100% · 89% roofline",
+        ]),
+        ("AscendKernelGen", ACCENT_RED, [
+            "Domain-model-based",
+            "Generate-Eval loop",
+            "专训领域 LLM",
+            "Ascend-CoT 数据集",
+            "NPUKernelBench 三级",
+            "AscendC DSL",
+            "仅 Ascend NPU",
+            "LLM 权重",
+            "Pass@10  0%→95.5%",
+        ]),
+        ("AutoKernel", ACCENT, [
+            "Autoresearch-based",
+            "edit-bench-keep",
+            "自主 agent",
+            "6-tier playbook",
+            "5-stage harness",
+            "Triton / CUDA C++",
+            "NVIDIA H100 / B200",
+            "program.md + artifact",
+            "5.29× RMSNorm",
+        ]),
+        ("K-Search", ACCENT_ALT, [
+            "Planning-based",
+            "World-Model tree",
+            "World Model + Planner",
+            "LLM 内在 prior",
+            "execution feedback",
+            "Triton / CUDA",
+            "NVIDIA H100",
+            "co-evolving WM",
+            "MoE 14.3× / TriMul SOTA",
+        ]),
+        ("AVO", ACCENT_RED, [
+            "Evolution-based",
+            "Single-lineage EA",
+            "Variation Operator",
+            "Domain KB + FA4 src",
+            "propose/critique/verify",
+            "CUTLASS / CUDA",
+            "NVIDIA Blackwell",
+            "knowledge base",
+            "超 cuDNN 3.5% · 超 FA-4 10.5%",
+        ]),
+        ("CuTeGen", ACCENT_BLUE, [
+            "Refinement-based",
+            "Single-kernel iter",
+            "代码生成+调试",
+            "CuTe examples",
+            "PyTorch ref 对比",
+            "CuTe (CUTLASS C++)",
+            "NVIDIA",
+            "— 无持久化",
+            "library-level matmul/act",
+        ]),
+    ]
+
+    # Table geometry
+    tbl_x = Inches(0.35)
+    tbl_y = Inches(1.95)
+    name_w = Inches(1.45)
+    col_w = Inches(1.28)
+    n_dim = len(dims)
+    tbl_w = name_w + col_w * n_dim
+    row_h = Inches(0.56)
+
+    # Header
+    panel(slide, tbl_x, tbl_y, tbl_w, row_h - Inches(0.04), BG_PANEL_ALT)
+    add_text(slide, tbl_x + Inches(0.1), tbl_y + Inches(0.05),
+             name_w - Inches(0.15), Inches(0.45),
+             "方案 / 维度", size=11, bold=True, color=ACCENT,
+             anchor=MSO_ANCHOR.MIDDLE)
+    for j, d in enumerate(dims):
+        x = tbl_x + name_w + j * col_w
+        add_text(slide, x + Inches(0.04), tbl_y + Inches(0.05),
+                 col_w - Inches(0.08), Inches(0.45),
+                 d, size=9, bold=True, color=ACCENT,
+                 align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+
+    # Rows
+    for i, (name, col, vals) in enumerate(rows):
+        y = tbl_y + (i + 1) * row_h
+        highlight = i == 0
+        bg = BG_PANEL if not highlight else BG_PANEL_ALT
+        panel(slide, tbl_x, y, tbl_w, row_h - Inches(0.04), bg)
+        if highlight:
+            accent_bar(slide, tbl_x, y, width=Inches(0.08),
+                       height=row_h - Inches(0.04), color=ACCENT)
+        add_text(slide, tbl_x + Inches(0.15), y + Inches(0.05),
+                 name_w - Inches(0.2), Inches(0.45),
+                 name, size=10, bold=True,
+                 color=col, anchor=MSO_ANCHOR.MIDDLE)
+        for j, v in enumerate(vals):
+            x = tbl_x + name_w + j * col_w
+            add_text(slide, x + Inches(0.04), y + Inches(0.05),
+                     col_w - Inches(0.08), Inches(0.45),
+                     v, size=8,
+                     color=FG if highlight else FG_MUTED,
+                     align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+
+    # Bottom summary bar
+    sy = tbl_y + (len(rows) + 1) * row_h + Inches(0.08)
+    panel(slide, Inches(0.35), sy, tbl_w, Inches(0.45), BG_PANEL_ALT)
+    add_text(slide, Inches(0.5), sy + Inches(0.06), tbl_w - Inches(0.2),
+             Inches(0.35),
+             "关键分歧  ·  是否多层 IR · 是否有界动作空间 · 知识沉淀介质 · 跨硬件范式",
+             size=11, bold=True, color=ACCENT_ALT,
+             anchor=MSO_ANCHOR.MIDDLE, align=PP_ALIGN.CENTER)
+    footer(slide, page)
+
+
+def make_pros_cons(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "11 · 汇总对比",
+                 "7 方案优劣势速览  ·  以及对本方案的启发")
+
+    items = [
+        ("KernelEvolve", ACCENT_ALT,
+         "生产级规模 · 跨 NVIDIA/AMD/MTIA/CPU · RAG 硬件知识库",
+         "输出仍为自由代码 · 无显式策略层 · 无跨硬件可迁移知识"),
+        ("KernelFalcon + KernelAgent", ACCENT_BLUE,
+         "Deep-Agent 分层编排 · 硬件信号驱动 · 100% KernelBench",
+         "仍是 Triton 自由代码 · 无多层 IR · 无 @rationale 沉淀"),
+        ("AscendKernelGen", ACCENT_RED,
+         "单硬件最深度 · 开源数据+权重 · CoT + RLEF 补数据空洞",
+         "强耦合 AscendC · 权重即知识 · 跨架构迁移困难"),
+        ("AutoKernel", ACCENT,
+         "过夜自主搜索 · 双后端 · 6-tier playbook 极佳",
+         "agent 直接编辑文件 · 无 IR 回滚粒度 · 单硬件"),
+        ("K-Search", ACCENT_ALT,
+         "World Model 解耦策略与实现 · 复杂 MoE 优势 14.3×",
+         "WM 隐式在 LLM 里 · 难跨 session 持久化 · 需频繁采样"),
+        ("AVO", ACCENT_RED,
+         "「agent 即变异算子」突破 · 能超 FA-4 10.5%",
+         "7 天 token 成本高 · 仍需 C++ 手写 · 领域 KB 手工构建"),
+        ("CuTeGen", ACCENT_BLUE,
+         "选择稳定抽象 (CuTe) 作为目标语言 · token 成本低",
+         "CuTe ≠ LLM-Native · 单 kernel 精炼 · 无跨硬件"),
+    ]
+
+    top = Inches(1.95)
+    row_h = Inches(0.65)
+    for i, (name, col, pro, con) in enumerate(items):
+        y = top + i * row_h
+        panel(slide, Inches(0.6), y, Inches(12.15), row_h - Inches(0.08), BG_PANEL)
+        accent_bar(slide, Inches(0.6), y, width=Inches(0.12),
+                   height=row_h - Inches(0.08), color=col)
+        add_text(slide, Inches(0.9), y + Inches(0.1), Inches(2.8),
+                 Inches(0.4), name, size=12, bold=True, color=col,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        # Pro
+        add_text(slide, Inches(3.75), y + Inches(0.08), Inches(0.25),
+                 Inches(0.4), "+", size=16, bold=True, color=ACCENT,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, Inches(4.0), y + Inches(0.1), Inches(4.4),
+                 Inches(0.4), pro, size=10, color=FG,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        # Con
+        add_text(slide, Inches(8.4), y + Inches(0.08), Inches(0.25),
+                 Inches(0.4), "−", size=16, bold=True, color=ACCENT_RED,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(slide, Inches(8.65), y + Inches(0.1), Inches(4.05),
+                 Inches(0.4), con, size=10, color=FG_MUTED,
+                 anchor=MSO_ANCHOR.MIDDLE)
+
+    sy = top + len(items) * row_h + Inches(0.1)
+    panel(slide, Inches(0.6), sy, Inches(12.15), Inches(0.55), BG_PANEL_ALT)
+    add_text(slide, Inches(0.8), sy + Inches(0.08),
+             Inches(11.8), Inches(0.4),
+             "共性收敛  ·  所有方案都走向「Agent 闭环 + 硬件反馈 + 结构化知识」 ·  分歧点在「知识沉淀介质」与「是否引入 IR 分层」",
+             size=11, bold=True, color=ACCENT,
+             anchor=MSO_ANCHOR.MIDDLE)
+    footer(slide, page)
+
+
+def make_evolution_trend(prs, page):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(slide)
+    slide_header(slide, "12 · 演进趋势",
+                 "目标态下大模型算子生成技术的演进方向  ·  呼应 Arke 技术规划")
+
+    # Left: 4 trends
+    trends = [
+        ("T1  从代码生成  →  决策生成",
+         "LLM 从「写 Triton」降级为「选 tile / fuse / layout」，编译器验证",
+         "→ 映射 Arke 件套四 · Bounded Action Space + Tool-Use 协议", ACCENT),
+        ("T2  从单层代码  →  多层 LLM-Native IR",
+         "Semantic / Strategy / Schedule / Instruction 按 LLM 参与度分层",
+         "→ 映射 Arke 件套二 · L4/L3/L2/L1 + 下接 MLIR/LLVM", ACCENT_ALT),
+        ("T3  从权重里的知识  →  @rationale 里的知识",
+         "跨 session / 跨硬件可迁移  ·  不必再训一个领域 LLM",
+         "→ 映射 Arke H4 验证目标 · @rationale ≥10% cross-arch lift",
+         ACCENT_BLUE),
+        ("T4  从单硬件精化  →  一次定义多后端",
+         "同一 Semantic 对多后端  ·  策略自适应各硬件",
+         "→ 映射 Arke Phase 2/3/4 · Triton → MLIR → LLVM IR", ACCENT_RED),
+    ]
+    tx = Inches(0.6)
+    ty = Inches(1.95)
+    tw = Inches(8.0)
+    card_h = Inches(1.2)
+    for i, (t, d, map_, col) in enumerate(trends):
+        y = ty + i * (card_h + Inches(0.08))
+        panel(slide, tx, y, tw, card_h, BG_PANEL)
+        accent_bar(slide, tx, y, width=Inches(0.12), height=card_h, color=col)
+        add_text(slide, tx + Inches(0.3), y + Inches(0.1),
+                 tw - Inches(0.4), Inches(0.35),
+                 t, size=13, bold=True, color=col)
+        add_text(slide, tx + Inches(0.3), y + Inches(0.5),
+                 tw - Inches(0.4), Inches(0.35),
+                 d, size=10, color=FG)
+        add_text(slide, tx + Inches(0.3), y + Inches(0.85),
+                 tw - Inches(0.4), Inches(0.3),
+                 map_, size=10, bold=True, color=ACCENT,
+                 anchor=MSO_ANCHOR.MIDDLE)
+
+    # Right: Arke regulation mapping to Phases
+    rx = Inches(8.85)
+    ry = Inches(1.95)
+    rw = Inches(3.95)
+    panel(slide, rx, ry, rw, Inches(5.05), BG_PANEL)
+    accent_bar(slide, rx, ry, width=rw, height=Inches(0.08), color=ACCENT)
+    add_text(slide, rx + Inches(0.25), ry + Inches(0.2), rw - Inches(0.4),
+             Inches(0.4), "Arke 规划呼应  ·  Phase 1→4",
+             size=14, bold=True, color=ACCENT)
+
+    phases = [
+        ("P1", "SIMT MVP  ·  NVIDIA Triton",
+         "Lang / IR v2 · Agent 自主化 · v1.0", ACCENT),
+        ("P2", "SIMD 泛化  ·  Ascend NPU",
+         "验证 @rationale 跨架构 ≥10% lift", ACCENT_ALT),
+        ("P3", "MLIR Dialect",
+         "打穿 Triton 天花板 · L2 决策", ACCENT_BLUE),
+        ("P4", "LLVM IR × 多后端",
+         "100% 硬件完整度 · L3 决策", ACCENT_RED),
+    ]
+    for i, (ph, t1, t2, col) in enumerate(phases):
+        y = ry + Inches(0.8) + i * Inches(1.0)
+        panel(slide, rx + Inches(0.2), y, rw - Inches(0.4),
+              Inches(0.85), BG_PANEL_ALT)
+        add_text(slide, rx + Inches(0.4), y + Inches(0.1),
+                 Inches(0.6), Inches(0.35),
+                 ph, size=15, bold=True, color=col, font=FONT_MONO)
+        add_text(slide, rx + Inches(1.05), y + Inches(0.08),
+                 rw - Inches(1.3), Inches(0.3),
+                 t1, size=10, bold=True, color=FG)
+        add_text(slide, rx + Inches(1.05), y + Inches(0.4),
+                 rw - Inches(1.3), Inches(0.4),
+                 t2, size=9, color=FG_MUTED)
+
+    footer(slide, page)
+
+
 def make_closing(prs, page):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(slide)
@@ -1578,24 +2336,38 @@ def build(out_path: Path) -> None:
     # 业界洞察 / 应有特征 / 方案对比
     make_industry_insight_1(prs, page=17)                     # 17
     make_industry_insight_2(prs, page=18)                     # 18
-    make_required_traits(prs, page=19)                        # 19
-    make_comparison(prs, page=20)                             # 20
-    make_advantage_detail(prs, page=21)                       # 21
+
+    # 业界深度洞察：LLM-Driven Kernel Generation 7 方案（新增）
+    make_industry_section_intro(prs, page=19)                 # 19
+    make_kernelevolve(prs, page=20)                           # 20
+    make_kernelfalcon_agent(prs, page=21)                     # 21
+    make_kernelgen_ascend(prs, page=22)                       # 22
+    make_autokernel(prs, page=23)                             # 23
+    make_ksearch(prs, page=24)                                # 24
+    make_avo(prs, page=25)                                    # 25
+    make_cutegen(prs, page=26)                                # 26
+    make_landscape_matrix(prs, page=27)                       # 27
+    make_pros_cons(prs, page=28)                              # 28
+    make_evolution_trend(prs, page=29)                        # 29
+
+    # 特征 × 方案对比（在业界深度洞察之后）
+    make_required_traits(prs, page=30)                        # 30
+    make_comparison(prs, page=31)                             # 31
+    make_advantage_detail(prs, page=32)                       # 32
 
     # 架构图
-    make_overall_arch(prs, page=22)                           # 22
-    make_lang_arch(prs, page=23)                              # 23
-    make_ir_arch(prs, page=24)                                # 24
-    make_compiler_arch(prs, page=25)                          # 25
-    make_agent_arch(prs, page=26)                             # 26
+    make_overall_arch(prs, page=33)                           # 33
+    make_lang_arch(prs, page=34)                              # 34
+    make_ir_arch(prs, page=35)                                # 35
+    make_compiler_arch(prs, page=36)                          # 36
+    make_agent_arch(prs, page=37)                             # 37
 
     # 贯通 + 收尾
-    make_integration(prs, page=27)                            # 27
-    make_verification(prs, page=28)                           # 28
-    make_benchmark(prs, page=29)                              # 29
-    make_token_economics(prs, page=30)                        # 30
-    make_roadmap(prs, page=31)                                # 31
-    make_closing(prs, page=32)                                # 32
+    make_integration(prs, page=38)                            # 38
+    make_verification(prs, page=39)                           # 39
+    make_benchmark(prs, page=40)                              # 40
+    make_token_economics(prs, page=41)                        # 41
+    make_closing(prs, page=42)                                # 42
 
     prs.save(out_path)
     print(f"wrote: {out_path}")
