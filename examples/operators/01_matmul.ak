@@ -14,21 +14,18 @@
 kernel matmul(
     A: Tensor<[1024, 1024], f16>,
     B: Tensor<[1024, 1024], f16>
-) -> Tensor<[1024, 1024], f16> 
-where B: dynamic(max=64), S: dynamic(max=8192), D: static
+) -> Tensor<[1024, 1024], f16>
 {
     let C = matmul(A=A, B=B);
     return C;
 }
 
-// strategy block omitted intentionally — compiler auto-generates from nvidia_ampere profile:
-//
-//   tile(loop="M", factors=[64])   — tensor-core aligned, fits L1
-//   tile(loop="N", factors=[64])
-//   tile(loop="K", factors=[16])   — shared memory budget
-//   reorder(order=["M", "N", "K"])
-//   parallel(loops=["M", "N"], mapping={"M": "blockIdx.x", "N": "blockIdx.y"})
-//   place(tensor="A_tile", memory="shared")
-//   place(tensor="B_tile", memory="shared")
-//
-// To override, add an explicit strategy block (see docs/examples/01_matmul.md §5).
+strategy matmul_strategy for target("nvidia_ampere") {
+    tile(loop="M", factors=[128]) @rationale("tile M for tensor-core friendly CTA reuse");
+    tile(loop="N", factors=[128]) @rationale("tile N to balance occupancy and shared-memory reuse");
+    tile(loop="K", factors=[32]) @rationale("keep K tile aligned with Ampere MMA fragments");
+    reorder(order=["M", "N", "K"]) @rationale("outer MN ordering improves cooperative tile traversal");
+    parallel(loops=["M", "N"], mapping={"M": "blockIdx.x", "N": "blockIdx.y"}) @rationale("map output tiles to CTA grid");
+    place(tensor="A_tile", memory="shared") @rationale("stage lhs tile in shared memory");
+    place(tensor="B_tile", memory="shared") @rationale("stage rhs tile in shared memory");
+}

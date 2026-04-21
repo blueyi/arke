@@ -6,7 +6,7 @@ Organized examples demonstrating Arke's capabilities from language syntax to IR 
 
 ```
 examples/
-├── operators/     .ak operator definitions (46 files, OT0-OT4)
+├── operators/     .ak operator definitions (46+ files, OT0-OT4 + Stage 7 L2 surfaces)
 ├── ir/            Arke IR examples (.akir) — TODO: generate after G6 v2
 ├── pipelines/     End-to-end walkthrough docs (NL → .ak → IR → GPU)
 └── README.md      This file
@@ -23,6 +23,14 @@ Arke Language (`.ak`) source files for all 46 operators across 5 categories:
 | **OT2** Compute-Dense | matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy | `01_matmul.ak`, `08_batch_matmul.ak`, ... |
 | **OT3** Gated/Fused | matmul_gelu, rmsnorm_residual, swiglu, geglu, rope, cross_entropy, fused_linear_cross_entropy, quantize/dequantize | `05_matmul_gelu.ak`, `19_swiglu.ak`, ... |
 | **OT4** Attention | flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention | `15_flash_attention.ak`, `16_grouped_query_attention.ak`, ... |
+
+### Stage 7 L2 surface examples
+
+`examples/operators/l2/` contains file-backed fusion-surface kernels used by the Stage 7 coverage ledger and audit flow:
+
+- `matmul_relu.ak` — explicit matmul + relu epilogue fusion surface
+- `linear_ce.ak` — streamed linear + cross entropy fusion surface
+- `qkv_fa.ak` — QKV projection + flash attention producer/consumer fusion surface
 
 ## ir/
 

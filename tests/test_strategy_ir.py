@@ -5,6 +5,7 @@
 
 import json
 
+from arke.ir.schedule import ScheduleIR
 from arke.ir.strategy import (
     ConditionalDecision,
     Decision,
@@ -151,6 +152,19 @@ class TestStrategyIRConvenience:
         assert d.kind == "fuse"
         assert d.params == {"ops": ["matmul", "gelu"], "type": "epilogue"}
         assert d.rationale.text == "eliminate round-trip"
+
+    def test_schedule_ir_accepts_legacy_and_surface_fusion_type_keys(self):
+        schedule = ScheduleIR(kernel_id="test", target_hw="nvidia_ampere")
+        schedule.apply_decision(Decision(kind="fuse", params={"ops": ["a", "b"], "type": "epilogue"}, step=1))
+        schedule.apply_decision(
+            Decision(
+                kind="fuse",
+                params={"ops": ["matmul", "cross_entropy"], "fusion_type": "producer_consumer"},
+                step=2,
+            )
+        )
+        assert schedule.fusion_groups[0].fusion_type == "epilogue"
+        assert schedule.fusion_groups[1].fusion_type == "producer_consumer"
 
     def test_parallel(self):
         ir = StrategyIR(kernel_id="test")

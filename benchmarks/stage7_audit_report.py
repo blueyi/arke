@@ -80,6 +80,18 @@ def _layer_summary(entries: list[dict[str, Any]]) -> dict[str, Any]:
         and entry["example"]["found"]
         and not entry["pipeline"].get("has_fusion_decision", False)
     )
+    unsupported_surface_cases.extend(
+        {
+            "op": entry["op"],
+            "reason": "missing_full_shape_evidence",
+            "missing_shape_tags": entry["evidence"].get("missing_shape_tags", []),
+        }
+        for entry in entries
+        if entry.get("layer") == "l2"
+        and entry["evidence"].get("missing_shape_tags")
+        and entry["pipeline"].get("strategy_ok", False)
+        and entry["pipeline"].get("has_fusion_decision", False)
+    )
 
     return {
         "entries": len(entries),

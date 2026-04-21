@@ -10,14 +10,14 @@
     "l1": {
       "entries": 45,
       "with_examples": 45,
-      "with_strategy_examples": 44,
+      "with_strategy_examples": 45,
       "with_benchmark_evidence": 1,
       "with_full_required_shape_evidence": 0
     },
     "l2": {
       "entries": 6,
-      "with_examples": 3,
-      "with_strategy_examples": 3,
+      "with_examples": 6,
+      "with_strategy_examples": 6,
       "with_benchmark_evidence": 1,
       "with_full_required_shape_evidence": 0
     }
@@ -61,7 +61,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [
@@ -133,7 +134,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -202,7 +204,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -271,7 +274,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -340,7 +344,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -409,7 +414,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -478,7 +484,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -547,7 +554,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -616,7 +624,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -685,7 +694,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -754,7 +764,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -823,7 +834,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -897,7 +909,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -972,7 +985,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1043,7 +1057,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1114,7 +1129,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1175,7 +1191,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1226,7 +1243,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1277,7 +1295,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1328,7 +1347,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1381,7 +1401,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1434,7 +1455,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1505,10 +1527,11 @@
         "compile_success": true,
         "errors": [],
         "semantic_ok": true,
-        "strategy_ok": false,
-        "schedule_ok": false,
-        "instruction_ok": false,
-        "has_fusion_decision": false
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1580,7 +1603,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1625,7 +1649,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1667,7 +1692,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1713,7 +1739,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1762,7 +1789,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1811,7 +1839,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1861,7 +1890,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1913,7 +1943,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -1967,7 +1998,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2028,7 +2060,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2089,7 +2122,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2142,7 +2176,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2199,7 +2234,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2256,7 +2292,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2310,7 +2347,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2364,7 +2402,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2417,7 +2456,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2474,7 +2514,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2529,7 +2570,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2576,7 +2618,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2625,7 +2668,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2678,7 +2722,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2745,19 +2790,26 @@
         "ds-v3-long-32k"
       ],
       "example": {
-        "found": false,
-        "relative_path": null
+        "found": true,
+        "relative_path": "operators/l2/matmul_relu.ak"
       },
       "pipeline": {
-        "compile_success": false,
-        "errors": [
-          "example not found"
-        ],
-        "semantic_ok": false,
-        "strategy_ok": false,
-        "schedule_ok": false,
-        "instruction_ok": false,
-        "has_fusion_decision": false
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "relu"
+            ],
+            "type": "epilogue"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [
@@ -2857,7 +2909,16 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": true
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "gelu"
+            ],
+            "type": "epilogue"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2932,7 +2993,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -2985,7 +3047,8 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false
+        "has_fusion_decision": false,
+        "fusion_groups": []
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -3028,19 +3091,26 @@
         "extreme-large-vocab"
       ],
       "example": {
-        "found": false,
-        "relative_path": null
+        "found": true,
+        "relative_path": "operators/l2/linear_ce.ak"
       },
       "pipeline": {
-        "compile_success": false,
-        "errors": [
-          "example not found"
-        ],
-        "semantic_ok": false,
-        "strategy_ok": false,
-        "schedule_ok": false,
-        "instruction_ok": false,
-        "has_fusion_decision": false
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "cross_entropy"
+            ],
+            "type": "producer_consumer"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [],
@@ -3087,19 +3157,28 @@
         "ds-batch-8"
       ],
       "example": {
-        "found": false,
-        "relative_path": null
+        "found": true,
+        "relative_path": "operators/l2/qkv_fa.ak"
       },
       "pipeline": {
-        "compile_success": false,
-        "errors": [
-          "example not found"
-        ],
-        "semantic_ok": false,
-        "strategy_ok": false,
-        "schedule_ok": false,
-        "instruction_ok": false,
-        "has_fusion_decision": false
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "matmul",
+              "matmul",
+              "flash_attention"
+            ],
+            "type": "producer_consumer"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [],

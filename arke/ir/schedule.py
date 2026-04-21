@@ -222,7 +222,7 @@ class ScheduleIR:
         if kind == "fuse":
             self.fusion_groups.append(FusionGroup(
                 ops=list(params.get("ops", [])),
-                fusion_type=params.get("type", "epilogue"),
+                fusion_type=params.get("fusion_type") or params.get("type", "epilogue"),
             ))
             self.provenance.append(ScheduleDecisionRecord(kind, decision.step, "fuse", decision.rationale))
             return

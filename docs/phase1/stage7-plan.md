@@ -218,8 +218,8 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 | T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | 🟨 — language/IR representation covered, but full benchmark-level executability still blocked for OT4 memory-heavy cases |
 | T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ⬜ |
 | T5.6 | Audit every BL5 operator / shape family against Stage 7 Lang surface (`where`, conditional strategy) and log unsupported cases | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_audit_report` now consumes `coverage_ledger.json` and emits `audit_report.json` with missing-example / missing-strategy / missing-shape evidence plus unsupported-case queues for T5.7/T6 follow-up. |
-| T5.7 | Add or update `.ak` examples for any patterns uncovered by the audit | P0 | 0.5d | ⬜ |
-| T5.8 | Maintain machine-readable coverage ledger linking BL5 targets to `.ak` artefacts (feeds Track 6 automation) | P0 | 0.5d | 🟨 — `python -m benchmarks.stage7_coverage_ledger` now emits `coverage_ledger.json` linking target-matrix entries to `.ak` examples, dry-run pipeline evidence, and Track 6 PERF_ALL coverage; current ledger shows L1 45/45 examples (44 with strategy) and L2 3/6 examples. |
+| T5.7 | Add or update `.ak` examples for any patterns uncovered by the audit | P0 | 0.5d | 🟨 — added explicit Stage 7 L2 surface examples for `matmul_relu`, `linear_ce`, and `qkv_fa` under `examples/operators/l2/`, and restored `examples/operators/01_matmul.ak` to an explicit strategy-backed L1 surface so Track 5 / audit no longer reports a missing `matmul` strategy example; remaining follow-up is to expand shape evidence / benchmark coverage. |
+| T5.8 | Maintain machine-readable coverage ledger linking BL5 targets to `.ak` artefacts (feeds Track 6 automation) | P0 | 0.5d | 🟨 — `python -m benchmarks.stage7_coverage_ledger` now emits `coverage_ledger.json` linking target-matrix entries to `.ak` examples, dry-run pipeline evidence, and Track 6 PERF_ALL coverage; current ledger shows L1 45/45 examples with strategy and L2 6/6 examples (shape evidence still sparse). |
 
 ### Track 6: BL5 Benchmark, L2 Fusion, and Memory-Readiness (P0)
 
@@ -238,7 +238,7 @@ That means every unfinished task in S7 should be justified by one of these bench
 |:---|:-----|:--------:|:--------:|:------:|
 | T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | 🟨 |
 | T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | 🟨 |
-| T6.3 | Ensure Lang + IR + lowering can express the six BL5 L2 fusion cases end-to-end | P0 | 0.5d | ⬜ |
+| T6.3 | Ensure Lang + IR + lowering can express the six BL5 L2 fusion cases end-to-end | P0 | 0.5d | 🟨 — explicit `.ak` surface coverage now exists for `matmul_relu`, `matmul_gelu`, `swiglu`, `geglu`, `linear_ce`, and `qkv_fa`; remaining work is benchmark/lowering evidence across the full BL5 shape set. |
 | T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | 🟨 |
 | T6.5 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM without reducing BL5 scope | P0 | 1d | ⬜ |
 | T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, `PERF_ALL.csv`, `summary.json`, manifests) for gate verification | P1 | 0.5d | 🟨 |

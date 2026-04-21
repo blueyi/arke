@@ -98,6 +98,9 @@ def _scan_perf_all(path: Path) -> dict[str, dict[str, Any]]:
 
 def _compile_example(path: Path) -> dict[str, Any]:
     result = ArkePipeline().compile_file(str(path))
+    fusion_groups = []
+    if result.schedule_ir is not None:
+        fusion_groups = [group.to_dict() for group in result.schedule_ir.fusion_groups]
     return {
         "compile_success": result.success,
         "errors": result.errors,
@@ -106,6 +109,7 @@ def _compile_example(path: Path) -> dict[str, Any]:
         "schedule_ok": result.schedule_ir is not None,
         "instruction_ok": result.instruction_ir is not None,
         "has_fusion_decision": any(getattr(decision, "kind", None) == "fuse" for decision in (result.strategy_ir.decisions if result.strategy_ir else [])),
+        "fusion_groups": fusion_groups,
     }
 
 
@@ -120,6 +124,7 @@ def _build_entry(entry: dict[str, Any], layer: str, example_index: dict[str, Pat
         "schedule_ok": False,
         "instruction_ok": False,
         "has_fusion_decision": False,
+        "fusion_groups": [],
     }
     example_info = {
         "found": example_path is not None,

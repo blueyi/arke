@@ -58,6 +58,13 @@ def test_build_stage7_audit_report_summarizes_surface_and_benchmark_gaps(tmp_pat
     assert report["summary"]["l1"]["missing_strategy_examples"] == ["gelu"]
     assert report["summary"]["l2"]["missing_benchmark_evidence"] == ["matmul_gelu", "qkv_fa"]
     assert report["summary"]["l2"]["missing_full_shape_evidence"] == ["matmul_gelu", "qkv_fa"]
+    assert report["summary"]["l2"]["unsupported_surface_cases"] == [
+        {
+            "op": "qkv_fa",
+            "reason": "missing_example",
+            "missing_shape_tags": ["llama-long"],
+        },
+    ]
 
     assert report["priority_actions"][0]["category"] == "missing_l2_examples"
     assert report["priority_actions"][0]["ops"] == ["qkv_fa"]

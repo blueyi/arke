@@ -81,5 +81,6 @@ def test_build_stage7_coverage_ledger_links_matrix_examples_and_artifacts(tmp_pa
     assert matmul_gelu["pipeline"]["semantic_ok"] is True
     assert matmul_gelu["pipeline"]["strategy_ok"] is True
     assert matmul_gelu["pipeline"]["has_fusion_decision"] is True
+    assert matmul_gelu["pipeline"]["fusion_groups"][0]["type"] == "epilogue"
     assert matmul_gelu["evidence"]["observed_shape_tags"] == ["gpt2-ffn"]
     assert matmul_gelu["evidence"]["missing_shape_tags"] == []
