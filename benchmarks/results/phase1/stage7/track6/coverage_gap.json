@@ -3,9 +3,9 @@
   "gate": "G7",
   "sources": {
     "matrix": "/home/blueyi/workspace/repos/arke/benchmarks/stage7_bl5_target_matrix.json",
-    "l1_perf_all": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase1/stage7/track6/l1/PERF_ALL.csv",
+    "l1_perf_all": "benchmarks/results/phase1/stage7/track6/l1/PERF_ALL.csv",
     "l1_perf_all_exists": true,
-    "l2_perf_all": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase1/stage7/track6/l2/PERF_ALL.csv",
+    "l2_perf_all": "benchmarks/results/phase1/stage7/track6/l2/PERF_ALL.csv",
     "l2_perf_all_exists": true
   },
   "l1": {

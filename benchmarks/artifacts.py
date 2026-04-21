@@ -29,6 +29,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
         "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
         "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
         "correctness_status", "correctness_reason",
+        "perf_target", "perf_actual", "perf_pass", "perf_gap",
     ]
     with out_csv.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -66,6 +67,10 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
                     "atol": row.get("atol", ""),
                     "correctness_status": row.get("correctness_status", "unknown"),
                     "correctness_reason": row.get("correctness_reason", ""),
+                    "perf_target": row.get("perf_target", ""),
+                    "perf_actual": row.get("perf_actual", row.get("ratio_vs_baseline", "")),
+                    "perf_pass": row.get("perf_pass", ""),
+                    "perf_gap": row.get("perf_gap", ""),
                 })
     return out_csv
 
@@ -78,6 +83,7 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
         "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
         "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
         "correctness_status", "correctness_reason",
+        "perf_target", "perf_actual", "perf_pass", "perf_gap",
     ]
     with out_csv.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -115,6 +121,10 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
                     "atol": row.get("atol", ""),
                     "correctness_status": row.get("correctness_status", "unknown"),
                     "correctness_reason": row.get("correctness_reason", ""),
+                    "perf_target": row.get("perf_target", ""),
+                    "perf_actual": row.get("perf_actual", row.get("ratio_vs_baseline", "")),
+                    "perf_pass": row.get("perf_pass", ""),
+                    "perf_gap": row.get("perf_gap", ""),
                 })
     return out_csv
 
@@ -156,6 +166,28 @@ def write_summary(run_dir: Path) -> Path | None:
         correctness = row.get("correctness_status", "unknown")
         correctness_counts[correctness] = correctness_counts.get(correctness, 0) + 1
 
+    perf_target_counts: dict[str, int] = {}
+    perf_pass_counts: dict[str, int] = {}
+    perf_targets_by_operator: dict[str, list[float]] = {}
+    perf_actuals_by_operator: dict[str, list[float]] = {}
+    perf_gaps_by_operator: dict[str, list[float]] = {}
+    for row in perf_rows:
+        operator = row.get("operator", "unknown")
+        perf_target = _safe_float(row.get("perf_target"))
+        perf_actual = _safe_float(row.get("perf_actual"))
+        perf_gap = _safe_float(row.get("perf_gap"))
+        perf_pass = (row.get("perf_pass", "") or "").strip().lower()
+        if perf_target is not None:
+            perf_targets_by_operator.setdefault(operator, []).append(perf_target)
+        if perf_actual is not None:
+            perf_actuals_by_operator.setdefault(operator, []).append(perf_actual)
+        if perf_gap is not None:
+            perf_gaps_by_operator.setdefault(operator, []).append(perf_gap)
+        if perf_pass:
+            perf_pass_counts[perf_pass] = perf_pass_counts.get(perf_pass, 0) + 1
+        else:
+            perf_pass_counts["unknown"] = perf_pass_counts.get("unknown", 0) + 1
+
     summary = {
         "overall_geomean": round(geomean([v for vals in ratios_by_operator.values() for v in vals]), 4)
         if ratios_by_operator else 0.0,
@@ -164,6 +196,14 @@ def write_summary(run_dir: Path) -> Path | None:
         "operators": sorted(ratios_by_operator.keys()),
         "status_counts": status_counts,
         "correctness_counts": correctness_counts,
+        "perf_target_counts": {
+            "with_target": sum(len(vals) for vals in perf_targets_by_operator.values()),
+            "without_target": sum(1 for row in perf_rows if _safe_float(row.get("perf_target")) is None),
+        },
+        "perf_pass_counts": perf_pass_counts,
+        "perf_targets": {op: round(geomean(vals), 4) for op, vals in perf_targets_by_operator.items()},
+        "perf_actuals": {op: round(geomean(vals), 4) for op, vals in perf_actuals_by_operator.items()},
+        "perf_gaps": {op: round(sum(vals) / len(vals), 4) for op, vals in perf_gaps_by_operator.items()},
     }
     out = run_dir / "summary.json"
     out.write_text(json.dumps(summary, indent=2))

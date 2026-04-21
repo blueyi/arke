@@ -217,9 +217,9 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 | T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ✅ |
 | T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | 🟨 — language/IR representation covered, but full benchmark-level executability still blocked for OT4 memory-heavy cases |
 | T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ⬜ |
-| T5.6 | Audit every BL5 operator / shape family against Stage 7 Lang surface (`where`, conditional strategy) and log unsupported cases | P0 | 0.5d | ⬜ |
+| T5.6 | Audit every BL5 operator / shape family against Stage 7 Lang surface (`where`, conditional strategy) and log unsupported cases | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_audit_report` now consumes `coverage_ledger.json` and emits `audit_report.json` with missing-example / missing-strategy / missing-shape evidence plus unsupported-case queues for T5.7/T6 follow-up. |
 | T5.7 | Add or update `.ak` examples for any patterns uncovered by the audit | P0 | 0.5d | ⬜ |
-| T5.8 | Maintain machine-readable coverage ledger linking BL5 targets to `.ak` artefacts (feeds Track 6 automation) | P0 | 0.5d | ⬜ |
+| T5.8 | Maintain machine-readable coverage ledger linking BL5 targets to `.ak` artefacts (feeds Track 6 automation) | P0 | 0.5d | 🟨 — `python -m benchmarks.stage7_coverage_ledger` now emits `coverage_ledger.json` linking target-matrix entries to `.ak` examples, dry-run pipeline evidence, and Track 6 PERF_ALL coverage; current ledger shows L1 45/45 examples (44 with strategy) and L2 3/6 examples. |
 
 ### Track 6: BL5 Benchmark, L2 Fusion, and Memory-Readiness (P0)
 
@@ -244,10 +244,10 @@ That means every unfinished task in S7 should be justified by one of these bench
 | T6.6 | Produce stable perf artifacts (`perf_{op}.csv`, `PERF_ALL.csv`, `summary.json`, manifests) for gate verification | P1 | 0.5d | 🟨 |
 | T6.7 | Drive remaining Lang / IR / compiler refinements from BL5 benchmark gaps instead of local code convenience | P0 | continuous | 🟨 |
 | T6.8 | Persist correctness metrics & tolerances across benchmark artifacts (`PERF_ALL.csv`, summaries, per-op files) | P0 | 0.5d | ✅ |
-| T6.9 | Persist performance target evaluation fields (`perf_target`, `perf_actual`, `perf_pass`, `perf_gap`) across artifacts | P0 | 0.5d | ⬜ |
+| T6.9 | Persist performance target evaluation fields (`perf_target`, `perf_actual`, `perf_pass`, `perf_gap`) across artifacts | P0 | 0.5d | ✅ — `benchmarks.artifacts` now writes + aggregates these fields into `PERF_ALL.csv` / `summary.json` |
 | T6.10 | Build automation script to compute L1/L2 coverage gaps from `stage7_bl5_target_matrix.json` | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_coverage_gap` |
-| T6.11 | Generate machine-readable coverage dashboards / reports from automation outputs | P1 | 0.5d | ⬜ |
-| T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | ⬜ |
+| T6.11 | Generate machine-readable coverage dashboards / reports from automation outputs | P1 | 0.5d | 🟨 — `coverage_gap.json` + textual CLI summary now emitted; richer dashboard slicing still pending |
+| T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | 🟨 — `benchmarks.gate_g7` consumes Track 6 artifacts and current contract tests are green, but CI/pipeline enforcement still needs expansion |
 
 ### Track 7: Non-Regression and Gate Closure (P0)
 
@@ -346,8 +346,8 @@ Remaining BL5 work is tracked under four component lenses, each feeding existing
 
 1. Continue extending `run_with_inputs(...)` / reference coverage from the current verified L1 subset into the remaining unsupported BL5 operators (drives T5.6–T5.8, T6.1).
 2. Audit write/index ops for probe-semantics pitfalls (e.g. repeated-index nondeterminism) before counting mismatches as implementation bugs (drives T6.7).
-3. Extend artifact writing so performance pass/fail is preserved in `PERF_ALL.csv` and summaries alongside the new correctness fields (T6.9).
-4. Wire the coverage gap automation (`python -m benchmarks.stage7_coverage_gap`, written by T6.10) into Stage 7 dashboards and gate verification (drives T6.11 → T6.12). A first snapshot is already persisted at `benchmarks/results/phase1/stage7/track6/coverage_gap.json`.
+3. Extend artifact writing so performance pass/fail is preserved in `PERF_ALL.csv` and summaries alongside the new correctness fields (T6.9). ✅ Completed in `benchmarks.artifacts`; summaries now aggregate `perf_target` / `perf_actual` / `perf_pass` / `perf_gap`.
+4. Wire the coverage gap automation (`python -m benchmarks.stage7_coverage_gap`, written by T6.10) into Stage 7 dashboards and gate verification (drives T6.11 → T6.12). ✅ Initial integration is in place via persisted `coverage_gap.json`, CLI summaries, and green Track 6 contract/gate slices; remaining work is richer dashboarding + stricter CI enforcement.
 
 ## Dependencies
 
