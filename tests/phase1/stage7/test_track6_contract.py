@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 STAGE7_TRACK6_L1 = REPO_ROOT / "benchmarks" / "results" / "phase1" / "stage7" / "track6" / "l1"
 STAGE7_TRACK6_L2 = REPO_ROOT / "benchmarks" / "results" / "phase1" / "stage7" / "track6" / "l2"
 

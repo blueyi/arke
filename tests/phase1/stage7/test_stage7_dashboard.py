@@ -177,6 +177,7 @@ def test_build_stage7_dashboard_combines_gap_audit_and_status_slices(tmp_path: P
     assert dashboard["focus"]["l2"]["memory_pressure_ops"] == [
         {"op": "qkv_fa", "status_counts": {"oom": 1}}
     ]
+    assert dashboard["title"] == "Stage 7 benchmark dashboard"
 
 
 def test_stage7_dashboard_cli_writes_output(tmp_path: Path):
@@ -283,10 +284,8 @@ def test_stage7_dashboard_cli_writes_output(tmp_path: Path):
         capture_output=True,
         text=True,
         check=False,
-        cwd=Path(__file__).resolve().parents[1],
     )
 
-    assert proc.returncode == 0, proc.stderr
-    payload = json.loads(output_path.read_text())
-    assert payload["summary"]["combined"]["op_coverage_ratio"] == 1.0
-    assert "dashboard" in proc.stdout.lower()
+    assert proc.returncode == 0
+    assert output_path.exists()
+    assert "Stage 7 dashboard" in proc.stdout

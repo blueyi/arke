@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 from benchmarks.gate import GateResult, GateSummary
+from benchmarks.results_contract import check_result_tree_artifacts
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OPERATORS_DIR = REPO_ROOT / "examples" / "operators"
@@ -33,6 +34,7 @@ REQUIRED_TRACK6_ROOT_ARTIFACTS = (
     "stage7_operator_shape_stats.json",
     "dashboard.json",
 )
+RESULT_TREE_NAME = "phase1/stage7/track6"
 
 
 def _run_cmd(args: list[str], timeout: int = 300) -> tuple[bool, str]:
@@ -79,41 +81,13 @@ def _check_spec_docs() -> tuple[bool, str]:
     return True, "Lang spec, IR spec, and dynamic-shape feasibility doc present"
 
 
-def _display_path(path: Path) -> str:
-    try:
-        return str(path.relative_to(REPO_ROOT))
-    except ValueError:
-        return str(path)
-
-
 def check_stage7_track6_artifacts(track6_root: Path = STAGE7_TRACK6_ROOT) -> tuple[bool, str]:
-    found: list[str] = []
-    missing: list[str] = []
-
-    for artifact in REQUIRED_TRACK6_ROOT_ARTIFACTS:
-        path = track6_root / artifact
-        if path.exists():
-            found.append(f"root:{artifact}")
-        else:
-            missing.append(f"root:{artifact} missing")
-
-    for layer in ("l1", "l2"):
-        layer_dir = track6_root / layer
-        if not layer_dir.exists():
-            missing.append(f"{layer}:{_display_path(layer_dir)} absent")
-            continue
-        layer_missing = [
-            artifact
-            for artifact in REQUIRED_TRACK6_LAYER_ARTIFACTS
-            if not (layer_dir / artifact).exists()
-        ]
-        if layer_missing:
-            missing.append(f"{layer}:{', '.join(layer_missing)} missing")
-        else:
-            found.append(f"{layer}:{_display_path(layer_dir)}")
-
-    detail = "; ".join(found + missing)
-    return not missing, detail
+    return check_result_tree_artifacts(
+        track6_root,
+        layer_artifacts=REQUIRED_TRACK6_LAYER_ARTIFACTS,
+        root_artifacts=REQUIRED_TRACK6_ROOT_ARTIFACTS,
+        tree_name=RESULT_TREE_NAME,
+    )
 
 
 def _check_benchmark_artifacts() -> tuple[bool, str]:
@@ -193,13 +167,15 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_arke_runner_advice.py",
         "tests/test_benchmark_cli.py",
         "tests/test_benchmark_status.py",
-        "tests/test_stage7_track6_contract.py",
+        "tests/phase1/stage7/test_track6_contract.py",
         "tests/test_stage7_l2_fusion_surface.py",
         "tests/test_stage7_compile_advice_provenance.py",
         "tests/test_stage7_advice_materialization.py",
         "tests/test_stage7_strategy_synthesis.py",
         "tests/test_stage7_specialized_strategy_synthesis.py",
         "tests/test_stage7_more_specialized_strategy_synthesis.py",
+        "tests/benchmark/test_dashboard.py",
+        "tests/phase1/stage7/test_stage7_dashboard.py",
     ])
     artifact_ok, artifact_detail = _check_benchmark_artifacts()
     results.append(GateResult(
@@ -250,13 +226,15 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_compiler_advice.py",
         "tests/test_arke_runner_advice.py",
         "tests/test_benchmark_status.py",
-        "tests/test_stage7_track6_contract.py",
+        "tests/phase1/stage7/test_track6_contract.py",
         "tests/test_stage7_l2_fusion_surface.py",
         "tests/test_stage7_compile_advice_provenance.py",
         "tests/test_stage7_advice_materialization.py",
         "tests/test_stage7_strategy_synthesis.py",
         "tests/test_stage7_specialized_strategy_synthesis.py",
         "tests/test_stage7_more_specialized_strategy_synthesis.py",
+        "tests/benchmark/test_dashboard.py",
+        "tests/phase1/stage7/test_stage7_dashboard.py",
     ])
     results.append(GateResult(
         "G7", "G7.10",
@@ -267,9 +245,9 @@ def run_g7(tier: int = 2) -> GateSummary:
     passed_count = sum(1 for r in results if r.passed)
     failed_count = len(results) - passed_count
     return GateSummary(
-        gate="G7",
+        gate_id="G7",
+        gate_name="Lang & IR v2",
         tier=tier,
-        total=len(results),
         passed=passed_count,
         failed=failed_count,
         results=results,
