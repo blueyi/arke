@@ -19,6 +19,20 @@ from benchmarks.gate import GateResult, GateSummary
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OPERATORS_DIR = REPO_ROOT / "examples" / "operators"
+STAGE7_TRACK6_ROOT = REPO_ROOT / "benchmarks" / "results" / "phase1" / "stage7" / "track6"
+REQUIRED_TRACK6_LAYER_ARTIFACTS = (
+    "config.json",
+    "hardware.json",
+    "sources.json",
+    "summary.json",
+    "PERF_ALL.csv",
+)
+REQUIRED_TRACK6_ROOT_ARTIFACTS = (
+    "coverage_gap.json",
+    "audit_report.json",
+    "stage7_operator_shape_stats.json",
+    "dashboard.json",
+)
 
 
 def _run_cmd(args: list[str], timeout: int = 300) -> tuple[bool, str]:
@@ -65,28 +79,45 @@ def _check_spec_docs() -> tuple[bool, str]:
     return True, "Lang spec, IR spec, and dynamic-shape feasibility doc present"
 
 
-def _check_benchmark_artifacts() -> tuple[bool, str]:
-    l1_dir = REPO_ROOT / "benchmarks" / "results" / "phase1" / "stage7" / "track6" / "l1"
-    l2_dir = REPO_ROOT / "benchmarks" / "results" / "phase1" / "stage7" / "track6" / "l2"
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
 
-    found = []
-    missing = []
-    for label, run_dir in (("L1", l1_dir), ("L2", l2_dir)):
-        if run_dir.exists():
-            summary = run_dir / "summary.json"
-            perf_all = run_dir / "PERF_ALL.csv"
-            if summary.exists() and perf_all.exists():
-                found.append(f"{label}:{run_dir.relative_to(REPO_ROOT)}")
-            else:
-                missing.append(f"{label}:{run_dir.relative_to(REPO_ROOT)} missing summary/PERF_ALL")
+
+def check_stage7_track6_artifacts(track6_root: Path = STAGE7_TRACK6_ROOT) -> tuple[bool, str]:
+    found: list[str] = []
+    missing: list[str] = []
+
+    for artifact in REQUIRED_TRACK6_ROOT_ARTIFACTS:
+        path = track6_root / artifact
+        if path.exists():
+            found.append(f"root:{artifact}")
         else:
-            missing.append(f"{label}:{run_dir.relative_to(REPO_ROOT)} absent")
+            missing.append(f"root:{artifact} missing")
 
-    l2_ok = any(item.startswith("L2:") for item in found)
+    for layer in ("l1", "l2"):
+        layer_dir = track6_root / layer
+        if not layer_dir.exists():
+            missing.append(f"{layer}:{_display_path(layer_dir)} absent")
+            continue
+        layer_missing = [
+            artifact
+            for artifact in REQUIRED_TRACK6_LAYER_ARTIFACTS
+            if not (layer_dir / artifact).exists()
+        ]
+        if layer_missing:
+            missing.append(f"{layer}:{', '.join(layer_missing)} missing")
+        else:
+            found.append(f"{layer}:{_display_path(layer_dir)}")
+
     detail = "; ".join(found + missing)
-    if l2_ok:
-        return True, detail
-    return False, detail
+    return not missing, detail
+
+
+def _check_benchmark_artifacts() -> tuple[bool, str]:
+    return check_stage7_track6_artifacts(STAGE7_TRACK6_ROOT)
 
 
 def run_g7(tier: int = 2) -> GateSummary:

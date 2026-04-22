@@ -246,8 +246,8 @@ That means every unfinished task in S7 should be justified by one of these bench
 | T6.8 | Persist correctness metrics & tolerances across benchmark artifacts (`PERF_ALL.csv`, summaries, per-op files) | P0 | 0.5d | ✅ |
 | T6.9 | Persist performance target evaluation fields (`perf_target`, `perf_actual`, `perf_pass`, `perf_gap`) across artifacts | P0 | 0.5d | ✅ — `benchmarks.artifacts` now writes + aggregates these fields into `PERF_ALL.csv` / `summary.json` |
 | T6.10 | Build automation script to compute L1/L2 coverage gaps from `stage7_bl5_target_matrix.json` | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_coverage_gap` |
-| T6.11 | Generate machine-readable coverage dashboards / reports from automation outputs | P1 | 0.5d | 🟨 — `coverage_gap.json` + textual CLI summary now emitted; richer dashboard slicing still pending |
-| T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | 🟨 — `benchmarks.gate_g7` consumes Track 6 artifacts and current contract tests are green, but CI/pipeline enforcement still needs expansion |
+| T6.11 | Generate machine-readable coverage dashboards / reports from automation outputs | P1 | 0.5d | ✅ — `python -m benchmarks.stage7_dashboard` now consolidates `coverage_gap.json`, `audit_report.json`, and `stage7_operator_shape_stats.json` into `dashboard.json` with focus slices for evidence gaps, unsupported surface cases, perf-field gaps, memory-pressure ops, and priority actions. |
+| T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | ✅ — `benchmarks.gate_g7.check_stage7_track6_artifacts()` now enforces the full Track 6 artifact contract for `l1/`, `l2/`, and root dashboard artifacts (`coverage_gap.json`, `audit_report.json`, `stage7_operator_shape_stats.json`, `dashboard.json`). |
 
 ### Track 7: Non-Regression and Gate Closure (P0)
 

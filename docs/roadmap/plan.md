@@ -151,6 +151,8 @@ AND ALL:
 
 → Detailed plan: [docs/phase1/stage7-plan.md](../phase1/stage7-plan.md)
 
+**Track 6 artifact status (current):** Stage 7 benchmark automation now emits a consolidated root-level dashboard artifact set under `benchmarks/results/phase1/stage7/track6/` — `coverage_gap.json`, `audit_report.json`, `stage7_operator_shape_stats.json`, and `dashboard.json` — and `benchmarks.gate_g7` validates that contract in addition to the per-layer `l1/` and `l2/` benchmark manifests.
+
 ---
 
 ### Stage 8 (G8): Agent Autonomy ⬜
