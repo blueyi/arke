@@ -214,6 +214,59 @@ Each operator is benchmarked against multiple baseline tiers, ranked by expected
 
 ---
 
+## 6. Standard Benchmark Usage
+
+### Recommended entry points
+
+The benchmark system is documented around `arke bench`, but the codebase currently supports two practical entry paths:
+
+- `arke bench ...` — canonical benchmark CLI.
+- `python -m benchmarks ...` — compatibility wrapper for the same benchmark CLI.
+
+Gate verification remains separate:
+
+- `python -m benchmarks gate ...`
+
+### Standard local invocation
+
+```bash
+cd /home/blueyi/workspace/repos/arke
+source ~/.venvs/arke/bin/activate
+```
+
+### Common commands
+
+```bash
+# Default daily benchmark selection (BL2, L1)
+arke bench
+
+# Full BL5 coverage
+arke bench --bl 5
+
+# OT / layer scoped runs
+arke bench --bl 5 --ot 0 --layer L1
+arke bench --bl 5 --ot 4 --layer L1
+arke bench --bl 5 --layer L2
+
+# Compatibility form
+python -m benchmarks --bl 5 --ot 4 --layer L1
+
+# Gate checks
+python -m benchmarks gate G0 --tier 2
+python -m benchmarks gate G6 --tier 2
+python -m benchmarks gate G7 --tier 2
+```
+
+### Documentation convention
+
+- Use `arke bench` in benchmark design/spec examples by default.
+- Use `python -m benchmarks` when documenting module execution or compatibility behavior.
+- Use `python -m benchmarks gate ...` for Gate verification examples.
+
+For the full CLI contract, option semantics, and legacy/current mapping table, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md#cli-interface).
+
+---
+
 *For full shape matrices, see [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md).*
 *For baseline source installation and API details, see [`operator-source-registry.md`](./benchmark/operator-source-registry.md).*
 *For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md).*
