@@ -1,49 +1,58 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""P5: Arke-generated Triton kernels via KernelCache."""
+"""P5: Arke-generated kernels via the new SemanticInterpreter path.
+
+S6 bridge: routes baseline calls through ``arke.ir.ops.interpreter.INTERPRETER``
+(the same ``reference_impl`` substrate that ``arke/backend/triton_backend.py``
+currently executes on). When S7 replaces ``reference_impl`` with real Triton
+codegen, this runner will automatically pick that up with no changes.
+
+Replaces the prior ``arke.integration.kernel_cache.KernelCache`` dependency,
+which no longer exists in the repo.
+"""
 
 from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from typing import Any
 
 import torch
 
 from benchmarks.baselines.base import BaselineRunner, register_baseline
-from benchmarks.compiler_advice import compile_advice_for_op
-from benchmarks.hardware import collect_hardware_info
-from benchmarks.shapes import AttentionShape
 
 logger = logging.getLogger(__name__)
 
 _AVAILABLE = False
 try:
-    from arke.integration.kernel_cache import KernelCache  # noqa: F401
+    from arke.ir.ops.interpreter import INTERPRETER  # noqa: F401
+    from arke.ir.ops.registry import REGISTRY  # noqa: F401
 
     _AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover - defensive
     pass
 
 
 @register_baseline
 class ArkeRunner(BaselineRunner):
-    """P5: Arke KernelCache — LLM-generated Triton kernels.
+    """P5: Arke kernels via SemanticInterpreter (S6) / Triton codegen (S7+).
 
-    Bypasses KernelCache's cuBLAS/PyTorch fallbacks so we always
-    measure the actual Arke-generated Triton kernel, even for shapes
-    where KernelCache would normally fall back.
+    For every supported op, inputs are mapped positionally onto the schema's
+    declared input names and dispatched through ``INTERPRETER.execute``.
     """
 
+    # Ops we expose. An op is usable iff REGISTRY has it AND it declares a
+    # reference_impl. We filter dynamically in ``supports()`` rather than
+    # maintaining a hand-coded allowlist.
+    _EXCLUDED_OPS: frozenset[str] = frozenset({
+        # Ops whose schemas need non-tensor attrs / complex setup we can't
+        # reasonably synthesize from (op, M, N, K, dtype) alone.
+        "scatter",
+    })
+
     def __init__(self) -> None:
-        self._cache: KernelCache | None = None
-
-    def _ensure_cache(self) -> KernelCache:
-        if self._cache is None:
-            from arke.integration.kernel_cache import KernelCache
-
-            self._cache = KernelCache()
-        return self._cache
+        pass
 
     @property
     def name(self) -> str:
@@ -63,7 +72,7 @@ class ArkeRunner(BaselineRunner):
         except Exception:
             pass
         return (
-            f"Arke {v} (KernelCache Triton codegen) | "
+            f"Arke {v} (SemanticInterpreter; Triton codegen is S7 scope) | "
             "https://github.com/arke-ai/arke | License: Apache-2.0"
         )
 
@@ -71,37 +80,18 @@ class ArkeRunner(BaselineRunner):
     def available(self) -> bool:
         return _AVAILABLE and torch.cuda.is_available()
 
-    # Ops with specialized compile paths (original high-perf path)
-    _SPECIALIZED_OPS = frozenset({"matmul", "softmax", "relu", "gelu", "silu", "layernorm", "rmsnorm"})
-    # All ops that compile_op can handle via generic path
-    _GENERIC_OPS = frozenset({
-        "tanh", "sigmoid", "neg", "exp", "rsqrt", "cast", "copy_",
-        "add", "mul", "where_",
-        "rmsnorm_residual", "reduce_sum", "reduce_max", "reduce_mean",
-        "argmax", "topk", "cumsum",
-        "batch_matmul", "transpose",
-        "swiglu", "geglu",
-        "flash_attention", "grouped_query_attention", "cross_attention",
-        # These may fail at compile time, but supports() still returns True
-        "concat", "split", "gather", "scatter", "embedding", "permute",
-        "rope", "cross_entropy", "fused_linear_cross_entropy",
-        "quantize_per_token", "dequantize_per_channel",
-        "grouped_matmul", "multi_latent_attention", "paged_attention",
-    })
-    _RUN_WITH_INPUTS_OPS = _SPECIALIZED_OPS | {
-        "tanh", "sigmoid", "neg", "exp", "rsqrt", "cast", "copy_",
-        "add", "mul", "where_",
-        "rmsnorm_residual", "reduce_sum", "reduce_max", "reduce_mean",
-        "argmax", "topk", "cumsum",
-        "batch_matmul", "transpose",
-        "swiglu", "geglu",
-        "flash_attention", "grouped_query_attention", "cross_attention",
-        "rope",
-    }
-
     def supports(self, op: str) -> bool:
-        return op in self._SPECIALIZED_OPS or op in self._GENERIC_OPS
+        if not _AVAILABLE:
+            return False
+        if op in self._EXCLUDED_OPS:
+            return False
+        try:
+            schema = REGISTRY.get(op)
+        except Exception:
+            return False
+        return getattr(schema, "reference_impl", None) is not None
 
+    # ── get_fn: zero-arg callable for perf timing ──────────────────────────
     def get_fn(
         self,
         op: str,
@@ -110,265 +100,223 @@ class ArkeRunner(BaselineRunner):
         K: int = 0,
         dtype: torch.dtype = torch.float16,
     ) -> Callable[[], torch.Tensor] | None:
-        cache = self._ensure_cache()
+        if not self.available or not self.supports(op):
+            return None
 
-        # Use specialized paths for original ops (better performance)
-        if op == "matmul":
-            return self._get_matmul_fn(cache, M, N, K, dtype)
-        elif op == "softmax":
-            return self._get_softmax_fn(cache, M, N, dtype)
-        elif op in ("relu", "gelu", "silu"):
-            return self._get_elementwise_fn(cache, op, M, N, dtype)
-        elif op in ("layernorm", "rmsnorm"):
-            return self._get_layernorm_fn(cache, op, M, N, dtype)
+        try:
+            tensors = self._build_test_inputs(op, M, N, K, dtype)
+        except Exception as exc:
+            logger.debug("Arke build_inputs %s failed: %s", op, exc)
+            return None
+        if tensors is None:
+            logger.debug("Arke: no input builder for op=%s", op)
+            return None
 
-        # Generic path via compile_op/run_op for all other ops
-        return self._get_generic_fn(cache, op, M, N, K, dtype)
+        try:
+            named = self._bind_inputs(op, tensors)
+        except Exception as exc:
+            logger.debug("Arke bind_inputs %s failed: %s", op, exc)
+            return None
 
+        attrs = self._default_attrs(op, dtype)
+
+        # Warmup
+        try:
+            for _ in range(3):
+                INTERPRETER.execute(op, named, attrs)
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+        except Exception as exc:
+            logger.debug("Arke warmup %s failed: %s", op, exc)
+            return None
+
+        def _run() -> torch.Tensor:
+            out = INTERPRETER.execute(op, named, attrs)
+            if isinstance(out, tuple):
+                return out[0]
+            return out
+
+        return _run
+
+    # ── run_with_inputs: correctness-oriented execution ────────────────────
     def run_with_inputs(
         self,
         op: str,
         *inputs: torch.Tensor,
-        **kwargs,
+        **kwargs: Any,
     ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
-        if not self.available or op not in self._RUN_WITH_INPUTS_OPS:
+        if not self.available or not self.supports(op):
             return None
 
-        cache = self._ensure_cache()
+        # Some ops commonly called with a subset of inputs (e.g. layernorm
+        # without explicit weight/bias). Fill in neutral defaults where the
+        # shape is determined by the primary tensor.
+        try:
+            filled = self._fill_missing_inputs(op, list(inputs))
+            named = self._bind_inputs(op, tuple(filled))
+        except Exception as exc:
+            logger.debug("Arke run_with_inputs bind %s failed: %s", op, exc)
+            return None
+
+        attrs = self._default_attrs(op, filled[0].dtype if filled else torch.float16)
 
         try:
-            if op == "matmul" and len(inputs) == 2:
-                return cache.matmul(inputs[0], inputs[1])
-            if op == "softmax" and len(inputs) == 1:
-                return cache.softmax(inputs[0])
-            if op in {"relu", "gelu", "silu"} and len(inputs) == 1:
-                return cache.elementwise(inputs[0], op)
-            if op == "layernorm" and len(inputs) == 1:
-                x = inputs[0]
-                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
-                b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
-                return cache.layernorm(x, w, b)
-            if op == "rmsnorm" and len(inputs) == 1:
-                x = inputs[0]
-                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
-                return cache.rmsnorm(x, w)
-            if op == "rmsnorm_residual" and len(inputs) == 2:
-                x, residual = inputs
-                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
-                return cache.run_op(op, x, residual, w)
-            if op in self._RUN_WITH_INPUTS_OPS:
-                return cache.run_op(op, *inputs)
+            return INTERPRETER.execute(op, named, attrs)
         except Exception as exc:
             logger.debug("Arke run_with_inputs %s failed: %s", op, exc)
             return None
-        return None
 
-    def _get_matmul_fn(
-        self,
-        cache: KernelCache,
-        M: int,
-        N: int,
-        K: int,
-        dtype: torch.dtype,
-    ) -> Callable[[], torch.Tensor] | None:
-        """Get a matmul callable that uses the Arke Triton kernel.
+    # ── helpers ────────────────────────────────────────────────────────────
+    @staticmethod
+    def _bind_inputs(
+        op: str, tensors: tuple[torch.Tensor, ...]
+    ) -> dict[str, torch.Tensor]:
+        """Map positional tensors onto the schema's input names (in order)."""
+        schema = REGISTRY.get(op)
+        names = list(schema.inputs.keys())
+        if len(tensors) > len(names):
+            raise ValueError(
+                f"{op}: got {len(tensors)} inputs, schema declares {len(names)} "
+                f"({names})"
+            )
+        return {names[i]: tensors[i] for i in range(len(tensors))}
 
-        Compiles the kernel for the exact shape and returns the raw function
-        for benchmarking with minimal dispatch overhead.
-        """
-        # Force-compile the Triton kernel for this shape (bypasses threshold)
-        cache.precompile_matmul([(M, N, K)])
+    @staticmethod
+    def _fill_missing_inputs(
+        op: str, inputs: list[torch.Tensor]
+    ) -> list[torch.Tensor]:
+        """Fill in common missing trailing inputs with neutral defaults."""
+        if not inputs:
+            return inputs
+        x = inputs[0]
+        device, dtype = x.device, x.dtype
 
-        # Grab the raw compiled function — this IS the Triton kernel
-        raw_fn = cache._matmul_cache.get((M, N, K))
-        if raw_fn is None:
-            logger.warning(f"Arke matmul compile failed for ({M}, {N}, {K})")
-            return None
+        if op == "layernorm" and len(inputs) == 1:
+            N = x.shape[-1]
+            return [
+                x,
+                torch.ones(N, device=device, dtype=dtype),
+                torch.zeros(N, device=device, dtype=dtype),
+            ]
+        if op == "rmsnorm" and len(inputs) == 1:
+            N = x.shape[-1]
+            return [x, torch.ones(N, device=device, dtype=dtype)]
+        if op == "rmsnorm_residual" and len(inputs) == 2:
+            N = x.shape[-1]
+            return [*inputs, torch.ones(N, device=device, dtype=dtype)]
+        return inputs
 
-        A = torch.randn(M, K, device="cuda", dtype=dtype)
-        B = torch.randn(K, N, device="cuda", dtype=dtype)
-
-        # Warmup the raw Triton kernel
-        for _ in range(3):
-            raw_fn(A, B)
-        torch.cuda.synchronize()
-
-        return lambda: raw_fn(A, B)
-
-    def _get_softmax_fn(
-        self,
-        cache: KernelCache,
-        M: int,
-        N: int,
-        dtype: torch.dtype,
-    ) -> Callable[[], torch.Tensor] | None:
-        """Get a softmax callable that uses the Arke Triton kernel.
-
-        Compiles the kernel for the exact shape and returns the raw function
-        for benchmarking with minimal dispatch overhead.
-        """
-        # Force-compile the Triton kernel for this shape
-        cache.precompile_softmax([(M, N)])
-
-        raw_fn = cache._softmax_cache.get((M, N))
-        if raw_fn is None:
-            logger.warning(f"Arke softmax compile failed for ({M}, {N})")
-            return None
-
-        X = torch.randn(M, N, device="cuda", dtype=dtype)
-
-        # Warmup the raw Triton kernel
-        for _ in range(3):
-            raw_fn(X)
-        torch.cuda.synchronize()
-
-        return lambda: raw_fn(X)
-
-    def _get_elementwise_fn(
-        self,
-        cache: KernelCache,
-        op: str,
-        M: int,
-        N: int,
-        dtype: torch.dtype,
-    ) -> Callable[[], torch.Tensor] | None:
-        """Get an elementwise callable that uses the Arke Triton kernel.
-
-        Compiles the kernel for the exact shape and returns the raw function
-        for benchmarking with minimal dispatch overhead.
-        """
-        cache.precompile_elementwise([(op, M, N)])
-
-        X = torch.randn(M, N, device="cuda", dtype=dtype)
-
-        # Warmup
-        for _ in range(3):
-            cache.elementwise(X, op)
-        torch.cuda.synchronize()
-
-        return lambda: cache.elementwise(X, op)
-
-    def _get_layernorm_fn(
-        self,
-        cache: KernelCache,
-        op: str,
-        M: int,
-        N: int,
-        dtype: torch.dtype,
-    ) -> Callable[[], torch.Tensor] | None:
-        """Get a layernorm/rmsnorm callable that uses the Arke Triton kernel.
-
-        Compiles the kernel for the exact shape and returns the raw function
-        for benchmarking with minimal dispatch overhead.
-        """
-        cache.precompile_layernorm([(M, N)])
-
-        X = torch.randn(M, N, device="cuda", dtype=dtype)
-        W = torch.ones(N, device="cuda", dtype=dtype)
-
-        if op == "layernorm":
-            B = torch.zeros(N, device="cuda", dtype=dtype)
-            # Warmup
-            for _ in range(3):
-                cache.layernorm(X, W, B)
-            torch.cuda.synchronize()
-            return lambda: cache.layernorm(X, W, B)
-        else:
-            # Warmup
-            for _ in range(3):
-                cache.rmsnorm(X, W)
-            torch.cuda.synchronize()
-            return lambda: cache.rmsnorm(X, W)
-
-    def _get_generic_fn(
-        self,
-        cache: KernelCache,
-        op: str,
-        M: int,
-        N: int,
-        K: int,
-        dtype: torch.dtype,
-    ) -> Callable[[], torch.Tensor] | None:
-        """Generic path using KernelCache.run_op for ops without specialized paths."""
-        try:
-            hw = collect_hardware_info()
-            shape = AttentionShape(tag=f"{op}-{M}x{N}x{K}", B=max(1, M // max(N, 1)), H=max(1, M // max(max(1, M // max(N, 1)), 1)), S=N, D=max(K, 64))
-            advice = compile_advice_for_op(hw, op, shape)
-            if not advice.allow_compile:
-                logger.info(f"Arke generic {op}: compile suppressed by advice: {advice.reason}")
-                return None
-            # Build test inputs
-            tensors = self._build_test_inputs(op, M, N, K, dtype)
-            if tensors is None:
-                return None
-
-            # Try compile + warmup
-            result = cache.run_op(op, *tensors)
-            if result is None:
-                logger.debug(f"Arke generic compile failed for {op}")
-                return None
-
-            # Warmup
-            for _ in range(3):
-                cache.run_op(op, *tensors)
-            torch.cuda.synchronize()
-
-            return lambda: cache.run_op(op, *tensors)
-        except Exception as e:
-            logger.debug(f"Arke generic {op}: {e}")
-            return None
+    @staticmethod
+    def _default_attrs(op: str, dtype: torch.dtype) -> dict[str, Any]:
+        if op == "cast":
+            return {"target_dtype": str(dtype).replace("torch.", "")}
+        return {}
 
     @staticmethod
     def _build_test_inputs(
         op: str, M: int, N: int, K: int, dtype: torch.dtype,
     ) -> tuple[torch.Tensor, ...] | None:
-        """Build test input tensors for a given op."""
-        device = "cuda"
-        # Unary elementwise
-        if op in ("tanh", "sigmoid", "neg", "exp", "rsqrt", "cast", "copy_"):
+        """Build test input tensors for a given op.
+
+        Mirrors the (M, N, K) shape convention used by ``bench_l1`` and the
+        prior KernelCache-based runner so benchmarks keep driving this baseline
+        with the same shape semantics.
+        """
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # ── matmul family ──────────────────────────────────────────
+        if op == "matmul":
+            A = torch.randn(M, max(K, 1), device=device, dtype=dtype)
+            B = torch.randn(max(K, 1), N, device=device, dtype=dtype)
+            return (A, B)
+        if op == "batch_matmul":
+            B_dim = max(K, 4)
+            A = torch.randn(B_dim, M, N, device=device, dtype=dtype)
+            Bt = torch.randn(B_dim, N, N, device=device, dtype=dtype)
+            return (A, Bt)
+        if op == "grouped_matmul":
+            E = 4
+            B_dim = max(M, 1)
+            A = torch.randn(B_dim, N, max(K, 1), device=device, dtype=dtype)
+            W = torch.randn(E, max(K, 1), N, device=device, dtype=dtype)
+            idx = torch.randint(0, E, (B_dim,), device=device, dtype=torch.int64)
+            return (A, W, idx)
+
+        # ── unary elementwise ──────────────────────────────────────
+        if op in ("relu", "gelu", "silu", "tanh", "sigmoid", "neg", "exp",
+                  "rsqrt", "cast", "copy_"):
             X = torch.randn(M, N, device=device, dtype=dtype)
             if op == "rsqrt":
-                X = X.abs() + 0.01  # positive for rsqrt
+                X = X.abs() + 0.01
             return (X,)
-        # Binary
+
+        # ── binary elementwise ─────────────────────────────────────
         if op in ("add", "mul"):
             A = torch.randn(M, N, device=device, dtype=dtype)
             B = torch.randn(M, N, device=device, dtype=dtype)
             return (A, B)
-        # Ternary
+
+        # ── ternary ────────────────────────────────────────────────
         if op == "where_":
             cond = torch.randn(M, N, device=device) > 0
             A = torch.randn(M, N, device=device, dtype=dtype)
             B = torch.randn(M, N, device=device, dtype=dtype)
             return (cond, A, B)
-        # Reductions
-        if op in ("reduce_sum", "reduce_max", "reduce_mean", "argmax", "topk", "cumsum"):
+
+        # ── reductions / scans ─────────────────────────────────────
+        if op in ("softmax", "reduce_sum", "reduce_max", "reduce_mean",
+                  "argmax", "topk", "cumsum"):
+            return (torch.randn(M, N, device=device, dtype=dtype),)
+
+        # ── normalization ──────────────────────────────────────────
+        if op == "layernorm":
             X = torch.randn(M, N, device=device, dtype=dtype)
-            return (X,)
-        # Normalization
+            W = torch.ones(N, device=device, dtype=dtype)
+            B = torch.zeros(N, device=device, dtype=dtype)
+            return (X, W, B)
+        if op == "rmsnorm":
+            X = torch.randn(M, N, device=device, dtype=dtype)
+            W = torch.ones(N, device=device, dtype=dtype)
+            return (X, W)
         if op == "rmsnorm_residual":
             X = torch.randn(M, N, device=device, dtype=dtype)
             residual = torch.randn(M, N, device=device, dtype=dtype)
             W = torch.ones(N, device=device, dtype=dtype)
             return (X, residual, W)
-        # Matmul variants
-        if op == "batch_matmul":
-            B = max(K, 4)  # use K as batch dim
-            A = torch.randn(B, M, N, device=device, dtype=dtype)
-            Bt = torch.randn(B, N, N, device=device, dtype=dtype)
-            return (A, Bt)
-        # Data movement
+
+        # ── data movement ──────────────────────────────────────────
         if op == "transpose":
+            return (torch.randn(M, N, device=device, dtype=dtype),)
+        if op == "permute":
+            # Needs a 4D tensor for default dims=[0,2,1,3]
+            return (torch.randn(max(M // N, 1) or 1, 4, N, max(K, 8),
+                                device=device, dtype=dtype),)
+        if op == "concat":
+            A = torch.randn(M, N, device=device, dtype=dtype)
+            B = torch.randn(M, N, device=device, dtype=dtype)
+            return (A, B)
+        if op == "split":
+            return (torch.randn(M, N * 2, device=device, dtype=dtype),)
+        if op == "gather":
             X = torch.randn(M, N, device=device, dtype=dtype)
-            return (X,)
-        # Gated
+            idx = torch.randint(0, N, (M, max(K, 1)), device=device,
+                                dtype=torch.int64)
+            return (X, idx)
+        if op == "embedding":
+            V = max(N, 16)
+            D = max(K, 16)
+            weight = torch.randn(V, D, device=device, dtype=dtype)
+            idx = torch.randint(0, V, (max(M // 16, 1) or 1, 16), device=device,
+                                dtype=torch.int64)
+            return (idx, weight)
+
+        # ── gated activations (OT3) ───────────────────────────────
         if op in ("swiglu", "geglu"):
-            X = torch.randn(M, N * 2, device=device, dtype=dtype)  # 2N input
-            return (X,)
-        # Attention
-        if op in ("flash_attention", "grouped_query_attention", "cross_attention", "multi_latent_attention", "paged_attention", "rope"):
-            # M=B*H, N=S, K=D from bench_l1 shape mapping
-            B_dim = max(1, M // max(N, 1))  # approximate B
+            return (torch.randn(M, N * 2, device=device, dtype=dtype),)
+
+        # ── attention (OT4) ────────────────────────────────────────
+        if op in ("flash_attention", "cross_attention"):
+            B_dim = max(1, M // max(N, 1))
             H_dim = max(1, M // max(B_dim, 1))
             S = N
             D = max(K, 64)
@@ -376,5 +324,48 @@ class ArkeRunner(BaselineRunner):
             Kk = torch.randn(B_dim, H_dim, S, D, device=device, dtype=dtype)
             V = torch.randn(B_dim, H_dim, S, D, device=device, dtype=dtype)
             return (Q, Kk, V)
-        # Other ops — not yet supported in generic path
+        if op == "grouped_query_attention":
+            B_dim = max(1, M // max(N, 1))
+            H_q = max(1, M // max(B_dim, 1))
+            H_kv = max(1, H_q // 4)
+            S = N
+            D = max(K, 64)
+            Q = torch.randn(B_dim, H_q, S, D, device=device, dtype=dtype)
+            Kk = torch.randn(B_dim, H_kv, S, D, device=device, dtype=dtype)
+            V = torch.randn(B_dim, H_kv, S, D, device=device, dtype=dtype)
+            return (Q, Kk, V)
+        if op == "rope":
+            B_dim = max(1, M // max(N, 1))
+            H_dim = max(1, M // max(B_dim, 1))
+            S = N
+            D = max(K, 64)
+            X = torch.randn(B_dim, H_dim, S, D, device=device, dtype=dtype)
+            cos = torch.randn(S, D // 2, device=device, dtype=dtype)
+            sin = torch.randn(S, D // 2, device=device, dtype=dtype)
+            return (X, cos, sin)
+
+        # ── quantization ──────────────────────────────────────────
+        if op == "quantize_per_token":
+            return (torch.randn(M, N, device=device, dtype=dtype),)
+        if op == "dequantize_per_channel":
+            X = torch.randint(-128, 127, (M, N), device=device, dtype=torch.int8)
+            scale = torch.randn(N, device=device, dtype=torch.float32).abs() + 0.01
+            zp = torch.zeros(N, device=device, dtype=torch.int8)
+            return (X, scale, zp)
+
+        # ── losses ────────────────────────────────────────────────
+        if op == "cross_entropy":
+            V = max(N, 16)
+            logits = torch.randn(M, V, device=device, dtype=dtype)
+            labels = torch.randint(0, V, (M,), device=device, dtype=torch.int64)
+            return (logits, labels)
+        if op == "fused_linear_cross_entropy":
+            V = max(N, 16)
+            D = max(K, 16)
+            X = torch.randn(M, D, device=device, dtype=dtype)
+            W = torch.randn(V, D, device=device, dtype=dtype)
+            labels = torch.randint(0, V, (M,), device=device, dtype=torch.int64)
+            return (X, W, labels)
+
+        # Ops we don't yet synthesize (scatter, MLA, paged_attention, …)
         return None
