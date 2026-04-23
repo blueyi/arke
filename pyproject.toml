@@ -84,6 +84,9 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "cuda: tests that require CUDA availability",
+]
 
 [tool.mypy]
 python_version = "3.10"

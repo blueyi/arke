@@ -88,6 +88,16 @@ class ArkeRunner(BaselineRunner):
         "quantize_per_token", "dequantize_per_channel",
         "grouped_matmul", "multi_latent_attention", "paged_attention",
     })
+    _RUN_WITH_INPUTS_OPS = _SPECIALIZED_OPS | {
+        "tanh", "sigmoid", "neg", "exp", "rsqrt", "cast", "copy_",
+        "add", "mul", "where_",
+        "rmsnorm_residual", "reduce_sum", "reduce_max", "reduce_mean",
+        "argmax", "topk", "cumsum",
+        "batch_matmul", "transpose",
+        "swiglu", "geglu",
+        "flash_attention", "grouped_query_attention", "cross_attention",
+        "rope",
+    }
 
     def supports(self, op: str) -> bool:
         return op in self._SPECIALIZED_OPS or op in self._GENERIC_OPS
@@ -114,6 +124,44 @@ class ArkeRunner(BaselineRunner):
 
         # Generic path via compile_op/run_op for all other ops
         return self._get_generic_fn(cache, op, M, N, K, dtype)
+
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        if not self.available or op not in self._RUN_WITH_INPUTS_OPS:
+            return None
+
+        cache = self._ensure_cache()
+
+        try:
+            if op == "matmul" and len(inputs) == 2:
+                return cache.matmul(inputs[0], inputs[1])
+            if op == "softmax" and len(inputs) == 1:
+                return cache.softmax(inputs[0])
+            if op in {"relu", "gelu", "silu"} and len(inputs) == 1:
+                return cache.elementwise(inputs[0], op)
+            if op == "layernorm" and len(inputs) == 1:
+                x = inputs[0]
+                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+                b = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
+                return cache.layernorm(x, w, b)
+            if op == "rmsnorm" and len(inputs) == 1:
+                x = inputs[0]
+                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+                return cache.rmsnorm(x, w)
+            if op == "rmsnorm_residual" and len(inputs) == 2:
+                x, residual = inputs
+                w = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+                return cache.run_op(op, x, residual, w)
+            if op in self._RUN_WITH_INPUTS_OPS:
+                return cache.run_op(op, *inputs)
+        except Exception as exc:
+            logger.debug("Arke run_with_inputs %s failed: %s", op, exc)
+            return None
+        return None
 
     def _get_matmul_fn(
         self,
