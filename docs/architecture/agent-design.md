@@ -482,7 +482,7 @@ optimization fails or is unavailable.
 ---
 
 
-> **Implementation roadmap** → [plan.md](../../roadmap/plan.md)
+> **Implementation roadmap** → [plan.md](../roadmap/plan.md)
 
 ## Appendix A: Current `arke/agent/` Code Structure
 

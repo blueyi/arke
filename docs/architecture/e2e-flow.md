@@ -220,7 +220,7 @@ Semantic IR 构建完成后，系统自动计算特征，作为 LLM 做决策的
 - ST3: Stress（非对齐 + 极端）
 - ST4: Production（真实 LLM 生产 shape）
 
-→ 完整算子列表见 [benchmark-ops.md](benchmark/benchmark-ops.md)
+→ 完整算子列表见 [benchmark-ops.md](../benchmark/benchmark-ops.md)
 
 
 ## 三、Phase 2 — LLM 优化循环（核心）
@@ -1008,7 +1008,7 @@ Phase 1 共 **10 个 Gate（G0-G9）**，每个 Gate 的出口条件由 **BL×L 
 | G8 | BL5×L1+L2 + BL6×L3 | **Agent Autonomy**（自主工程能力） | ⬜ |
 | G9 | BL6×L3 (4模型) | **Phase 1 最终验收** | ⬜ |
 
-→ 详见 [benchmark-design.md](benchmark-design.md) | [plan.md](../../roadmap/plan.md)
+→ 详见 [benchmark-design.md](../benchmark/benchmark-design.md) | [plan.md](../roadmap/plan.md)
 
 
 ## 八、数据流总结

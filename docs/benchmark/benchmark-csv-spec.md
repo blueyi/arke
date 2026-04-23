@@ -3,7 +3,7 @@
 > Version: 2.0 | Date: 2026-04-05
 > All performance CSVs must follow this schema for cross-stage analysis in Excel.
 
-→ Parent: [`benchmark-design.md`](../benchmark-design.md)
+→ Parent: [`benchmark-design.md`](./benchmark-design.md)
 
 ## Design Principles
 

@@ -12,23 +12,23 @@ automated provenance tracking, and a three-layer evaluation architecture.
 3. [Shape Tier (ST)](#3-shape-tier-st)
 4. [Evaluation Layers (L1/L2/L3)](#4-evaluation-layers-l1l2l3)
 5. [Baselines](#5-baselines)
-6. [Measurement Protocol](./benchmark/benchmark-protocol.md#measurement-protocol)
-7. [Scoring System](./benchmark/benchmark-protocol.md#scoring-system)
-8. [Output & CSV Spec](./benchmark/benchmark-csv-spec.md)
-9. [Operator Source Registry](./benchmark/operator-source-registry.md)
-10. [CLI Interface](./benchmark/benchmark-protocol.md#cli-interface)
-11. [Benchmark-Driven Development](./benchmark/benchmark-protocol.md#benchmark-driven-development)
-12. [Implementation Status](./benchmark/benchmark-protocol.md#implementation-status)
-13. [Dependencies](./benchmark/benchmark-protocol.md#dependencies)
+6. [Measurement Protocol](./benchmark-protocol.md#measurement-protocol)
+7. [Scoring System](./benchmark-protocol.md#scoring-system)
+8. [Output & CSV Spec](./benchmark-csv-spec.md)
+9. [Operator Source Registry](./operator-source-registry.md)
+10. [CLI Interface](./benchmark-protocol.md#cli-interface)
+11. [Benchmark-Driven Development](./benchmark-protocol.md#benchmark-driven-development)
+12. [Implementation Status](./benchmark-protocol.md#implementation-status)
+13. [Dependencies](./benchmark-protocol.md#dependencies)
 14. [Op Catalog — Single Source of Truth](#op-catalog--single-source-of-truth)
 15. [Shape Catalog — Single Source of Truth](#shape-catalog--single-source-of-truth)
 
-**Sub-documents** (all in [`benchmark/`](./benchmark/)):
-- [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — Op Tier definitions, operator catalog, per-op baseline selection
-- [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md) — Shape Tier definitions, full shape matrices per operator
-- [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md) — Measurement protocol, scoring, CLI, implementation status
-- [`benchmark-csv-spec.md`](./benchmark/benchmark-csv-spec.md) — Unified CSV output schema (39 columns, Excel-friendly)
-- [`operator-source-registry.md`](./benchmark/operator-source-registry.md) — Complete baseline source catalog (14 sources)
+**Sub-documents** (all in [`benchmark/`](./)):
+- [`benchmark-ops.md`](./benchmark-ops.md) — Op Tier definitions, operator catalog, per-op baseline selection
+- [`benchmark-shapes.md`](./benchmark-shapes.md) — Shape Tier definitions, full shape matrices per operator
+- [`benchmark-protocol.md`](./benchmark-protocol.md) — Measurement protocol, scoring, CLI, implementation status
+- [`benchmark-csv-spec.md`](./benchmark-csv-spec.md) — Unified CSV output schema (39 columns, Excel-friendly)
+- [`operator-source-registry.md`](./operator-source-registry.md) — Complete baseline source catalog (14 sources)
 
 ---
 
@@ -99,7 +99,7 @@ L3 ≡ BL6  ─    ─    ─    ─    ─    ✓     E2E model perf
 
 Operators are classified by **computational complexity and kernel design difficulty**.
 
-> Full details: [`benchmark-ops.md`](./benchmark/benchmark-ops.md)
+> Full details: [`benchmark-ops.md`](./benchmark-ops.md)
 
 | Tier | Name | Operators | Core Characteristic |
 |:----:|:-----|:----------|:--------------------|
@@ -121,7 +121,7 @@ Operators are classified by **computational complexity and kernel design difficu
 
 Shapes are classified by **scale, alignment, and production relevance**.
 
-> Full shape matrices: [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md)
+> Full shape matrices: [`benchmark-shapes.md`](./benchmark-shapes.md)
 
 | Tier | Name | Description | Count (approx) |
 |:----:|:-----|:------------|:--------------:|
@@ -197,9 +197,9 @@ Each operator is benchmarked against multiple baseline tiers, ranked by expected
 
 | What | Where |
 |:-----|:------|
-| **Per-operator baseline selection** (primary + expert baselines) | [`benchmark-ops.md`](./benchmark/benchmark-ops.md) — each op card lists its P0–P5 mapping |
-| **Source installation, API, version, full op lists** | [`operator-source-registry.md`](./benchmark/operator-source-registry.md) — complete catalog of all 14 baseline sources |
-| **Fused operator baselines** | [`benchmark-ops.md` §OT3/OT4](./benchmark/benchmark-ops.md) + table below |
+| **Per-operator baseline selection** (primary + expert baselines) | [`benchmark-ops.md`](./benchmark-ops.md) — each op card lists its P0–P5 mapping |
+| **Source installation, API, version, full op lists** | [`operator-source-registry.md`](./operator-source-registry.md) — complete catalog of all 14 baseline sources |
+| **Fused operator baselines** | [`benchmark-ops.md` §OT3/OT4](./benchmark-ops.md) + table below |
 
 ### Fused Operator → Baseline Summary (L2)
 
@@ -263,13 +263,13 @@ python -m benchmarks gate G7 --tier 2
 - Use `python -m benchmarks` when documenting module execution or compatibility behavior.
 - Use `python -m benchmarks gate ...` for Gate verification examples.
 
-For the full CLI contract, option semantics, and legacy/current mapping table, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md#cli-interface).
+For the full CLI contract, option semantics, and legacy/current mapping table, see [`benchmark-protocol.md`](./benchmark-protocol.md#cli-interface).
 
 ---
 
-*For full shape matrices, see [`benchmark-shapes.md`](./benchmark/benchmark-shapes.md).*
-*For baseline source installation and API details, see [`operator-source-registry.md`](./benchmark/operator-source-registry.md).*
-*For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark/benchmark-protocol.md).*
+*For full shape matrices, see [`benchmark-shapes.md`](./benchmark-shapes.md).*
+*For baseline source installation and API details, see [`operator-source-registry.md`](./operator-source-registry.md).*
+*For measurement protocol, scoring, and CLI, see [`benchmark-protocol.md`](./benchmark-protocol.md).*
 
 ---
 
