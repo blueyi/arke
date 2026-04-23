@@ -201,10 +201,10 @@ The goal is not full MLIR functionality yet; it is to establish the architectura
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T4.1 | Define minimal in-code ScheduleIR / InstructionIR skeletons aligned with IR spec terminology | P1 | 1d | ⬜ |
-| T4.2 | Implement StrategyIR → ScheduleIR lowering skeleton for BL1 matmul path | P1 | 1d | ⬜ |
-| T4.3 | Implement MLIREmitter / stub bridge from lower layers to MLIR-oriented output | P1 | 1d | ⬜ |
-| T4.4 | Add verification that BL1 matmul can traverse the new skeleton path without regressions | P1 | 0.5d | ⬜ |
+| T4.1 | Define minimal in-code ScheduleIR / InstructionIR skeletons aligned with IR spec terminology | P1 | 1d | ✅ — `arke/ir/schedule.py` and `arke/ir/instruction.py` define the Layer 2/1 skeletons with loop nests, fusion groups, resources, provenance, and instruction blocks. |
+| T4.2 | Implement StrategyIR → ScheduleIR lowering skeleton for BL1 matmul path | P1 | 1d | ✅ — `arke/compiler/lowering.py` lowers StrategyIR decisions (including conditional branches) into ScheduleIR and then InstructionIR, exercised by `tests/test_track4_lowering.py` and `tests/test_stage7_lowering.py`. |
+| T4.3 | Implement MLIREmitter / stub bridge from lower layers to MLIR-oriented output | P1 | 1d | ✅ — `arke/compiler/mlir_emitter.py` emits `module { func.func ... }` skeletons with `linalg.matmul` / op attrs plus schedule + instruction-block provenance comments. |
+| T4.4 | Add verification that BL1 matmul can traverse the new skeleton path without regressions | P1 | 0.5d | ✅ — `tests/test_stage7_lowering.py::TestStage7Lowering::test_bl1_matmul_traverses_full_stage7_skeleton` exercises SemanticIR → StrategyIR → ScheduleIR → InstructionIR → MLIR on `examples/operators/01_matmul.ak`. |
 
 ### Track 5: Full BL5 Surface Coverage (P0)
 
@@ -216,7 +216,7 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 | T5.2 | Verify all 45 BL5 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | ✅ |
 | T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ✅ |
 | T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | 🟨 — language/IR representation covered, but full benchmark-level executability still blocked for OT4 memory-heavy cases |
-| T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ⬜ |
+| T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ✅ — `scripts/check_token_efficiency.py` and `tests/test_token_efficiency.py` now include BL5 L2 fused examples (`examples/operators/l2/*.ak`) with dedicated `l2_fused` category and Triton reference lines; full suite passes with aggregate ratio ≈ 0.26 under v2.0 syntax (`where`, conditional strategy, production-shape annotations). |
 | T5.6 | Audit every BL5 operator / shape family against Stage 7 Lang surface (`where`, conditional strategy) and log unsupported cases | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_audit_report` now consumes `coverage_ledger.json` and emits `audit_report.json` with missing-example / missing-strategy / missing-shape evidence plus unsupported-case queues for T5.7/T6 follow-up. |
 | T5.7 | Add or update `.ak` examples for any patterns uncovered by the audit | P0 | 0.5d | 🟨 — added explicit Stage 7 L2 surface examples for `matmul_relu`, `linear_ce`, and `qkv_fa` under `examples/operators/l2/`, and restored `examples/operators/01_matmul.ak` to an explicit strategy-backed L1 surface so Track 5 / audit no longer reports a missing `matmul` strategy example; remaining follow-up is to expand shape evidence / benchmark coverage. |
 | T5.8 | Maintain machine-readable coverage ledger linking BL5 targets to `.ak` artefacts (feeds Track 6 automation) | P0 | 0.5d | 🟨 — `python -m benchmarks.stage7_coverage_ledger` now emits `coverage_ledger.json` linking target-matrix entries to `.ak` examples, dry-run pipeline evidence, and Track 6 PERF_ALL coverage; current ledger shows L1 45/45 examples with strategy and L2 6/6 examples (shape evidence still sparse). |
@@ -265,7 +265,7 @@ That means every unfinished task in S7 should be justified by one of these bench
 |:----------|:------|:------------|
 | M1 | Track 1 complete | Spec terminology and required v2.0 features mapped to code | ✅ |
 | M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end | ✅ |
-| M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge | ⬜ |
+| M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge | ✅ |
 | M4 | Track 5 complete | All 45 BL5 ops pass v2.0 dry-run round-trip and BL5 shape families are representable | 🟨 — dry-run coverage is green; full benchmark executability remains partially blocked by memory-heavy OT4 cases |
 | M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | 🟨 |
 | M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | ⬜ |

@@ -92,6 +92,13 @@ TRITON_REFERENCE_LINES: dict[str, int] = {
     "17_multi_latent_attention": 180,
     "44_cross_attention": 150,
     "45_paged_attention": 170,
+
+    # ── BL5 L2 fused examples (see `examples/operators/l2/*.ak`) ──
+    # Triton references are conservative lower bounds for hand-written
+    # fused kernels covering the same composition.
+    "linear_ce": 110,        # fused Linear + CE, cf. 41_fused_linear_cross_entropy
+    "matmul_relu": 90,       # tiled matmul with epilogue fusion
+    "qkv_fa": 200,           # QKV projection + flash-attention in one fused kernel
 }
 
 
@@ -109,7 +116,9 @@ def count_code_lines(path: Path) -> int:
 
 
 def main() -> int:
-    ak_files = sorted(OPERATORS_DIR.glob("*.ak"))
+    ak_files = sorted(OPERATORS_DIR.glob("*.ak")) + sorted(
+        OPERATORS_DIR.glob("l2/*.ak")
+    )
     if not ak_files:
         print("ERROR: No .ak files found in", OPERATORS_DIR)
         return 1

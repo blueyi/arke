@@ -19,9 +19,9 @@ class TestStage7Lowering:
 
         assert result.success, result.errors
         assert result.semantic_ir is not None
-        assert result.strategy_ir is None
-        assert result.schedule_ir is None
-        assert result.instruction_ir is None
+        assert result.strategy_ir is not None
+        assert result.schedule_ir is not None
+        assert result.instruction_ir is not None
         assert result.mlir_module is not None
         assert "module {" in result.mlir_module
         assert "func.func @matmul" in result.mlir_module

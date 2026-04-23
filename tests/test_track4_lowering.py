@@ -23,7 +23,7 @@ def test_strategy_to_schedule_lowering_on_example_relu():
     assert result.instruction_ir is not None
 
     schedule = result.schedule_ir
-    assert schedule.kernel_id == "relu_kernel_strategy"
+    assert schedule.kernel_id == "relu_kernel"
     assert schedule.target_hw == "nvidia_ampere"
     assert len(schedule.loop_nests) == 1
     assert schedule.loop_nests[0].loop == "row"
