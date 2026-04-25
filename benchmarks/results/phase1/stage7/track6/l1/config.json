@@ -1,11 +1,18 @@
 {
-  "timestamp": "2026-04-25_230900",
+  "timestamp": "2026-04-25_234207",
   "ops": [
-    "multi_latent_attention",
-    "paged_attention"
+    "matmul",
+    "softmax",
+    "silu",
+    "tanh",
+    "sigmoid",
+    "mul",
+    "layernorm",
+    "rmsnorm",
+    "rmsnorm_residual"
   ],
-  "warmup": 10,
-  "reps": 20,
-  "tier": 1,
+  "warmup": 20,
+  "reps": 60,
+  "tier": 2,
   "shape_tags": null
 }

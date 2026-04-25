@@ -1,19 +1,61 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-softmax,attn-gpt2-128,cuBLAS/cuDNN,58.4,6.1,,1.0582,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0582,true,0.0582
-softmax,attn-gpt2-128,Triton-Tutorial,127.7,28.5,,0.4839,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.4839,false,-0.5161
-softmax,attn-gpt2-128,PyTorch-eager,61.8,67.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-softmax,attn-gpt2-128,torch.compile,429.4,42.0,,0.1439,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1439,false,-0.8561
-softmax,attn-gpt2-128,Arke,126.0,15.4,,0.4905,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.4905,false,-0.5095
-softmax,attn-gpt2-128,FlagGems,51.9,47.1,,1.1908,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,1.1908,true,0.1908
-softmax,attn-gpt2-256,cuBLAS/cuDNN,60.4,10.2,,0.9040,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9040,false,-0.0960
-softmax,attn-gpt2-256,Triton-Tutorial,142.3,84.0,,0.3837,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.3837,false,-0.6163
-softmax,attn-gpt2-256,PyTorch-eager,54.6,10.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-softmax,attn-gpt2-256,torch.compile,426.0,312.3,,0.1282,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1282,false,-0.8718
-softmax,attn-gpt2-256,Arke,44.0,10.2,,1.2409,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.2409,true,0.2409
-softmax,attn-gpt2-256,FlagGems,57.6,66.5,,0.9479,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,0.9479,false,-0.0521
-softmax,attn-gpt2-512,cuBLAS/cuDNN,83.9,10.2,,0.6877,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6877,false,-0.3123
-softmax,attn-gpt2-512,Triton-Tutorial,168.2,65.5,,0.3430,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.3430,false,-0.6570
-softmax,attn-gpt2-512,PyTorch-eager,57.7,16.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-softmax,attn-gpt2-512,torch.compile,458.0,321.5,,0.1260,ok,,false,true,4.76837e-07,7.76102e-11,0.005,0.005,ok,,,,,,1.0,0.1260,false,-0.8740
-softmax,attn-gpt2-512,Arke,63.9,74.6,,0.9030,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9030,false,-0.0970
-softmax,attn-gpt2-512,FlagGems,63.1,66.6,,0.9144,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,0.9144,false,-0.0856
+softmax,attn-gpt2-128,cuBLAS/cuDNN,86.1,60.4,,0.9524,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9524,false,-0.0476
+softmax,attn-gpt2-128,Triton-Tutorial,111.1,133.2,,0.7381,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.7381,false,-0.2619
+softmax,attn-gpt2-128,PyTorch-eager,82.0,59.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-128,torch.compile,371.0,380.8,,0.2210,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2210,false,-0.7790
+softmax,attn-gpt2-128,Arke,84.8,96.4,,0.9670,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9670,false,-0.0330
+softmax,attn-gpt2-128,FlagGems,47.1,55.3,,1.7410,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,1.7410,true,0.7410
+softmax,attn-gpt2-256,cuBLAS/cuDNN,83.2,118.0,,0.9964,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9964,false,-0.0036
+softmax,attn-gpt2-256,Triton-Tutorial,106.9,6.1,,0.7755,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.7755,false,-0.2245
+softmax,attn-gpt2-256,PyTorch-eager,82.9,9.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-256,torch.compile,426.9,316.4,,0.1942,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1942,false,-0.8058
+softmax,attn-gpt2-256,Arke,87.9,7.2,,0.9431,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9431,false,-0.0569
+softmax,attn-gpt2-256,FlagGems,39.7,54.3,,2.0882,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,2.0882,true,1.0882
+softmax,attn-gpt2-512,cuBLAS/cuDNN,85.8,8.2,,1.0478,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0478,true,0.0478
+softmax,attn-gpt2-512,Triton-Tutorial,63.9,12.3,,1.4069,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,1.4069,true,0.4069
+softmax,attn-gpt2-512,PyTorch-eager,89.9,60.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-512,torch.compile,343.6,275.5,,0.2616,ok,,false,true,9.53674e-07,1.5522e-10,0.005,0.005,ok,,,,,,1.0,0.2616,false,-0.7384
+softmax,attn-gpt2-512,Arke,40.2,7.2,,2.2363,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,2.2363,true,1.2363
+softmax,attn-gpt2-512,FlagGems,41.5,59.4,,2.1663,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,2.1663,true,1.1663
+softmax,attn-llama-512,cuBLAS/cuDNN,82.4,4.1,,0.7998,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7998,false,-0.2002
+softmax,attn-llama-512,Triton-Tutorial,105.0,76.8,,0.6276,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.6276,false,-0.3724
+softmax,attn-llama-512,PyTorch-eager,65.9,66.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-512,torch.compile,413.6,294.7,,0.1593,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1593,false,-0.8407
+softmax,attn-llama-512,Arke,87.7,73.7,,0.7514,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7514,false,-0.2486
+softmax,attn-llama-512,FlagGems,41.2,62.5,,1.5995,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,1.5995,true,0.5995
+softmax,attn-llama-2k,cuBLAS/cuDNN,79.2,66.6,,0.7689,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7689,false,-0.2311
+softmax,attn-llama-2k,Triton-Tutorial,62.4,5.1,,0.9760,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.9760,false,-0.0240
+softmax,attn-llama-2k,PyTorch-eager,60.9,51.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-2k,torch.compile,346.5,285.7,,0.1758,ok,,false,true,4.76837e-07,1.81899e-11,0.005,0.005,ok,,,,,,1.0,0.1758,false,-0.8242
+softmax,attn-llama-2k,Arke,62.2,8.2,,0.9791,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9791,false,-0.0209
+softmax,attn-llama-2k,FlagGems,41.4,61.4,,1.4710,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,1.4710,true,0.4710
+softmax,attn-llama-4k,cuBLAS/cuDNN,41.9,57.4,,0.9189,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9189,false,-0.0811
+softmax,attn-llama-4k,Triton-Tutorial,85.6,76.0,,0.4498,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.4498,false,-0.5502
+softmax,attn-llama-4k,PyTorch-eager,38.5,50.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-4k,torch.compile,419.5,311.3,,0.0918,ok,,false,true,1.19209e-07,1.81899e-12,0.005,0.005,ok,,,,,,1.0,0.0918,false,-0.9082
+softmax,attn-llama-4k,Arke,87.3,60.5,,0.4410,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.4410,false,-0.5590
+softmax,attn-llama-4k,FlagGems,40.8,59.5,,0.9436,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,0.9436,false,-0.0564
+softmax,wide-vocab-gpt2,cuBLAS/cuDNN,79.9,17.5,,0.5019,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.5019,false,-0.4981
+softmax,wide-vocab-gpt2,Triton-Tutorial,886.0,294.9,,0.0453,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.0453,false,-0.9547
+softmax,wide-vocab-gpt2,PyTorch-eager,40.1,54.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,wide-vocab-gpt2,torch.compile,271.3,71.7,,0.1478,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1478,false,-0.8522
+softmax,wide-vocab-gpt2,Arke,45.0,47.1,,0.8911,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8911,false,-0.1089
+softmax,wide-vocab-gpt2,FlagGems,40.8,58.4,,0.9828,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,0.9828,false,-0.0172
+softmax,wide-vocab-llama3,cuBLAS/cuDNN,39.8,54.2,,7.4824,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,7.4824,true,6.4824
+softmax,wide-vocab-llama3,Triton-Tutorial,inf,inf,,,error,"out of resource: shared memory, Required: 262176, Hardware limit: 101376. Reducing block sizes or `num_stages` may help.",false,,,,,,error,"out of resource: shared memory, Required: 262176, Hardware limit: 101376. Reducing block sizes or `num_stages` may help.",,,,,1.0,N/A,false,N/A
+softmax,wide-vocab-llama3,PyTorch-eager,297.8,197.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,wide-vocab-llama3,torch.compile,348.7,260.1,,0.8540,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8540,false,-0.1460
+softmax,wide-vocab-llama3,Arke,298.2,38.9,,0.9987,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9987,false,-0.0013
+softmax,wide-vocab-llama3,FlagGems,41.9,33.8,,7.1074,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,7.1074,true,6.1074
+softmax,batch-large,cuBLAS/cuDNN,40.1,57.3,,1.0075,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0075,true,0.0075
+softmax,batch-large,Triton-Tutorial,60.4,49.2,,0.6689,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.6689,false,-0.3311
+softmax,batch-large,PyTorch-eager,40.4,55.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,batch-large,torch.compile,295.0,288.8,,0.1369,ok,,false,true,9.53674e-07,8.86757e-12,0.005,0.005,ok,,,,,,1.0,0.1369,false,-0.8631
+softmax,batch-large,Arke,43.6,63.7,,0.9266,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9266,false,-0.0734
+softmax,batch-large,FlagGems,42.6,62.4,,0.9484,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,0.9484,false,-0.0516
+softmax,square-4k,cuBLAS/cuDNN,216.0,218.1,,1.0019,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0019,true,0.0019
+softmax,square-4k,Triton-Tutorial,221.5,218.1,,0.9770,ok,,false,,,,0.005,0.005,unsupported,runner Triton-Tutorial does not implement run_with_inputs for softmax,,,,,1.0,0.9770,false,-0.0230
+softmax,square-4k,PyTorch-eager,216.4,221.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,square-4k,torch.compile,519.9,520.1,,0.4162,ok,,false,true,3.8147e-06,7.29727e-12,0.005,0.005,ok,,,,,,1.0,0.4162,false,-0.5838
+softmax,square-4k,Arke,216.5,220.2,,0.9995,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9995,false,-0.0005
+softmax,square-4k,FlagGems,216.0,221.2,,1.0019,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for softmax,,,,,1.0,1.0019,true,0.0019

@@ -1,37 +1,73 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-matmul,tiny,cuBLAS/cuDNN,73.7,11.3,0.057,0.8657,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8657,false,-0.1343
-matmul,tiny,Triton-Tutorial,86.7,85.0,0.048,0.7359,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,,,,,1.0,0.7359,false,-0.2641
-matmul,tiny,PyTorch-eager,63.8,78.0,0.066,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-matmul,tiny,torch.compile,279.9,284.7,0.015,0.2279,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.2279,false,-0.7721
-matmul,tiny,Arke,69.6,85.0,0.060,0.9167,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9167,false,-0.0833
-matmul,tiny,FlagGems,68.9,81.9,0.061,0.9260,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,,,,,1.0,0.9260,false,-0.0740
-matmul,gpt2-c_proj,cuBLAS/cuDNN,66.5,29.7,2.269,1.4526,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.4526,true,0.4526
-matmul,gpt2-c_proj,Triton-Tutorial,156.3,103.4,0.966,0.6180,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,,,,,1.0,0.6180,false,-0.3820
-matmul,gpt2-c_proj,PyTorch-eager,96.6,96.3,1.563,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-matmul,gpt2-c_proj,torch.compile,340.7,328.7,0.443,0.2835,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.2835,false,-0.7165
-matmul,gpt2-c_proj,Arke,88.4,46.9,1.708,1.0928,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0928,true,0.0928
-matmul,gpt2-c_proj,FlagGems,71.7,82.9,2.107,1.3473,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,,,,,1.0,1.3473,true,0.3473
-matmul,gpt2-c_attn,cuBLAS/cuDNN,128.0,126.0,3.540,0.5336,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5336,false,-0.4664
-matmul,gpt2-c_attn,Triton-Tutorial,108.2,117.8,4.186,0.6312,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,,,,,1.0,0.6312,false,-0.3688
-matmul,gpt2-c_attn,PyTorch-eager,68.3,100.4,6.636,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-matmul,gpt2-c_attn,torch.compile,332.1,332.8,1.364,0.2057,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.2057,false,-0.7943
-matmul,gpt2-c_attn,Arke,89.1,70.6,5.085,0.7666,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7666,false,-0.2334
-matmul,gpt2-c_attn,FlagGems,96.3,118.8,4.706,0.7092,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,,,,,1.0,0.7092,false,-0.2908
-matmul,square-1k,cuBLAS/cuDNN,245.4,226.3,8.750,0.8778,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8778,false,-0.1222
-matmul,square-1k,Triton-Tutorial,197.6,227.3,10.866,1.0901,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,,,,,1.0,1.0901,true,0.0901
-matmul,square-1k,PyTorch-eager,215.4,222.2,9.971,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-matmul,square-1k,torch.compile,522.2,517.1,4.112,0.4125,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.4125,false,-0.5875
-matmul,square-1k,Arke,262.5,229.3,8.181,0.8206,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8206,false,-0.1794
-matmul,square-1k,FlagGems,242.3,249.9,8.861,0.8890,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,,,,,1.0,0.8890,false,-0.1110
-matmul,square-2k,cuBLAS/cuDNN,1527.1,1516.4,11.250,0.9361,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9361,false,-0.0639
-matmul,square-2k,Triton-Tutorial,1352.4,1305.6,12.704,1.0570,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,,,,,1.0,1.0570,true,0.0570
-matmul,square-2k,PyTorch-eager,1429.5,1370.1,12.018,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-matmul,square-2k,torch.compile,1798.5,1994.8,9.552,0.7948,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7948,false,-0.2052
-matmul,square-2k,Arke,1644.9,1616.7,10.444,0.8690,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8690,false,-0.1310
-matmul,square-2k,FlagGems,1581.1,1562.6,10.866,0.9041,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,,,,,1.0,0.9041,false,-0.0959
-matmul,square-4k,cuBLAS/cuDNN,12702.0,12621.8,10.820,0.7650,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7650,false,-0.2350
-matmul,square-4k,Triton-Tutorial,9354.2,9024.4,14.693,1.0388,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,,,,,1.0,1.0388,true,0.0388
-matmul,square-4k,PyTorch-eager,9716.7,9751.6,14.145,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-matmul,square-4k,torch.compile,13202.8,12772.4,10.410,0.7360,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7360,false,-0.2640
-matmul,square-4k,Arke,12430.7,12548.1,11.056,0.7817,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7817,false,-0.2183
-matmul,square-4k,FlagGems,12468.6,12365.8,11.023,0.7793,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,,,,,1.0,0.7793,false,-0.2207
+matmul,tiny,cuBLAS/cuDNN,14.2,27.8,0.295,0.9225,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.9225,false,-0.0775
+matmul,tiny,Triton-Tutorial,63.8,56.3,0.066,0.2053,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,98304,3542771302,0.0000,dense_matmul,1.0,0.2053,false,-0.7947
+matmul,tiny,PyTorch-eager,13.1,8.2,0.319,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
+matmul,tiny,torch.compile,105.1,128.0,0.040,0.1246,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.1246,false,-0.8754
+matmul,tiny,Arke,17.2,26.8,0.244,0.7616,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.7616,false,-0.2384
+matmul,tiny,FlagGems,56.5,9.2,0.074,0.2319,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,98304,3542771302,0.0000,dense_matmul,1.0,0.2319,false,-0.7681
+matmul,gpt2-c_proj,cuBLAS/cuDNN,16.2,29.7,9.333,0.7840,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.7840,false,-0.2160
+matmul,gpt2-c_proj,Triton-Tutorial,62.1,80.9,2.431,0.2045,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,1572864,3542771302,0.0004,dense_matmul,1.0,0.2045,false,-0.7955
+matmul,gpt2-c_proj,PyTorch-eager,12.7,17.4,11.844,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+matmul,gpt2-c_proj,torch.compile,126.8,123.1,1.190,0.1002,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.1002,false,-0.8998
+matmul,gpt2-c_proj,Arke,16.2,15.4,9.315,0.7840,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.7840,false,-0.2160
+matmul,gpt2-c_proj,FlagGems,56.0,87.0,2.696,0.2268,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,1572864,3542771302,0.0004,dense_matmul,1.0,0.2268,false,-0.7732
+matmul,gpt2-c_attn,cuBLAS/cuDNN,33.0,37.7,13.732,1.0606,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0606,true,0.0606
+matmul,gpt2-c_attn,Triton-Tutorial,61.5,79.9,7.363,0.5691,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,4325376,3542771302,0.0012,dense_matmul,1.0,0.5691,false,-0.4309
+matmul,gpt2-c_attn,PyTorch-eager,35.0,36.6,12.929,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0000,true,0.0000
+matmul,gpt2-c_attn,torch.compile,126.0,154.6,3.595,0.2778,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.2778,false,-0.7222
+matmul,gpt2-c_attn,Arke,33.3,35.8,13.619,1.0511,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0511,true,0.0511
+matmul,gpt2-c_attn,FlagGems,54.9,84.0,8.248,0.6375,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,4325376,3542771302,0.0012,dense_matmul,1.0,0.6375,false,-0.3625
+matmul,square-1k,cuBLAS/cuDNN,149.1,148.5,14.405,1.1811,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.1811,true,0.1811
+matmul,square-1k,Triton-Tutorial,111.1,120.8,19.329,1.5851,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,6291456,3542771302,0.0018,dense_matmul,1.0,1.5851,true,0.5851
+matmul,square-1k,PyTorch-eager,176.1,152.4,12.198,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-1k,torch.compile,183.1,268.3,11.726,0.9618,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9618,false,-0.0382
+matmul,square-1k,Arke,146.5,150.4,14.655,1.2020,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.2020,true,0.2020
+matmul,square-1k,FlagGems,105.0,104.4,20.447,1.6771,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,6291456,3542771302,0.0018,dense_matmul,1.0,1.6771,true,0.6771
+matmul,square-2k,cuBLAS/cuDNN,855.9,856.1,20.072,0.9822,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9822,false,-0.0178
+matmul,square-2k,Triton-Tutorial,770.9,730.0,22.284,1.0905,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,25165824,3542771302,0.0071,dense_matmul,1.0,1.0905,true,0.0905
+matmul,square-2k,PyTorch-eager,840.7,786.4,20.436,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-2k,torch.compile,950.4,959.5,18.077,0.8846,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.8846,false,-0.1154
+matmul,square-2k,Arke,829.8,810.0,20.704,1.0131,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.0131,true,0.0131
+matmul,square-2k,FlagGems,949.2,898.0,18.100,0.8857,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,25165824,3542771302,0.0071,dense_matmul,1.0,0.8857,false,-0.1143
+matmul,square-4k,cuBLAS/cuDNN,6178.3,5893.1,22.246,1.0019,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0019,true,0.0019
+matmul,square-4k,Triton-Tutorial,5937.5,5790.7,23.148,1.0425,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,100663296,3542771302,0.0284,dense_matmul,1.0,1.0425,true,0.0425
+matmul,square-4k,PyTorch-eager,6190.0,5879.8,22.203,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-4k,torch.compile,6617.0,6287.4,20.771,0.9355,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9355,false,-0.0645
+matmul,square-4k,Arke,6188.9,6060.0,22.207,1.0002,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0002,true,0.0002
+matmul,square-4k,FlagGems,6190.8,5996.5,22.201,0.9999,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,100663296,3542771302,0.0284,dense_matmul,1.0,0.9999,false,-0.0001
+matmul,rect-wide,cuBLAS/cuDNN,423.3,432.0,20.292,0.9967,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9967,false,-0.0033
+matmul,rect-wide,Triton-Tutorial,382.7,379.9,22.447,1.1024,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,18874368,3542771302,0.0053,dense_matmul,1.0,1.1024,true,0.1024
+matmul,rect-wide,PyTorch-eager,421.9,427.0,20.358,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
+matmul,rect-wide,torch.compile,496.7,514.0,17.293,0.8494,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8494,false,-0.1506
+matmul,rect-wide,Arke,423.6,399.4,20.279,0.9960,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9960,false,-0.0040
+matmul,rect-wide,FlagGems,422.6,403.3,20.327,0.9983,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,18874368,3542771302,0.0053,dense_matmul,1.0,0.9983,false,-0.0017
+matmul,rect-tall,cuBLAS/cuDNN,419.4,422.9,20.480,0.9938,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9938,false,-0.0062
+matmul,rect-tall,Triton-Tutorial,400.0,398.1,21.474,1.0420,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,18874368,3542771302,0.0053,dense_matmul,1.0,1.0420,true,0.0420
+matmul,rect-tall,PyTorch-eager,416.8,409.4,20.608,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
+matmul,rect-tall,torch.compile,493.8,524.3,17.397,0.8441,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8441,false,-0.1559
+matmul,rect-tall,Arke,425.5,397.3,20.186,0.9796,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9796,false,-0.0204
+matmul,rect-tall,FlagGems,429.0,431.1,20.025,0.9716,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,18874368,3542771302,0.0053,dense_matmul,1.0,0.9716,false,-0.0284
+matmul,lm-head-gpt2,cuBLAS/cuDNN,666.8,651.1,14.819,1.0009,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0009,true,0.0009
+matmul,lm-head-gpt2,Triton-Tutorial,846.5,763.8,11.673,0.7884,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,90257152,3542771302,0.0255,dense_matmul,1.0,0.7884,false,-0.2116
+matmul,lm-head-gpt2,PyTorch-eager,667.4,661.5,14.805,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0000,true,0.0000
+matmul,lm-head-gpt2,torch.compile,1171.0,1148.9,8.438,0.5699,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,0.5699,false,-0.4301
+matmul,lm-head-gpt2,Arke,661.5,650.0,14.937,1.0089,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0089,true,0.0089
+matmul,lm-head-gpt2,FlagGems,875.0,860.2,11.292,0.7627,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,90257152,3542771302,0.0255,dense_matmul,1.0,0.7627,false,-0.2373
+matmul,llama-q,cuBLAS/cuDNN,6180.8,6068.2,22.237,0.9992,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9992,false,-0.0008
+matmul,llama-q,Triton-Tutorial,6117.6,5864.4,22.466,1.0095,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,100663296,3542771302,0.0284,dense_matmul,1.0,1.0095,true,0.0095
+matmul,llama-q,PyTorch-eager,6175.8,5893.1,22.254,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
+matmul,llama-q,torch.compile,6785.2,6485.0,20.256,0.9102,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9102,false,-0.0898
+matmul,llama-q,Arke,6187.3,5950.5,22.213,0.9981,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9981,false,-0.0019
+matmul,llama-q,FlagGems,6196.3,6029.3,22.181,0.9967,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,100663296,3542771302,0.0284,dense_matmul,1.0,0.9967,false,-0.0033
+matmul,llama-ffn,cuBLAS/cuDNN,16080.8,15826.9,22.969,1.0003,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0003,true,0.0003
+matmul,llama-ffn,Triton-Tutorial,16009.8,15782.9,23.071,1.0048,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,213909504,3542771302,0.0604,dense_matmul,1.0,1.0048,true,0.0048
+matmul,llama-ffn,PyTorch-eager,16085.9,15839.2,22.962,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0000,true,0.0000
+matmul,llama-ffn,torch.compile,16862.5,16646.1,21.905,0.9539,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9539,false,-0.0461
+matmul,llama-ffn,Arke,16112.5,15885.3,22.924,0.9983,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9983,false,-0.0017
+matmul,llama-ffn,FlagGems,16473.1,15732.7,22.422,0.9765,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,213909504,3542771302,0.0604,dense_matmul,1.0,0.9765,false,-0.0235
+matmul,seq512,cuBLAS/cuDNN,104.8,102.4,17.294,0.9914,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.9914,false,-0.0086
+matmul,seq512,Triton-Tutorial,87.6,129.0,20.683,1.1861,ok,,false,,,,0.01,0.01,unsupported,runner Triton-Tutorial does not implement run_with_inputs for matmul,6684672,3542771302,0.0019,dense_matmul,1.0,1.1861,true,0.1861
+matmul,seq512,PyTorch-eager,103.9,108.5,17.433,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,1.0000,true,0.0000
+matmul,seq512,torch.compile,212.1,211.9,8.544,0.4899,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.4899,false,-0.5101
+matmul,seq512,Arke,85.8,88.1,21.120,1.2110,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,1.2110,true,0.2110
+matmul,seq512,FlagGems,99.6,84.0,18.189,1.0432,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for matmul,6684672,3542771302,0.0019,dense_matmul,1.0,1.0432,true,0.0432

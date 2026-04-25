@@ -1,5 +1,49 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-tanh,square-1k,cuBLAS/cuDNN,88.8,19.5,,1.1351,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1351,true,0.1351
-tanh,square-1k,PyTorch-eager,100.8,100.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-tanh,square-1k,Arke,89.5,58.5,,1.1263,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1263,true,0.1263
-tanh,square-1k,FlagGems,87.8,75.8,,1.1481,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.1481,true,0.1481
+tanh,micro-tiny,cuBLAS/cuDNN,67.8,56.3,,1.0221,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0221,true,0.0221
+tanh,micro-tiny,PyTorch-eager,69.3,94.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,micro-tiny,Arke,70.3,81.9,,0.9858,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9858,false,-0.0142
+tanh,micro-tiny,FlagGems,68.4,82.9,,1.0132,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.0132,true,0.0132
+tanh,micro-small,cuBLAS/cuDNN,67.7,94.3,,0.9764,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9764,false,-0.0236
+tanh,micro-small,PyTorch-eager,66.1,90.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,micro-small,Arke,68.5,9.2,,0.9650,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9650,false,-0.0350
+tanh,micro-small,FlagGems,66.3,90.1,,0.9970,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,0.9970,false,-0.0030
+tanh,gpt2-hidden,cuBLAS/cuDNN,66.5,79.9,,0.9744,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9744,false,-0.0256
+tanh,gpt2-hidden,PyTorch-eager,64.8,8.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,gpt2-hidden,Arke,75.1,41.0,,0.8628,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8628,false,-0.1372
+tanh,gpt2-hidden,FlagGems,64.9,89.1,,0.9985,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,0.9985,false,-0.0015
+tanh,gpt2-ffn,cuBLAS/cuDNN,72.4,90.2,,0.9696,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9696,false,-0.0304
+tanh,gpt2-ffn,PyTorch-eager,70.2,66.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,gpt2-ffn,Arke,73.0,92.2,,0.9616,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9616,false,-0.0384
+tanh,gpt2-ffn,FlagGems,64.8,88.1,,1.0833,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.0833,true,0.0833
+tanh,square-1k,cuBLAS/cuDNN,71.5,89.2,,0.9804,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9804,false,-0.0196
+tanh,square-1k,PyTorch-eager,70.1,94.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,square-1k,Arke,72.8,96.3,,0.9629,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9629,false,-0.0371
+tanh,square-1k,FlagGems,65.3,90.0,,1.0735,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.0735,true,0.0735
+tanh,llama-ffn,cuBLAS/cuDNN,77.3,108.4,,0.9922,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9922,false,-0.0078
+tanh,llama-ffn,PyTorch-eager,76.7,78.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,llama-ffn,Arke,76.8,144.4,,0.9987,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9987,false,-0.0013
+tanh,llama-ffn,FlagGems,76.9,79.9,,0.9974,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,0.9974,false,-0.0026
+tanh,llama-hidden,cuBLAS/cuDNN,67.0,87.0,,0.9731,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9731,false,-0.0269
+tanh,llama-hidden,PyTorch-eager,65.2,84.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,llama-hidden,Arke,68.2,97.3,,0.9560,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9560,false,-0.0440
+tanh,llama-hidden,FlagGems,68.7,83.8,,0.9491,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,0.9491,false,-0.0509
+tanh,llama-long,cuBLAS/cuDNN,217.7,257.0,,0.9995,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9995,false,-0.0005
+tanh,llama-long,PyTorch-eager,217.6,224.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,llama-long,Arke,217.2,228.4,,1.0018,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0018,true,0.0018
+tanh,llama-long,FlagGems,218.4,248.8,,0.9963,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,0.9963,false,-0.0037
+tanh,ds-ffn,cuBLAS/cuDNN,85.7,136.2,,0.9977,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9977,false,-0.0023
+tanh,ds-ffn,PyTorch-eager,85.5,135.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,ds-ffn,Arke,85.6,137.2,,0.9988,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9988,false,-0.0012
+tanh,ds-ffn,FlagGems,85.3,139.3,,1.0023,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.0023,true,0.0023
+tanh,ds-ffn-large,cuBLAS/cuDNN,124.9,165.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,ds-ffn-large,PyTorch-eager,124.9,131.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,ds-ffn-large,Arke,130.7,156.7,,0.9556,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9556,false,-0.0444
+tanh,ds-ffn-large,FlagGems,125.0,133.1,,0.9992,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,0.9992,false,-0.0008
+tanh,qwen-ffn,cuBLAS/cuDNN,128.6,180.2,,1.0008,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0008,true,0.0008
+tanh,qwen-ffn,PyTorch-eager,128.7,190.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,qwen-ffn,Arke,129.3,140.3,,0.9954,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9954,false,-0.0046
+tanh,qwen-ffn,FlagGems,128.1,159.7,,1.0047,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.0047,true,0.0047
+tanh,xlarge,cuBLAS/cuDNN,531.5,541.7,,0.8600,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8600,false,-0.1400
+tanh,xlarge,PyTorch-eager,457.1,461.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,xlarge,Arke,437.4,436.2,,1.0450,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0450,true,0.0450
+tanh,xlarge,FlagGems,429.4,423.9,,1.0645,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.0645,true,0.0645

@@ -1,13 +1,37 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-rmsnorm,gpt2-small,Liger-Kernel,103.1,43.0,,10.2696,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,10.2696,true,9.2696
-rmsnorm,gpt2-small,PyTorch-eager,1058.8,530.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-small,Arke,816.5,754.7,,1.2968,ok,,false,true,0.00272441,0.000209739,0.005,0.005,ok,,,,,,1.0,1.2968,true,0.2968
-rmsnorm,gpt2-small,FlagGems,589.8,572.4,,1.7952,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.7952,true,0.7952
-rmsnorm,gpt2-ffn,Liger-Kernel,112.3,102.4,,5.3918,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,5.3918,true,4.3918
-rmsnorm,gpt2-ffn,PyTorch-eager,605.5,560.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-ffn,Arke,961.9,750.6,,0.6295,ok,,false,true,0.00274658,0.000203263,0.005,0.005,ok,,,,,,1.0,0.6295,false,-0.3705
-rmsnorm,gpt2-ffn,FlagGems,580.9,567.3,,1.0423,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0423,true,0.0423
-rmsnorm,gpt2-medium,Liger-Kernel,131.1,19.5,,4.6941,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,4.6941,true,3.6941
-rmsnorm,gpt2-medium,PyTorch-eager,615.4,546.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-medium,Arke,787.5,749.6,,0.7815,ok,,false,true,0.00246358,0.00020918,0.005,0.005,ok,,,,,,1.0,0.7815,false,-0.2185
-rmsnorm,gpt2-medium,FlagGems,608.9,545.9,,1.0107,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0107,true,0.0107
+rmsnorm,gpt2-small,Liger-Kernel,128.6,107.3,,4.2939,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,4.2939,true,3.2939
+rmsnorm,gpt2-small,PyTorch-eager,552.2,509.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-small,Arke,1069.9,685.1,,0.5161,ok,,false,true,0.00298929,0.000200314,0.005,0.005,ok,,,,,,1.0,0.5161,false,-0.4839
+rmsnorm,gpt2-small,FlagGems,496.1,451.5,,1.1131,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.1131,true,0.1131
+rmsnorm,gpt2-ffn,Liger-Kernel,76.5,105.5,,6.7673,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.7673,true,5.7673
+rmsnorm,gpt2-ffn,PyTorch-eager,517.7,500.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-ffn,Arke,702.2,667.6,,0.7373,ok,,false,true,0.00294852,0.000208535,0.005,0.005,ok,,,,,,1.0,0.7373,false,-0.2627
+rmsnorm,gpt2-ffn,FlagGems,514.6,514.0,,1.0060,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0060,true,0.0060
+rmsnorm,gpt2-medium,Liger-Kernel,83.2,113.7,,5.9675,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,5.9675,true,4.9675
+rmsnorm,gpt2-medium,PyTorch-eager,496.5,406.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-medium,Arke,667.4,447.5,,0.7439,ok,,false,true,0.00259948,0.000208353,0.005,0.005,ok,,,,,,1.0,0.7439,false,-0.2561
+rmsnorm,gpt2-medium,FlagGems,492.1,508.9,,1.0089,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0089,true,0.0089
+rmsnorm,llama-7b,Liger-Kernel,78.8,16.4,,6.0901,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.0901,true,5.0901
+rmsnorm,llama-7b,PyTorch-eager,479.9,477.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-7b,Arke,679.2,373.8,,0.7066,ok,,false,true,0.0029583,0.000202438,0.005,0.005,ok,,,,,,1.0,0.7066,false,-0.2934
+rmsnorm,llama-7b,FlagGems,519.0,506.9,,0.9247,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,0.9247,false,-0.0753
+rmsnorm,llama-13b,Liger-Kernel,89.0,53.3,,5.7292,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,5.7292,true,4.7292
+rmsnorm,llama-13b,PyTorch-eager,509.9,495.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-13b,Arke,741.6,686.1,,0.6876,ok,,false,true,0.00317812,0.000194329,0.005,0.005,ok,,,,,,1.0,0.6876,false,-0.3124
+rmsnorm,llama-13b,FlagGems,491.6,490.5,,1.0372,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0372,true,0.0372
+rmsnorm,llama-long,Liger-Kernel,132.2,158.7,,4.5325,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,4.5325,true,3.5325
+rmsnorm,llama-long,PyTorch-eager,599.2,605.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-long,Arke,974.2,980.0,,0.6151,ok,,false,true,0.00432062,0.000207049,0.005,0.005,ok,,,,,,1.0,0.6151,false,-0.3849
+rmsnorm,llama-long,FlagGems,553.6,609.3,,1.0824,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0824,true,0.0824
+rmsnorm,ds-v2,Liger-Kernel,76.5,91.2,,6.5346,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.5346,true,5.5346
+rmsnorm,ds-v2,PyTorch-eager,499.9,510.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v2,Arke,774.5,690.2,,0.6454,ok,,false,true,0.00352573,0.000195784,0.005,0.005,ok,,,,,,1.0,0.6454,false,-0.3546
+rmsnorm,ds-v2,FlagGems,538.8,221.2,,0.9278,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,0.9278,false,-0.0722
+rmsnorm,ds-v3,Liger-Kernel,76.4,111.6,,6.9359,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.9359,true,5.9359
+rmsnorm,ds-v3,PyTorch-eager,529.9,431.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v3,Arke,673.9,671.7,,0.7863,ok,,false,true,0.00335741,0.000208097,0.005,0.005,ok,,,,,,1.0,0.7863,false,-0.2137
+rmsnorm,ds-v3,FlagGems,481.8,489.5,,1.0998,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0998,true,0.0998
+rmsnorm,mixtral-ffn,Liger-Kernel,76.6,108.5,,7.4269,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,7.4269,true,6.4269
+rmsnorm,mixtral-ffn,PyTorch-eager,568.9,103.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,mixtral-ffn,Arke,723.6,686.1,,0.7862,ok,,false,true,0.00354385,0.000192876,0.005,0.005,ok,,,,,,1.0,0.7862,false,-0.2138
+rmsnorm,mixtral-ffn,FlagGems,488.0,490.5,,1.1658,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.1658,true,0.1658
