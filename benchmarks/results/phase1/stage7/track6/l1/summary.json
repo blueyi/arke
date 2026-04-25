@@ -93,6 +93,7 @@
   ],
   "status_counts": {
     "ok": 398,
+    "skipped": 8,
     "error": 2
   },
   "correctness_counts": {
@@ -100,14 +101,20 @@
     "unsupported": 102,
     "error": 7,
     "mismatch": 3,
+    "skipped": 8,
     "unknown": 2
   },
+  "memory_policy_counts": {
+    "none": 400,
+    "attention": 8
+  },
+  "memory_pressure_rows": 8,
   "perf_target_counts": {
     "with_target": 0,
-    "without_target": 400
+    "without_target": 408
   },
   "perf_pass_counts": {
-    "unknown": 400
+    "unknown": 408
   },
   "perf_targets": {},
   "perf_actuals": {},

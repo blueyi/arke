@@ -12,7 +12,7 @@
       "with_examples": 45,
       "with_strategy_examples": 45,
       "with_benchmark_evidence": 45,
-      "with_full_required_shape_evidence": 3
+      "with_full_required_shape_evidence": 0
     },
     "l2": {
       "entries": 6,
@@ -2708,24 +2708,12 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "ds-batch-8",
-          "ds-v2-16k",
-          "ds-v2-2k",
-          "ds-v2-4k",
-          "ds-v2-512",
-          "ds-v2-8k",
-          "ds-v3-163k",
-          "ds-v3-32k",
-          "gpt2-md-2k",
-          "gpt2-sm-128",
-          "gpt2-sm-1k",
-          "gpt2-sm-512",
-          "llama2-7b-2k",
-          "llama2-7b-4k",
-          "llama2-7b-512",
-          "llama2-7b-batch"
+          "gpt2-sm-128"
         ],
         "observed_required_shape_tags": [
+          "gpt2-sm-128"
+        ],
+        "missing_shape_tags": [
           "ds-batch-8",
           "ds-v2-16k",
           "ds-v2-2k",
@@ -2735,7 +2723,6 @@
           "ds-v3-163k",
           "ds-v3-32k",
           "gpt2-md-2k",
-          "gpt2-sm-128",
           "gpt2-sm-1k",
           "gpt2-sm-512",
           "llama2-7b-2k",
@@ -2743,7 +2730,6 @@
           "llama2-7b-512",
           "llama2-7b-batch"
         ],
-        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": false
       }
@@ -2781,21 +2767,14 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "ds-v2-mha-512",
-          "llama3-8b-2k",
-          "llama3-8b-512",
-          "llama3-8b-8k",
-          "llama3-batch4",
-          "mistral-7b-512",
-          "qwen25-7b-2k",
-          "qwen25-7b-32k",
-          "qwen25-7b-512",
-          "qwen25-7b-8k"
+          "llama3-8b-512"
         ],
         "observed_required_shape_tags": [
+          "llama3-8b-512"
+        ],
+        "missing_shape_tags": [
           "ds-v2-mha-512",
           "llama3-8b-2k",
-          "llama3-8b-512",
           "llama3-8b-8k",
           "llama3-batch4",
           "mistral-7b-512",
@@ -2804,7 +2783,6 @@
           "qwen25-7b-512",
           "qwen25-7b-8k"
         ],
-        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": false
       }
@@ -2896,20 +2874,14 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "batch4-cross",
-          "llava-vision",
-          "non-align-1",
-          "non-align-2",
-          "sdxl-unet-128",
-          "sdxl-unet-64",
-          "t5-base-dec512",
-          "t5-small-dec128",
-          "t5-small-enc128",
           "tiny",
-          "whisper-decode-1",
           "whisper-enc-dec"
         ],
         "observed_required_shape_tags": [
+          "tiny",
+          "whisper-enc-dec"
+        ],
+        "missing_shape_tags": [
           "batch4-cross",
           "llava-vision",
           "non-align-1",
@@ -2919,11 +2891,8 @@
           "t5-base-dec512",
           "t5-small-dec128",
           "t5-small-enc128",
-          "tiny",
-          "whisper-decode-1",
-          "whisper-enc-dec"
+          "whisper-decode-1"
         ],
-        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": false
       }
@@ -3055,12 +3024,10 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "square-1k",
-          "tiny"
+          "square-1k"
         ],
         "observed_required_shape_tags": [
-          "square-1k",
-          "tiny"
+          "square-1k"
         ],
         "missing_shape_tags": [
           "ds-v2-attn",
@@ -3094,7 +3061,8 @@
           "rect-wide",
           "seq512",
           "square-2k",
-          "square-4k"
+          "square-4k",
+          "tiny"
         ],
         "correctness_evidence_present": true,
         "performance_evidence_present": false
@@ -3165,12 +3133,10 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "square-1k",
-          "tiny"
+          "square-1k"
         ],
         "observed_required_shape_tags": [
-          "square-1k",
-          "tiny"
+          "square-1k"
         ],
         "missing_shape_tags": [
           "ds-v2-attn",
@@ -3204,7 +3170,8 @@
           "rect-wide",
           "seq512",
           "square-2k",
-          "square-4k"
+          "square-4k",
+          "tiny"
         ],
         "correctness_evidence_present": true,
         "performance_evidence_present": false

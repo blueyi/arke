@@ -1,7 +1,4 @@
-op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
-matmul_relu,rect-wide,1024,4096,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,582.7,561.2,14.743,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,rect-wide,1024,4096,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,636.9,658.4,13.487,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,rect-tall,4096,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,510.5,504.8,16.828,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,rect-tall,4096,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,656.9,583.6,13.077,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,rect-wide,1024,4096,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,914.4,888.7,9.394,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,rect-tall,4096,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,928.3,913.4,9.254,ok,,false,true,0,0,0.01,0.01,ok,
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy
+matmul_relu,square-1k,1024,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,213.8,217.1,10.042,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_relu,square-1k,1024,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,205.9,207.9,10.432,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_relu,square-1k,1024,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,242.6,224.3,8.850,ok,,false,true,0,0,0.01,0.01,ok,,,,,

@@ -1,20 +1,11 @@
 {
-  "timestamp": "2026-04-25_204819",
+  "timestamp": "2026-04-25_230900",
   "ops": [
-    "flash_attention",
-    "grouped_query_attention",
     "multi_latent_attention",
-    "cross_attention",
     "paged_attention"
   ],
-  "warmup": 1,
-  "reps": 2,
-  "tier": null,
-  "shape_tags": [
-    "gpt2-sm-128",
-    "llama3-8b-512",
-    "ds-v2-mla-512",
-    "whisper-enc-dec",
-    "tiny"
-  ]
+  "warmup": 10,
+  "reps": 20,
+  "tier": 1,
+  "shape_tags": null
 }

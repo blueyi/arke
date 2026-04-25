@@ -1,2 +1,2 @@
-operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-geglu,gpt2-sm,separate,34.5,22.5,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,
+operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+geglu,gpt2-sm,separate,383.8,124.1,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,,,,

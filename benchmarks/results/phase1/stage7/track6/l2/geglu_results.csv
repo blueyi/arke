@@ -1,2 +1,2 @@
-op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
-geglu,gpt2-sm,128,3072,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,34.5,22.5,,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy
+geglu,gpt2-sm,128,3072,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,383.8,124.1,,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,

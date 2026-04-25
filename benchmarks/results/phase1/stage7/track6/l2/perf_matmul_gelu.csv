@@ -1,7 +1,4 @@
-operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-matmul_gelu,rect-wide,separate,927.2,928.8,9.264,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,rect-wide,torch.compile,1187.8,1121.3,7.232,0.7806,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,rect-wide,FlagGems,1103.9,1101.8,7.782,0.8399,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,rect-tall,separate,1061.4,1055.7,8.093,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,rect-tall,torch.compile,1338.9,1374.2,6.416,0.7927,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,rect-tall,FlagGems,1095.1,1078.3,7.844,0.9692,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+matmul_gelu,square-1k,separate,301.1,281.3,7.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
+matmul_gelu,square-1k,torch.compile,388.6,380.9,5.526,0.7748,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
+matmul_gelu,square-1k,FlagGems,236.7,223.5,9.074,1.2721,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,

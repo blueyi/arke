@@ -11,11 +11,11 @@
     "l1": {
       "ops_total": 45,
       "ops_with_any_evidence": 45,
-      "ops_fully_covered": 3,
+      "ops_fully_covered": 0,
       "op_coverage_ratio": 1.0,
       "shapes_required_total": 685,
-      "shapes_observed_total": 158,
-      "shape_coverage_ratio": 0.2307,
+      "shapes_observed_total": 124,
+      "shape_coverage_ratio": 0.181,
       "per_op": [
         {
           "op": "relu",
@@ -1367,9 +1367,12 @@
         {
           "op": "flash_attention",
           "required_shape_count": 16,
-          "observed_shape_count": 16,
-          "coverage_ratio": 1.0,
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.0625,
           "observed_shape_tags": [
+            "gpt2-sm-128"
+          ],
+          "missing_shape_tags": [
             "ds-batch-8",
             "ds-v2-16k",
             "ds-v2-2k",
@@ -1379,7 +1382,6 @@
             "ds-v3-163k",
             "ds-v3-32k",
             "gpt2-md-2k",
-            "gpt2-sm-128",
             "gpt2-sm-1k",
             "gpt2-sm-512",
             "llama2-7b-2k",
@@ -1387,7 +1389,6 @@
             "llama2-7b-512",
             "llama2-7b-batch"
           ],
-          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": false,
           "missing_perf_target_fields": [
@@ -1400,12 +1401,14 @@
         {
           "op": "grouped_query_attention",
           "required_shape_count": 10,
-          "observed_shape_count": 10,
-          "coverage_ratio": 1.0,
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.1,
           "observed_shape_tags": [
+            "llama3-8b-512"
+          ],
+          "missing_shape_tags": [
             "ds-v2-mha-512",
             "llama3-8b-2k",
-            "llama3-8b-512",
             "llama3-8b-8k",
             "llama3-batch4",
             "mistral-7b-512",
@@ -1414,7 +1417,6 @@
             "qwen25-7b-512",
             "qwen25-7b-8k"
           ],
-          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": false,
           "missing_perf_target_fields": [
@@ -1453,9 +1455,13 @@
         {
           "op": "cross_attention",
           "required_shape_count": 12,
-          "observed_shape_count": 12,
-          "coverage_ratio": 1.0,
+          "observed_shape_count": 2,
+          "coverage_ratio": 0.16666666666666666,
           "observed_shape_tags": [
+            "tiny",
+            "whisper-enc-dec"
+          ],
+          "missing_shape_tags": [
             "batch4-cross",
             "llava-vision",
             "non-align-1",
@@ -1465,11 +1471,8 @@
             "t5-base-dec512",
             "t5-small-dec128",
             "t5-small-enc128",
-            "tiny",
-            "whisper-decode-1",
-            "whisper-enc-dec"
+            "whisper-decode-1"
           ],
-          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": false,
           "missing_perf_target_fields": [
@@ -1517,17 +1520,16 @@
       "ops_fully_covered": 0,
       "op_coverage_ratio": 1.0,
       "shapes_required_total": 120,
-      "shapes_observed_total": 8,
-      "shape_coverage_ratio": 0.0667,
+      "shapes_observed_total": 6,
+      "shape_coverage_ratio": 0.05,
       "per_op": [
         {
           "op": "matmul_relu",
           "required_shape_count": 34,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.058823529411764705,
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.029411764705882353,
           "observed_shape_tags": [
-            "square-1k",
-            "tiny"
+            "square-1k"
           ],
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -1561,7 +1563,8 @@
             "rect-wide",
             "seq512",
             "square-2k",
-            "square-4k"
+            "square-4k",
+            "tiny"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": false,
@@ -1575,11 +1578,10 @@
         {
           "op": "matmul_gelu",
           "required_shape_count": 34,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.058823529411764705,
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.029411764705882353,
           "observed_shape_tags": [
-            "square-1k",
-            "tiny"
+            "square-1k"
           ],
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -1613,7 +1615,8 @@
             "rect-wide",
             "seq512",
             "square-2k",
-            "square-4k"
+            "square-4k",
+            "tiny"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": false,
@@ -1752,7 +1755,7 @@
     },
     "combined": {
       "op_coverage_ratio": 1.0,
-      "shape_coverage_ratio": 0.2062
+      "shape_coverage_ratio": 0.1615
     }
   },
   "focus": {
@@ -2555,6 +2558,44 @@
           ]
         },
         {
+          "op": "flash_attention",
+          "observed_shape_count": 1,
+          "required_shape_count": 16,
+          "missing_shape_tags": [
+            "ds-batch-8",
+            "ds-v2-16k",
+            "ds-v2-2k",
+            "ds-v2-4k",
+            "ds-v2-512",
+            "ds-v2-8k",
+            "ds-v3-163k",
+            "ds-v3-32k",
+            "gpt2-md-2k",
+            "gpt2-sm-1k",
+            "gpt2-sm-512",
+            "llama2-7b-2k",
+            "llama2-7b-4k",
+            "llama2-7b-512",
+            "llama2-7b-batch"
+          ]
+        },
+        {
+          "op": "grouped_query_attention",
+          "observed_shape_count": 1,
+          "required_shape_count": 10,
+          "missing_shape_tags": [
+            "ds-v2-mha-512",
+            "llama3-8b-2k",
+            "llama3-8b-8k",
+            "llama3-batch4",
+            "mistral-7b-512",
+            "qwen25-7b-2k",
+            "qwen25-7b-32k",
+            "qwen25-7b-512",
+            "qwen25-7b-8k"
+          ]
+        },
+        {
           "op": "multi_latent_attention",
           "observed_shape_count": 4,
           "required_shape_count": 8,
@@ -2563,6 +2604,23 @@
             "ds-v2-mla-512",
             "ds-v3-mla-2k",
             "ds-v3-mla-512"
+          ]
+        },
+        {
+          "op": "cross_attention",
+          "observed_shape_count": 2,
+          "required_shape_count": 12,
+          "missing_shape_tags": [
+            "batch4-cross",
+            "llava-vision",
+            "non-align-1",
+            "non-align-2",
+            "sdxl-unet-128",
+            "sdxl-unet-64",
+            "t5-base-dec512",
+            "t5-small-dec128",
+            "t5-small-enc128",
+            "whisper-decode-1"
           ]
         },
         {
@@ -2625,7 +2683,10 @@
         "cross_entropy",
         "quantize_per_token",
         "dequantize_per_channel",
+        "flash_attention",
+        "grouped_query_attention",
         "multi_latent_attention",
+        "cross_attention",
         "paged_attention"
       ],
       "unsupported_surface_cases": [],
@@ -3043,7 +3104,7 @@
       "partial_coverage_ops": [
         {
           "op": "matmul_relu",
-          "observed_shape_count": 2,
+          "observed_shape_count": 1,
           "required_shape_count": 34,
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -3077,12 +3138,13 @@
             "rect-wide",
             "seq512",
             "square-2k",
-            "square-4k"
+            "square-4k",
+            "tiny"
           ]
         },
         {
           "op": "matmul_gelu",
-          "observed_shape_count": 2,
+          "observed_shape_count": 1,
           "required_shape_count": 34,
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -3116,7 +3178,8 @@
             "rect-wide",
             "seq512",
             "square-2k",
-            "square-4k"
+            "square-4k",
+            "tiny"
           ]
         },
         {
@@ -3277,7 +3340,8 @@
             "rect-wide",
             "seq512",
             "square-2k",
-            "square-4k"
+            "square-4k",
+            "tiny"
           ]
         },
         {
@@ -3315,7 +3379,8 @@
             "rect-wide",
             "seq512",
             "square-2k",
-            "square-4k"
+            "square-4k",
+            "tiny"
           ]
         },
         {
@@ -3472,11 +3537,14 @@
           "cross_entropy",
           "quantize_per_token",
           "dequantize_per_channel",
+          "flash_attention",
+          "grouped_query_attention",
           "multi_latent_attention",
+          "cross_attention",
           "paged_attention"
         ]
       }
     ]
   },
-  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=20.62%\n[L1] ops=45/45 fully_covered=3 missing_examples=0 unsupported=0\n  partial coverage: relu (5/20), gelu (5/20), silu (1/20), tanh (1/20), sigmoid (1/20)\n[L2] ops=6/6 fully_covered=0 missing_examples=0 unsupported=6\n  partial coverage: matmul_relu (2/34), matmul_gelu (2/34), swiglu (1/12), geglu (1/12), linear_ce (1/12)\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, multi_latent_attention, paged_attention"
+  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=16.15%\n[L1] ops=45/45 fully_covered=0 missing_examples=0 unsupported=0\n  partial coverage: relu (5/20), gelu (5/20), silu (1/20), tanh (1/20), sigmoid (1/20)\n[L2] ops=6/6 fully_covered=0 missing_examples=0 unsupported=6\n  partial coverage: matmul_relu (1/34), matmul_gelu (1/34), swiglu (1/12), geglu (1/12), linear_ce (1/12)\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }

@@ -1,15 +1,21 @@
 {
-  "timestamp": "2026-04-25_204532",
+  "timestamp": "2026-04-25_225124",
   "ops": [
     "matmul_relu",
-    "matmul_gelu"
+    "matmul_gelu",
+    "linear_ce",
+    "qkv_fa",
+    "swiglu",
+    "geglu"
   ],
-  "warmup": 1,
-  "reps": 2,
+  "warmup": 40,
+  "reps": 80,
   "layer": "L2",
   "shape_tags": [
-    "rect-wide",
-    "rect-tall"
+    "gpt2-sm",
+    "gpt2-sm-128",
+    "gpt2-seq128",
+    "square-1k"
   ],
   "phase": 1,
   "stage": 7,

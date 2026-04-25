@@ -146,15 +146,32 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
 
 def merge_perf_all(run_dir: Path) -> Path | None:
     rows: list[dict[str, str]] = []
+    fieldnames: list[str] = []
+    seen_fields: set[str] = set()
+
     for csv_file in sorted(run_dir.glob("perf_*.csv")):
-        rows.extend(list(csv.DictReader(csv_file.open())))
+        with csv_file.open(newline="") as fh:
+            reader = csv.DictReader(fh)
+            for name in reader.fieldnames or []:
+                if name and name not in seen_fields:
+                    seen_fields.add(name)
+                    fieldnames.append(name)
+            for row in reader:
+                rows.append(row)
+                for name in row.keys():
+                    if name and name not in seen_fields:
+                        seen_fields.add(name)
+                        fieldnames.append(name)
+
     if not rows:
         return None
+
     out = run_dir / "PERF_ALL.csv"
     with out.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            writer.writerow({name: row.get(name, "") for name in fieldnames})
     return out
 
 
