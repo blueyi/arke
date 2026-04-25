@@ -1,5 +1,5 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-dequantize_per_channel,tiny-int8,PyTorch-eager,132.1,45.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-dequantize_per_channel,tiny-int8,Arke,62.5,67.6,,2.1136,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,
-dequantize_per_channel,gpt2-int8,PyTorch-eager,35.8,37.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-dequantize_per_channel,gpt2-int8,Arke,55.0,62.5,,0.6509,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+dequantize_per_channel,tiny-int8,PyTorch-eager,132.1,45.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,tiny-int8,Arke,62.5,67.6,,2.1136,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,,1.0,2.1136,true,1.1136
+dequantize_per_channel,gpt2-int8,PyTorch-eager,35.8,37.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,gpt2-int8,Arke,55.0,62.5,,0.6509,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,,1.0,0.6509,false,-0.3491

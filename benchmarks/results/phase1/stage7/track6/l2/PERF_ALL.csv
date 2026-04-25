@@ -1,11 +1,11 @@
 operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-geglu,gpt2-sm,separate,383.8,124.1,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,,,,
-linear_ce,gpt2-seq128,separate,5056.0,4810.4,1.954,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,103123968,3542771302,0.0291,linear_ce,,,,
-matmul_gelu,square-1k,separate,301.1,281.3,7.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-matmul_gelu,square-1k,torch.compile,388.6,380.9,5.526,0.7748,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-matmul_gelu,square-1k,FlagGems,236.7,223.5,9.074,1.2721,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-matmul_relu,square-1k,separate,213.8,217.1,10.042,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-matmul_relu,square-1k,torch.compile,205.9,207.9,10.432,1.0384,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-matmul_relu,square-1k,FlagGems,242.6,224.3,8.850,0.8813,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-qkv_fa,gpt2-sm-128,separate,752.9,442.1,0.602,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: qkv_fa,1179648,3542771302,0.0003,attention,,,,
-swiglu,gpt2-sm,separate,297.8,323.5,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,,,,
+geglu,gpt2-sm,separate,383.8,124.1,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
+linear_ce,gpt2-seq128,separate,5056.0,4810.4,1.954,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,103123968,3542771302,0.0291,linear_ce,1.0,1.0000,true,0.0000
+matmul_gelu,square-1k,separate,301.1,281.3,7.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_gelu,square-1k,torch.compile,388.6,380.9,5.526,0.7748,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7748,false,-0.2252
+matmul_gelu,square-1k,FlagGems,236.7,223.5,9.074,1.2721,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.2721,true,0.2721
+matmul_relu,square-1k,separate,213.8,217.1,10.042,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,square-1k,torch.compile,205.9,207.9,10.432,1.0384,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0384,true,0.0384
+matmul_relu,square-1k,FlagGems,242.6,224.3,8.850,0.8813,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8813,false,-0.1187
+qkv_fa,gpt2-sm-128,separate,752.9,442.1,0.602,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: qkv_fa,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+swiglu,gpt2-sm,separate,297.8,323.5,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000

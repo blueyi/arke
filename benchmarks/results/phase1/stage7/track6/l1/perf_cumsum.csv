@@ -1,7 +1,7 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-cumsum,small-row,PyTorch-eager,146.8,171.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-cumsum,small-row,Arke,60.8,73.7,,2.4145,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-cumsum,small-row,FlagGems,59.8,72.7,,2.4548,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,
-cumsum,gpt2-row,PyTorch-eager,62.8,71.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-cumsum,gpt2-row,Arke,61.4,73.7,,1.0228,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-cumsum,gpt2-row,FlagGems,61.4,65.5,,1.0228,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+cumsum,small-row,PyTorch-eager,146.8,171.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,small-row,Arke,60.8,73.7,,2.4145,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.4145,true,1.4145
+cumsum,small-row,FlagGems,59.8,72.7,,2.4548,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,2.4548,true,1.4548
+cumsum,gpt2-row,PyTorch-eager,62.8,71.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,gpt2-row,Arke,61.4,73.7,,1.0228,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0228,true,0.0228
+cumsum,gpt2-row,FlagGems,61.4,65.5,,1.0228,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.0228,true,0.0228

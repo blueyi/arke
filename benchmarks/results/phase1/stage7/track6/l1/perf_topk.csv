@@ -1,5 +1,5 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-topk,moe-top2-small,PyTorch-eager,143.0,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-topk,moe-top2-small,Arke,106.8,64.3,,1.3390,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(128, 4) cand=(128, 1)",,,,
-topk,moe-top2-gpt2,PyTorch-eager,669.4,579.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-topk,moe-top2-gpt2,Arke,251.9,240.6,,2.6574,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(512, 4) cand=(512, 1)",,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+topk,moe-top2-small,PyTorch-eager,143.0,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,moe-top2-small,Arke,106.8,64.3,,1.3390,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(128, 4) cand=(128, 1)",,,,,1.0,1.3390,true,0.3390
+topk,moe-top2-gpt2,PyTorch-eager,669.4,579.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,moe-top2-gpt2,Arke,251.9,240.6,,2.6574,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(512, 4) cand=(512, 1)",,,,,1.0,2.6574,true,1.6574

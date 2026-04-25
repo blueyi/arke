@@ -1,7 +1,7 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-rope,gpt2-sm-128,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,unknown,,,,,
-rope,gpt2-sm-128,PyTorch-eager,296.3,275.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-rope,gpt2-sm-128,Arke,113.4,66.6,,2.6129,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for rope,,,,
-rope,gpt2-sm-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,unknown,,,,,
-rope,gpt2-sm-512,PyTorch-eager,262.1,281.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-rope,gpt2-sm-512,Arke,121.2,111.5,,2.1625,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for rope,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+rope,gpt2-sm-128,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,unknown,,,,,,1.0,N/A,false,N/A
+rope,gpt2-sm-128,PyTorch-eager,296.3,275.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rope,gpt2-sm-128,Arke,113.4,66.6,,2.6129,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for rope,,,,,1.0,2.6129,true,1.6129
+rope,gpt2-sm-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,unknown,,,,,,1.0,N/A,false,N/A
+rope,gpt2-sm-512,PyTorch-eager,262.1,281.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rope,gpt2-sm-512,Arke,121.2,111.5,,2.1625,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for rope,,,,,1.0,2.1625,true,1.1625

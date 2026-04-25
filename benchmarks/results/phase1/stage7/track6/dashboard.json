@@ -47,13 +47,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "gelu",
@@ -85,13 +80,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "silu",
@@ -123,13 +113,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "tanh",
@@ -161,13 +146,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "sigmoid",
@@ -199,13 +179,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "add",
@@ -237,13 +212,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "mul",
@@ -275,13 +245,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "where_",
@@ -313,13 +278,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "cast",
@@ -351,13 +311,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "neg",
@@ -389,13 +344,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "exp",
@@ -427,13 +377,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "rsqrt",
@@ -465,13 +410,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "softmax",
@@ -508,13 +448,8 @@
             "wide-vocab-qwen25"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "layernorm",
@@ -547,13 +482,8 @@
             "qwen25-7b-norm"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "rmsnorm",
@@ -586,13 +516,8 @@
             "qwen25-7b-norm"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "rmsnorm_residual",
@@ -625,13 +550,8 @@
             "qwen25-7b-norm"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "reduce_sum",
@@ -654,13 +574,8 @@
             "wide"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "reduce_max",
@@ -683,13 +598,8 @@
             "wide"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "reduce_mean",
@@ -712,13 +622,8 @@
             "wide"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "argmax",
@@ -741,13 +646,8 @@
             "wide"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "topk",
@@ -772,13 +672,8 @@
             "sampling-top50-llama3"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "cumsum",
@@ -801,13 +696,8 @@
             "sampling-probs-llama3"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "matmul",
@@ -853,13 +743,8 @@
             "seq512"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "batch_matmul",
@@ -880,13 +765,8 @@
             "non-align-2"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "grouped_matmul",
@@ -905,13 +785,8 @@
             "non-align-1"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "transpose",
@@ -929,13 +804,8 @@
             "wide"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "concat",
@@ -958,13 +828,8 @@
             "non-align-2"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "split",
@@ -985,13 +850,8 @@
             "qwen25-qkv-gqa"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "gather",
@@ -1014,13 +874,8 @@
             "non-align-2"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "scatter",
@@ -1042,13 +897,8 @@
             "non-align-2"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "embedding",
@@ -1073,13 +923,8 @@
             "qwen25-seq512"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "permute",
@@ -1103,13 +948,8 @@
             "qwen25-q"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "copy_",
@@ -1141,13 +981,8 @@
             "xlarge"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "swiglu",
@@ -1171,13 +1006,8 @@
             "qwen25-7b-2k"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "geglu",
@@ -1201,13 +1031,8 @@
             "qwen25-7b-2k"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "rope",
@@ -1235,13 +1060,8 @@
             "qwen25-q-512"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "fused_linear_cross_entropy",
@@ -1265,13 +1085,8 @@
             "qwen25-seq512"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "cross_entropy",
@@ -1296,13 +1111,8 @@
             "qwen25-seq512"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "quantize_per_token",
@@ -1326,13 +1136,8 @@
             "qwen25-fp8"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "dequantize_per_channel",
@@ -1356,13 +1161,8 @@
             "qwen25-int4-ffn"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "flash_attention",
@@ -1390,13 +1190,8 @@
             "llama2-7b-batch"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "grouped_query_attention",
@@ -1418,13 +1213,8 @@
             "qwen25-7b-8k"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "multi_latent_attention",
@@ -1444,13 +1234,8 @@
             "ds-v3-mla-512"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "cross_attention",
@@ -1474,13 +1259,8 @@
             "whisper-decode-1"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "paged_attention",
@@ -1504,13 +1284,8 @@
             "tiny"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         }
       ]
     },
@@ -1567,13 +1342,8 @@
             "tiny"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "matmul_gelu",
@@ -1619,13 +1389,8 @@
             "tiny"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "swiglu",
@@ -1649,13 +1414,8 @@
             "qwen25-7b-2k"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "geglu",
@@ -1679,13 +1439,8 @@
             "qwen25-7b-2k"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "linear_ce",
@@ -1709,13 +1464,8 @@
             "qwen25-seq512"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         },
         {
           "op": "qkv_fa",
@@ -1743,13 +1493,8 @@
             "llama2-7b-batch"
           ],
           "correctness_fields_present": true,
-          "perf_target_fields_present": false,
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
+          "perf_target_fields_present": true,
+          "missing_perf_target_fields": []
         }
       ]
     },
@@ -2690,413 +2435,7 @@
         "paged_attention"
       ],
       "unsupported_surface_cases": [],
-      "perf_field_gaps": [
-        {
-          "op": "relu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "gelu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "silu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "tanh",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "sigmoid",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "add",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "mul",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "where_",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "cast",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "neg",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "exp",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "rsqrt",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "softmax",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "layernorm",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "rmsnorm",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "rmsnorm_residual",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "reduce_sum",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "reduce_max",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "reduce_mean",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "argmax",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "topk",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "cumsum",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "matmul",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "batch_matmul",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "grouped_matmul",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "transpose",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "concat",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "split",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "gather",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "scatter",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "embedding",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "permute",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "copy_",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "swiglu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "geglu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "rope",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "fused_linear_cross_entropy",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "cross_entropy",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "quantize_per_token",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "dequantize_per_channel",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "flash_attention",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "grouped_query_attention",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "multi_latent_attention",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "cross_attention",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "paged_attention",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        }
-      ],
+      "perf_field_gaps": [],
       "memory_pressure_ops": []
     },
     "l2": {
@@ -3422,62 +2761,7 @@
           ]
         }
       ],
-      "perf_field_gaps": [
-        {
-          "op": "matmul_relu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "matmul_gelu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "swiglu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "geglu",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "linear_ce",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        },
-        {
-          "op": "qkv_fa",
-          "missing_perf_target_fields": [
-            "perf_target",
-            "perf_actual",
-            "perf_pass",
-            "perf_gap"
-          ]
-        }
-      ],
+      "perf_field_gaps": [],
       "memory_pressure_ops": []
     },
     "priority_actions": [

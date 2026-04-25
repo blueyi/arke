@@ -1,5 +1,5 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-argmax,small,PyTorch-eager,55.6,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-argmax,small,Arke,60.8,70.6,,0.9145,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-argmax,medium,PyTorch-eager,53.6,55.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-argmax,medium,Arke,79.8,13.3,,0.6717,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+argmax,small,PyTorch-eager,55.6,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+argmax,small,Arke,60.8,70.6,,0.9145,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9145,false,-0.0855
+argmax,medium,PyTorch-eager,53.6,55.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+argmax,medium,Arke,79.8,13.3,,0.6717,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6717,false,-0.3283

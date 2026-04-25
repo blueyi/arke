@@ -1,7 +1,7 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-cross_entropy,tiny,PyTorch-eager,28.0,30.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-cross_entropy,tiny,Arke,46.8,50.2,,0.5983,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-cross_entropy,gpt2-seq128,PyTorch-eager,319.8,319.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-cross_entropy,gpt2-seq128,Arke,456.4,457.7,,0.7007,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-cross_entropy,gpt2-seq512,PyTorch-eager,1222.0,1216.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-cross_entropy,gpt2-seq512,Arke,1752.7,1752.1,,0.6972,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+cross_entropy,tiny,PyTorch-eager,28.0,30.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+cross_entropy,tiny,Arke,46.8,50.2,,0.5983,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5983,false,-0.4017
+cross_entropy,gpt2-seq128,PyTorch-eager,319.8,319.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+cross_entropy,gpt2-seq128,Arke,456.4,457.7,,0.7007,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7007,false,-0.2993
+cross_entropy,gpt2-seq512,PyTorch-eager,1222.0,1216.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+cross_entropy,gpt2-seq512,Arke,1752.7,1752.1,,0.6972,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6972,false,-0.3028

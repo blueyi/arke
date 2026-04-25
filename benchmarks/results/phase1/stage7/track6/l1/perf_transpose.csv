@@ -1,9 +1,9 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-transpose,small,cuBLAS/cuDNN,125.6,97.3,,0.0430,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-transpose,small,PyTorch-eager,5.4,13.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-transpose,small,Arke,101.7,9.2,,0.0531,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-transpose,small,FlagGems,92.8,27.6,,0.0582,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,
-transpose,square-1k,cuBLAS/cuDNN,115.0,150.5,,0.0530,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-transpose,square-1k,PyTorch-eager,6.1,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-transpose,square-1k,Arke,104.8,152.6,,0.0582,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-transpose,square-1k,FlagGems,103.8,153.6,,0.0588,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+transpose,small,cuBLAS/cuDNN,125.6,97.3,,0.0430,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0430,false,-0.9570
+transpose,small,PyTorch-eager,5.4,13.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,small,Arke,101.7,9.2,,0.0531,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0531,false,-0.9469
+transpose,small,FlagGems,92.8,27.6,,0.0582,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.0582,false,-0.9418
+transpose,square-1k,cuBLAS/cuDNN,115.0,150.5,,0.0530,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0530,false,-0.9470
+transpose,square-1k,PyTorch-eager,6.1,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,square-1k,Arke,104.8,152.6,,0.0582,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0582,false,-0.9418
+transpose,square-1k,FlagGems,103.8,153.6,,0.0588,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.0588,false,-0.9412

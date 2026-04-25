@@ -97,7 +97,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -174,7 +174,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -247,7 +247,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -320,7 +320,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -393,7 +393,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -470,7 +470,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -543,7 +543,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -620,7 +620,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -697,7 +697,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -774,7 +774,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -851,7 +851,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -928,7 +928,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1013,7 +1013,7 @@
           "wide-vocab-qwen25"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1090,7 +1090,7 @@
           "qwen25-7b-norm"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1167,7 +1167,7 @@
           "qwen25-7b-norm"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1244,7 +1244,7 @@
           "qwen25-7b-norm"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1300,7 +1300,7 @@
           "wide"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1356,7 +1356,7 @@
           "wide"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1412,7 +1412,7 @@
           "wide"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1468,7 +1468,7 @@
           "wide"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1528,7 +1528,7 @@
           "sampling-top50-llama3"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1584,7 +1584,7 @@
           "sampling-probs-llama3"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1690,7 +1690,7 @@
           "seq512"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1742,7 +1742,7 @@
           "non-align-2"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1790,7 +1790,7 @@
           "non-align-1"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1836,7 +1836,7 @@
           "wide"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1892,7 +1892,7 @@
           "non-align-2"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -1944,7 +1944,7 @@
           "qwen25-qkv-gqa"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2000,7 +2000,7 @@
           "non-align-2"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2054,7 +2054,7 @@
           "non-align-2"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2115,7 +2115,7 @@
           "qwen25-seq512"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2174,7 +2174,7 @@
           "qwen25-q"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2251,7 +2251,7 @@
           "xlarge"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2308,7 +2308,7 @@
           "qwen25-7b-2k"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2365,7 +2365,7 @@
           "qwen25-7b-2k"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2431,7 +2431,7 @@
           "qwen25-q-512"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2489,7 +2489,7 @@
           "qwen25-seq512"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2550,7 +2550,7 @@
           "qwen25-seq512"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2608,7 +2608,7 @@
           "qwen25-fp8"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2666,7 +2666,7 @@
           "qwen25-int4-ffn"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2731,7 +2731,7 @@
           "llama2-7b-batch"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2784,7 +2784,7 @@
           "qwen25-7b-8k"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2836,7 +2836,7 @@
           "ds-v3-mla-512"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2894,7 +2894,7 @@
           "whisper-decode-1"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -2954,7 +2954,7 @@
           "tiny"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     }
   ],
@@ -3065,7 +3065,7 @@
           "tiny"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -3174,7 +3174,7 @@
           "tiny"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -3231,7 +3231,7 @@
           "qwen25-7b-2k"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -3288,7 +3288,7 @@
           "qwen25-7b-2k"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -3353,7 +3353,7 @@
           "qwen25-seq512"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     },
     {
@@ -3428,7 +3428,7 @@
           "llama2-7b-batch"
         ],
         "correctness_evidence_present": true,
-        "performance_evidence_present": false
+        "performance_evidence_present": true
       }
     }
   ]

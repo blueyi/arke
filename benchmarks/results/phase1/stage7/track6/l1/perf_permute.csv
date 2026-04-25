@@ -1,4 +1,4 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-permute,small-3d,PyTorch-eager,16.4,8.4,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,
-permute,gpt2-bhsd,PyTorch-eager,7.5,4.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,
-permute,gpt2-bshd,PyTorch-eager,3.1,6.3,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+permute,small-3d,PyTorch-eager,16.4,8.4,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+permute,gpt2-bhsd,PyTorch-eager,7.5,4.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+permute,gpt2-bshd,PyTorch-eager,3.1,6.3,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000

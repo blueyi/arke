@@ -1,5 +1,5 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-concat,tiny-2,PyTorch-eager,76.8,77.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,
-concat,tiny-2,Arke,63.8,91.1,,1.2038,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,
-concat,gpt2-qkv-merge,PyTorch-eager,66.2,42.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,
-concat,gpt2-qkv-merge,Arke,86.7,101.4,,0.7636,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+concat,tiny-2,PyTorch-eager,76.8,77.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+concat,tiny-2,Arke,63.8,91.1,,1.2038,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.2038,true,0.2038
+concat,gpt2-qkv-merge,PyTorch-eager,66.2,42.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+concat,gpt2-qkv-merge,Arke,86.7,101.4,,0.7636,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7636,false,-0.2364

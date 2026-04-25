@@ -31,13 +31,35 @@
   },
   "memory_pressure_rows": 0,
   "perf_target_counts": {
-    "with_target": 0,
-    "without_target": 10
+    "with_target": 10,
+    "without_target": 0
   },
   "perf_pass_counts": {
-    "unknown": 10
+    "true": 8,
+    "false": 2
   },
-  "perf_targets": {},
-  "perf_actuals": {},
-  "perf_gaps": {}
+  "perf_targets": {
+    "geglu": 1.0,
+    "linear_ce": 1.0,
+    "matmul_gelu": 1.0,
+    "matmul_relu": 1.0,
+    "qkv_fa": 1.0,
+    "swiglu": 1.0
+  },
+  "perf_actuals": {
+    "geglu": 1.0,
+    "linear_ce": 1.0,
+    "matmul_gelu": 0.9952,
+    "matmul_relu": 0.9709,
+    "qkv_fa": 1.0,
+    "swiglu": 1.0
+  },
+  "perf_gaps": {
+    "geglu": 0.0,
+    "linear_ce": 0.0,
+    "matmul_gelu": 0.0156,
+    "matmul_relu": -0.0268,
+    "qkv_fa": 0.0,
+    "swiglu": 0.0
+  }
 }

@@ -1,5 +1,5 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-tanh,square-1k,cuBLAS/cuDNN,88.8,19.5,,1.1351,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-tanh,square-1k,PyTorch-eager,100.8,100.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-tanh,square-1k,Arke,89.5,58.5,,1.1263,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-tanh,square-1k,FlagGems,87.8,75.8,,1.1481,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+tanh,square-1k,cuBLAS/cuDNN,88.8,19.5,,1.1351,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1351,true,0.1351
+tanh,square-1k,PyTorch-eager,100.8,100.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+tanh,square-1k,Arke,89.5,58.5,,1.1263,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1263,true,0.1263
+tanh,square-1k,FlagGems,87.8,75.8,,1.1481,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for tanh,,,,,1.0,1.1481,true,0.1481

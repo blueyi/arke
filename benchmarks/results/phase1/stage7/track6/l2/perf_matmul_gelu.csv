@@ -1,4 +1,4 @@
 operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-matmul_gelu,square-1k,separate,301.1,281.3,7.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-matmul_gelu,square-1k,torch.compile,388.6,380.9,5.526,0.7748,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
-matmul_gelu,square-1k,FlagGems,236.7,223.5,9.074,1.2721,ok,,false,true,0,0,0.01,0.01,ok,,,,,,,,,
+matmul_gelu,square-1k,separate,301.1,281.3,7.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_gelu,square-1k,torch.compile,388.6,380.9,5.526,0.7748,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7748,false,-0.2252
+matmul_gelu,square-1k,FlagGems,236.7,223.5,9.074,1.2721,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.2721,true,0.2721

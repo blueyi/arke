@@ -1,4 +1,4 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-flash_attention,gpt2-sm-128,cuBLAS/cuDNN,64.5,30.7,,4.4930,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-flash_attention,gpt2-sm-128,PyTorch-eager,289.8,273.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-flash_attention,gpt2-sm-128,Arke,33.3,23.4,,8.7027,ok,,false,false,4.04112,0.147052,0.001,0.001,mismatch,,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+flash_attention,gpt2-sm-128,cuBLAS/cuDNN,64.5,30.7,,4.4930,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,4.4930,true,3.4930
+flash_attention,gpt2-sm-128,PyTorch-eager,289.8,273.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+flash_attention,gpt2-sm-128,Arke,33.3,23.4,,8.7027,ok,,false,false,4.04112,0.147052,0.001,0.001,mismatch,,,,,,1.0,8.7027,true,7.7027

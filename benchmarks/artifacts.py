@@ -32,6 +32,46 @@ def _copy_memory_fields(row: dict[str, str]) -> dict[str, str]:
     return {field: row.get(field, "") for field in MEMORY_FIELDS}
 
 
+def _resolve_perf_fields(row: dict[str, str], ratio: float | None) -> dict[str, str]:
+    perf_target = (row.get("perf_target") or "").strip()
+    perf_actual = (row.get("perf_actual") or "").strip()
+    perf_pass = (row.get("perf_pass") or "").strip().lower()
+    perf_gap = (row.get("perf_gap") or "").strip()
+    status = (row.get("status") or "").strip().lower()
+
+    if not perf_target:
+        perf_target = "1.0"
+
+    target = _safe_float(perf_target)
+    if target is None:
+        target = 1.0
+
+    if not perf_actual:
+        if ratio is not None:
+            perf_actual = f"{ratio:.4f}"
+        elif status in {"skipped", "oom", "error"}:
+            perf_actual = "N/A"
+
+    if not perf_pass:
+        if ratio is not None:
+            perf_pass = "true" if ratio >= target else "false"
+        elif perf_actual in {"N/A", "NA"}:
+            perf_pass = "false"
+
+    if not perf_gap:
+        if ratio is not None:
+            perf_gap = f"{(ratio - target):.4f}"
+        elif perf_actual in {"N/A", "NA"}:
+            perf_gap = "N/A"
+
+    return {
+        "perf_target": perf_target,
+        "perf_actual": perf_actual,
+        "perf_pass": perf_pass,
+        "perf_gap": perf_gap,
+    }
+
+
 def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
     rows = list(csv.DictReader(raw_csv.open()))
     out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -61,6 +101,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
             for row in shape_rows:
                 lat = _safe_float(row.get("latency_us"))
                 ratio = baseline_lat / lat if baseline_lat and lat else None
+                perf_fields = _resolve_perf_fields(row, ratio)
                 writer.writerow({
                     "operator": row.get("op", "unknown"),
                     "shape_tag": shape_tag,
@@ -80,10 +121,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
                     "correctness_status": row.get("correctness_status", "unknown"),
                     "correctness_reason": row.get("correctness_reason", ""),
                     **_copy_memory_fields(row),
-                    "perf_target": row.get("perf_target", ""),
-                    "perf_actual": row.get("perf_actual", row.get("ratio_vs_baseline", "")),
-                    "perf_pass": row.get("perf_pass", ""),
-                    "perf_gap": row.get("perf_gap", ""),
+                    **perf_fields,
                 })
     return out_csv
 
@@ -117,6 +155,7 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
             for row in shape_rows:
                 lat = _safe_float(row.get("latency_us"))
                 ratio = baseline_lat / lat if baseline_lat and lat else None
+                perf_fields = _resolve_perf_fields(row, ratio)
                 writer.writerow({
                     "operator": row.get("op", "unknown"),
                     "shape_tag": shape_tag,
@@ -136,10 +175,7 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
                     "correctness_status": row.get("correctness_status", "unknown"),
                     "correctness_reason": row.get("correctness_reason", ""),
                     **_copy_memory_fields(row),
-                    "perf_target": row.get("perf_target", ""),
-                    "perf_actual": row.get("perf_actual", row.get("ratio_vs_baseline", "")),
-                    "perf_pass": row.get("perf_pass", ""),
-                    "perf_gap": row.get("perf_gap", ""),
+                    **perf_fields,
                 })
     return out_csv
 

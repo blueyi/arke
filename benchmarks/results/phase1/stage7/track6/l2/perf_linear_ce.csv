@@ -1,2 +1,2 @@
 operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-linear_ce,gpt2-seq128,separate,5056.0,4810.4,1.954,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,103123968,3542771302,0.0291,linear_ce,,,,
+linear_ce,gpt2-seq128,separate,5056.0,4810.4,1.954,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,103123968,3542771302,0.0291,linear_ce,1.0,1.0000,true,0.0000

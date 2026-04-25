@@ -1,9 +1,9 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,64.9,16.4,0.002,1.1726,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-batch_matmul,gpt2-attn-128,PyTorch-eager,76.1,32.8,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-batch_matmul,gpt2-attn-128,Arke,113.7,19.5,0.001,0.6693,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-batch_matmul,gpt2-attn-128,FlagGems,129.0,165.0,0.001,0.5899,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,,,,
-batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,180.6,55.3,0.004,0.3704,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-batch_matmul,gpt2-attn-512,PyTorch-eager,66.9,78.8,0.012,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-batch_matmul,gpt2-attn-512,Arke,178.9,241.7,0.004,0.3740,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-batch_matmul,gpt2-attn-512,FlagGems,125.6,152.6,0.006,0.5326,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,64.9,16.4,0.002,1.1726,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.1726,true,0.1726
+batch_matmul,gpt2-attn-128,PyTorch-eager,76.1,32.8,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-128,Arke,113.7,19.5,0.001,0.6693,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6693,false,-0.3307
+batch_matmul,gpt2-attn-128,FlagGems,129.0,165.0,0.001,0.5899,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,,,,,1.0,0.5899,false,-0.4101
+batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,180.6,55.3,0.004,0.3704,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.3704,false,-0.6296
+batch_matmul,gpt2-attn-512,PyTorch-eager,66.9,78.8,0.012,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-512,Arke,178.9,241.7,0.004,0.3740,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.3740,false,-0.6260
+batch_matmul,gpt2-attn-512,FlagGems,125.6,152.6,0.006,0.5326,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,,,,,1.0,0.5326,false,-0.4674

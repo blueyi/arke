@@ -1,6 +1,6 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-silu,square-1k,cuBLAS/cuDNN,18.5,17.4,,0.9351,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-silu,square-1k,PyTorch-eager,17.3,17.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-silu,square-1k,torch.compile,109.4,130.2,,0.1581,ok,,false,true,0.00012207,1.86265e-09,0.001,0.001,ok,,,,,
-silu,square-1k,Arke,18.6,18.4,,0.9301,ok,,false,true,0,0,0.001,0.001,ok,,,,,
-silu,square-1k,FlagGems,87.3,73.5,,0.1982,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for silu,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+silu,square-1k,cuBLAS/cuDNN,18.5,17.4,,0.9351,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9351,false,-0.0649
+silu,square-1k,PyTorch-eager,17.3,17.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,square-1k,torch.compile,109.4,130.2,,0.1581,ok,,false,true,0.00012207,1.86265e-09,0.001,0.001,ok,,,,,,1.0,0.1581,false,-0.8419
+silu,square-1k,Arke,18.6,18.4,,0.9301,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9301,false,-0.0699
+silu,square-1k,FlagGems,87.3,73.5,,0.1982,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for silu,,,,,1.0,0.1982,false,-0.8018

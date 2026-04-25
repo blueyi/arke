@@ -1,5 +1,5 @@
-operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-grouped_matmul,moe-tiny,PyTorch-eager,134.1,120.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-grouped_matmul,moe-tiny,Arke,665.6,604.2,,0.2015,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,
-grouped_matmul,moe-small,PyTorch-eager,233.1,220.2,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-grouped_matmul,moe-small,Arke,1177.9,1115.1,,0.1979,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+grouped_matmul,moe-tiny,PyTorch-eager,134.1,120.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+grouped_matmul,moe-tiny,Arke,665.6,604.2,,0.2015,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,,1.0,0.2015,false,-0.7985
+grouped_matmul,moe-small,PyTorch-eager,233.1,220.2,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+grouped_matmul,moe-small,Arke,1177.9,1115.1,,0.1979,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,,1.0,0.1979,false,-0.8021
