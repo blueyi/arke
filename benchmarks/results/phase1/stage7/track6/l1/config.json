@@ -1,12 +1,13 @@
 {
-  "timestamp": "2026-04-10_014246",
+  "timestamp": "2026-04-25_194631",
   "ops": [
-    "relu"
+    "relu",
+    "gelu",
+    "add",
+    "matmul"
   ],
   "warmup": 1,
-  "reps": 1,
-  "tier": null,
-  "shape_tags": [
-    "square-1k"
-  ]
+  "reps": 3,
+  "tier": 1,
+  "shape_tags": null
 }

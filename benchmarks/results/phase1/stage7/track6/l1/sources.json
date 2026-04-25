@@ -3,13 +3,13 @@
     "priority": "P0",
     "source": "NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary)"
   },
-  "FlagGems": {
-    "priority": "P1",
-    "source": "FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0"
-  },
   "Liger-Kernel": {
     "priority": "P1",
     "source": "Liger-Kernel 0.7.0 (LinkedIn) | https://github.com/linkedin/Liger-Kernel | License: BSD-2-Clause"
+  },
+  "FlagGems": {
+    "priority": "P1",
+    "source": "FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0"
   },
   "Triton-Tutorial": {
     "priority": "P2",
@@ -22,5 +22,9 @@
   "torch.compile": {
     "priority": "P4",
     "source": "torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause"
+  },
+  "Arke": {
+    "priority": "P5",
+    "source": "Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0"
   }
 }

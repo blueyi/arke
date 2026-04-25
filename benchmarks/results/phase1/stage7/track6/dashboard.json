@@ -1,4 +1,5 @@
 {
+  "title": "Stage 7 benchmark dashboard",
   "stage": "S7",
   "gate": "G7",
   "sources": {
@@ -9,12 +10,12 @@
   "summary": {
     "l1": {
       "ops_total": 45,
-      "ops_with_any_evidence": 1,
+      "ops_with_any_evidence": 4,
       "ops_fully_covered": 0,
-      "op_coverage_ratio": 0.0222,
+      "op_coverage_ratio": 0.0889,
       "shapes_required_total": 685,
-      "shapes_observed_total": 1,
-      "shape_coverage_ratio": 0.0015,
+      "shapes_observed_total": 4,
+      "shape_coverage_ratio": 0.0058,
       "per_op": [
         {
           "op": "relu",
@@ -57,9 +58,11 @@
         {
           "op": "gelu",
           "required_shape_count": 20,
-          "observed_shape_count": 0,
-          "coverage_ratio": 0.0,
-          "observed_shape_tags": [],
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.05,
+          "observed_shape_tags": [
+            "square-1k"
+          ],
           "missing_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
@@ -79,10 +82,9 @@
             "non-align-4",
             "non-align-5",
             "qwen-ffn",
-            "square-1k",
             "xlarge"
           ],
-          "correctness_fields_present": false,
+          "correctness_fields_present": true,
           "perf_target_fields_present": false,
           "missing_perf_target_fields": [
             "perf_target",
@@ -205,9 +207,11 @@
         {
           "op": "add",
           "required_shape_count": 20,
-          "observed_shape_count": 0,
-          "coverage_ratio": 0.0,
-          "observed_shape_tags": [],
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.05,
+          "observed_shape_tags": [
+            "square-1k"
+          ],
           "missing_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
@@ -227,10 +231,9 @@
             "non-align-4",
             "non-align-5",
             "qwen-ffn",
-            "square-1k",
             "xlarge"
           ],
-          "correctness_fields_present": false,
+          "correctness_fields_present": true,
           "perf_target_fields_present": false,
           "missing_perf_target_fields": [
             "perf_target",
@@ -790,9 +793,11 @@
         {
           "op": "matmul",
           "required_shape_count": 34,
-          "observed_shape_count": 0,
-          "coverage_ratio": 0.0,
-          "observed_shape_tags": [],
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.029411764705882353,
+          "observed_shape_tags": [
+            "square-1k"
+          ],
           "missing_shape_tags": [
             "ds-v2-attn",
             "ds-v2-ffn-down",
@@ -824,12 +829,11 @@
             "rect-tall",
             "rect-wide",
             "seq512",
-            "square-1k",
             "square-2k",
             "square-4k",
             "tiny"
           ],
-          "correctness_fields_present": false,
+          "correctness_fields_present": true,
           "perf_target_fields_present": false,
           "missing_perf_target_fields": [
             "perf_target",
@@ -1471,12 +1475,12 @@
     },
     "l2": {
       "ops_total": 6,
-      "ops_with_any_evidence": 1,
+      "ops_with_any_evidence": 2,
       "ops_fully_covered": 0,
-      "op_coverage_ratio": 0.1667,
+      "op_coverage_ratio": 0.3333,
       "shapes_required_total": 120,
-      "shapes_observed_total": 1,
-      "shape_coverage_ratio": 0.0083,
+      "shapes_observed_total": 2,
+      "shape_coverage_ratio": 0.0167,
       "per_op": [
         {
           "op": "matmul_relu",
@@ -1533,9 +1537,11 @@
         {
           "op": "matmul_gelu",
           "required_shape_count": 34,
-          "observed_shape_count": 0,
-          "coverage_ratio": 0.0,
-          "observed_shape_tags": [],
+          "observed_shape_count": 1,
+          "coverage_ratio": 0.029411764705882353,
+          "observed_shape_tags": [
+            "square-1k"
+          ],
           "missing_shape_tags": [
             "ds-v2-attn",
             "ds-v2-ffn-down",
@@ -1567,12 +1573,11 @@
             "rect-tall",
             "rect-wide",
             "seq512",
-            "square-1k",
             "square-2k",
             "square-4k",
             "tiny"
           ],
-          "correctness_fields_present": false,
+          "correctness_fields_present": true,
           "perf_target_fields_present": false,
           "missing_perf_target_fields": [
             "perf_target",
@@ -1704,18 +1709,16 @@
       ]
     },
     "combined": {
-      "op_coverage_ratio": 0.0392,
-      "shape_coverage_ratio": 0.0025
+      "op_coverage_ratio": 0.1176,
+      "shape_coverage_ratio": 0.0075
     }
   },
   "focus": {
     "l1": {
       "ops_without_evidence": [
-        "gelu",
         "silu",
         "tanh",
         "sigmoid",
-        "add",
         "mul",
         "where_",
         "cast",
@@ -1732,7 +1735,6 @@
         "argmax",
         "topk",
         "cumsum",
-        "matmul",
         "batch_matmul",
         "grouped_matmul",
         "transpose",
@@ -1782,16 +1784,106 @@
             "qwen-ffn",
             "xlarge"
           ]
+        },
+        {
+          "op": "gelu",
+          "observed_shape_count": 1,
+          "required_shape_count": 20,
+          "missing_shape_tags": [
+            "ds-ffn",
+            "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
+            "gpt2-ffn",
+            "gpt2-hidden",
+            "llama-ffn",
+            "llama-hidden",
+            "llama-long",
+            "micro-small",
+            "micro-tiny",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "qwen-ffn",
+            "xlarge"
+          ]
+        },
+        {
+          "op": "add",
+          "observed_shape_count": 1,
+          "required_shape_count": 20,
+          "missing_shape_tags": [
+            "ds-ffn",
+            "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
+            "gpt2-ffn",
+            "gpt2-hidden",
+            "llama-ffn",
+            "llama-hidden",
+            "llama-long",
+            "micro-small",
+            "micro-tiny",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "qwen-ffn",
+            "xlarge"
+          ]
+        },
+        {
+          "op": "matmul",
+          "observed_shape_count": 1,
+          "required_shape_count": 34,
+          "missing_shape_tags": [
+            "ds-v2-attn",
+            "ds-v2-ffn-down",
+            "ds-v2-ffn-up",
+            "ds-v2-lmhead",
+            "ds-v2-long-8k",
+            "ds-v3-attn",
+            "ds-v3-ffn-up",
+            "ds-v3-lmhead",
+            "ds-v3-long-32k",
+            "extreme-16",
+            "extreme-1row",
+            "extreme-long",
+            "gpt2-c_attn",
+            "gpt2-c_proj",
+            "llama-ffn",
+            "llama-q",
+            "lm-head-gpt2",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "non-align-6",
+            "non-align-7",
+            "qwen25-attn",
+            "qwen25-ffn-up",
+            "qwen25-lmhead",
+            "rect-tall",
+            "rect-wide",
+            "seq512",
+            "square-2k",
+            "square-4k",
+            "tiny"
+          ]
         }
       ],
       "missing_examples": [],
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [
-        "gelu",
         "silu",
         "tanh",
         "sigmoid",
-        "add",
         "mul",
         "where_",
         "cast",
@@ -1808,7 +1900,6 @@
         "argmax",
         "topk",
         "cumsum",
-        "matmul",
         "batch_matmul",
         "grouped_matmul",
         "transpose",
@@ -2291,7 +2382,6 @@
     },
     "l2": {
       "ops_without_evidence": [
-        "matmul_gelu",
         "swiglu",
         "geglu",
         "linear_ce",
@@ -2337,12 +2427,51 @@
             "square-4k",
             "tiny"
           ]
+        },
+        {
+          "op": "matmul_gelu",
+          "observed_shape_count": 1,
+          "required_shape_count": 34,
+          "missing_shape_tags": [
+            "ds-v2-attn",
+            "ds-v2-ffn-down",
+            "ds-v2-ffn-up",
+            "ds-v2-lmhead",
+            "ds-v2-long-8k",
+            "ds-v3-attn",
+            "ds-v3-ffn-up",
+            "ds-v3-lmhead",
+            "ds-v3-long-32k",
+            "extreme-16",
+            "extreme-1row",
+            "extreme-long",
+            "gpt2-c_attn",
+            "gpt2-c_proj",
+            "llama-ffn",
+            "llama-q",
+            "lm-head-gpt2",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "non-align-6",
+            "non-align-7",
+            "qwen25-attn",
+            "qwen25-ffn-up",
+            "qwen25-lmhead",
+            "rect-tall",
+            "rect-wide",
+            "seq512",
+            "square-2k",
+            "square-4k",
+            "tiny"
+          ]
         }
       ],
       "missing_examples": [],
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [
-        "matmul_gelu",
         "swiglu",
         "geglu",
         "linear_ce",
@@ -2466,7 +2595,6 @@
             "rect-tall",
             "rect-wide",
             "seq512",
-            "square-1k",
             "square-2k",
             "square-4k",
             "tiny"
@@ -2637,5 +2765,5 @@
       }
     ]
   },
-  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=3.9% shapes=0.25%\n[L1] ops=1/45 fully_covered=0 missing_examples=0 unsupported=0\n  no evidence: gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention\n  partial coverage: relu (1/20)\n[L2] ops=1/6 fully_covered=0 missing_examples=0 unsupported=6\n  no evidence: matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n  partial coverage: matmul_relu (1/34)\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=11.8% shapes=0.75%\n[L1] ops=4/45 fully_covered=0 missing_examples=0 unsupported=0\n  no evidence: silu, tanh, sigmoid, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention\n  partial coverage: relu (1/20), gelu (1/20), add (1/20), matmul (1/34)\n[L2] ops=2/6 fully_covered=0 missing_examples=0 unsupported=6\n  no evidence: swiglu, geglu, linear_ce, qkv_fa\n  partial coverage: matmul_relu (1/34), matmul_gelu (1/34)\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }

@@ -137,7 +137,7 @@ def run_g7(tier: int = 2) -> GateSummary:
     passed, details = _check_all_examples_compile()
     results.append(GateResult(
         "G7", "G7.6",
-        "All 45 BL5 ops: .ak -> SemanticIR -> StrategyIR full round-trip passes",
+        "All BL5 op examples: .ak -> SemanticIR -> StrategyIR full round-trip passes",
         "correctness", passed, details,
     ))
 
@@ -161,7 +161,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_memory_policy.py",
         "tests/test_benchmark_l1_attention_preflight.py",
         "tests/test_benchmark_advice.py",
-        "tests/test_agent_benchmark_advice_tool.py",
+        "tests/agent/test_benchmark_advice_tool.py",
         "tests/test_stage7_report.py",
         "tests/test_compiler_advice.py",
         "tests/test_arke_runner_advice.py",
@@ -221,7 +221,7 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/test_memory_policy.py",
         "tests/test_benchmark_l1_attention_preflight.py",
         "tests/test_benchmark_advice.py",
-        "tests/test_agent_benchmark_advice_tool.py",
+        "tests/agent/test_benchmark_advice_tool.py",
         "tests/test_stage7_report.py",
         "tests/test_compiler_advice.py",
         "tests/test_arke_runner_advice.py",
@@ -245,9 +245,9 @@ def run_g7(tier: int = 2) -> GateSummary:
     passed_count = sum(1 for r in results if r.passed)
     failed_count = len(results) - passed_count
     return GateSummary(
-        gate_id="G7",
-        gate_name="Lang & IR v2",
+        gate="G7",
         tier=tier,
+        total=len(results),
         passed=passed_count,
         failed=failed_count,
         results=results,

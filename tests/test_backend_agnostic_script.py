@@ -23,4 +23,10 @@ class TestBackendAgnosticScript:
         )
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
         assert "PASS:" in result.stdout
-        assert "49 .ak files" in result.stdout
+        import re
+        from pathlib import Path
+        repo_root = Path(__file__).resolve().parent.parent
+        ak_count = len(list((repo_root / "examples" / "operators").rglob("*.ak")))
+        m = re.search(r"Checking (\d+) \.ak files", result.stdout)
+        assert m is not None, f"unexpected stdout: {result.stdout}"
+        assert int(m.group(1)) == ak_count

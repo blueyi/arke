@@ -1,24 +1,31 @@
 {
-  "overall_geomean": 0.4165,
+  "overall_geomean": 0.7063,
   "op_scores": {
-    "relu": 0.4165
+    "add": 1.1047,
+    "gelu": 0.4978,
+    "matmul": 0.7764,
+    "relu": 0.6557
   },
-  "total_shapes": 4,
+  "total_shapes": 111,
   "operators": [
+    "add",
+    "gelu",
+    "matmul",
     "relu"
   ],
   "status_counts": {
-    "ok": 4
+    "ok": 111
   },
   "correctness_counts": {
-    "unknown": 4
+    "ok": 79,
+    "unsupported": 32
   },
   "perf_target_counts": {
     "with_target": 0,
-    "without_target": 4
+    "without_target": 111
   },
   "perf_pass_counts": {
-    "unknown": 4
+    "unknown": 111
   },
   "perf_targets": {},
   "perf_actuals": {},

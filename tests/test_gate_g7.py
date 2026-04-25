@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from benchmarks.gate_g7 import check_stage7_track6_artifacts
+from benchmarks.gate_g7 import check_stage7_track6_artifacts, run_g7
 
 
 REQUIRED_ROOT_ARTIFACTS = (
@@ -51,3 +51,22 @@ def test_check_stage7_track6_artifacts_requires_root_dashboard_artifacts(tmp_pat
 
     assert ok is False
     assert "dashboard.json" in detail
+
+
+def test_run_g7_returns_standard_gate_summary(monkeypatch):
+    """Guard the G7 runner against drifting from benchmarks.gate.GateSummary."""
+    import benchmarks.gate_g7 as gate_g7
+
+    monkeypatch.setattr(gate_g7, "_check_spec_docs", lambda: (True, "docs ok"))
+    monkeypatch.setattr(gate_g7, "_run_pytest", lambda _args: (True, "tests ok"))
+    monkeypatch.setattr(gate_g7, "_check_all_examples_compile", lambda: (True, "examples ok"))
+    monkeypatch.setattr(gate_g7, "_check_benchmark_artifacts", lambda: (True, "artifacts ok"))
+
+    summary = run_g7(tier=1)
+
+    assert summary.gate == "G7"
+    assert summary.tier == 1
+    assert summary.total == len(summary.results)
+    assert summary.passed == summary.total
+    assert summary.failed == 0
+    assert summary.to_dict()["pass_rate"] == "100.0%"

@@ -1,0 +1,7 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+matmul_gelu,tiny,128,128,128,separate,PyTorch 2.6.0+cu124 separate ops (matmul + gelu) | https://pytorch.org | License: BSD-3-Clause,212.3,12.3,0.020,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_gelu,tiny,128,128,128,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,415.8,318.5,0.010,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_gelu,square-1k,1024,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + gelu) | https://pytorch.org | License: BSD-3-Clause,271.7,247.8,7.904,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_gelu,square-1k,1024,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,572.4,334.8,3.752,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_gelu,tiny,128,128,128,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + gelu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,175.8,20.4,0.024,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_gelu,square-1k,1024,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + gelu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,267.9,281.6,8.015,ok,,false,true,0,0,0.01,0.01,ok,

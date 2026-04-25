@@ -1,5 +1,26 @@
-op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops
-relu,square-1k,1024,1024,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),31.7,26.6,
-relu,square-1k,1024,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,26.6,25.6,
-relu,square-1k,1024,1024,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,161.8,134.1,
-relu,square-1k,1024,1024,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,121.9,102.5,
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+relu,micro-tiny,32,64,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),19.4,5.1,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-tiny,32,64,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,22.9,5.1,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-tiny,32,64,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,154.4,164.9,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-tiny,32,64,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,19.5,9.2,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-small,128,256,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),14.7,19.5,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-small,128,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,20.1,18.4,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-small,128,256,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,148.1,33.6,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-small,128,256,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,20.2,19.7,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-hidden,128,768,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),17.4,16.4,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-hidden,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,27.3,19.5,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-hidden,128,768,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,234.5,30.7,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-hidden,128,768,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,4.8,7.2,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-ffn,128,3072,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),23.2,7.2,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-ffn,128,3072,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,17.8,15.4,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-ffn,128,3072,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,160.1,125.9,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,gpt2-ffn,128,3072,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,5.8,7.2,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,square-1k,1024,1024,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),27.6,28.7,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,square-1k,1024,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,19.1,17.3,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,square-1k,1024,1024,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,150.9,160.9,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,square-1k,1024,1024,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,23.6,27.8,,ok,,false,true,0,0,0.001,0.001,ok,
+relu,micro-tiny,32,64,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,231.8,5.1,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for relu
+relu,micro-small,128,256,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,61.4,5.1,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for relu
+relu,gpt2-hidden,128,768,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,93.6,69.6,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for relu
+relu,gpt2-ffn,128,3072,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,6.1,9.2,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for relu
+relu,square-1k,1024,1024,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,14.7,17.4,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for relu

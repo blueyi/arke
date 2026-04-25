@@ -8,11 +8,9 @@
       "missing_examples": [],
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [
-        "gelu",
         "silu",
         "tanh",
         "sigmoid",
-        "add",
         "mul",
         "where_",
         "cast",
@@ -29,7 +27,6 @@
         "argmax",
         "topk",
         "cumsum",
-        "matmul",
         "batch_matmul",
         "grouped_matmul",
         "transpose",
@@ -107,7 +104,6 @@
       "missing_examples": [],
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [
-        "matmul_gelu",
         "swiglu",
         "geglu",
         "linear_ce",
@@ -231,7 +227,6 @@
             "rect-tall",
             "rect-wide",
             "seq512",
-            "square-1k",
             "square-2k",
             "square-4k",
             "tiny"
@@ -345,5 +340,5 @@
       ]
     }
   ],
-  "text_summary": "Stage 7 audit report \u2014 S7 / G7\n============================================================\n[L1] entries=45, missing examples=0, missing strategy examples=0, missing benchmark evidence=44, missing full shape evidence=45\n[L2] entries=6, missing examples=0, missing strategy examples=0, missing benchmark evidence=5, missing full shape evidence=6\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+  "text_summary": "Stage 7 audit report \u2014 S7 / G7\n============================================================\n[L1] entries=45, missing examples=0, missing strategy examples=0, missing benchmark evidence=41, missing full shape evidence=45\n[L2] entries=6, missing examples=0, missing strategy examples=0, missing benchmark evidence=4, missing full shape evidence=6\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }

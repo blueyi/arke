@@ -1,4 +1,7 @@
 operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-matmul_relu,square-1k,separate,321.5,219.1,6.679,1.0000,ok,,false,,,,,,unknown,,,,,
-matmul_relu,square-1k,torch.compile,354.3,341.0,6.061,0.9074,ok,,false,,,,,,unknown,,,,,
-matmul_relu,square-1k,FlagGems,259.9,118.8,8.263,1.2370,ok,,false,,,,,,unknown,,,,,
+matmul_relu,tiny,separate,86.0,97.3,0.049,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_relu,tiny,torch.compile,182.3,21.5,0.023,0.4717,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_relu,tiny,FlagGems,9.9,12.3,0.424,8.6869,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_relu,square-1k,separate,219.1,217.1,9.800,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_relu,square-1k,torch.compile,398.7,243.7,5.387,0.5495,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_relu,square-1k,FlagGems,123.9,127.0,17.332,1.7684,ok,,false,true,0,0,0.01,0.01,ok,,,,,

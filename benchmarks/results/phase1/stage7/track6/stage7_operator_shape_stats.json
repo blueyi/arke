@@ -1,5 +1,35 @@
 {
   "l1": {
+    "add": {
+      "shape_count": 1,
+      "shape_tags": [
+        "square-1k"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "gelu": {
+      "shape_count": 1,
+      "shape_tags": [
+        "square-1k"
+      ],
+      "rows": 6,
+      "status_counts": {
+        "ok": 6
+      }
+    },
+    "matmul": {
+      "shape_count": 1,
+      "shape_tags": [
+        "square-1k"
+      ],
+      "rows": 6,
+      "status_counts": {
+        "ok": 6
+      }
+    },
     "relu": {
       "shape_count": 1,
       "shape_tags": [
@@ -12,6 +42,16 @@
     }
   },
   "l2": {
+    "matmul_gelu": {
+      "shape_count": 1,
+      "shape_tags": [
+        "square-1k"
+      ],
+      "rows": 3,
+      "status_counts": {
+        "ok": 3
+      }
+    },
     "matmul_relu": {
       "shape_count": 1,
       "shape_tags": [

@@ -111,7 +111,7 @@ where B: dynamic(min=128, max=64, multiple_of=32, default=96)
     def test_compile_matmul_emits_mlir_skeleton(self, pipeline):
         result = pipeline.compile_file(str(OPERATORS_DIR / "01_matmul.ak"))
         assert result.success, result.errors
-        assert result.strategy_ir is None
+        assert result.strategy_ir is not None
         assert result.mlir_module is not None
         assert "module {" in result.mlir_module
         assert "func.func @matmul" in result.mlir_module
@@ -549,7 +549,24 @@ class TestStrategyPreservation:
 
     def test_strategy_absent(self, pipeline):
         """Files without strategy blocks should have StrategyIR = None."""
-        result = pipeline.compile_file(str(OPERATORS_DIR / "01_matmul.ak"))
+        import tempfile, os
+        src = (
+            "kernel matmul_no_strategy(\n"
+            "    A: Tensor<[1024, 1024], f16>,\n"
+            "    B: Tensor<[1024, 1024], f16>\n"
+            ") -> Tensor<[1024, 1024], f16>\n"
+            "{\n"
+            "    let C = matmul(A=A, B=B);\n"
+            "    return C;\n"
+            "}\n"
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".ak", delete=False) as fh:
+            fh.write(src)
+            path = fh.name
+        try:
+            result = pipeline.compile_file(path)
+        finally:
+            os.unlink(path)
         assert result.success
         assert result.strategy_ir is None
 

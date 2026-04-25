@@ -1,12 +1,14 @@
 {
-  "timestamp": "2026-04-10_014253",
+  "timestamp": "2026-04-25_194631",
   "ops": [
-    "matmul_relu"
+    "matmul_relu",
+    "matmul_gelu"
   ],
   "warmup": 1,
-  "reps": 1,
+  "reps": 3,
   "layer": "L2",
   "shape_tags": [
+    "tiny",
     "square-1k"
   ],
   "phase": 1,

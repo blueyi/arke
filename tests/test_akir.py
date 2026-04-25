@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -278,7 +279,23 @@ class TestE2ERoundTrip:
         ), "Round-trip changed matmul result"
 
     def test_round_trip_strategy_excluded(self, pipeline, tmp_akir):
-        result = pipeline.compile_file(str(OPERATORS_DIR / "01_matmul.ak"))
+        src = (
+            "kernel matmul_no_strategy(\n"
+            "    A: Tensor<[1024, 1024], f16>,\n"
+            "    B: Tensor<[1024, 1024], f16>\n"
+            ") -> Tensor<[1024, 1024], f16>\n"
+            "{\n"
+            "    let C = matmul(A=A, B=B);\n"
+            "    return C;\n"
+            "}\n"
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".ak", delete=False) as fh:
+            fh.write(src)
+            path = fh.name
+        try:
+            result = pipeline.compile_file(path)
+        finally:
+            os.unlink(path)
         assert result.success
         assert result.strategy_ir is None
         result.save_akir(tmp_akir)

@@ -1,24 +1,26 @@
 {
-  "overall_geomean": 1.0393,
+  "overall_geomean": 1.014,
   "op_scores": {
-    "matmul_relu": 1.0393
+    "matmul_gelu": 0.8168,
+    "matmul_relu": 1.259
   },
-  "total_shapes": 3,
+  "total_shapes": 12,
   "operators": [
+    "matmul_gelu",
     "matmul_relu"
   ],
   "status_counts": {
-    "ok": 3
+    "ok": 12
   },
   "correctness_counts": {
-    "unknown": 3
+    "ok": 12
   },
   "perf_target_counts": {
     "with_target": 0,
-    "without_target": 3
+    "without_target": 12
   },
   "perf_pass_counts": {
-    "unknown": 3
+    "unknown": 12
   },
   "perf_targets": {},
   "perf_actuals": {},

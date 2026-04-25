@@ -10,12 +10,12 @@
   },
   "l1": {
     "ops_total": 45,
-    "ops_with_any_evidence": 1,
+    "ops_with_any_evidence": 4,
     "ops_fully_covered": 0,
-    "op_coverage_ratio": 0.0222,
+    "op_coverage_ratio": 0.0889,
     "shapes_required_total": 685,
-    "shapes_observed_total": 1,
-    "shape_coverage_ratio": 0.0015,
+    "shapes_observed_total": 4,
+    "shape_coverage_ratio": 0.0058,
     "per_op": [
       {
         "op": "relu",
@@ -58,9 +58,11 @@
       {
         "op": "gelu",
         "required_shape_count": 20,
-        "observed_shape_count": 0,
-        "coverage_ratio": 0.0,
-        "observed_shape_tags": [],
+        "observed_shape_count": 1,
+        "coverage_ratio": 0.05,
+        "observed_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-ffn",
           "ds-ffn-large",
@@ -80,10 +82,9 @@
           "non-align-4",
           "non-align-5",
           "qwen-ffn",
-          "square-1k",
           "xlarge"
         ],
-        "correctness_fields_present": false,
+        "correctness_fields_present": true,
         "perf_target_fields_present": false,
         "missing_perf_target_fields": [
           "perf_target",
@@ -206,9 +207,11 @@
       {
         "op": "add",
         "required_shape_count": 20,
-        "observed_shape_count": 0,
-        "coverage_ratio": 0.0,
-        "observed_shape_tags": [],
+        "observed_shape_count": 1,
+        "coverage_ratio": 0.05,
+        "observed_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-ffn",
           "ds-ffn-large",
@@ -228,10 +231,9 @@
           "non-align-4",
           "non-align-5",
           "qwen-ffn",
-          "square-1k",
           "xlarge"
         ],
-        "correctness_fields_present": false,
+        "correctness_fields_present": true,
         "perf_target_fields_present": false,
         "missing_perf_target_fields": [
           "perf_target",
@@ -791,9 +793,11 @@
       {
         "op": "matmul",
         "required_shape_count": 34,
-        "observed_shape_count": 0,
-        "coverage_ratio": 0.0,
-        "observed_shape_tags": [],
+        "observed_shape_count": 1,
+        "coverage_ratio": 0.029411764705882353,
+        "observed_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-v2-attn",
           "ds-v2-ffn-down",
@@ -825,12 +829,11 @@
           "rect-tall",
           "rect-wide",
           "seq512",
-          "square-1k",
           "square-2k",
           "square-4k",
           "tiny"
         ],
-        "correctness_fields_present": false,
+        "correctness_fields_present": true,
         "perf_target_fields_present": false,
         "missing_perf_target_fields": [
           "perf_target",
@@ -1472,12 +1475,12 @@
   },
   "l2": {
     "ops_total": 6,
-    "ops_with_any_evidence": 1,
+    "ops_with_any_evidence": 2,
     "ops_fully_covered": 0,
-    "op_coverage_ratio": 0.1667,
+    "op_coverage_ratio": 0.3333,
     "shapes_required_total": 120,
-    "shapes_observed_total": 1,
-    "shape_coverage_ratio": 0.0083,
+    "shapes_observed_total": 2,
+    "shape_coverage_ratio": 0.0167,
     "per_op": [
       {
         "op": "matmul_relu",
@@ -1534,9 +1537,11 @@
       {
         "op": "matmul_gelu",
         "required_shape_count": 34,
-        "observed_shape_count": 0,
-        "coverage_ratio": 0.0,
-        "observed_shape_tags": [],
+        "observed_shape_count": 1,
+        "coverage_ratio": 0.029411764705882353,
+        "observed_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-v2-attn",
           "ds-v2-ffn-down",
@@ -1568,12 +1573,11 @@
           "rect-tall",
           "rect-wide",
           "seq512",
-          "square-1k",
           "square-2k",
           "square-4k",
           "tiny"
         ],
-        "correctness_fields_present": false,
+        "correctness_fields_present": true,
         "perf_target_fields_present": false,
         "missing_perf_target_fields": [
           "perf_target",
@@ -1705,7 +1709,7 @@
     ]
   },
   "combined": {
-    "op_coverage_ratio": 0.0392,
-    "shape_coverage_ratio": 0.0025
+    "op_coverage_ratio": 0.1176,
+    "shape_coverage_ratio": 0.0075
   }
 }

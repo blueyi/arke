@@ -11,14 +11,14 @@
       "entries": 45,
       "with_examples": 45,
       "with_strategy_examples": 45,
-      "with_benchmark_evidence": 1,
+      "with_benchmark_evidence": 4,
       "with_full_required_shape_evidence": 0
     },
     "l2": {
       "entries": 6,
       "with_examples": 6,
       "with_strategy_examples": 6,
-      "with_benchmark_evidence": 1,
+      "with_benchmark_evidence": 2,
       "with_full_required_shape_evidence": 0
     }
   },
@@ -138,8 +138,12 @@
         "fusion_groups": []
       },
       "evidence": {
-        "observed_shape_tags": [],
-        "observed_required_shape_tags": [],
+        "observed_shape_tags": [
+          "square-1k"
+        ],
+        "observed_required_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-ffn",
           "ds-ffn-large",
@@ -159,10 +163,9 @@
           "non-align-4",
           "non-align-5",
           "qwen-ffn",
-          "square-1k",
           "xlarge"
         ],
-        "correctness_evidence_present": false,
+        "correctness_evidence_present": true,
         "performance_evidence_present": false
       }
     },
@@ -418,8 +421,12 @@
         "fusion_groups": []
       },
       "evidence": {
-        "observed_shape_tags": [],
-        "observed_required_shape_tags": [],
+        "observed_shape_tags": [
+          "square-1k"
+        ],
+        "observed_required_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-ffn",
           "ds-ffn-large",
@@ -439,10 +446,9 @@
           "non-align-4",
           "non-align-5",
           "qwen-ffn",
-          "square-1k",
           "xlarge"
         ],
-        "correctness_evidence_present": false,
+        "correctness_evidence_present": true,
         "performance_evidence_present": false
       }
     },
@@ -1534,8 +1540,12 @@
         "fusion_groups": []
       },
       "evidence": {
-        "observed_shape_tags": [],
-        "observed_required_shape_tags": [],
+        "observed_shape_tags": [
+          "square-1k"
+        ],
+        "observed_required_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-v2-attn",
           "ds-v2-ffn-down",
@@ -1567,12 +1577,11 @@
           "rect-tall",
           "rect-wide",
           "seq512",
-          "square-1k",
           "square-2k",
           "square-4k",
           "tiny"
         ],
-        "correctness_evidence_present": false,
+        "correctness_evidence_present": true,
         "performance_evidence_present": false
       }
     },
@@ -2921,8 +2930,12 @@
         ]
       },
       "evidence": {
-        "observed_shape_tags": [],
-        "observed_required_shape_tags": [],
+        "observed_shape_tags": [
+          "square-1k"
+        ],
+        "observed_required_shape_tags": [
+          "square-1k"
+        ],
         "missing_shape_tags": [
           "ds-v2-attn",
           "ds-v2-ffn-down",
@@ -2954,12 +2967,11 @@
           "rect-tall",
           "rect-wide",
           "seq512",
-          "square-1k",
           "square-2k",
           "square-4k",
           "tiny"
         ],
-        "correctness_evidence_present": false,
+        "correctness_evidence_present": true,
         "performance_evidence_present": false
       }
     },
