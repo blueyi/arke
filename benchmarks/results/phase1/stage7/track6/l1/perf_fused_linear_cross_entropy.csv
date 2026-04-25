@@ -1,0 +1,5 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+fused_linear_cross_entropy,gpt2-seq128,PyTorch-eager,78.2,90.1,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+fused_linear_cross_entropy,gpt2-seq128,Arke,108.5,100.2,,0.7207,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+fused_linear_cross_entropy,gpt2-seq512,PyTorch-eager,95.9,97.1,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+fused_linear_cross_entropy,gpt2-seq512,Arke,100.4,95.3,,0.9552,ok,,false,true,0,0,0.01,0.01,ok,,,,,

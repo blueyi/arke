@@ -1,0 +1,9 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+reduce_mean,small,cuBLAS/cuDNN,75.8,9.0,,0.8522,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_mean,small,PyTorch-eager,64.6,22.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_mean,small,Arke,60.8,76.8,,1.0625,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_mean,small,FlagGems,78.5,81.0,,0.8229,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_mean,,,,
+reduce_mean,medium,cuBLAS/cuDNN,135.5,128.0,,0.6118,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_mean,medium,PyTorch-eager,82.9,74.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_mean,medium,Arke,125.4,103.4,,0.6611,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_mean,medium,FlagGems,61.1,68.4,,1.3568,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_mean,,,,

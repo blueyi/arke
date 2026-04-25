@@ -1,7 +1,7 @@
 op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
-matmul_relu,tiny,128,128,128,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,86.0,97.3,0.049,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,tiny,128,128,128,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,182.3,21.5,0.023,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,square-1k,1024,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,219.1,217.1,9.800,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,square-1k,1024,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,398.7,243.7,5.387,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,tiny,128,128,128,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,9.9,12.3,0.424,ok,,false,true,0,0,0.01,0.01,ok,
-matmul_relu,square-1k,1024,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,123.9,127.0,17.332,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_relu,rect-wide,1024,4096,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,582.7,561.2,14.743,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_relu,rect-wide,1024,4096,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,636.9,658.4,13.487,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_relu,rect-tall,4096,1024,1024,separate,PyTorch 2.6.0+cu124 separate ops (matmul + relu) | https://pytorch.org | License: BSD-3-Clause,510.5,504.8,16.828,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_relu,rect-tall,4096,1024,1024,torch.compile,torch.compile (Inductor) auto-fusion via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,656.9,583.6,13.077,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_relu,rect-wide,1024,4096,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,914.4,888.7,9.394,ok,,false,true,0,0,0.01,0.01,ok,
+matmul_relu,rect-tall,4096,1024,1024,FlagGems,FlagGems 5.0.0 ATen dispatch (matmul + relu) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,928.3,913.4,9.254,ok,,false,true,0,0,0.01,0.01,ok,

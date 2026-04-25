@@ -1,0 +1,5 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+argmax,small,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,55.6,6.1,,ok,,false,true,0,0,0.001,0.001,ok,
+argmax,small,128,768,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,60.8,70.6,,ok,,false,true,0,0,0.001,0.001,ok,
+argmax,medium,128,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,53.6,55.3,,ok,,false,true,0,0,0.001,0.001,ok,
+argmax,medium,128,4096,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,79.8,13.3,,ok,,false,true,0,0,0.001,0.001,ok,

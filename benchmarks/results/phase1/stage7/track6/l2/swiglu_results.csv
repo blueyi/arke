@@ -1,0 +1,2 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+swiglu,gpt2-sm,128,3072,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,31.6,22.3,,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu

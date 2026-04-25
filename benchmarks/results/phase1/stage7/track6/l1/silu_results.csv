@@ -1,0 +1,6 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+silu,square-1k,1024,1024,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),18.5,17.4,,ok,,false,true,0,0,0.001,0.001,ok,
+silu,square-1k,1024,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,17.3,17.4,,ok,,false,true,0,0,0.001,0.001,ok,
+silu,square-1k,1024,1024,0,torch.compile,4,torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause,109.4,130.2,,ok,,false,true,0.00012207,1.86265e-09,0.001,0.001,ok,
+silu,square-1k,1024,1024,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,18.6,18.4,,ok,,false,true,0,0,0.001,0.001,ok,
+silu,square-1k,1024,1024,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,87.3,73.5,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for silu

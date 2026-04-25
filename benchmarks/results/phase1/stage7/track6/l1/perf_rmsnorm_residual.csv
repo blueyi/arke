@@ -1,0 +1,7 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+rmsnorm_residual,gpt2-small,PyTorch-eager,1207.0,738.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,
+rmsnorm_residual,gpt2-small,Arke,1046.9,940.0,,1.1529,ok,,false,true,0.00345874,0.000238356,0.005,0.005,ok,,,,,
+rmsnorm_residual,gpt2-ffn,PyTorch-eager,761.2,691.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,
+rmsnorm_residual,gpt2-ffn,Arke,925.7,938.0,,0.8223,ok,,false,true,0.00387359,0.000249757,0.005,0.005,ok,,,,,
+rmsnorm_residual,gpt2-medium,PyTorch-eager,848.9,798.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,
+rmsnorm_residual,gpt2-medium,Arke,1336.3,836.6,,0.6353,ok,,false,true,0.0049777,0.000249104,0.005,0.005,ok,,,,,

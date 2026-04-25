@@ -1,7 +1,7 @@
 operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
-matmul_gelu,tiny,separate,212.3,12.3,0.020,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,tiny,torch.compile,415.8,318.5,0.010,0.5106,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,tiny,FlagGems,175.8,20.4,0.024,1.2076,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,square-1k,separate,271.7,247.8,7.904,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,square-1k,torch.compile,572.4,334.8,3.752,0.4747,ok,,false,true,0,0,0.01,0.01,ok,,,,,
-matmul_gelu,square-1k,FlagGems,267.9,281.6,8.015,1.0142,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_gelu,rect-wide,separate,927.2,928.8,9.264,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_gelu,rect-wide,torch.compile,1187.8,1121.3,7.232,0.7806,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_gelu,rect-wide,FlagGems,1103.9,1101.8,7.782,0.8399,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_gelu,rect-tall,separate,1061.4,1055.7,8.093,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_gelu,rect-tall,torch.compile,1338.9,1374.2,6.416,0.7927,ok,,false,true,0,0,0.01,0.01,ok,,,,,
+matmul_gelu,rect-tall,FlagGems,1095.1,1078.3,7.844,0.9692,ok,,false,true,0,0,0.01,0.01,ok,,,,,

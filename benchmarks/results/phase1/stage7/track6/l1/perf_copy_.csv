@@ -1,0 +1,11 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+copy_,micro-tiny,PyTorch-eager,103.8,97.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,micro-tiny,Arke,115.7,111.6,,0.8971,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,micro-small,PyTorch-eager,154.6,50.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,micro-small,Arke,96.3,101.4,,1.6054,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,gpt2-hidden,PyTorch-eager,167.6,123.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,gpt2-hidden,Arke,90.1,88.1,,1.8602,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,gpt2-ffn,PyTorch-eager,146.1,151.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,gpt2-ffn,Arke,115.0,96.3,,1.2704,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,square-1k,PyTorch-eager,109.9,74.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+copy_,square-1k,Arke,119.1,120.8,,0.9228,ok,,false,true,0,0,0.001,0.001,ok,,,,,

@@ -1,0 +1,5 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+split,tiny-2,PyTorch-eager,9.9,7.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+split,tiny-2,Arke,9.9,2.0,,1.0000,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,
+split,gpt2-qkv-split,PyTorch-eager,15.7,23.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+split,gpt2-qkv-split,Arke,14.3,20.5,,1.0979,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,

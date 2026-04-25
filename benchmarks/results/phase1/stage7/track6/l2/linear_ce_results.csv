@@ -1,0 +1,2 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+linear_ce,gpt2-seq128,128,50257,768,separate,PyTorch 2.6.0+cu124 eager fused expression (linear_ce) | https://pytorch.org | License: BSD-3-Clause,2740.9,2688.0,3.605,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce

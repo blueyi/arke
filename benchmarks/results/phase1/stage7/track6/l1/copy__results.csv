@@ -1,0 +1,11 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+copy_,micro-tiny,32,64,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,103.8,97.3,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,micro-tiny,32,64,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,115.7,111.6,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,micro-small,128,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,154.6,50.2,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,micro-small,128,256,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,96.3,101.4,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,gpt2-hidden,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,167.6,123.9,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,gpt2-hidden,128,768,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,90.1,88.1,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,gpt2-ffn,128,3072,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,146.1,151.6,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,gpt2-ffn,128,3072,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,115.0,96.3,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,square-1k,1024,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,109.9,74.8,,ok,,false,true,0,0,0.001,0.001,ok,
+copy_,square-1k,1024,1024,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,119.1,120.8,,ok,,false,true,0,0,0.001,0.001,ok,

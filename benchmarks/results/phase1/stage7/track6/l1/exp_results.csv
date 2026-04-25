@@ -1,0 +1,21 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+exp,micro-tiny,32,64,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),102.1,103.4,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,micro-tiny,32,64,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,99.7,69.8,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,micro-tiny,32,64,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,91.8,56.3,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,micro-small,128,256,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),90.1,66.7,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,micro-small,128,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,91.5,31.7,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,micro-small,128,256,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,94.2,104.3,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,gpt2-hidden,128,768,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),94.5,99.5,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,gpt2-hidden,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,90.5,42.0,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,gpt2-hidden,128,768,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,105.8,106.5,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,gpt2-ffn,128,3072,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),82.3,56.3,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,gpt2-ffn,128,3072,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,88.7,18.4,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,gpt2-ffn,128,3072,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,151.2,109.6,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,square-1k,1024,1024,0,cuBLAS/cuDNN,0,NVIDIA cuBLAS/cuDNN via PyTorch 2.6.0+cu124 (CUDA 12.4) | https://pytorch.org | License: NVIDIA EULA (proprietary),92.2,37.9,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,square-1k,1024,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,94.5,104.4,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,square-1k,1024,1024,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,90.5,37.9,,ok,,false,true,0,0,0.001,0.001,ok,
+exp,micro-tiny,32,64,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,82.6,57.3,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp
+exp,micro-small,128,256,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,94.9,61.4,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp
+exp,gpt2-hidden,128,768,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,86.6,97.4,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp
+exp,gpt2-ffn,128,3072,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,87.7,95.2,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp
+exp,square-1k,1024,1024,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,86.4,105.5,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp

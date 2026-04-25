@@ -1,0 +1,16 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+cast,micro-tiny,32,64,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,97.2,95.4,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,micro-tiny,32,64,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,0.7,2.0,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,micro-small,128,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,87.8,105.5,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,micro-small,128,256,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,5.8,4.1,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,gpt2-hidden,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,90.1,91.1,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,gpt2-hidden,128,768,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,1.0,2.0,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,gpt2-ffn,128,3072,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,88.7,96.4,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,gpt2-ffn,128,3072,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,6.8,3.1,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,square-1k,1024,1024,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,113.0,52.2,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,square-1k,1024,1024,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,6.5,5.1,,ok,,false,true,0,0,0.001,0.001,ok,
+cast,micro-tiny,32,64,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,114.3,119.8,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast
+cast,micro-small,128,256,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,90.5,54.1,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast
+cast,gpt2-hidden,128,768,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,96.6,7.2,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast
+cast,gpt2-ffn,128,3072,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,87.4,63.4,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast
+cast,square-1k,1024,1024,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,95.2,103.4,,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast

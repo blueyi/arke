@@ -1,0 +1,3 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+grouped_query_attention,llama3-8b-512,32,512,128,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,2185.1,2133.0,,ok,,false,true,0,0,0.001,0.001,ok,
+grouped_query_attention,llama3-8b-512,32,512,128,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,348.2,350.2,,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for grouped_query_attention

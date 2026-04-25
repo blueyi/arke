@@ -1,0 +1,5 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
+fused_linear_cross_entropy,gpt2-seq128,128,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,78.2,90.1,,ok,,false,true,0,0,0.01,0.01,ok,
+fused_linear_cross_entropy,gpt2-seq128,128,768,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,108.5,100.2,,ok,,false,true,0,0,0.01,0.01,ok,
+fused_linear_cross_entropy,gpt2-seq512,512,768,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,95.9,97.1,,ok,,false,true,0,0,0.01,0.01,ok,
+fused_linear_cross_entropy,gpt2-seq512,512,768,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,100.4,95.3,,ok,,false,true,0,0,0.01,0.01,ok,

@@ -1,0 +1,5 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+gather,tiny,PyTorch-eager,60.8,70.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+gather,tiny,Arke,63.5,11.3,,0.9575,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+gather,moe-dispatch-top2,PyTorch-eager,141.3,115.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+gather,moe-dispatch-top2,Arke,76.5,81.9,,1.8471,ok,,false,true,0,0,0.001,0.001,ok,,,,,

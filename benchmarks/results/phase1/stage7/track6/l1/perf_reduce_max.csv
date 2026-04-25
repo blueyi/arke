@@ -1,0 +1,9 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+reduce_max,small,cuBLAS/cuDNN,146.0,43.0,,1.1247,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_max,small,PyTorch-eager,164.2,153.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_max,small,Arke,194.6,151.6,,0.8438,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_max,small,FlagGems,137.9,140.4,,1.1907,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,
+reduce_max,medium,cuBLAS/cuDNN,184.7,162.8,,0.9664,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_max,medium,PyTorch-eager,178.5,125.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_max,medium,Arke,168.6,73.7,,1.0587,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_max,medium,FlagGems,143.7,91.1,,1.2422,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,

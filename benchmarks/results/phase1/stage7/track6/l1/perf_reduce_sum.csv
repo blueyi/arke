@@ -1,0 +1,9 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+reduce_sum,small,cuBLAS/cuDNN,46.1,26.6,,0.5575,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_sum,small,PyTorch-eager,25.7,14.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_sum,small,Arke,26.6,11.3,,0.9662,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_sum,small,FlagGems,66.6,9.2,,0.3859,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,
+reduce_sum,medium,cuBLAS/cuDNN,20.1,15.2,,1.1045,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_sum,medium,PyTorch-eager,22.2,13.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_sum,medium,Arke,21.5,21.5,,1.0326,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+reduce_sum,medium,FlagGems,80.6,9.1,,0.2754,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,

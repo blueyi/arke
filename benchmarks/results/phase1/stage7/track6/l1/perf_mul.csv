@@ -1,0 +1,5 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,perf_target,perf_actual,perf_pass,perf_gap
+mul,square-1k,cuBLAS/cuDNN,105.8,27.6,,0.9442,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+mul,square-1k,PyTorch-eager,99.9,73.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+mul,square-1k,Arke,111.3,113.7,,0.8976,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+mul,square-1k,FlagGems,102.9,51.2,,0.9708,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for mul,,,,
