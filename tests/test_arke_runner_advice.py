@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from benchmarks.compiler_advice import compile_advice_for_op
 from benchmarks.hardware import HardwareInfo
-from benchmarks.shapes import AttentionShape
+from benchmarks.shapes import AttentionShape, GroupedMatmulShape
 
 
 class TestArkeRunnerAdvice:
@@ -15,3 +15,10 @@ class TestArkeRunnerAdvice:
         advice = compile_advice_for_op(hw, "paged_attention", shape)
         assert advice.allow_compile is False
         assert advice.reason
+
+    def test_runner_side_advice_matches_ot2_grouped_matmul_pressure(self):
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        shape = GroupedMatmulShape(tag="ds-v3-moe", B=4, E=256, M=512, K=7168, N=7168)
+        advice = compile_advice_for_op(hw, "grouped_matmul", shape)
+        assert advice.allow_compile is False
+        assert "expert sharding" in advice.strategy_hint

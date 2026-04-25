@@ -153,6 +153,8 @@ AND ALL:
 
 **Track 6 artifact status (current):** Stage 7 benchmark automation now emits a consolidated root-level dashboard artifact set under `benchmarks/results/phase1/stage7/track6/` — `coverage_gap.json`, `audit_report.json`, `stage7_operator_shape_stats.json`, and `dashboard.json` — and `benchmarks.gate_g7` validates that contract in addition to the per-layer `l1/` and `l2/` benchmark manifests.
 
+**Memory evidence note (current):** skipped benchmark rows now carry memory preflight metadata in artifact CSVs, including `memory_bytes_required`, `memory_bytes_budget`, `memory_ratio`, and `memory_policy`. The evidence path is no longer attention-only; OT2 / OT3 pressure is represented the same way as OT4 attention pressure, which keeps BL5 coverage accounting honest under 6GB VRAM constraints.
+
 ---
 
 ### Stage 8 (G8): Agent Autonomy ⬜

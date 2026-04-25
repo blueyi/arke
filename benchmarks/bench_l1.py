@@ -33,7 +33,7 @@ from benchmarks.baselines.base import get_all_runners, get_runners_for_op
 from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l1, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
-from benchmarks.memory_policy import maybe_attention_preflight
+from benchmarks.memory_policy import maybe_memory_preflight
 from benchmarks.status import classify_exception
 from benchmarks.shapes import (
     MatmulShape,
@@ -87,6 +87,10 @@ class OpResult:
     atol: float | None = None
     correctness_status: str = "unknown"
     correctness_reason: str = ""
+    memory_bytes_required: int | None = None
+    memory_bytes_budget: int | None = None
+    memory_ratio: float | None = None
+    memory_policy: str = ""
 
 
 def _get_shapes(
@@ -516,8 +520,8 @@ def run_op(
                 pass  # M, N already set
 
             for runner in runner_group:
-                preflight = maybe_attention_preflight(hw, op, shape)
-                if preflight is not None and preflight.status != "ok":
+                preflight = maybe_memory_preflight(hw, op, shape)
+                if preflight is not None and preflight.status.status != "ok":
                     results.append(OpResult(
                         op=op,
                         shape_tag=tag,
@@ -530,9 +534,15 @@ def run_op(
                         latency_us=float("inf"),
                         latency_min_us=float("inf"),
                         tflops=None,
-                        status=preflight.status,
-                        reason=preflight.reason,
-                        retryable=preflight.retryable,
+                        status=preflight.status.status,
+                        reason=preflight.status.reason,
+                        retryable=preflight.status.retryable,
+                        correctness_status="skipped",
+                        correctness_reason=preflight.status.reason,
+                        memory_bytes_required=preflight.estimate.bytes_required,
+                        memory_bytes_budget=preflight.estimate.bytes_budget,
+                        memory_ratio=preflight.estimate.ratio,
+                        memory_policy=preflight.estimate.category,
                     ))
                     continue
 
@@ -572,6 +582,10 @@ def run_op(
                         atol=correctness["atol"],
                         correctness_status=correctness["correctness_status"],
                         correctness_reason=correctness["correctness_reason"],
+                        memory_bytes_required=(preflight.estimate.bytes_required if preflight else None),
+                        memory_bytes_budget=(preflight.estimate.bytes_budget if preflight else None),
+                        memory_ratio=(preflight.estimate.ratio if preflight else None),
+                        memory_policy=(preflight.estimate.category if preflight else ""),
                     )
                     results.append(result)
                     tflops_str = f" {tflops:.2f} TFLOPS" if tflops else ""
@@ -597,6 +611,12 @@ def run_op(
                         status=status.status,
                         reason=status.reason,
                         retryable=status.retryable,
+                        correctness_status="error",
+                        correctness_reason=status.reason,
+                        memory_bytes_required=(preflight.estimate.bytes_required if preflight else None),
+                        memory_bytes_budget=(preflight.estimate.bytes_budget if preflight else None),
+                        memory_ratio=(preflight.estimate.ratio if preflight else None),
+                        memory_policy=(preflight.estimate.category if preflight else ""),
                     ))
 
     return results
@@ -616,6 +636,7 @@ def save_results(
         "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
         "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
         "correctness_status", "correctness_reason",
+        "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
     ]
 
     with open(csv_path, "w", newline="") as f:
@@ -644,6 +665,10 @@ def save_results(
                 "atol": "" if r.atol is None else f"{r.atol:.6g}",
                 "correctness_status": r.correctness_status,
                 "correctness_reason": r.correctness_reason,
+                "memory_bytes_required": "" if r.memory_bytes_required is None else str(r.memory_bytes_required),
+                "memory_bytes_budget": "" if r.memory_bytes_budget is None else str(r.memory_bytes_budget),
+                "memory_ratio": "" if r.memory_ratio is None else f"{r.memory_ratio:.4f}",
+                "memory_policy": r.memory_policy,
             })
 
     return csv_path

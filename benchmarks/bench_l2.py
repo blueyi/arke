@@ -27,7 +27,7 @@ import torch
 from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l2, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
-from benchmarks.memory_policy import attention_preflight
+from benchmarks.memory_policy import maybe_memory_preflight
 from benchmarks.shapes import GATED_SHAPES, MATMUL_SHAPES, GatedShape, MatmulShape, Shape2D, get_shapes
 from benchmarks.status import classify_exception
 
@@ -75,6 +75,52 @@ class FusedResult:
     atol: float | None = None
     correctness_status: str = "unknown"
     correctness_reason: str = ""
+    memory_bytes_required: int | None = None
+    memory_bytes_budget: int | None = None
+    memory_ratio: float | None = None
+    memory_policy: str = ""
+
+
+def _fused_memory_fields(preflight) -> dict[str, object]:
+    if preflight is None:
+        return {}
+    return {
+        "memory_bytes_required": preflight.estimate.bytes_required,
+        "memory_bytes_budget": preflight.estimate.bytes_budget,
+        "memory_ratio": preflight.estimate.ratio,
+        "memory_policy": preflight.estimate.category,
+    }
+
+
+def _memory_skipped_fused_result(
+    *,
+    op: str,
+    tag: str,
+    M: int,
+    N: int,
+    K: int,
+    approach: str,
+    source: str,
+    preflight,
+) -> FusedResult:
+    return FusedResult(
+        op=op,
+        shape_tag=tag,
+        M=M,
+        N=N,
+        K=K,
+        approach=approach,
+        source=source,
+        latency_us=float("inf"),
+        latency_min_us=float("inf"),
+        tflops=None,
+        status=preflight.status.status,
+        reason=preflight.status.reason,
+        retryable=preflight.status.retryable,
+        correctness_status="skipped",
+        correctness_reason=preflight.status.reason,
+        **_fused_memory_fields(preflight),
+    )
 
 
 # ── Approach builders ───────────────────────────────────────
@@ -216,7 +262,8 @@ def run_fused_op(
         logger.info(
             f"Benchmarking fused op: {op} ({len(shapes)} shapes × 1 approach)"
         )
-        return _run_fused_linear_ce_op(op, shapes, warmup=warmup, reps=reps)
+        hw = collect_hardware_info()
+        return _run_fused_linear_ce_op(op, shapes, warmup=warmup, reps=reps, hw=hw)
 
     if op == "qkv_fa":
         if shapes is None:
@@ -356,6 +403,7 @@ def _measure_fused(
     fn: callable,
     warmup: int,
     reps: int,
+    memory_preflight=None,
 ) -> FusedResult:
     """Run measurement for a single fused op approach."""
     try:
@@ -383,6 +431,7 @@ def _measure_fused(
             atol=correctness["atol"],
             correctness_status=correctness["correctness_status"],
             correctness_reason=correctness["correctness_reason"],
+            **_fused_memory_fields(memory_preflight),
         )
     except Exception as e:
         status = classify_exception(e)
@@ -399,6 +448,9 @@ def _measure_fused(
             status=status.status,
             reason=status.reason,
             retryable=status.retryable,
+            correctness_status="error",
+            correctness_reason=status.reason,
+            **_fused_memory_fields(memory_preflight),
         )
 
 
@@ -439,6 +491,7 @@ def _run_fused_linear_ce_op(
     shapes: list[Shape2D],
     warmup: int,
     reps: int,
+    hw=None,
 ) -> list[FusedResult]:
     """Benchmark fused linear + cross entropy using benchmark-defined shapes."""
     results: list[FusedResult] = []
@@ -446,6 +499,24 @@ def _run_fused_linear_ce_op(
     for shape in shapes:
         tag, M, hidden = shape.tag, shape.M, shape.N
         vocab = 50257 if "gpt2" in tag else 128256 if "llama3" in tag else 32000
+        source = (
+            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+        preflight = maybe_memory_preflight(hw, op, shape) if hw is not None else None
+        if preflight is not None and preflight.status.status != "ok":
+            results.append(_memory_skipped_fused_result(
+                op=op,
+                tag=tag,
+                M=M,
+                N=vocab,
+                K=hidden,
+                approach="separate",
+                source=source,
+                preflight=preflight,
+            ))
+            continue
+
         X = torch.randn(M, hidden, device="cuda", dtype=torch.float16)
         W = torch.randn(vocab, hidden, device="cuda", dtype=torch.float16)
         labels = torch.randint(0, vocab, (M,), device="cuda")
@@ -456,13 +527,10 @@ def _run_fused_linear_ce_op(
                 labels,
             )
 
-        source = (
-            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
-            "https://pytorch.org | License: BSD-3-Clause"
-        )
         results.append(
             _measure_fused(
-                op, tag, M, vocab, hidden, "separate", source, fn, warmup, reps
+                op, tag, M, vocab, hidden, "separate", source, fn, warmup, reps,
+                memory_preflight=preflight,
             )
         )
 
@@ -489,34 +557,22 @@ def _run_qkv_fa_op(
         hidden = shape.H * shape.D
         qkv_dim = 3 * hidden
 
-        if hw is not None:
-            status, _estimate = attention_preflight(
-                hw,
-                batch=shape.B,
-                heads=shape.H,
-                seq=shape.S,
-                head_dim=shape.D,
-            )
-            if status.status != "ok":
-                results.append(FusedResult(
-                    op=op,
-                    shape_tag=tag,
-                    M=tokens,
-                    N=qkv_dim,
-                    K=hidden,
-                    approach="separate",
-                    source=(
-                        f"PyTorch {torch.__version__} eager fused expression ({op}) | "
-                        "https://pytorch.org | License: BSD-3-Clause"
-                    ),
-                    latency_us=float("inf"),
-                    latency_min_us=float("inf"),
-                    tflops=None,
-                    status=status.status,
-                    reason=status.reason,
-                    retryable=status.retryable,
-                ))
-                continue
+        preflight = maybe_memory_preflight(hw, op, shape) if hw is not None else None
+        if preflight is not None and preflight.status.status != "ok":
+            results.append(_memory_skipped_fused_result(
+                op=op,
+                tag=tag,
+                M=tokens,
+                N=qkv_dim,
+                K=hidden,
+                approach="separate",
+                source=(
+                    f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+                    "https://pytorch.org | License: BSD-3-Clause"
+                ),
+                preflight=preflight,
+            ))
+            continue
 
         X = torch.randn(tokens, hidden, device="cuda", dtype=torch.float16)
         W = torch.randn(hidden, qkv_dim, device="cuda", dtype=torch.float16)
@@ -534,7 +590,8 @@ def _run_qkv_fa_op(
         )
         results.append(
             _measure_fused(
-                op, tag, tokens, qkv_dim, hidden, "separate", source, fn, warmup, reps
+                op, tag, tokens, qkv_dim, hidden, "separate", source, fn, warmup, reps,
+                memory_preflight=preflight,
             )
         )
 
@@ -555,6 +612,7 @@ def save_results(
         "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
         "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
         "correctness_status", "correctness_reason",
+        "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
     ]
 
     with open(csv_path, "w", newline="") as f:
@@ -582,6 +640,10 @@ def save_results(
                 "atol": "" if r.atol is None else f"{r.atol:.6g}",
                 "correctness_status": r.correctness_status,
                 "correctness_reason": r.correctness_reason,
+                "memory_bytes_required": "" if r.memory_bytes_required is None else str(r.memory_bytes_required),
+                "memory_bytes_budget": "" if r.memory_bytes_budget is None else str(r.memory_bytes_budget),
+                "memory_ratio": "" if r.memory_ratio is None else f"{r.memory_ratio:.4f}",
+                "memory_policy": r.memory_policy,
             })
 
     return csv_path

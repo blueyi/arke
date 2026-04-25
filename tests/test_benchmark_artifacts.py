@@ -26,6 +26,7 @@ class TestBenchmarkArtifacts:
                     "source", "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
                     "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
                     "correctness_status", "correctness_reason",
+                    "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
                     "perf_target", "perf_actual", "perf_pass", "perf_gap",
                 ],
             )
@@ -36,6 +37,7 @@ class TestBenchmarkArtifacts:
                 "latency_us": "10.0", "latency_min_us": "9.0", "tflops": "", "status": "ok", "reason": "", "retryable": "false",
                 "allclose": "true", "max_abs_diff": "0.0", "mean_abs_diff": "0.0", "rtol": "1e-5", "atol": "1e-6",
                 "correctness_status": "pass", "correctness_reason": "",
+                "memory_bytes_required": "0", "memory_bytes_budget": "1000", "memory_ratio": "0.0", "memory_policy": "none",
                 "perf_target": "1.0", "perf_actual": "1.0", "perf_pass": "true", "perf_gap": "0.0",
             })
             writer.writerow({
@@ -44,6 +46,7 @@ class TestBenchmarkArtifacts:
                 "latency_us": "8.0", "latency_min_us": "7.5", "tflops": "", "status": "ok", "reason": "", "retryable": "false",
                 "allclose": "true", "max_abs_diff": "0.0", "mean_abs_diff": "0.0", "rtol": "1e-5", "atol": "1e-6",
                 "correctness_status": "pass", "correctness_reason": "",
+                "memory_bytes_required": "2048", "memory_bytes_budget": "1024", "memory_ratio": "1.25", "memory_policy": "dense_matmul",
                 "perf_target": "1.0", "perf_actual": "1.25", "perf_pass": "true", "perf_gap": "0.25",
             })
         perf = write_perf_csv_from_l1(raw, tmp_path / "perf_relu.csv")
@@ -56,6 +59,9 @@ class TestBenchmarkArtifacts:
         assert data["overall_geomean"] > 0
         assert data["status_counts"]["ok"] == 2
         assert data["correctness_counts"]["pass"] == 2
+        assert data["memory_policy_counts"]["dense_matmul"] == 1
+        assert data["memory_policy_counts"]["none"] == 1
+        assert data["memory_pressure_rows"] == 1
         assert data["perf_target_counts"] == {"with_target": 2, "without_target": 0}
         assert data["perf_pass_counts"]["true"] == 2
         assert data["perf_targets"]["relu"] == 1.0
@@ -72,6 +78,7 @@ class TestBenchmarkArtifacts:
                     "source", "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
                     "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
                     "correctness_status", "correctness_reason",
+                    "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
                     "perf_target", "perf_actual", "perf_pass", "perf_gap",
                 ],
             )
@@ -82,6 +89,7 @@ class TestBenchmarkArtifacts:
                 "latency_us": "12.0", "latency_min_us": "11.0", "tflops": "1.0", "status": "ok", "reason": "", "retryable": "false",
                 "allclose": "true", "max_abs_diff": "0.0", "mean_abs_diff": "0.0", "rtol": "1e-5", "atol": "1e-6",
                 "correctness_status": "pass", "correctness_reason": "",
+                "memory_bytes_required": "0", "memory_bytes_budget": "1000", "memory_ratio": "0.0", "memory_policy": "none",
                 "perf_target": "1.0", "perf_actual": "1.0", "perf_pass": "true", "perf_gap": "0.0",
             })
             writer.writerow({
@@ -90,6 +98,7 @@ class TestBenchmarkArtifacts:
                 "latency_us": "9.0", "latency_min_us": "8.5", "tflops": "1.2", "status": "oom", "reason": "CUDA out of memory", "retryable": "true",
                 "allclose": "", "max_abs_diff": "", "mean_abs_diff": "", "rtol": "", "atol": "",
                 "correctness_status": "skipped", "correctness_reason": "oom",
+                "memory_bytes_required": "2048", "memory_bytes_budget": "1024", "memory_ratio": "1.5", "memory_policy": "dense_matmul",
                 "perf_target": "1.0", "perf_actual": "1.3333", "perf_pass": "true", "perf_gap": "0.3333",
             })
         perf = write_perf_csv_from_l2(raw, tmp_path / "perf_matmul_relu.csv")
@@ -104,6 +113,9 @@ class TestBenchmarkArtifacts:
         assert data["status_counts"]["oom"] == 1
         assert data["correctness_counts"]["pass"] == 1
         assert data["correctness_counts"]["skipped"] == 1
+        assert data["memory_policy_counts"]["dense_matmul"] == 1
+        assert data["memory_policy_counts"]["none"] == 1
+        assert data["memory_pressure_rows"] == 1
         assert data["perf_target_counts"] == {"with_target": 2, "without_target": 0}
         assert data["perf_pass_counts"]["true"] == 2
         assert data["perf_targets"]["matmul_relu"] == 1.0

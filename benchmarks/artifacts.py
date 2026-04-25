@@ -8,6 +8,13 @@ import json
 import math
 from pathlib import Path
 
+MEMORY_FIELDS = (
+    "memory_bytes_required",
+    "memory_bytes_budget",
+    "memory_ratio",
+    "memory_policy",
+)
+
 
 def _safe_float(value: str | float | int | None) -> float | None:
     if value in (None, "", "N/A", "None", "inf"):
@@ -21,6 +28,10 @@ def _safe_float(value: str | float | int | None) -> float | None:
     return val
 
 
+def _copy_memory_fields(row: dict[str, str]) -> dict[str, str]:
+    return {field: row.get(field, "") for field in MEMORY_FIELDS}
+
+
 def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
     rows = list(csv.DictReader(raw_csv.open()))
     out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -29,6 +40,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
         "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
         "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
         "correctness_status", "correctness_reason",
+        *MEMORY_FIELDS,
         "perf_target", "perf_actual", "perf_pass", "perf_gap",
     ]
     with out_csv.open("w", newline="") as f:
@@ -67,6 +79,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
                     "atol": row.get("atol", ""),
                     "correctness_status": row.get("correctness_status", "unknown"),
                     "correctness_reason": row.get("correctness_reason", ""),
+                    **_copy_memory_fields(row),
                     "perf_target": row.get("perf_target", ""),
                     "perf_actual": row.get("perf_actual", row.get("ratio_vs_baseline", "")),
                     "perf_pass": row.get("perf_pass", ""),
@@ -83,6 +96,7 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
         "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
         "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
         "correctness_status", "correctness_reason",
+        *MEMORY_FIELDS,
         "perf_target", "perf_actual", "perf_pass", "perf_gap",
     ]
     with out_csv.open("w", newline="") as f:
@@ -121,6 +135,7 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
                     "atol": row.get("atol", ""),
                     "correctness_status": row.get("correctness_status", "unknown"),
                     "correctness_reason": row.get("correctness_reason", ""),
+                    **_copy_memory_fields(row),
                     "perf_target": row.get("perf_target", ""),
                     "perf_actual": row.get("perf_actual", row.get("ratio_vs_baseline", "")),
                     "perf_pass": row.get("perf_pass", ""),
@@ -160,11 +175,18 @@ def write_summary(run_dir: Path) -> Path | None:
 
     status_counts: dict[str, int] = {}
     correctness_counts: dict[str, int] = {}
+    memory_policy_counts: dict[str, int] = {}
+    memory_pressure_rows = 0
     for row in perf_rows:
         status = row.get("status", "ok")
         status_counts[status] = status_counts.get(status, 0) + 1
         correctness = row.get("correctness_status", "unknown")
         correctness_counts[correctness] = correctness_counts.get(correctness, 0) + 1
+        policy = (row.get("memory_policy", "") or "none").strip() or "none"
+        memory_policy_counts[policy] = memory_policy_counts.get(policy, 0) + 1
+        memory_ratio = _safe_float(row.get("memory_ratio"))
+        if status in {"skipped", "oom"} or (memory_ratio is not None and memory_ratio > 1.0):
+            memory_pressure_rows += 1
 
     perf_target_counts: dict[str, int] = {}
     perf_pass_counts: dict[str, int] = {}
@@ -196,6 +218,8 @@ def write_summary(run_dir: Path) -> Path | None:
         "operators": sorted(ratios_by_operator.keys()),
         "status_counts": status_counts,
         "correctness_counts": correctness_counts,
+        "memory_policy_counts": memory_policy_counts,
+        "memory_pressure_rows": memory_pressure_rows,
         "perf_target_counts": {
             "with_target": sum(len(vals) for vals in perf_targets_by_operator.values()),
             "without_target": sum(1 for row in perf_rows if _safe_float(row.get("perf_target")) is None),
