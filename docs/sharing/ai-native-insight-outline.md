@@ -14,6 +14,11 @@
 > - 2026-04-25 v0.1 初版
 > - 2026-04-26 v0.2 聚焦"技术趋势洞察"叙事；A 加"模型能力侧"；B 改为"趋势 + 案例证据"；C 引入 H8/H9 与 TODO 列表
 > - 2026-04-26 v0.3 **新增"目标态总览"承上启下页**；**Part C 去项目进度化**，改为"设计逻辑 → 总架构 → 四件套各一页 + Benchmark 一页"的纯技术叙事
+> - 2026-04-26 v0.4 **面向高层 + 技术专家** 三处加固：
+>   1. **新增 Glossary 速读表**（紧跟 TOC）作为全篇术语索引：LLM 工程、GPU/NPU 硬件、业界系统三类术语
+>   2. **A3 图表用公开真实数据**：模型规模 (GPT-2 1.5B → GPT-3 175B → GPT-4 → DeepSeek V3 671B-A37B) / 硬件代际 (V100 → A100 → H100 → B200) / 算子复杂度 (ATen 数 / Attention 变体) 时间线
+>   3. **Part C 之前严禁出现 Arke 专有概念**（`@rationale` / V0/V1/V2 / SemanticIR / StrategyIR / `.ak` / KernelCache 等），统一用业界通用术语；首次出现的术语在右下角标注 "→ Glossary"
+>   4. **真实数据 + 案例归属**：B2 七案例每页都带可归属的性能数据（KernelBench 250/250 · L1 1.56× torch.compile · 89% H100 roofline · RMSNorm 5.29× · MoE 14.3× · Blackwell B200 vs FA-4 +10.5% · AscendKernelGen Pass@10 0%→95.5%）；B3/B4/B5 每条都标"代表案例"
 
 ---
 

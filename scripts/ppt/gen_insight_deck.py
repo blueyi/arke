@@ -4,45 +4,51 @@ Insight deck generator (single PPTX) — implements outline v0.3.
 Output: docs/sharing/ai-native-insight-deck.pptx
 Theme:  16:9 dark-navy + teal accents (consistent with existing chapter decks).
 
-Outline mapping (slide → outline section):
-  01  Cover                                       (A1)
+Outline mapping (slide → outline section, v0.4):
+  01  Cover                                                       (A1)
   02  TOC
-  03  PART A divider
-  04  A1  封面与目标 / 3 questions
-  05  A2  模型能力侧 — 6 维能力跃迁
-  06  A3  问题域侧 — 硬件 / 工作负载 / 工程现实
-  07  A3  量化曲线（模型规模 / 算子复杂度 / 硬件代际）
-  08  A4  传统路径失效（4 类基线）
-  09  A5  洞察输出形态（六段式）
-  10  PART B divider
-  11  B1  全景图
-  12  B2  7 案例索引表
-  13  B2.1 KernelEvolve
-  14  B2.2 KernelAgent / KernelFalcon
-  15  B2.3 AutoKernel
-  16  B2.4 K-Search
-  17  B2.5 AVO
-  18  B2.6 CuTeGen
-  19  B2.7 KernelGen-LM / AscendKernelGen
-  20  B3  趋势归纳 T1–T6
-  21  B4  好进展 G1–G6
-  22  B5  关键难题 H1–H9
-  23  TARGET-STATE divider
-  24  S1  北极星定义
-  25  S2  7 大技术特征 F1–F7
-  26  S3  对通用编程的启示
-  27  S4  过渡到 Part C
-  28  PART C divider
-  29  C1  设计逻辑（5 条公理）
-  30  C2  整体架构总图
-  31  C3  ① Arke Language
-  32  C4  ② Arke IR
-  33  C5  ③ Compiler Toolchain
-  34  C6  ④ Agent Engineering
-  35  C7  ⑤ Benchmark 体系
-  36  C8  与 F1–F7 最终对齐表
-  37  C9  讨论题 / Q&A
-  38  References
+  03  Glossary (术语速读)                                          (新增)
+  04  PART A divider
+  05  A1  封面与目标 / 3 questions
+  06  A2  模型能力侧 — 6 维能力跃迁
+  07  A3  问题域侧 — 硬件 / 工作负载 / 工程现实
+  08  A3  真实数据时间线（模型 / 硬件 / 算子复杂度）
+  09  A4  传统路径失效（4 类基线）
+  10  A5  洞察输出形态（六段式）
+  11  PART B divider
+  12  B1  全景图（避免 Arke 专有词）
+  13  B2  7 案例索引表（含真实数据列）
+  14  B2.1 KernelEvolve   ← 真实数据
+  15  B2.2 KernelAgent / KernelFalcon
+  16  B2.3 AutoKernel
+  17  B2.4 K-Search
+  18  B2.5 AVO
+  19  B2.6 CuTeGen
+  20  B2.7 KernelGen-LM / AscendKernelGen
+  21  B3  趋势归纳 T1–T6（每条标注代表案例）
+  22  B4  好进展 G1–G6（每条标注代表案例）
+  23  B5  关键难题 H1–H9（每条标注业界证据）
+  24  TARGET-STATE divider
+  25  S1  北极星定义
+  26  S2  7 大技术特征 F1–F7
+  27  S3  对通用编程的启示
+  28  S4  过渡到 Part C
+  29  PART C divider
+  30  C1  设计逻辑（5 条公理）
+  31  C2  整体架构总图
+  32  C3  ① Arke Language
+  33  C4  ② Arke IR
+  34  C5  ③ Compiler Toolchain
+  35  C6  ④ Agent Engineering
+  36  C7  ⑤ Benchmark 体系
+  37  C8  与 F1–F7 最终对齐表
+  38  C9  讨论题 / Q&A
+  39  References
+
+Audience: 高层管理者 + 技术专家。
+- Pre-Part-C 严禁 Arke 专有概念（@rationale / V0/V1/V2 / SemanticIR / .ak / KernelCache）
+- 首次出现的专业术语在 footer 标注 "→ Glossary P03"
+- A3 三条曲线 / B2 案例数据 全部使用公开真实数据，标注来源
 """
 
 from __future__ import annotations
@@ -240,6 +246,19 @@ def footer(slide, page_num: int, total: int, section: str = ""):
              size=9, color=FG_DIM, align=PP_ALIGN.RIGHT, font=FONT_MONO)
 
 
+def glossary_hint(slide, terms: str = "→ 术语见速读 P03"):
+    """Bottom-right small annotation for slides that introduce new terms."""
+    add_text(slide, Inches(8.5), Inches(7.15), Inches(2.95), Inches(0.28),
+             terms, size=9, color=FG_DIM, italic=True,
+             align=PP_ALIGN.RIGHT, font=FONT_MONO)
+
+
+def source_note(slide, text: str):
+    """Bottom-left small annotation for data sources / citations."""
+    add_text(slide, Inches(0.6), Inches(6.78), Inches(8.5), Inches(0.28),
+             text, size=9, color=FG_DIM, italic=True)
+
+
 def chapter_chip(slide, label: str, color: RGBColor = ACCENT):
     """Top-right kicker chip (e.g. PART A / B / TARGET / PART C)."""
     chip = slide.shapes.add_shape(
@@ -335,34 +354,139 @@ def slide_toc(prs, page, total):
     _no_line(line)
 
     entries = [
+        ("Glossary · 术语速读", "LLM 工程 · GPU/NPU 硬件 · 业界评测系统",
+         "03", ACCENT_RED),
         ("Part A · 背景", "为什么需要这次洞察（模型能力 + 业界现状 + 失效）",
-         "04–09", ACCENT),
+         "05–10", ACCENT),
         ("Part B · 业界趋势", "7 个 LLM-driven kernel 案例 → T1–T6 / G1–G6 / H1–H9",
-         "11–22", ACCENT_BLUE),
+         "12–23", ACCENT_BLUE),
         ("🌟 目标态总览", "北极星 · F1–F7 七大特征 · 对通用编程的启示",
-         "24–27", ACCENT_ALT),
+         "25–28", ACCENT_ALT),
         ("Part C · Arke 技术构建", "设计逻辑 · 总架构 · 四件套 + Benchmark · F 对齐",
-         "29–37", ACCENT_PURPLE),
+         "30–38", ACCENT_PURPLE),
     ]
     top = Inches(2.0)
-    row_h = Inches(1.05)
+    row_h = Inches(0.88)
     for i, (name, sub, rng, col) in enumerate(entries):
         y = top + i * row_h
-        p = panel(s, Inches(0.9), y, Inches(11.5), Inches(0.9), BG_PANEL,
+        p = panel(s, Inches(0.9), y, Inches(11.5), Inches(0.78), BG_PANEL,
                   stroke=None)
         accent_bar(s, Inches(0.9), y, width=Inches(0.14),
-                   height=Inches(0.9), color=col)
-        add_text(s, Inches(1.2), y + Inches(0.13), Inches(8.5), Inches(0.4),
-                 name, size=16, bold=True, color=FG)
-        add_text(s, Inches(1.2), y + Inches(0.5),
-                 Inches(8.5), Inches(0.4),
-                 sub, size=12, color=FG_MUTED)
-        add_text(s, Inches(10.0), y + Inches(0.25), Inches(2.3), Inches(0.5),
-                 rng, size=18, bold=True, color=col,
+                   height=Inches(0.78), color=col)
+        add_text(s, Inches(1.2), y + Inches(0.1), Inches(8.5), Inches(0.36),
+                 name, size=15, bold=True, color=FG)
+        add_text(s, Inches(1.2), y + Inches(0.43),
+                 Inches(8.5), Inches(0.32),
+                 sub, size=11.5, color=FG_MUTED)
+        add_text(s, Inches(10.0), y + Inches(0.2), Inches(2.3), Inches(0.45),
+                 rng, size=17, bold=True, color=col,
                  align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE,
                  font=FONT_MONO)
 
     footer(s, page, total, "TOC")
+
+
+# ============================================================
+# Slide 03 · Glossary (术语速读)
+# ============================================================
+def slide_glossary(prs, page, total):
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(s)
+    add_text(s, Inches(0.6), Inches(0.45), Inches(8), Inches(0.35),
+             "GLOSSARY · 术语速读", size=12, bold=True, color=ACCENT,
+             font=FONT_MONO)
+    add_text(s, Inches(0.6), Inches(0.78), Inches(12), Inches(0.85),
+             "面向高层 + 专家的术语速读表", size=26, bold=True, color=FG)
+    line = s.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                              Inches(0.6), Inches(1.62), Inches(0.6),
+                              Emu(28000))
+    _set_fill(line, ACCENT)
+    _no_line(line)
+    add_text(s, Inches(0.6), Inches(1.72), Inches(12.2), Inches(0.32),
+             "本 deck 后续页若引入下列概念，统一指代下表定义；详细说明请扫题对号入座。",
+             size=11, color=FG_MUTED, italic=True)
+
+    # Three columns × multiple rows
+    cols = [
+        ("LLM 工程层", ACCENT, [
+            ("Agent / Tool-use",
+             "LLM 通过结构化工具调用与外部工具（编译器/profiler）交互"),
+            ("RAG",
+             "Retrieval-Augmented Generation；将外部知识检索后注入上下文"),
+            ("Tool harness",
+             "把编译/对拍/性能测试封装为可被 Agent 调用的工具集"),
+            ("RLEF",
+             "RL with Execution Feedback；用执行结果做强化学习反馈"),
+            ("SFT",
+             "Supervised Fine-Tuning；用标注样本做监督微调"),
+            ("World model",
+             "Agent 内部对环境状态的可预测表征，用于规划"),
+            ("Decision rationale",
+             "对每条优化决策的自然语言解释，用于审计与迁移"),
+            ("Bounded action space",
+             "决策从编译器枚举的合法动作集中选择，禁止自由代码"),
+        ]),
+        ("GPU / NPU 硬件层", ACCENT_BLUE, [
+            ("SIMT",
+             "Single-Instruction Multiple-Thread（NVIDIA / AMD GPU）"),
+            ("SIMD",
+             "Single-Instruction Multiple-Data（Ascend NPU 等）"),
+            ("Tensor Core",
+             "NVIDIA GPU 上的矩阵乘加加速单元"),
+            ("Roofline",
+             "性能上限模型：计算强度 vs 带宽/算力交点"),
+            ("NCU",
+             "NVIDIA Nsight Compute；kernel 级 profiler"),
+            ("Occupancy",
+             "SM 同时驻留的 warp 数与硬件上限之比"),
+            ("Triton / CuTe / MLIR",
+             "GPU 编程抽象层：Triton (块级) / CuTe (布局代数) / MLIR (多方言)"),
+            ("FlashAttention (FA-2/3/4)",
+             "Tri Dao 等提出的 IO-aware attention 系列实现"),
+        ]),
+        ("业界评测 / 系统", ACCENT_ALT, [
+            ("KernelBench",
+             "Stanford 推的 GPU kernel 生成基准；分 L1/L2/L3 三级"),
+            ("ATen",
+             "PyTorch 后端算子集，主流神经网络的「指令集」 (≈2000+)"),
+            ("FlagGems / Liger-Kernel",
+             "开源 Triton 算子库；常作为 LLM 生成 kernel 的对照基线"),
+            ("torch.compile / Inductor",
+             "PyTorch 2.x 图编译器，AOT 路径的事实标准"),
+            ("cuBLAS / cuDNN",
+             "NVIDIA 官方矩阵 / 卷积库；性能上限基线"),
+            ("MLA / GQA / MoE",
+             "Multi-Head Latent Attention / Grouped-Query Attention / Mixture-of-Experts"),
+            ("Pass@k",
+             "Top-k 候选中至少 1 个通过的概率；代码生成评测常用"),
+            ("Amdahl",
+             "并行加速上限 = 1 / ((1-p) + p/N)；用作瓶颈优先级"),
+        ]),
+    ]
+    cw = Inches(4.0)
+    cy = Inches(2.15)
+    cx = Inches(0.6)
+    for i, (title, c, items) in enumerate(cols):
+        x = cx + i * (cw + Inches(0.1))
+        panel(s, x, cy, cw, Inches(4.85), BG_PANEL, stroke=None)
+        accent_bar(s, x, cy, width=cw, height=Inches(0.08), color=c)
+        add_text(s, x + Inches(0.25), cy + Inches(0.2),
+                 cw - Inches(0.4), Inches(0.4),
+                 title, size=14, bold=True, color=c, font=FONT_MONO)
+        ty = cy + Inches(0.65)
+        for term, defn in items:
+            add_text(s, x + Inches(0.25), ty, cw - Inches(0.4), Inches(0.2),
+                     term, size=10.5, bold=True, color=FG)
+            add_text(s, x + Inches(0.25), ty + Inches(0.2),
+                     cw - Inches(0.4), Inches(0.32),
+                     defn, size=9, color=FG_MUTED)
+            ty = ty + Inches(0.52)
+
+    add_text(s, Inches(0.6), Inches(7.05), Inches(12), Inches(0.25),
+             "提示：Arke 项目专有概念（@rationale / 多层 IR / 多级验证 / KernelCache 等）将在 Part C 引入；本表只列业界通用术语。",
+             size=9, color=FG_DIM, italic=True)
+
+    footer(s, page, total, "Glossary")
 
 
 # ============================================================
@@ -526,97 +650,156 @@ def slide_a3_problem_domain(prs, page, total):
     footer(s, page, total, "Part A")
 
 
+def _timeline_panel(slide, x, y, w, h, *, title, color,
+                    points, y_label, source_text):
+    """One mini timeline chart with real milestones.
+
+    points: list of (x_label, y_label_value, numeric_y_for_position)
+    where numeric_y_for_position is in the [0, 1] range used for height.
+    """
+    panel(slide, x, y, w, h, BG_PANEL_DEEP, stroke=STROKE)
+    accent_bar(slide, x, y, width=w, height=Inches(0.06), color=color)
+    add_text(slide, x + Inches(0.2), y + Inches(0.12),
+             w - Inches(0.4), Inches(0.32),
+             title, size=12, bold=True, color=color, font=FONT_MONO)
+
+    # plot area
+    pad_l = Inches(0.55)
+    pad_r = Inches(0.25)
+    pad_t = Inches(0.55)
+    pad_b = Inches(0.95)
+    px = x + pad_l
+    py = y + pad_t
+    pw = w - pad_l - pad_r
+    ph = h - pad_t - pad_b
+
+    # baseline
+    bl = slide.shapes.add_connector(1, px, py + ph, px + pw, py + ph)
+    _set_line(bl, FG_MUTED, 1.0)
+    # y-axis
+    ya = slide.shapes.add_connector(1, px, py, px, py + ph)
+    _set_line(ya, FG_MUTED, 0.8)
+    # 3 light grid lines
+    for k in (0.25, 0.5, 0.75):
+        gy = py + ph - Emu(int(ph * k))
+        gl = slide.shapes.add_connector(1, px, gy, px + pw, gy)
+        _set_line(gl, STROKE, 0.4)
+    # y axis label
+    add_text(slide, x + Inches(0.05), py - Inches(0.05),
+             Inches(2.5), Inches(0.25),
+             y_label, size=8, color=FG_MUTED, font=FONT_MONO)
+
+    n = len(points)
+    if n < 2:
+        return
+    # plot polyline + markers + labels
+    coords = []
+    for i, (xl, yl, yv) in enumerate(points):
+        t = i / (n - 1)
+        cx = px + Emu(int(pw * t))
+        cy = py + ph - Emu(int(ph * max(0.02, min(0.98, yv))))
+        coords.append((cx, cy))
+    for i in range(n - 1):
+        ln = slide.shapes.add_connector(1, coords[i][0], coords[i][1],
+                                        coords[i + 1][0], coords[i + 1][1])
+        _set_line(ln, color, 2.0)
+    for i, (xl, yl, _) in enumerate(points):
+        cx_, cy_ = coords[i]
+        m = slide.shapes.add_shape(MSO_SHAPE.OVAL,
+                                   cx_ - Inches(0.06),
+                                   cy_ - Inches(0.06),
+                                   Inches(0.12), Inches(0.12))
+        _set_fill(m, color)
+        _no_line(m)
+        # value label above
+        add_text(slide, cx_ - Inches(0.7), cy_ - Inches(0.42),
+                 Inches(1.4), Inches(0.25),
+                 yl, size=8.5, bold=True, color=FG, font=FONT_MONO,
+                 align=PP_ALIGN.CENTER)
+        # x label below baseline
+        add_text(slide, cx_ - Inches(0.5), py + ph + Inches(0.05),
+                 Inches(1.0), Inches(0.4),
+                 xl, size=9, color=FG_MUTED, font=FONT_MONO,
+                 align=PP_ALIGN.CENTER)
+
+    # source citation strip
+    add_text(slide, x + Inches(0.2), y + h - Inches(0.42),
+             w - Inches(0.4), Inches(0.36),
+             source_text, size=7.5, color=FG_DIM, italic=True)
+
+
 def slide_a3_chart(prs, page, total):
-    """Conceptual divergence chart of the three curves."""
+    """Three real-data milestone timelines (model scale / hardware /
+    operator complexity)."""
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
     chapter_chip(s, "PART A", ACCENT)
-    slide_header(s, "A3 · 三条发散曲线",
-                 "模型规模 / 算子复杂度 / 硬件代际——同时加速")
+    slide_header(s, "A3 · 三条发散曲线（公开数据）",
+                 "模型规模 / 硬件代际 / 算子复杂度——同步加速 (2018→2026)")
 
-    # chart frame
-    cx = Inches(0.9)
-    cy = Inches(2.05)
-    cw = Inches(8.3)
-    ch = Inches(4.3)
-    panel(s, cx, cy, cw, ch, BG_PANEL_DEEP, stroke=STROKE)
-    # axes
-    ax_left = cx + Inches(0.7)
-    ax_bottom = cy + ch - Inches(0.6)
-    ax_top = cy + Inches(0.4)
-    ax_right = cx + cw - Inches(0.4)
-    # x-axis
-    xa = s.shapes.add_connector(1, ax_left, ax_bottom, ax_right, ax_bottom)
-    _set_line(xa, FG_MUTED, 1.2)
-    # y-axis
-    ya = s.shapes.add_connector(1, ax_left, ax_bottom, ax_left, ax_top)
-    _set_line(ya, FG_MUTED, 1.2)
-    # gridlines
-    for i in range(1, 5):
-        gy = ax_bottom - i * Inches(0.78)
-        gl = s.shapes.add_connector(1, ax_left, gy, ax_right, gy)
-        _set_line(gl, STROKE, 0.5)
+    # 3 horizontal mini-timelines stacked
+    tw = Inches(12.15)
+    th = Inches(1.55)
+    tx = Inches(0.6)
+    ty = Inches(2.0)
 
-    # axis labels
-    add_text(s, ax_left - Inches(0.5), ax_top - Inches(0.32),
-             Inches(3), Inches(0.3),
-             "相对增速 (log)", size=10, color=FG_MUTED, font=FONT_MONO)
-    add_text(s, ax_right - Inches(2.5), ax_bottom + Inches(0.1),
-             Inches(2.5), Inches(0.3),
-             "时间 (年代际)", size=10, color=FG_MUTED, font=FONT_MONO,
-             align=PP_ALIGN.RIGHT)
+    # Chart 1 · Model scale
+    _timeline_panel(
+        s, tx, ty, tw, th,
+        title="① 大模型规模 (参数量级)",
+        color=ACCENT,
+        points=[
+            ("2018\nGPT-1",       "117M",   0.04),
+            ("2019\nGPT-2",       "1.5B",   0.10),
+            ("2020\nGPT-3",       "175B",   0.32),
+            ("2022\nPaLM",        "540B",   0.42),
+            ("2023\nGPT-4",       "≈1.7T*", 0.62),
+            ("2024\nLLaMA-3 405B","405B",   0.55),
+            ("2024\nDeepSeek V3", "671B-A37B", 0.72),
+            ("2025\nLLaMA-4",     "MoE 2T*",   0.85),
+        ],
+        y_label="params (log)",
+        source_text="Source: 各模型公开 paper / blog（* GPT-4 与 LLaMA-4 为 SemiAnalysis 等公开估算，非官方）",
+    )
 
-    # 3 curves drawn as freeform polylines using connectors approximating exponential
-    import math
-    colors = [(ACCENT, "模型规模 (params)", 1.4),
-              (ACCENT_ALT, "算子复杂度 (fusion + dyn shape)", 1.15),
-              (ACCENT_RED, "硬件代际 (NVIDIA / Ascend / NPU)", 0.95)]
-    n = 30
-    plot_w_emu = (ax_right - ax_left)
-    plot_h_emu = (ax_bottom - ax_top)
-    for ci, (col, lbl, k) in enumerate(colors):
-        prev = None
-        for i in range(n + 1):
-            t = i / n
-            v = (math.exp(k * t) - 1) / (math.exp(k) - 1)
-            px = ax_left + Emu(int(plot_w_emu * t))
-            py = ax_bottom - Emu(int(plot_h_emu * v))
-            if prev is not None:
-                ln = s.shapes.add_connector(1, prev[0], prev[1], px, py)
-                _set_line(ln, col, 2.2)
-            prev = (px, py)
+    # Chart 2 · Hardware
+    _timeline_panel(
+        s, tx, ty + th + Inches(0.12), tw, th,
+        title="② NVIDIA 数据中心 GPU 代际 · BF16 算力",
+        color=ACCENT_RED,
+        points=[
+            ("2017\nV100",   "125 TF", 0.08),
+            ("2020\nA100",   "312 TF", 0.20),
+            ("2022\nH100",   "989 TF", 0.45),
+            ("2024\nH200",   "989 TF", 0.45),
+            ("2024\nB100",   "1.8 PF", 0.75),
+            ("2025\nB200",   "2.25 PF", 0.92),
+            ("2026+\nGB200", "2.5 PF", 1.0),
+        ],
+        y_label="TF (BF16, log)",
+        source_text="Source: NVIDIA 官方 datasheet（V100/A100/H100/H200/Blackwell）。Ascend 910B/910C 与 AMD MI300X 形成 SIMD/异构平行路径（未画）。",
+    )
 
-    # legend (right column)
-    lx = Inches(9.45)
-    panel(s, lx, Inches(2.05), Inches(3.3), Inches(4.3), BG_PANEL,
-          stroke=None)
-    add_text(s, lx + Inches(0.25), Inches(2.2), Inches(3), Inches(0.4),
-             "图例与含义", size=14, bold=True, color=ACCENT)
-    legend_items = [
-        (ACCENT, "模型规模",
-         "参数量 / 上下文 / 推理预算 三轴齐升"),
-        (ACCENT_ALT, "算子复杂度",
-         "Attention 变体 + 融合 + 动态 shape"),
-        (ACCENT_RED, "硬件代际",
-         "SIMT → SIMD → 多 NPU 路径分化"),
-    ]
-    ly = Inches(2.7)
-    for col, t, d in legend_items:
-        sw = s.shapes.add_shape(MSO_SHAPE.RECTANGLE,
-                                lx + Inches(0.3), ly + Inches(0.13),
-                                Inches(0.3), Inches(0.08))
-        _set_fill(sw, col)
-        _no_line(sw)
-        add_text(s, lx + Inches(0.7), ly, Inches(2.5), Inches(0.35),
-                 t, size=13, bold=True, color=col)
-        add_text(s, lx + Inches(0.7), ly + Inches(0.32),
-                 Inches(2.5), Inches(0.7),
-                 d, size=10, color=FG_MUTED)
-        ly = ly + Inches(1.15)
+    # Chart 3 · Operator complexity
+    _timeline_panel(
+        s, tx, ty + 2 * (th + Inches(0.12)), tw, th,
+        title="③ 算子复杂度 · PyTorch ATen 算子数 + Attention 变体演进",
+        color=ACCENT_ALT,
+        points=[
+            ("2018\nATen ≈350",            "vanilla\nattn", 0.10),
+            ("2020\nATen 800+",            "MHA",           0.20),
+            ("2022\nFA-1",                 "FlashAttn-1",   0.32),
+            ("2023\nFA-2",                 "FA-2",          0.45),
+            ("2023\nGQA",                  "GQA",           0.55),
+            ("2024\nMoE 普及",             "MoE+SwiGLU",    0.70),
+            ("2024\nFA-3 + MLA",           "FA-3/MLA",      0.85),
+            ("2026\nFA-4 (Blackwell)",     "FA-4",          1.0),
+        ],
+        y_label="复杂度 (定性)",
+        source_text="Source: PyTorch 官方 ATen 源码计数 + FlashAttention 系列 (Tri Dao et al.) + DeepSeek-V2 MLA paper + cuDNN/CUTLASS release notes。",
+    )
 
-    add_text(s, Inches(0.9), Inches(6.55), Inches(12), Inches(0.5),
-             "示意图：表达三股发散趋势的相对加速关系，不代表精确数值。",
-             size=10, color=FG_DIM, italic=True)
+    glossary_hint(s, "→ Glossary P03 · 术语 ATen / MLA / GQA / FA-2/3/4")
     footer(s, page, total, "Part A")
 
 
@@ -727,18 +910,18 @@ def slide_b1_panorama(prs, page, total):
     set_bg(s)
     chapter_chip(s, "PART B", ACCENT_BLUE)
     slide_header(s, "B1 · 全景图",
-                 "LLM-driven kernel 工作链路：Spec/IR ↔ Agent ↔ Toolchain ↔ HW")
+                 "LLM-driven kernel 工作链路：Spec ↔ Agent ↔ Toolchain ↔ HW")
 
-    # 4 horizontal layers
+    # 4 horizontal layers — all referenced cases are public industry systems
     layers = [
-        ("① Spec / IR 层", "kernel 表达 · 决策表达 · 知识表达",
-         "案例：CuTeGen / Arke .ak", ACCENT_PURPLE),
+        ("① Spec / 抽象层", "kernel 表达 · 决策表达 · 知识表达",
+         "代表抽象层：CuTe / Triton / 各家 DSL", ACCENT_PURPLE),
         ("② LLM Agent 层", "规划 · 决策 · 反思 · 回滚",
-         "案例：KernelAgent / AVO / KernelFalcon", ACCENT),
+         "代表系统：KernelAgent / AVO / KernelFalcon", ACCENT),
         ("③ Toolchain 层", "compile · profile · verify · search",
-         "案例：KernelEvolve / AutoKernel / K-Search", ACCENT_ALT),
+         "代表系统：KernelEvolve / AutoKernel / K-Search", ACCENT_ALT),
         ("④ Hardware 层", "NVIDIA · Ascend · AMD · 多 NPU / DSA",
-         "案例：AscendKernelGen 等", ACCENT_RED),
+         "代表系统：AscendKernelGen / KernelEvolve (MTIA)", ACCENT_RED),
     ]
     lx = Inches(0.7)
     ly = Inches(2.0)
@@ -778,77 +961,104 @@ def slide_b2_index(prs, page, total):
     set_bg(s)
     chapter_chip(s, "PART B", ACCENT_BLUE)
     slide_header(s, "B2 · 7 个代表案例索引",
-                 "一页一个，落点是「它代表了什么趋势」")
+                 "一页一个；含可归属性能信号（公开数据）")
 
     rows = [
-        ("1", "KernelEvolve", "Meta",
-         "生产级异构 + RAG + 搜索式优化",
-         "T1 / T3 / T4", ACCENT),
+        ("1", "KernelEvolve", "Meta · ISCA'26",
+         "生产级异构 + RAG + 搜索",
+         "KernelBench 250/250 · 最高 17× vs PyTorch",
+         "T1/T3/T4", ACCENT),
         ("2", "KernelAgent / KernelFalcon", "PyTorch · Meta",
-         "Deep Agents 分层 + 硬件信号 + 严格门禁",
-         "T2 / T3", ACCENT_BLUE),
+         "Deep Agents 分层 + 硬件信号",
+         "L1/L2/L3 250/250 · 1.56× torch.compile · 89% H100 roofline",
+         "T2/T3", ACCENT_BLUE),
         ("3", "AutoKernel", "RightNow AI",
-         "autoresearch 循环 + Amdahl + 双后端",
-         "T1 / T2", ACCENT_ALT),
+         "autoresearch + Amdahl + 双后端",
+         "H100：RMSNorm 5.29× · softmax 2.82× · cross-entropy 2.21×",
+         "T1/T2", ACCENT_ALT),
         ("4", "K-Search", "UC Berkeley",
          "World-Model 规划 + 策略/实现解耦",
-         "T1 / T5", ACCENT_PURPLE),
+         "FlashInfer GQA/MLA/MoE 平均 2.10× · MoE 14.3× · TriMul SOTA 1030μs",
+         "T1/T5", ACCENT_PURPLE),
         ("5", "AVO", "NVIDIA",
-         "Agent-as-Variation-Operator + 长周期演化",
-         "T1 / T2", ACCENT),
+         "Agent-as-Variation-Operator",
+         "Blackwell B200 · MHA 7-day 演化 · 超 cuDNN +3.5%, 超 FA-4 +10.5%",
+         "T1/T2", ACCENT),
         ("6", "CuTeGen", "U. Toronto",
-         "选稳定抽象层 (CuTe) + 单 kernel 渐进精炼",
+         "稳定抽象层 (CuTe) + 单 kernel 渐进精炼",
+         "12 matmul + 14 activation kernels · token 成本可控",
          "T4", ACCENT_RED),
-        ("7", "KernelGen-LM / AscendKernelGen", "PCL",
+        ("7", "KernelGen-LM / AscendKernelGen", "PCL · 中山大学 · 华为",
          "领域数据 + 领域模型 (SFT + RLEF)",
+         "Ascend NPU · L2 编译成功率 0%→95.5% (Pass@10)",
          "T6", ACCENT_ALT),
     ]
-    # header row
-    hx = Inches(0.6)
-    hw = Inches(12.15)
-    rh = Inches(0.55)
-    hy = Inches(2.0)
+    # header row — reorganized to fit 6 columns
+    hx = Inches(0.45)
+    hw = Inches(12.45)
+    rh = Inches(0.5)
+    hy = Inches(1.95)
     panel(s, hx, hy, hw, rh, BG_PANEL_ALT, stroke=None)
-    cols_x = [Inches(0.85), Inches(1.4), Inches(4.6), Inches(6.6),
-              Inches(11.0)]
-    headers = ["#", "案例", "来源", "一句话定位", "代表趋势"]
-    for cx_, h in zip(cols_x, headers):
-        add_text(s, cx_, hy + Inches(0.13), Inches(3), Inches(0.35),
-                 h, size=12, bold=True, color=ACCENT_ALT,
+    cols_x = [Inches(0.55), Inches(0.95), Inches(3.45),
+              Inches(5.65), Inches(8.0), Inches(11.7)]
+    cols_w = [Inches(0.4), Inches(2.5), Inches(2.2),
+              Inches(2.35), Inches(3.7), Inches(1.2)]
+    headers = ["#", "案例", "来源", "一句话定位",
+               "公开性能 / 数据信号", "趋势"]
+    for cx_, cw_, h in zip(cols_x, cols_w, headers):
+        add_text(s, cx_, hy + Inches(0.11), cw_, Inches(0.3),
+                 h, size=11, bold=True, color=ACCENT_ALT,
                  font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
     # rows
-    for i, (n, name, src, desc, t, col) in enumerate(rows):
-        y = hy + Inches(0.6) + i * Inches(0.55)
-        panel(s, hx, y, hw, Inches(0.5),
+    for i, (n, name, src, desc, signal, t, col) in enumerate(rows):
+        y = hy + Inches(0.55) + i * Inches(0.62)
+        panel(s, hx, y, hw, Inches(0.58),
               BG_PANEL if i % 2 == 0 else BG_PANEL_DEEP, stroke=None)
-        accent_bar(s, hx, y, width=Inches(0.08),
-                   height=Inches(0.5), color=col)
-        add_text(s, cols_x[0], y + Inches(0.1), Inches(0.5), Inches(0.3),
-                 n, size=12, bold=True, color=col, font=FONT_MONO,
+        accent_bar(s, hx, y, width=Inches(0.06),
+                   height=Inches(0.58), color=col)
+        add_text(s, cols_x[0], y + Inches(0.14), cols_w[0], Inches(0.3),
+                 n, size=11, bold=True, color=col, font=FONT_MONO,
                  anchor=MSO_ANCHOR.MIDDLE)
-        add_text(s, cols_x[1], y + Inches(0.1), Inches(3.2), Inches(0.3),
-                 name, size=12, bold=True, color=FG,
+        add_text(s, cols_x[1], y + Inches(0.14), cols_w[1], Inches(0.3),
+                 name, size=11, bold=True, color=FG,
                  anchor=MSO_ANCHOR.MIDDLE)
-        add_text(s, cols_x[2], y + Inches(0.1), Inches(2), Inches(0.3),
-                 src, size=11, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
-        add_text(s, cols_x[3], y + Inches(0.1), Inches(4.4), Inches(0.3),
-                 desc, size=11, color=FG, anchor=MSO_ANCHOR.MIDDLE)
-        add_text(s, cols_x[4], y + Inches(0.1), Inches(2), Inches(0.3),
-                 t, size=11, bold=True, color=col,
+        add_text(s, cols_x[2], y + Inches(0.14), cols_w[2], Inches(0.3),
+                 src, size=9.5, color=FG_MUTED,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, cols_x[3], y + Inches(0.14), cols_w[3], Inches(0.3),
+                 desc, size=10, color=FG, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, cols_x[4], y + Inches(0.14), cols_w[4], Inches(0.3),
+                 signal, size=9.5, color=ACCENT_BLUE,
+                 anchor=MSO_ANCHOR.MIDDLE, font=FONT_MONO)
+        add_text(s, cols_x[5], y + Inches(0.14), cols_w[5], Inches(0.3),
+                 t, size=10, bold=True, color=col,
                  font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+    source_note(s, "Source: 各案例 arXiv / 官方 blog / GitHub repo (详见 References)；性能为各方公布数据，硬件 / shape 各异不可直接横比。")
     footer(s, page, total, "Part B")
 
 
 def slide_b2_case(prs, page, total, idx, name, source, color,
-                  what, key_tech, trend, gap):
-    """Single case page using fixed template."""
+                  what, key_tech, trend, gap, metrics, source_cite):
+    """Single case page using fixed template — now with公开 metrics row."""
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
     chapter_chip(s, "PART B", ACCENT_BLUE)
     slide_header(s, f"B2.{idx} · 案例 {idx}/7 · {name}",
                  f"{source}　|　代表趋势：{trend}")
 
-    # 2x2 grid
+    # Metrics strip (public, attributable data)
+    panel(s, Inches(0.6), Inches(1.95), Inches(12.15), Inches(0.7),
+          BG_PANEL_ALT, stroke=None)
+    accent_bar(s, Inches(0.6), Inches(1.95), width=Inches(0.14),
+               height=Inches(0.7), color=ACCENT_BLUE)
+    add_text(s, Inches(0.95), Inches(2.02), Inches(2.4), Inches(0.32),
+             "公开数据 / 代表性能", size=10, bold=True,
+             color=ACCENT_BLUE, font=FONT_MONO,
+             anchor=MSO_ANCHOR.MIDDLE)
+    add_text(s, Inches(3.4), Inches(2.02), Inches(9.3), Inches(0.55),
+             metrics, size=11.5, color=FG, anchor=MSO_ANCHOR.MIDDLE)
+
+    # 2x2 grid (slightly compacted to make room for metrics strip)
     grid = [
         ("做了什么", what, ACCENT),
         ("关键技术点", key_tech, ACCENT_BLUE),
@@ -856,23 +1066,24 @@ def slide_b2_case(prs, page, total, idx, name, source, color,
         ("它没解决什么", gap, ACCENT_RED),
     ]
     cw = Inches(5.95)
-    ch = Inches(2.35)
+    ch = Inches(2.05)
     cx = Inches(0.6)
-    cy = Inches(2.0)
+    cy = Inches(2.8)
     for i, (t, items, col) in enumerate(grid):
         x = cx + (i % 2) * (cw + Inches(0.15))
-        y = cy + (i // 2) * (ch + Inches(0.18))
+        y = cy + (i // 2) * (ch + Inches(0.15))
         panel(s, x, y, cw, ch, BG_PANEL, stroke=None)
         accent_bar(s, x, y, width=Inches(0.14), height=ch, color=col)
-        add_text(s, x + Inches(0.3), y + Inches(0.12),
-                 cw - Inches(0.5), Inches(0.4),
-                 t, size=15, bold=True, color=col)
-        add_bullets(s, x + Inches(0.3), y + Inches(0.6),
-                    cw - Inches(0.5), ch - Inches(0.7),
-                    items, size=12, bullet_color=col, line_spacing=1.22)
+        add_text(s, x + Inches(0.3), y + Inches(0.1),
+                 cw - Inches(0.5), Inches(0.36),
+                 t, size=14, bold=True, color=col)
+        add_bullets(s, x + Inches(0.3), y + Inches(0.55),
+                    cw - Inches(0.5), ch - Inches(0.65),
+                    items, size=11, bullet_color=col, line_spacing=1.2)
     # bottom case-color stripe
     accent_bar(s, Inches(0.6), Inches(6.95), width=Inches(12.15),
                height=Inches(0.05), color=color)
+    source_note(s, f"Source: {source_cite}")
     footer(s, page, total, f"Part B · 案例 {idx}/7")
 
 
@@ -895,31 +1106,37 @@ def slide_b3_trends(prs, page, total):
     set_bg(s)
     chapter_chip(s, "PART B", ACCENT_BLUE)
     slide_header(s, "B3 · 趋势归纳",
-                 "业界正在收敛的 6 个方向（核心页）")
+                 "业界正在收敛的 6 个方向（每条标注代表案例）")
 
     trends = [
         ("T1", "搜索化",
          "从 one-shot → 演化 / 规划 / MCTS 等结构化搜索",
+         "代表：KernelEvolve · K-Search · AVO",
          ACCENT),
         ("T2", "工具化",
-         "tool-use + harness + 可复现评测=把 LLM 关进编译器/profiler 控制室",
+         "tool-use + harness + 可复现评测，把 LLM 关进编译器 / profiler 控制室",
+         "代表：KernelAgent · AutoKernel",
          ACCENT_BLUE),
         ("T3", "硬件信号化",
          "profile / roofline / NCU 反馈直接进入决策循环",
+         "代表：KernelAgent · AVO · KernelEvolve",
          ACCENT_ALT),
         ("T4", "抽象层选择",
-         "放弃直写 PTX，押注稳定可迭代的抽象层 (Triton/CuTe/DSL/IR)",
+         "放弃直写 PTX，押注稳定可迭代的抽象层 (Triton / CuTe / DSL)",
+         "代表：CuTeGen · KernelEvolve",
          ACCENT_PURPLE),
         ("T5", "知识资产化",
-         "RAG + playbook + @rationale + 轨迹 → 经验从手感到资产",
+         "RAG + playbook + decision rationale + 轨迹 → 经验从手感到资产",
+         "代表：KernelEvolve (RAG) · K-Search (world model)",
          ACCENT_RED),
         ("T6", "领域模型化",
-         "SFT + RLEF + 后训练，让小/中模型在 kernel 域具备专家级判断",
+         "SFT + RLEF + 后训练，让小 / 中模型在 kernel 域具备专家级判断",
+         "代表：KernelGen-LM / AscendKernelGen",
          ACCENT),
     ]
     cw = Inches(4.0)
-    ch = Inches(2.25)
-    for i, (code, t, d, c) in enumerate(trends):
+    ch = Inches(2.4)
+    for i, (code, t, d, case_ref, c) in enumerate(trends):
         x = Inches(0.6) + (i % 3) * (cw + Inches(0.1))
         y = Inches(2.0) + (i // 3) * (ch + Inches(0.18))
         panel(s, x, y, cw, ch, BG_PANEL, stroke=None)
@@ -930,9 +1147,22 @@ def slide_b3_trends(prs, page, total):
         add_text(s, x + Inches(1.1), y + Inches(0.18),
                  cw - Inches(1.3), Inches(0.4),
                  t, size=15, bold=True, color=FG)
-        add_text(s, x + Inches(0.3), y + Inches(0.7),
-                 cw - Inches(0.4), ch - Inches(0.85),
-                 d, size=12, color=FG_MUTED)
+        add_text(s, x + Inches(0.3), y + Inches(0.65),
+                 cw - Inches(0.4), Inches(1.0),
+                 d, size=11.5, color=FG_MUTED)
+        chip = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                                  x + Inches(0.3),
+                                  y + ch - Inches(0.55),
+                                  cw - Inches(0.5), Inches(0.4))
+        chip.adjustments[0] = 0.4
+        _set_fill(chip, BG_PANEL_DEEP)
+        _set_line(chip, c, 0.75)
+        add_text(s, x + Inches(0.3), y + ch - Inches(0.55),
+                 cw - Inches(0.5), Inches(0.4),
+                 case_ref, size=10, color=c,
+                 anchor=MSO_ANCHOR.MIDDLE, align=PP_ALIGN.CENTER,
+                 font=FONT_MONO)
+    glossary_hint(s, "→ Glossary P03 · 术语 RAG / harness / RLEF / NCU")
     footer(s, page, total, "Part B")
 
 
@@ -941,41 +1171,53 @@ def slide_b4_progress(prs, page, total):
     set_bg(s)
     chapter_chip(s, "PART B", ACCENT_BLUE)
     slide_header(s, "B4 · 已有的「好进展」",
-                 "What's working — 客观陈述案例已经验证可行的部分")
+                 "What's working — 客观陈述案例已经验证可行的部分（含真实数据）")
 
     progs = [
         ("G1", "正确性门禁",
-         "数值等价 (numerical equivalence) 已成为业界标准做法"),
+         "数值等价 (numerical equivalence) 已是业界标配",
+         "KernelAgent: KernelBench L1/L2/L3 250/250 全 PASS"),
         ("G2", "并行探索 + 早停 + 预算",
-         "多个工作验证有效；显著降低 token 与 wall-clock 成本"),
+         "multi-worker + early-win 显著降低 token/wall-clock 成本",
+         "AutoKernel: 长时无人值守演化 · KernelEvolve: tree search"),
         ("G3", "硬件 profile 反馈",
-         "进入决策循环后能稳定带来双位数性能提升"),
+         "进入决策循环后稳定带来双位数性能提升",
+         "KernelAgent: 89% H100 roofline · 1.56× torch.compile"),
         ("G4", "稳定抽象层",
-         "Triton / CuTe 等上的 LLM 生成已能落地生产"),
+         "Triton / CuTe 等上的 LLM 生成已能落地生产",
+         "CuTeGen: 12 matmul + 14 act kernels · KernelEvolve: 多 DSL"),
         ("G5", "RAG + 知识库 + 后训练",
-         "让「专家直觉」开始可累计、可迁移"),
+         "让「专家直觉」开始可累计、可迁移",
+         "KernelEvolve: 硬件知识库 RAG · KernelGen-LM: SFT + RLEF"),
         ("G6", "Agent 编排",
-         "分层 + 规划 + 回滚 让长会话稳定性显著改善"),
+         "分层 + 规划 + 回滚让长会话稳定性显著改善",
+         "AVO: B200 上 MHA 7-day 演化超 FA-4 +10.5%"),
     ]
-    rh = Inches(0.78)
+    rh = Inches(0.82)
     ry = Inches(2.0)
     rx = Inches(0.6)
     rw = Inches(12.15)
-    for i, (code, t, d) in enumerate(progs):
+    for i, (code, t, d, evidence) in enumerate(progs):
         y = ry + i * (rh + Inches(0.05))
         panel(s, rx, y, rw, rh,
               BG_PANEL if i % 2 == 0 else BG_PANEL_DEEP, stroke=None)
         accent_bar(s, rx, y, width=Inches(0.14), height=rh, color=ACCENT)
-        add_text(s, rx + Inches(0.4), y + Inches(0.18),
+        add_text(s, rx + Inches(0.4), y + Inches(0.2),
                  Inches(0.9), Inches(0.45),
                  code, size=16, bold=True, color=ACCENT, font=FONT_MONO)
         add_text(s, rx + Inches(1.45), y + Inches(0.13),
-                 Inches(3.3), Inches(0.45),
+                 Inches(3.3), Inches(0.4),
                  t, size=14, bold=True, color=FG,
                  anchor=MSO_ANCHOR.MIDDLE)
-        add_text(s, rx + Inches(4.95), y + Inches(0.13),
-                 Inches(7.0), Inches(0.55),
-                 d, size=12, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, rx + Inches(1.45), y + Inches(0.43),
+                 Inches(3.3), Inches(0.36),
+                 d, size=10, color=FG_MUTED,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, rx + Inches(4.95), y + Inches(0.18),
+                 Inches(7.0), Inches(0.5),
+                 "证据：" + evidence, size=11, color=ACCENT_BLUE,
+                 anchor=MSO_ANCHOR.MIDDLE, font=FONT_MONO)
+    source_note(s, "Source: 各案例公开 paper / blog / repo（详见 B2 与 References）")
     footer(s, page, total, "Part B")
 
 
@@ -984,46 +1226,66 @@ def slide_b5_challenges(prs, page, total):
     set_bg(s)
     chapter_chip(s, "PART B", ACCENT_BLUE)
     slide_header(s, "B5 · 仍待解决的「关键技术难题」",
-                 "What's hard — H1–H9 (用统一编号便于后文对齐)")
+                 "What's hard — H1–H9（统一编号 · 每条带业界证据）")
 
     chs = [
         ("H1", "策略可迁移性",
-         "从自由代码抽出策略，变成可迁移、可检索资产", ACCENT),
+         "策略仍埋在自由代码里，难审计 / 回滚 / 跨 kernel 迁移",
+         "证据：KernelAgent / AVO 输出仍是 Triton/CUDA",
+         ACCENT),
         ("H2", "多级验证",
-         "事后对拍 → 可剪枝多级门禁 V0/V1/V2", ACCENT_BLUE),
+         "事后对拍 → 静态 / 数值 / 性能的可剪枝多级门禁",
+         "证据：各家自建 harness，无统一协议",
+         ACCENT_BLUE),
         ("H3", "动态 / 符号 shape",
-         "动态 shape 下泛化与不退化的同时保证", ACCENT_ALT),
+         "动态 shape 下泛化与不退化同时保证",
+         "证据：shape guard / specialization 各家自做",
+         ACCENT_ALT),
         ("H4", "跨硬件迁移",
-         "NVIDIA → Ascend / AMD / NPU 的策略与知识复用", ACCENT_PURPLE),
+         "NVIDIA → Ascend / AMD / NPU 策略与知识复用",
+         "证据：KernelGen-LM 切硬件需重训",
+         ACCENT_PURPLE),
         ("H5", "模型级自治",
-         "从单 kernel 到模型级 (bottleneck → 优化 → 回归)",
+         "从单 kernel 到模型级 (bottleneck → 优化 → 回归) 闭环",
+         "证据：AutoKernel 仅做单 kernel；端到端少",
          ACCENT_RED),
         ("H6", "Token / 预算治理",
-         "长会话中预算 / 上下文 / 稳定性的可治理", ACCENT),
+         "长会话中预算 / 上下文 / 稳定性可治理",
+         "证据：AVO 7-day 演化的成本控制是开放问题",
+         ACCENT),
         ("H7", "后端天花板",
-         "Triton 封顶 → 何时下沉 MLIR / LLVM 解锁深决策",
+         "Triton 抽象封顶 → 何时下沉 MLIR / LLVM 解锁深决策",
+         "证据：CuTeGen 选 CuTe 才能逼近 cuBLAS",
          ACCENT_BLUE),
         ("H8", "数据稀缺 / 领域模型",
-         "kernel × HW × profile 三元组数据稀缺", ACCENT_ALT),
+         "kernel × HW × profile 三元组数据稀缺",
+         "证据：AscendKernelGen 自造 Ascend-CoT",
+         ACCENT_ALT),
         ("H9", "评测可复现",
-         "缺乏统一 benchmark / 形状层级 / 基线协议", ACCENT_RED),
+         "缺统一 benchmark / 形状层级 / 基线协议",
+         "证据：各家性能数据硬件 / shape 各异，难横比",
+         ACCENT_RED),
     ]
     cw = Inches(4.0)
-    ch = Inches(1.45)
-    for i, (code, t, d, c) in enumerate(chs):
+    ch = Inches(1.55)
+    for i, (code, t, d, ev, c) in enumerate(chs):
         x = Inches(0.6) + (i % 3) * (cw + Inches(0.1))
         y = Inches(2.0) + (i // 3) * (ch + Inches(0.13))
         panel(s, x, y, cw, ch, BG_PANEL, stroke=None)
         accent_bar(s, x, y, width=Inches(0.14), height=ch, color=c)
-        add_text(s, x + Inches(0.3), y + Inches(0.12),
-                 Inches(0.9), Inches(0.4),
+        add_text(s, x + Inches(0.3), y + Inches(0.1),
+                 Inches(0.9), Inches(0.36),
                  code, size=15, bold=True, color=c, font=FONT_MONO)
-        add_text(s, x + Inches(1.05), y + Inches(0.13),
-                 cw - Inches(1.2), Inches(0.4),
+        add_text(s, x + Inches(1.05), y + Inches(0.11),
+                 cw - Inches(1.2), Inches(0.36),
                  t, size=13, bold=True, color=FG)
-        add_text(s, x + Inches(0.3), y + Inches(0.62),
-                 cw - Inches(0.4), ch - Inches(0.7),
-                 d, size=11, color=FG_MUTED)
+        add_text(s, x + Inches(0.3), y + Inches(0.5),
+                 cw - Inches(0.4), Inches(0.5),
+                 d, size=10.5, color=FG_MUTED)
+        add_text(s, x + Inches(0.3), y + ch - Inches(0.42),
+                 cw - Inches(0.4), Inches(0.36),
+                 ev, size=9, color=ACCENT_BLUE,
+                 italic=True, font=FONT_MONO)
     footer(s, page, total, "Part B")
 
 
@@ -1159,11 +1421,11 @@ def slide_s3_implications(prs, page, total):
          "编译器 / 运行时 / 类型系统是它的「环境」。",
          ACCENT_BLUE),
         ("03", "编译器 / 工具链承担「可验证 RL 环境」的角色",
-         "V0/V1/V2 三级验证不仅是 kernel 域的工程实践，" \
+         "静态 / 数值 / 性能 三级验证不仅是 kernel 域的工程实践，" \
          "更是让 LLM 在通用程序合成中「安全地试错」的范式。",
          ACCENT_ALT),
         ("04", "经验资产化是 LLM 工程的真正护城河",
-         "@rationale / 轨迹 / 决策树可被检索、训练、跨团队复用——" \
+         "decision rationale / 轨迹 / 决策树可被检索、训练、跨团队复用——" \
          "比生成的代码本身更有长期价值。",
          ACCENT_PURPLE),
         ("05", "跨平台 / 跨架构「零迁移成本」正在变得可能",
@@ -1804,191 +2066,252 @@ def build(out_path: Path) -> None:
     prs.slide_width = SLIDE_W
     prs.slide_height = SLIDE_H
 
-    # Plan slides first (for total count)
-    # 1 cover, 2 toc, 3 PartA divider, 4 A1, 5 A2, 6 A3, 7 A3 chart,
-    # 8 A4, 9 A5, 10 PartB divider, 11 B1, 12 B2 index,
-    # 13–19 B2 cases x7, 20 B3, 21 B4, 22 B5,
-    # 23 Target divider, 24 S1, 25 S2, 26 S3, 27 S4,
-    # 28 PartC divider, 29 C1, 30 C2, 31 C3, 32 C4, 33 C5, 34 C6, 35 C7,
-    # 36 C8, 37 C9, 38 References
-    total = 38
+    # Slide plan (v0.4):
+    # 01 cover · 02 TOC · 03 Glossary
+    # 04 Part A divider · 05 A1 · 06 A2 · 07 A3 · 08 A3 chart · 09 A4 · 10 A5
+    # 11 Part B divider · 12 B1 · 13 B2 index · 14–20 B2.1–7 cases ·
+    # 21 B3 trends · 22 B4 progress · 23 B5 challenges
+    # 24 Target divider · 25 S1 · 26 S2 · 27 S3 · 28 S4
+    # 29 Part C divider · 30 C1 · 31 C2 · 32 C3 · 33 C4 · 34 C5 · 35 C6 ·
+    # 36 C7 · 37 C8 · 38 C9 · 39 References
+    total = 39
 
     slide_cover(prs)                                                      # 1
     slide_toc(prs, 2, total)                                              # 2
+    slide_glossary(prs, 3, total)                                         # 3
 
-    slide_divider(prs, 3, total,
+    slide_divider(prs, 4, total,
                   "PART A · BACKGROUND",
                   "为什么需要这次洞察",
                   "模型能力跃迁 · 算子工程现状 · 传统路径失效 · 输出形态",
-                  accent=ACCENT)                                          # 3
-    slide_a1_questions(prs, 4, total)                                     # 4
-    slide_a2_model_capability(prs, 5, total)                              # 5
-    slide_a3_problem_domain(prs, 6, total)                                # 6
-    slide_a3_chart(prs, 7, total)                                         # 7
-    slide_a4_failure_modes(prs, 8, total)                                 # 8
-    slide_a5_output_form(prs, 9, total)                                   # 9
+                  accent=ACCENT)                                          # 4
+    slide_a1_questions(prs, 5, total)                                     # 5
+    slide_a2_model_capability(prs, 6, total)                              # 6
+    slide_a3_problem_domain(prs, 7, total)                                # 7
+    slide_a3_chart(prs, 8, total)                                         # 8
+    slide_a4_failure_modes(prs, 9, total)                                 # 9
+    slide_a5_output_form(prs, 10, total)                                  # 10
 
-    slide_divider(prs, 10, total,
+    slide_divider(prs, 11, total,
                   "PART B · INDUSTRY TRENDS",
                   "业界趋势：从 LLM-driven kernel 看技术走向",
                   "7 个代表案例 · 趋势 T1–T6 · 进展 G1–G6 · 难题 H1–H9",
-                  accent=ACCENT_BLUE)                                     # 10
-    slide_b1_panorama(prs, 11, total)                                     # 11
-    slide_b2_index(prs, 12, total)                                        # 12
+                  accent=ACCENT_BLUE)                                     # 11
+    slide_b1_panorama(prs, 12, total)                                     # 12
+    slide_b2_index(prs, 13, total)                                        # 13
 
-    # 7 cases
-    slide_b2_case(prs, 13, total, idx=1, name="KernelEvolve",
-                  source="Meta · 2026", color=ACCENT,
-                  what=[
-                      "在生产级 ranking infra 上做异构 kernel 生成与优化",
-                      "搜索式优化：演化算法驱动迭代",
-                      "RAG 注入硬件知识库（手册 / 经验 / 模板）",
-                  ],
-                  key_tech=[
-                      "演化 + 验证 + 反馈三段式 loop",
-                      "硬件知识库 RAG 检索",
-                      "生产级异构 (CPU/GPU) 落地",
-                  ],
-                  trend="T1 / T3 / T4",
-                  gap=[
-                      "策略仍偏自由代码，可迁移性弱",
-                      "知识库以文档为主，缺结构化决策资产",
-                  ])                                                      # 13
-    slide_b2_case(prs, 14, total, idx=2,
-                  name="KernelAgent / KernelFalcon",
-                  source="PyTorch · Meta · 2025", color=ACCENT_BLUE,
-                  what=[
-                      "Deep Agents 分层编排：planner / coder / verifier",
-                      "硬件信号驱动（NCU / roofline）进入决策",
-                      "严格的正确性门禁与自动回滚",
-                  ],
-                  key_tech=[
-                      "Multi-agent orchestration",
-                      "硬件 profile 反馈循环",
-                      "门禁式 commit",
-                  ],
-                  trend="T2 / T3",
-                  gap=[
-                      "策略仍是 Triton 代码，缺独立策略 IR",
-                      "跨硬件迁移尚未系统化验证",
-                  ])                                                      # 14
-    slide_b2_case(prs, 15, total, idx=3, name="AutoKernel",
-                  source="RightNow AI · 2026", color=ACCENT_ALT,
-                  what=[
-                      "autoresearch 风格的优化循环",
-                      "Amdahl 优先级排序，集中精力到瓶颈",
-                      "双后端：Triton 与 CUDA",
-                  ],
-                  key_tech=[
-                      "瓶颈定位 + 优先级调度",
-                      "工具化 (tool-use harness)",
-                      "多后端代码生成",
-                  ],
-                  trend="T1 / T2",
-                  gap=[
-                      "缺独立的策略层与符号 shape",
-                      "知识沉淀仍以代码片段为主",
-                  ])                                                      # 15
-    slide_b2_case(prs, 16, total, idx=4, name="K-Search",
-                  source="UC Berkeley · 2026", color=ACCENT_PURPLE,
-                  what=[
-                      "World-Model 风格的规划式搜索",
-                      "策略与实现解耦，搜索抽象决策",
-                      "可处理非单调优化路径",
-                  ],
-                  key_tech=[
-                      "World model + planning",
-                      "策略 / 实现分离",
-                      "状态空间剪枝",
-                  ],
-                  trend="T1 / T5",
-                  gap=[
-                      "硬件信号集成偏弱",
-                      "尚未在生产级负载验证",
-                  ])                                                      # 16
-    slide_b2_case(prs, 17, total, idx=5, name="AVO",
-                  source="NVIDIA · 2026", color=ACCENT,
-                  what=[
-                      "Agent-as-Variation-Operator",
-                      "把演化算法的「变异算子」升级为自主 agent",
-                      "支持长周期演化",
-                  ],
-                  key_tech=[
-                      "Agent 化变异",
-                      "多目标演化",
-                      "长会话稳定性",
-                  ],
-                  trend="T1 / T2",
-                  gap=[
-                      "缺统一策略 IR",
-                      "结果可解释性 / @rationale 不足",
-                  ])                                                      # 17
-    slide_b2_case(prs, 18, total, idx=6, name="CuTeGen",
-                  source="U. Toronto · 2026", color=ACCENT_RED,
-                  what=[
-                      "选 CuTe 作为「稳定抽象层」目标语言",
-                      "单 kernel 渐进精炼（incremental refinement）",
-                      "极低 token 成本",
-                  ],
-                  key_tech=[
-                      "稳定抽象层 + 渐进精炼",
-                      "Token 高效",
-                      "面向 NVIDIA Hopper / Blackwell",
-                  ],
-                  trend="T4",
-                  gap=[
-                      "强绑定 NVIDIA / CuTe 生态",
-                      "跨硬件能力受限",
-                  ])                                                      # 18
-    slide_b2_case(prs, 19, total, idx=7,
-                  name="KernelGen-LM / AscendKernelGen",
-                  source="PCL · 2026", color=ACCENT_ALT,
-                  what=[
-                      "面向专用 DSL 的领域数据 + 领域模型",
-                      "SFT + RLEF 后训练",
-                      "针对 Ascend 等专用硬件",
-                  ],
-                  key_tech=[
-                      "领域数据集构建",
-                      "RLEF (RL with execution feedback)",
-                      "专用硬件适配",
-                  ],
-                  trend="T6",
-                  gap=[
-                      "通用性受限于专用 DSL",
-                      "工具链与决策协议尚未通用化",
-                  ])                                                      # 19
+    # 7 cases (each with 公开 metrics + source citation)
+    slide_b2_case(
+        prs, 14, total, idx=1, name="KernelEvolve",
+        source="Meta · ISCA 2026 · arXiv 2512.23236", color=ACCENT,
+        what=[
+            "在生产级 ranking infra 上做异构 kernel 生成与优化",
+            "搜索式优化：tree search + 自改进 state",
+            "RAG 注入硬件知识库（含专有 MTIA 架构）",
+            "覆盖多 DSL：Triton / CuTe / FlyDSL / CUDA / HIP / MTIA C++",
+        ],
+        key_tech=[
+            "演化 + 验证 + 反馈三段式 loop",
+            "Job harness：规模化并行 compile + profile",
+            "运行时 RAG 上下文 → 动态 prompt 合成",
+            "生产部署：DLRM / Ads 推理吞吐提升",
+        ],
+        trend="T1 / T3 / T4",
+        gap=[
+            "策略仍偏自由代码，跨 kernel 不易抽象成可复用资产",
+            "硬件知识库以文档为主，缺结构化决策资产",
+        ],
+        metrics=("KernelBench 250/250 全 PASS · ATen 160 ops × 3 HW · "
+                 "最高 17× vs PyTorch · 已落地 Meta 生产 ranking 系统"),
+        source_cite=("Meta engineering blog (2026-04) + arXiv 2512.23236"
+                     " (KernelEvolve / Heterogeneous Agentic Kernel "
+                     "Authoring at Scale)"),
+    )                                                                     # 14
+    slide_b2_case(
+        prs, 15, total, idx=2,
+        name="KernelAgent / KernelFalcon",
+        source="PyTorch · Meta · 2025–2026", color=ACCENT_BLUE,
+        what=[
+            "Deep Agents 分层编排：Orchestrator / FuserAgent / "
+            "ExtractorAgent / Workers / Profiler",
+            "硬件信号驱动：NCU + roofline 进入决策",
+            "严格门禁：编译 → 数值 → 性能 三段验证",
+            "并行多 worker 探索 + early-win 收敛",
+        ],
+        key_tech=[
+            "Deterministic orchestration（控制逻辑从 LLM 拿出来）",
+            "Grounded tool use：每步都经编译器/硬件验证",
+            "子图边界 + shape contract → JSON 合同",
+            "用合成 kernel 重建 forward 端到端替换",
+        ],
+        trend="T2 / T3",
+        gap=[
+            "输出仍是 Triton 自由代码，缺独立策略层",
+            "跨硬件迁移尚未系统化验证（仍以 H100 为主）",
+        ],
+        metrics=("KernelBench L1/L2/L3 250/250 · 1.56× vs torch.compile · "
+                 "89% H100 roofline · 多算子并行合成"),
+        source_cite=("PyTorch blog · KernelFalcon (autonomous GPU kernel "
+                     "generation via deep agents) + KernelAgent "
+                     "(hardware-guided GPU kernel optimization) · "
+                     "github.com/meta-pytorch/KernelAgent"),
+    )                                                                     # 15
+    slide_b2_case(
+        prs, 16, total, idx=3, name="AutoKernel",
+        source="RightNow AI · arXiv 2603.21331", color=ACCENT_ALT,
+        what=[
+            "autoresearch 风格优化循环：profile → extract → "
+            "edit → bench → keep/revert",
+            "Amdahl 优先级排序：集中精力到收益最大的瓶颈",
+            "双后端：Triton（快迭代）+ CUDA C++（深硬件）",
+            "5 阶段正确性 harness + 6 层 playbook",
+        ],
+        key_tech=[
+            "瓶颈定位 + 优先级调度（torch.profiler）",
+            "Tool-use harness：固定基准 + 自动 keep/revert",
+            "知识注入以 playbook（提示工程）为主",
+            "可长时间无人值守探索",
+        ],
+        trend="T1 / T2",
+        gap=[
+            "优化粒度是「编辑文件」，缺中间层级可逆决策",
+            "知识沉淀仍是代码片段 + prompt，不易跨 kernel 复用",
+        ],
+        metrics=("H100 实测：RMSNorm 5.29× · softmax 2.82× · "
+                 "cross-entropy 2.21× vs PyTorch eager（公开 README 数据）"),
+        source_cite=("arXiv 2603.21331 + github.com/RightNow-AI/autokernel"),
+    )                                                                     # 16
+    slide_b2_case(
+        prs, 17, total, idx=4, name="K-Search",
+        source="UC Berkeley · arXiv 2602.19128", color=ACCENT_PURPLE,
+        what=[
+            "把 kernel 生成视作规划问题：problem → search tree",
+            "World Model：LLM 估计状态转移 + 价值，指导搜索",
+            "Plan ↔ Codegen 显式解耦：策略与实现分离",
+            "Co-Evolving：世界模型随搜索共同演化",
+        ],
+        key_tech=[
+            "World-model + planning + 状态空间剪枝",
+            "Stagnation-aware：无提升时自动切 action",
+            "Exec feedback 更新世界模型",
+            "对临时编译失败更鲁棒（不会「误杀」好策略）",
+        ],
+        trend="T1 / T5",
+        gap=[
+            "世界模型大多隐式在 LLM 内部，难跨 session 持久化",
+            "硬件信号集成偏弱；输出仍是 Triton/CUDA 自由代码",
+        ],
+        metrics=("FlashInfer GQA/MLA/MoE 平均 2.10× · MoE 最高 14.3× · "
+                 "GPUMode TriMul H100 SOTA 1030μs（公开 paper 数据）"),
+        source_cite=("arXiv 2602.19128 + github.com/caoshiyi/K-Search"),
+    )                                                                     # 17
+    slide_b2_case(
+        prs, 18, total, idx=5, name="AVO",
+        source="NVIDIA · arXiv 2603.24517", color=ACCENT,
+        what=[
+            "Evolutionary Algorithm 骨架（population / lineage）",
+            "把变异算子 Vary() 升级为自主 agent：propose → "
+            "repair → critique → verify",
+            "Domain KB 作为知识源（硬件规约 + FA-4 / CUTLASS 实现）",
+            "长周期演化（多日尺度）发现微架构级优化",
+        ],
+        key_tech=[
+            "Agent-as-Variation-Operator：从 pipeline → agent",
+            "Self-directed loop · 多目标演化",
+            "Long-horizon：在 attention 上发现专家未覆盖的优化",
+            "Exec feedback 驱动下一轮变异",
+        ],
+        trend="T1 / T2",
+        gap=[
+            "缺独立的策略表征层；输出多是 CUDA / C++ 实现",
+            "结果可解释性偏弱；长周期探索 token / 算力成本高",
+        ],
+        metrics=("Blackwell B200 · MHA 7-day 演化 · 超 cuDNN +3.5% · "
+                 "超 FlashAttention-4 +10.5% · GQA 迁移仅需 30 min"),
+        source_cite=("arXiv 2603.24517 (Agentic Variation Operators "
+                     "for Evolutionary Kernel Optimization)"),
+    )                                                                     # 18
+    slide_b2_case(
+        prs, 19, total, idx=6, name="CuTeGen",
+        source="U. Toronto · arXiv 2604.01489", color=ACCENT_RED,
+        what=[
+            "选 CuTe（CUTLASS 4.x layout algebra）作为稳定抽象层",
+            "单 kernel 渐进精炼（generate → test → refine）",
+            "失败走结构化模板而非纯报错粘贴",
+            "先正确性后性能，profile 反馈延迟注入",
+        ],
+        key_tech=[
+            "稳定抽象层 + 渐进精炼",
+            "对 tiling / data-movement 更显式",
+            "Token 成本可控（不做大规模搜索）",
+        ],
+        trend="T4",
+        gap=[
+            "强绑定 NVIDIA / CuTe 生态，跨硬件能力受限",
+            "仍是 C++ 模板体系，知识沉淀机制弱",
+        ],
+        metrics=("CUTLASS v4.3 (CuTe) 上 12 matmul + 14 activation kernels"
+                 " · 渐进精炼 token 成本可控（vs 纯 LLM 直写 CUDA）"),
+        source_cite=("arXiv 2604.01489 (LLM × CuTe abstraction for "
+                     "iterative kernel synthesis)"),
+    )                                                                     # 19
+    slide_b2_case(
+        prs, 20, total, idx=7,
+        name="KernelGen-LM / AscendKernelGen",
+        source="PCL · 中山大学 · 华为 · arXiv 2601.07160",
+        color=ACCENT_ALT,
+        what=[
+            "Ascend-CoT 数据集：真实 kernel + 文档推理 + 代码推理链",
+            "KernelGen-LM：Qwen3 backbone · NPU-aware SFT",
+            "RLEF：执行反馈强化（compile / 正确性 / 性能信号）",
+            "NPUKernelBench：编译/正确性/性能三维评测，难度分层",
+        ],
+        key_tech=[
+            "走「训一个领域模型」路线：知识进入权重",
+            "强耦合单硬件（AscendC / 昇腾）换取深度",
+            "用 CoT + RLEF 填补 DSL 数据稀缺",
+            "评测一等公民：编译 / 正确性 / 性能全量指标",
+        ],
+        trend="T6",
+        gap=[
+            "通用性受限：跨硬件需要再训 / 再适配",
+            "工具链与决策协议尚未通用化",
+        ],
+        metrics=("Ascend NPU · AscendC DSL · NPUKernelBench L2 编译"
+                 "成功率 0% → 95.5% (Pass@10)；权重 / 数据 / 评测全部开源"),
+        source_cite=("arXiv 2601.07160 (KernelGen-LM / AscendKernelGen)"),
+    )                                                                     # 20
 
-    slide_b3_trends(prs, 20, total)                                       # 20
-    slide_b4_progress(prs, 21, total)                                     # 21
-    slide_b5_challenges(prs, 22, total)                                   # 22
+    slide_b3_trends(prs, 21, total)                                       # 21
+    slide_b4_progress(prs, 22, total)                                     # 22
+    slide_b5_challenges(prs, 23, total)                                   # 23
 
-    slide_divider(prs, 23, total,
+    slide_divider(prs, 24, total,
                   "TARGET STATE",
                   "目标态总览：未来算子生成 / 调优技术",
                   "北极星 · 7 大技术特征 F1–F7 · 对通用编程的启示",
-                  accent=ACCENT_ALT)                                      # 23
-    slide_s1_north_star(prs, 24, total)                                   # 24
-    slide_s2_features(prs, 25, total)                                     # 25
-    slide_s3_implications(prs, 26, total)                                 # 26
-    slide_s4_bridge(prs, 27, total)                                       # 27
+                  accent=ACCENT_ALT)                                      # 24
+    slide_s1_north_star(prs, 25, total)                                   # 25
+    slide_s2_features(prs, 26, total)                                     # 26
+    slide_s3_implications(prs, 27, total)                                 # 27
+    slide_s4_bridge(prs, 28, total)                                       # 28
 
-    slide_divider(prs, 28, total,
+    slide_divider(prs, 29, total,
                   "PART C · ARKE",
                   "Arke 的技术构建：设计逻辑 + 整体架构 + 四件套 + Benchmark",
                   "5 条公理 · 一张总图 · Language / IR / Compiler / Agent / Benchmark",
-                  accent=ACCENT_PURPLE)                                   # 28
-    slide_c1_axioms(prs, 29, total)                                       # 29
-    slide_c2_architecture(prs, 30, total)                                 # 30
-    slide_c3_language(prs, 31, total)                                     # 31
-    slide_c4_ir(prs, 32, total)                                           # 32
-    slide_c5_compiler(prs, 33, total)                                     # 33
-    slide_c6_agent(prs, 34, total)                                        # 34
-    slide_c7_benchmark(prs, 35, total)                                    # 35
-    slide_c8_alignment(prs, 36, total)                                    # 36
-    slide_c9_qa(prs, 37, total)                                           # 37
+                  accent=ACCENT_PURPLE)                                   # 29
+    slide_c1_axioms(prs, 30, total)                                       # 30
+    slide_c2_architecture(prs, 31, total)                                 # 31
+    slide_c3_language(prs, 32, total)                                     # 32
+    slide_c4_ir(prs, 33, total)                                           # 33
+    slide_c5_compiler(prs, 34, total)                                     # 34
+    slide_c6_agent(prs, 35, total)                                        # 35
+    slide_c7_benchmark(prs, 36, total)                                    # 36
+    slide_c8_alignment(prs, 37, total)                                    # 37
+    slide_c9_qa(prs, 38, total)                                           # 38
 
-    slide_references(prs, 38, total)                                      # 38
+    slide_references(prs, 39, total)                                      # 39
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(out_path)
