@@ -13,6 +13,11 @@ from pathlib import Path
 
 from pptx import Presentation
 from copy import deepcopy
+import argparse
+from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.util import Inches, Pt
 
 
 def clone_slide(dst_prs: Presentation, src_slide) -> None:
@@ -29,8 +34,171 @@ def clone_slide(dst_prs: Presentation, src_slide) -> None:
     # copy background if present (python-pptx doesn't expose directly; for our decks,
     # background is a rectangle shape copied above, so this is fine.)
 
+BG_DARK = RGBColor(0x0B, 0x1B, 0x2E)
+BG_PANEL = RGBColor(0x12, 0x2A, 0x43)
+BG_PANEL_ALT = RGBColor(0x18, 0x35, 0x53)
+FG = RGBColor(0xEA, 0xF2, 0xFA)
+FG_MUTED = RGBColor(0x9F, 0xB5, 0xC9)
+ACCENT = RGBColor(0x38, 0xD1, 0xB8)
+ACCENT_ALT = RGBColor(0xF2, 0xC5, 0x5C)
 
-def merge(pptx_paths: list[Path], out_path: Path) -> None:
+FONT_BODY = "Microsoft YaHei"
+FONT_MONO = "Consolas"
+
+
+def _set_fill(shape, color: RGBColor) -> None:
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = color
+
+
+def _no_line(shape) -> None:
+    shape.line.fill.background()
+
+
+def _set_line(shape, color: RGBColor, width_pt: float = 0.75) -> None:
+    shape.line.color.rgb = color
+    shape.line.width = Pt(width_pt)
+
+
+def _set_bg(slide, color: RGBColor = BG_DARK) -> None:
+    bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, slide.part.slide_layout.part.slide_master.part.presentation.slide_width, slide.part.slide_layout.part.slide_master.part.presentation.slide_height)  # type: ignore[attr-defined]
+    _set_fill(bg, color)
+    _no_line(bg)
+    sp_tree = bg._element.getparent()
+    sp_tree.remove(bg._element)
+    sp_tree.insert(2, bg._element)
+
+
+def _panel(slide, left, top, width, height, color=BG_PANEL, stroke=RGBColor(0x24, 0x44, 0x66)):
+    shp = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
+    shp.adjustments[0] = 0.06
+    _set_fill(shp, color)
+    _set_line(shp, stroke, 0.75)
+    return shp
+
+
+def _accent_bar(slide, left, top, width=Inches(0.12), height=Inches(0.42), color=ACCENT):
+    shp = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
+    _set_fill(shp, color)
+    _no_line(shp)
+    return shp
+
+
+def _add_text(slide, left, top, width, height, text: str, *, size=14, bold=False,
+              color: RGBColor = FG, font: str = FONT_BODY, align=PP_ALIGN.LEFT,
+              anchor=MSO_ANCHOR.TOP):
+    tb = slide.shapes.add_textbox(left, top, width, height)
+    tf = tb.text_frame
+    tf.word_wrap = True
+    tf.margin_left = Inches(0.0)
+    tf.margin_right = Inches(0.0)
+    tf.margin_top = Inches(0.0)
+    tf.margin_bottom = Inches(0.0)
+    tf.vertical_anchor = anchor
+    p = tf.paragraphs[0]
+    p.alignment = align
+    run = p.add_run()
+    run.text = text
+    run.font.name = font
+    run.font.size = Pt(size)
+    run.font.bold = bold
+    run.font.color.rgb = color
+    return tb
+
+
+def _footer(merged, slide, page_num: int, total: int) -> None:
+    # a unified footer overlay (do not rely on chapter footers)
+    _add_text(slide, Inches(0.6), Inches(7.15), Inches(6), Inches(0.28),
+              "AI-Native Compile Stack Insight · merged", size=9, color=FG_MUTED)
+    _add_text(slide, Inches(11.5), Inches(7.15), Inches(1.3), Inches(0.28),
+              f"{page_num:02d} / {total:02d}", size=9, color=FG_MUTED, align=PP_ALIGN.RIGHT)
+
+
+def _chapter_divider_slide(merged: Presentation, chapter_title: str, chapter_sub: str) -> None:
+    s = merged.slides.add_slide(merged.slide_layouts[6])
+    # background
+    bg = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, merged.slide_width, merged.slide_height)
+    _set_fill(bg, BG_DARK)
+    _no_line(bg)
+    sp_tree = bg._element.getparent()
+    sp_tree.remove(bg._element)
+    sp_tree.insert(2, bg._element)
+    # band
+    b = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, merged.slide_width, Inches(0.08))
+    _set_fill(b, ACCENT)
+    _no_line(b)
+    b2 = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, Inches(7.42), merged.slide_width, Inches(0.08))
+    _set_fill(b2, ACCENT)
+    _no_line(b2)
+    _add_text(s, Inches(0.9), Inches(1.4), Inches(12), Inches(0.6),
+              "CHAPTER", size=14, bold=True, color=ACCENT, font=FONT_MONO)
+    _add_text(s, Inches(0.9), Inches(2.0), Inches(12), Inches(1.2),
+              chapter_title, size=44, bold=True, color=FG)
+    _panel(s, Inches(0.9), Inches(4.2), Inches(11.5), Inches(1.4), BG_PANEL)
+    _accent_bar(s, Inches(0.9), Inches(4.2), width=Inches(0.14), height=Inches(1.4), color=ACCENT_ALT)
+    _add_text(s, Inches(1.2), Inches(4.35), Inches(11), Inches(1.2),
+              chapter_sub, size=15, color=FG_MUTED)
+
+
+def _toc_slide(merged: Presentation, toc_entries: list[tuple[str, int, int]]) -> None:
+    s = merged.slides.add_slide(merged.slide_layouts[6])
+    bg = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, merged.slide_width, merged.slide_height)
+    _set_fill(bg, BG_DARK)
+    _no_line(bg)
+    sp_tree = bg._element.getparent()
+    sp_tree.remove(bg._element)
+    sp_tree.insert(2, bg._element)
+
+    _add_text(s, Inches(0.6), Inches(0.45), Inches(8), Inches(0.35),
+              "TABLE OF CONTENTS", size=12, bold=True, color=ACCENT)
+    _add_text(s, Inches(0.6), Inches(0.75), Inches(12), Inches(0.8),
+              "总目录", size=28, bold=True, color=FG)
+    line = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.6), Inches(1.55), Inches(0.6), Inches(0.03))
+    _set_fill(line, ACCENT)
+    _no_line(line)
+
+    top = Inches(2.0)
+    row_h = Inches(0.75)
+    for i, (name, start, end) in enumerate(toc_entries):
+        y = top + i * row_h
+        _panel(s, Inches(0.9), y, Inches(11.5), Inches(0.65), BG_PANEL)
+        _add_text(s, Inches(1.15), y + Inches(0.12), Inches(7.8), Inches(0.4),
+                  name, size=14, bold=True, color=FG, anchor=MSO_ANCHOR.MIDDLE)
+        _add_text(s, Inches(10.7), y + Inches(0.12), Inches(1.7), Inches(0.4),
+                  f"{start:02d}–{end:02d}", size=12, bold=True, color=ACCENT,
+                  align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE, font=FONT_MONO)
+
+
+def _refs_slide(merged: Presentation, refs: list[tuple[str, str]]) -> None:
+    s = merged.slides.add_slide(merged.slide_layouts[6])
+    bg = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, merged.slide_width, merged.slide_height)
+    _set_fill(bg, BG_DARK)
+    _no_line(bg)
+    sp_tree = bg._element.getparent()
+    sp_tree.remove(bg._element)
+    sp_tree.insert(2, bg._element)
+
+    _add_text(s, Inches(0.6), Inches(0.45), Inches(8), Inches(0.35),
+              "REFERENCES", size=12, bold=True, color=ACCENT)
+    _add_text(s, Inches(0.6), Inches(0.75), Inches(12), Inches(0.8),
+              "参考链接（论文 & Repo）", size=28, bold=True, color=FG)
+    line = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.6), Inches(1.55), Inches(0.6), Inches(0.03))
+    _set_fill(line, ACCENT)
+    _no_line(line)
+
+    # list
+    top = Inches(1.9)
+    row_h = Inches(0.52)
+    for i, (name, url) in enumerate(refs[:18]):  # keep it readable
+        y = top + i * row_h
+        _panel(s, Inches(0.9), y, Inches(11.5), Inches(0.44), BG_PANEL if i % 2 == 0 else BG_PANEL_ALT)
+        _add_text(s, Inches(1.1), y + Inches(0.08), Inches(3.4), Inches(0.3),
+                  name, size=11, bold=True, color=ACCENT_ALT, anchor=MSO_ANCHOR.MIDDLE)
+        _add_text(s, Inches(4.6), y + Inches(0.08), Inches(7.6), Inches(0.3),
+                  url, size=9, color=FG_MUTED, anchor=MSO_ANCHOR.MIDDLE, font=FONT_MONO)
+
+
+def merge_with_structure(pptx_paths: list[Path], out_path: Path) -> None:
     if not pptx_paths:
         raise ValueError("No pptx inputs")
 
@@ -39,24 +207,98 @@ def merge(pptx_paths: list[Path], out_path: Path) -> None:
     merged.slide_width = first.slide_width
     merged.slide_height = first.slide_height
 
+    # Plan: [TOC] + [divider + chapter slides]* + [refs]
+    # Determine chapter boundaries from input order
+    chapter_names = [
+        ("Chapter 01 · Background", "为什么需要这份洞察？变化驱动、基线失效、评价标准与输出形态"),
+        ("Chapter 02 · Industry Methods", "7 个 LLM-driven kernel generation/optimization 代表系统：架构与特征"),
+        ("Chapter 03 · Progress & Challenges", "从案例抽象：好进展与关键难题（H1–H10 → 能力清单）"),
+        ("Chapter 04 · Arke Mapping & TODOs", "Arke 技术构建：逐条对齐进展与难题，并把未覆盖点标为 TODO"),
+    ]
+    # precompute counts
+    chapter_counts: list[int] = []
+    chapter_slides: list[list] = []
     for p in pptx_paths:
         prs = Presentation(str(p))
-        for s in prs.slides:
+        slides = list(prs.slides)
+        chapter_slides.append(slides)
+        chapter_counts.append(len(slides))
+
+    # We'll add slides, then compute toc ranges based on final numbering.
+    # Placeholder: build in order.
+    # TOC will be inserted as first slide; ranges computed after building but before saving is tricky.
+    # We'll build TOC at the end and move it to front by rebuilding: simplest is create it now with dummy ranges,
+    # then update its text boxes later (not worth complexity). We'll compute ranges up-front using known layout:
+    # Slide 1 = TOC
+    # Then for each chapter: divider (1) + chapter slides (N)
+    # Then final refs slide (1)
+    toc_entries = []
+    current = 1  # TOC will be slide 1
+    current += 1
+    for (ch_title, _), n in zip(chapter_names, chapter_counts):
+        start = current + 1  # divider itself counts, chapter content starts after divider
+        end = start + n - 1
+        toc_entries.append((ch_title, start, end))
+        current = end + 1
+        current += 1  # next divider
+    # Last slide will be refs
+    _toc_slide(merged, toc_entries)
+
+    # Append chapters with dividers
+    for (ch_title, ch_sub), slides in zip(chapter_names, chapter_slides):
+        _chapter_divider_slide(merged, ch_title, ch_sub)
+        for s in slides:
             clone_slide(merged, s)
+
+    # References (papers + repos)
+    refs = [
+        ("KernelEvolve (arXiv)", "https://arxiv.org/abs/2512.23236"),
+        ("KernelEvolve (Meta blog)", "https://engineering.fb.com/2026/04/02/developer-tools/kernelevolve-how-metas-ranking-engineer-agent-optimizes-ai-infrastructure/"),
+        ("KernelAgent repo", "https://github.com/meta-pytorch/KernelAgent"),
+        ("KernelFalcon blog", "https://pytorch.org/blog/kernelfalcon-autonomous-gpu-kernel-generation-via-deep-agents/"),
+        ("KernelAgent blog", "https://pytorch.org/blog/kernelagent-hardware-guided-gpu-kernel-optimization-via-multi-agent-orchestration/"),
+        ("AutoKernel (arXiv)", "https://arxiv.org/abs/2603.21331"),
+        ("AutoKernel repo", "https://github.com/RightNow-AI/autokernel"),
+        ("K-Search (arXiv)", "https://arxiv.org/abs/2602.19128"),
+        ("K-Search repo", "https://github.com/caoshiyi/K-Search"),
+        ("AVO (arXiv)", "https://arxiv.org/abs/2603.24517"),
+        ("CuTeGen (arXiv)", "https://arxiv.org/abs/2604.01489"),
+        ("AscendKernelGen (arXiv)", "https://arxiv.org/abs/2601.07160"),
+        ("Awesome list", "https://github.com/flagos-ai/awesome-LLM-driven-kernel-generation"),
+    ]
+    _refs_slide(merged, refs)
+
+    # Unified page numbering overlay
+    total = len(merged.slides)
+    for i, s in enumerate(merged.slides, 1):
+        _footer(merged, s, i, total)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     merged.save(str(out_path))
     print(f"wrote: {out_path} slides={len(merged.slides)}")
 
 
+def merge(pptx_paths: list[Path], out_path: Path) -> None:
+    """Backward compatible alias for structured merge."""
+    merge_with_structure(pptx_paths, out_path)
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Merge chapter PPTX files into a structured deck with TOC/separators/references and unified page numbers.")
+    parser.add_argument("--out", type=str, required=False, default="docs/sharing/ai-native-insight-merged-v2.pptx", help="Output pptx path (relative to repo root).")
+    parser.add_argument("inputs", nargs="*", help="Input pptx paths (relative to repo root). If omitted, uses default chapter-01..04 outputs.")
+    args = parser.parse_args()
+
     root = Path(__file__).resolve().parents[2]
-    out = root / "docs" / "sharing" / "ai-native-insight-merged.pptx"
-    inputs = [
-        root / "docs" / "sharing" / "chapter-01-background.pptx",
-        root / "docs" / "sharing" / "chapter-02-industry-methods.pptx",
-        root / "docs" / "sharing" / "chapter-03-progress-and-challenges.pptx",
-        root / "docs" / "sharing" / "chapter-04-arke-mapping-and-todos.pptx",
-    ]
-    merge(inputs, out)
+    out = root / args.out
+    if args.inputs:
+        inputs = [root / p for p in args.inputs]
+    else:
+        inputs = [
+            root / "docs" / "sharing" / "chapter-01-background.pptx",
+            root / "docs" / "sharing" / "chapter-02-industry-methods.pptx",
+            root / "docs" / "sharing" / "chapter-03-progress-and-challenges.pptx",
+            root / "docs" / "sharing" / "chapter-04-arke-mapping-and-todos.pptx",
+        ]
+    merge_with_structure(inputs, out)
 
