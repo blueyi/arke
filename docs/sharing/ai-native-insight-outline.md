@@ -1,15 +1,19 @@
 # Arke 技术洞察 PPT 大纲（聚焦"技术发展趋势")
 
-> **定位**：本 PPT 是一次**技术趋势洞察**，不是 Arke 项目汇报。叙事主轴是"业界正在发生什么 → 难题在哪 → Arke 如何承接"，Arke 作为最后一章的"答卷"出现。
+> **定位**：本 PPT 是一次**技术趋势洞察**，不是 Arke 项目汇报。叙事主轴是"业界正在发生什么 → 难题在哪 → 未来目标态长什么样 → Arke 如何承接"。Arke 作为最后一章的"答卷"出现，重点展示**设计逻辑与整体架构**，不展示具体项目进度。
 >
-> **结构**：三大部分
-> 1. **背景**：为什么需要这次洞察（模型能力 + 业界现状 + 传统路径失效）
-> 2. **趋势 + 案例**：用 7 个代表性 LLM-driven kernel 案例，归纳趋势、提炼"已有进展"与"待解难题"
-> 3. **Arke 的技术构建**：把进展和难题逐条映射到 Arke 的方案；未覆盖部分**显式标记 TODO**
+> **结构**：三大部分 + 一张承上启下的"目标态总览"
+> 1. **Part A · 背景**：为什么需要这次洞察（模型能力 + 业界现状 + 传统路径失效）
+> 2. **Part B · 趋势 + 案例**：用 7 个代表性 LLM-driven kernel 案例，归纳趋势、提炼"已有进展"与"待解难题"
+> 3. **🌟 目标态总览（A+B 收束页）**：未来大模型算子生成/调优的目标态、技术特征、对通用编程的启示
+> 4. **Part C · Arke 的技术构建**：从设计逻辑 → 整体架构 → 四件套（Language / IR / Compiler / Agent）+ Benchmark 体系，呼应 A/B 的优势与难题
 >
 > **使用方式**：先确认本大纲，确认后再生成各章节正文与最终 PPT。后续大纲调整也通过本 md 文件承载。
 >
-> **上次修订**：2026-04-26（聚焦"技术趋势洞察"叙事，强化模型能力角度和 TODO 标记）
+> **修订**：
+> - 2026-04-25 v0.1 初版
+> - 2026-04-26 v0.2 聚焦"技术趋势洞察"叙事；A 加"模型能力侧"；B 改为"趋势 + 案例证据"；C 引入 H8/H9 与 TODO 列表
+> - 2026-04-26 v0.3 **新增"目标态总览"承上启下页**；**Part C 去项目进度化**，改为"设计逻辑 → 总架构 → 四件套各一页 + Benchmark 一页"的纯技术叙事
 
 ---
 
@@ -20,7 +24,7 @@
 - 本次分享要回答的 3 个问题：
   1. 模型变强了，到底**强到能做什么**？
   2. 业界相关方向**已经走到哪、卡在哪**？
-  3. 我们**应当如何构建**才能搭上这一波趋势？
+  3. **未来的目标态长什么样**？我们应当**如何构建**才能搭上这一波趋势？
 
 ### A2. 模型能力侧：LLM 能力跃迁带来的"新可能"
 > 这一节回答"为什么以前做不了，今天可以做"。
@@ -34,7 +38,7 @@
 
 > 小结：**模型从"会写代码"升级为"会做带反馈的工程决策"**——这是后续所有趋势的能力底座。
 
-### A3. 问题域侧：算子工程的业界现状（Arke 要解决的问题域）
+### A3. 问题域侧：算子工程的业界现状（这次洞察要解决的问题域）
 > 这一节回答"为什么这个领域亟需被 LLM 重塑"。
 
 - **硬件维度**：SIMT（NVIDIA）→ SIMD（Ascend）→ 多类 NPU/DSA，**代际叠加 + 异构叠加**
@@ -53,7 +57,7 @@
 - **结论**：单点工具不再够用，**"能力底座 + 问题域复杂度"**共同迫使我们重新思考算子工程栈
 
 ### A5. 这份洞察的输出形态
-- 用"案例 → 趋势 → 进展 → 难题 → 构建方案"五段式给出**可落地的范式判断**
+- 用"案例 → 趋势 → 进展 → 难题 → **目标态** → 构建方案"六段式给出**可落地的范式判断**
 - 不只是"看热闹"，每条趋势都要回答："这个工程上**该不该跟、怎么跟**？"
 
 ---
@@ -91,7 +95,7 @@
 - **T6 · 领域模型化**：SFT + RLEF + 后训练，让小/中模型在 kernel 域具备专家级判断
 
 ### B4. 已有的"好进展"（What's working）
-> 客观陈述案例已经验证可行的部分，作为后续 Part C 对齐的输入。
+> 客观陈述案例已经验证可行的部分。
 
 - **G1**：正确性门禁（numerical equivalence）已成为业界标准做法
 - **G2**：并行探索 + 早停 + 成本预算已被多个工作验证有效
@@ -101,7 +105,7 @@
 - **G6**：Agent 编排（分层、规划、回滚）让长会话稳定性显著改善
 
 ### B5. 仍待解决的"关键技术难题"（What's hard）
-> 用统一编号，便于 Part C 一一对齐。
+> 用统一编号，便于"目标态总览"和 Part C 一一对齐。
 
 - **H1 · 策略可迁移性**：如何把"策略"从自由代码中抽出来变成可迁移、可检索的资产？
 - **H2 · 多级验证**：如何把验证从"事后对拍"变成**逐步可剪枝的多级门禁**（V0 静态 / V1 数值 / V2 性能）？
@@ -113,102 +117,196 @@
 - **H8 · 数据稀缺与领域模型**：高质量 kernel × HW × profile 三元组数据稀缺，专用模型如何冷启动
 - **H9 · 评测与可复现**：缺乏统一的 benchmark / 形状层级 / 基线协议，跨工作不可比
 
-### B6. 小结页：为什么"需要一套体系化的编译栈"，而不是再堆一个 Agent
-- 一句话过渡到 Part C：**Agent 是手段，IR + 验证 + 编译栈才是底盘**
+---
+
+## 🌟 目标态总览页（Part A + Part B 收束 → 引出 Part C）
+
+> **这是承上启下的关键页**：既是 A/B 的总结，也是 C 的起点。**不依赖任何项目实现**，纯技术判断。
+
+### S1. 未来大模型算子生成及调优技术的"目标态"（北极星）
+
+一句话定义：
+
+> **"语义 / 策略分层、有界动作空间、多级编译器验证、结构化经验沉淀、跨硬件零迁移成本"** —— 让任意 LLM 在最小 token 预算下产出**正确、最优、可迁移、可演进**的算子。
+
+### S2. 目标态应具备的 7 大技术特征
+> 由 T1–T6 的趋势收敛 + H1–H9 难题的解法收敛而来。
+
+| # | 技术特征 | 对应趋势 / 难题 | 一句话内涵 |
+|---|---------|-----------------|-----------|
+| **F1** | **语义与策略分离** | T4, T5 / H1 | "做什么"是不可变数学，"怎么做"是可搜索决策；二者解耦，正确性与性能互不污染 |
+| **F2** | **有界动作空间** | T2 / H2, H6 | LLM 不写自由代码，只在编译器枚举的合法动作上做选择；可枚举、可剪枝、可回滚 |
+| **F3** | **多层 IR + 多级验证** | T2, T4 / H2, H7 | 高层语义 → 策略 → 调度 → 指令多层下沉；每层都有静态/数值/性能三级门禁 |
+| **F4** | **硬件信号闭环** | T3 / H3, H4 | profile / roofline / 占用率 / 寄存器压力等真实信号进入决策循环，不靠猜 |
+| **F5** | **结构化经验资产** | T5 / H1, H8 | `rationale` / playbook / 轨迹 / 决策树成为一等公民，可检索、可迁移、可训练 |
+| **F6** | **跨硬件统一表达** | T4 / H4 | 同一份语义、同一套决策原语，靠 target-aware 策略适配 NVIDIA / Ascend / AMD / 未来 NPU |
+| **F7** | **可复现的评测协议** | T1, T2 / H9 | 统一的形状层级 / baseline / 报表 schema，让跨工作、跨硬件、跨版本可横向对比 |
+
+### S3. 目标态对"通用编程"的启示（**升维**）
+> 这一节把 kernel 域的洞察推广到更广的软件工程。
+
+- **启示 1 · 编程语言会"双层化"**
+  *What* 与 *How* 应当显式分离，让编译器可以独立验证语义、让 LLM 可以独立搜索策略。这一思路适用于所有"性能敏感 + 正确性敏感"的领域（数据库执行计划、分布式调度、系统调优、形式化证明）。
+- **启示 2 · 模型不是代码生成器，而是"决策代理"**
+  通用编程的下一步不是让 LLM 写更多自由代码，而是让 LLM 在**结构化决策空间**里做选择；编译器/运行时/类型系统是它的"环境"。
+- **启示 3 · 编译器/工具链承担"可验证 RL 环境"的角色**
+  V0/V1/V2 三级验证不仅是 kernel 域的工程实践，更是让 LLM 在通用程序合成中"安全地试错"的范式。
+- **启示 4 · 经验资产化是 LLM 工程的真正护城河**
+  `@rationale` / 轨迹 / 决策树是可被检索、可被训练、可跨团队复用的——比生成的代码本身更有长期价值。
+- **启示 5 · 跨平台/跨架构的"零迁移成本"**正在变得可能
+  抽象层稳定 + 策略可迁移 → 写一次跑多硬件，将从"图编译器的口号"变成"LLM 时代的现实"。
+- **启示 6 · 评测协议是行业的公共物品**
+  与其每家堆 demo，不如共同推动可复现的评测协议——这是行业从"PR 驱动"走向"工程化"的前提。
+
+### S4. 一句话过渡到 Part C
+> "**Agent 是手段，IR + 验证 + 编译栈才是底盘**"——下一章给出一个**可落地的总体设计**，而不是"再堆一个 agent"。
 
 ---
 
-## Part C｜Arke 的技术构建：承接进展、正面解决难题（含 TODO）
+## Part C｜Arke 的技术构建：设计逻辑 + 整体架构 + 四件套 + Benchmark
 
-> 本部分**严格回应 Part B 的 G1–G6 与 H1–H9**，每一条都要给出 Arke 的对应方案；没有覆盖的部分**显式 TODO**。
+> **本部分不展示项目进度（Stage / Gate / 完成百分比一律不出现）**。重点展示 Arke 作为目标态的**一种具体设计回答**：设计逻辑 → 总体架构 → 四件套 + Benchmark 体系，每件套各一页，每页都呼应 Part A/B 的优势与难题。
 
-### C1. Arke 定位与总图
-- 一张总图：**`.ak` 语言 → 多层 IR（Semantic/Strategy/Schedule/Instruction）→ Agent 协议 → Compiler/Verifier → Backend → HW**
-- 一句话总纲：**"让 LLM 写 kernel，让编译器把关数学；用 IR 把策略变成可迁移资产"**
+### C1. 设计逻辑：Arke 凭什么相信能逼近"目标态"
+> 一页讲清楚 Arke 的 **5 条设计公理**，每一条直接回应 S2 的技术特征。
 
-### C2. 四件套总览（Language / IR / Compiler Toolchain / Agent Engineering）
-- 每件套一句话职责
-- **核心理念表**（与 Part B 趋势一一对应）：
-  - 语义/策略分离 ↔ T1/T5
-  - Bounded Action Space ↔ T2
-  - 多层 IR + 多级验证 ↔ T2/T4
-  - @rationale 一等公民 ↔ T5
-  - 多后端可插拔 ↔ T4
-  - Agent 协议（tool-use 闭环）↔ T2/T3
+- **公理 1 · 算子是"可数学验证"的对象** → 必然要 *语义/策略分离*（F1）。
+- **公理 2 · LLM 是决策者，不是代码生成器** → 必然要 *Bounded Action Space*（F2）。
+- **公理 3 · 编译器是"可验证 RL 环境"** → 必然要 *多层 IR + 多级验证*（F3）。
+- **公理 4 · 经验必须能沉淀** → 必然要 ``@rationale`` *作为一等公民*（F5）。
+- **公理 5 · 性能上限来自硬件，不是抽象层** → 必然要 *渐进下沉到更深的 IR*（F3 + F6 + 后端天花板）。
 
-### C3. 把"好进展（G1–G6）"映射到 Arke 的设计
+> 一句话：**设计公理 → 体系结构 → 四件套实现**，逻辑自上而下闭合。
 
-| Part B 进展 | Arke 中的体现 |
-|------|------|
-| G1 正确性门禁 | V0 静态（<1ms）→ V1 数值 → V2 性能 三级流水 |
-| G2 并行探索 + 预算 | checkpoint/rollback + budget governance + 段式 prompt cache |
-| G3 硬件信号 | `compile_and_profile` + roofline-aware decisions |
-| G4 稳定抽象层 | Phase 1 Triton → Phase 3 MLIR → Phase 4 LLVM 渐进路线 |
-| G5 知识资产 | `@rationale` 一等公民 + Strategy IR + KernelCache + 轨迹导出 |
-| G6 Agent 编排 | Mode A/B 双模 + 工具协议 + nudge/compact/stop 机制 |
+### C2. 整体架构：一张总图
+> 全 PPT 唯一的"系统总图"——只有一张，看一眼就懂。
 
-### C4. 把"难题（H1–H9）"映射到 Arke 的方案 + 显式 TODO
+```
+   用户/Agent 输入
+        │
+        ▼
+ ┌──────────────────────────────────────────────┐
+ │ ① Arke Language (.ak)                        │
+ │   kernel { 语义 }   strategy { 决策 + rationale } │
+ └──────────────────┬───────────────────────────┘
+                    ▼
+ ┌──────────────────────────────────────────────┐
+ │ ② Arke IR — 多层架构                          │
+ │   Layer 4 SemanticIR   (WHAT)                │
+ │   Layer 3 StrategyIR   (HOW，LLM 决策)        │
+ │   Layer 2 ScheduleIR   (映射，半自动)         │
+ │   Layer 1 InstructionIR(近 LLVM，自动)        │
+ └──────────────────┬───────────────────────────┘
+                    ▼
+ ┌──────────────────────────────────────────────┐
+ │ ③ Compiler Toolchain                         │
+ │   OpRegistry · PassPipeline · 多级验证 V0/V1/V2 │
+ │   Backend 抽象（Triton / MLIR / LLVM 渐进）   │
+ └──────────────────┬───────────────────────────┘
+                    ▼
+ ┌──────────────────────────────────────────────┐
+ │ ④ Agent Engineering                          │
+ │   Tool-use 协议 · Bounded Action Space       │
+ │   Budget · Checkpoint/Rollback · Compact     │
+ └──────────────────┬───────────────────────────┘
+                    ▼
+              GPU / NPU 执行
+```
 
-> 这是 Part C 的核心页。每条难题给出"Arke 怎么做"+"还差什么（TODO）"。
+页面右侧标注：**①②③④ 各承担目标态的哪些技术特征 F1–F7**，让 A/B/Part C 三段叙事在这一张图上闭合。
 
-- **H1 · 策略可迁移** → ✅ Semantic/Strategy 分离 + Strategy IR + `@rationale`
-  - **TODO-1**：跨 kernel 的 *Rationale Knowledge Base* 检索/合成尚未产品化（计划在 P4-S_FINAL 累计 ≥200 条）
-- **H2 · 多级验证** → ✅ V0/V1/V2 + checkpoint/rollback + Compiler-as-Verifier
-  - **TODO-2**：V2 性能门禁的"可剪枝早停"策略尚未形式化（当前依赖 budget，缺少基于增益梯度的主动剪枝）
-- **H3 · 动态 / 符号 shape** → ✅ `where` 子句 + Symbolic Dimension System + conditional strategy（v2.0 已落地设计）
-  - **TODO-3**：动态 shape 在 L2 fused / L3 模型级的端到端泛化验证尚未完成（S7 feasibility 文档 → S8 落地）
-- **H4 · 跨硬件迁移** → ✅ target-aware strategy + 后端可插拔（Phase 2 Ascend）
-  - **TODO-4**：跨架构 *strategy lift*（NVIDIA→Ascend→AMD）的量化验证 + KB 检索体系尚未建立
-  - **TODO-5**：`@rationale` 跨架构有效性（≥10% lift）目前是 Gate P2-S4 目标，**尚未达成**
-- **H5 · 模型级自治** → ⚠️ 部分覆盖：KernelCache + benchmark BL6 + Inductor 集成（S8）
-  - **TODO-6**：模型级"瓶颈定位 → 自动回灌优化 → 回归"的**闭环产品化**尚未完成
-  - **TODO-7**：跨 kernel 的全局优化（共享内存/流/调度协同）尚未纳入决策空间
-- **H6 · Token / 预算治理** → ✅ budget tracker + segmented prompt cache + compact + observe(delta)
-  - **TODO-8**：跨 session 的**长期记忆 / 知识库治理**（去重 / 失效 / 版本）尚未设计
-- **H7 · 后端天花板** → ✅ 路线已定：Triton (P1) → MLIR (P3) → LLVM (P4)
-  - **TODO-9**：Strategy IR Level 2 (loop_nest / memory_access_pattern) 与 Level 3 (register / barrier / instr_sched) 的**完整动作枚举**尚未实现
-  - **TODO-10**：MLIR Dialect (`arke.kernel` / `arke.strategy`) 仅有骨架，尚未端到端打通
-- **H8 · 领域模型与数据** → ⚠️ 当前未覆盖
-  - **TODO-11**：领域模型路线（SFT / RLEF / 轨迹回放）尚未纳入 Arke 路线图，需要决策"自研 or 复用 KernelGen-LM 类外部模型"
-  - **TODO-12**：Arke 自身的轨迹/rationale 数据如何形成训练集，尚无 schema 与采集流水
-- **H9 · 评测与可复现** → ✅ BL/OT/ST/L benchmark 框架 + Gate 治理 + 多 baseline (P0–P5)
-  - **TODO-13**：与业界（KernelEvolve / KernelAgent 等）的**横向 benchmark 对齐**尚未做（缺统一 reporting schema）
+### C3. 组件 ① · Arke Language（`.ak`）
+> 一句话定位：**LLM 与人共同书写的"算子规约语言"**。
 
-### C5. Arke 路线图（Phase / Stage / Gate）如何保证趋势"持续落地"
-- 用 Gate 体系解释：每个 Stage 的 Gate 是"业界趋势 → Arke 验证"的落点
-- 关键里程碑映射：
-  - **G6（当前）**：Compiler Infrastructure，对应 T4（稳定抽象层）+ T2（工具化）
-  - **G7**：Lang & IR v2，对应 T5（知识资产化）+ H3（符号 shape）
-  - **G8**：Agent Autonomy，对应 T1/T2/T3，集中回应 H5/H6
-  - **G9**：Phase 1 Final，4 模型 E2E + Arke vs LLM-direct，对应 H9（评测）
-  - **Phase 2**：Ascend 验证，集中回应 H4
-  - **Phase 3/4**：MLIR / LLVM，集中回应 H7
+- **设计要点**
+  - `kernel { ... }` 写**纯数学语义**（无 tile / 无 thread / 无 memory）
+  - `strategy { ... }` 写**离散决策 + `@rationale`**
+  - `where` 子句承载**符号维度 / 动态 shape**
+  - 通用算子抽象（universal operator abstraction），算子通过 OpRegistry 注册而非内建
+- **呼应**
+  - ✅ 进展：T4 稳定抽象层、T5 知识资产化
+  - ✅ 难题：H1（策略可迁移）、H3（动态 shape）
+  - 🌟 目标态特征：**F1 语义/策略分离**、**F5 结构化经验资产**
 
-### C6. TODO 总览（按优先级 / 责任 Stage）
+### C4. 组件 ② · Arke IR（多层架构）
+> 一句话定位：**LLM-Native 的中间表示，4 层各有"LLM 参与度"**。
 
-| TODO | 关联难题 | 优先级 | 建议落地 Stage / Phase |
-|------|---------|------|----------|
-| TODO-1 Rationale KB 产品化 | H1 | P1 | P4-S_FINAL（≥200 条目标） |
-| TODO-2 V2 早停剪枝 | H2 | P2 | S8（Agent Autonomy） |
-| TODO-3 动态 shape 端到端 | H3 | P1 | S7→S8 |
-| TODO-4 跨架构 strategy lift 量化 | H4 | P1 | Phase 2 |
-| TODO-5 @rationale 跨架构 ≥10% lift | H4 | P1 | P2-S4 |
-| TODO-6 模型级闭环产品化 | H5 | P2 | S8/S9 |
-| TODO-7 跨 kernel 全局优化 | H5 | P3 | Phase 3+ |
-| TODO-8 跨 session 长期记忆 | H6 | P2 | Phase 3+ |
-| TODO-9 L2/L3 决策动作完整枚举 | H7 | P1 | Phase 3 |
-| TODO-10 MLIR Dialect 端到端 | H7 | P1 | Phase 3 |
-| TODO-11 领域模型路线决策 | H8 | P2 | Phase 2/3 |
-| TODO-12 训练集 schema + 采集流水 | H8 | P2 | Phase 2 |
-| TODO-13 与业界横向 benchmark 对齐 | H9 | P1 | S9 |
+- **设计要点**
+  - **Layer 4 SemanticIR**：纯数学，与硬件无关，作为正确性参考
+  - **Layer 3 StrategyIR**：决策 + `@rationale`，LLM 主战场，可 checkpoint/rollback
+  - **Layer 2 ScheduleIR**：thread/block/warp 映射，编译器主导
+  - **Layer 1 InstructionIR**：近 LLVM IR，全自动
+  - 与 MLIR/LLVM **互操作而非依赖**：可下沉、可绕过
+- **呼应**
+  - ✅ 进展：T2 工具化、T4 稳定抽象层
+  - ✅ 难题：H2（多级验证）、H7（后端天花板）
+  - 🌟 目标态特征：**F2 有界动作空间**、**F3 多层 IR + 多级验证**、**F6 跨硬件统一表达**
 
-### C7. 讨论题 / Q&A
-- 3–5 个研讨引导问题，例如：
-  - 有界动作空间的"边界"应当由谁定义？编译器枚举 vs 模型外推
-  - `@rationale` 是终极的"知识沉淀介质"吗？还是只是过渡形态？
-  - 自研领域模型 vs 复用通用前沿模型，分界点在哪里？
-  - 跨硬件策略迁移：是 IR 层的事，还是模型层的事？
-  - 评测的"业界横向可比"由谁主导？是否应当推动一个开放协议？
+### C5. 组件 ③ · Arke Compiler Toolchain
+> 一句话定位：**"Compiler-as-Verifier"——不优化，只把关**。
+
+- **设计要点**
+  - **OpRegistry**：算子单一事实源，新增算子的成本最小化
+  - **Pass Pipeline**：可组合的 IR 变换基础设施
+  - **多级验证**
+    - V0 静态（< 1ms，结构/类型/约束）
+    - V1 数值（与 NumPy / 参考实现对拍）
+    - V2 性能（编译 + profile，进入 LLM 反馈循环）
+  - **Backend 抽象**：Triton / MLIR / LLVM 可插拔，**抽象层稳定 + 后端可演进**
+- **呼应**
+  - ✅ 进展：G1 正确性门禁、G3 硬件信号、G4 稳定抽象层
+  - ✅ 难题：H2、H4、H7
+  - 🌟 目标态特征：**F3 多级验证**、**F4 硬件信号闭环**、**F6 跨硬件统一表达**
+
+### C6. 组件 ④ · Arke Agent Engineering
+> 一句话定位：**让任意 LLM 都能稳定开 kernel 的"工程化运行时"**。
+
+- **设计要点**
+  - **统一工具协议**：`analyze_compute / list_legal_actions / apply_decision / verify_correctness / compile_and_profile / checkpoint / rollback / observe`
+  - **Bounded Action Space**：动作来自编译器枚举，杜绝幻觉式自由代码
+  - **预算与节流**：budget / nudge / compact / segmented prompt cache
+  - **双模集成**：Mode A 内置 agent / Mode B 外部 agent（Cursor/Claude Code 等可直接驱动）
+  - **轨迹与 rationale 沉淀**：每次会话产出可检索/可训练资产
+- **呼应**
+  - ✅ 进展：T1 搜索化、T2 工具化、G2/G6 并行 + 编排
+  - ✅ 难题：H5（模型级闭环）、H6（token/预算治理）、H8（数据/领域模型）
+  - 🌟 目标态特征：**F2 有界动作空间**、**F4 硬件信号闭环**、**F5 经验资产**
+
+### C7. 组件 ⑤ · Benchmark 体系（横切的"度量层"）
+> 一句话定位：**"没有度量就没有优化"——Arke 的可复现评测协议**。
+
+- **设计要点**
+  - **BL（Benchmark Level）**：能力级别（BL1 单算子正确性 → BL5 多算子融合 → BL6 模型 E2E）
+  - **OT（Op Tier）**：算子能力分层（OT0 elementwise → OT4 attention）
+  - **ST（Shape Tier）**：形状层级（ST1 小 / ST2 中 / ST3 大 / ST4 极端），覆盖动态 shape
+  - **L（Layer）**：评测维度（L1 单算子 / L2 融合 / L3 模型）
+  - **多 baseline 矩阵**：cuBLAS / FlagGems / Liger / PyTorch eager / Inductor / Arke 自身，跨 baseline 横向可比
+  - **统一 reporting schema**：JSON + Markdown 报告，对外可复现
+- **呼应**
+  - ✅ 进展：G1（正确性门禁）、G3（硬件信号）
+  - ✅ 难题：**H9 评测可复现**（业界最缺、Arke 重点投入）
+  - 🌟 目标态特征：**F7 可复现评测协议**——这是 Arke 给行业的"公共物品提案"
+
+### C8. Arke 与目标态 7 大技术特征的最终对齐表（结尾页）
+
+| 目标态特征 | Arke 的承载组件 | 一句话说明 |
+|-----------|---------------|-----------|
+| **F1** 语义/策略分离 | Language + IR L4/L3 | `.ak` 双块 + IR 双层强约束 |
+| **F2** 有界动作空间 | IR L3 + Agent | StrategyIR 决策可枚举；Agent 工具协议禁止自由代码 |
+| **F3** 多层 IR + 多级验证 | IR L4–L1 + Compiler V0/V1/V2 | 四层下沉 × 三级验证 |
+| **F4** 硬件信号闭环 | Compiler + Agent | `compile_and_profile` 反馈进入决策循环 |
+| **F5** 结构化经验资产 | Language `@rationale` + Agent 轨迹 | 一等公民 + 跨会话沉淀 |
+| **F6** 跨硬件统一表达 | Language + IR + Backend 抽象 | 单语义多 target；Triton/MLIR/LLVM 渐进 |
+| **F7** 可复现评测协议 | Benchmark 体系（BL/OT/ST/L） | 多 baseline + 统一 schema |
+
+> 收尾一句话：**Arke 不是"再做一个 agent"，而是"把目标态的 7 个特征变成可工程实现的栈"**。
+
+### C9. 讨论题 / Q&A
+- 有界动作空间的"边界"应当由谁定义？编译器枚举 vs 模型外推
+- `@rationale` 是终极的"知识沉淀介质"吗？还是过渡形态？
+- 自研领域模型 vs 复用通用前沿模型，分界点在哪里？
+- 跨硬件策略迁移：是 IR 层的事，还是模型层的事？
+- 评测的"业界横向可比"由谁主导？是否应当推动一个开放协议？
 
 ---
 
@@ -216,8 +314,8 @@
 
 - 附录 A：术语表（SemanticIR / StrategyIR / `@rationale` / V0–V2 / BL/OT/ST/L 等）
 - 附录 B：7 个案例的关键参考链接 / paper / repo
-- 附录 C：Arke 当前 Stage 状态速查（S0–S5 ✅，S6 进行中，S7–S9 ⬜）
-- 附录 D：与 README 中"Key Features"的逐项映射表
+- 附录 C：与 README 中"Key Features"的逐项映射表
+- 附录 D：扩展阅读（MLIR / Triton / CuTe / FlagGems / Liger）
 
 ---
 
@@ -227,3 +325,4 @@
 |------|------|---------|
 | 2026-04-25 | v0.1 | 初版大纲，三段式结构 |
 | 2026-04-26 | v0.2 | 聚焦"技术趋势洞察"叙事；A 部分新增"模型能力侧"专章；B 部分由案例巡礼改为"趋势 + 案例证据"；C 部分新增 H8/H9，TODO 列表化并按优先级排序 |
+| 2026-04-26 | v0.3 | **新增承上启下的"目标态总览页"**（北极星 + 7 大技术特征 F1–F7 + 对通用编程的启示）；**Part C 去项目进度化**，改为"设计公理 → 总架构 → 四件套各一页 + Benchmark 一页 → 与 F1–F7 的最终对齐表"，不再出现 Stage/Gate/TODO 列表 |
