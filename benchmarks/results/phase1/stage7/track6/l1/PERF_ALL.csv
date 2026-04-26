@@ -23,14 +23,42 @@ argmax,small,PyTorch-eager,55.6,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,
 argmax,small,Arke,60.8,70.6,,0.9145,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9145,false,-0.0855
 argmax,medium,PyTorch-eager,53.6,55.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 argmax,medium,Arke,79.8,13.3,,0.6717,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6717,false,-0.3283
-batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,64.9,16.4,0.002,1.1726,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.1726,true,0.1726
-batch_matmul,gpt2-attn-128,PyTorch-eager,76.1,32.8,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-batch_matmul,gpt2-attn-128,Arke,113.7,19.5,0.001,0.6693,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6693,false,-0.3307
-batch_matmul,gpt2-attn-128,FlagGems,129.0,165.0,0.001,0.5899,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,,,,,1.0,0.5899,false,-0.4101
-batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,180.6,55.3,0.004,0.3704,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.3704,false,-0.6296
-batch_matmul,gpt2-attn-512,PyTorch-eager,66.9,78.8,0.012,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-batch_matmul,gpt2-attn-512,Arke,178.9,241.7,0.004,0.3740,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.3740,false,-0.6260
-batch_matmul,gpt2-attn-512,FlagGems,125.6,152.6,0.006,0.5326,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,,,,,1.0,0.5326,false,-0.4674
+batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,22.0,23.4,0.006,0.9773,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,0.9773,false,-0.0227
+batch_matmul,gpt2-attn-128,PyTorch-eager,21.5,10.2,0.006,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-128,Arke,39.4,34.8,0.003,0.5457,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,0.5457,false,-0.4543
+batch_matmul,gpt2-attn-128,FlagGems,75.4,75.6,0.002,0.2851,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,409600,3542771302,0.0001,dense_matmul,1.0,0.2851,false,-0.7149
+batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,59.9,66.6,0.013,1.2053,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.2053,true,0.2053
+batch_matmul,gpt2-attn-512,PyTorch-eager,72.2,80.8,0.011,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-512,Arke,153.0,142.3,0.005,0.4719,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.4719,false,-0.5281
+batch_matmul,gpt2-attn-512,FlagGems,83.5,79.9,0.009,0.8647,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,7143424,3542771302,0.0020,dense_matmul,1.0,0.8647,false,-0.1353
+batch_matmul,llama-attn-512,cuBLAS/cuDNN,128.5,130.0,0.033,0.3300,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.3300,false,-0.6700
+batch_matmul,llama-attn-512,PyTorch-eager,42.4,35.8,0.099,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,llama-attn-512,Arke,263.2,266.1,0.016,0.1611,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.1611,false,-0.8389
+batch_matmul,llama-attn-512,FlagGems,127.5,142.4,0.033,0.3325,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,21102592,3542771302,0.0060,dense_matmul,1.0,0.3325,false,-0.6675
+batch_matmul,llama-attn-2k,cuBLAS/cuDNN,1819.1,1805.3,0.009,0.0678,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0678,false,-0.9322
+batch_matmul,llama-attn-2k,PyTorch-eager,123.4,120.8,0.136,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,llama-attn-2k,Arke,3466.7,3452.9,0.005,0.0356,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0356,false,-0.9644
+batch_matmul,llama-attn-2k,FlagGems,1407.5,1406.0,0.012,0.0877,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,285736960,3542771302,0.0807,dense_matmul,1.0,0.0877,false,-0.9123
+batch_matmul,batched-8,cuBLAS/cuDNN,24.1,9.2,0.003,1.3361,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.3361,true,0.3361
+batch_matmul,batched-8,PyTorch-eager,32.2,11.3,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,batched-8,Arke,38.9,35.8,0.002,0.8278,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.8278,false,-0.1722
+batch_matmul,batched-8,FlagGems,63.6,73.7,0.001,0.5063,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,139264,3542771302,0.0000,dense_matmul,1.0,0.5063,false,-0.4937
+batch_matmul,batched-32,cuBLAS/cuDNN,32.8,33.8,0.032,0.8872,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.8872,false,-0.1128
+batch_matmul,batched-32,PyTorch-eager,29.1,11.3,0.036,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,batched-32,Arke,35.3,44.0,0.030,0.8244,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.8244,false,-0.1756
+batch_matmul,batched-32,FlagGems,67.0,69.6,0.016,0.4343,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,2129920,3542771302,0.0006,dense_matmul,1.0,0.4343,false,-0.5657
+batch_matmul,non-align-1,cuBLAS/cuDNN,29.2,25.6,0.004,0.7568,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,0.7568,false,-0.2432
+batch_matmul,non-align-1,PyTorch-eager,22.1,29.7,0.005,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,non-align-1,Arke,39.4,48.0,0.003,0.5609,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,0.5609,false,-0.4391
+batch_matmul,non-align-1,FlagGems,152.1,129.9,0.001,0.1453,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,361702,3542771302,0.0001,dense_matmul,1.0,0.1453,false,-0.8547
+batch_matmul,non-align-2,cuBLAS/cuDNN,120.3,119.8,0.017,0.3408,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.3408,false,-0.6592
+batch_matmul,non-align-2,PyTorch-eager,41.0,42.0,0.048,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,non-align-2,Arke,289.8,283.6,0.007,0.1415,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.1415,false,-0.8585
+batch_matmul,non-align-2,FlagGems,158.2,161.8,0.013,0.2592,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,10012734,3542771302,0.0028,dense_matmul,1.0,0.2592,false,-0.7408
+batch_matmul,extreme-bsz,cuBLAS/cuDNN,23.6,18.4,0.011,1.3898,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,1.3898,true,0.3898
+batch_matmul,extreme-bsz,PyTorch-eager,32.8,23.2,0.008,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,extreme-bsz,Arke,33.8,29.7,0.008,0.9704,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,0.9704,false,-0.0296
+batch_matmul,extreme-bsz,FlagGems,88.5,82.9,0.003,0.3706,ok,,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for batch_matmul,397312,3542771302,0.0001,dense_matmul,1.0,0.3706,false,-0.6294
 cast,micro-tiny,PyTorch-eager,97.2,95.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 cast,micro-tiny,Arke,0.7,2.0,,138.8571,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,138.8571,true,137.8571
 cast,micro-tiny,FlagGems,114.3,119.8,,0.8504,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.8504,false,-0.1496
@@ -152,10 +180,20 @@ gelu,square-1k,PyTorch-eager,104.4,69.6,,1.0000,ok,,false,true,0,0,0.001,0.001,o
 gelu,square-1k,torch.compile,408.2,331.8,,0.2558,ok,,false,true,5.96046e-08,1.3074e-12,0.001,0.001,ok,,,,,,1.0,0.2558,false,-0.7442
 gelu,square-1k,Arke,147.1,187.4,,0.7097,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7097,false,-0.2903
 gelu,square-1k,FlagGems,118.8,142.3,,0.8788,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.8788,false,-0.1212
-grouped_matmul,moe-tiny,PyTorch-eager,134.1,120.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-grouped_matmul,moe-tiny,Arke,665.6,604.2,,0.2015,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,,1.0,0.2015,false,-0.7985
-grouped_matmul,moe-small,PyTorch-eager,233.1,220.2,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-grouped_matmul,moe-small,Arke,1177.9,1115.1,,0.1979,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,,1.0,0.1979,false,-0.8021
+grouped_matmul,moe-tiny,PyTorch-eager,46.1,59.6,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,180224,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-tiny,Arke,251.5,258.0,,0.1833,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,180224,3542771302,0.0001,dense_matmul,1.0,0.1833,false,-0.8167
+grouped_matmul,moe-small,PyTorch-eager,51.7,57.3,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-small,Arke,562.1,517.9,,0.0920,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,1572864,3542771302,0.0004,dense_matmul,1.0,0.0920,false,-0.9080
+grouped_matmul,moe-medium,PyTorch-eager,120.3,126.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,53477376,3542771302,0.0151,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-medium,Arke,16633.3,13964.3,,0.0072,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,53477376,3542771302,0.0151,dense_matmul,1.0,0.0072,false,-0.9928
+grouped_matmul,ds-moe-512,PyTorch-eager,193.0,182.3,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,3397386240,3542771302,0.9590,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,ds-moe-512,Arke,39745.0,39275.5,,0.0049,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,3397386240,3542771302,0.9590,dense_matmul,1.0,0.0049,false,-0.9951
+grouped_matmul,ds-moe-2k,PyTorch-eager,182.8,182.2,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,3523215360,3542771302,0.9945,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,ds-moe-2k,Arke,39652.4,39309.3,,0.0046,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,3523215360,3542771302,0.9945,dense_matmul,1.0,0.0046,false,-0.9954
+grouped_matmul,ds-v3-moe,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,26365394944,3542771302,7.4420,dense_matmul,1.0,N/A,false,N/A
+grouped_matmul,ds-v3-moe,Arke,inf,inf,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,26365394944,3542771302,7.4420,dense_matmul,1.0,N/A,false,N/A
+grouped_matmul,non-align-1,PyTorch-eager,55.8,63.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,12196340,3542771302,0.0034,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,non-align-1,Arke,976.3,945.2,,0.0572,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,12196340,3542771302,0.0034,dense_matmul,1.0,0.0572,false,-0.9428
 grouped_query_attention,llama3-8b-512,PyTorch-eager,2185.1,2133.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 grouped_query_attention,llama3-8b-512,Arke,348.2,350.2,,6.2754,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for grouped_query_attention,,,,,1.0,6.2754,true,5.2754
 layernorm,gpt2-small,cuBLAS/cuDNN,61.8,45.2,,0.9029,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9029,false,-0.0971
@@ -715,14 +753,30 @@ topk,moe-top2-small,PyTorch-eager,143.0,113.7,,1.0000,ok,,false,true,0,0,0.001,0
 topk,moe-top2-small,Arke,106.8,64.3,,1.3390,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(128, 4) cand=(128, 1)",,,,,1.0,1.3390,true,0.3390
 topk,moe-top2-gpt2,PyTorch-eager,669.4,579.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 topk,moe-top2-gpt2,Arke,251.9,240.6,,2.6574,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(512, 4) cand=(512, 1)",,,,,1.0,2.6574,true,1.6574
-transpose,small,cuBLAS/cuDNN,125.6,97.3,,0.0430,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0430,false,-0.9570
-transpose,small,PyTorch-eager,5.4,13.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-transpose,small,Arke,101.7,9.2,,0.0531,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0531,false,-0.9469
-transpose,small,FlagGems,92.8,27.6,,0.0582,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.0582,false,-0.9418
-transpose,square-1k,cuBLAS/cuDNN,115.0,150.5,,0.0530,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0530,false,-0.9470
-transpose,square-1k,PyTorch-eager,6.1,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-transpose,square-1k,Arke,104.8,152.6,,0.0582,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0582,false,-0.9418
-transpose,square-1k,FlagGems,103.8,153.6,,0.0588,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.0588,false,-0.9412
+transpose,small,cuBLAS/cuDNN,31.1,26.8,,0.7235,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7235,false,-0.2765
+transpose,small,PyTorch-eager,22.5,43.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,small,Arke,71.7,95.2,,0.3138,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3138,false,-0.6862
+transpose,small,FlagGems,145.0,129.0,,0.1552,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.1552,false,-0.8448
+transpose,square-1k,cuBLAS/cuDNN,53.8,42.8,,0.2751,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2751,false,-0.7249
+transpose,square-1k,PyTorch-eager,14.8,28.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,square-1k,Arke,53.2,67.4,,0.2782,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2782,false,-0.7218
+transpose,square-1k,FlagGems,151.6,153.6,,0.0976,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.0976,false,-0.9024
+transpose,llama-kv,cuBLAS/cuDNN,114.2,107.5,,0.1839,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.1839,false,-0.8161
+transpose,llama-kv,PyTorch-eager,21.0,40.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,llama-kv,Arke,115.7,137.2,,0.1815,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.1815,false,-0.8185
+transpose,llama-kv,FlagGems,145.4,194.6,,0.1444,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.1444,false,-0.8556
+transpose,wide,cuBLAS/cuDNN,63.0,65.8,,0.1063,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.1063,false,-0.8937
+transpose,wide,PyTorch-eager,6.7,41.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,wide,Arke,67.5,70.6,,0.0993,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0993,false,-0.9007
+transpose,wide,FlagGems,124.9,102.7,,0.0536,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.0536,false,-0.9464
+transpose,non-align-1,cuBLAS/cuDNN,68.6,91.1,,0.3586,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3586,false,-0.6414
+transpose,non-align-1,PyTorch-eager,24.6,41.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,non-align-1,Arke,71.7,96.3,,0.3431,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3431,false,-0.6569
+transpose,non-align-1,FlagGems,87.1,98.6,,0.2824,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.2824,false,-0.7176
+transpose,extreme-tall,cuBLAS/cuDNN,405.0,402.4,,0.0546,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0546,false,-0.9454
+transpose,extreme-tall,PyTorch-eager,22.1,41.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,extreme-tall,Arke,405.5,406.3,,0.0545,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0545,false,-0.9455
+transpose,extreme-tall,FlagGems,374.3,378.7,,0.0590,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for transpose,,,,,1.0,0.0590,false,-0.9410
 where_,micro-tiny,PyTorch-eager,18.4,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 where_,micro-tiny,Arke,4.8,7.2,,3.8333,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,3.8333,true,2.8333
 where_,micro-tiny,FlagGems,127.7,64.5,,0.1441,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1441,false,-0.8559

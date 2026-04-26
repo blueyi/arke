@@ -1,2 +1,4 @@
 operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-qkv_fa,gpt2-sm-128,separate,752.9,442.1,0.602,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: qkv_fa,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+qkv_fa,gpt2-sm-128,separate,98.4,73.7,4.604,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+qkv_fa,gpt2-sm-512,separate,217.6,220.2,8.328,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+qkv_fa,gpt2-sm-1k,separate,543.2,544.6,6.671,1.0000,ok,,false,true,5.82077e-11,7.40149e-17,0.01,0.01,ok,,31457280,3542771302,0.0089,attention,1.0,1.0000,true,0.0000

@@ -1,14 +1,14 @@
 {
-  "overall_geomean": 0.9897,
+  "overall_geomean": 0.8238,
   "op_scores": {
     "geglu": 1.0,
     "linear_ce": 1.0,
-    "matmul_gelu": 0.9952,
-    "matmul_relu": 0.9709,
+    "matmul_gelu": 0.95,
+    "matmul_relu": 0.6677,
     "qkv_fa": 1.0,
     "swiglu": 1.0
   },
-  "total_shapes": 10,
+  "total_shapes": 155,
   "operators": [
     "geglu",
     "linear_ce",
@@ -18,25 +18,27 @@
     "swiglu"
   ],
   "status_counts": {
-    "ok": 10
+    "ok": 155,
+    "error": 4
   },
   "correctness_counts": {
-    "unsupported": 4,
-    "ok": 6
+    "unsupported": 20,
+    "error": 4,
+    "ok": 135
   },
   "memory_policy_counts": {
-    "none": 8,
-    "linear_ce": 1,
-    "attention": 1
+    "none": 144,
+    "linear_ce": 12,
+    "attention": 3
   },
   "memory_pressure_rows": 0,
   "perf_target_counts": {
-    "with_target": 10,
+    "with_target": 159,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "true": 8,
-    "false": 2
+    "true": 82,
+    "false": 77
   },
   "perf_targets": {
     "geglu": 1.0,
@@ -49,16 +51,16 @@
   "perf_actuals": {
     "geglu": 1.0,
     "linear_ce": 1.0,
-    "matmul_gelu": 0.9952,
-    "matmul_relu": 0.9709,
+    "matmul_gelu": 0.95,
+    "matmul_relu": 0.6677,
     "qkv_fa": 1.0,
     "swiglu": 1.0
   },
   "perf_gaps": {
     "geglu": 0.0,
     "linear_ce": 0.0,
-    "matmul_gelu": 0.0156,
-    "matmul_relu": -0.0268,
+    "matmul_gelu": -0.0461,
+    "matmul_relu": -0.252,
     "qkv_fa": 0.0,
     "swiglu": 0.0
   }

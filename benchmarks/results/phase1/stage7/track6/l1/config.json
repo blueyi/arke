@@ -1,18 +1,10 @@
 {
-  "timestamp": "2026-04-25_234207",
+  "timestamp": "2026-04-26_013330",
   "ops": [
-    "matmul",
-    "softmax",
-    "silu",
-    "tanh",
-    "sigmoid",
-    "mul",
-    "layernorm",
-    "rmsnorm",
-    "rmsnorm_residual"
+    "grouped_matmul"
   ],
-  "warmup": 20,
-  "reps": 60,
-  "tier": 2,
+  "warmup": 1,
+  "reps": 2,
+  "tier": null,
   "shape_tags": null
 }

@@ -1,9 +1,9 @@
 {
-  "overall_geomean": 0.8646,
+  "overall_geomean": 0.8124,
   "op_scores": {
     "add": 1.1047,
     "argmax": 0.8853,
-    "batch_matmul": 0.6557,
+    "batch_matmul": 0.5038,
     "cast": 3.2112,
     "concat": 0.9792,
     "copy_": 1.1213,
@@ -18,7 +18,7 @@
     "gather": 1.1532,
     "geglu": 0.7534,
     "gelu": 0.4978,
-    "grouped_matmul": 0.4469,
+    "grouped_matmul": 0.1524,
     "grouped_query_attention": 2.5051,
     "layernorm": 0.4999,
     "matmul": 0.8208,
@@ -42,10 +42,10 @@
     "swiglu": 1.1783,
     "tanh": 0.9912,
     "topk": 1.3734,
-    "transpose": 0.1116,
+    "transpose": 0.2522,
     "where_": 0.5339
   },
-  "total_shapes": 728,
+  "total_shapes": 780,
   "operators": [
     "add",
     "argmax",
@@ -92,31 +92,31 @@
     "where_"
   ],
   "status_counts": {
-    "ok": 728,
-    "skipped": 8,
+    "ok": 780,
+    "skipped": 10,
     "error": 3
   },
   "correctness_counts": {
-    "ok": 529,
-    "unsupported": 189,
+    "ok": 566,
+    "unsupported": 204,
     "error": 8,
     "mismatch": 3,
-    "skipped": 8,
+    "skipped": 10,
     "unknown": 2
   },
   "memory_policy_counts": {
-    "none": 659,
-    "dense_matmul": 72,
+    "none": 663,
+    "dense_matmul": 122,
     "attention": 8
   },
-  "memory_pressure_rows": 8,
+  "memory_pressure_rows": 10,
   "perf_target_counts": {
-    "with_target": 739,
+    "with_target": 793,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "true": 396,
-    "false": 343
+    "true": 413,
+    "false": 380
   },
   "perf_targets": {
     "add": 1.0,
@@ -168,7 +168,7 @@
   "perf_actuals": {
     "add": 1.1047,
     "argmax": 0.8853,
-    "batch_matmul": 0.6557,
+    "batch_matmul": 0.5038,
     "cast": 3.2112,
     "concat": 0.9792,
     "copy_": 1.1213,
@@ -183,7 +183,7 @@
     "gather": 1.1532,
     "geglu": 0.7534,
     "gelu": 0.4978,
-    "grouped_matmul": 0.4469,
+    "grouped_matmul": 0.1524,
     "grouped_query_attention": 2.5051,
     "layernorm": 0.4999,
     "matmul": 0.8208,
@@ -207,13 +207,13 @@
     "swiglu": 1.1783,
     "tanh": 0.9912,
     "topk": 1.3734,
-    "transpose": 0.1116,
+    "transpose": 0.2522,
     "where_": 0.5339
   },
   "perf_gaps": {
     "add": 0.128,
     "argmax": -0.1035,
-    "batch_matmul": -0.2864,
+    "batch_matmul": -0.3301,
     "cast": 17.9653,
     "concat": -0.0081,
     "copy_": 0.1556,
@@ -228,7 +228,7 @@
     "gather": 0.2011,
     "geglu": -0.2162,
     "gelu": -0.1961,
-    "grouped_matmul": -0.4002,
+    "grouped_matmul": -0.4709,
     "grouped_query_attention": 2.6377,
     "layernorm": -0.3287,
     "matmul": -0.0964,
@@ -252,7 +252,7 @@
     "swiglu": 0.1943,
     "tanh": -0.008,
     "topk": 0.4991,
-    "transpose": -0.7095,
+    "transpose": -0.5931,
     "where_": -0.1653
   }
 }

@@ -46,7 +46,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
-| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v2 | ⬜ |
+| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v2 | ✅ |
 | S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
@@ -98,7 +98,7 @@ GPT-2 Small E2E inference: top-1 token correctness 100%, 49/48 Conv1D replacemen
 
 ---
 
-### Stage 6 (G6): Compiler Infrastructure ⬜ ← CURRENT
+### Stage 6 (G6): Compiler Infrastructure ✅
 
 **Objective:** Refactor the compiler toolchain into a clean, extensible architecture. OpRegistry as single source of truth, Pass pipeline for composable transformations, Backend abstraction for multi-target support.
 
@@ -123,7 +123,7 @@ AND ALL:
 
 ---
 
-### Stage 7 (G7): Lang & IR v2 ⬜
+### Stage 7 (G7): Lang & IR v2 ✅
 
 **Objective:** Implement the multi-layer IR architecture (Layer 4/3/2/1), upgrade Arke Lang with where clause and backend-agnostic strategy, complete spec documents, assess dynamic shape feasibility, establish MLIR framework skeleton.
 

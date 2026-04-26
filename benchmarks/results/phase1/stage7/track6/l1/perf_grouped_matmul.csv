@@ -1,5 +1,15 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-grouped_matmul,moe-tiny,PyTorch-eager,134.1,120.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-grouped_matmul,moe-tiny,Arke,665.6,604.2,,0.2015,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,,1.0,0.2015,false,-0.7985
-grouped_matmul,moe-small,PyTorch-eager,233.1,220.2,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-grouped_matmul,moe-small,Arke,1177.9,1115.1,,0.1979,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,,,,,1.0,0.1979,false,-0.8021
+grouped_matmul,moe-tiny,PyTorch-eager,46.1,59.6,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,180224,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-tiny,Arke,251.5,258.0,,0.1833,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,180224,3542771302,0.0001,dense_matmul,1.0,0.1833,false,-0.8167
+grouped_matmul,moe-small,PyTorch-eager,51.7,57.3,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-small,Arke,562.1,517.9,,0.0920,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,1572864,3542771302,0.0004,dense_matmul,1.0,0.0920,false,-0.9080
+grouped_matmul,moe-medium,PyTorch-eager,120.3,126.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,53477376,3542771302,0.0151,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-medium,Arke,16633.3,13964.3,,0.0072,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,53477376,3542771302,0.0151,dense_matmul,1.0,0.0072,false,-0.9928
+grouped_matmul,ds-moe-512,PyTorch-eager,193.0,182.3,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,3397386240,3542771302,0.9590,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,ds-moe-512,Arke,39745.0,39275.5,,0.0049,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,3397386240,3542771302,0.9590,dense_matmul,1.0,0.0049,false,-0.9951
+grouped_matmul,ds-moe-2k,PyTorch-eager,182.8,182.2,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,3523215360,3542771302,0.9945,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,ds-moe-2k,Arke,39652.4,39309.3,,0.0046,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,3523215360,3542771302,0.9945,dense_matmul,1.0,0.0046,false,-0.9954
+grouped_matmul,ds-v3-moe,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,26365394944,3542771302,7.4420,dense_matmul,1.0,N/A,false,N/A
+grouped_matmul,ds-v3-moe,Arke,inf,inf,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated dense matmul footprint 26365394944 bytes > budget 3542771302 bytes,26365394944,3542771302,7.4420,dense_matmul,1.0,N/A,false,N/A
+grouped_matmul,non-align-1,PyTorch-eager,55.8,63.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,12196340,3542771302,0.0034,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,non-align-1,Arke,976.3,945.2,,0.0572,ok,,false,,,,0.01,0.01,unsupported,runner Arke does not implement run_with_inputs for grouped_matmul,12196340,3542771302,0.0034,dense_matmul,1.0,0.0572,false,-0.9428

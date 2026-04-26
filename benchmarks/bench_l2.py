@@ -18,6 +18,7 @@ import argparse
 import csv
 import json
 import logging
+import math
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,6 +80,28 @@ class FusedResult:
     memory_bytes_budget: int | None = None
     memory_ratio: float | None = None
     memory_policy: str = ""
+
+
+def _tensor_metrics(
+    ref: torch.Tensor,
+    cand: torch.Tensor,
+    *,
+    rtol: float,
+    atol: float,
+) -> dict[str, object]:
+    ref32 = ref.detach().to(torch.float32)
+    cand32 = cand.detach().to(torch.float32)
+    diff = (cand32 - ref32).abs()
+    ok = torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
+    return {
+        "allclose": bool(ok),
+        "max_abs_diff": float(diff.max().item()) if diff.numel() else 0.0,
+        "mean_abs_diff": float(diff.mean().item()) if diff.numel() else 0.0,
+        "rtol": rtol,
+        "atol": atol,
+        "correctness_status": "ok" if ok else "mismatch",
+        "correctness_reason": "",
+    }
 
 
 def _fused_memory_fields(preflight) -> dict[str, object]:
@@ -326,7 +349,7 @@ def run_fused_op(
 
 def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tuple[float, float]:
     if dtype == torch.float16:
-        if op in {"matmul_relu", "matmul_gelu", "swiglu", "geglu"}:
+        if op in {"matmul_relu", "matmul_gelu", "swiglu", "geglu", "linear_ce", "qkv_fa"}:
             return 1e-2, 1e-2
         return 5e-3, 5e-3
     return 1e-5, 1e-6
@@ -355,21 +378,55 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
                 cand = act_fn(torch.matmul(a, b))
             else:
                 raise NotImplementedError(f"Unknown fused approach: {approach}")
-        else:
-            raise NotImplementedError(f"No correctness probe for fused op: {op}")
-        ref32 = ref.detach().to(torch.float32)
-        cand32 = cand.detach().to(torch.float32)
-        diff = (cand32 - ref32).abs()
-        ok = torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
-        return {
-            "allclose": bool(ok),
-            "max_abs_diff": float(diff.max().item()) if diff.numel() else 0.0,
-            "mean_abs_diff": float(diff.mean().item()) if diff.numel() else 0.0,
-            "rtol": rtol,
-            "atol": atol,
-            "correctness_status": "ok" if ok else "mismatch",
-            "correctness_reason": "",
-        }
+            return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
+
+        if op in {"swiglu", "geglu"}:
+            x = torch.randn(M, 2 * N, device="cuda", dtype=dtype)
+            x1, x2 = x.chunk(2, dim=-1)
+            if op == "swiglu":
+                ref = torch.nn.functional.silu(x1) * x2
+                cand = torch.sigmoid(x1) * x1 * x2
+            else:
+                ref = torch.nn.functional.gelu(x1) * x2
+                cand = (0.5 * x1 * (1.0 + torch.erf(x1 / math.sqrt(2.0)))) * x2
+            return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
+
+        if op == "linear_ce":
+            hidden = max(K, 128)
+            num_classes = N
+            x = torch.randn(M, hidden, device="cuda", dtype=dtype)
+            w = torch.randn(num_classes, hidden, device="cuda", dtype=dtype)
+            labels = torch.randint(0, num_classes, (M,), device="cuda")
+            logits = x.to(torch.float32) @ w.to(torch.float32).T
+            ref = torch.nn.functional.cross_entropy(logits, labels.long())
+            manual_log_probs = torch.log_softmax(logits, dim=-1)
+            cand = (-manual_log_probs.gather(-1, labels.long().unsqueeze(-1)).mean())
+            return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
+
+        if op == "qkv_fa":
+            tokens = M
+            hidden = K
+            qkv_dim = N
+            x = torch.randn(tokens, hidden, device="cuda", dtype=dtype)
+            w = torch.randn(hidden, qkv_dim, device="cuda", dtype=dtype)
+            qkv = x @ w
+            q, k, v = qkv.chunk(3, dim=-1)
+            # Use fp64 here so the probe checks algebraic equivalence rather
+            # than fp16 / fp32 reduction noise from the attention path.
+            q64 = q.double()
+            k64 = k.double()
+            v64 = v.double()
+            ref = torch.nn.functional.scaled_dot_product_attention(
+                q64.unsqueeze(0),
+                k64.unsqueeze(0),
+                v64.unsqueeze(0),
+                is_causal=False,
+            ).squeeze(0)
+            scores = (q64 @ k64.transpose(-1, -2)) / max(math.sqrt(float(q.shape[-1])), 1.0)
+            cand = torch.softmax(scores, dim=-1) @ v64
+            return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
+
+        raise NotImplementedError(f"No correctness probe for fused op: {op}")
     except NotImplementedError as e:
         return {
             "allclose": None,

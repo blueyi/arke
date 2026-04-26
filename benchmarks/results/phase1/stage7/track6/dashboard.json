@@ -11,11 +11,11 @@
     "l1": {
       "ops_total": 45,
       "ops_with_any_evidence": 45,
-      "ops_fully_covered": 0,
+      "ops_fully_covered": 3,
       "op_coverage_ratio": 1.0,
       "shapes_required_total": 685,
-      "shapes_observed_total": 124,
-      "shape_coverage_ratio": 0.181,
+      "shapes_observed_total": 215,
+      "shape_coverage_ratio": 0.3139,
       "per_op": [
         {
           "op": "relu",
@@ -86,17 +86,11 @@
         {
           "op": "silu",
           "required_shape_count": 20,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.05,
+          "observed_shape_count": 12,
+          "coverage_ratio": 0.6,
           "observed_shape_tags": [
-            "square-1k"
-          ],
-          "missing_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -104,13 +98,19 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
+          ],
+          "missing_shape_tags": [
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -119,17 +119,11 @@
         {
           "op": "tanh",
           "required_shape_count": 20,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.05,
+          "observed_shape_count": 12,
+          "coverage_ratio": 0.6,
           "observed_shape_tags": [
-            "square-1k"
-          ],
-          "missing_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -137,13 +131,19 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
+          ],
+          "missing_shape_tags": [
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -152,17 +152,11 @@
         {
           "op": "sigmoid",
           "required_shape_count": 20,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.05,
+          "observed_shape_count": 12,
+          "coverage_ratio": 0.6,
           "observed_shape_tags": [
-            "square-1k"
-          ],
-          "missing_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -170,13 +164,19 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
+          ],
+          "missing_shape_tags": [
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -218,17 +218,11 @@
         {
           "op": "mul",
           "required_shape_count": 20,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.05,
+          "observed_shape_count": 12,
+          "coverage_ratio": 0.6,
           "observed_shape_tags": [
-            "square-1k"
-          ],
-          "missing_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -236,13 +230,19 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
+          ],
+          "missing_shape_tags": [
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -416,18 +416,21 @@
         {
           "op": "softmax",
           "required_shape_count": 25,
-          "observed_shape_count": 3,
-          "coverage_ratio": 0.12,
+          "observed_shape_count": 10,
+          "coverage_ratio": 0.4,
           "observed_shape_tags": [
             "attn-gpt2-128",
             "attn-gpt2-256",
-            "attn-gpt2-512"
-          ],
-          "missing_shape_tags": [
+            "attn-gpt2-512",
             "attn-llama-2k",
             "attn-llama-4k",
             "attn-llama-512",
             "batch-large",
+            "square-4k",
+            "wide-vocab-gpt2",
+            "wide-vocab-llama3"
+          ],
+          "missing_shape_tags": [
             "ds-v2-attn-16k",
             "ds-v2-attn-8k",
             "ds-v3-attn-32k",
@@ -441,10 +444,7 @@
             "non-align-4",
             "non-align-5",
             "qwen25-attn-32k",
-            "square-4k",
             "wide-vocab-ds-v2",
-            "wide-vocab-gpt2",
-            "wide-vocab-llama3",
             "wide-vocab-qwen25"
           ],
           "correctness_fields_present": true,
@@ -454,26 +454,26 @@
         {
           "op": "layernorm",
           "required_shape_count": 21,
-          "observed_shape_count": 3,
-          "coverage_ratio": 0.14285714285714285,
+          "observed_shape_count": 9,
+          "coverage_ratio": 0.42857142857142855,
           "observed_shape_tags": [
+            "ds-v2",
+            "ds-v3",
             "gpt2-ffn",
             "gpt2-medium",
-            "gpt2-small"
-          ],
-          "missing_shape_tags": [
-            "ds-v2",
-            "ds-v2-long",
-            "ds-v3",
-            "ds-v3-long",
-            "extreme-large",
-            "extreme-small",
+            "gpt2-small",
             "llama-13b",
             "llama-7b",
             "llama-long",
+            "mixtral-ffn"
+          ],
+          "missing_shape_tags": [
+            "ds-v2-long",
+            "ds-v3-long",
+            "extreme-large",
+            "extreme-small",
             "llama3-8b-long",
             "llama3-8b-norm",
-            "mixtral-ffn",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -488,26 +488,26 @@
         {
           "op": "rmsnorm",
           "required_shape_count": 21,
-          "observed_shape_count": 3,
-          "coverage_ratio": 0.14285714285714285,
+          "observed_shape_count": 9,
+          "coverage_ratio": 0.42857142857142855,
           "observed_shape_tags": [
+            "ds-v2",
+            "ds-v3",
             "gpt2-ffn",
             "gpt2-medium",
-            "gpt2-small"
-          ],
-          "missing_shape_tags": [
-            "ds-v2",
-            "ds-v2-long",
-            "ds-v3",
-            "ds-v3-long",
-            "extreme-large",
-            "extreme-small",
+            "gpt2-small",
             "llama-13b",
             "llama-7b",
             "llama-long",
+            "mixtral-ffn"
+          ],
+          "missing_shape_tags": [
+            "ds-v2-long",
+            "ds-v3-long",
+            "extreme-large",
+            "extreme-small",
             "llama3-8b-long",
             "llama3-8b-norm",
-            "mixtral-ffn",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -522,26 +522,26 @@
         {
           "op": "rmsnorm_residual",
           "required_shape_count": 21,
-          "observed_shape_count": 3,
-          "coverage_ratio": 0.14285714285714285,
+          "observed_shape_count": 9,
+          "coverage_ratio": 0.42857142857142855,
           "observed_shape_tags": [
+            "ds-v2",
+            "ds-v3",
             "gpt2-ffn",
             "gpt2-medium",
-            "gpt2-small"
-          ],
-          "missing_shape_tags": [
-            "ds-v2",
-            "ds-v2-long",
-            "ds-v3",
-            "ds-v3-long",
-            "extreme-large",
-            "extreme-small",
+            "gpt2-small",
             "llama-13b",
             "llama-7b",
             "llama-long",
+            "mixtral-ffn"
+          ],
+          "missing_shape_tags": [
+            "ds-v2-long",
+            "ds-v3-long",
+            "extreme-large",
+            "extreme-small",
             "llama3-8b-long",
             "llama3-8b-norm",
-            "mixtral-ffn",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -702,11 +702,17 @@
         {
           "op": "matmul",
           "required_shape_count": 34,
-          "observed_shape_count": 6,
-          "coverage_ratio": 0.17647058823529413,
+          "observed_shape_count": 12,
+          "coverage_ratio": 0.35294117647058826,
           "observed_shape_tags": [
             "gpt2-c_attn",
             "gpt2-c_proj",
+            "llama-ffn",
+            "llama-q",
+            "lm-head-gpt2",
+            "rect-tall",
+            "rect-wide",
+            "seq512",
             "square-1k",
             "square-2k",
             "square-4k",
@@ -725,9 +731,6 @@
             "extreme-16",
             "extreme-1row",
             "extreme-long",
-            "llama-ffn",
-            "llama-q",
-            "lm-head-gpt2",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -737,10 +740,7 @@
             "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512"
+            "qwen25-lmhead"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -749,21 +749,20 @@
         {
           "op": "batch_matmul",
           "required_shape_count": 9,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.2222222222222222,
+          "observed_shape_count": 9,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "gpt2-attn-128",
-            "gpt2-attn-512"
-          ],
-          "missing_shape_tags": [
             "batched-32",
             "batched-8",
             "extreme-bsz",
+            "gpt2-attn-128",
+            "gpt2-attn-512",
             "llama-attn-2k",
             "llama-attn-512",
             "non-align-1",
             "non-align-2"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -771,19 +770,18 @@
         {
           "op": "grouped_matmul",
           "required_shape_count": 7,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.2857142857142857,
+          "observed_shape_count": 7,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "moe-small",
-            "moe-tiny"
-          ],
-          "missing_shape_tags": [
             "ds-moe-2k",
             "ds-moe-512",
             "ds-v3-moe",
             "moe-medium",
+            "moe-small",
+            "moe-tiny",
             "non-align-1"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -791,18 +789,17 @@
         {
           "op": "transpose",
           "required_shape_count": 6,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.3333333333333333,
+          "observed_shape_count": 6,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "small",
-            "square-1k"
-          ],
-          "missing_shape_tags": [
             "extreme-tall",
             "llama-kv",
             "non-align-1",
+            "small",
+            "square-1k",
             "wide"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1292,19 +1289,37 @@
     "l2": {
       "ops_total": 6,
       "ops_with_any_evidence": 6,
-      "ops_fully_covered": 0,
+      "ops_fully_covered": 1,
       "op_coverage_ratio": 1.0,
       "shapes_required_total": 120,
-      "shapes_observed_total": 6,
-      "shape_coverage_ratio": 0.05,
+      "shapes_observed_total": 65,
+      "shape_coverage_ratio": 0.5417,
       "per_op": [
         {
           "op": "matmul_relu",
           "required_shape_count": 34,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.029411764705882353,
+          "observed_shape_count": 19,
+          "coverage_ratio": 0.5588235294117647,
           "observed_shape_tags": [
-            "square-1k"
+            "extreme-16",
+            "extreme-1row",
+            "extreme-long",
+            "llama-ffn",
+            "llama-q",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "non-align-6",
+            "non-align-7",
+            "rect-tall",
+            "rect-wide",
+            "seq512",
+            "square-1k",
+            "square-2k",
+            "square-4k",
+            "tiny"
           ],
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -1316,30 +1331,12 @@
             "ds-v3-ffn-up",
             "ds-v3-lmhead",
             "ds-v3-long-32k",
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
             "gpt2-c_attn",
             "gpt2-c_proj",
-            "llama-ffn",
-            "llama-q",
             "lm-head-gpt2",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-2k",
-            "square-4k",
-            "tiny"
+            "qwen25-lmhead"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -1348,10 +1345,28 @@
         {
           "op": "matmul_gelu",
           "required_shape_count": 34,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.029411764705882353,
+          "observed_shape_count": 19,
+          "coverage_ratio": 0.5588235294117647,
           "observed_shape_tags": [
-            "square-1k"
+            "extreme-16",
+            "extreme-1row",
+            "extreme-long",
+            "llama-ffn",
+            "llama-q",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "non-align-6",
+            "non-align-7",
+            "rect-tall",
+            "rect-wide",
+            "seq512",
+            "square-1k",
+            "square-2k",
+            "square-4k",
+            "tiny"
           ],
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -1363,30 +1378,12 @@
             "ds-v3-ffn-up",
             "ds-v3-lmhead",
             "ds-v3-long-32k",
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
             "gpt2-c_attn",
             "gpt2-c_proj",
-            "llama-ffn",
-            "llama-q",
             "lm-head-gpt2",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-2k",
-            "square-4k",
-            "tiny"
+            "qwen25-lmhead"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -1395,21 +1392,21 @@
         {
           "op": "swiglu",
           "required_shape_count": 12,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.08333333333333333,
+          "observed_shape_count": 6,
+          "coverage_ratio": 0.5,
           "observed_shape_tags": [
-            "gpt2-sm"
+            "gpt2-sm",
+            "llama-7b-2k",
+            "llama-7b-512",
+            "llama3-8b",
+            "non-align-1",
+            "non-align-2"
           ],
           "missing_shape_tags": [
             "ds-v2-2k",
             "ds-v2-512",
             "ds-v3-2k",
             "ds-v3-512",
-            "llama-7b-2k",
-            "llama-7b-512",
-            "llama3-8b",
-            "non-align-1",
-            "non-align-2",
             "qwen25-7b",
             "qwen25-7b-2k"
           ],
@@ -1420,21 +1417,21 @@
         {
           "op": "geglu",
           "required_shape_count": 12,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.08333333333333333,
+          "observed_shape_count": 6,
+          "coverage_ratio": 0.5,
           "observed_shape_tags": [
-            "gpt2-sm"
+            "gpt2-sm",
+            "llama-7b-2k",
+            "llama-7b-512",
+            "llama3-8b",
+            "non-align-1",
+            "non-align-2"
           ],
           "missing_shape_tags": [
             "ds-v2-2k",
             "ds-v2-512",
             "ds-v3-2k",
             "ds-v3-512",
-            "llama-7b-2k",
-            "llama-7b-512",
-            "llama3-8b",
-            "non-align-1",
-            "non-align-2",
             "qwen25-7b",
             "qwen25-7b-2k"
           ],
@@ -1445,14 +1442,12 @@
         {
           "op": "linear_ce",
           "required_shape_count": 12,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.08333333333333333,
+          "observed_shape_count": 12,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "gpt2-seq128"
-          ],
-          "missing_shape_tags": [
             "ds-v2-seq512",
             "extreme-large-vocab",
+            "gpt2-seq128",
             "gpt2-seq512",
             "llama2-seq2k",
             "llama2-seq512",
@@ -1463,6 +1458,7 @@
             "qwen25-seq2k",
             "qwen25-seq512"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1470,10 +1466,12 @@
         {
           "op": "qkv_fa",
           "required_shape_count": 16,
-          "observed_shape_count": 1,
-          "coverage_ratio": 0.0625,
+          "observed_shape_count": 3,
+          "coverage_ratio": 0.1875,
           "observed_shape_tags": [
-            "gpt2-sm-128"
+            "gpt2-sm-128",
+            "gpt2-sm-1k",
+            "gpt2-sm-512"
           ],
           "missing_shape_tags": [
             "ds-batch-8",
@@ -1485,8 +1483,6 @@
             "ds-v3-163k",
             "ds-v3-32k",
             "gpt2-md-2k",
-            "gpt2-sm-1k",
-            "gpt2-sm-512",
             "llama2-7b-2k",
             "llama2-7b-4k",
             "llama2-7b-512",
@@ -1500,7 +1496,7 @@
     },
     "combined": {
       "op_coverage_ratio": 1.0,
-      "shape_coverage_ratio": 0.1615
+      "shape_coverage_ratio": 0.3478
     }
   },
   "focus": {
@@ -1553,80 +1549,47 @@
         },
         {
           "op": "silu",
-          "observed_shape_count": 1,
+          "observed_shape_count": 12,
           "required_shape_count": 20,
           "missing_shape_tags": [
-            "ds-ffn",
-            "ds-ffn-large",
             "extreme-flat",
             "extreme-tall",
             "extreme-wide",
-            "gpt2-ffn",
-            "gpt2-hidden",
-            "llama-ffn",
-            "llama-hidden",
-            "llama-long",
-            "micro-small",
-            "micro-tiny",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ]
         },
         {
           "op": "tanh",
-          "observed_shape_count": 1,
+          "observed_shape_count": 12,
           "required_shape_count": 20,
           "missing_shape_tags": [
-            "ds-ffn",
-            "ds-ffn-large",
             "extreme-flat",
             "extreme-tall",
             "extreme-wide",
-            "gpt2-ffn",
-            "gpt2-hidden",
-            "llama-ffn",
-            "llama-hidden",
-            "llama-long",
-            "micro-small",
-            "micro-tiny",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ]
         },
         {
           "op": "sigmoid",
-          "observed_shape_count": 1,
+          "observed_shape_count": 12,
           "required_shape_count": 20,
           "missing_shape_tags": [
-            "ds-ffn",
-            "ds-ffn-large",
             "extreme-flat",
             "extreme-tall",
             "extreme-wide",
-            "gpt2-ffn",
-            "gpt2-hidden",
-            "llama-ffn",
-            "llama-hidden",
-            "llama-long",
-            "micro-small",
-            "micro-tiny",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ]
         },
         {
@@ -1653,28 +1616,17 @@
         },
         {
           "op": "mul",
-          "observed_shape_count": 1,
+          "observed_shape_count": 12,
           "required_shape_count": 20,
           "missing_shape_tags": [
-            "ds-ffn",
-            "ds-ffn-large",
             "extreme-flat",
             "extreme-tall",
             "extreme-wide",
-            "gpt2-ffn",
-            "gpt2-hidden",
-            "llama-ffn",
-            "llama-hidden",
-            "llama-long",
-            "micro-small",
-            "micro-tiny",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5",
-            "qwen-ffn",
-            "xlarge"
+            "non-align-5"
           ]
         },
         {
@@ -1789,13 +1741,9 @@
         },
         {
           "op": "softmax",
-          "observed_shape_count": 3,
+          "observed_shape_count": 10,
           "required_shape_count": 25,
           "missing_shape_tags": [
-            "attn-llama-2k",
-            "attn-llama-4k",
-            "attn-llama-512",
-            "batch-large",
             "ds-v2-attn-16k",
             "ds-v2-attn-8k",
             "ds-v3-attn-32k",
@@ -1809,30 +1757,21 @@
             "non-align-4",
             "non-align-5",
             "qwen25-attn-32k",
-            "square-4k",
             "wide-vocab-ds-v2",
-            "wide-vocab-gpt2",
-            "wide-vocab-llama3",
             "wide-vocab-qwen25"
           ]
         },
         {
           "op": "layernorm",
-          "observed_shape_count": 3,
+          "observed_shape_count": 9,
           "required_shape_count": 21,
           "missing_shape_tags": [
-            "ds-v2",
             "ds-v2-long",
-            "ds-v3",
             "ds-v3-long",
             "extreme-large",
             "extreme-small",
-            "llama-13b",
-            "llama-7b",
-            "llama-long",
             "llama3-8b-long",
             "llama3-8b-norm",
-            "mixtral-ffn",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -1843,21 +1782,15 @@
         },
         {
           "op": "rmsnorm",
-          "observed_shape_count": 3,
+          "observed_shape_count": 9,
           "required_shape_count": 21,
           "missing_shape_tags": [
-            "ds-v2",
             "ds-v2-long",
-            "ds-v3",
             "ds-v3-long",
             "extreme-large",
             "extreme-small",
-            "llama-13b",
-            "llama-7b",
-            "llama-long",
             "llama3-8b-long",
             "llama3-8b-norm",
-            "mixtral-ffn",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -1868,21 +1801,15 @@
         },
         {
           "op": "rmsnorm_residual",
-          "observed_shape_count": 3,
+          "observed_shape_count": 9,
           "required_shape_count": 21,
           "missing_shape_tags": [
-            "ds-v2",
             "ds-v2-long",
-            "ds-v3",
             "ds-v3-long",
             "extreme-large",
             "extreme-small",
-            "llama-13b",
-            "llama-7b",
-            "llama-long",
             "llama3-8b-long",
             "llama3-8b-norm",
-            "mixtral-ffn",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -1991,7 +1918,7 @@
         },
         {
           "op": "matmul",
-          "observed_shape_count": 6,
+          "observed_shape_count": 12,
           "required_shape_count": 34,
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -2006,9 +1933,6 @@
             "extreme-16",
             "extreme-1row",
             "extreme-long",
-            "llama-ffn",
-            "llama-q",
-            "lm-head-gpt2",
             "non-align-1",
             "non-align-2",
             "non-align-3",
@@ -2018,47 +1942,7 @@
             "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512"
-          ]
-        },
-        {
-          "op": "batch_matmul",
-          "observed_shape_count": 2,
-          "required_shape_count": 9,
-          "missing_shape_tags": [
-            "batched-32",
-            "batched-8",
-            "extreme-bsz",
-            "llama-attn-2k",
-            "llama-attn-512",
-            "non-align-1",
-            "non-align-2"
-          ]
-        },
-        {
-          "op": "grouped_matmul",
-          "observed_shape_count": 2,
-          "required_shape_count": 7,
-          "missing_shape_tags": [
-            "ds-moe-2k",
-            "ds-moe-512",
-            "ds-v3-moe",
-            "moe-medium",
-            "non-align-1"
-          ]
-        },
-        {
-          "op": "transpose",
-          "observed_shape_count": 2,
-          "required_shape_count": 6,
-          "missing_shape_tags": [
-            "extreme-tall",
-            "llama-kv",
-            "non-align-1",
-            "wide"
+            "qwen25-lmhead"
           ]
         },
         {
@@ -2443,7 +2327,7 @@
       "partial_coverage_ops": [
         {
           "op": "matmul_relu",
-          "observed_shape_count": 1,
+          "observed_shape_count": 19,
           "required_shape_count": 34,
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -2455,35 +2339,17 @@
             "ds-v3-ffn-up",
             "ds-v3-lmhead",
             "ds-v3-long-32k",
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
             "gpt2-c_attn",
             "gpt2-c_proj",
-            "llama-ffn",
-            "llama-q",
             "lm-head-gpt2",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-2k",
-            "square-4k",
-            "tiny"
+            "qwen25-lmhead"
           ]
         },
         {
           "op": "matmul_gelu",
-          "observed_shape_count": 1,
+          "observed_shape_count": 19,
           "required_shape_count": 34,
           "missing_shape_tags": [
             "ds-v2-attn",
@@ -2495,89 +2361,43 @@
             "ds-v3-ffn-up",
             "ds-v3-lmhead",
             "ds-v3-long-32k",
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
             "gpt2-c_attn",
             "gpt2-c_proj",
-            "llama-ffn",
-            "llama-q",
             "lm-head-gpt2",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-2k",
-            "square-4k",
-            "tiny"
+            "qwen25-lmhead"
           ]
         },
         {
           "op": "swiglu",
-          "observed_shape_count": 1,
+          "observed_shape_count": 6,
           "required_shape_count": 12,
           "missing_shape_tags": [
             "ds-v2-2k",
             "ds-v2-512",
             "ds-v3-2k",
             "ds-v3-512",
-            "llama-7b-2k",
-            "llama-7b-512",
-            "llama3-8b",
-            "non-align-1",
-            "non-align-2",
             "qwen25-7b",
             "qwen25-7b-2k"
           ]
         },
         {
           "op": "geglu",
-          "observed_shape_count": 1,
+          "observed_shape_count": 6,
           "required_shape_count": 12,
           "missing_shape_tags": [
             "ds-v2-2k",
             "ds-v2-512",
             "ds-v3-2k",
             "ds-v3-512",
-            "llama-7b-2k",
-            "llama-7b-512",
-            "llama3-8b",
-            "non-align-1",
-            "non-align-2",
             "qwen25-7b",
             "qwen25-7b-2k"
           ]
         },
         {
-          "op": "linear_ce",
-          "observed_shape_count": 1,
-          "required_shape_count": 12,
-          "missing_shape_tags": [
-            "ds-v2-seq512",
-            "extreme-large-vocab",
-            "gpt2-seq512",
-            "llama2-seq2k",
-            "llama2-seq512",
-            "llama3-seq2k",
-            "llama3-seq512",
-            "non-align-1",
-            "non-align-2",
-            "qwen25-seq2k",
-            "qwen25-seq512"
-          ]
-        },
-        {
           "op": "qkv_fa",
-          "observed_shape_count": 1,
+          "observed_shape_count": 3,
           "required_shape_count": 16,
           "missing_shape_tags": [
             "ds-batch-8",
@@ -2589,8 +2409,6 @@
             "ds-v3-163k",
             "ds-v3-32k",
             "gpt2-md-2k",
-            "gpt2-sm-1k",
-            "gpt2-sm-512",
             "llama2-7b-2k",
             "llama2-7b-4k",
             "llama2-7b-512",
@@ -2830,5 +2648,5 @@
       }
     ]
   },
-  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=16.15%\n[L1] ops=45/45 fully_covered=0 missing_examples=0 unsupported=0\n  partial coverage: relu (5/20), gelu (5/20), silu (1/20), tanh (1/20), sigmoid (1/20)\n[L2] ops=6/6 fully_covered=0 missing_examples=0 unsupported=6\n  partial coverage: matmul_relu (1/34), matmul_gelu (1/34), swiglu (1/12), geglu (1/12), linear_ce (1/12)\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=34.78%\n[L1] ops=45/45 fully_covered=3 missing_examples=0 unsupported=0\n  partial coverage: relu (5/20), gelu (5/20), silu (12/20), tanh (12/20), sigmoid (12/20)\n[L2] ops=6/6 fully_covered=1 missing_examples=0 unsupported=6\n  partial coverage: matmul_relu (19/34), matmul_gelu (19/34), swiglu (6/12), geglu (6/12), qkv_fa (3/16)\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }
