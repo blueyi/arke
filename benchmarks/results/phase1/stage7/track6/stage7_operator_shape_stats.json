@@ -1,13 +1,10 @@
 {
   "l1": {
     "add": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -15,18 +12,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 80,
+      "rows": 48,
       "status_counts": {
-        "ok": 80
+        "ok": 48
       }
     },
     "argmax": {
@@ -59,13 +51,10 @@
       }
     },
     "cast": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -73,18 +62,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 60,
+      "rows": 36,
       "status_counts": {
-        "ok": 60
+        "ok": 36
       }
     },
     "concat": {
@@ -99,17 +83,24 @@
       }
     },
     "copy_": {
-      "shape_count": 5,
+      "shape_count": 12,
       "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
         "gpt2-ffn",
         "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
         "micro-small",
         "micro-tiny",
-        "square-1k"
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
       ],
-      "rows": 10,
+      "rows": 24,
       "status_counts": {
-        "ok": 10
+        "ok": 24
       }
     },
     "cross_attention": {
@@ -170,13 +161,10 @@
       }
     },
     "exp": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -184,18 +172,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 80,
+      "rows": 48,
       "status_counts": {
-        "ok": 80
+        "ok": 48
       }
     },
     "flash_attention": {
@@ -241,13 +224,10 @@
       }
     },
     "gelu": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -255,19 +235,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 120,
+      "rows": 72,
       "status_counts": {
-        "error": 1,
-        "ok": 119
+        "ok": 72
       }
     },
     "grouped_matmul": {
@@ -337,13 +311,10 @@
       }
     },
     "mul": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -351,18 +322,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 80,
+      "rows": 48,
       "status_counts": {
-        "ok": 80
+        "ok": 48
       }
     },
     "multi_latent_attention": {
@@ -379,13 +345,10 @@
       }
     },
     "neg": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -393,18 +356,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 80,
+      "rows": 48,
       "status_counts": {
-        "ok": 80
+        "ok": 48
       }
     },
     "paged_attention": {
@@ -477,18 +435,13 @@
       }
     },
     "relu": {
-      "shape_count": 20,
+      "shape_count": 13,
       "shape_tags": [
-        "ds-ffn",
-        "ds-ffn-large",
         "extreme-flat",
         "extreme-tall",
         "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
-        "llama-ffn",
-        "llama-hidden",
-        "llama-long",
         "micro-small",
         "micro-tiny",
         "non-align-1",
@@ -496,13 +449,11 @@
         "non-align-3",
         "non-align-4",
         "non-align-5",
-        "qwen-ffn",
-        "square-1k",
-        "xlarge"
+        "square-1k"
       ],
-      "rows": 100,
+      "rows": 65,
       "status_counts": {
-        "ok": 100
+        "ok": 65
       }
     },
     "rmsnorm": {
@@ -554,13 +505,10 @@
       }
     },
     "rsqrt": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -568,18 +516,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 80,
+      "rows": 48,
       "status_counts": {
-        "ok": 80
+        "ok": 48
       }
     },
     "scatter": {
@@ -594,13 +537,10 @@
       }
     },
     "sigmoid": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -608,28 +548,20 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 80,
+      "rows": 48,
       "status_counts": {
-        "ok": 80
+        "ok": 48
       }
     },
     "silu": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -637,18 +569,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 100,
+      "rows": 60,
       "status_counts": {
-        "ok": 100
+        "ok": 60
       }
     },
     "softmax": {
@@ -693,13 +620,10 @@
       }
     },
     "tanh": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -707,18 +631,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 80,
+      "rows": 48,
       "status_counts": {
-        "ok": 80
+        "ok": 48
       }
     },
     "topk": {
@@ -748,13 +667,10 @@
       }
     },
     "where_": {
-      "shape_count": 20,
+      "shape_count": 12,
       "shape_tags": [
         "ds-ffn",
         "ds-ffn-large",
-        "extreme-flat",
-        "extreme-tall",
-        "extreme-wide",
         "gpt2-ffn",
         "gpt2-hidden",
         "llama-ffn",
@@ -762,18 +678,13 @@
         "llama-long",
         "micro-small",
         "micro-tiny",
-        "non-align-1",
-        "non-align-2",
-        "non-align-3",
-        "non-align-4",
-        "non-align-5",
         "qwen-ffn",
         "square-1k",
         "xlarge"
       ],
-      "rows": 60,
+      "rows": 36,
       "status_counts": {
-        "ok": 60
+        "ok": 36
       }
     }
   },

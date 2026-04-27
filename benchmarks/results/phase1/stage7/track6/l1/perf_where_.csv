@@ -1,16 +1,37 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-where_,micro-tiny,PyTorch-eager,18.4,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-where_,micro-tiny,Arke,4.8,7.2,,3.8333,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,3.8333,true,2.8333
-where_,micro-tiny,FlagGems,127.7,64.5,,0.1441,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1441,false,-0.8559
-where_,micro-small,PyTorch-eager,17.4,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-where_,micro-small,Arke,18.8,6.0,,0.9255,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9255,false,-0.0745
-where_,micro-small,FlagGems,130.0,10.1,,0.1338,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1338,false,-0.8662
-where_,gpt2-hidden,PyTorch-eager,18.1,27.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-where_,gpt2-hidden,Arke,24.9,18.5,,0.7269,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7269,false,-0.2731
-where_,gpt2-hidden,FlagGems,127.3,133.1,,0.1422,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1422,false,-0.8578
+where_,ds-ffn,FlagGems,169.0,232.4,,1.3473,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,1.3473,true,0.3473
+where_,ds-ffn,PyTorch-eager,227.7,193.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,ds-ffn,Arke,172.2,149.5,,1.3223,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3223,true,0.3223
+where_,ds-ffn-large,FlagGems,311.7,276.5,,0.7594,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.7594,false,-0.2406
+where_,ds-ffn-large,PyTorch-eager,236.7,214.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,ds-ffn-large,Arke,236.7,316.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,gpt2-ffn,FlagGems,137.1,38.9,,0.1371,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1371,false,-0.8629
 where_,gpt2-ffn,PyTorch-eager,18.8,27.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 where_,gpt2-ffn,Arke,25.3,8.2,,0.7431,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7431,false,-0.2569
-where_,gpt2-ffn,FlagGems,137.1,38.9,,0.1371,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1371,false,-0.8629
+where_,gpt2-hidden,FlagGems,127.3,133.1,,0.1422,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1422,false,-0.8578
+where_,gpt2-hidden,PyTorch-eager,18.1,27.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,gpt2-hidden,Arke,24.9,18.5,,0.7269,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7269,false,-0.2731
+where_,llama-ffn,FlagGems,192.5,133.1,,1.0405,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,1.0405,true,0.0405
+where_,llama-ffn,PyTorch-eager,200.3,247.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,llama-ffn,Arke,164.0,129.0,,1.2213,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2213,true,0.2213
+where_,llama-hidden,FlagGems,112.6,146.4,,2.0240,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,2.0240,true,1.0240
+where_,llama-hidden,PyTorch-eager,227.9,58.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,llama-hidden,Arke,166.1,143.4,,1.3721,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3721,true,0.3721
+where_,llama-long,FlagGems,413.5,383.0,,1.1304,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,1.1304,true,0.1304
+where_,llama-long,PyTorch-eager,467.4,370.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,llama-long,Arke,419.6,405.5,,1.1139,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1139,true,0.1139
+where_,micro-small,FlagGems,130.0,10.1,,0.1338,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1338,false,-0.8662
+where_,micro-small,PyTorch-eager,17.4,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,micro-small,Arke,18.8,6.0,,0.9255,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9255,false,-0.0745
+where_,micro-tiny,FlagGems,127.7,64.5,,0.1441,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.1441,false,-0.8559
+where_,micro-tiny,PyTorch-eager,18.4,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,micro-tiny,Arke,4.8,7.2,,3.8333,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,3.8333,true,2.8333
+where_,qwen-ffn,FlagGems,283.4,288.8,,0.8673,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.8673,false,-0.1327
+where_,qwen-ffn,PyTorch-eager,245.8,220.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,qwen-ffn,Arke,249.2,280.5,,0.9864,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9864,false,-0.0136
+where_,square-1k,FlagGems,123.6,28.7,,0.2209,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.2209,false,-0.7791
 where_,square-1k,PyTorch-eager,27.3,29.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 where_,square-1k,Arke,53.2,30.7,,0.5132,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5132,false,-0.4868
-where_,square-1k,FlagGems,123.6,28.7,,0.2209,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,0.2209,false,-0.7791
+where_,xlarge,FlagGems,860.9,866.3,,1.0374,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for where_,,,,,1.0,1.0374,true,0.0374
+where_,xlarge,PyTorch-eager,893.1,818.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+where_,xlarge,Arke,805.9,919.6,,1.1082,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1082,true,0.1082

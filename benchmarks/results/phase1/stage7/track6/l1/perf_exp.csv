@@ -1,21 +1,49 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-exp,micro-tiny,cuBLAS/cuDNN,102.1,103.4,,0.9765,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9765,false,-0.0235
-exp,micro-tiny,PyTorch-eager,99.7,69.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-exp,micro-tiny,Arke,91.8,56.3,,1.0861,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0861,true,0.0861
-exp,micro-tiny,FlagGems,82.6,57.3,,1.2070,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.2070,true,0.2070
-exp,micro-small,cuBLAS/cuDNN,90.1,66.7,,1.0155,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0155,true,0.0155
-exp,micro-small,PyTorch-eager,91.5,31.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-exp,micro-small,Arke,94.2,104.3,,0.9713,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9713,false,-0.0287
-exp,micro-small,FlagGems,94.9,61.4,,0.9642,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,0.9642,false,-0.0358
-exp,gpt2-hidden,cuBLAS/cuDNN,94.5,99.5,,0.9577,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9577,false,-0.0423
-exp,gpt2-hidden,PyTorch-eager,90.5,42.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-exp,gpt2-hidden,Arke,105.8,106.5,,0.8554,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8554,false,-0.1446
-exp,gpt2-hidden,FlagGems,86.6,97.4,,1.0450,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0450,true,0.0450
+exp,ds-ffn,cuBLAS/cuDNN,103.0,169.0,,1.0777,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0777,true,0.0777
+exp,ds-ffn,FlagGems,156.1,167.0,,0.7111,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,0.7111,false,-0.2889
+exp,ds-ffn,PyTorch-eager,111.0,149.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,ds-ffn,Arke,118.2,154.6,,0.9391,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9391,false,-0.0609
+exp,ds-ffn-large,cuBLAS/cuDNN,147.4,200.6,,0.9932,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9932,false,-0.0068
+exp,ds-ffn-large,FlagGems,150.5,131.1,,0.9728,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,0.9728,false,-0.0272
+exp,ds-ffn-large,PyTorch-eager,146.4,131.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,ds-ffn-large,Arke,146.8,173.1,,0.9973,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9973,false,-0.0027
 exp,gpt2-ffn,cuBLAS/cuDNN,82.3,56.3,,1.0778,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0778,true,0.0778
+exp,gpt2-ffn,FlagGems,87.7,95.2,,1.0114,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0114,true,0.0114
 exp,gpt2-ffn,PyTorch-eager,88.7,18.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 exp,gpt2-ffn,Arke,151.2,109.6,,0.5866,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5866,false,-0.4134
-exp,gpt2-ffn,FlagGems,87.7,95.2,,1.0114,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0114,true,0.0114
+exp,gpt2-hidden,cuBLAS/cuDNN,94.5,99.5,,0.9577,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9577,false,-0.0423
+exp,gpt2-hidden,FlagGems,86.6,97.4,,1.0450,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0450,true,0.0450
+exp,gpt2-hidden,PyTorch-eager,90.5,42.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,gpt2-hidden,Arke,105.8,106.5,,0.8554,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8554,false,-0.1446
+exp,llama-ffn,cuBLAS/cuDNN,138.4,81.9,,1.1915,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1915,true,0.1915
+exp,llama-ffn,FlagGems,149.9,91.1,,1.1001,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.1001,true,0.1001
+exp,llama-ffn,PyTorch-eager,164.9,149.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,llama-ffn,Arke,157.5,182.3,,1.0470,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0470,true,0.0470
+exp,llama-hidden,cuBLAS/cuDNN,95.4,110.4,,1.3889,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3889,true,0.3889
+exp,llama-hidden,FlagGems,104.2,92.2,,1.2716,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.2716,true,0.2716
+exp,llama-hidden,PyTorch-eager,132.5,31.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,llama-hidden,Arke,78.0,63.5,,1.6987,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6987,true,0.6987
+exp,llama-long,cuBLAS/cuDNN,253.7,261.1,,0.9874,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9874,false,-0.0126
+exp,llama-long,FlagGems,235.3,225.3,,1.0646,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0646,true,0.0646
+exp,llama-long,PyTorch-eager,250.5,333.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,llama-long,Arke,235.3,239.6,,1.0646,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0646,true,0.0646
+exp,micro-small,cuBLAS/cuDNN,90.1,66.7,,1.0155,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0155,true,0.0155
+exp,micro-small,FlagGems,94.9,61.4,,0.9642,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,0.9642,false,-0.0358
+exp,micro-small,PyTorch-eager,91.5,31.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,micro-small,Arke,94.2,104.3,,0.9713,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9713,false,-0.0287
+exp,micro-tiny,cuBLAS/cuDNN,102.1,103.4,,0.9765,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9765,false,-0.0235
+exp,micro-tiny,FlagGems,82.6,57.3,,1.2070,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.2070,true,0.2070
+exp,micro-tiny,PyTorch-eager,99.7,69.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,micro-tiny,Arke,91.8,56.3,,1.0861,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0861,true,0.0861
+exp,qwen-ffn,cuBLAS/cuDNN,149.3,202.8,,0.9645,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9645,false,-0.0355
+exp,qwen-ffn,FlagGems,189.8,204.8,,0.7587,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,0.7587,false,-0.2413
+exp,qwen-ffn,PyTorch-eager,144.0,136.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,qwen-ffn,Arke,143.1,129.0,,1.0063,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0063,true,0.0063
 exp,square-1k,cuBLAS/cuDNN,92.2,37.9,,1.0249,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0249,true,0.0249
+exp,square-1k,FlagGems,86.4,105.5,,1.0938,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0938,true,0.0938
 exp,square-1k,PyTorch-eager,94.5,104.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 exp,square-1k,Arke,90.5,37.9,,1.0442,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0442,true,0.0442
-exp,square-1k,FlagGems,86.4,105.5,,1.0938,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0938,true,0.0938
+exp,xlarge,cuBLAS/cuDNN,471.4,438.3,,1.1317,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1317,true,0.1317
+exp,xlarge,FlagGems,512.6,443.4,,1.0408,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for exp,,,,,1.0,1.0408,true,0.0408
+exp,xlarge,PyTorch-eager,533.5,504.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+exp,xlarge,Arke,455.5,441.2,,1.1712,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1712,true,0.1712

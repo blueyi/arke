@@ -1,31 +1,73 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-gelu,micro-tiny,cuBLAS/cuDNN,167.3,38.0,,0.0305,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0305,false,-0.9695
-gelu,micro-tiny,Liger-Kernel,97.3,6.1,,0.0524,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.0524,false,-0.9476
-gelu,micro-tiny,PyTorch-eager,5.1,7.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-gelu,micro-tiny,torch.compile,274.8,284.5,,0.0186,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0186,false,-0.9814
-gelu,micro-tiny,Arke,155.3,155.6,,0.0328,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0328,false,-0.9672
-gelu,micro-tiny,FlagGems,93.2,103.4,,0.0547,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.0547,false,-0.9453
-gelu,micro-small,cuBLAS/cuDNN,91.1,106.5,,0.9813,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9813,false,-0.0187
-gelu,micro-small,Liger-Kernel,74.1,94.2,,1.2065,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,1.2065,true,0.2065
-gelu,micro-small,PyTorch-eager,89.4,109.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-gelu,micro-small,torch.compile,322.9,311.1,,0.2769,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2769,false,-0.7231
-gelu,micro-small,Arke,193.2,139.4,,0.4627,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4627,false,-0.5373
-gelu,micro-small,FlagGems,88.4,107.5,,1.0113,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.0113,true,0.0113
-gelu,gpt2-hidden,cuBLAS/cuDNN,100.0,109.6,,1.6150,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6150,true,0.6150
-gelu,gpt2-hidden,Liger-Kernel,79.9,92.2,,2.0213,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,2.0213,true,1.0213
-gelu,gpt2-hidden,PyTorch-eager,161.5,117.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-gelu,gpt2-hidden,torch.compile,457.4,334.8,,0.3531,ok,,false,true,5.96046e-08,3.03165e-12,0.001,0.001,ok,,,,,,1.0,0.3531,false,-0.6469
-gelu,gpt2-hidden,Arke,133.5,119.8,,1.2097,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2097,true,0.2097
-gelu,gpt2-hidden,FlagGems,92.8,104.4,,1.7403,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.7403,true,0.7403
+gelu,ds-ffn,cuBLAS/cuDNN,129.2,85.0,,0.8166,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8166,false,-0.1834
+gelu,ds-ffn,FlagGems,313.8,124.9,,0.3362,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.3362,false,-0.6638
+gelu,ds-ffn,Liger-Kernel,127.4,137.2,,0.8281,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.8281,false,-0.1719
+gelu,ds-ffn,PyTorch-eager,105.5,121.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,ds-ffn,torch.compile,449.5,346.1,,0.2347,ok,,false,true,5.96046e-08,1.91373e-12,0.001,0.001,ok,,,,,,1.0,0.2347,false,-0.7653
+gelu,ds-ffn,Arke,107.1,88.1,,0.9851,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9851,false,-0.0149
+gelu,ds-ffn-large,cuBLAS/cuDNN,138.9,124.9,,2.2779,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.2779,true,1.2779
+gelu,ds-ffn-large,FlagGems,175.9,252.9,,1.7987,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.7987,true,0.7987
+gelu,ds-ffn-large,Liger-Kernel,231.2,208.9,,1.3685,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,1.3685,true,0.3685
+gelu,ds-ffn-large,PyTorch-eager,316.4,277.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,ds-ffn-large,torch.compile,740.4,462.8,,0.4273,ok,,false,true,5.96046e-08,1.7053e-12,0.001,0.001,ok,,,,,,1.0,0.4273,false,-0.5727
+gelu,ds-ffn-large,Arke,295.7,123.7,,1.0700,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0700,true,0.0700
 gelu,gpt2-ffn,cuBLAS/cuDNN,100.0,89.1,,0.9450,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9450,false,-0.0550
+gelu,gpt2-ffn,FlagGems,89.1,100.4,,1.0606,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.0606,true,0.0606
 gelu,gpt2-ffn,Liger-Kernel,104.4,96.3,,0.9052,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.9052,false,-0.0948
 gelu,gpt2-ffn,PyTorch-eager,94.5,13.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,gpt2-ffn,torch.compile,335.2,323.6,,0.2819,ok,,false,true,5.96046e-08,1.51582e-12,0.001,0.001,ok,,,,,,1.0,0.2819,false,-0.7181
 gelu,gpt2-ffn,Arke,101.0,33.8,,0.9356,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9356,false,-0.0644
-gelu,gpt2-ffn,FlagGems,89.1,100.4,,1.0606,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.0606,true,0.0606
+gelu,gpt2-hidden,cuBLAS/cuDNN,100.0,109.6,,1.6150,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6150,true,0.6150
+gelu,gpt2-hidden,FlagGems,92.8,104.4,,1.7403,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.7403,true,0.7403
+gelu,gpt2-hidden,Liger-Kernel,79.9,92.2,,2.0213,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,2.0213,true,1.0213
+gelu,gpt2-hidden,PyTorch-eager,161.5,117.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,gpt2-hidden,torch.compile,457.4,334.8,,0.3531,ok,,false,true,5.96046e-08,3.03165e-12,0.001,0.001,ok,,,,,,1.0,0.3531,false,-0.6469
+gelu,gpt2-hidden,Arke,133.5,119.8,,1.2097,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2097,true,0.2097
+gelu,llama-ffn,cuBLAS/cuDNN,121.0,163.6,,0.9430,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9430,false,-0.0570
+gelu,llama-ffn,FlagGems,123.9,85.0,,0.9209,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.9209,false,-0.0791
+gelu,llama-ffn,Liger-Kernel,148.5,113.7,,0.7684,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.7684,false,-0.2316
+gelu,llama-ffn,PyTorch-eager,114.1,101.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,llama-ffn,torch.compile,437.3,350.2,,0.2609,ok,,false,true,5.96046e-08,1.67093e-12,0.001,0.001,ok,,,,,,1.0,0.2609,false,-0.7391
+gelu,llama-ffn,Arke,172.4,76.8,,0.6618,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6618,false,-0.3382
+gelu,llama-hidden,cuBLAS/cuDNN,95.0,114.5,,1.5474,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.5474,true,0.5474
+gelu,llama-hidden,FlagGems,129.0,34.8,,1.1395,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.1395,true,0.1395
+gelu,llama-hidden,Liger-Kernel,91.8,98.0,,1.6013,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,1.6013,true,0.6013
+gelu,llama-hidden,PyTorch-eager,147.0,120.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,llama-hidden,torch.compile,368.6,334.8,,0.3988,ok,,false,true,5.96046e-08,1.59162e-12,0.001,0.001,ok,,,,,,1.0,0.3988,false,-0.6012
+gelu,llama-hidden,Arke,168.3,96.3,,0.8734,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8734,false,-0.1266
+gelu,llama-long,cuBLAS/cuDNN,342.8,227.3,,0.6954,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6954,false,-0.3046
+gelu,llama-long,FlagGems,245.6,276.5,,0.9707,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.9707,false,-0.0293
+gelu,llama-long,Liger-Kernel,417.0,396.3,,0.5717,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.5717,false,-0.4283
+gelu,llama-long,PyTorch-eager,238.4,223.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,llama-long,torch.compile,487.0,543.7,,0.4895,ok,,false,true,5.96046e-08,1.68754e-12,0.001,0.001,ok,,,,,,1.0,0.4895,false,-0.5105
+gelu,llama-long,Arke,231.0,261.1,,1.0320,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0320,true,0.0320
+gelu,micro-small,cuBLAS/cuDNN,91.1,106.5,,0.9813,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9813,false,-0.0187
+gelu,micro-small,FlagGems,88.4,107.5,,1.0113,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.0113,true,0.0113
+gelu,micro-small,Liger-Kernel,74.1,94.2,,1.2065,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,1.2065,true,0.2065
+gelu,micro-small,PyTorch-eager,89.4,109.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,micro-small,torch.compile,322.9,311.1,,0.2769,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2769,false,-0.7231
+gelu,micro-small,Arke,193.2,139.4,,0.4627,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4627,false,-0.5373
+gelu,micro-tiny,cuBLAS/cuDNN,167.3,38.0,,0.0305,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0305,false,-0.9695
+gelu,micro-tiny,FlagGems,93.2,103.4,,0.0547,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.0547,false,-0.9453
+gelu,micro-tiny,Liger-Kernel,97.3,6.1,,0.0524,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.0524,false,-0.9476
+gelu,micro-tiny,PyTorch-eager,5.1,7.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,micro-tiny,torch.compile,274.8,284.5,,0.0186,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0186,false,-0.9814
+gelu,micro-tiny,Arke,155.3,155.6,,0.0328,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0328,false,-0.9672
+gelu,qwen-ffn,cuBLAS/cuDNN,153.0,179.2,,0.9922,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9922,false,-0.0078
+gelu,qwen-ffn,FlagGems,221.0,208.9,,0.6869,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.6869,false,-0.3131
+gelu,qwen-ffn,Liger-Kernel,246.6,217.1,,0.6156,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.6156,false,-0.3844
+gelu,qwen-ffn,PyTorch-eager,151.8,130.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,qwen-ffn,torch.compile,359.0,410.6,,0.4228,ok,,false,true,5.96046e-08,1.78826e-12,0.001,0.001,ok,,,,,,1.0,0.4228,false,-0.5772
+gelu,qwen-ffn,Arke,150.5,217.8,,1.0086,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0086,true,0.0086
 gelu,square-1k,cuBLAS/cuDNN,101.4,120.8,,1.0296,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0296,true,0.0296
+gelu,square-1k,FlagGems,118.8,142.3,,0.8788,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.8788,false,-0.1212
 gelu,square-1k,Liger-Kernel,99.7,108.5,,1.0471,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,1.0471,true,0.0471
 gelu,square-1k,PyTorch-eager,104.4,69.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,square-1k,torch.compile,408.2,331.8,,0.2558,ok,,false,true,5.96046e-08,1.3074e-12,0.001,0.001,ok,,,,,,1.0,0.2558,false,-0.7442
 gelu,square-1k,Arke,147.1,187.4,,0.7097,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7097,false,-0.2903
-gelu,square-1k,FlagGems,118.8,142.3,,0.8788,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,0.8788,false,-0.1212
+gelu,xlarge,cuBLAS/cuDNN,484.6,440.3,,1.1364,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1364,true,0.1364
+gelu,xlarge,FlagGems,540.3,557.1,,1.0192,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gelu,,,,,1.0,1.0192,true,0.0192
+gelu,xlarge,Liger-Kernel,639.0,725.0,,0.8618,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu,,,,,1.0,0.8618,false,-0.1382
+gelu,xlarge,PyTorch-eager,550.7,436.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,xlarge,torch.compile,1180.2,923.6,,0.4666,ok,,false,true,5.96046e-08,1.85452e-12,0.001,0.001,ok,,,,,,1.0,0.4666,false,-0.5334
+gelu,xlarge,Arke,460.4,537.6,,1.1961,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1961,true,0.1961

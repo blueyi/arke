@@ -1,10 +1,19 @@
 {
-  "timestamp": "2026-04-26_013330",
+  "timestamp": "2026-04-28_014240",
   "ops": [
-    "grouped_matmul"
+    "relu"
   ],
-  "warmup": 1,
-  "reps": 2,
+  "warmup": 2,
+  "reps": 3,
   "tier": null,
-  "shape_tags": null
+  "shape_tags": [
+    "non-align-1",
+    "non-align-2",
+    "non-align-3",
+    "non-align-4",
+    "non-align-5",
+    "extreme-flat",
+    "extreme-tall",
+    "extreme-wide"
+  ]
 }
