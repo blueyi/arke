@@ -41,10 +41,11 @@ Outline mapping (slide → outline section, v0.5):
   34  C4   ② Arke IR
   35  C5   ③ Compiler Toolchain
   36  C6   ④ Agent Engineering
-  37  C7   ⑤ Benchmark 体系
-  38  C8   与 F1–F7 最终对齐表
-  39  C9   讨论题 / Q&A
-  40  References
+  37  C7a  ⑤ Benchmark · OP 覆盖 + Shape 覆盖
+  38  C7b  ⑤ Benchmark · BL/L 矩阵 + 6 baseline + 报告
+  39  C8   与 F1–F7 最终对齐表
+  40  C9   讨论题 / Q&A
+  41  References
 
 Audience: 高层管理者 + 技术专家。
 - Pre-Part-C 严禁 Arke 专有概念（@rationale / V0/V1/V2 / SemanticIR / .ak / KernelCache）
@@ -363,8 +364,8 @@ def slide_toc(prs, page, total):
          "13–24", ACCENT_BLUE),
         ("🌟 目标态总览", "北极星 · F1–F7 七大特征 · 对通用编程的启示",
          "26–29", ACCENT_ALT),
-        ("Part C · Arke 技术构建", "设计逻辑 · 总架构 · 四件套 + Benchmark · F 对齐",
-         "31–39", ACCENT_PURPLE),
+        ("Part C · Arke 技术构建", "设计逻辑 · 总架构 · 四件套 + Benchmark (2 页) · F 对齐",
+         "31–40", ACCENT_PURPLE),
     ]
     top = Inches(2.0)
     row_h = Inches(0.88)
@@ -2082,78 +2083,355 @@ def slide_c6_agent(prs, page, total):
     )
 
 
-def slide_c7_benchmark(prs, page, total):
+def slide_c7a_op_shape_coverage(prs, page, total):
+    """C7 (page 1/2) — Op + Shape coverage system."""
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
     chapter_chip(s, "PART C", ACCENT_PURPLE)
-    slide_header(s, "C7 · 组件 ⑤ · Benchmark 体系",
-                 "「没有度量就没有优化」——Arke 的可复现评测协议")
+    slide_header(s, "C7 · 组件 ⑤ · Benchmark 体系 (1/2)",
+                 "OP 覆盖体系 (OT0–OT4 · 45 ops) + Shape 覆盖体系 (ST1–ST4 · ~350 shapes)")
 
-    # 4-axis matrix
-    axes = [
-        ("BL", "Benchmark Level",
-         "BL1 单算子正确性 → BL5 多算子融合 → BL6 模型 E2E",
-         ACCENT),
-        ("OT", "Op Tier",
-         "OT0 elementwise → OT1 reduction → OT2 dense → OT3 fused → OT4 attention",
-         ACCENT_BLUE),
-        ("ST", "Shape Tier",
-         "ST1 小 → ST2 中 → ST3 大 → ST4 极端（覆盖动态 shape）",
-         ACCENT_ALT),
-        ("L", "Layer",
-         "L1 单算子 · L2 融合 · L3 模型级 E2E",
-         ACCENT_PURPLE),
+    # ============================================================
+    # Top half · OP coverage table (5 rows × 4 cols)
+    # ============================================================
+    add_text(s, Inches(0.6), Inches(1.95), Inches(8), Inches(0.34),
+             "OP 覆盖体系 · Operator Tier (OT)", size=13, bold=True,
+             color=ACCENT, font=FONT_MONO)
+    add_text(s, Inches(0.6), Inches(2.27), Inches(12), Inches(0.28),
+             "按计算复杂度 / 内核设计难度分 5 层；每层定义代表算子，覆盖 LLM 推理全部主流算子。",
+             size=10.5, color=FG_MUTED)
+
+    op_tx = Inches(0.6)
+    op_ty = Inches(2.65)
+    op_tw = Inches(12.15)
+    op_rh = Inches(0.45)
+    # header
+    panel(s, op_tx, op_ty, op_tw, op_rh, BG_PANEL_ALT, stroke=None)
+    cols_x = [Inches(0.75), Inches(1.6), Inches(3.25), Inches(4.25),
+              Inches(10.65)]
+    cols_w = [Inches(0.75), Inches(1.55), Inches(0.95), Inches(6.3),
+              Inches(2.0)]
+    headers = ["Tier", "类别", "算子数", "代表算子", "核心特性"]
+    for cx_, cw_, h in zip(cols_x, cols_w, headers):
+        add_text(s, cx_, op_ty + Inches(0.1), cw_, Inches(0.3),
+                 h, size=10.5, bold=True, color=ACCENT,
+                 font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+
+    op_rows = [
+        ("OT0", "Elementwise", "12",
+         "relu · gelu · silu · tanh · sigmoid · add · mul · where · cast · neg · exp · rsqrt",
+         "纯访存 · 1:1 element map", ACCENT),
+        ("OT1", "Reduction", "10",
+         "softmax · layernorm · rmsnorm · rmsnorm_residual · reduce_{sum/max/mean} · argmax · topk · cumsum",
+         "warp 级归约 · 共享内存", ACCENT_BLUE),
+        ("OT2", "Data Movement & Dense", "11",
+         "matmul · batch_matmul · grouped_matmul · transpose · concat · split · gather · scatter · embedding · permute · copy",
+         "Tensor Core · tile · 内存布局变换", ACCENT_ALT),
+        ("OT3", "Fused Compound", "7",
+         "swiglu · geglu · rope · fused_linear_cross_entropy · cross_entropy · quantize_per_token · dequantize_per_channel",
+         "split + 多算子融合 · 输出 shape ≠ 输入", ACCENT_PURPLE),
+        ("OT4", "Attention", "5",
+         "flash_attention · grouped_query_attention · multi_latent_attention · cross_attention · paged_attention",
+         "多阶段融合 · online softmax · KV cache", ACCENT_RED),
     ]
-    cw = Inches(2.95)
-    cy = Inches(2.0)
-    cx = Inches(0.6)
-    for i, (code, t, d, c) in enumerate(axes):
-        x = cx + i * (cw + Inches(0.1))
-        panel(s, x, cy, cw, Inches(2.05), BG_PANEL, stroke=None)
-        accent_bar(s, x, cy, width=cw, height=Inches(0.08), color=c)
-        add_text(s, x + Inches(0.2), cy + Inches(0.25),
-                 cw - Inches(0.3), Inches(0.5),
-                 code, size=22, bold=True, color=c,
-                 align=PP_ALIGN.CENTER, font=FONT_MONO)
-        add_text(s, x + Inches(0.2), cy + Inches(0.85),
-                 cw - Inches(0.3), Inches(0.4),
-                 t, size=12, bold=True, color=FG,
-                 align=PP_ALIGN.CENTER)
-        add_text(s, x + Inches(0.2), cy + Inches(1.25),
-                 cw - Inches(0.3), Inches(0.75),
-                 d, size=10.5, color=FG_MUTED,
-                 align=PP_ALIGN.CENTER)
-
-    # baselines + reporting
-    panel(s, Inches(0.6), Inches(4.3), Inches(7.7), Inches(2.55),
-          BG_PANEL, stroke=None)
-    accent_bar(s, Inches(0.6), Inches(4.3), width=Inches(0.14),
-               height=Inches(2.55), color=ACCENT_ALT)
-    add_text(s, Inches(0.95), Inches(4.42), Inches(7), Inches(0.4),
-             "多 baseline 矩阵", size=13, bold=True, color=ACCENT_ALT,
+    for i, (code, name, n, ops, char, c) in enumerate(op_rows):
+        y = op_ty + Inches(0.5) + i * Inches(0.4)
+        panel(s, op_tx, y, op_tw, Inches(0.36),
+              BG_PANEL if i % 2 == 0 else BG_PANEL_DEEP, stroke=None)
+        accent_bar(s, op_tx, y, width=Inches(0.06),
+                   height=Inches(0.36), color=c)
+        add_text(s, cols_x[0], y + Inches(0.05), cols_w[0], Inches(0.28),
+                 code, size=11, bold=True, color=c, font=FONT_MONO,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, cols_x[1], y + Inches(0.05), cols_w[1], Inches(0.28),
+                 name, size=10.5, bold=True, color=FG,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, cols_x[2], y + Inches(0.05), cols_w[2], Inches(0.28),
+                 n, size=11, bold=True, color=ACCENT_BLUE,
+                 font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, cols_x[3], y + Inches(0.05), cols_w[3], Inches(0.28),
+                 ops, size=8.5, color=FG_MUTED,
+                 anchor=MSO_ANCHOR.MIDDLE, font=FONT_MONO)
+        add_text(s, cols_x[4], y + Inches(0.05), cols_w[4], Inches(0.28),
+                 char, size=9, color=FG, italic=True,
+                 anchor=MSO_ANCHOR.MIDDLE)
+    # Total summary chip
+    total_chip = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                                    Inches(10.65), Inches(2.27),
+                                    Inches(2.1), Inches(0.32))
+    total_chip.adjustments[0] = 0.4
+    _set_fill(total_chip, ACCENT)
+    _no_line(total_chip)
+    add_text(s, Inches(10.65), Inches(2.27), Inches(2.1), Inches(0.32),
+             "TOTAL · 45 OPS", size=10, bold=True, color=BG_DARK,
+             align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
              font=FONT_MONO)
-    add_bullets(s, Inches(0.95), Inches(4.85), Inches(7.2), Inches(2.0),
-                ["P0 cuBLAS / cuDNN —— 厂商极致基线",
-                 "P1 FlagGems / Liger —— 开源 Triton 算子库",
-                 "P3 PyTorch eager —— 通用基线",
-                 "P4 torch.compile (Inductor) —— 图编译器基线",
-                 "P5 Arke 自身（KernelCache）—— 自我回归"],
-                size=12, bullet_color=ACCENT_ALT, line_spacing=1.25)
 
-    panel(s, Inches(8.45), Inches(4.3), Inches(4.3), Inches(2.55),
+    # ============================================================
+    # Bottom half · SHAPE coverage table (4 rows)
+    # ============================================================
+    add_text(s, Inches(0.6), Inches(4.78), Inches(10), Inches(0.34),
+             "Shape 覆盖体系 · Shape Tier (ST)",
+             size=13, bold=True, color=ACCENT_ALT, font=FONT_MONO)
+    add_text(s, Inches(0.6), Inches(5.10), Inches(12), Inches(0.28),
+             "按规模 / 对齐 / 生产相关性分 4 层；ST4 对齐真实 LLM 生产 shape，覆盖动态 / 长上下文。",
+             size=10.5, color=FG_MUTED)
+
+    sh_tx = Inches(0.6)
+    sh_ty = Inches(5.48)
+    sh_tw = Inches(12.15)
+    sh_rh = Inches(0.42)
+    panel(s, sh_tx, sh_ty, sh_tw, sh_rh, BG_PANEL_ALT, stroke=None)
+    sh_cols_x = [Inches(0.75), Inches(1.6), Inches(2.7),
+                 Inches(4.5), Inches(7.6), Inches(11.0)]
+    sh_cols_w = [Inches(0.75), Inches(1.0), Inches(1.7),
+                 Inches(3.0), Inches(3.3), Inches(1.7)]
+    sh_headers = ["Tier", "名称", "对齐特征", "shape 选取原则",
+                  "覆盖示例", "规模 (∼/op)"]
+    for cx_, cw_, h in zip(sh_cols_x, sh_cols_w, sh_headers):
+        add_text(s, cx_, sh_ty + Inches(0.08), cw_, Inches(0.3),
+                 h, size=10.5, bold=True, color=ACCENT_ALT,
+                 font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+
+    sh_rows = [
+        ("ST1", "Micro",
+         "2 的幂次", "small + power-of-2，启动开销主导",
+         "[32, 64] · [128, 256] · [1024, 1024]",
+         "≈15 shapes", ACCENT),
+        ("ST2", "Standard",
+         "混合", "中等规模 + GPT-2/LLaMA-2/3 / Qwen2.5 推理 shape",
+         "[B, 768/4096/14336] · [S, head_dim×n_heads]",
+         "≈30 shapes", ACCENT_BLUE),
+        ("ST3", "Stress",
+         "非对齐", "Off-by-one / 非 2 幂次 / 极端纵横比",
+         "[1, 4097] · [127, 769] · [33, 65]",
+         "≈50 shapes", ACCENT_ALT),
+        ("ST4", "Production",
+         "混合", "DeepSeek-V2/V3 · LLaMA-3 · Qwen2.5 长上下文 (仅 OT2–OT4)",
+         "DeepSeek-V3 [B, 7168] · ctx 163840 · KV-cache",
+         "per-op", ACCENT_RED),
+    ]
+    for i, (code, name, align, pol, ex, scale, c) in enumerate(sh_rows):
+        y = sh_ty + Inches(0.46) + i * Inches(0.36)
+        panel(s, sh_tx, y, sh_tw, Inches(0.32),
+              BG_PANEL if i % 2 == 0 else BG_PANEL_DEEP, stroke=None)
+        accent_bar(s, sh_tx, y, width=Inches(0.06),
+                   height=Inches(0.32), color=c)
+        add_text(s, sh_cols_x[0], y + Inches(0.04),
+                 sh_cols_w[0], Inches(0.26),
+                 code, size=11, bold=True, color=c,
+                 font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, sh_cols_x[1], y + Inches(0.04),
+                 sh_cols_w[1], Inches(0.26),
+                 name, size=10.5, bold=True, color=FG,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, sh_cols_x[2], y + Inches(0.04),
+                 sh_cols_w[2], Inches(0.26),
+                 align, size=9.5, color=FG_MUTED,
+                 anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, sh_cols_x[3], y + Inches(0.04),
+                 sh_cols_w[3], Inches(0.26),
+                 pol, size=9, color=FG, anchor=MSO_ANCHOR.MIDDLE)
+        add_text(s, sh_cols_x[4], y + Inches(0.04),
+                 sh_cols_w[4], Inches(0.26),
+                 ex, size=8.5, color=ACCENT_BLUE,
+                 anchor=MSO_ANCHOR.MIDDLE, font=FONT_MONO)
+        add_text(s, sh_cols_x[5], y + Inches(0.04),
+                 sh_cols_w[5], Inches(0.26),
+                 scale, size=10, bold=True, color=c,
+                 font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+    # Shape total chip
+    total_chip = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                                    Inches(10.65), Inches(5.10),
+                                    Inches(2.1), Inches(0.32))
+    total_chip.adjustments[0] = 0.4
+    _set_fill(total_chip, ACCENT_ALT)
+    _no_line(total_chip)
+    add_text(s, Inches(10.65), Inches(5.10), Inches(2.1), Inches(0.32),
+             "TOTAL · ~350 SHAPES", size=10, bold=True, color=BG_DARK,
+             align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
+             font=FONT_MONO)
+
+    # bottom hint to next page
+    add_text(s, Inches(0.6), Inches(7.04), Inches(12.15), Inches(0.3),
+             "下一页 (C7 · 2/2)：BL × L 评测矩阵 · 多 baseline 矩阵 · 报告 schema",
+             size=10, color=FG_DIM, italic=True, align=PP_ALIGN.CENTER)
+    footer(s, page, total, "Part C · 组件 5 · 1/2")
+
+
+def slide_c7b_bl_baseline(prs, page, total):
+    """C7 (page 2/2) — BL × L matrix + Baselines + Reporting + ref models."""
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(s)
+    chapter_chip(s, "PART C", ACCENT_PURPLE)
+    slide_header(s, "C7 · 组件 ⑤ · Benchmark 体系 (2/2)",
+                 "BL × L 评测矩阵 + 6 档 baseline + BL6 真实模型 + 报告 schema")
+
+    # ============================================================
+    # Top-left · BL = OT × ST coverage matrix (5 rows × 4 cols)
+    # ============================================================
+    add_text(s, Inches(0.6), Inches(1.95), Inches(7), Inches(0.32),
+             "BL = OT × ST 覆盖矩阵", size=12, bold=True,
+             color=ACCENT, font=FONT_MONO)
+
+    # Render as grid
+    mtx_x = Inches(0.6)
+    mtx_y = Inches(2.32)
+    mtx_w = Inches(7.7)
+    cell_w = Inches(1.05)
+    cell_h = Inches(0.4)
+    headers = ["", "ST1 micro", "ST2 std", "ST3 stress", "ST4 prod"]
+    rows_data = [
+        ("OT0 elem",  ["BL1", "BL2", "BL3", "—"]),
+        ("OT1 reduce",["BL1", "BL2", "BL3", "—"]),
+        ("OT2 dense", ["BL1", "BL2", "BL3", "BL5"]),
+        ("OT3 fused", ["BL4", "BL4", "—",  "BL5"]),
+        ("OT4 attn",  ["—",   "—",   "—",   "BL5"]),
+    ]
+    bl_color = {
+        "BL1": ACCENT, "BL2": ACCENT_BLUE,
+        "BL3": ACCENT_ALT, "BL4": ACCENT_PURPLE,
+        "BL5": ACCENT_RED, "—": FG_DIM,
+    }
+    # header row
+    for j, h in enumerate(headers):
+        bg = BG_PANEL_ALT
+        panel(s, mtx_x + Inches(1.1) + (j - 1) * cell_w if j > 0
+              else mtx_x, mtx_y, cell_w if j > 0 else Inches(1.1),
+              cell_h, bg, stroke=None)
+    for j, h in enumerate(headers):
+        if j == 0:
+            tx = mtx_x
+            tw = Inches(1.1)
+        else:
+            tx = mtx_x + Inches(1.1) + (j - 1) * cell_w
+            tw = cell_w
+        add_text(s, tx, mtx_y + Inches(0.08), tw, Inches(0.28),
+                 h, size=9.5, bold=True, color=ACCENT,
+                 font=FONT_MONO, align=PP_ALIGN.CENTER,
+                 anchor=MSO_ANCHOR.MIDDLE)
+    for i, (label, vals) in enumerate(rows_data):
+        ry = mtx_y + cell_h + i * cell_h
+        # row label
+        panel(s, mtx_x, ry, Inches(1.1), cell_h,
+              BG_PANEL if i % 2 == 0 else BG_PANEL_DEEP, stroke=None)
+        add_text(s, mtx_x, ry + Inches(0.08), Inches(1.1), Inches(0.28),
+                 label, size=9.5, bold=True, color=FG,
+                 align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
+                 font=FONT_MONO)
+        for j, v in enumerate(vals):
+            cx_ = mtx_x + Inches(1.1) + j * cell_w
+            panel(s, cx_, ry, cell_w, cell_h,
+                  BG_PANEL if i % 2 == 0 else BG_PANEL_DEEP,
+                  stroke=None)
+            add_text(s, cx_, ry + Inches(0.08), cell_w, Inches(0.28),
+                     v, size=11, bold=True, color=bl_color.get(v, FG),
+                     font=FONT_MONO, align=PP_ALIGN.CENTER,
+                     anchor=MSO_ANCHOR.MIDDLE)
+    # BL6 banner row
+    bl6_y = mtx_y + cell_h + 5 * cell_h
+    panel(s, mtx_x, bl6_y, Inches(1.1) + 4 * cell_w, cell_h,
           BG_PANEL_ALT, stroke=None)
-    accent_bar(s, Inches(8.45), Inches(4.3), width=Inches(0.14),
-               height=Inches(2.55), color=ACCENT_RED)
-    add_text(s, Inches(8.78), Inches(4.42), Inches(4), Inches(0.4),
-             "回应 H9 · 承载 F7", size=13, bold=True, color=ACCENT_RED,
+    add_text(s, mtx_x, bl6_y + Inches(0.08),
+             Inches(1.1) + 4 * cell_w, Inches(0.28),
+             "BL6 · Model-Complete   ←   GPT-2 · LLaMA-2/3 · "
+             "DeepSeek-V2/V3 · Qwen2.5 真实模型 forward 算子+shape 集",
+             size=9.5, bold=True, color=ACCENT_RED,
+             align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
              font=FONT_MONO)
-    add_bullets(s, Inches(8.78), Inches(4.85), Inches(3.85), Inches(2.0),
-                ["统一 reporting schema (JSON + Markdown)",
-                 "跨 baseline 横向可比",
-                 "跨硬件 / 跨版本可复现",
-                 "Arke 给行业的「公共物品提案」"],
-                size=11.5, bullet_color=ACCENT_RED, line_spacing=1.25)
-    footer(s, page, total, "Part C · 组件 5")
+
+    # ============================================================
+    # Top-right · L1/L2/L3 evaluation layers
+    # ============================================================
+    add_text(s, Inches(8.55), Inches(1.95), Inches(4.2), Inches(0.32),
+             "L1 / L2 / L3 评测层", size=12, bold=True,
+             color=ACCENT_PURPLE, font=FONT_MONO)
+    layers = [
+        ("L1", "单算子",
+         "能否打平专家手写单算子？\nμs · TFLOPS · GB/s · % vs baseline",
+         "BL1–BL5", ACCENT_PURPLE),
+        ("L2", "融合",
+         "能否做出与专家一致的融合？\nmatmul+relu/gelu · swiglu · geglu",
+         "BL4–BL5", ACCENT_BLUE),
+        ("L3", "模型级 E2E ≡ BL6",
+         "是否真让模型变快？\nlatency · tok/s · peak mem · top-1",
+         "BL6", ACCENT_RED),
+    ]
+    ly = Inches(2.32)
+    for code, t, d, br, c in layers:
+        panel(s, Inches(8.55), ly, Inches(4.2), Inches(0.85),
+              BG_PANEL, stroke=None)
+        accent_bar(s, Inches(8.55), ly, width=Inches(0.1),
+                   height=Inches(0.85), color=c)
+        add_text(s, Inches(8.7), ly + Inches(0.08),
+                 Inches(0.6), Inches(0.3),
+                 code, size=14, bold=True, color=c, font=FONT_MONO)
+        add_text(s, Inches(9.3), ly + Inches(0.09),
+                 Inches(2.4), Inches(0.3),
+                 t, size=11, bold=True, color=FG)
+        add_text(s, Inches(11.7), ly + Inches(0.1),
+                 Inches(0.95), Inches(0.3),
+                 br, size=9, color=c, font=FONT_MONO,
+                 align=PP_ALIGN.RIGHT)
+        add_text(s, Inches(8.7), ly + Inches(0.42),
+                 Inches(3.95), Inches(0.4),
+                 d, size=9.5, color=FG_MUTED)
+        ly = ly + Inches(0.95)
+
+    # ============================================================
+    # Bottom-left · 6 baseline tiers
+    # ============================================================
+    add_text(s, Inches(0.6), Inches(5.45), Inches(7.7), Inches(0.32),
+             "多 Baseline 矩阵 · 6 档对照", size=12, bold=True,
+             color=ACCENT_ALT, font=FONT_MONO)
+    bls = [
+        ("P0", "厂商极致", "cuBLAS · cuDNN · CUTLASS", ACCENT),
+        ("P1", "专家 Triton", "FlagGems · Liger-Kernel · FlashAttention",
+         ACCENT_BLUE),
+        ("P2", "Triton 教程", "Triton 官方 tutorial", ACCENT_ALT),
+        ("P3", "PyTorch eager", "torch.nn.functional", ACCENT_PURPLE),
+        ("P4", "图编译器", "torch.compile (Inductor)", ACCENT_RED),
+        ("P5", "LLM-direct", "LLM 直写 Triton（自我对照）", FG_MUTED),
+    ]
+    bx = Inches(0.6)
+    by = Inches(5.85)
+    bw = Inches(2.55)
+    bh = Inches(0.55)
+    for i, (code, name, src, c) in enumerate(bls):
+        col = i % 3
+        row = i // 3
+        x = bx + col * (bw + Inches(0.05))
+        y = by + row * (bh + Inches(0.06))
+        panel(s, x, y, bw, bh, BG_PANEL, stroke=None)
+        accent_bar(s, x, y, width=Inches(0.08), height=bh, color=c)
+        add_text(s, x + Inches(0.18), y + Inches(0.06),
+                 Inches(0.5), Inches(0.22),
+                 code, size=10.5, bold=True, color=c, font=FONT_MONO)
+        add_text(s, x + Inches(0.7), y + Inches(0.06),
+                 bw - Inches(0.85), Inches(0.22),
+                 name, size=10, bold=True, color=FG)
+        add_text(s, x + Inches(0.18), y + Inches(0.3),
+                 bw - Inches(0.3), Inches(0.22),
+                 src, size=8.5, color=FG_MUTED, font=FONT_MONO)
+
+    # ============================================================
+    # Bottom-right · Reproducibility / report schema callout
+    # ============================================================
+    panel(s, Inches(8.55), Inches(5.45), Inches(4.2), Inches(1.6),
+          BG_PANEL_ALT, stroke=None)
+    accent_bar(s, Inches(8.55), Inches(5.45), width=Inches(0.14),
+               height=Inches(1.6), color=ACCENT_RED)
+    add_text(s, Inches(8.85), Inches(5.55), Inches(3.85), Inches(0.32),
+             "回应 H9 · 承载 F7", size=11, bold=True,
+             color=ACCENT_RED, font=FONT_MONO)
+    add_bullets(s, Inches(8.85), Inches(5.92), Inches(3.85), Inches(1.05),
+                ["统一 reporting schema (39 列 CSV + Markdown)",
+                 "OP × HW × baseline × shape 全可比",
+                 "正确性 / 性能 / token 成本三维",
+                 "snapshot 自动同步 (sync_ops.py)"],
+                size=9.5, bullet_color=ACCENT_RED, line_spacing=1.18)
+
+    footer(s, page, total, "Part C · 组件 5 · 2/2")
 
 
 def slide_c8_alignment(prs, page, total):
@@ -2323,16 +2601,17 @@ def build(out_path: Path) -> None:
     prs.slide_width = SLIDE_W
     prs.slide_height = SLIDE_H
 
-    # Slide plan (v0.5):
+    # Slide plan (v0.6):
     # 01 cover · 02 TOC · 03 Glossary
-    # 04 Part A divider · 05 A1 · 06 A2 · 07 A2.5 thesis (NEW) ·
+    # 04 Part A divider · 05 A1 · 06 A2 · 07 A2.5 thesis ·
     # 08 A3 · 09 A3 chart · 10 A4 · 11 A5
     # 12 Part B divider · 13 B1 · 14 B2 index · 15–21 B2.1–7 cases ·
     # 22 B3 trends · 23 B4 progress · 24 B5 challenges
     # 25 Target divider · 26 S1 · 27 S2 · 28 S3 · 29 S4
     # 30 Part C divider · 31 C1 · 32 C2 · 33 C3 · 34 C4 · 35 C5 · 36 C6 ·
-    # 37 C7 · 38 C8 · 39 C9 · 40 References
-    total = 40
+    # 37 C7a (op + shape) · 38 C7b (BL/L + baselines) ·
+    # 39 C8 · 40 C9 · 41 References
+    total = 41
 
     slide_cover(prs)                                                      # 1
     slide_toc(prs, 2, total)                                              # 2
@@ -2566,11 +2845,12 @@ def build(out_path: Path) -> None:
     slide_c4_ir(prs, 34, total)                                           # 34
     slide_c5_compiler(prs, 35, total)                                     # 35
     slide_c6_agent(prs, 36, total)                                        # 36
-    slide_c7_benchmark(prs, 37, total)                                    # 37
-    slide_c8_alignment(prs, 38, total)                                    # 38
-    slide_c9_qa(prs, 39, total)                                           # 39
+    slide_c7a_op_shape_coverage(prs, 37, total)                           # 37
+    slide_c7b_bl_baseline(prs, 38, total)                                 # 38
+    slide_c8_alignment(prs, 39, total)                                    # 39
+    slide_c9_qa(prs, 40, total)                                           # 40
 
-    slide_references(prs, 40, total)                                      # 40
+    slide_references(prs, 41, total)                                      # 41
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(out_path)
