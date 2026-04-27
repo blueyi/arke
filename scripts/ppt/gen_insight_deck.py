@@ -4,46 +4,47 @@ Insight deck generator (single PPTX) — implements outline v0.3.
 Output: docs/sharing/ai-native-insight-deck.pptx
 Theme:  16:9 dark-navy + teal accents (consistent with existing chapter decks).
 
-Outline mapping (slide → outline section, v0.4):
+Outline mapping (slide → outline section, v0.5):
   01  Cover                                                       (A1)
   02  TOC
-  03  Glossary (术语速读)                                          (新增)
+  03  Glossary (术语速读)
   04  PART A divider
-  05  A1  封面与目标 / 3 questions
-  06  A2  模型能力侧 — 6 维能力跃迁
-  07  A3  问题域侧 — 硬件 / 工作负载 / 工程现实
-  08  A3  真实数据时间线（模型 / 硬件 / 算子复杂度）
-  09  A4  传统路径失效（4 类基线）
-  10  A5  洞察输出形态（六段式）
-  11  PART B divider
-  12  B1  全景图（避免 Arke 专有词）
-  13  B2  7 案例索引表（含真实数据列）
-  14  B2.1 KernelEvolve   ← 真实数据
-  15  B2.2 KernelAgent / KernelFalcon
-  16  B2.3 AutoKernel
-  17  B2.4 K-Search
-  18  B2.5 AVO
-  19  B2.6 CuTeGen
-  20  B2.7 KernelGen-LM / AscendKernelGen
-  21  B3  趋势归纳 T1–T6（每条标注代表案例）
-  22  B4  好进展 G1–G6（每条标注代表案例）
-  23  B5  关键难题 H1–H9（每条标注业界证据）
-  24  TARGET-STATE divider
-  25  S1  北极星定义
-  26  S2  7 大技术特征 F1–F7
-  27  S3  对通用编程的启示
-  28  S4  过渡到 Part C
-  29  PART C divider
-  30  C1  设计逻辑（5 条公理）
-  31  C2  整体架构总图
-  32  C3  ① Arke Language
-  33  C4  ② Arke IR
-  34  C5  ③ Compiler Toolchain
-  35  C6  ④ Agent Engineering
-  36  C7  ⑤ Benchmark 体系
-  37  C8  与 F1–F7 最终对齐表
-  38  C9  讨论题 / Q&A
-  39  References
+  05  A1   封面与目标 / 3 questions
+  06  A2   模型能力侧 — 6 维能力跃迁
+  07  A2.5 范式判断 — 6 条预判 (NEW · 全篇技术前提)
+  08  A3   问题域侧 — 硬件 / 工作负载 / 工程现实
+  09  A3   真实数据时间线（模型 / 硬件 / 算子复杂度）
+  10  A4   传统路径失效（4 类基线）
+  11  A5   洞察输出形态（六段式）
+  12  PART B divider
+  13  B1   全景图
+  14  B2   7 案例索引表（含真实数据列）
+  15  B2.1 KernelEvolve  ← 真实数据
+  16  B2.2 KernelAgent / KernelFalcon
+  17  B2.3 AutoKernel
+  18  B2.4 K-Search
+  19  B2.5 AVO
+  20  B2.6 CuTeGen
+  21  B2.7 KernelGen-LM / AscendKernelGen
+  22  B3   趋势归纳 T1–T6（每条标注代表案例 + ↔ A2.5 预判）
+  23  B4   好进展 G1–G6（每条标注代表案例）
+  24  B5   关键难题 H1–H9（每条标注业界证据）
+  25  TARGET-STATE divider
+  26  S1   北极星定义
+  27  S2   7 大技术特征 F1–F7
+  28  S3   对通用编程的启示
+  29  S4   过渡到 Part C
+  30  PART C divider
+  31  C1   设计逻辑（5 条公理 ← A2.5 反向追溯）
+  32  C2   整体架构总图
+  33  C3   ① Arke Language
+  34  C4   ② Arke IR
+  35  C5   ③ Compiler Toolchain
+  36  C6   ④ Agent Engineering
+  37  C7   ⑤ Benchmark 体系
+  38  C8   与 F1–F7 最终对齐表
+  39  C9   讨论题 / Q&A
+  40  References
 
 Audience: 高层管理者 + 技术专家。
 - Pre-Part-C 严禁 Arke 专有概念（@rationale / V0/V1/V2 / SemanticIR / .ak / KernelCache）
@@ -356,14 +357,14 @@ def slide_toc(prs, page, total):
     entries = [
         ("Glossary · 术语速读", "LLM 工程 · GPU/NPU 硬件 · 业界评测系统",
          "03", ACCENT_RED),
-        ("Part A · 背景", "为什么需要这次洞察（模型能力 + 业界现状 + 失效）",
-         "05–10", ACCENT),
+        ("Part A · 背景", "模型能力 · 范式判断 (A2.5) · 业界现状 · 失效",
+         "05–11", ACCENT),
         ("Part B · 业界趋势", "7 个 LLM-driven kernel 案例 → T1–T6 / G1–G6 / H1–H9",
-         "12–23", ACCENT_BLUE),
+         "13–24", ACCENT_BLUE),
         ("🌟 目标态总览", "北极星 · F1–F7 七大特征 · 对通用编程的启示",
-         "25–28", ACCENT_ALT),
+         "26–29", ACCENT_ALT),
         ("Part C · Arke 技术构建", "设计逻辑 · 总架构 · 四件套 + Benchmark · F 对齐",
-         "30–38", ACCENT_PURPLE),
+         "31–39", ACCENT_PURPLE),
     ]
     top = Inches(2.0)
     row_h = Inches(0.88)
@@ -600,6 +601,104 @@ def slide_a2_model_capability(prs, page, total):
              "模型从「会写代码」升级为「会做带反馈的工程决策」——这是后续所有趋势的能力底座。",
              size=15, bold=True, color=FG)
     footer(s, page, total, "Part A")
+
+
+# ============================================================
+# A2.5 · Paradigm-shift thesis (key foundation for the whole deck)
+# ============================================================
+def slide_a2p5_thesis(prs, page, total):
+    """A2.5 — overview: the 6-prediction thesis that anchors the deck."""
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(s)
+    chapter_chip(s, "PART A", ACCENT)
+    slide_header(
+        s, "A2.5 · 范式判断（本洞察的技术前提）",
+        "从「代码编写」到「意图治理」的范式迁移——后续所有判断的根")
+
+    # Banner statement
+    panel(s, Inches(0.6), Inches(1.95), Inches(12.15), Inches(0.85),
+          BG_PANEL_ALT, stroke=None)
+    accent_bar(s, Inches(0.6), Inches(1.95), width=Inches(0.16),
+               height=Inches(0.85), color=ACCENT_ALT)
+    add_runs(
+        s, Inches(0.95), Inches(2.0), Inches(11.5), Inches(0.75),
+        [
+            {"text": "未来开发生态的胜负手不再是 ", "size": 16,
+             "color": FG_MUTED},
+            {"text": "「如何写代码」", "size": 16, "bold": True,
+             "color": FG_DIM, "italic": True},
+            {"text": "，而是 ", "size": 16, "color": FG_MUTED},
+            {"text": "「如何定义意图 + 如何闭环验证」", "size": 16,
+             "bold": True, "color": ACCENT},
+            {"text": "——本 deck 后续每一条主张，都是这个判断的延伸。",
+             "size": 16, "color": FG_MUTED},
+        ], anchor=MSO_ANCHOR.MIDDLE)
+
+    # 2x3 grid of 6 predictions
+    preds = [
+        ("❶", "能力平庸化",
+         "顶级模型代差缩小，竞争从「博学」转向\n「特定链路稳定性 / 成功率」",
+         "Commodity · FeatureBench",
+         "→ T2 / T6 / F2",
+         ACCENT),
+        ("❷", "Harness 治理",
+         "「上下文焦虑」→「智能脚手架」\n图谱索引 + 静态/动态依赖 + 语义路由",
+         "Harness · 语义路由器",
+         "→ T2 / T3 / F4",
+         ACCENT_BLUE),
+        ("❸", "颗粒度跃迁",
+         "片段式编程被吞噬，开发坍缩为\n「高层架构」+「底层性能」两端",
+         "片段消失 · 两端坍缩",
+         "→ T1 / T4 / F1",
+         ACCENT_ALT),
+        ("❹", "Agent 自主流转",
+         "从「辅助生成」到「自愈工作流」\n自主拉仓库 / 跑测试 / 修 bug",
+         "Self-healing · 端到端自治",
+         "→ T1 / G6 / F2",
+         ACCENT_PURPLE),
+        ("❺", "意图 + 形式化验证",
+         "代码边际成本 → 0；「确保 AI 做对」成为\n最贵环节，验证驱动开发",
+         "形式化验证 · 抗幻觉",
+         "→ G1 / F3 / F5",
+         ACCENT_RED),
+        ("❻", "AI 原生基座",
+         "软件主动适配 AI：原生编译器 +\nAI-friendly IR + 强契约模块化",
+         "AI-native compiler · 解耦契约",
+         "→ T4 / F3 / F6",
+         ACCENT),
+    ]
+    cw = Inches(4.0)
+    ch = Inches(1.95)
+    cx = Inches(0.6)
+    cy = Inches(2.95)
+    for i, (n, t, d, kw, mapping, c) in enumerate(preds):
+        x = cx + (i % 3) * (cw + Inches(0.1))
+        y = cy + (i // 3) * (ch + Inches(0.13))
+        panel(s, x, y, cw, ch, BG_PANEL, stroke=None)
+        accent_bar(s, x, y, width=Inches(0.14), height=ch, color=c)
+        add_text(s, x + Inches(0.3), y + Inches(0.1),
+                 Inches(0.5), Inches(0.4),
+                 n, size=18, bold=True, color=c)
+        add_text(s, x + Inches(0.85), y + Inches(0.13),
+                 cw - Inches(1.0), Inches(0.4),
+                 t, size=14, bold=True, color=FG)
+        add_text(s, x + Inches(0.3), y + Inches(0.55),
+                 cw - Inches(0.4), Inches(0.85),
+                 d, size=10.5, color=FG_MUTED)
+        add_text(s, x + Inches(0.3), y + ch - Inches(0.6),
+                 cw - Inches(0.4), Inches(0.28),
+                 kw, size=9, color=ACCENT_ALT, italic=True,
+                 font=FONT_MONO)
+        add_text(s, x + Inches(0.3), y + ch - Inches(0.32),
+                 cw - Inches(0.4), Inches(0.28),
+                 mapping, size=9, bold=True, color=c, font=FONT_MONO)
+
+    # bottom takeaway
+    add_text(s, Inches(0.6), Inches(7.04), Inches(12.15), Inches(0.3),
+             "当代码生成的边际成本趋近于零，「定义意图 + 闭环验证」成为生产力重心；本 deck 的所有趋势 / 目标态 / Arke 设计都建立在此之上。",
+             size=10.5, color=FG_DIM, italic=True,
+             align=PP_ALIGN.CENTER)
+    footer(s, page, total, "Part A · 范式判断")
 
 
 def slide_a3_problem_domain(prs, page, total):
@@ -1163,6 +1262,7 @@ def slide_b3_trends(prs, page, total):
                  anchor=MSO_ANCHOR.MIDDLE, align=PP_ALIGN.CENTER,
                  font=FONT_MONO)
     glossary_hint(s, "→ Glossary P03 · 术语 RAG / harness / RLEF / NCU")
+    source_note(s, "← 与 A2.5 范式判断对应：T1/T2/T3/T4/T5/T6 分别延伸自 ❶❷❸❹❺❻ 六条预判 (P07)")
     footer(s, page, total, "Part B")
 
 
@@ -1564,9 +1664,10 @@ def slide_c1_axioms(prs, page, total):
                  align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
                  font=FONT_MONO)
 
-    add_text(s, Inches(0.6), Inches(6.95), Inches(12), Inches(0.3),
+    add_text(s, Inches(0.6), Inches(6.78), Inches(12), Inches(0.3),
              "设计公理 → 体系结构 → 四件套实现，逻辑自上而下闭合。",
              size=12, color=FG_MUTED, italic=True, align=PP_ALIGN.CENTER)
+    source_note(s, "← 5 条公理直接回应 A2.5 范式判断：公理 1↔❺ · 公理 2↔❹ · 公理 3↔❷❺ · 公理 4↔❺❻ · 公理 5↔❻ (P07)")
     footer(s, page, total, "Part C")
 
 
@@ -2066,15 +2167,16 @@ def build(out_path: Path) -> None:
     prs.slide_width = SLIDE_W
     prs.slide_height = SLIDE_H
 
-    # Slide plan (v0.4):
+    # Slide plan (v0.5):
     # 01 cover · 02 TOC · 03 Glossary
-    # 04 Part A divider · 05 A1 · 06 A2 · 07 A3 · 08 A3 chart · 09 A4 · 10 A5
-    # 11 Part B divider · 12 B1 · 13 B2 index · 14–20 B2.1–7 cases ·
-    # 21 B3 trends · 22 B4 progress · 23 B5 challenges
-    # 24 Target divider · 25 S1 · 26 S2 · 27 S3 · 28 S4
-    # 29 Part C divider · 30 C1 · 31 C2 · 32 C3 · 33 C4 · 34 C5 · 35 C6 ·
-    # 36 C7 · 37 C8 · 38 C9 · 39 References
-    total = 39
+    # 04 Part A divider · 05 A1 · 06 A2 · 07 A2.5 thesis (NEW) ·
+    # 08 A3 · 09 A3 chart · 10 A4 · 11 A5
+    # 12 Part B divider · 13 B1 · 14 B2 index · 15–21 B2.1–7 cases ·
+    # 22 B3 trends · 23 B4 progress · 24 B5 challenges
+    # 25 Target divider · 26 S1 · 27 S2 · 28 S3 · 29 S4
+    # 30 Part C divider · 31 C1 · 32 C2 · 33 C3 · 34 C4 · 35 C5 · 36 C6 ·
+    # 37 C7 · 38 C8 · 39 C9 · 40 References
+    total = 40
 
     slide_cover(prs)                                                      # 1
     slide_toc(prs, 2, total)                                              # 2
@@ -2083,26 +2185,27 @@ def build(out_path: Path) -> None:
     slide_divider(prs, 4, total,
                   "PART A · BACKGROUND",
                   "为什么需要这次洞察",
-                  "模型能力跃迁 · 算子工程现状 · 传统路径失效 · 输出形态",
+                  "模型能力 · 范式判断 · 算子工程现状 · 失效 · 输出形态",
                   accent=ACCENT)                                          # 4
     slide_a1_questions(prs, 5, total)                                     # 5
     slide_a2_model_capability(prs, 6, total)                              # 6
-    slide_a3_problem_domain(prs, 7, total)                                # 7
-    slide_a3_chart(prs, 8, total)                                         # 8
-    slide_a4_failure_modes(prs, 9, total)                                 # 9
-    slide_a5_output_form(prs, 10, total)                                  # 10
+    slide_a2p5_thesis(prs, 7, total)                                      # 7  ← NEW
+    slide_a3_problem_domain(prs, 8, total)                                # 8
+    slide_a3_chart(prs, 9, total)                                         # 9
+    slide_a4_failure_modes(prs, 10, total)                                # 10
+    slide_a5_output_form(prs, 11, total)                                  # 11
 
-    slide_divider(prs, 11, total,
+    slide_divider(prs, 12, total,
                   "PART B · INDUSTRY TRENDS",
                   "业界趋势：从 LLM-driven kernel 看技术走向",
                   "7 个代表案例 · 趋势 T1–T6 · 进展 G1–G6 · 难题 H1–H9",
-                  accent=ACCENT_BLUE)                                     # 11
-    slide_b1_panorama(prs, 12, total)                                     # 12
-    slide_b2_index(prs, 13, total)                                        # 13
+                  accent=ACCENT_BLUE)                                     # 12
+    slide_b1_panorama(prs, 13, total)                                     # 13
+    slide_b2_index(prs, 14, total)                                        # 14
 
     # 7 cases (each with 公开 metrics + source citation)
     slide_b2_case(
-        prs, 14, total, idx=1, name="KernelEvolve",
+        prs, 15, total, idx=1, name="KernelEvolve",
         source="Meta · ISCA 2026 · arXiv 2512.23236", color=ACCENT,
         what=[
             "在生产级 ranking infra 上做异构 kernel 生成与优化",
@@ -2126,9 +2229,9 @@ def build(out_path: Path) -> None:
         source_cite=("Meta engineering blog (2026-04) + arXiv 2512.23236"
                      " (KernelEvolve / Heterogeneous Agentic Kernel "
                      "Authoring at Scale)"),
-    )                                                                     # 14
+    )                                                                     # 15
     slide_b2_case(
-        prs, 15, total, idx=2,
+        prs, 16, total, idx=2,
         name="KernelAgent / KernelFalcon",
         source="PyTorch · Meta · 2025–2026", color=ACCENT_BLUE,
         what=[
@@ -2155,9 +2258,9 @@ def build(out_path: Path) -> None:
                      "generation via deep agents) + KernelAgent "
                      "(hardware-guided GPU kernel optimization) · "
                      "github.com/meta-pytorch/KernelAgent"),
-    )                                                                     # 15
+    )                                                                     # 16
     slide_b2_case(
-        prs, 16, total, idx=3, name="AutoKernel",
+        prs, 17, total, idx=3, name="AutoKernel",
         source="RightNow AI · arXiv 2603.21331", color=ACCENT_ALT,
         what=[
             "autoresearch 风格优化循环：profile → extract → "
@@ -2180,9 +2283,9 @@ def build(out_path: Path) -> None:
         metrics=("H100 实测：RMSNorm 5.29× · softmax 2.82× · "
                  "cross-entropy 2.21× vs PyTorch eager（公开 README 数据）"),
         source_cite=("arXiv 2603.21331 + github.com/RightNow-AI/autokernel"),
-    )                                                                     # 16
+    )                                                                     # 17
     slide_b2_case(
-        prs, 17, total, idx=4, name="K-Search",
+        prs, 18, total, idx=4, name="K-Search",
         source="UC Berkeley · arXiv 2602.19128", color=ACCENT_PURPLE,
         what=[
             "把 kernel 生成视作规划问题：problem → search tree",
@@ -2204,9 +2307,9 @@ def build(out_path: Path) -> None:
         metrics=("FlashInfer GQA/MLA/MoE 平均 2.10× · MoE 最高 14.3× · "
                  "GPUMode TriMul H100 SOTA 1030μs（公开 paper 数据）"),
         source_cite=("arXiv 2602.19128 + github.com/caoshiyi/K-Search"),
-    )                                                                     # 17
+    )                                                                     # 18
     slide_b2_case(
-        prs, 18, total, idx=5, name="AVO",
+        prs, 19, total, idx=5, name="AVO",
         source="NVIDIA · arXiv 2603.24517", color=ACCENT,
         what=[
             "Evolutionary Algorithm 骨架（population / lineage）",
@@ -2230,9 +2333,9 @@ def build(out_path: Path) -> None:
                  "超 FlashAttention-4 +10.5% · GQA 迁移仅需 30 min"),
         source_cite=("arXiv 2603.24517 (Agentic Variation Operators "
                      "for Evolutionary Kernel Optimization)"),
-    )                                                                     # 18
+    )                                                                     # 19
     slide_b2_case(
-        prs, 19, total, idx=6, name="CuTeGen",
+        prs, 20, total, idx=6, name="CuTeGen",
         source="U. Toronto · arXiv 2604.01489", color=ACCENT_RED,
         what=[
             "选 CuTe（CUTLASS 4.x layout algebra）作为稳定抽象层",
@@ -2254,9 +2357,9 @@ def build(out_path: Path) -> None:
                  " · 渐进精炼 token 成本可控（vs 纯 LLM 直写 CUDA）"),
         source_cite=("arXiv 2604.01489 (LLM × CuTe abstraction for "
                      "iterative kernel synthesis)"),
-    )                                                                     # 19
+    )                                                                     # 20
     slide_b2_case(
-        prs, 20, total, idx=7,
+        prs, 21, total, idx=7,
         name="KernelGen-LM / AscendKernelGen",
         source="PCL · 中山大学 · 华为 · arXiv 2601.07160",
         color=ACCENT_ALT,
@@ -2280,38 +2383,38 @@ def build(out_path: Path) -> None:
         metrics=("Ascend NPU · AscendC DSL · NPUKernelBench L2 编译"
                  "成功率 0% → 95.5% (Pass@10)；权重 / 数据 / 评测全部开源"),
         source_cite=("arXiv 2601.07160 (KernelGen-LM / AscendKernelGen)"),
-    )                                                                     # 20
+    )                                                                     # 21
 
-    slide_b3_trends(prs, 21, total)                                       # 21
-    slide_b4_progress(prs, 22, total)                                     # 22
-    slide_b5_challenges(prs, 23, total)                                   # 23
+    slide_b3_trends(prs, 22, total)                                       # 22
+    slide_b4_progress(prs, 23, total)                                     # 23
+    slide_b5_challenges(prs, 24, total)                                   # 24
 
-    slide_divider(prs, 24, total,
+    slide_divider(prs, 25, total,
                   "TARGET STATE",
                   "目标态总览：未来算子生成 / 调优技术",
                   "北极星 · 7 大技术特征 F1–F7 · 对通用编程的启示",
-                  accent=ACCENT_ALT)                                      # 24
-    slide_s1_north_star(prs, 25, total)                                   # 25
-    slide_s2_features(prs, 26, total)                                     # 26
-    slide_s3_implications(prs, 27, total)                                 # 27
-    slide_s4_bridge(prs, 28, total)                                       # 28
+                  accent=ACCENT_ALT)                                      # 25
+    slide_s1_north_star(prs, 26, total)                                   # 26
+    slide_s2_features(prs, 27, total)                                     # 27
+    slide_s3_implications(prs, 28, total)                                 # 28
+    slide_s4_bridge(prs, 29, total)                                       # 29
 
-    slide_divider(prs, 29, total,
+    slide_divider(prs, 30, total,
                   "PART C · ARKE",
                   "Arke 的技术构建：设计逻辑 + 整体架构 + 四件套 + Benchmark",
                   "5 条公理 · 一张总图 · Language / IR / Compiler / Agent / Benchmark",
-                  accent=ACCENT_PURPLE)                                   # 29
-    slide_c1_axioms(prs, 30, total)                                       # 30
-    slide_c2_architecture(prs, 31, total)                                 # 31
-    slide_c3_language(prs, 32, total)                                     # 32
-    slide_c4_ir(prs, 33, total)                                           # 33
-    slide_c5_compiler(prs, 34, total)                                     # 34
-    slide_c6_agent(prs, 35, total)                                        # 35
-    slide_c7_benchmark(prs, 36, total)                                    # 36
-    slide_c8_alignment(prs, 37, total)                                    # 37
-    slide_c9_qa(prs, 38, total)                                           # 38
+                  accent=ACCENT_PURPLE)                                   # 30
+    slide_c1_axioms(prs, 31, total)                                       # 31
+    slide_c2_architecture(prs, 32, total)                                 # 32
+    slide_c3_language(prs, 33, total)                                     # 33
+    slide_c4_ir(prs, 34, total)                                           # 34
+    slide_c5_compiler(prs, 35, total)                                     # 35
+    slide_c6_agent(prs, 36, total)                                        # 36
+    slide_c7_benchmark(prs, 37, total)                                    # 37
+    slide_c8_alignment(prs, 38, total)                                    # 38
+    slide_c9_qa(prs, 39, total)                                           # 39
 
-    slide_references(prs, 39, total)                                      # 39
+    slide_references(prs, 40, total)                                      # 40
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(out_path)
