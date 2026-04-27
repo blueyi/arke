@@ -1,5 +1,13 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-fused_linear_cross_entropy,gpt2-seq128,PyTorch-eager,78.2,90.1,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-fused_linear_cross_entropy,gpt2-seq128,Arke,108.5,100.2,,0.7207,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7207,false,-0.2793
-fused_linear_cross_entropy,gpt2-seq512,PyTorch-eager,95.9,97.1,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-fused_linear_cross_entropy,gpt2-seq512,Arke,100.4,95.3,,0.9552,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9552,false,-0.0448
+fused_linear_cross_entropy,gpt2-seq128,PyTorch-eager,110.9,30.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,103123968,3542771302,0.0291,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,gpt2-seq128,Arke,88.0,86.2,,1.2602,ok,,false,true,0,0,0.01,0.01,ok,,103123968,3542771302,0.0291,linear_ce,1.0,1.2602,true,0.2602
+fused_linear_cross_entropy,gpt2-seq512,PyTorch-eager,76.8,85.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,180911616,3542771302,0.0511,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,gpt2-seq512,Arke,75.4,79.9,,1.0186,ok,,false,true,0,0,0.01,0.01,ok,,180911616,3542771302,0.0511,linear_ce,1.0,1.0186,true,0.0186
+fused_linear_cross_entropy,llama2-seq512,PyTorch-eager,182.6,191.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,331878400,3542771302,0.0937,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,llama2-seq512,Arke,126.3,138.2,,1.4458,ok,,false,true,0,0,0.01,0.01,ok,,331878400,3542771302,0.0937,linear_ce,1.0,1.4458,true,0.4458
+fused_linear_cross_entropy,llama3-seq512,PyTorch-eager,191.8,184.3,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1317539840,3542771302,0.3719,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,llama3-seq512,Arke,126.3,137.1,,1.5186,ok,,false,true,0,0,0.01,0.01,ok,,1317539840,3542771302,0.3719,linear_ce,1.0,1.5186,true,0.5186
+fused_linear_cross_entropy,non-align-1,PyTorch-eager,79.5,58.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,65668342,3542771302,0.0185,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,non-align-1,Arke,90.8,69.4,,0.8756,ok,,false,true,0,0,0.01,0.01,ok,,65668342,3542771302,0.0185,linear_ce,1.0,0.8756,false,-0.1244
+fused_linear_cross_entropy,non-align-2,PyTorch-eager,185.6,181.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,307563266,3542771302,0.0868,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,non-align-2,Arke,122.2,132.1,,1.5188,ok,,false,true,0,0,0.01,0.01,ok,,307563266,3542771302,0.0868,linear_ce,1.0,1.5188,true,0.5188

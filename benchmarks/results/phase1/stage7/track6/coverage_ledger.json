@@ -1748,24 +1748,29 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "moe-top2-gpt2",
-          "moe-top2-small"
-        ],
-        "observed_required_shape_tags": [
-          "moe-top2-gpt2",
-          "moe-top2-small"
-        ],
-        "missing_shape_tags": [
           "extreme-k1",
-          "extreme-kmax",
-          "extreme-wide",
-          "moe-top2-ds",
+          "moe-top2-gpt2",
+          "moe-top2-small",
           "moe-top4-llama",
           "non-align-1",
           "non-align-2",
+          "sampling-top50"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-k1",
+          "moe-top2-gpt2",
+          "moe-top2-small",
+          "moe-top4-llama",
+          "non-align-1",
+          "non-align-2",
+          "sampling-top50"
+        ],
+        "missing_shape_tags": [
+          "extreme-kmax",
+          "extreme-wide",
+          "moe-top2-ds",
           "non-align-3",
           "sampling-top100-qwen",
-          "sampling-top50",
           "sampling-top50-llama3"
         ],
         "correctness_evidence_present": true,
@@ -2135,10 +2140,14 @@
       "evidence": {
         "observed_shape_tags": [
           "gpt2-qkv-merge",
+          "non-align-1",
+          "non-align-2",
           "tiny-2"
         ],
         "observed_required_shape_tags": [
           "gpt2-qkv-merge",
+          "non-align-1",
+          "non-align-2",
           "tiny-2"
         ],
         "missing_shape_tags": [
@@ -2148,9 +2157,7 @@
           "kvcache-append-2k",
           "kvcache-append-512",
           "llama-qkv-merge",
-          "llama3-qkv-gqa",
-          "non-align-1",
-          "non-align-2"
+          "llama3-qkv-gqa"
         ],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
@@ -2189,10 +2196,14 @@
       "evidence": {
         "observed_shape_tags": [
           "gpt2-qkv-split",
+          "non-align-1",
+          "non-align-2",
           "tiny-2"
         ],
         "observed_required_shape_tags": [
           "gpt2-qkv-split",
+          "non-align-1",
+          "non-align-2",
           "tiny-2"
         ],
         "missing_shape_tags": [
@@ -2200,8 +2211,6 @@
           "ffn-gate-up",
           "llama-qkv-split",
           "llama3-qkv-gqa",
-          "non-align-1",
-          "non-align-2",
           "qwen25-qkv-gqa"
         ],
         "correctness_evidence_present": true,
@@ -2243,10 +2252,14 @@
       "evidence": {
         "observed_shape_tags": [
           "moe-dispatch-top2",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "observed_required_shape_tags": [
           "moe-dispatch-top2",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "missing_shape_tags": [
@@ -2256,9 +2269,7 @@
           "extreme-m-large",
           "kvcache-read-256",
           "kvcache-read-2k",
-          "moe-dispatch-top4",
-          "non-align-1",
-          "non-align-2"
+          "moe-dispatch-top4"
         ],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
@@ -2298,10 +2309,14 @@
       "evidence": {
         "observed_shape_tags": [
           "moe-combine-top2",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "observed_required_shape_tags": [
           "moe-combine-top2",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "missing_shape_tags": [
@@ -2310,9 +2325,7 @@
           "extreme-k-large",
           "kvcache-write-256",
           "kvcache-write-2k",
-          "moe-combine-top4",
-          "non-align-1",
-          "non-align-2"
+          "moe-combine-top4"
         ],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
@@ -2356,11 +2369,15 @@
         "observed_shape_tags": [
           "gpt2-medium",
           "gpt2-small",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "observed_required_shape_tags": [
           "gpt2-medium",
           "gpt2-small",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "missing_shape_tags": [
@@ -2371,8 +2388,6 @@
           "llama2-seq512",
           "llama3-seq2k",
           "llama3-seq512",
-          "non-align-1",
-          "non-align-2",
           "qwen25-seq512"
         ],
         "correctness_evidence_present": true,
@@ -2416,11 +2431,15 @@
         "observed_shape_tags": [
           "gpt2-bhsd",
           "gpt2-bshd",
+          "non-align-1",
+          "non-align-2",
           "small-3d"
         ],
         "observed_required_shape_tags": [
           "gpt2-bhsd",
           "gpt2-bshd",
+          "non-align-1",
+          "non-align-2",
           "small-3d"
         ],
         "missing_shape_tags": [
@@ -2429,8 +2448,6 @@
           "llama-bhsd-512",
           "llama3-gqa-512",
           "llama3-kv-512",
-          "non-align-1",
-          "non-align-2",
           "qwen25-kv",
           "qwen25-q"
         ],
@@ -2564,22 +2581,30 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-sm"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-sm"
-        ],
-        "missing_shape_tags": [
           "ds-v2-2k",
           "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
+          "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
           "non-align-2",
-          "qwen25-7b",
+          "qwen25-7b"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b"
+        ],
+        "missing_shape_tags": [
+          "ds-v3-2k",
+          "ds-v3-512",
           "qwen25-7b-2k"
         ],
         "correctness_evidence_present": true,
@@ -2621,22 +2646,30 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-sm"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-sm"
-        ],
-        "missing_shape_tags": [
           "ds-v2-2k",
           "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
+          "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
           "non-align-2",
-          "qwen25-7b",
+          "qwen25-7b"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b"
+        ],
+        "missing_shape_tags": [
+          "ds-v3-2k",
+          "ds-v3-512",
           "qwen25-7b-2k"
         ],
         "correctness_evidence_present": true,
@@ -2745,21 +2778,25 @@
       "evidence": {
         "observed_shape_tags": [
           "gpt2-seq128",
-          "gpt2-seq512"
+          "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2"
         ],
         "observed_required_shape_tags": [
           "gpt2-seq128",
-          "gpt2-seq512"
+          "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2"
         ],
         "missing_shape_tags": [
           "ds-v2-seq512",
           "extreme-large-vocab",
           "llama2-seq2k",
-          "llama2-seq512",
           "llama3-seq2k",
-          "llama3-seq512",
-          "non-align-1",
-          "non-align-2",
           "qwen25-seq2k",
           "qwen25-seq512"
         ],
@@ -2805,11 +2842,19 @@
         "observed_shape_tags": [
           "gpt2-seq128",
           "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "observed_required_shape_tags": [
           "gpt2-seq128",
           "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
           "tiny"
         ],
         "missing_shape_tags": [
@@ -2818,10 +2863,6 @@
           "extreme-large-bs",
           "extreme-large-vocab",
           "llama2-seq2k",
-          "llama2-seq512",
-          "llama3-seq512",
-          "non-align-1",
-          "non-align-2",
           "qwen25-seq512"
         ],
         "correctness_evidence_present": true,
@@ -2863,23 +2904,28 @@
       },
       "evidence": {
         "observed_shape_tags": [
+          "ds-v2-int8",
           "gpt2-int8",
+          "llama2-fp8-512",
+          "llama2-int8-512",
+          "non-align-1",
+          "non-align-2",
           "tiny-int8"
         ],
         "observed_required_shape_tags": [
+          "ds-v2-int8",
           "gpt2-int8",
+          "llama2-fp8-512",
+          "llama2-int8-512",
+          "non-align-1",
+          "non-align-2",
           "tiny-int8"
         ],
         "missing_shape_tags": [
-          "ds-v2-int8",
           "ds-v3-int8",
           "extreme-long-batch",
           "extreme-wide",
-          "llama2-fp8-512",
-          "llama2-int8-512",
           "llama3-int8-512",
-          "non-align-1",
-          "non-align-2",
           "qwen25-fp8"
         ],
         "correctness_evidence_present": true,
@@ -2922,10 +2968,14 @@
       "evidence": {
         "observed_shape_tags": [
           "gpt2-int8",
+          "non-align-1",
+          "non-align-2",
           "tiny-int8"
         ],
         "observed_required_shape_tags": [
           "gpt2-int8",
+          "non-align-1",
+          "non-align-2",
           "tiny-int8"
         ],
         "missing_shape_tags": [
@@ -2936,8 +2986,6 @@
           "llama2-int4-ffn",
           "llama2-int8-hidden",
           "llama3-int4-ffn",
-          "non-align-1",
-          "non-align-2",
           "qwen25-int4-ffn"
         ],
         "correctness_evidence_present": true,

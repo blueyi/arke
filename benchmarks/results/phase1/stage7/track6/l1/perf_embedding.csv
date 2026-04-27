@@ -1,10 +1,7 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-embedding,tiny,PyTorch-eager,53.6,64.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-embedding,tiny,Arke,55.3,67.6,,0.9693,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9693,false,-0.0307
-embedding,tiny,FlagGems,57.0,9.2,,0.9404,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for embedding,,,,,1.0,0.9404,false,-0.0596
-embedding,gpt2-small,PyTorch-eager,151.9,133.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-embedding,gpt2-small,Arke,57.3,56.3,,2.6510,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.6510,true,1.6510
-embedding,gpt2-small,FlagGems,108.5,123.9,,1.4000,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for embedding,,,,,1.0,1.4000,true,0.4000
-embedding,gpt2-medium,PyTorch-eager,141.3,132.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-embedding,gpt2-medium,Arke,57.0,67.6,,2.4789,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.4789,true,1.4789
-embedding,gpt2-medium,FlagGems,143.7,60.4,,0.9833,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for embedding,,,,,1.0,0.9833,false,-0.0167
+embedding,non-align-1,PyTorch-eager,221.2,222.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+embedding,non-align-1,Arke,70.3,37.9,,3.1465,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,3.1465,true,2.1465
+embedding,non-align-1,FlagGems,120.1,13.4,,1.8418,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for embedding,,,,,1.0,1.8418,true,0.8418
+embedding,non-align-2,PyTorch-eager,142.3,144.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+embedding,non-align-2,Arke,25.6,29.7,,5.5586,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,5.5586,true,4.5586
+embedding,non-align-2,FlagGems,109.9,138.2,,1.2948,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for embedding,,,,,1.0,1.2948,true,0.2948

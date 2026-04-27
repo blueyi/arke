@@ -1,5 +1,15 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-topk,moe-top2-small,PyTorch-eager,143.0,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-topk,moe-top2-small,Arke,106.8,64.3,,1.3390,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(128, 4) cand=(128, 1)",,,,,1.0,1.3390,true,0.3390
-topk,moe-top2-gpt2,PyTorch-eager,669.4,579.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-topk,moe-top2-gpt2,Arke,251.9,240.6,,2.6574,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(512, 4) cand=(512, 1)",,,,,1.0,2.6574,true,1.6574
+topk,moe-top2-small,PyTorch-eager,27.3,20.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,moe-top2-small,Arke,18.8,11.2,,1.4521,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(128, 4) cand=(128, 1)",,,,,1.0,1.4521,true,0.4521
+topk,moe-top2-gpt2,PyTorch-eager,184.7,186.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,moe-top2-gpt2,Arke,134.1,135.2,,1.3773,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(512, 4) cand=(512, 1)",,,,,1.0,1.3773,true,0.3773
+topk,moe-top4-llama,PyTorch-eager,31.4,31.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,moe-top4-llama,Arke,22.9,22.5,,1.3712,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(512, 4) cand=(512, 1)",,,,,1.0,1.3712,true,0.3712
+topk,sampling-top50,PyTorch-eager,104.1,86.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,sampling-top50,Arke,90.1,84.0,,1.1554,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(1, 4) cand=(1, 1)",,,,,1.0,1.1554,true,0.1554
+topk,non-align-1,PyTorch-eager,61.8,63.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,non-align-1,Arke,46.4,46.1,,1.3319,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(127, 4) cand=(127, 1)",,,,,1.0,1.3319,true,0.3319
+topk,non-align-2,PyTorch-eager,139.6,140.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,non-align-2,Arke,186.7,125.7,,0.7477,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(333, 4) cand=(333, 1)",,,,,1.0,0.7477,false,-0.2523
+topk,extreme-k1,PyTorch-eager,327.0,327.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+topk,extreme-k1,Arke,291.2,292.9,,1.1229,ok,,false,false,,,0.001,0.001,mismatch,"shape mismatch: ref=(1024, 4) cand=(1024, 1)",,,,,1.0,1.1229,true,0.1229

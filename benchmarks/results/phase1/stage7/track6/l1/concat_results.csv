@@ -1,5 +1,5 @@
-op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason
-concat,tiny-2,64,0,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,76.8,77.8,,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero
-concat,tiny-2,64,0,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,63.8,91.1,,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero
-concat,gpt2-qkv-merge,128,0,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,66.2,42.1,,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero
-concat,gpt2-qkv-merge,128,0,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,86.7,101.4,,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy
+concat,non-align-1,127,0,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,0.7,2.2,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+concat,non-align-1,127,0,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,21.5,54.0,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+concat,non-align-2,333,0,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,16.9,8.6,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+concat,non-align-2,333,0,0,Arke,5,Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,21.7,51.9,,ok,,false,true,0,0,0.001,0.001,ok,,,,,

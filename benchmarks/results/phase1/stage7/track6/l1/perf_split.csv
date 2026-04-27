@@ -1,5 +1,5 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-split,tiny-2,PyTorch-eager,9.9,7.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-split,tiny-2,Arke,9.9,2.0,,1.0000,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,,1.0,1.0000,true,0.0000
-split,gpt2-qkv-split,PyTorch-eager,15.7,23.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-split,gpt2-qkv-split,Arke,14.3,20.5,,1.0979,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,,1.0,1.0979,true,0.0979
+split,non-align-1,PyTorch-eager,11.3,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,non-align-1,Arke,10.9,4.4,,1.0367,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,,1.0,1.0367,true,0.0367
+split,non-align-2,PyTorch-eager,21.5,10.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,non-align-2,Arke,9.5,27.6,,2.2632,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,,1.0,2.2632,true,1.2632

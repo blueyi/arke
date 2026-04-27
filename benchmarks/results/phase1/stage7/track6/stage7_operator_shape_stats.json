@@ -97,14 +97,16 @@
       }
     },
     "concat": {
-      "shape_count": 2,
+      "shape_count": 4,
       "shape_tags": [
         "gpt2-qkv-merge",
+        "non-align-1",
+        "non-align-2",
         "tiny-2"
       ],
-      "rows": 4,
+      "rows": 8,
       "status_counts": {
-        "ok": 4
+        "ok": 8
       }
     },
     "copy_": {
@@ -148,15 +150,19 @@
       }
     },
     "cross_entropy": {
-      "shape_count": 3,
+      "shape_count": 7,
       "shape_tags": [
         "gpt2-seq128",
         "gpt2-seq512",
+        "llama2-seq512",
+        "llama3-seq512",
+        "non-align-1",
+        "non-align-2",
         "tiny"
       ],
-      "rows": 6,
+      "rows": 14,
       "status_counts": {
-        "ok": 6
+        "ok": 14
       }
     },
     "cumsum": {
@@ -172,26 +178,30 @@
       }
     },
     "dequantize_per_channel": {
-      "shape_count": 2,
+      "shape_count": 4,
       "shape_tags": [
         "gpt2-int8",
+        "non-align-1",
+        "non-align-2",
         "tiny-int8"
       ],
-      "rows": 4,
+      "rows": 8,
       "status_counts": {
-        "ok": 4
+        "ok": 8
       }
     },
     "embedding": {
-      "shape_count": 3,
+      "shape_count": 5,
       "shape_tags": [
         "gpt2-medium",
         "gpt2-small",
+        "non-align-1",
+        "non-align-2",
         "tiny"
       ],
-      "rows": 9,
+      "rows": 15,
       "status_counts": {
-        "ok": 9
+        "ok": 15
       }
     },
     "exp": {
@@ -234,35 +244,49 @@
       }
     },
     "fused_linear_cross_entropy": {
-      "shape_count": 2,
+      "shape_count": 6,
       "shape_tags": [
         "gpt2-seq128",
-        "gpt2-seq512"
+        "gpt2-seq512",
+        "llama2-seq512",
+        "llama3-seq512",
+        "non-align-1",
+        "non-align-2"
       ],
-      "rows": 4,
+      "rows": 12,
       "status_counts": {
-        "ok": 4
+        "ok": 12
       }
     },
     "gather": {
-      "shape_count": 2,
+      "shape_count": 4,
       "shape_tags": [
         "moe-dispatch-top2",
+        "non-align-1",
+        "non-align-2",
         "tiny"
       ],
-      "rows": 4,
+      "rows": 8,
       "status_counts": {
-        "ok": 4
+        "ok": 8
       }
     },
     "geglu": {
-      "shape_count": 1,
+      "shape_count": 9,
       "shape_tags": [
-        "gpt2-sm"
+        "ds-v2-2k",
+        "ds-v2-512",
+        "gpt2-sm",
+        "llama-7b-2k",
+        "llama-7b-512",
+        "llama3-8b",
+        "non-align-1",
+        "non-align-2",
+        "qwen25-7b"
       ],
-      "rows": 2,
+      "rows": 18,
       "status_counts": {
-        "ok": 2
+        "ok": 18
       }
     },
     "gelu": {
@@ -446,26 +470,33 @@
       }
     },
     "permute": {
-      "shape_count": 3,
+      "shape_count": 5,
       "shape_tags": [
         "gpt2-bhsd",
         "gpt2-bshd",
+        "non-align-1",
+        "non-align-2",
         "small-3d"
       ],
-      "rows": 3,
+      "rows": 5,
       "status_counts": {
-        "ok": 3
+        "ok": 5
       }
     },
     "quantize_per_token": {
-      "shape_count": 2,
+      "shape_count": 7,
       "shape_tags": [
+        "ds-v2-int8",
         "gpt2-int8",
+        "llama2-fp8-512",
+        "llama2-int8-512",
+        "non-align-1",
+        "non-align-2",
         "tiny-int8"
       ],
-      "rows": 4,
+      "rows": 14,
       "status_counts": {
-        "ok": 4
+        "ok": 14
       }
     },
     "reduce_max": {
@@ -635,14 +666,16 @@
       }
     },
     "scatter": {
-      "shape_count": 2,
+      "shape_count": 4,
       "shape_tags": [
         "moe-combine-top2",
+        "non-align-1",
+        "non-align-2",
         "tiny"
       ],
-      "rows": 2,
+      "rows": 4,
       "status_counts": {
-        "ok": 2
+        "ok": 4
       }
     },
     "sigmoid": {
@@ -724,24 +757,34 @@
       }
     },
     "split": {
-      "shape_count": 2,
+      "shape_count": 4,
       "shape_tags": [
         "gpt2-qkv-split",
+        "non-align-1",
+        "non-align-2",
         "tiny-2"
       ],
-      "rows": 4,
+      "rows": 8,
       "status_counts": {
-        "ok": 4
+        "ok": 8
       }
     },
     "swiglu": {
-      "shape_count": 1,
+      "shape_count": 9,
       "shape_tags": [
-        "gpt2-sm"
+        "ds-v2-2k",
+        "ds-v2-512",
+        "gpt2-sm",
+        "llama-7b-2k",
+        "llama-7b-512",
+        "llama3-8b",
+        "non-align-1",
+        "non-align-2",
+        "qwen25-7b"
       ],
-      "rows": 2,
+      "rows": 18,
       "status_counts": {
-        "ok": 2
+        "ok": 18
       }
     },
     "tanh": {
@@ -774,14 +817,19 @@
       }
     },
     "topk": {
-      "shape_count": 2,
+      "shape_count": 7,
       "shape_tags": [
+        "extreme-k1",
         "moe-top2-gpt2",
-        "moe-top2-small"
+        "moe-top2-small",
+        "moe-top4-llama",
+        "non-align-1",
+        "non-align-2",
+        "sampling-top50"
       ],
-      "rows": 4,
+      "rows": 14,
       "status_counts": {
-        "ok": 4
+        "ok": 14
       }
     },
     "transpose": {
