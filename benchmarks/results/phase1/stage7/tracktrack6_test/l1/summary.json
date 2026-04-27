@@ -1,0 +1,38 @@
+{
+  "overall_geomean": 0.8221,
+  "op_scores": {
+    "relu": 0.8221
+  },
+  "total_shapes": 5,
+  "operators": [
+    "relu"
+  ],
+  "status_counts": {
+    "ok": 5
+  },
+  "correctness_counts": {
+    "ok": 4,
+    "unsupported": 1
+  },
+  "memory_policy_counts": {
+    "none": 5
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 5,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "false": 4,
+    "true": 1
+  },
+  "perf_targets": {
+    "relu": 1.0
+  },
+  "perf_actuals": {
+    "relu": 0.8221
+  },
+  "perf_gaps": {
+    "relu": -0.1416
+  }
+}
