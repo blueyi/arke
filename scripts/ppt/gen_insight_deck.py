@@ -828,77 +828,202 @@ def _timeline_panel(slide, x, y, w, h, *, title, color,
 
 
 def slide_a3_chart(prs, page, total):
-    """Three real-data milestone timelines (model scale / hardware /
-    operator complexity)."""
+    """Single 2D line chart — three real-data curves on a shared
+    time axis (2017→2026), y = log10(× baseline) so divergence is visible."""
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
     chapter_chip(s, "PART A", ACCENT)
-    slide_header(s, "A3 · 三条发散曲线（公开数据）",
-                 "模型规模 / 硬件代际 / 算子复杂度——同步加速 (2018→2026)")
+    slide_header(s, "A3 · 三条发散曲线（公开数据 · 二维曲线图）",
+                 "同一时间轴上的相对增速 — y 轴 = log10(× baseline) (2017→2026)")
 
-    # 3 horizontal mini-timelines stacked
-    tw = Inches(12.15)
-    th = Inches(1.55)
-    tx = Inches(0.6)
-    ty = Inches(2.0)
+    # ============================================================
+    # Left panel · 2D chart
+    # ============================================================
+    cx = Inches(0.6)
+    cy = Inches(2.0)
+    cw = Inches(8.6)
+    ch = Inches(4.7)
+    panel(s, cx, cy, cw, ch, BG_PANEL_DEEP, stroke=STROKE)
 
-    # Chart 1 · Model scale
-    _timeline_panel(
-        s, tx, ty, tw, th,
-        title="① 大模型规模 (参数量级)",
-        color=ACCENT,
-        points=[
-            ("2018\nGPT-1",       "117M",   0.04),
-            ("2019\nGPT-2",       "1.5B",   0.10),
-            ("2020\nGPT-3",       "175B",   0.32),
-            ("2022\nPaLM",        "540B",   0.42),
-            ("2023\nGPT-4",       "≈1.7T*", 0.62),
-            ("2024\nLLaMA-3 405B","405B",   0.55),
-            ("2024\nDeepSeek V3", "671B-A37B", 0.72),
-            ("2025\nLLaMA-4",     "MoE 2T*",   0.85),
-        ],
-        y_label="params (log)",
-        source_text="Source: 各模型公开 paper / blog（* GPT-4 与 LLaMA-4 为 SemiAnalysis 等公开估算，非官方）",
-    )
+    # plot area paddings
+    pad_l = Inches(0.85)
+    pad_r = Inches(0.3)
+    pad_t = Inches(0.55)
+    pad_b = Inches(0.95)
+    px = cx + pad_l
+    py = cy + pad_t
+    pw = cw - pad_l - pad_r
+    ph = ch - pad_t - pad_b
 
-    # Chart 2 · Hardware
-    _timeline_panel(
-        s, tx, ty + th + Inches(0.12), tw, th,
-        title="② NVIDIA 数据中心 GPU 代际 · BF16 算力",
-        color=ACCENT_RED,
-        points=[
-            ("2017\nV100",   "125 TF", 0.08),
-            ("2020\nA100",   "312 TF", 0.20),
-            ("2022\nH100",   "989 TF", 0.45),
-            ("2024\nH200",   "989 TF", 0.45),
-            ("2024\nB100",   "1.8 PF", 0.75),
-            ("2025\nB200",   "2.25 PF", 0.92),
-            ("2026+\nGB200", "2.5 PF", 1.0),
-        ],
-        y_label="TF (BF16, log)",
-        source_text="Source: NVIDIA 官方 datasheet（V100/A100/H100/H200/Blackwell）。Ascend 910B/910C 与 AMD MI300X 形成 SIMD/异构平行路径（未画）。",
-    )
+    # axes
+    xa = s.shapes.add_connector(1, px, py + ph, px + pw, py + ph)
+    _set_line(xa, FG_MUTED, 1.4)
+    ya = s.shapes.add_connector(1, px, py, px, py + ph)
+    _set_line(ya, FG_MUTED, 1.4)
 
-    # Chart 3 · Operator complexity
-    _timeline_panel(
-        s, tx, ty + 2 * (th + Inches(0.12)), tw, th,
-        title="③ 算子复杂度 · PyTorch ATen 算子数 + Attention 变体演进",
-        color=ACCENT_ALT,
-        points=[
-            ("2018\nATen ≈350",            "vanilla\nattn", 0.10),
-            ("2020\nATen 800+",            "MHA",           0.20),
-            ("2022\nFA-1",                 "FlashAttn-1",   0.32),
-            ("2023\nFA-2",                 "FA-2",          0.45),
-            ("2023\nGQA",                  "GQA",           0.55),
-            ("2024\nMoE 普及",             "MoE+SwiGLU",    0.70),
-            ("2024\nFA-3 + MLA",           "FA-3/MLA",      0.85),
-            ("2026\nFA-4 (Blackwell)",     "FA-4",          1.0),
-        ],
-        y_label="复杂度 (定性)",
-        source_text="Source: PyTorch 官方 ATen 源码计数 + FlashAttention 系列 (Tri Dao et al.) + DeepSeek-V2 MLA paper + cuDNN/CUTLASS release notes。",
-    )
+    YEAR_MIN, YEAR_MAX = 2017, 2026
+    span = YEAR_MAX - YEAR_MIN
+    Y_MAX = 5.0  # log10 ticks: 0..5  (10^5 = 100000×)
 
-    glossary_hint(s, "→ Glossary P03 · 术语 ATen / MLA / GQA / FA-2/3/4")
+    # X gridlines + year tick labels
+    for yr in range(YEAR_MIN, YEAR_MAX + 1):
+        t = (yr - YEAR_MIN) / span
+        tx = px + Emu(int(pw * t))
+        gl = s.shapes.add_connector(1, tx, py, tx, py + ph)
+        _set_line(gl, STROKE, 0.4)
+        add_text(s, tx - Inches(0.25), py + ph + Inches(0.06),
+                 Inches(0.5), Inches(0.28),
+                 str(yr), size=9, color=FG_MUTED, font=FONT_MONO,
+                 align=PP_ALIGN.CENTER)
+
+    # Y gridlines + log labels
+    for k in range(0, int(Y_MAX) + 1):
+        v = k / Y_MAX
+        gy = py + ph - Emu(int(ph * v))
+        gl = s.shapes.add_connector(1, px, gy, px + pw, gy)
+        _set_line(gl, STROKE, 0.4)
+        label = "1×" if k == 0 else f"10^{k}×"
+        add_text(s, px - Inches(0.78), gy - Inches(0.13),
+                 Inches(0.7), Inches(0.28),
+                 label, size=8.5, color=FG_MUTED, font=FONT_MONO,
+                 align=PP_ALIGN.RIGHT)
+
+    # axis titles
+    add_text(s, px - Inches(0.85), py - Inches(0.38),
+             Inches(2.6), Inches(0.3),
+             "log10(× baseline)", size=9, bold=True,
+             color=FG_MUTED, font=FONT_MONO)
+    add_text(s, px + pw - Inches(1.0), py + ph + Inches(0.36),
+             Inches(1.0), Inches(0.3),
+             "year", size=9, bold=True, color=FG_MUTED,
+             font=FONT_MONO, align=PP_ALIGN.RIGHT)
+
+    # ============================================================
+    # 3 series (real public data, normalized to each curve's baseline)
+    # ============================================================
+    # values are log10(value / baseline_value); selected milestones only
+    series = [
+        # (color, name, baseline_label, points = [(year, log10_ratio, label)])
+        (ACCENT, "① 模型规模 (params)", "GPT-1 117M = 1×", [
+            (2018, 0.00, "GPT-1 117M"),
+            (2019, 1.11, "GPT-2 1.5B"),
+            (2020, 3.17, "GPT-3 175B"),
+            (2022, 3.66, "PaLM 540B"),
+            (2023, 4.16, "GPT-4 ≈1.7T*"),
+            (2024, 3.76, "DeepSeek-V3 671B"),
+            (2025, 4.23, "LLaMA-4 ≈2T*"),
+        ]),
+        (ACCENT_RED, "② NVIDIA HW (BF16 算力)", "V100 125 TF = 1×", [
+            (2017, 0.00, "V100 125 TF"),
+            (2020, 0.40, "A100 312 TF"),
+            (2022, 0.90, "H100 989 TF"),
+            (2024, 1.16, "B100 1.8 PF"),
+            (2025, 1.26, "B200 2.25 PF"),
+            (2026, 1.30, "GB200 2.5 PF"),
+        ]),
+        (ACCENT_ALT, "③ 算子复杂度 (定性)",
+         "ATen 350 / vanilla attn = 1×", [
+            (2018, 0.00, "ATen ≈350 · vanilla"),
+            (2020, 0.36, "ATen 800+ · MHA"),
+            (2022, 0.50, "FA-1"),
+            (2023, 0.70, "FA-2 + GQA"),
+            (2024, 0.90, "FA-3 + MLA + MoE"),
+            (2026, 1.10, "FA-4 (Blackwell)"),
+         ]),
+    ]
+
+    # plot polylines + markers; collect end-points for series labels
+    end_points = []
+    for col, name, baseline, pts in series:
+        coords = []
+        for (yr, v, lbl) in pts:
+            t = (yr - YEAR_MIN) / span
+            mx = px + Emu(int(pw * t))
+            my = py + ph - Emu(int(ph * (max(0.0, min(Y_MAX, v)) / Y_MAX)))
+            coords.append((mx, my))
+        # polyline
+        for i in range(len(coords) - 1):
+            ln = s.shapes.add_connector(1, coords[i][0], coords[i][1],
+                                        coords[i + 1][0], coords[i + 1][1])
+            _set_line(ln, col, 2.5)
+        # markers
+        for mx, my in coords:
+            mk = s.shapes.add_shape(MSO_SHAPE.OVAL,
+                                    mx - Inches(0.075),
+                                    my - Inches(0.075),
+                                    Inches(0.15), Inches(0.15))
+            _set_fill(mk, col)
+            _no_line(mk)
+        end_points.append((col, name, coords[-1], pts[-1]))
+
+    # in-chart series end-labels (slightly offset right of last marker)
+    for col, name, (mx, my), (yr, v, lbl) in end_points:
+        add_text(s, mx + Inches(0.1), my - Inches(0.18),
+                 Inches(2.0), Inches(0.32),
+                 name.split("·")[0].split("(")[0].strip(),
+                 size=9, bold=True, color=col, font=FONT_MONO)
+
+    # ============================================================
+    # Right column · legend + key takeaway
+    # ============================================================
+    rx = Inches(9.4)
+    ry = Inches(2.0)
+    rw = Inches(3.35)
+    rh = Inches(4.7)
+    panel(s, rx, ry, rw, rh, BG_PANEL, stroke=None)
+    add_text(s, rx + Inches(0.2), ry + Inches(0.18),
+             rw - Inches(0.4), Inches(0.36),
+             "曲线图例 · 公开数据", size=12, bold=True, color=ACCENT,
+             font=FONT_MONO)
+
+    legend_meta = [
+        (ACCENT, "① 模型规模",
+         "GPT-1 → LLaMA-4 / DSV3：~10⁴ 倍"),
+        (ACCENT_RED, "② NVIDIA HW",
+         "V100 → GB200 (BF16)：~20 倍"),
+        (ACCENT_ALT, "③ 算子复杂度",
+         "vanilla attn → FA-4：~10 倍 (定性)"),
+    ]
+    ly = ry + Inches(0.65)
+    for col, t, d in legend_meta:
+        sw = s.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                                rx + Inches(0.25),
+                                ly + Inches(0.16),
+                                Inches(0.32), Inches(0.08))
+        _set_fill(sw, col)
+        _no_line(sw)
+        add_text(s, rx + Inches(0.65), ly,
+                 rw - Inches(0.85), Inches(0.32),
+                 t, size=11.5, bold=True, color=col)
+        add_text(s, rx + Inches(0.65), ly + Inches(0.3),
+                 rw - Inches(0.85), Inches(0.5),
+                 d, size=9.5, color=FG_MUTED)
+        ly = ly + Inches(0.78)
+
+    # KEY TAKEAWAY callout
+    panel(s, rx + Inches(0.15), ry + Inches(3.1),
+          rw - Inches(0.3), Inches(1.45),
+          BG_PANEL_ALT, stroke=None)
+    accent_bar(s, rx + Inches(0.15), ry + Inches(3.1),
+               width=Inches(0.08), height=Inches(1.45),
+               color=ACCENT_ALT)
+    add_text(s, rx + Inches(0.32), ry + Inches(3.18),
+             rw - Inches(0.5), Inches(0.3),
+             "KEY TAKEAWAY", size=10, bold=True, color=ACCENT_ALT,
+             font=FONT_MONO)
+    add_text(s, rx + Inches(0.32), ry + Inches(3.5),
+             rw - Inches(0.5), Inches(1.0),
+             "8 年内 · 模型规模 ↑ ~10⁴×，算子复杂度 ↑ ~10×，"
+             "但硬件 BF16 算力仅 ↑ ~20×。\n"
+             "缺口必须靠编译 / 调度 / 算法填补——这正是本洞察的主题。",
+             size=10.5, color=FG)
+
+    source_note(s, "Sources: 各模型公开 paper/blog (GPT-1..4, LLaMA, "
+                   "PaLM, DeepSeek-V3) · NVIDIA 官方 datasheet "
+                   "(V100/A100/H100/H200/Blackwell) · PyTorch ATen "
+                   "源码计数 · FlashAttention 系列 (Tri Dao et al.)。"
+                   "* GPT-4 / LLaMA-4 参数为 SemiAnalysis 等公开估算。")
+    glossary_hint(s, "→ Glossary P03 · ATen / MLA / GQA / FA-2/3/4")
     footer(s, page, total, "Part A")
 
 
