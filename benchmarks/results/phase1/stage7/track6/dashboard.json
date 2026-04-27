@@ -11,23 +11,28 @@
     "l1": {
       "ops_total": 45,
       "ops_with_any_evidence": 45,
-      "ops_fully_covered": 3,
+      "ops_fully_covered": 20,
       "op_coverage_ratio": 1.0,
       "shapes_required_total": 685,
-      "shapes_observed_total": 279,
-      "shape_coverage_ratio": 0.4073,
+      "shapes_observed_total": 419,
+      "shape_coverage_ratio": 0.6117,
       "per_op": [
         {
           "op": "relu",
           "required_shape_count": 20,
-          "observed_shape_count": 13,
-          "coverage_ratio": 0.65,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
+            "ds-ffn",
+            "ds-ffn-large",
             "extreme-flat",
             "extreme-tall",
             "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
+            "llama-ffn",
+            "llama-hidden",
+            "llama-long",
             "micro-small",
             "micro-tiny",
             "non-align-1",
@@ -35,17 +40,11 @@
             "non-align-3",
             "non-align-4",
             "non-align-5",
-            "square-1k"
-          ],
-          "missing_shape_tags": [
-            "ds-ffn",
-            "ds-ffn-large",
-            "llama-ffn",
-            "llama-hidden",
-            "llama-long",
             "qwen-ffn",
+            "square-1k",
             "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -53,11 +52,14 @@
         {
           "op": "gelu",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -65,20 +67,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -86,11 +84,14 @@
         {
           "op": "silu",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -98,20 +99,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -119,11 +116,14 @@
         {
           "op": "tanh",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -131,20 +131,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -152,11 +148,14 @@
         {
           "op": "sigmoid",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -164,20 +163,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -185,11 +180,14 @@
         {
           "op": "add",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -197,20 +195,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -218,11 +212,14 @@
         {
           "op": "mul",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -230,20 +227,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -251,11 +244,14 @@
         {
           "op": "where_",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -263,20 +259,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -284,11 +276,14 @@
         {
           "op": "cast",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -296,20 +291,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -317,11 +308,14 @@
         {
           "op": "neg",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -329,20 +323,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -350,11 +340,14 @@
         {
           "op": "exp",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -362,20 +355,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -383,11 +372,14 @@
         {
           "op": "rsqrt",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -395,20 +387,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -556,23 +544,22 @@
         {
           "op": "reduce_sum",
           "required_shape_count": 11,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.18181818181818182,
+          "observed_shape_count": 11,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "medium",
-            "small"
-          ],
-          "missing_shape_tags": [
             "extreme-flat",
             "extreme-tall",
             "large",
             "llama3-wide",
+            "medium",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "qwen25-wide",
+            "small",
             "wide"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -580,23 +567,22 @@
         {
           "op": "reduce_max",
           "required_shape_count": 11,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.18181818181818182,
+          "observed_shape_count": 11,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "medium",
-            "small"
-          ],
-          "missing_shape_tags": [
             "extreme-flat",
             "extreme-tall",
             "large",
             "llama3-wide",
+            "medium",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "qwen25-wide",
+            "small",
             "wide"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -604,23 +590,22 @@
         {
           "op": "reduce_mean",
           "required_shape_count": 11,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.18181818181818182,
+          "observed_shape_count": 11,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "medium",
-            "small"
-          ],
-          "missing_shape_tags": [
             "extreme-flat",
             "extreme-tall",
             "large",
             "llama3-wide",
+            "medium",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "qwen25-wide",
+            "small",
             "wide"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -628,23 +613,22 @@
         {
           "op": "argmax",
           "required_shape_count": 11,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.18181818181818182,
+          "observed_shape_count": 11,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "medium",
-            "small"
-          ],
-          "missing_shape_tags": [
             "extreme-flat",
             "extreme-tall",
             "large",
             "llama3-wide",
+            "medium",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "qwen25-wide",
+            "small",
             "wide"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -678,22 +662,22 @@
         {
           "op": "cumsum",
           "required_shape_count": 11,
-          "observed_shape_count": 2,
-          "coverage_ratio": 0.18181818181818182,
+          "observed_shape_count": 3,
+          "coverage_ratio": 0.2727272727272727,
           "observed_shape_tags": [
-            "gpt2-row",
-            "small-row"
+            "non-align-1",
+            "non-align-2",
+            "non-align-3"
           ],
           "missing_shape_tags": [
             "extreme-long-row",
             "extreme-tall-col",
+            "gpt2-row",
             "llama-col",
             "llama-row",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
             "sampling-probs",
-            "sampling-probs-llama3"
+            "sampling-probs-llama3",
+            "small-row"
           ],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
@@ -951,11 +935,14 @@
         {
           "op": "copy_",
           "required_shape_count": 20,
-          "observed_shape_count": 12,
-          "coverage_ratio": 0.6,
+          "observed_shape_count": 20,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
             "ds-ffn",
             "ds-ffn-large",
+            "extreme-flat",
+            "extreme-tall",
+            "extreme-wide",
             "gpt2-ffn",
             "gpt2-hidden",
             "llama-ffn",
@@ -963,20 +950,16 @@
             "llama-long",
             "micro-small",
             "micro-tiny",
-            "qwen-ffn",
-            "square-1k",
-            "xlarge"
-          ],
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
             "non-align-1",
             "non-align-2",
             "non-align-3",
             "non-align-4",
-            "non-align-5"
+            "non-align-5",
+            "qwen-ffn",
+            "square-1k",
+            "xlarge"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1491,192 +1474,13 @@
     },
     "combined": {
       "op_coverage_ratio": 1.0,
-      "shape_coverage_ratio": 0.4957
+      "shape_coverage_ratio": 0.6696
     }
   },
   "focus": {
     "l1": {
       "ops_without_evidence": [],
       "partial_coverage_ops": [
-        {
-          "op": "relu",
-          "observed_shape_count": 13,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "ds-ffn",
-            "ds-ffn-large",
-            "llama-ffn",
-            "llama-hidden",
-            "llama-long",
-            "qwen-ffn",
-            "xlarge"
-          ]
-        },
-        {
-          "op": "gelu",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "silu",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "tanh",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "sigmoid",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "add",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "mul",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "where_",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "cast",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "neg",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "exp",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
-        {
-          "op": "rsqrt",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
-          ]
-        },
         {
           "op": "softmax",
           "observed_shape_count": 10,
@@ -1757,70 +1561,6 @@
           ]
         },
         {
-          "op": "reduce_sum",
-          "observed_shape_count": 2,
-          "required_shape_count": 11,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "large",
-            "llama3-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "qwen25-wide",
-            "wide"
-          ]
-        },
-        {
-          "op": "reduce_max",
-          "observed_shape_count": 2,
-          "required_shape_count": 11,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "large",
-            "llama3-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "qwen25-wide",
-            "wide"
-          ]
-        },
-        {
-          "op": "reduce_mean",
-          "observed_shape_count": 2,
-          "required_shape_count": 11,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "large",
-            "llama3-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "qwen25-wide",
-            "wide"
-          ]
-        },
-        {
-          "op": "argmax",
-          "observed_shape_count": 2,
-          "required_shape_count": 11,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "large",
-            "llama3-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "qwen25-wide",
-            "wide"
-          ]
-        },
-        {
           "op": "topk",
           "observed_shape_count": 2,
           "required_shape_count": 13,
@@ -1840,18 +1580,17 @@
         },
         {
           "op": "cumsum",
-          "observed_shape_count": 2,
+          "observed_shape_count": 3,
           "required_shape_count": 11,
           "missing_shape_tags": [
             "extreme-long-row",
             "extreme-tall-col",
+            "gpt2-row",
             "llama-col",
             "llama-row",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
             "sampling-probs",
-            "sampling-probs-llama3"
+            "sampling-probs-llama3",
+            "small-row"
           ]
         },
         {
@@ -1975,21 +1714,6 @@
             "non-align-2",
             "qwen25-kv",
             "qwen25-q"
-          ]
-        },
-        {
-          "op": "copy_",
-          "observed_shape_count": 12,
-          "required_shape_count": 20,
-          "missing_shape_tags": [
-            "extreme-flat",
-            "extreme-tall",
-            "extreme-wide",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5"
           ]
         },
         {
@@ -2203,26 +1927,10 @@
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [],
       "missing_full_shape_evidence": [
-        "relu",
-        "gelu",
-        "silu",
-        "tanh",
-        "sigmoid",
-        "add",
-        "mul",
-        "where_",
-        "cast",
-        "neg",
-        "exp",
-        "rsqrt",
         "softmax",
         "layernorm",
         "rmsnorm",
         "rmsnorm_residual",
-        "reduce_sum",
-        "reduce_max",
-        "reduce_mean",
-        "argmax",
         "topk",
         "cumsum",
         "matmul",
@@ -2232,7 +1940,6 @@
         "scatter",
         "embedding",
         "permute",
-        "copy_",
         "swiglu",
         "geglu",
         "rope",
@@ -2249,6 +1956,13 @@
       "unsupported_surface_cases": [],
       "perf_field_gaps": [],
       "memory_pressure_ops": [
+        {
+          "op": "gelu",
+          "status_counts": {
+            "error": 1,
+            "ok": 119
+          }
+        },
         {
           "op": "grouped_matmul",
           "status_counts": {
@@ -2333,26 +2047,10 @@
         "category": "missing_l1_shape_evidence",
         "layer": "l1",
         "ops": [
-          "relu",
-          "gelu",
-          "silu",
-          "tanh",
-          "sigmoid",
-          "add",
-          "mul",
-          "where_",
-          "cast",
-          "neg",
-          "exp",
-          "rsqrt",
           "softmax",
           "layernorm",
           "rmsnorm",
           "rmsnorm_residual",
-          "reduce_sum",
-          "reduce_max",
-          "reduce_mean",
-          "argmax",
           "topk",
           "cumsum",
           "matmul",
@@ -2362,7 +2060,6 @@
           "scatter",
           "embedding",
           "permute",
-          "copy_",
           "swiglu",
           "geglu",
           "rope",
@@ -2379,5 +2076,5 @@
       }
     ]
   },
-  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=49.57%\n[L1] ops=45/45 fully_covered=3 missing_examples=0 unsupported=0\n  partial coverage: relu (13/20), gelu (12/20), silu (12/20), tanh (12/20), sigmoid (12/20)\n  memory pressure / skipped: grouped_matmul, multi_latent_attention, paged_attention, rope, softmax\n[L2] ops=6/6 fully_covered=6 missing_examples=0 unsupported=2\n  memory pressure / skipped: geglu, qkv_fa, swiglu\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=66.96%\n[L1] ops=45/45 fully_covered=20 missing_examples=0 unsupported=0\n  partial coverage: softmax (10/25), layernorm (9/21), rmsnorm (9/21), rmsnorm_residual (9/21), topk (2/13)\n  memory pressure / skipped: gelu, grouped_matmul, multi_latent_attention, paged_attention, rope, softmax\n[L2] ops=6/6 fully_covered=6 missing_examples=0 unsupported=2\n  memory pressure / skipped: geglu, qkv_fa, swiglu\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }

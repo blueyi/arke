@@ -1,19 +1,26 @@
 {
-  "timestamp": "2026-04-28_014240",
+  "timestamp": "2026-04-28_015937",
   "ops": [
-    "relu"
+    "reduce_sum",
+    "reduce_max",
+    "reduce_mean",
+    "argmax",
+    "cumsum"
   ],
   "warmup": 2,
   "reps": 3,
   "tier": null,
   "shape_tags": [
+    "small",
+    "medium",
+    "large",
+    "wide",
+    "llama3-wide",
+    "qwen25-wide",
     "non-align-1",
     "non-align-2",
     "non-align-3",
-    "non-align-4",
-    "non-align-5",
-    "extreme-flat",
     "extreme-tall",
-    "extreme-wide"
+    "extreme-flat"
   ]
 }

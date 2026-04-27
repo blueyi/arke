@@ -1,49 +1,81 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-sigmoid,micro-tiny,cuBLAS/cuDNN,66.0,90.9,,1.0485,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0485,true,0.0485
-sigmoid,micro-tiny,PyTorch-eager,69.2,88.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,micro-tiny,Arke,70.6,97.5,,0.9802,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9802,false,-0.0198
-sigmoid,micro-tiny,FlagGems,75.4,87.0,,0.9178,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9178,false,-0.0822
-sigmoid,micro-small,cuBLAS/cuDNN,66.1,80.9,,1.0030,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0030,true,0.0030
-sigmoid,micro-small,PyTorch-eager,66.3,86.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,micro-small,Arke,68.6,78.8,,0.9665,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9665,false,-0.0335
-sigmoid,micro-small,FlagGems,71.1,80.9,,0.9325,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9325,false,-0.0675
-sigmoid,gpt2-hidden,cuBLAS/cuDNN,65.8,88.2,,1.0304,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0304,true,0.0304
-sigmoid,gpt2-hidden,PyTorch-eager,67.8,53.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,gpt2-hidden,Arke,78.4,91.3,,0.8648,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8648,false,-0.1352
-sigmoid,gpt2-hidden,FlagGems,75.0,91.1,,0.9040,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9040,false,-0.0960
-sigmoid,gpt2-ffn,cuBLAS/cuDNN,76.8,99.3,,0.9336,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9336,false,-0.0664
-sigmoid,gpt2-ffn,PyTorch-eager,71.7,85.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,gpt2-ffn,Arke,73.5,101.4,,0.9755,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9755,false,-0.0245
-sigmoid,gpt2-ffn,FlagGems,76.5,89.1,,0.9373,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9373,false,-0.0627
-sigmoid,square-1k,cuBLAS/cuDNN,65.5,90.1,,0.9924,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9924,false,-0.0076
-sigmoid,square-1k,PyTorch-eager,65.0,79.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,square-1k,Arke,67.7,91.1,,0.9601,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9601,false,-0.0399
-sigmoid,square-1k,FlagGems,83.9,81.9,,0.7747,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.7747,false,-0.2253
-sigmoid,llama-ffn,cuBLAS/cuDNN,76.5,141.3,,0.9987,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9987,false,-0.0013
-sigmoid,llama-ffn,PyTorch-eager,76.4,141.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,llama-ffn,Arke,84.4,143.2,,0.9052,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9052,false,-0.0948
-sigmoid,llama-ffn,FlagGems,133.1,148.5,,0.5740,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.5740,false,-0.4260
-sigmoid,llama-hidden,cuBLAS/cuDNN,66.3,90.1,,1.0045,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0045,true,0.0045
-sigmoid,llama-hidden,PyTorch-eager,66.6,88.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,llama-hidden,Arke,73.1,37.9,,0.9111,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9111,false,-0.0889
-sigmoid,llama-hidden,FlagGems,72.2,98.3,,0.9224,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9224,false,-0.0776
-sigmoid,llama-long,cuBLAS/cuDNN,217.5,269.3,,1.0014,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0014,true,0.0014
-sigmoid,llama-long,PyTorch-eager,217.8,251.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,llama-long,Arke,218.1,280.6,,0.9986,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9986,false,-0.0014
-sigmoid,llama-long,FlagGems,218.2,255.0,,0.9982,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9982,false,-0.0018
-sigmoid,ds-ffn,cuBLAS/cuDNN,85.3,117.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,ds-ffn,PyTorch-eager,85.3,148.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,ds-ffn,Arke,84.9,117.8,,1.0047,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0047,true,0.0047
-sigmoid,ds-ffn,FlagGems,85.7,88.1,,0.9953,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9953,false,-0.0047
-sigmoid,ds-ffn-large,cuBLAS/cuDNN,124.9,131.1,,0.9976,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9976,false,-0.0024
-sigmoid,ds-ffn-large,PyTorch-eager,124.6,130.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,ds-ffn-large,Arke,124.8,179.2,,0.9984,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9984,false,-0.0016
-sigmoid,ds-ffn-large,FlagGems,125.3,190.5,,0.9944,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9944,false,-0.0056
-sigmoid,qwen-ffn,cuBLAS/cuDNN,128.3,136.2,,0.9992,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9992,false,-0.0008
-sigmoid,qwen-ffn,PyTorch-eager,128.2,131.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,qwen-ffn,Arke,129.2,130.0,,0.9923,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9923,false,-0.0077
-sigmoid,qwen-ffn,FlagGems,128.1,177.2,,1.0008,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0008,true,0.0008
-sigmoid,xlarge,cuBLAS/cuDNN,435.5,430.1,,1.0611,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0611,true,0.0611
-sigmoid,xlarge,PyTorch-eager,462.1,491.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-sigmoid,xlarge,Arke,457.7,521.2,,1.0096,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0096,true,0.0096
-sigmoid,xlarge,FlagGems,433.4,432.1,,1.0662,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0662,true,0.0662
+sigmoid,micro-tiny,cuBLAS/cuDNN,110.3,98.1,,0.7525,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7525,false,-0.2475
+sigmoid,micro-tiny,PyTorch-eager,83.0,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,micro-tiny,Arke,87.7,103.2,,0.9464,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9464,false,-0.0536
+sigmoid,micro-tiny,FlagGems,111.3,93.5,,0.7457,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.7457,false,-0.2543
+sigmoid,micro-small,cuBLAS/cuDNN,102.4,103.4,,0.8672,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8672,false,-0.1328
+sigmoid,micro-small,PyTorch-eager,88.8,60.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,micro-small,Arke,88.4,101.4,,1.0045,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0045,true,0.0045
+sigmoid,micro-small,FlagGems,85.3,11.3,,1.0410,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0410,true,0.0410
+sigmoid,gpt2-hidden,cuBLAS/cuDNN,99.7,100.4,,0.8877,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8877,false,-0.1123
+sigmoid,gpt2-hidden,PyTorch-eager,88.5,67.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,gpt2-hidden,Arke,133.5,104.4,,0.6629,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6629,false,-0.3371
+sigmoid,gpt2-hidden,FlagGems,86.6,96.2,,1.0219,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0219,true,0.0219
+sigmoid,gpt2-ffn,cuBLAS/cuDNN,92.5,97.5,,0.9189,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9189,false,-0.0811
+sigmoid,gpt2-ffn,PyTorch-eager,85.0,103.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,gpt2-ffn,Arke,87.4,86.9,,0.9725,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9725,false,-0.0275
+sigmoid,gpt2-ffn,FlagGems,91.8,104.4,,0.9259,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9259,false,-0.0741
+sigmoid,square-1k,cuBLAS/cuDNN,104.8,97.3,,0.8340,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8340,false,-0.1660
+sigmoid,square-1k,PyTorch-eager,87.4,92.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,square-1k,Arke,89.7,103.7,,0.9744,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9744,false,-0.0256
+sigmoid,square-1k,FlagGems,98.1,95.2,,0.8909,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.8909,false,-0.1091
+sigmoid,llama-ffn,cuBLAS/cuDNN,99.0,109.6,,1.1202,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1202,true,0.1202
+sigmoid,llama-ffn,PyTorch-eager,110.9,150.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,llama-ffn,Arke,104.1,146.4,,1.0653,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0653,true,0.0653
+sigmoid,llama-ffn,FlagGems,101.4,76.9,,1.0937,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0937,true,0.0937
+sigmoid,llama-hidden,cuBLAS/cuDNN,83.3,74.8,,0.9952,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9952,false,-0.0048
+sigmoid,llama-hidden,PyTorch-eager,82.9,105.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,llama-hidden,Arke,96.6,108.5,,0.8582,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8582,false,-0.1418
+sigmoid,llama-hidden,FlagGems,96.3,100.4,,0.8609,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.8609,false,-0.1391
+sigmoid,llama-long,cuBLAS/cuDNN,240.0,293.9,,1.0267,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0267,true,0.0267
+sigmoid,llama-long,PyTorch-eager,246.4,265.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,llama-long,Arke,260.1,272.4,,0.9473,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9473,false,-0.0527
+sigmoid,llama-long,FlagGems,237.2,245.8,,1.0388,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0388,true,0.0388
+sigmoid,ds-ffn,cuBLAS/cuDNN,113.3,135.0,,1.0124,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0124,true,0.0124
+sigmoid,ds-ffn,PyTorch-eager,114.7,121.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,ds-ffn,Arke,114.7,162.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,ds-ffn,FlagGems,114.3,157.7,,1.0035,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0035,true,0.0035
+sigmoid,ds-ffn-large,cuBLAS/cuDNN,155.6,200.6,,0.9589,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9589,false,-0.0411
+sigmoid,ds-ffn-large,PyTorch-eager,149.2,194.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,ds-ffn-large,Arke,169.3,187.4,,0.8813,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8813,false,-0.1187
+sigmoid,ds-ffn-large,FlagGems,150.5,179.2,,0.9914,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9914,false,-0.0086
+sigmoid,qwen-ffn,cuBLAS/cuDNN,153.2,200.7,,1.1919,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1919,true,0.1919
+sigmoid,qwen-ffn,PyTorch-eager,182.6,199.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,qwen-ffn,Arke,157.7,129.0,,1.1579,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1579,true,0.1579
+sigmoid,qwen-ffn,FlagGems,153.3,203.8,,1.1911,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.1911,true,0.1911
+sigmoid,xlarge,cuBLAS/cuDNN,440.0,431.1,,0.9743,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9743,false,-0.0257
+sigmoid,xlarge,PyTorch-eager,428.7,432.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,xlarge,Arke,452.6,460.8,,0.9472,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9472,false,-0.0528
+sigmoid,xlarge,FlagGems,441.3,465.9,,0.9714,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9714,false,-0.0286
+sigmoid,non-align-1,cuBLAS/cuDNN,84.7,84.1,,0.9551,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9551,false,-0.0449
+sigmoid,non-align-1,PyTorch-eager,80.9,101.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,non-align-1,Arke,94.5,95.0,,0.8561,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8561,false,-0.1439
+sigmoid,non-align-1,FlagGems,86.0,9.2,,0.9407,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9407,false,-0.0593
+sigmoid,non-align-2,cuBLAS/cuDNN,86.7,115.7,,1.0946,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0946,true,0.0946
+sigmoid,non-align-2,PyTorch-eager,94.9,58.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,non-align-2,Arke,106.8,116.7,,0.8886,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8886,false,-0.1114
+sigmoid,non-align-2,FlagGems,102.4,114.7,,0.9268,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9268,false,-0.0732
+sigmoid,non-align-3,cuBLAS/cuDNN,134.1,182.1,,1.0634,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0634,true,0.0634
+sigmoid,non-align-3,PyTorch-eager,142.6,181.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,non-align-3,Arke,135.5,175.1,,1.0524,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0524,true,0.0524
+sigmoid,non-align-3,FlagGems,149.1,137.2,,0.9564,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9564,false,-0.0436
+sigmoid,non-align-4,cuBLAS/cuDNN,94.2,130.0,,1.0658,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0658,true,0.0658
+sigmoid,non-align-4,PyTorch-eager,100.4,83.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,non-align-4,Arke,111.5,52.1,,0.9004,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9004,false,-0.0996
+sigmoid,non-align-4,FlagGems,90.8,92.0,,1.1057,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.1057,true,0.1057
+sigmoid,non-align-5,cuBLAS/cuDNN,93.2,99.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,non-align-5,PyTorch-eager,93.2,101.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,non-align-5,Arke,93.9,98.2,,0.9925,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9925,false,-0.0075
+sigmoid,non-align-5,FlagGems,89.8,96.2,,1.0379,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.0379,true,0.0379
+sigmoid,extreme-flat,cuBLAS/cuDNN,86.4,99.1,,1.7025,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.7025,true,0.7025
+sigmoid,extreme-flat,PyTorch-eager,147.1,99.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,extreme-flat,Arke,87.1,90.0,,1.6889,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6889,true,0.6889
+sigmoid,extreme-flat,FlagGems,101.4,100.2,,1.4507,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.4507,true,0.4507
+sigmoid,extreme-tall,cuBLAS/cuDNN,86.3,98.0,,1.0915,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0915,true,0.0915
+sigmoid,extreme-tall,PyTorch-eager,94.2,97.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,extreme-tall,Arke,99.4,88.1,,0.9477,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9477,false,-0.0523
+sigmoid,extreme-tall,FlagGems,94.5,93.5,,0.9968,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,0.9968,false,-0.0032
+sigmoid,extreme-wide,cuBLAS/cuDNN,119.7,141.2,,0.8956,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8956,false,-0.1044
+sigmoid,extreme-wide,PyTorch-eager,107.2,102.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+sigmoid,extreme-wide,Arke,105.1,135.0,,1.0200,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0200,true,0.0200
+sigmoid,extreme-wide,FlagGems,83.6,126.0,,1.2823,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for sigmoid,,,,,1.0,1.2823,true,0.2823

@@ -1,7 +1,10 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-cumsum,small-row,PyTorch-eager,146.8,171.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,small-row,Arke,60.8,73.7,,2.4145,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.4145,true,1.4145
-cumsum,small-row,FlagGems,59.8,72.7,,2.4548,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,2.4548,true,1.4548
-cumsum,gpt2-row,PyTorch-eager,62.8,71.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,gpt2-row,Arke,61.4,73.7,,1.0228,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0228,true,0.0228
-cumsum,gpt2-row,FlagGems,61.4,65.5,,1.0228,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.0228,true,0.0228
+cumsum,non-align-1,PyTorch-eager,54.2,22.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,non-align-1,Arke,116.1,74.8,,0.4668,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4668,false,-0.5332
+cumsum,non-align-1,FlagGems,64.5,53.2,,0.8403,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.8403,false,-0.1597
+cumsum,non-align-2,PyTorch-eager,124.6,94.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,non-align-2,Arke,150.2,111.6,,0.8296,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8296,false,-0.1704
+cumsum,non-align-2,FlagGems,81.6,109.6,,1.5270,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.5270,true,0.5270
+cumsum,non-align-3,PyTorch-eager,2797.2,2306.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,non-align-3,Arke,2948.0,2605.0,,0.9488,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9488,false,-0.0512
+cumsum,non-align-3,FlagGems,3146.4,2942.0,,0.8890,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.8890,false,-0.1110

@@ -1,37 +1,61 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-cast,ds-ffn,FlagGems,230.4,163.8,,0.6784,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.6784,false,-0.3216
-cast,ds-ffn,PyTorch-eager,156.3,226.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,ds-ffn,Arke,3.3,4.1,,47.3636,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,47.3636,true,46.3636
-cast,ds-ffn-large,FlagGems,214.6,254.0,,1.1240,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.1240,true,0.1240
-cast,ds-ffn-large,PyTorch-eager,241.2,190.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,ds-ffn-large,Arke,4.5,13.3,,53.6000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,53.6000,true,52.6000
-cast,gpt2-ffn,FlagGems,87.4,63.4,,1.0149,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0149,true,0.0149
-cast,gpt2-ffn,PyTorch-eager,88.7,96.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,gpt2-ffn,Arke,6.8,3.1,,13.0441,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,13.0441,true,12.0441
-cast,gpt2-hidden,FlagGems,96.6,7.2,,0.9327,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9327,false,-0.0673
-cast,gpt2-hidden,PyTorch-eager,90.1,91.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,gpt2-hidden,Arke,1.0,2.0,,90.1000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,90.1000,true,89.1000
-cast,llama-ffn,FlagGems,210.7,188.4,,0.8358,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.8358,false,-0.1642
-cast,llama-ffn,PyTorch-eager,176.1,197.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,llama-ffn,Arke,2.0,6.1,,88.0500,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,88.0500,true,87.0500
-cast,llama-hidden,FlagGems,155.0,45.1,,1.0406,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0406,true,0.0406
-cast,llama-hidden,PyTorch-eager,161.3,51.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,llama-hidden,Arke,11.3,3.1,,14.2743,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,14.2743,true,13.2743
-cast,llama-long,FlagGems,357.0,324.6,,1.0056,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0056,true,0.0056
-cast,llama-long,PyTorch-eager,359.0,427.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,llama-long,Arke,3.1,7.2,,115.8065,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,115.8065,true,114.8065
-cast,micro-small,FlagGems,90.5,54.1,,0.9702,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9702,false,-0.0298
-cast,micro-small,PyTorch-eager,87.8,105.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,micro-small,Arke,5.8,4.1,,15.1379,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,15.1379,true,14.1379
-cast,micro-tiny,FlagGems,114.3,119.8,,0.8504,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.8504,false,-0.1496
-cast,micro-tiny,PyTorch-eager,97.2,95.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,micro-tiny,Arke,0.7,2.0,,138.8571,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,138.8571,true,137.8571
-cast,qwen-ffn,FlagGems,228.1,275.4,,0.9895,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9895,false,-0.0105
-cast,qwen-ffn,PyTorch-eager,225.7,196.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,qwen-ffn,Arke,4.5,4.9,,50.1556,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,50.1556,true,49.1556
-cast,square-1k,FlagGems,95.2,103.4,,1.1870,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.1870,true,0.1870
-cast,square-1k,PyTorch-eager,113.0,52.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,square-1k,Arke,6.5,5.1,,17.3846,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,17.3846,true,16.3846
-cast,xlarge,FlagGems,736.0,647.2,,0.9837,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9837,false,-0.0163
-cast,xlarge,PyTorch-eager,724.0,663.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cast,xlarge,Arke,5.3,2.0,,136.6038,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,136.6038,true,135.6038
+cast,micro-tiny,PyTorch-eager,110.9,111.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,micro-tiny,Arke,5.5,5.0,,20.1636,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,20.1636,true,19.1636
+cast,micro-tiny,FlagGems,94.9,101.4,,1.1686,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.1686,true,0.1686
+cast,micro-small,PyTorch-eager,91.5,107.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,micro-small,Arke,6.5,3.2,,14.0769,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,14.0769,true,13.0769
+cast,micro-small,FlagGems,95.5,104.7,,0.9581,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9581,false,-0.0419
+cast,gpt2-hidden,PyTorch-eager,87.4,105.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,gpt2-hidden,Arke,6.8,5.2,,12.8529,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,12.8529,true,11.8529
+cast,gpt2-hidden,FlagGems,91.1,100.4,,0.9594,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9594,false,-0.0406
+cast,gpt2-ffn,PyTorch-eager,88.1,104.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,gpt2-ffn,Arke,4.8,4.1,,18.3542,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,18.3542,true,17.3542
+cast,gpt2-ffn,FlagGems,85.0,67.5,,1.0365,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0365,true,0.0365
+cast,square-1k,PyTorch-eager,98.9,111.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,square-1k,Arke,5.8,11.4,,17.0517,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,17.0517,true,16.0517
+cast,square-1k,FlagGems,93.5,104.6,,1.0578,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0578,true,0.0578
+cast,llama-ffn,PyTorch-eager,139.9,193.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,llama-ffn,Arke,5.5,4.2,,25.4364,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,25.4364,true,24.4364
+cast,llama-ffn,FlagGems,137.9,181.2,,1.0145,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0145,true,0.0145
+cast,llama-hidden,PyTorch-eager,101.0,119.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,llama-hidden,Arke,6.1,12.5,,16.5574,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,16.5574,true,15.5574
+cast,llama-hidden,FlagGems,94.2,118.7,,1.0722,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0722,true,0.0722
+cast,llama-long,PyTorch-eager,347.1,357.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,llama-long,Arke,6.1,14.1,,56.9016,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,56.9016,true,55.9016
+cast,llama-long,FlagGems,343.0,334.8,,1.0120,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0120,true,0.0120
+cast,ds-ffn,PyTorch-eager,151.9,203.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,ds-ffn,Arke,5.8,5.1,,26.1897,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,26.1897,true,25.1897
+cast,ds-ffn,FlagGems,151.5,122.9,,1.0026,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0026,true,0.0026
+cast,ds-ffn-large,PyTorch-eager,214.4,241.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,ds-ffn-large,Arke,14.7,9.2,,14.5850,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,14.5850,true,13.5850
+cast,ds-ffn-large,FlagGems,201.7,237.3,,1.0630,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0630,true,0.0630
+cast,qwen-ffn,PyTorch-eager,242.7,314.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,qwen-ffn,Arke,3.4,10.2,,71.3824,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,71.3824,true,70.3824
+cast,qwen-ffn,FlagGems,221.1,221.2,,1.0977,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0977,true,0.0977
+cast,xlarge,PyTorch-eager,672.1,639.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,xlarge,Arke,17.4,10.1,,38.6264,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,38.6264,true,37.6264
+cast,xlarge,FlagGems,657.1,640.0,,1.0228,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0228,true,0.0228
+cast,non-align-1,PyTorch-eager,90.5,105.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,non-align-1,Arke,6.1,4.8,,14.8361,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,14.8361,true,13.8361
+cast,non-align-1,FlagGems,94.1,59.4,,0.9617,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9617,false,-0.0383
+cast,non-align-2,PyTorch-eager,117.4,133.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,non-align-2,Arke,5.9,13.6,,19.8983,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,19.8983,true,18.8983
+cast,non-align-2,FlagGems,94.5,138.2,,1.2423,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.2423,true,0.2423
+cast,non-align-3,PyTorch-eager,191.8,219.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,non-align-3,Arke,6.1,16.4,,31.4426,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,31.4426,true,30.4426
+cast,non-align-3,FlagGems,189.8,234.5,,1.0105,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0105,true,0.0105
+cast,non-align-4,PyTorch-eager,105.5,152.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,non-align-4,Arke,9.3,4.1,,11.3441,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,11.3441,true,10.3441
+cast,non-align-4,FlagGems,102.1,144.4,,1.0333,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0333,true,0.0333
+cast,non-align-5,PyTorch-eager,91.5,102.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,non-align-5,Arke,7.4,9.2,,12.3649,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,12.3649,true,11.3649
+cast,non-align-5,FlagGems,86.7,102.4,,1.0554,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0554,true,0.0554
+cast,extreme-flat,PyTorch-eager,95.6,134.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,extreme-flat,Arke,5.5,3.2,,17.3818,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,17.3818,true,16.3818
+cast,extreme-flat,FlagGems,96.0,108.5,,0.9958,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,0.9958,false,-0.0042
+cast,extreme-tall,PyTorch-eager,92.2,69.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,extreme-tall,Arke,7.5,8.2,,12.2933,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,12.2933,true,11.2933
+cast,extreme-tall,FlagGems,89.1,103.4,,1.0348,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0348,true,0.0348
+cast,extreme-wide,PyTorch-eager,119.1,167.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cast,extreme-wide,Arke,8.6,4.1,,13.8488,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,13.8488,true,12.8488
+cast,extreme-wide,FlagGems,113.6,154.6,,1.0484,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cast,,,,,1.0,1.0484,true,0.0484
