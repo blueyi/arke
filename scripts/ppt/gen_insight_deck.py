@@ -1581,6 +1581,10 @@ def slide_s2_features(prs, page, total):
     slide_header(s, "S2 · 7 大技术特征 F1–F7",
                  "由趋势 T1–T6 + 难题 H1–H9 收敛而来——目标态的 spec")
 
+    # F1-F6 sit in a 2×3 grid; F7 (cross-cut evaluation protocol) is
+    # rendered as a full-width banner card below — it is structurally
+    # different (a measurement layer, not a system feature) so the
+    # visual treatment matches the semantics.
     feats = [
         ("F1", "语义与策略分离", "T4 · T5 / H1",
          "「做什么」是不可变数学；「怎么做」是可搜索决策。", ACCENT),
@@ -1599,33 +1603,60 @@ def slide_s2_features(prs, page, total):
         ("F6", "跨硬件统一表达", "T4 / H4",
          "同一份语义、同一套决策原语，target-aware 适配多硬件。",
          ACCENT),
-        ("F7", "可复现评测协议", "T1 · T2 / H9",
-         "统一形状层级 / baseline / 报表 schema，跨工作可比。",
-         ACCENT_ALT),
     ]
+    # 2×3 grid for F1–F6
     cw = Inches(4.0)
-    ch = Inches(2.3)
+    ch = Inches(1.95)
+    grid_left = Inches(0.6)
+    grid_top = Inches(2.0)
+    gap_x = Inches(0.1)
+    gap_y = Inches(0.13)
     for i, (code, t, tag, d, c) in enumerate(feats):
-        if i < 6:
-            x = Inches(0.6) + (i % 3) * (cw + Inches(0.1))
-            y = Inches(2.0) + (i // 3) * (ch + Inches(0.16))
-        else:
-            x = Inches(4.7)
-            y = Inches(2.0) + 2 * (ch + Inches(0.16))
+        x = grid_left + (i % 3) * (cw + gap_x)
+        y = grid_top + (i // 3) * (ch + gap_y)
         panel(s, x, y, cw, ch, BG_PANEL, stroke=None)
         accent_bar(s, x, y, width=Inches(0.14), height=ch, color=c)
-        add_text(s, x + Inches(0.3), y + Inches(0.12),
-                 Inches(0.85), Inches(0.4),
+        add_text(s, x + Inches(0.3), y + Inches(0.1),
+                 Inches(0.85), Inches(0.36),
                  code, size=16, bold=True, color=c, font=FONT_MONO)
-        add_text(s, x + Inches(1.1), y + Inches(0.13),
-                 cw - Inches(1.2), Inches(0.4),
+        add_text(s, x + Inches(1.1), y + Inches(0.11),
+                 cw - Inches(1.2), Inches(0.36),
                  t, size=14, bold=True, color=FG)
-        add_text(s, x + Inches(0.3), y + Inches(0.6),
-                 cw - Inches(0.4), Inches(0.4),
-                 tag, size=11, color=ACCENT_ALT, font=FONT_MONO)
-        add_text(s, x + Inches(0.3), y + Inches(1.0),
-                 cw - Inches(0.4), ch - Inches(1.05),
-                 d, size=11.5, color=FG_MUTED)
+        add_text(s, x + Inches(0.3), y + Inches(0.55),
+                 cw - Inches(0.4), Inches(0.32),
+                 tag, size=10.5, color=ACCENT_ALT, font=FONT_MONO)
+        add_text(s, x + Inches(0.3), y + Inches(0.92),
+                 cw - Inches(0.4), ch - Inches(1.0),
+                 d, size=11, color=FG_MUTED)
+
+    # F7 — full-width banner card (cross-cut measurement layer)
+    bx = grid_left
+    by = grid_top + 2 * (ch + gap_y)
+    bw = Inches(12.15)
+    bh = Inches(0.95)
+    panel(s, bx, by, bw, bh, BG_PANEL_ALT, stroke=None)
+    accent_bar(s, bx, by, width=Inches(0.14), height=bh, color=ACCENT_ALT)
+    add_text(s, bx + Inches(0.3), by + Inches(0.13),
+             Inches(0.85), Inches(0.4),
+             "F7", size=18, bold=True, color=ACCENT_ALT,
+             font=FONT_MONO)
+    add_text(s, bx + Inches(1.1), by + Inches(0.13),
+             Inches(3.6), Inches(0.4),
+             "可复现评测协议", size=15, bold=True, color=FG)
+    add_text(s, bx + Inches(4.85), by + Inches(0.16),
+             Inches(2.3), Inches(0.4),
+             "T1 · T2 / H9", size=11, color=ACCENT_ALT,
+             font=FONT_MONO, anchor=MSO_ANCHOR.MIDDLE)
+    # right-side description so the banner reads horizontally
+    add_text(s, bx + Inches(7.3), by + Inches(0.13),
+             Inches(4.7), Inches(0.4),
+             "横切的「度量层」", size=12, bold=True,
+             color=ACCENT_ALT)
+    add_text(s, bx + Inches(0.3), by + Inches(0.55),
+             bw - Inches(0.4), Inches(0.36),
+             "统一形状层级 / baseline / 报表 schema → 跨工作 / 跨硬件 / 跨版本可横向对比；"
+             "是把前 6 个特征「真正落到工程」的前提。",
+             size=11, color=FG_MUTED)
     footer(s, page, total, "Target State")
 
 
