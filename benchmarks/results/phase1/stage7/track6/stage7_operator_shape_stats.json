@@ -166,15 +166,20 @@
       }
     },
     "cumsum": {
-      "shape_count": 3,
+      "shape_count": 8,
       "shape_tags": [
+        "extreme-long-row",
+        "extreme-tall-col",
+        "gpt2-row",
+        "llama-col",
+        "llama-row",
         "non-align-1",
         "non-align-2",
         "non-align-3"
       ],
-      "rows": 9,
+      "rows": 24,
       "status_counts": {
-        "ok": 9
+        "ok": 24
       }
     },
     "dequantize_per_channel": {
@@ -272,21 +277,24 @@
       }
     },
     "geglu": {
-      "shape_count": 9,
+      "shape_count": 12,
       "shape_tags": [
         "ds-v2-2k",
         "ds-v2-512",
+        "ds-v3-2k",
+        "ds-v3-512",
         "gpt2-sm",
         "llama-7b-2k",
         "llama-7b-512",
         "llama3-8b",
         "non-align-1",
         "non-align-2",
-        "qwen25-7b"
+        "qwen25-7b",
+        "qwen25-7b-2k"
       ],
-      "rows": 18,
+      "rows": 24,
       "status_counts": {
-        "ok": 18
+        "ok": 24
       }
     },
     "gelu": {
@@ -770,21 +778,24 @@
       }
     },
     "swiglu": {
-      "shape_count": 9,
+      "shape_count": 12,
       "shape_tags": [
         "ds-v2-2k",
         "ds-v2-512",
+        "ds-v3-2k",
+        "ds-v3-512",
         "gpt2-sm",
         "llama-7b-2k",
         "llama-7b-512",
         "llama3-8b",
         "non-align-1",
         "non-align-2",
-        "qwen25-7b"
+        "qwen25-7b",
+        "qwen25-7b-2k"
       ],
-      "rows": 18,
+      "rows": 24,
       "status_counts": {
-        "ok": 18
+        "ok": 24
       }
     },
     "tanh": {

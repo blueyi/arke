@@ -1,19 +1,11 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-geglu,gpt2-sm,PyTorch-eager,9.2,4.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,gpt2-sm,Arke,12.6,5.8,,0.7302,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7302,false,-0.2698
-geglu,llama-7b-512,PyTorch-eager,9.8,2.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,llama-7b-512,Arke,15.1,24.9,,0.6490,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6490,false,-0.3510
-geglu,llama-7b-2k,PyTorch-eager,8.9,4.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,llama-7b-2k,Arke,23.0,30.9,,0.3870,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3870,false,-0.6130
-geglu,llama3-8b,PyTorch-eager,10.3,4.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,llama3-8b,Arke,11.6,21.2,,0.8879,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8879,false,-0.1121
-geglu,ds-v2-512,PyTorch-eager,9.3,3.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,ds-v2-512,Arke,13.2,17.3,,0.7045,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7045,false,-0.2955
-geglu,ds-v2-2k,PyTorch-eager,9.5,3.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,ds-v2-2k,Arke,12.1,24.5,,0.7851,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7851,false,-0.2149
-geglu,qwen25-7b,PyTorch-eager,8.9,3.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,qwen25-7b,Arke,12.2,11.5,,0.7295,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7295,false,-0.2705
-geglu,non-align-1,PyTorch-eager,22.4,7.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,non-align-1,Arke,18.5,39.4,,1.2108,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2108,true,0.2108
-geglu,non-align-2,PyTorch-eager,30.8,3.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,non-align-2,Arke,13.4,18.7,,2.2985,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.2985,true,1.2985
+geglu,ds-v3-512,PyTorch-eager,35.5,3.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-512,Arke,45.1,89.9,,0.7871,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7871,false,-0.2129
+geglu,ds-v3-2k,PyTorch-eager,54.6,73.5,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-2k,Arke,72.4,83.6,,0.7541,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7541,false,-0.2459
+geglu,qwen25-7b-2k,PyTorch-eager,49.8,72.7,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b-2k,Arke,63.1,77.8,,0.7892,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7892,false,-0.2108
+geglu,non-align-1,PyTorch-eager,42.1,68.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-1,Arke,63.1,88.1,,0.6672,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.6672,false,-0.3328
+geglu,non-align-2,PyTorch-eager,52.7,53.6,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-2,Arke,59.7,80.9,,0.8827,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.8827,false,-0.1173

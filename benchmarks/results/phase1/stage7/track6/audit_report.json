@@ -22,8 +22,6 @@
         "scatter",
         "embedding",
         "permute",
-        "swiglu",
-        "geglu",
         "rope",
         "fused_linear_cross_entropy",
         "cross_entropy",
@@ -75,8 +73,6 @@
         "scatter",
         "embedding",
         "permute",
-        "swiglu",
-        "geglu",
         "rope",
         "fused_linear_cross_entropy",
         "cross_entropy",
@@ -90,5 +86,5 @@
       ]
     }
   ],
-  "text_summary": "Stage 7 audit report \u2014 S7 / G7\n============================================================\n[L1] entries=45, missing examples=0, missing strategy examples=0, missing benchmark evidence=0, missing full shape evidence=25\n[L2] entries=6, missing examples=0, missing strategy examples=0, missing benchmark evidence=0, missing full shape evidence=0\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+  "text_summary": "Stage 7 audit report \u2014 S7 / G7\n============================================================\n[L1] entries=45, missing examples=0, missing strategy examples=0, missing benchmark evidence=0, missing full shape evidence=23\n[L2] entries=6, missing examples=0, missing strategy examples=0, missing benchmark evidence=0, missing full shape evidence=0\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }

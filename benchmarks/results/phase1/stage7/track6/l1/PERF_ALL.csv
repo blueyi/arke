@@ -251,15 +251,15 @@ cross_entropy,gpt2-seq128,PyTorch-eager,318.1,318.5,,1.0000,ok,,false,true,0,0,0
 cross_entropy,gpt2-seq128,Arke,455.0,455.7,,0.6991,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6991,false,-0.3009
 cross_entropy,gpt2-seq512,PyTorch-eager,1217.5,1217.3,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
 cross_entropy,gpt2-seq512,Arke,1754.1,1753.0,,0.6941,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6941,false,-0.3059
-cumsum,non-align-1,PyTorch-eager,54.2,22.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,non-align-1,Arke,116.1,74.8,,0.4668,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4668,false,-0.5332
-cumsum,non-align-1,FlagGems,64.5,53.2,,0.8403,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.8403,false,-0.1597
-cumsum,non-align-2,PyTorch-eager,124.6,94.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,non-align-2,Arke,150.2,111.6,,0.8296,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8296,false,-0.1704
-cumsum,non-align-2,FlagGems,81.6,109.6,,1.5270,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.5270,true,0.5270
-cumsum,non-align-3,PyTorch-eager,2797.2,2306.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,non-align-3,Arke,2948.0,2605.0,,0.9488,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9488,false,-0.0512
-cumsum,non-align-3,FlagGems,3146.4,2942.0,,0.8890,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.8890,false,-0.1110
+cumsum,non-align-1,PyTorch-eager,22.2,23.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,non-align-1,Arke,22.1,19.5,,1.0045,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0045,true,0.0045
+cumsum,non-align-1,FlagGems,48.9,6.1,,0.4540,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.4540,false,-0.5460
+cumsum,non-align-2,PyTorch-eager,88.7,89.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,non-align-2,Arke,88.0,90.0,,1.0080,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0080,true,0.0080
+cumsum,non-align-2,FlagGems,48.1,43.0,,1.8441,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.8441,true,0.8441
+cumsum,non-align-3,PyTorch-eager,3561.4,3546.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,non-align-3,Arke,3491.2,3282.9,,1.0201,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0201,true,0.0201
+cumsum,non-align-3,FlagGems,2848.7,2766.8,,1.2502,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.2502,true,0.2502
 dequantize_per_channel,tiny-int8,PyTorch-eager,31.8,41.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 dequantize_per_channel,tiny-int8,Arke,51.5,63.8,,0.6175,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,,1.0,0.6175,false,-0.3825
 dequantize_per_channel,gpt2-int8,PyTorch-eager,42.0,19.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
@@ -1656,10 +1656,10 @@ swiglu,ds-v2-2k,PyTorch-eager,13.7,7.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok
 swiglu,ds-v2-2k,Arke,24.3,26.4,,0.5638,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5638,false,-0.4362
 swiglu,qwen25-7b,PyTorch-eager,10.6,3.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 swiglu,qwen25-7b,Arke,11.9,17.5,,0.8908,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8908,false,-0.1092
-swiglu,non-align-1,PyTorch-eager,10.4,2.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,non-align-1,Arke,11.9,8.4,,0.8739,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8739,false,-0.1261
-swiglu,non-align-2,PyTorch-eager,8.6,4.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,non-align-2,Arke,13.8,19.3,,0.6232,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6232,false,-0.3768
+swiglu,non-align-1,PyTorch-eager,55.0,78.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,non-align-1,Arke,59.7,88.1,,0.9213,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.9213,false,-0.0787
+swiglu,non-align-2,PyTorch-eager,54.6,76.6,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,non-align-2,Arke,60.1,68.6,,0.9085,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.9085,false,-0.0915
 geglu,llama-7b-512,PyTorch-eager,9.8,2.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 geglu,llama-7b-512,Arke,15.1,24.9,,0.6490,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6490,false,-0.3510
 geglu,llama-7b-2k,PyTorch-eager,8.9,4.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
@@ -1672,7 +1672,34 @@ geglu,ds-v2-2k,PyTorch-eager,9.5,3.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,
 geglu,ds-v2-2k,Arke,12.1,24.5,,0.7851,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7851,false,-0.2149
 geglu,qwen25-7b,PyTorch-eager,8.9,3.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 geglu,qwen25-7b,Arke,12.2,11.5,,0.7295,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7295,false,-0.2705
-geglu,non-align-1,PyTorch-eager,22.4,7.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,non-align-1,Arke,18.5,39.4,,1.2108,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2108,true,0.2108
-geglu,non-align-2,PyTorch-eager,30.8,3.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,non-align-2,Arke,13.4,18.7,,2.2985,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.2985,true,1.2985
+geglu,non-align-1,PyTorch-eager,42.1,68.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-1,Arke,63.1,88.1,,0.6672,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.6672,false,-0.3328
+geglu,non-align-2,PyTorch-eager,52.7,53.6,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-2,Arke,59.7,80.9,,0.8827,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.8827,false,-0.1173
+cumsum,gpt2-row,PyTorch-eager,16.4,21.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,gpt2-row,Arke,17.1,17.4,,0.9591,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9591,false,-0.0409
+cumsum,gpt2-row,FlagGems,57.0,65.5,,0.2877,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.2877,false,-0.7123
+cumsum,llama-row,PyTorch-eager,109.2,109.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,llama-row,Arke,109.6,110.6,,0.9964,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9964,false,-0.0036
+cumsum,llama-row,FlagGems,55.0,29.7,,1.9855,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.9855,true,0.9855
+cumsum,llama-col,PyTorch-eager,108.9,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,llama-col,Arke,109.6,111.5,,0.9936,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9936,false,-0.0064
+cumsum,llama-col,FlagGems,57.0,66.6,,1.9105,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.9105,true,0.9105
+cumsum,extreme-long-row,PyTorch-eager,26.6,25.6,,1.0000,ok,,false,false,4,0.420621,0.001,0.001,mismatch,,,,,,1.0,1.0000,true,0.0000
+cumsum,extreme-long-row,Arke,26.3,32.8,,1.0114,ok,,false,false,6,0.511645,0.001,0.001,mismatch,,,,,,1.0,1.0114,true,0.0114
+cumsum,extreme-long-row,FlagGems,143.7,134.1,,0.1851,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.1851,false,-0.8149
+cumsum,extreme-tall-col,PyTorch-eager,2353.5,2161.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,extreme-tall-col,Arke,2343.9,2344.8,,1.0041,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0041,true,0.0041
+cumsum,extreme-tall-col,FlagGems,130.8,122.9,,17.9931,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,17.9931,true,16.9931
+swiglu,ds-v3-512,PyTorch-eager,48.8,3.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-512,Arke,61.4,3.1,,0.7948,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7948,false,-0.2052
+swiglu,ds-v3-2k,PyTorch-eager,46.1,6.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-2k,Arke,62.8,89.2,,0.7341,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7341,false,-0.2659
+swiglu,qwen25-7b-2k,PyTorch-eager,45.4,75.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b-2k,Arke,63.9,87.0,,0.7105,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7105,false,-0.2895
+geglu,ds-v3-512,PyTorch-eager,35.5,3.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-512,Arke,45.1,89.9,,0.7871,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7871,false,-0.2129
+geglu,ds-v3-2k,PyTorch-eager,54.6,73.5,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-2k,Arke,72.4,83.6,,0.7541,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7541,false,-0.2459
+geglu,qwen25-7b-2k,PyTorch-eager,49.8,72.7,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b-2k,Arke,63.1,77.8,,0.7892,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7892,false,-0.2108

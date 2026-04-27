@@ -1,19 +1,11 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-swiglu,gpt2-sm,PyTorch-eager,9.2,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,gpt2-sm,Arke,12.0,28.7,,0.7667,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7667,false,-0.2333
-swiglu,llama-7b-512,PyTorch-eager,11.0,3.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,llama-7b-512,Arke,16.1,22.4,,0.6832,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6832,false,-0.3168
-swiglu,llama-7b-2k,PyTorch-eager,6.5,15.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,llama-7b-2k,Arke,15.3,25.8,,0.4248,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4248,false,-0.5752
-swiglu,llama3-8b,PyTorch-eager,11.0,2.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,llama3-8b,Arke,13.0,24.0,,0.8462,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8462,false,-0.1538
-swiglu,ds-v2-512,PyTorch-eager,8.4,4.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,ds-v2-512,Arke,12.9,22.6,,0.6512,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6512,false,-0.3488
-swiglu,ds-v2-2k,PyTorch-eager,13.7,7.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,ds-v2-2k,Arke,24.3,26.4,,0.5638,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5638,false,-0.4362
-swiglu,qwen25-7b,PyTorch-eager,10.6,3.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,qwen25-7b,Arke,11.9,17.5,,0.8908,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8908,false,-0.1092
-swiglu,non-align-1,PyTorch-eager,10.4,2.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,non-align-1,Arke,11.9,8.4,,0.8739,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8739,false,-0.1261
-swiglu,non-align-2,PyTorch-eager,8.6,4.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,non-align-2,Arke,13.8,19.3,,0.6232,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6232,false,-0.3768
+swiglu,ds-v3-512,PyTorch-eager,48.8,3.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-512,Arke,61.4,3.1,,0.7948,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7948,false,-0.2052
+swiglu,ds-v3-2k,PyTorch-eager,46.1,6.1,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-2k,Arke,62.8,89.2,,0.7341,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7341,false,-0.2659
+swiglu,qwen25-7b-2k,PyTorch-eager,45.4,75.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b-2k,Arke,63.9,87.0,,0.7105,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7105,false,-0.2895
+swiglu,non-align-1,PyTorch-eager,55.0,78.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,non-align-1,Arke,59.7,88.1,,0.9213,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.9213,false,-0.0787
+swiglu,non-align-2,PyTorch-eager,54.6,76.6,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
+swiglu,non-align-2,Arke,60.1,68.6,,0.9085,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.9085,false,-0.0915
