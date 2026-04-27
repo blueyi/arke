@@ -1,0 +1,36 @@
+{
+  "overall_geomean": 1.0,
+  "op_scores": {
+    "geglu": 1.0
+  },
+  "total_shapes": 6,
+  "operators": [
+    "geglu"
+  ],
+  "status_counts": {
+    "ok": 6
+  },
+  "correctness_counts": {
+    "ok": 6
+  },
+  "memory_policy_counts": {
+    "none": 6
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 6,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 6
+  },
+  "perf_targets": {
+    "geglu": 1.0
+  },
+  "perf_actuals": {
+    "geglu": 1.0
+  },
+  "perf_gaps": {
+    "geglu": 0.0
+  }
+}

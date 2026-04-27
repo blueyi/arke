@@ -1,0 +1,14 @@
+{
+  "separate": {
+    "description": "Manual separate ops (matmul then activation)",
+    "source": "PyTorch 2.6.0+cu124"
+  },
+  "torch.compile": {
+    "description": "torch.compile auto-fusion (Inductor)",
+    "source": "PyTorch 2.6.0+cu124"
+  },
+  "FlagGems": {
+    "description": "FlagGems ATen dispatch",
+    "source": "FlagGems 5.0.0"
+  }
+}

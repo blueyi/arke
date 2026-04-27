@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-04-28_005506",
+  "ops": [
+    "swiglu"
+  ],
+  "warmup": 1,
+  "reps": 2,
+  "layer": "L2",
+  "shape_tags": [
+    "ds-v2-512",
+    "ds-v2-2k",
+    "ds-v3-512",
+    "ds-v3-2k",
+    "qwen25-7b",
+    "qwen25-7b-2k"
+  ],
+  "phase": 1,
+  "stage": 7,
+  "track": 6
+}

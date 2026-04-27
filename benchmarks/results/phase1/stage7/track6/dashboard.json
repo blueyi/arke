@@ -1289,39 +1289,18 @@
     "l2": {
       "ops_total": 6,
       "ops_with_any_evidence": 6,
-      "ops_fully_covered": 1,
+      "ops_fully_covered": 6,
       "op_coverage_ratio": 1.0,
       "shapes_required_total": 120,
-      "shapes_observed_total": 65,
-      "shape_coverage_ratio": 0.5417,
+      "shapes_observed_total": 120,
+      "shape_coverage_ratio": 1.0,
       "per_op": [
         {
           "op": "matmul_relu",
           "required_shape_count": 34,
-          "observed_shape_count": 19,
-          "coverage_ratio": 0.5588235294117647,
+          "observed_shape_count": 34,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
-            "llama-ffn",
-            "llama-q",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-1k",
-            "square-2k",
-            "square-4k",
-            "tiny"
-          ],
-          "missing_shape_tags": [
             "ds-v2-attn",
             "ds-v2-ffn-down",
             "ds-v2-ffn-up",
@@ -1331,13 +1310,33 @@
             "ds-v3-ffn-up",
             "ds-v3-lmhead",
             "ds-v3-long-32k",
+            "extreme-16",
+            "extreme-1row",
+            "extreme-long",
             "gpt2-c_attn",
             "gpt2-c_proj",
+            "llama-ffn",
+            "llama-q",
             "lm-head-gpt2",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "non-align-6",
+            "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead"
+            "qwen25-lmhead",
+            "rect-tall",
+            "rect-wide",
+            "seq512",
+            "square-1k",
+            "square-2k",
+            "square-4k",
+            "tiny"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1345,30 +1344,9 @@
         {
           "op": "matmul_gelu",
           "required_shape_count": 34,
-          "observed_shape_count": 19,
-          "coverage_ratio": 0.5588235294117647,
+          "observed_shape_count": 34,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
-            "llama-ffn",
-            "llama-q",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-1k",
-            "square-2k",
-            "square-4k",
-            "tiny"
-          ],
-          "missing_shape_tags": [
             "ds-v2-attn",
             "ds-v2-ffn-down",
             "ds-v2-ffn-up",
@@ -1378,13 +1356,33 @@
             "ds-v3-ffn-up",
             "ds-v3-lmhead",
             "ds-v3-long-32k",
+            "extreme-16",
+            "extreme-1row",
+            "extreme-long",
             "gpt2-c_attn",
             "gpt2-c_proj",
+            "llama-ffn",
+            "llama-q",
             "lm-head-gpt2",
+            "non-align-1",
+            "non-align-2",
+            "non-align-3",
+            "non-align-4",
+            "non-align-5",
+            "non-align-6",
+            "non-align-7",
             "qwen25-attn",
             "qwen25-ffn-up",
-            "qwen25-lmhead"
+            "qwen25-lmhead",
+            "rect-tall",
+            "rect-wide",
+            "seq512",
+            "square-1k",
+            "square-2k",
+            "square-4k",
+            "tiny"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1392,24 +1390,23 @@
         {
           "op": "swiglu",
           "required_shape_count": 12,
-          "observed_shape_count": 6,
-          "coverage_ratio": 0.5,
+          "observed_shape_count": 12,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
+            "ds-v2-2k",
+            "ds-v2-512",
+            "ds-v3-2k",
+            "ds-v3-512",
             "gpt2-sm",
             "llama-7b-2k",
             "llama-7b-512",
             "llama3-8b",
             "non-align-1",
-            "non-align-2"
-          ],
-          "missing_shape_tags": [
-            "ds-v2-2k",
-            "ds-v2-512",
-            "ds-v3-2k",
-            "ds-v3-512",
+            "non-align-2",
             "qwen25-7b",
             "qwen25-7b-2k"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1417,24 +1414,23 @@
         {
           "op": "geglu",
           "required_shape_count": 12,
-          "observed_shape_count": 6,
-          "coverage_ratio": 0.5,
+          "observed_shape_count": 12,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
+            "ds-v2-2k",
+            "ds-v2-512",
+            "ds-v3-2k",
+            "ds-v3-512",
             "gpt2-sm",
             "llama-7b-2k",
             "llama-7b-512",
             "llama3-8b",
             "non-align-1",
-            "non-align-2"
-          ],
-          "missing_shape_tags": [
-            "ds-v2-2k",
-            "ds-v2-512",
-            "ds-v3-2k",
-            "ds-v3-512",
+            "non-align-2",
             "qwen25-7b",
             "qwen25-7b-2k"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1466,14 +1462,9 @@
         {
           "op": "qkv_fa",
           "required_shape_count": 16,
-          "observed_shape_count": 3,
-          "coverage_ratio": 0.1875,
+          "observed_shape_count": 16,
+          "coverage_ratio": 1.0,
           "observed_shape_tags": [
-            "gpt2-sm-128",
-            "gpt2-sm-1k",
-            "gpt2-sm-512"
-          ],
-          "missing_shape_tags": [
             "ds-batch-8",
             "ds-v2-16k",
             "ds-v2-2k",
@@ -1483,11 +1474,15 @@
             "ds-v3-163k",
             "ds-v3-32k",
             "gpt2-md-2k",
+            "gpt2-sm-128",
+            "gpt2-sm-1k",
+            "gpt2-sm-512",
             "llama2-7b-2k",
             "llama2-7b-4k",
             "llama2-7b-512",
             "llama2-7b-batch"
           ],
+          "missing_shape_tags": [],
           "correctness_fields_present": true,
           "perf_target_fields_present": true,
           "missing_perf_target_fields": []
@@ -1496,7 +1491,7 @@
     },
     "combined": {
       "op_coverage_ratio": 1.0,
-      "shape_coverage_ratio": 0.3478
+      "shape_coverage_ratio": 0.4161
     }
   },
   "focus": {
@@ -2295,9 +2290,6 @@
         "topk",
         "cumsum",
         "matmul",
-        "batch_matmul",
-        "grouped_matmul",
-        "transpose",
         "concat",
         "split",
         "gather",
@@ -2320,281 +2312,94 @@
       ],
       "unsupported_surface_cases": [],
       "perf_field_gaps": [],
-      "memory_pressure_ops": []
+      "memory_pressure_ops": [
+        {
+          "op": "gelu",
+          "status_counts": {
+            "error": 1,
+            "ok": 119
+          }
+        },
+        {
+          "op": "grouped_matmul",
+          "status_counts": {
+            "ok": 12,
+            "skipped": 2
+          }
+        },
+        {
+          "op": "multi_latent_attention",
+          "status_counts": {
+            "skipped": 4
+          }
+        },
+        {
+          "op": "paged_attention",
+          "status_counts": {
+            "skipped": 4
+          }
+        },
+        {
+          "op": "rope",
+          "status_counts": {
+            "error": 2,
+            "ok": 4
+          }
+        },
+        {
+          "op": "softmax",
+          "status_counts": {
+            "error": 1,
+            "ok": 59
+          }
+        }
+      ]
     },
     "l2": {
       "ops_without_evidence": [],
-      "partial_coverage_ops": [
-        {
-          "op": "matmul_relu",
-          "observed_shape_count": 19,
-          "required_shape_count": 34,
-          "missing_shape_tags": [
-            "ds-v2-attn",
-            "ds-v2-ffn-down",
-            "ds-v2-ffn-up",
-            "ds-v2-lmhead",
-            "ds-v2-long-8k",
-            "ds-v3-attn",
-            "ds-v3-ffn-up",
-            "ds-v3-lmhead",
-            "ds-v3-long-32k",
-            "gpt2-c_attn",
-            "gpt2-c_proj",
-            "lm-head-gpt2",
-            "qwen25-attn",
-            "qwen25-ffn-up",
-            "qwen25-lmhead"
-          ]
-        },
-        {
-          "op": "matmul_gelu",
-          "observed_shape_count": 19,
-          "required_shape_count": 34,
-          "missing_shape_tags": [
-            "ds-v2-attn",
-            "ds-v2-ffn-down",
-            "ds-v2-ffn-up",
-            "ds-v2-lmhead",
-            "ds-v2-long-8k",
-            "ds-v3-attn",
-            "ds-v3-ffn-up",
-            "ds-v3-lmhead",
-            "ds-v3-long-32k",
-            "gpt2-c_attn",
-            "gpt2-c_proj",
-            "lm-head-gpt2",
-            "qwen25-attn",
-            "qwen25-ffn-up",
-            "qwen25-lmhead"
-          ]
-        },
-        {
-          "op": "swiglu",
-          "observed_shape_count": 6,
-          "required_shape_count": 12,
-          "missing_shape_tags": [
-            "ds-v2-2k",
-            "ds-v2-512",
-            "ds-v3-2k",
-            "ds-v3-512",
-            "qwen25-7b",
-            "qwen25-7b-2k"
-          ]
-        },
-        {
-          "op": "geglu",
-          "observed_shape_count": 6,
-          "required_shape_count": 12,
-          "missing_shape_tags": [
-            "ds-v2-2k",
-            "ds-v2-512",
-            "ds-v3-2k",
-            "ds-v3-512",
-            "qwen25-7b",
-            "qwen25-7b-2k"
-          ]
-        },
-        {
-          "op": "qkv_fa",
-          "observed_shape_count": 3,
-          "required_shape_count": 16,
-          "missing_shape_tags": [
-            "ds-batch-8",
-            "ds-v2-16k",
-            "ds-v2-2k",
-            "ds-v2-4k",
-            "ds-v2-512",
-            "ds-v2-8k",
-            "ds-v3-163k",
-            "ds-v3-32k",
-            "gpt2-md-2k",
-            "llama2-7b-2k",
-            "llama2-7b-4k",
-            "llama2-7b-512",
-            "llama2-7b-batch"
-          ]
-        }
-      ],
+      "partial_coverage_ops": [],
       "missing_examples": [],
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [],
-      "missing_full_shape_evidence": [
-        "matmul_relu",
-        "matmul_gelu",
-        "swiglu",
-        "geglu",
-        "linear_ce",
-        "qkv_fa"
-      ],
+      "missing_full_shape_evidence": [],
       "unsupported_surface_cases": [
         {
           "op": "swiglu",
           "reason": "missing_fusion_strategy",
-          "missing_shape_tags": [
-            "ds-v2-2k",
-            "ds-v2-512",
-            "ds-v3-2k",
-            "ds-v3-512",
-            "llama-7b-2k",
-            "llama-7b-512",
-            "llama3-8b",
-            "non-align-1",
-            "non-align-2",
-            "qwen25-7b",
-            "qwen25-7b-2k"
-          ]
+          "missing_shape_tags": []
         },
         {
           "op": "geglu",
           "reason": "missing_fusion_strategy",
-          "missing_shape_tags": [
-            "ds-v2-2k",
-            "ds-v2-512",
-            "ds-v3-2k",
-            "ds-v3-512",
-            "llama-7b-2k",
-            "llama-7b-512",
-            "llama3-8b",
-            "non-align-1",
-            "non-align-2",
-            "qwen25-7b",
-            "qwen25-7b-2k"
-          ]
-        },
-        {
-          "op": "matmul_relu",
-          "reason": "missing_full_shape_evidence",
-          "missing_shape_tags": [
-            "ds-v2-attn",
-            "ds-v2-ffn-down",
-            "ds-v2-ffn-up",
-            "ds-v2-lmhead",
-            "ds-v2-long-8k",
-            "ds-v3-attn",
-            "ds-v3-ffn-up",
-            "ds-v3-lmhead",
-            "ds-v3-long-32k",
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
-            "gpt2-c_attn",
-            "gpt2-c_proj",
-            "llama-ffn",
-            "llama-q",
-            "lm-head-gpt2",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
-            "qwen25-attn",
-            "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-2k",
-            "square-4k",
-            "tiny"
-          ]
-        },
-        {
-          "op": "matmul_gelu",
-          "reason": "missing_full_shape_evidence",
-          "missing_shape_tags": [
-            "ds-v2-attn",
-            "ds-v2-ffn-down",
-            "ds-v2-ffn-up",
-            "ds-v2-lmhead",
-            "ds-v2-long-8k",
-            "ds-v3-attn",
-            "ds-v3-ffn-up",
-            "ds-v3-lmhead",
-            "ds-v3-long-32k",
-            "extreme-16",
-            "extreme-1row",
-            "extreme-long",
-            "gpt2-c_attn",
-            "gpt2-c_proj",
-            "llama-ffn",
-            "llama-q",
-            "lm-head-gpt2",
-            "non-align-1",
-            "non-align-2",
-            "non-align-3",
-            "non-align-4",
-            "non-align-5",
-            "non-align-6",
-            "non-align-7",
-            "qwen25-attn",
-            "qwen25-ffn-up",
-            "qwen25-lmhead",
-            "rect-tall",
-            "rect-wide",
-            "seq512",
-            "square-2k",
-            "square-4k",
-            "tiny"
-          ]
-        },
-        {
-          "op": "linear_ce",
-          "reason": "missing_full_shape_evidence",
-          "missing_shape_tags": [
-            "ds-v2-seq512",
-            "extreme-large-vocab",
-            "gpt2-seq512",
-            "llama2-seq2k",
-            "llama2-seq512",
-            "llama3-seq2k",
-            "llama3-seq512",
-            "non-align-1",
-            "non-align-2",
-            "qwen25-seq2k",
-            "qwen25-seq512"
-          ]
-        },
-        {
-          "op": "qkv_fa",
-          "reason": "missing_full_shape_evidence",
-          "missing_shape_tags": [
-            "ds-batch-8",
-            "ds-v2-16k",
-            "ds-v2-2k",
-            "ds-v2-4k",
-            "ds-v2-512",
-            "ds-v2-8k",
-            "ds-v3-163k",
-            "ds-v3-32k",
-            "gpt2-md-2k",
-            "gpt2-sm-1k",
-            "gpt2-sm-512",
-            "llama2-7b-2k",
-            "llama2-7b-4k",
-            "llama2-7b-512",
-            "llama2-7b-batch"
-          ]
+          "missing_shape_tags": []
         }
       ],
       "perf_field_gaps": [],
-      "memory_pressure_ops": []
+      "memory_pressure_ops": [
+        {
+          "op": "geglu",
+          "status_counts": {
+            "error": 2,
+            "ok": 10
+          }
+        },
+        {
+          "op": "qkv_fa",
+          "status_counts": {
+            "ok": 11,
+            "skipped": 5
+          }
+        },
+        {
+          "op": "swiglu",
+          "status_counts": {
+            "error": 2,
+            "ok": 10
+          }
+        }
+      ]
     },
     "priority_actions": [
-      {
-        "category": "missing_l2_shape_evidence",
-        "layer": "l2",
-        "ops": [
-          "matmul_relu",
-          "matmul_gelu",
-          "swiglu",
-          "geglu",
-          "linear_ce",
-          "qkv_fa"
-        ]
-      },
       {
         "category": "missing_l1_shape_evidence",
         "layer": "l1",
@@ -2622,9 +2427,6 @@
           "topk",
           "cumsum",
           "matmul",
-          "batch_matmul",
-          "grouped_matmul",
-          "transpose",
           "concat",
           "split",
           "gather",
@@ -2648,5 +2450,5 @@
       }
     ]
   },
-  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=34.78%\n[L1] ops=45/45 fully_covered=3 missing_examples=0 unsupported=0\n  partial coverage: relu (5/20), gelu (5/20), silu (12/20), tanh (12/20), sigmoid (12/20)\n[L2] ops=6/6 fully_covered=1 missing_examples=0 unsupported=6\n  partial coverage: matmul_relu (19/34), matmul_gelu (19/34), swiglu (6/12), geglu (6/12), qkv_fa (3/16)\n------------------------------------------------------------\nPriority actions:\n- missing_l2_shape_evidence: matmul_relu, matmul_gelu, swiglu, geglu, linear_ce, qkv_fa\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=41.61%\n[L1] ops=45/45 fully_covered=3 missing_examples=0 unsupported=0\n  partial coverage: relu (5/20), gelu (5/20), silu (12/20), tanh (12/20), sigmoid (12/20)\n  memory pressure / skipped: gelu, grouped_matmul, multi_latent_attention, paged_attention, rope, softmax\n[L2] ops=6/6 fully_covered=6 missing_examples=0 unsupported=2\n  memory pressure / skipped: geglu, qkv_fa, swiglu\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: relu, gelu, silu, tanh, sigmoid, add, mul, where_, cast, neg, exp, rsqrt, softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max, reduce_mean, argmax, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, copy_, swiglu, geglu, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }

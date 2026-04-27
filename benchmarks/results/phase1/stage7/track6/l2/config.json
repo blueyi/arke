@@ -1,15 +1,31 @@
 {
-  "timestamp": "2026-04-26_145643",
+  "timestamp": "2026-04-28_000016",
   "ops": [
-    "qkv_fa"
+    "matmul_gelu"
   ],
-  "warmup": 20,
-  "reps": 40,
+  "warmup": 1,
+  "reps": 1,
   "layer": "L2",
   "shape_tags": [
-    "gpt2-sm-128",
-    "gpt2-sm-512",
-    "gpt2-sm-1k"
+    "tiny",
+    "square-1k",
+    "square-2k",
+    "square-4k",
+    "rect-wide",
+    "rect-tall",
+    "llama-q",
+    "llama-ffn",
+    "seq512",
+    "non-align-1",
+    "non-align-2",
+    "non-align-3",
+    "non-align-4",
+    "non-align-5",
+    "non-align-6",
+    "non-align-7",
+    "extreme-1row",
+    "extreme-16",
+    "extreme-long"
   ],
   "phase": 1,
   "stage": 7,

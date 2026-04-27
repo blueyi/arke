@@ -1,0 +1,7 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy
+geglu,ds-v2-512,512,12288,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,244.7,245.6,,ok,,false,true,0.0078125,6.86275e-05,0.01,0.01,ok,,,,,
+geglu,ds-v2-2k,2048,12288,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,928.8,930.6,,ok,,false,true,0.0078125,6.8519e-05,0.01,0.01,ok,,,,,
+geglu,ds-v3-512,512,18432,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,355.2,357.3,,ok,,false,true,0.0078125,6.84148e-05,0.01,0.01,ok,,,,,
+geglu,ds-v3-2k,2048,18432,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,1383.9,1387.5,,ok,,false,true,0.0078125,6.8576e-05,0.01,0.01,ok,,,,,
+geglu,qwen25-7b,512,18944,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,348.7,346.9,,ok,,false,true,0.0078125,6.8468e-05,0.01,0.01,ok,,,,,
+geglu,qwen25-7b-2k,2048,18944,0,separate,PyTorch 2.6.0+cu124 eager fused expression (geglu) | https://pytorch.org | License: BSD-3-Clause,1351.2,1349.6,,ok,,false,true,0.0078125,6.85608e-05,0.01,0.01,ok,,,,,

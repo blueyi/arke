@@ -1,65 +1,958 @@
 {
   "l1": {
     "add": {
-      "shape_count": 1,
+      "shape_count": 20,
       "shape_tags": [
-        "square-1k"
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 80,
+      "status_counts": {
+        "ok": 80
+      }
+    },
+    "argmax": {
+      "shape_count": 2,
+      "shape_tags": [
+        "medium",
+        "small"
       ],
       "rows": 4,
       "status_counts": {
         "ok": 4
+      }
+    },
+    "batch_matmul": {
+      "shape_count": 9,
+      "shape_tags": [
+        "batched-32",
+        "batched-8",
+        "extreme-bsz",
+        "gpt2-attn-128",
+        "gpt2-attn-512",
+        "llama-attn-2k",
+        "llama-attn-512",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "rows": 36,
+      "status_counts": {
+        "ok": 36
+      }
+    },
+    "cast": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 60,
+      "status_counts": {
+        "ok": 60
+      }
+    },
+    "concat": {
+      "shape_count": 2,
+      "shape_tags": [
+        "gpt2-qkv-merge",
+        "tiny-2"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "copy_": {
+      "shape_count": 5,
+      "shape_tags": [
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "micro-small",
+        "micro-tiny",
+        "square-1k"
+      ],
+      "rows": 10,
+      "status_counts": {
+        "ok": 10
+      }
+    },
+    "cross_attention": {
+      "shape_count": 2,
+      "shape_tags": [
+        "tiny",
+        "whisper-enc-dec"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "cross_entropy": {
+      "shape_count": 3,
+      "shape_tags": [
+        "gpt2-seq128",
+        "gpt2-seq512",
+        "tiny"
+      ],
+      "rows": 6,
+      "status_counts": {
+        "ok": 6
+      }
+    },
+    "cumsum": {
+      "shape_count": 2,
+      "shape_tags": [
+        "gpt2-row",
+        "small-row"
+      ],
+      "rows": 6,
+      "status_counts": {
+        "ok": 6
+      }
+    },
+    "dequantize_per_channel": {
+      "shape_count": 2,
+      "shape_tags": [
+        "gpt2-int8",
+        "tiny-int8"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "embedding": {
+      "shape_count": 3,
+      "shape_tags": [
+        "gpt2-medium",
+        "gpt2-small",
+        "tiny"
+      ],
+      "rows": 9,
+      "status_counts": {
+        "ok": 9
+      }
+    },
+    "exp": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 80,
+      "status_counts": {
+        "ok": 80
+      }
+    },
+    "flash_attention": {
+      "shape_count": 1,
+      "shape_tags": [
+        "gpt2-sm-128"
+      ],
+      "rows": 3,
+      "status_counts": {
+        "ok": 3
+      }
+    },
+    "fused_linear_cross_entropy": {
+      "shape_count": 2,
+      "shape_tags": [
+        "gpt2-seq128",
+        "gpt2-seq512"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "gather": {
+      "shape_count": 2,
+      "shape_tags": [
+        "moe-dispatch-top2",
+        "tiny"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "geglu": {
+      "shape_count": 1,
+      "shape_tags": [
+        "gpt2-sm"
+      ],
+      "rows": 2,
+      "status_counts": {
+        "ok": 2
       }
     },
     "gelu": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 120,
+      "status_counts": {
+        "error": 1,
+        "ok": 119
+      }
+    },
+    "grouped_matmul": {
+      "shape_count": 7,
+      "shape_tags": [
+        "ds-moe-2k",
+        "ds-moe-512",
+        "ds-v3-moe",
+        "moe-medium",
+        "moe-small",
+        "moe-tiny",
+        "non-align-1"
+      ],
+      "rows": 14,
+      "status_counts": {
+        "ok": 12,
+        "skipped": 2
+      }
+    },
+    "grouped_query_attention": {
       "shape_count": 1,
       "shape_tags": [
-        "square-1k"
+        "llama3-8b-512"
       ],
-      "rows": 6,
+      "rows": 2,
       "status_counts": {
-        "ok": 6
+        "ok": 2
+      }
+    },
+    "layernorm": {
+      "shape_count": 9,
+      "shape_tags": [
+        "ds-v2",
+        "ds-v3",
+        "gpt2-ffn",
+        "gpt2-medium",
+        "gpt2-small",
+        "llama-13b",
+        "llama-7b",
+        "llama-long",
+        "mixtral-ffn"
+      ],
+      "rows": 45,
+      "status_counts": {
+        "ok": 45
       }
     },
     "matmul": {
-      "shape_count": 1,
+      "shape_count": 12,
       "shape_tags": [
-        "square-1k"
+        "gpt2-c_attn",
+        "gpt2-c_proj",
+        "llama-ffn",
+        "llama-q",
+        "lm-head-gpt2",
+        "rect-tall",
+        "rect-wide",
+        "seq512",
+        "square-1k",
+        "square-2k",
+        "square-4k",
+        "tiny"
       ],
-      "rows": 6,
+      "rows": 72,
       "status_counts": {
-        "ok": 6
+        "ok": 72
       }
     },
-    "relu": {
-      "shape_count": 1,
+    "mul": {
+      "shape_count": 20,
       "shape_tags": [
-        "square-1k"
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 80,
+      "status_counts": {
+        "ok": 80
+      }
+    },
+    "multi_latent_attention": {
+      "shape_count": 4,
+      "shape_tags": [
+        "ds-v2-mla-4k",
+        "ds-v2-mla-8k",
+        "ds-v3-mla-4k",
+        "ds-v3-mla-8k"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "skipped": 4
+      }
+    },
+    "neg": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 80,
+      "status_counts": {
+        "ok": 80
+      }
+    },
+    "paged_attention": {
+      "shape_count": 4,
+      "shape_tags": [
+        "llama3-ctx8k",
+        "qwen25-ctx32k",
+        "vllm-batch16",
+        "vllm-batch32-ctx4k"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "skipped": 4
+      }
+    },
+    "permute": {
+      "shape_count": 3,
+      "shape_tags": [
+        "gpt2-bhsd",
+        "gpt2-bshd",
+        "small-3d"
+      ],
+      "rows": 3,
+      "status_counts": {
+        "ok": 3
+      }
+    },
+    "quantize_per_token": {
+      "shape_count": 2,
+      "shape_tags": [
+        "gpt2-int8",
+        "tiny-int8"
       ],
       "rows": 4,
       "status_counts": {
         "ok": 4
+      }
+    },
+    "reduce_max": {
+      "shape_count": 2,
+      "shape_tags": [
+        "medium",
+        "small"
+      ],
+      "rows": 8,
+      "status_counts": {
+        "ok": 8
+      }
+    },
+    "reduce_mean": {
+      "shape_count": 2,
+      "shape_tags": [
+        "medium",
+        "small"
+      ],
+      "rows": 8,
+      "status_counts": {
+        "ok": 8
+      }
+    },
+    "reduce_sum": {
+      "shape_count": 2,
+      "shape_tags": [
+        "medium",
+        "small"
+      ],
+      "rows": 8,
+      "status_counts": {
+        "ok": 8
+      }
+    },
+    "relu": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 100,
+      "status_counts": {
+        "ok": 100
+      }
+    },
+    "rmsnorm": {
+      "shape_count": 9,
+      "shape_tags": [
+        "ds-v2",
+        "ds-v3",
+        "gpt2-ffn",
+        "gpt2-medium",
+        "gpt2-small",
+        "llama-13b",
+        "llama-7b",
+        "llama-long",
+        "mixtral-ffn"
+      ],
+      "rows": 36,
+      "status_counts": {
+        "ok": 36
+      }
+    },
+    "rmsnorm_residual": {
+      "shape_count": 9,
+      "shape_tags": [
+        "ds-v2",
+        "ds-v3",
+        "gpt2-ffn",
+        "gpt2-medium",
+        "gpt2-small",
+        "llama-13b",
+        "llama-7b",
+        "llama-long",
+        "mixtral-ffn"
+      ],
+      "rows": 18,
+      "status_counts": {
+        "ok": 18
+      }
+    },
+    "rope": {
+      "shape_count": 2,
+      "shape_tags": [
+        "gpt2-sm-128",
+        "gpt2-sm-512"
+      ],
+      "rows": 6,
+      "status_counts": {
+        "error": 2,
+        "ok": 4
+      }
+    },
+    "rsqrt": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 80,
+      "status_counts": {
+        "ok": 80
+      }
+    },
+    "scatter": {
+      "shape_count": 2,
+      "shape_tags": [
+        "moe-combine-top2",
+        "tiny"
+      ],
+      "rows": 2,
+      "status_counts": {
+        "ok": 2
+      }
+    },
+    "sigmoid": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 80,
+      "status_counts": {
+        "ok": 80
+      }
+    },
+    "silu": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 100,
+      "status_counts": {
+        "ok": 100
+      }
+    },
+    "softmax": {
+      "shape_count": 10,
+      "shape_tags": [
+        "attn-gpt2-128",
+        "attn-gpt2-256",
+        "attn-gpt2-512",
+        "attn-llama-2k",
+        "attn-llama-4k",
+        "attn-llama-512",
+        "batch-large",
+        "square-4k",
+        "wide-vocab-gpt2",
+        "wide-vocab-llama3"
+      ],
+      "rows": 60,
+      "status_counts": {
+        "error": 1,
+        "ok": 59
+      }
+    },
+    "split": {
+      "shape_count": 2,
+      "shape_tags": [
+        "gpt2-qkv-split",
+        "tiny-2"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "swiglu": {
+      "shape_count": 1,
+      "shape_tags": [
+        "gpt2-sm"
+      ],
+      "rows": 2,
+      "status_counts": {
+        "ok": 2
+      }
+    },
+    "tanh": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 80,
+      "status_counts": {
+        "ok": 80
+      }
+    },
+    "topk": {
+      "shape_count": 2,
+      "shape_tags": [
+        "moe-top2-gpt2",
+        "moe-top2-small"
+      ],
+      "rows": 4,
+      "status_counts": {
+        "ok": 4
+      }
+    },
+    "transpose": {
+      "shape_count": 6,
+      "shape_tags": [
+        "extreme-tall",
+        "llama-kv",
+        "non-align-1",
+        "small",
+        "square-1k",
+        "wide"
+      ],
+      "rows": 24,
+      "status_counts": {
+        "ok": 24
+      }
+    },
+    "where_": {
+      "shape_count": 20,
+      "shape_tags": [
+        "ds-ffn",
+        "ds-ffn-large",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide",
+        "gpt2-ffn",
+        "gpt2-hidden",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "micro-small",
+        "micro-tiny",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "qwen-ffn",
+        "square-1k",
+        "xlarge"
+      ],
+      "rows": 60,
+      "status_counts": {
+        "ok": 60
       }
     }
   },
   "l2": {
-    "matmul_gelu": {
-      "shape_count": 1,
+    "geglu": {
+      "shape_count": 12,
       "shape_tags": [
-        "square-1k"
+        "ds-v2-2k",
+        "ds-v2-512",
+        "ds-v3-2k",
+        "ds-v3-512",
+        "gpt2-sm",
+        "llama-7b-2k",
+        "llama-7b-512",
+        "llama3-8b",
+        "non-align-1",
+        "non-align-2",
+        "qwen25-7b",
+        "qwen25-7b-2k"
       ],
-      "rows": 3,
+      "rows": 12,
       "status_counts": {
-        "ok": 3
+        "error": 2,
+        "ok": 10
+      }
+    },
+    "linear_ce": {
+      "shape_count": 12,
+      "shape_tags": [
+        "ds-v2-seq512",
+        "extreme-large-vocab",
+        "gpt2-seq128",
+        "gpt2-seq512",
+        "llama2-seq2k",
+        "llama2-seq512",
+        "llama3-seq2k",
+        "llama3-seq512",
+        "non-align-1",
+        "non-align-2",
+        "qwen25-seq2k",
+        "qwen25-seq512"
+      ],
+      "rows": 12,
+      "status_counts": {
+        "ok": 12
+      }
+    },
+    "matmul_gelu": {
+      "shape_count": 34,
+      "shape_tags": [
+        "ds-v2-attn",
+        "ds-v2-ffn-down",
+        "ds-v2-ffn-up",
+        "ds-v2-lmhead",
+        "ds-v2-long-8k",
+        "ds-v3-attn",
+        "ds-v3-ffn-up",
+        "ds-v3-lmhead",
+        "ds-v3-long-32k",
+        "extreme-16",
+        "extreme-1row",
+        "extreme-long",
+        "gpt2-c_attn",
+        "gpt2-c_proj",
+        "llama-ffn",
+        "llama-q",
+        "lm-head-gpt2",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "non-align-6",
+        "non-align-7",
+        "qwen25-attn",
+        "qwen25-ffn-up",
+        "qwen25-lmhead",
+        "rect-tall",
+        "rect-wide",
+        "seq512",
+        "square-1k",
+        "square-2k",
+        "square-4k",
+        "tiny"
+      ],
+      "rows": 102,
+      "status_counts": {
+        "ok": 102
       }
     },
     "matmul_relu": {
-      "shape_count": 1,
+      "shape_count": 34,
       "shape_tags": [
-        "square-1k"
+        "ds-v2-attn",
+        "ds-v2-ffn-down",
+        "ds-v2-ffn-up",
+        "ds-v2-lmhead",
+        "ds-v2-long-8k",
+        "ds-v3-attn",
+        "ds-v3-ffn-up",
+        "ds-v3-lmhead",
+        "ds-v3-long-32k",
+        "extreme-16",
+        "extreme-1row",
+        "extreme-long",
+        "gpt2-c_attn",
+        "gpt2-c_proj",
+        "llama-ffn",
+        "llama-q",
+        "lm-head-gpt2",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "non-align-6",
+        "non-align-7",
+        "qwen25-attn",
+        "qwen25-ffn-up",
+        "qwen25-lmhead",
+        "rect-tall",
+        "rect-wide",
+        "seq512",
+        "square-1k",
+        "square-2k",
+        "square-4k",
+        "tiny"
       ],
-      "rows": 3,
+      "rows": 102,
       "status_counts": {
-        "ok": 3
+        "ok": 102
+      }
+    },
+    "qkv_fa": {
+      "shape_count": 16,
+      "shape_tags": [
+        "ds-batch-8",
+        "ds-v2-16k",
+        "ds-v2-2k",
+        "ds-v2-4k",
+        "ds-v2-512",
+        "ds-v2-8k",
+        "ds-v3-163k",
+        "ds-v3-32k",
+        "gpt2-md-2k",
+        "gpt2-sm-128",
+        "gpt2-sm-1k",
+        "gpt2-sm-512",
+        "llama2-7b-2k",
+        "llama2-7b-4k",
+        "llama2-7b-512",
+        "llama2-7b-batch"
+      ],
+      "rows": 16,
+      "status_counts": {
+        "ok": 11,
+        "skipped": 5
+      }
+    },
+    "swiglu": {
+      "shape_count": 12,
+      "shape_tags": [
+        "ds-v2-2k",
+        "ds-v2-512",
+        "ds-v3-2k",
+        "ds-v3-512",
+        "gpt2-sm",
+        "llama-7b-2k",
+        "llama-7b-512",
+        "llama3-8b",
+        "non-align-1",
+        "non-align-2",
+        "qwen25-7b",
+        "qwen25-7b-2k"
+      ],
+      "rows": 12,
+      "status_counts": {
+        "error": 2,
+        "ok": 10
       }
     }
   }

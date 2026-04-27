@@ -267,7 +267,9 @@ def run_fused_op(
 
     if op in ("swiglu", "geglu"):
         if shapes is None:
-            shapes = GATED_FUSED_SHAPES
+            # Use canonical registry-backed shape catalog so BL5 tag coverage
+            # stays aligned with stage7_bl5_target_matrix.json.
+            shapes = get_shapes("swiglu")
         if shape_tags:
             allowed = set(shape_tags)
             shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
@@ -301,7 +303,9 @@ def run_fused_op(
         return _run_qkv_fa_op(op, shapes, warmup=warmup, reps=reps, hw=hw)
 
     if shapes is None:
-        shapes = FUSED_SHAPES
+        # matmul_* fusions should follow canonical matmul shape tags from
+        # benchmark-shapes.md via shape_registry.
+        shapes = get_shapes("matmul")
 
     if shape_tags:
         allowed = set(shape_tags)
@@ -318,33 +322,59 @@ def run_fused_op(
     )
 
     results: list[FusedResult] = []
+    hw = collect_hardware_info()
+    preflight_by_tag: dict[str, object] = {}
 
     for shape in shapes:
         tag, M, N, K = shape.tag, shape.M, shape.N, shape.K
+        preflight = maybe_memory_preflight(hw, op, shape)
+        preflight_by_tag[tag] = preflight
+
+        if preflight is not None and preflight.status.status != "ok":
+            results.append(_memory_skipped_fused_result(
+                op=op,
+                tag=tag,
+                M=M,
+                N=N,
+                K=K,
+                approach="separate",
+                source=(
+                    f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+                    "https://pytorch.org | License: BSD-3-Clause"
+                ),
+                preflight=preflight,
+            ))
+            continue
 
         fn_sep, src_sep = _build_separate_fn(activation, M, N, K)
         results.append(
             _measure_fused(op, tag, M, N, K, "separate", src_sep, fn_sep,
-                           warmup, reps)
+                           warmup, reps, memory_preflight=preflight)
         )
 
         fn_comp, src_comp = _build_compile_fn(activation, M, N, K)
         if fn_comp is not None:
             results.append(
                 _measure_fused(op, tag, M, N, K, "torch.compile", src_comp,
-                               fn_comp, warmup, reps)
+                               fn_comp, warmup, reps, memory_preflight=preflight)
             )
 
     for shape in shapes:
         tag, M, N, K = shape.tag, shape.M, shape.N, shape.K
+        preflight = preflight_by_tag.get(tag)
+        if preflight is not None and preflight.status.status != "ok":
+            continue
+
         fn_fg, src_fg = _build_flaggems_fn(activation, M, N, K)
         if fn_fg is not None:
             results.append(
                 _measure_fused(op, tag, M, N, K, "FlagGems", src_fg,
-                               fn_fg, warmup, reps)
+                               fn_fg, warmup, reps, memory_preflight=preflight)
             )
 
     return results
+
+
 
 
 def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tuple[float, float]:

@@ -1,0 +1,36 @@
+{
+  "overall_geomean": 1.0,
+  "op_scores": {
+    "swiglu": 1.0
+  },
+  "total_shapes": 6,
+  "operators": [
+    "swiglu"
+  ],
+  "status_counts": {
+    "ok": 6
+  },
+  "correctness_counts": {
+    "ok": 6
+  },
+  "memory_policy_counts": {
+    "none": 6
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 6,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 6
+  },
+  "perf_targets": {
+    "swiglu": 1.0
+  },
+  "perf_actuals": {
+    "swiglu": 1.0
+  },
+  "perf_gaps": {
+    "swiglu": 0.0
+  }
+}

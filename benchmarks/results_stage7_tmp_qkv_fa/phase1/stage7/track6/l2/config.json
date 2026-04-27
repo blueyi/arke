@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-04-28_005706",
+  "ops": [
+    "qkv_fa"
+  ],
+  "warmup": 1,
+  "reps": 1,
+  "layer": "L2",
+  "shape_tags": [
+    "llama2-7b-512",
+    "llama2-7b-2k",
+    "llama2-7b-4k",
+    "llama2-7b-batch",
+    "ds-v2-512",
+    "ds-v2-2k",
+    "ds-batch-8",
+    "ds-v2-4k",
+    "ds-v2-8k",
+    "ds-v2-16k",
+    "ds-v3-32k",
+    "ds-v3-163k",
+    "gpt2-md-2k"
+  ],
+  "phase": 1,
+  "stage": 7,
+  "track": 6
+}

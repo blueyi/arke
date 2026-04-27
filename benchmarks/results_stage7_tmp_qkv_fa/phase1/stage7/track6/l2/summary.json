@@ -1,0 +1,39 @@
+{
+  "overall_geomean": 1.0,
+  "op_scores": {
+    "qkv_fa": 1.0
+  },
+  "total_shapes": 8,
+  "operators": [
+    "qkv_fa"
+  ],
+  "status_counts": {
+    "ok": 8,
+    "skipped": 5
+  },
+  "correctness_counts": {
+    "ok": 8,
+    "skipped": 5
+  },
+  "memory_policy_counts": {
+    "attention": 13
+  },
+  "memory_pressure_rows": 5,
+  "perf_target_counts": {
+    "with_target": 13,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 8,
+    "false": 5
+  },
+  "perf_targets": {
+    "qkv_fa": 1.0
+  },
+  "perf_actuals": {
+    "qkv_fa": 1.0
+  },
+  "perf_gaps": {
+    "qkv_fa": 0.0
+  }
+}

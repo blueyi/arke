@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-04-28_000235",
+  "ops": [
+    "matmul_relu"
+  ],
+  "warmup": 1,
+  "reps": 1,
+  "layer": "L2",
+  "shape_tags": [
+    "gpt2-c_proj",
+    "gpt2-c_attn",
+    "lm-head-gpt2",
+    "ds-v2-attn",
+    "ds-v2-ffn-up",
+    "ds-v2-ffn-down",
+    "ds-v2-lmhead",
+    "ds-v2-long-8k",
+    "ds-v3-attn",
+    "ds-v3-ffn-up",
+    "ds-v3-lmhead",
+    "ds-v3-long-32k",
+    "qwen25-attn",
+    "qwen25-ffn-up",
+    "qwen25-lmhead"
+  ],
+  "phase": 1,
+  "stage": 7,
+  "track": 6
+}

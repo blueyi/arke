@@ -1,0 +1,7 @@
+op,shape_tag,M,N,K,approach,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy
+swiglu,ds-v2-512,512,12288,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,231.9,231.4,,ok,,false,true,0.0078125,5.03195e-05,0.01,0.01,ok,,,,,
+swiglu,ds-v2-2k,2048,12288,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,889.3,889.8,,ok,,false,true,0.0078125,5.02853e-05,0.01,0.01,ok,,,,,
+swiglu,ds-v3-512,512,18432,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,339.3,340.0,,ok,,false,true,0.0078125,5.02715e-05,0.01,0.01,ok,,,,,
+swiglu,ds-v3-2k,2048,18432,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,1322.0,1325.1,,ok,,false,true,0.015625,5.03611e-05,0.01,0.01,ok,,,,,
+swiglu,qwen25-7b,512,18944,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,351.7,349.2,,ok,,false,true,0.0078125,5.03035e-05,0.01,0.01,ok,,,,,
+swiglu,qwen25-7b-2k,2048,18944,0,separate,PyTorch 2.6.0+cu124 eager fused expression (swiglu) | https://pytorch.org | License: BSD-3-Clause,1358.8,1358.8,,ok,,false,true,0.015625,5.03307e-05,0.01,0.01,ok,,,,,

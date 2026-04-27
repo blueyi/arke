@@ -2,3 +2,16 @@ operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,s
 qkv_fa,gpt2-sm-128,separate,98.4,73.7,4.604,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
 qkv_fa,gpt2-sm-512,separate,217.6,220.2,8.328,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
 qkv_fa,gpt2-sm-1k,separate,543.2,544.6,6.671,1.0000,ok,,false,true,5.82077e-11,7.40149e-17,0.01,0.01,ok,,31457280,3542771302,0.0089,attention,1.0,1.0000,true,0.0000
+qkv_fa,gpt2-md-2k,separate,1814.5,1812.5,7.101,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,150994944,3542771302,0.0426,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-512,separate,2059.1,2024.2,25.030,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-2k,separate,12262.4,11357.0,16.812,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-4k,separate,30297.9,30128.1,13.609,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1207959552,3542771302,0.3410,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-batch,separate,9904.1,9888.8,20.815,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
+qkv_fa,ds-v2-512,separate,43724.8,43547.6,18.860,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
+qkv_fa,ds-v2-2k,separate,160261.1,158176.3,20.582,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0000,true,0.0000
+qkv_fa,ds-v2-4k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 4831838208 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4831838208 bytes > budget 3542771302 bytes,4831838208,3542771302,1.3639,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v2-8k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 18253611008 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 18253611008 bytes > budget 3542771302 bytes,18253611008,3542771302,5.1524,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v2-16k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 70866960384 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 70866960384 bytes > budget 3542771302 bytes,70866960384,3542771302,20.0033,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v3-32k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 279172874240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 279172874240 bytes > budget 3542771302 bytes,279172874240,3542771302,78.8007,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v3-163k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 6893422510080 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 6893422510080 bytes > budget 3542771302 bytes,6893422510080,3542771302,1945.7712,attention,1.0,N/A,false,N/A
+qkv_fa,ds-batch-8,separate,344058.9,351453.2,19.174,1.0000,ok,,false,true,4.76837e-07,1.4707e-14,0.01,0.01,ok,,1073741824,3542771302,0.3031,attention,1.0,1.0000,true,0.0000

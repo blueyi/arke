@@ -1,0 +1,7 @@
+operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+geglu,ds-v2-512,separate,244.7,245.6,,1.0000,ok,,false,true,0.0078125,6.86275e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v2-2k,separate,928.8,930.6,,1.0000,ok,,false,true,0.0078125,6.8519e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-512,separate,355.2,357.3,,1.0000,ok,,false,true,0.0078125,6.84148e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-2k,separate,1383.9,1387.5,,1.0000,ok,,false,true,0.0078125,6.8576e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b,separate,348.7,346.9,,1.0000,ok,,false,true,0.0078125,6.8468e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b-2k,separate,1351.2,1349.6,,1.0000,ok,,false,true,0.0078125,6.85608e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
