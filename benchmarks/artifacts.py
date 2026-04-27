@@ -7,6 +7,7 @@ import csv
 import json
 import math
 from pathlib import Path
+from typing import Any
 
 MEMORY_FIELDS = (
     "memory_bytes_required",
@@ -30,6 +31,134 @@ def _safe_float(value: str | float | int | None) -> float | None:
 
 def _copy_memory_fields(row: dict[str, str]) -> dict[str, str]:
     return {field: row.get(field, "") for field in MEMORY_FIELDS}
+
+
+def _read_csv_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
+    if not path.exists():
+        return [], []
+    with path.open(newline="") as fh:
+        reader = csv.DictReader(fh)
+        return list(reader.fieldnames or []), list(reader)
+
+
+def _merge_fieldnames(*field_lists: list[str]) -> list[str]:
+    merged: list[str] = []
+    seen: set[str] = set()
+    for field_list in field_lists:
+        for field in field_list:
+            if field and field not in seen:
+                seen.add(field)
+                merged.append(field)
+    return merged
+
+
+def _write_csv_rows(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _perf_row_key(row: dict[str, str], fieldnames: list[str]) -> tuple[str, str, str]:
+    runner_field = "baseline" if "baseline" in fieldnames else "approach" if "approach" in fieldnames else ""
+    key = (
+        (row.get("operator") or "").strip(),
+        (row.get("shape_tag") or "").strip(),
+        (row.get(runner_field) or "").strip() if runner_field else "",
+    )
+    if not all(key):
+        raise ValueError(
+            "perf rows must include operator, shape_tag, and baseline/approach "
+            f"identity fields; got {key!r}"
+        )
+    return key
+
+
+def _merge_perf_rows(
+    existing_rows: list[dict[str, str]],
+    incoming_rows: list[dict[str, str]],
+    fieldnames: list[str],
+) -> tuple[list[dict[str, str]], dict[str, int]]:
+    merged: list[dict[str, str]] = []
+    index_by_key: dict[tuple[str, str, str], int] = {}
+    updated = 0
+    inserted = 0
+
+    for row in existing_rows:
+        key = _perf_row_key(row, fieldnames)
+        if key in index_by_key:
+            merged[index_by_key[key]] = row
+        else:
+            index_by_key[key] = len(merged)
+            merged.append(row)
+
+    for row in incoming_rows:
+        key = _perf_row_key(row, fieldnames)
+        if key in index_by_key:
+            merged[index_by_key[key]] = row
+            updated += 1
+        else:
+            index_by_key[key] = len(merged)
+            merged.append(row)
+            inserted += 1
+
+    return merged, {
+        "preserved_existing_rows": len(existing_rows) - updated,
+        "updated_rows": updated,
+        "inserted_rows": inserted,
+        "total_rows": len(merged),
+    }
+
+
+def merge_perf_evidence(source_dir: Path, target_dir: Path) -> dict[str, Any]:
+    """Incrementally merge perf_*.csv evidence from a partial run into a target run.
+
+    Unlike :func:`merge_perf_all`, this function is safe for targeted benchmark runs:
+    it updates only matching ``(operator, shape_tag, baseline|approach)`` rows and
+    appends new evidence while preserving unrelated per-op rows already present in
+    the canonical result directory.
+    """
+    source_dir = Path(source_dir)
+    target_dir = Path(target_dir)
+    perf_files = sorted(source_dir.glob("perf_*.csv"))
+    if not perf_files:
+        raise FileNotFoundError(f"no perf_*.csv files found in {source_dir}")
+
+    totals = {
+        "perf_files": 0,
+        "preserved_existing_rows": 0,
+        "updated_rows": 0,
+        "inserted_rows": 0,
+        "total_rows": 0,
+    }
+    merged_files: list[str] = []
+
+    for source_csv in perf_files:
+        target_csv = target_dir / source_csv.name
+        existing_fields, existing_rows = _read_csv_rows(target_csv)
+        incoming_fields, incoming_rows = _read_csv_rows(source_csv)
+        fieldnames = _merge_fieldnames(existing_fields, incoming_fields)
+        merged_rows, stats = _merge_perf_rows(existing_rows, incoming_rows, fieldnames)
+        _write_csv_rows(target_csv, fieldnames, merged_rows)
+
+        totals["perf_files"] += 1
+        for key in ("preserved_existing_rows", "updated_rows", "inserted_rows"):
+            totals[key] += stats[key]
+        totals["total_rows"] += stats["total_rows"]
+        merged_files.append(str(target_csv))
+
+    perf_all = merge_perf_all(target_dir)
+    summary = write_summary(target_dir)
+    return {
+        **totals,
+        "source_dir": str(source_dir),
+        "target_dir": str(target_dir),
+        "merged_files": merged_files,
+        "perf_all": str(perf_all) if perf_all else None,
+        "summary": str(summary) if summary else None,
+    }
 
 
 def _resolve_perf_fields(row: dict[str, str], ratio: float | None) -> dict[str, str]:
@@ -285,3 +414,26 @@ def write_summary(run_dir: Path) -> Path | None:
     out = run_dir / "summary.json"
     out.write_text(json.dumps(summary, indent=2))
     return out
+
+
+def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Benchmark artifact utilities")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    merge_parser = sub.add_parser(
+        "merge-evidence",
+        help="Safely merge partial perf_*.csv evidence into a canonical run directory",
+    )
+    merge_parser.add_argument("--source", required=True, type=Path)
+    merge_parser.add_argument("--target", required=True, type=Path)
+
+    args = parser.parse_args()
+    if args.cmd == "merge-evidence":
+        result = merge_perf_evidence(args.source, args.target)
+        print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

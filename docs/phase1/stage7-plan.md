@@ -351,6 +351,7 @@ Remaining BL5 work is tracked under four component lenses, each feeding existing
 2. Audit write/index ops for probe-semantics pitfalls (e.g. repeated-index nondeterminism) before counting mismatches as implementation bugs (drives T6.7).
 3. Extend artifact writing so performance pass/fail is preserved in `PERF_ALL.csv` and summaries alongside the new correctness fields (T6.9). ✅ Completed in `benchmarks.artifacts`; summaries now aggregate `perf_target` / `perf_actual` / `perf_pass` / `perf_gap`.
 4. Wire the coverage gap automation (`python -m benchmarks.stage7_coverage_gap`, written by T6.10) into Stage 7 dashboards and gate verification (drives T6.11 → T6.12). ✅ Initial integration is in place via persisted `coverage_gap.json`, CLI summaries, and green Track 6 contract/gate slices; remaining work is richer dashboarding + stricter CI enforcement.
+5. Run targeted missing-shape benchmarks into temporary directories, then merge only new/updated evidence into canonical Track 6 artifacts with `python -m benchmarks.artifacts merge-evidence --source <tmp>/phase1/stage7/track*/l1 --target benchmarks/results/phase1/stage7/track6/l1`. This avoids partial per-op reruns shrinking `PERF_ALL.csv` / `summary.json` by overwriting canonical evidence with an incomplete local run.
 
 ## Dependencies
 

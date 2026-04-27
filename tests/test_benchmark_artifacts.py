@@ -68,6 +68,85 @@ class TestBenchmarkArtifacts:
         assert data["perf_actuals"]["relu"] > 1.0
         assert data["perf_gaps"]["relu"] == 0.125
 
+    def test_merge_perf_evidence_preserves_unrelated_rows(self, tmp_path: Path):
+        canonical = tmp_path / "canonical"
+        partial = tmp_path / "partial"
+        canonical.mkdir()
+        partial.mkdir()
+        fieldnames = [
+            "operator", "shape_tag", "baseline", "latency_us", "latency_min_us",
+            "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
+            "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
+            "correctness_status", "correctness_reason",
+            "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
+            "perf_target", "perf_actual", "perf_pass", "perf_gap",
+        ]
+        with (canonical / "perf_cumsum.csv").open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow({
+                "operator": "cumsum", "shape_tag": "gpt2-row", "baseline": "PyTorch-eager",
+                "latency_us": "20", "latency_min_us": "19", "ratio_vs_baseline": "1.0",
+                "status": "ok", "retryable": "false", "correctness_status": "pass",
+                "memory_policy": "none", "perf_target": "1.0", "perf_actual": "1.0",
+                "perf_pass": "true", "perf_gap": "0.0",
+            })
+            writer.writerow({
+                "operator": "cumsum", "shape_tag": "small-row", "baseline": "PyTorch-eager",
+                "latency_us": "10", "latency_min_us": "9", "ratio_vs_baseline": "1.0",
+                "status": "ok", "retryable": "false", "correctness_status": "pass",
+                "memory_policy": "none", "perf_target": "1.0", "perf_actual": "1.0",
+                "perf_pass": "true", "perf_gap": "0.0",
+            })
+        with (canonical / "perf_relu.csv").open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow({
+                "operator": "relu", "shape_tag": "square-1k", "baseline": "PyTorch-eager",
+                "latency_us": "5", "latency_min_us": "4", "ratio_vs_baseline": "1.0",
+                "status": "ok", "retryable": "false", "correctness_status": "pass",
+                "memory_policy": "none", "perf_target": "1.0", "perf_actual": "1.0",
+                "perf_pass": "true", "perf_gap": "0.0",
+            })
+        with (partial / "perf_cumsum.csv").open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow({
+                "operator": "cumsum", "shape_tag": "small-row", "baseline": "PyTorch-eager",
+                "latency_us": "8", "latency_min_us": "7", "ratio_vs_baseline": "1.0",
+                "status": "ok", "retryable": "false", "correctness_status": "pass",
+                "memory_policy": "none", "perf_target": "1.0", "perf_actual": "1.0",
+                "perf_pass": "true", "perf_gap": "0.0",
+            })
+            writer.writerow({
+                "operator": "cumsum", "shape_tag": "llama-row", "baseline": "PyTorch-eager",
+                "latency_us": "30", "latency_min_us": "28", "ratio_vs_baseline": "1.0",
+                "status": "ok", "retryable": "false", "correctness_status": "pass",
+                "memory_policy": "none", "perf_target": "1.0", "perf_actual": "1.0",
+                "perf_pass": "true", "perf_gap": "0.0",
+            })
+
+        from benchmarks.artifacts import merge_perf_evidence
+
+        result = merge_perf_evidence(partial, canonical)
+
+        assert result["perf_files"] == 1
+        assert result["updated_rows"] == 1
+        assert result["inserted_rows"] == 1
+        cumsum_rows = list(csv.DictReader((canonical / "perf_cumsum.csv").open()))
+        assert len(cumsum_rows) == 3
+        assert {(r["shape_tag"], r["baseline"]) for r in cumsum_rows} == {
+            ("gpt2-row", "PyTorch-eager"),
+            ("small-row", "PyTorch-eager"),
+            ("llama-row", "PyTorch-eager"),
+        }
+        small = next(r for r in cumsum_rows if r["shape_tag"] == "small-row")
+        assert small["latency_us"] == "8"
+        perf_all_rows = list(csv.DictReader((canonical / "PERF_ALL.csv").open()))
+        assert len(perf_all_rows) == 4
+        summary = json.loads((canonical / "summary.json").read_text())
+        assert set(summary["operators"]) == {"cumsum", "relu"}
+
     def test_write_perf_csv_from_l2_and_summary(self, tmp_path: Path):
         raw = tmp_path / "matmul_relu_results.csv"
         with raw.open("w", newline="") as f:
