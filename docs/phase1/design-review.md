@@ -420,7 +420,7 @@ matmul 是 GPU 优化中最"已解决"的问题：
 
 ### 问题 5：v2 设计文档之间有术语不一致
 
-> **注：** 下表引用的文档名（overview.md、e2e-design-v2.md、plan-v2.1.md、multi-backend.md）为历史文档，已在项目重构时归档至 `docs/deprecated/`。术语已在当前文档中统一。
+> **注：** 下表引用的文档名（overview.md、e2e-design-v2.md、plan-v2.1.md、multi-backend.md）仅用于说明历史命名，它们已从主线文档树移除；术语已在当前文档中统一。
 
 | 概念 | v2 overview.md | v2 e2e-design-v2.md | plan-v2.1.md | multi-backend.md |
 |------|---------------|---------------------|-------------|-----------------|

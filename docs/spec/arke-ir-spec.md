@@ -933,7 +933,7 @@ All IR documents include version metadata:
 
 ## References
 
-- `docs/spec/arke-lang-spec-v2.md` — Arke Language v2.0
+- `docs/spec/arke-lang-spec.md` — Arke Language v2.0
 - `docs/spec/arke-lang-vs-python-triton.md` — Comparative analysis
 - `docs/architecture/e2e-flow.md` — End-to-end LLM optimization flow
 - `docs/architecture/agent-design.md` — Agent architecture

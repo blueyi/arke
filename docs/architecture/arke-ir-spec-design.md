@@ -1,6 +1,6 @@
 # Arke IR Multi-Layer Architecture
 
-> **Version:** v2-only active design reference  
+> **Version:** active design reference for IR spec v2.0
 > **Status:** Design Spec — active architecture reference after Stage 7 V2-only cleanup  
 > **Owner:** IR Architecture Team  
 > **Created:** 2026-04-06  
@@ -304,7 +304,7 @@ Current rules:
 - use `SemanticIR`, not `SemanticGraph`
 - use canonical v2 StrategyIR decisions only
 - remove migration shims from active code/tests/docs rather than preserving them in the mainline
-- keep historical compatibility discussion in deprecated documents only if needed
+- keep historical compatibility discussion out of the active tree; use git history if old migration context is needed
 
 ### Terminology note
 
@@ -316,4 +316,4 @@ Active naming is:
 
 `HardwareIR` is not an active single-layer name. If used at all, it should only appear as an informal umbrella term for the hardware-near backend stack below StrategyIR.
 
-For the normative current-format definition, see `docs/spec/arke-ir-spec-v2.md`. 
+For the normative current-format definition, see `docs/spec/arke-ir-spec.md`.

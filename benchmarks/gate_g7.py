@@ -71,8 +71,8 @@ def _check_all_examples_compile() -> tuple[bool, str]:
 
 def _check_spec_docs() -> tuple[bool, str]:
     required = [
-        REPO_ROOT / "docs" / "spec" / "arke-lang-spec-v2.md",
-        REPO_ROOT / "docs" / "spec" / "arke-ir-spec-v2.md",
+        REPO_ROOT / "docs" / "spec" / "arke-lang-spec.md",
+        REPO_ROOT / "docs" / "spec" / "arke-ir-spec.md",
         REPO_ROOT / "docs" / "phase1" / "dynamic-shape-feasibility.md",
     ]
     missing = [str(p.relative_to(REPO_ROOT)) for p in required if not p.exists()]

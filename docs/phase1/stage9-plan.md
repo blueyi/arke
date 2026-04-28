@@ -13,7 +13,7 @@
 
 **BL Exit:** BL6×L3 (4 models) + BL5 full regression (no regression vs G8).
 
-> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions; `docs/deprecated/phase1-gate-design.md` §7 for original G8 derivation.
+> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions. BL5 regression and BL6 closure are governed by the active Stage 8 / Stage 9 contracts in `docs/roadmap/plan.md`; the old derivation note was retired during the spec cleanup.
 
 ### Benchmark Requirements
 

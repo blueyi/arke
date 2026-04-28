@@ -12,14 +12,14 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 
 | # | 能力 | 状态 | 文档 | 备注 |
 |:--|:-----|:----:|:-----|:-----|
-| 1 | LLM-Native Language | ✅ 完整 | `arke-lang-spec-v2.md` | — |
-| 2 | Semantic/Strategy Separation | ✅ 完整 | `arke-ir-spec-v2.md` | — |
+| 1 | LLM-Native Language | ✅ 完整 | `arke-lang-spec.md` | — |
+| 2 | Semantic/Strategy Separation | ✅ 完整 | `arke-ir-spec.md` | — |
 | 3 | Minimal-Token E2E | ✅ 完整 | `e2e-flow.md` + `token-efficiency-analysis.md` | 已补足 token 量化与预算系统 |
 | 4 | Bounded Action Space | ✅ 完整 | `agent-design.md` | — |
-| 5 | @rationale Annotations | ✅ 完整 | `arke-lang-spec-v2.md` + `arke-ir-spec-v2.md` | — |
+| 5 | @rationale Annotations | ✅ 完整 | `arke-lang-spec.md` + `arke-ir-spec.md` | — |
 | 6 | Compiler-as-Verifier | ✅ 完整 | `arke-compiler-infrastructure.md` + pass/validator docs | — |
 | 7 | Structured LLM-Compiler Protocol | ✅ 完整 | `agent-design.md` | — |
-| 8 | Multi-Hardware | 🟨 继续扩展 | `arke-ir-spec-v2.md` + backend notes | Phase 2 / 3 的后续设计项 |
+| 8 | Multi-Hardware | 🟨 继续扩展 | `arke-ir-spec.md` + backend notes | Phase 2 / 3 的后续设计项 |
 
 **结论：**
 - ✅ Stage 7 所需的核心 Lang / IR / Compiler / Benchmark 文档已经齐备
@@ -35,7 +35,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 > Semantic/Strategy Separation — "What to compute" and "how to optimize" are independent layers
 
 **现有文档：**
-- `docs/spec/arke-lang-spec-v2.md`
+- `docs/spec/arke-lang-spec.md`
 - `docs/architecture/naming-system.md`
 - `docs/spec/arke-lang-vs-python-triton.md`
 
@@ -49,7 +49,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 > enabling LLMs to explore strategies without risking correctness
 
 **现有文档：**
-- `docs/spec/arke-ir-spec-v2.md`
+- `docs/spec/arke-ir-spec.md`
 - `docs/architecture/e2e-flow.md`
 - `docs/phase1/dynamic-shape-feasibility.md`
 
@@ -83,7 +83,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 
 **现有文档：**
 - `docs/architecture/agent-design.md`
-- `docs/spec/arke-ir-spec-v2.md`
+- `docs/spec/arke-ir-spec.md`
 - `docs/phase1/stage7-plan.md`
 
 **覆盖度：** 100%
@@ -96,8 +96,8 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 > Every optimization decision carries a natural language explanation
 
 **现有文档：**
-- `docs/spec/arke-lang-spec-v2.md`
-- `docs/spec/arke-ir-spec-v2.md`
+- `docs/spec/arke-lang-spec.md`
+- `docs/spec/arke-ir-spec.md`
 - `docs/architecture/agent-design.md`
 
 **覆盖度：** 100%
@@ -140,7 +140,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 > Single kernel definition targets NVIDIA, Ascend, and beyond; strategy adapts per hardware
 
 **现有文档：**
-- `docs/spec/arke-ir-spec-v2.md`
+- `docs/spec/arke-ir-spec.md`
 - `docs/architecture/arke-compiler-infrastructure.md`
 - backend abstraction notes in the compiler stack
 

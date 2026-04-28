@@ -1,6 +1,6 @@
 # Arke Language Specification v2.0 — Design Document
 
-> **Version:** v2-only design note  
+> **Version:** active design note for spec v2.0
 > **Status:** Active design reference (historical migration content removed)  
 > **Author:** Kitty (Lead Engineer, Arke)  
 > **Date:** 2026-04-09
@@ -925,6 +925,6 @@ Implementation rules for the current mainline:
 2. `launch_config(...)` and other Triton-specific directive names are not part of the active language contract.
 3. `where` clauses, tuple returns, conditional strategies, and `@rationale` are first-class language features.
 4. Tests and examples should be rewritten to canonical v2 syntax rather than preserved through migration shims.
-5. If a historical syntax note is still needed, it belongs in deprecated/historical docs, not in active design references.
+5. If a historical syntax note is still needed, keep it in git history or an external archive, not in active design references.
 
-For the normative language definition, see `docs/spec/arke-lang-spec-v2.md`.
+For the normative language definition, see `docs/spec/arke-lang-spec.md`.

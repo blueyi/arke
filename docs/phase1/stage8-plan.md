@@ -13,7 +13,7 @@
 
 **BL Exit:** BL5 inherited (no regression vs G7) + BL6×L3 (GPT-2, LLaMA-2, DeepSeek-V2).
 
-> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions; `docs/deprecated/phase1-gate-design.md` §6 for original G7 derivation.
+> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions. BL5 inheritance is governed by the active Stage 7 / Stage 8 contracts in `docs/roadmap/plan.md`; the old derivation note was retired during the spec cleanup.
 
 ### Benchmark Requirements
 

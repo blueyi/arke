@@ -30,7 +30,7 @@ Concretely, S7 focuses on six outcomes:
 
 ### Arke Lang v2.0 implications for S7
 
-From `docs/spec/arke-lang-spec-v2.md`, S7 implementation must support:
+From `docs/spec/arke-lang-spec.md`, S7 implementation must support:
 
 - `kernel` + `strategy` as the canonical `.ak` structure
 - `where` clause for symbolic dimensions and shape constraints
@@ -43,7 +43,7 @@ From `docs/spec/arke-lang-spec-v2.md`, S7 implementation must support:
 
 ### Arke IR v2.0 implications for S7
 
-From `docs/spec/arke-ir-spec-v2.md`, S7 implementation must establish:
+From `docs/spec/arke-ir-spec.md`, S7 implementation must establish:
 
 - **Layer 4 SemanticIR** as immutable operator semantics
 - **Layer 3 StrategyIR** as bounded, rationale-carrying optimization decisions
@@ -76,7 +76,7 @@ For S7 planning purposes, this means the final Lang/IR design must support:
 - OT2–OT4 production-shape support strong enough to reach BL5, not merely BL4-style standard-shape support
 - the L2 fusion set required by BL5 (`matmul+relu`, `matmul+gelu`, `swiglu`, `geglu`, `linear+cross_entropy`, `QKV+flash_attention`)
 
-> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions; `docs/deprecated/phase1-gate-design.md` §5 for original G6 BL5 derivation.
+> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions. The active Gate contract lives in `docs/roadmap/plan.md`; historical derivation notes were retired from the active tree during the spec cleanup.
 
 ### Benchmark Requirements (from Gate-Purpose Mapping)
 
@@ -120,8 +120,8 @@ G7 PASS = AND ALL:
 
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
-| 1 | Arke Lang Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-lang-spec-v2.md` exists and current implementation matches required surface syntax |
-| 2 | Arke IR Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-ir-spec-v2.md` exists and Layer 4/3/2/1 terminology maps to code |
+| 1 | Arke Lang Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-lang-spec.md` exists and current implementation matches required surface syntax |
+| 2 | Arke IR Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-ir-spec.md` exists and Layer 4/3/2/1 terminology maps to code |
 | 3 | `where` clause + symbolic shape system supports BL5-relevant shape expression and propagation | `pytest tests/test_symbolic_shape.py` + BL5-oriented shape cases for OT2–OT4 |
 | 4 | Dynamic shape feasibility assessment complete | `docs/phase1/dynamic-shape-feasibility.md` exists |
 | 5 | MLIR framework skeleton exists with BL1 matmul path verified | MLIREmitter / lowering skeleton exists; BL1 matmul verified through skeleton path |

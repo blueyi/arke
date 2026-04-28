@@ -783,7 +783,7 @@ def test_hardware_constraints():
 
 ## References
 
-- `docs/spec/arke-ir-spec-v2.md` — IR layer definitions
+- `docs/spec/arke-ir-spec.md` — IR layer definitions
 - `docs/phase1/dynamic-shape-feasibility.md` — Dynamic shape feasibility analysis
 - `docs/architecture/e2e-flow.md` — End-to-end flow
 

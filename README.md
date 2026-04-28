@@ -231,8 +231,8 @@ The roadmap, Gate definitions, and benchmark terminology are maintained in the f
 
 ### Active Specs
 
-- [docs/spec/arke-lang-spec-v2.md](docs/spec/arke-lang-spec-v2.md) — active Arke language specification
-- [docs/spec/arke-ir-spec-v2.md](docs/spec/arke-ir-spec-v2.md) — active multi-layer IR specification
+- [docs/spec/arke-lang-spec.md](docs/spec/arke-lang-spec.md) — active Arke language specification
+- [docs/spec/arke-ir-spec.md](docs/spec/arke-ir-spec.md) — active multi-layer IR specification
 - [docs/spec/symbolic-dimension-spec.md](docs/spec/symbolic-dimension-spec.md) — symbolic dimension model
 - [docs/spec/pass-infrastructure-spec.md](docs/spec/pass-infrastructure-spec.md) — pass system specification
 - [docs/spec/op-registry-interface.md](docs/spec/op-registry-interface.md) — operator registry contract
@@ -265,9 +265,9 @@ The roadmap, Gate definitions, and benchmark terminology are maintained in the f
 - [docs/phase1/design-review.md](docs/phase1/design-review.md) — design review and risk analysis
 - [docs/phase1/completion-summary.md](docs/phase1/completion-summary.md) — completed Phase 1 summary for earlier stages
 
-### Historical / Deprecated
+### Historical Notes
 
-Historical design material is kept under [`docs/deprecated/`](docs/deprecated/) for reference. It should not be treated as the active specification or roadmap unless a newer document explicitly points back to it.
+Historical migration and superseded design drafts were removed from the active tree during the Stage 7 spec cleanup. Use git history if an older draft must be inspected.
 
 ## Project Structure
 

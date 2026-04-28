@@ -19,7 +19,7 @@
 
 | Area | Status | Evidence |
 |:--|:--:|:--|
-| Lang v2 canonical kernel/strategy surface | ✅ | `docs/spec/arke-lang-spec-v2.md`, `tests/test_stage7_roundtrip.py` |
+| Lang v2 canonical kernel/strategy surface | ✅ | `docs/spec/arke-lang-spec.md`, `tests/test_stage7_roundtrip.py` |
 | `where` clause + symbolic dimensions | ✅ | `docs/spec/symbolic-dimension-spec.md`, `tests/test_symbolic_shape.py` |
 | Conditional / shape-aware StrategyIR | ✅ | `arke/ir/strategy.py`, `tests/test_stage7_memory_aware_strategy.py` |
 | Backend-agnostic StrategyIR core | ✅ | `tests/test_backend_agnostic.py`, `tests/test_backend_agnostic_script.py` |

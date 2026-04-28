@@ -626,7 +626,7 @@ This document defines the canonical v2.0 language surface used by the active com
 
 ## References
 
-- `docs/spec/arke-ir-spec-v2.md` — IR multi-layer architecture
+- `docs/spec/arke-ir-spec.md` — IR multi-layer architecture
 - `docs/spec/op-registry-interface.md` — Op registration and extension framework
 - `docs/spec/op-catalog/semantic-ops.md` — Operator semantic definitions (reference)
 - `docs/phase1/dynamic-shape-feasibility.md` — Symbolic shape design rationale

@@ -748,7 +748,7 @@ class FusionPass(TransformPass):
 
 ## References
 
-- `docs/spec/arke-ir-spec-v2.md` — IR layer definitions
+- `docs/spec/arke-ir-spec.md` — IR layer definitions
 - `docs/architecture/arke-compiler-infrastructure.md` — Compiler architecture
 - `docs/architecture/e2e-flow.md` — End-to-end flow
 

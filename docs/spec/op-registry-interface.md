@@ -675,8 +675,8 @@ Operators can be shared via:
 
 ## References
 
-- `docs/spec/arke-lang-spec-v2.md` — Arke Language v2.0
-- `docs/spec/arke-ir-spec-v2.md` — Arke IR v2.0
+- `docs/spec/arke-lang-spec.md` — Arke Language v2.0
+- `docs/spec/arke-ir-spec.md` — Arke IR v2.0
 - `docs/architecture/e2e-flow.md` — End-to-end flow
 - `docs/architecture/agent-design.md` — Agent design
 

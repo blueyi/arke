@@ -957,4 +957,4 @@ with open("trajectory.jsonl", "w") as f:
 ---
 
 *Document version: v1.1 | Updated: 2026-04-09*
-*References: e2e-flow.md, op-registry-interface.md, arke-ir-spec-v2.md, arke/agent/ source*
+*References: e2e-flow.md, op-registry-interface.md, arke-ir-spec.md, arke/agent/ source*
