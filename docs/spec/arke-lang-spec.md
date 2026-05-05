@@ -613,7 +613,16 @@ Language-facing artifacts should identify the current schema version explicitly:
 }
 ```
 
-### 11.2 Scope of This Specification
+The `version` field above is the **language schema version**, not the Python package release version. The repository can ship prerelease package builds (for example `0.2.0.dev0`) while the active `.ak` schema remains `2.0.0`.
+
+### 11.2 Relationship to Package Version
+
+- `arke.__version__` / `pyproject.toml` track the Python package release line.
+- `version: 2.0.0` and `schema: arke-lang-v2.0` identify the canonical `.ak` surface.
+- Package release cadence and schema evolution are intentionally decoupled so the implementation can iterate without renumbering the language contract on every prerelease.
+- Supporting design/spec documents may keep independent document revision numbers; those labels should not be read as the active `.ak` schema version.
+
+### 11.3 Scope of This Specification
 
 This document defines the canonical v2.0 language surface used by the active compiler pipeline:
 
@@ -621,6 +630,7 @@ This document defines the canonical v2.0 language surface used by the active com
 - `where` clauses define symbolic dimensions
 - `when` / `otherwise` express conditional strategy branches
 - deprecated aliases and historical migration behavior are intentionally out of scope
+- legacy package-version history is not part of the language contract
 
 ---
 

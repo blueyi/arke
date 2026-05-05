@@ -1,7 +1,7 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — StrategyIR v1.0 (Layer 3).
+"""Arke IR — StrategyIR v2.0 (Layer 3).
 
 Optimization decisions: "how to optimize."
 L1 (backend-agnostic) and L2 (resource / backend-bound) decision levels.
@@ -12,8 +12,10 @@ See docs/spec/arke-ir-spec-design.md §7.3 for the complete schema.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
-from typing import Any, Union
+from dataclasses import dataclass, field
+from typing import Any
+
+from arke.version import IR_SCHEMA_VERSION, resolve_ir_schema_version
 
 
 @dataclass
@@ -77,7 +79,7 @@ class ConditionalDecision:
         return d
 
 
-AnyDecision = Union[Decision, ConditionalDecision]
+AnyDecision = Decision | ConditionalDecision
 
 
 def _decision_to_dict(d: AnyDecision) -> dict:
@@ -126,7 +128,7 @@ class HardwareConstraints:
 
 @dataclass
 class StrategyIR:
-    """Optimization strategy IR v1.0.
+    """Optimization strategy IR v2.0.
 
     Current v2-oriented structure:
     - decisions list accepts AnyDecision (Decision | ConditionalDecision)
@@ -134,7 +136,7 @@ class StrategyIR:
     - level field on each Decision (L1 vs L2)
     - compute is the canonical Layer-2 resource decision
     """
-    version: str = "1.0.0"
+    version: str = IR_SCHEMA_VERSION
     kernel_id: str = ""
     target_hw: str = ""
     decisions: list[AnyDecision] = field(default_factory=list)
@@ -263,7 +265,10 @@ class StrategyIR:
     def from_dict(cls, data: dict) -> StrategyIR:
         """Deserialize StrategyIR from the current format."""
         ir = cls(
-            version=data.get("version", "1.0.0"),
+            version=resolve_ir_schema_version(
+                data.get("version"),
+                artifact="StrategyIR",
+            ),
             kernel_id=data.get("kernel_id", ""),
             target_hw=data.get("target_hw", ""),
             metadata=dict(data.get("metadata", {})),

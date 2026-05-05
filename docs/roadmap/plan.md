@@ -180,6 +180,8 @@ AND ALL:
 
 → Detailed plan: [docs/phase1/stage8-plan.md](../phase1/stage8-plan.md)
 
+**Stage 8 MVP status (current):** the initial G8 bootstrap path is implemented and validated by `python -m benchmarks.gate G8`. It is intentionally an MVP subset of the locked full G8 criteria: `arke optimize <file.ak>` now generates bounded backend-agnostic StrategyIR with a deterministic heuristic, records three compile→profile→adjust cycles in `trajectory.jsonl`, writes `strategy.json` / `result.akir` / `summary.json`, and `benchmarks.bench_l3` now emits the GPT-2 eager vs `torch.compile` artifact contract with a CPU-safe `--mock` path. Full G8 remains open until the live LLM strategy path, multi-input routing, BL5 performance inheritance, LLaMA-2, and DeepSeek-V2 criteria above are satisfied.
+
 ---
 
 ### Stage 9 (G9): Phase 1 Final ⬜

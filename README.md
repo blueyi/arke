@@ -8,6 +8,14 @@
 
 Arke is a native LLM programming language, IR, compiler toolchain, and agent engineering system for GPU/NPU kernels. It combines benchmark systems to drive LLM for extreme kernel of operator functionality and performance generalization.
 
+## Status & Version Semantics
+
+- **Python package / CLI release:** `0.2.0.dev0` — the current prerelease line exposed by `pyproject.toml` and `arke.__version__`.
+- **Arke Language schema:** `2.0.0` — the canonical `.ak` surface documented in [docs/spec/arke-lang-spec.md](docs/spec/arke-lang-spec.md).
+- **Arke IR / `.akir` schema:** `2.0.0` — the active multi-layer IR contract documented in [docs/spec/arke-ir-spec.md](docs/spec/arke-ir-spec.md).
+- **Other version labels in the repo:** supporting specs may keep their own document revision numbers, and roadmap docs may mention project release tags such as `v1.0.0`; those are not the active `.ak` / `.akir` schema identifiers.
+- **Repository policy:** the active tree is **v2-only** for language/IR semantics. Historical drafts and migration notes live in git history, not in the active docs/code path.
+
 ## Key Features
 
 ### Project-Level Features
@@ -185,15 +193,16 @@ pip install -e ".[dev]"
 python -m pytest tests/ -q
 ```
 
-### First Verified Command
+### First Verified Commands
 
-The current top-level CLI entry point exposed by the package is `arke compile`:
+The current top-level CLI exposes the compiler-facing path and the Stage 8 MVP optimization path:
 
 ```bash
 arke compile examples/operators/01_matmul.ak
+arke optimize examples/operators/01_matmul.ak --output /tmp/arke-opt --cycles 3 --json
 ```
 
-To write the resulting `.akir` JSON to a file:
+To write the resulting `.akir` JSON from the compiler path to a file:
 
 ```bash
 arke compile examples/operators/01_matmul.ak -o /tmp/matmul.akir
@@ -203,11 +212,16 @@ For environment details and custom venv paths, see [docs/architecture/python-env
 
 ## Current CLI
 
-Today, the documented stable package entry point is the compiler-facing CLI:
+Today, the documented package entry points in the current prerelease distribution are:
 
 - `arke compile <file.ak>` — compile `.ak` source into Arke IR / `.akir` JSON
+- `arke optimize <file.ak>` — Stage 8 MVP flow: generate bounded StrategyIR, validate/lower, and emit machine-readable optimization artifacts
 
-Design documents describe richer optimization flows and agent-driven workflows, but those should be read as architecture and roadmap material unless a specific interface is documented here and implemented in the package entry points.
+`arke optimize` currently accepts `.ak` file input and uses a deterministic heuristic strategy generator by default. It emits `strategy.json`, `result.akir`, `trajectory.jsonl`, and `summary.json` so agent workflows can validate the compile→profile→adjust contract before the live LLM provider path is enabled.
+
+Design documents describe richer optimization flows and agent-driven workflows; read those as architecture and roadmap material unless a specific interface is documented here and implemented in the package entry points.
+
+If you are checking versions: the package stays on a `0.x` prerelease track while the active language and IR schemas are both `2.0.0`. See [docs/spec/arke-lang-spec.md#11-versioning](docs/spec/arke-lang-spec.md#11-versioning) and [docs/spec/arke-ir-spec.md#15-versioning](docs/spec/arke-ir-spec.md#15-versioning).
 
 ## Roadmap Snapshot
 
@@ -265,9 +279,9 @@ The roadmap, Gate definitions, and benchmark terminology are maintained in the f
 - [docs/phase1/design-review.md](docs/phase1/design-review.md) — design review and risk analysis
 - [docs/phase1/completion-summary.md](docs/phase1/completion-summary.md) — completed Phase 1 summary for earlier stages
 
-### Historical Notes
+### Repository History Policy
 
-Historical migration and superseded design drafts were removed from the active tree during the Stage 7 spec cleanup. Use git history if an older draft must be inspected.
+The active tree documents the current v2 language and IR surfaces only. Historical migration notes and superseded design drafts were removed during the Stage 7 spec cleanup so they do not compete with active references. Use git history when older drafts must be inspected for archaeology or provenance.
 
 ## Project Structure
 

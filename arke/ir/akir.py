@@ -27,9 +27,10 @@ from arke.ir.instruction import InstructionIR
 from arke.ir.schedule import ScheduleIR
 from arke.ir.semantic import SemanticIR
 from arke.ir.strategy import StrategyIR
+from arke.version import IR_SCHEMA_VERSION
 
 AKIR_FORMAT = "akir"
-AKIR_VERSION = "2.0.0"
+AKIR_VERSION = IR_SCHEMA_VERSION
 
 
 def akir_to_dict(
@@ -107,7 +108,9 @@ def save_akir(
         json.dump(combined, f, indent=indent)
 
 
-def load_akir(path: str) -> tuple[SemanticIR, StrategyIR | None, ScheduleIR | None, InstructionIR | None]:
+def load_akir(
+    path: str,
+) -> tuple[SemanticIR, StrategyIR | None, ScheduleIR | None, InstructionIR | None]:
     """Load the active multi-layer Arke IR stack from a .akir JSON file."""
     with open(path) as f:
         data = json.load(f)

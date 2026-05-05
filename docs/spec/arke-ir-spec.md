@@ -929,6 +929,15 @@ All IR documents include version metadata:
 }
 ```
 
+This `version` is the **IR schema version**. It identifies the active contract used by `SemanticIR`, `StrategyIR`, `ScheduleIR`, `InstructionIR`, and the top-level `.akir` wrapper; it is not the Python package release version.
+
+### 15.2 Package Version vs Schema Version
+
+- Python distribution metadata (for example `arke.__version__` / `pyproject.toml`) tracks the package release line, currently a prerelease series.
+- `2.0.0` is the canonical schema version for the active IR surface and serialized `.akir` artifacts.
+- The active codebase is v2-only for IR semantics: legacy compatibility shims and historical layer-name migrations are intentionally out of scope for the active tree.
+- Supporting docs and roadmap milestones may use their own document revisions or project release tags; those labels are separate from the active IR schema version.
+
 ---
 
 ## References

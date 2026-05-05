@@ -1,19 +1,12 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""L3 End-to-End Model Benchmark Runner.
+"""L3 end-to-end model benchmark runner for Stage 8.
 
-GPT-2 Small inference benchmark across three modes:
-  - eager (PyTorch default)
-  - torch.compile
-  - Arke-patched (KernelCache monkey-patch)
-
-Reports latency, correctness, and memory for seq_len = 128, 256, 512.
-
-Usage:
-    python -m benchmarks.bench_l3 --all
-    python -m benchmarks.bench_l3 --seq-len 128
-    python -m benchmarks.bench_l3 --seq-len 128,256,512
+The runner establishes the repeatable G8[4] artifact contract for GPT-2:
+PyTorch eager is the correctness/performance reference and torch.compile
+(Inductor) is measured against it.  A CPU-safe mock model is available for CI
+and contract tests when CUDA, transformers, or model downloads are unavailable.
 """
 
 from __future__ import annotations
@@ -22,9 +15,12 @@ import argparse
 import csv
 import json
 import logging
+import math
 import time
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 import torch
 
@@ -32,52 +28,102 @@ from benchmarks.hardware import collect_hardware_info
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SEQ_LENS = [128, 256, 512]
-WARMUP_RUNS = 10
-MEASURE_RUNS = 50
+DEFAULT_SEQ_LENS = [128, 512, 1024]
+DEFAULT_OUTPUT_DIR = "benchmarks/results/phase1/stage8/track4/l3"
+DEFAULT_WARMUP_RUNS = 5
+DEFAULT_MEASURE_RUNS = 20
+G8_GPT2_TARGET_RATIO = 0.95
 
 
 @dataclass
 class E2EResult:
-    """Result of one mode × one seq_len."""
+    """Result of one model x sequence length x execution mode."""
 
     model: str
     seq_len: int
     mode: str
     source: str
-    mean_ms: float
-    min_ms: float
-    max_ms: float
-    median_ms: float
-    peak_memory_mb: float
-    correct: bool
-    max_logit_diff: float
-    mean_logit_diff: float
-    top1_match: bool
+    status: str
+    reason: str = ""
+    mean_ms: float | None = None
+    min_ms: float | None = None
+    max_ms: float | None = None
+    median_ms: float | None = None
+    peak_memory_mb: float | None = None
+    correct: bool | None = None
+    max_logit_diff: float | None = None
+    mean_logit_diff: float | None = None
+    top1_match: bool | None = None
+    ratio_vs_eager: float | None = None
+
+    def to_csv_row(self) -> dict[str, Any]:
+        row = asdict(self)
+        for key, value in list(row.items()):
+            if isinstance(value, float):
+                row[key] = f"{value:.6f}"
+            elif value is None:
+                row[key] = ""
+        return row
 
 
-# ── Model loading ───────────────────────────────────────────
+class _MockTokenizer:
+    def __call__(self, text: str, return_tensors: str = "pt") -> dict[str, torch.Tensor]:
+        del text, return_tensors
+        return {"input_ids": torch.arange(8, dtype=torch.long).unsqueeze(0)}
 
 
-def _load_gpt2(device: str = "cuda") -> tuple:
-    """Load GPT-2 Small model and tokenizer."""
+class _MockGPT2(torch.nn.Module):
+    def __init__(self, vocab_size: int = 64):
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.weight = torch.nn.Parameter(torch.linspace(0.01, 0.64, vocab_size))
+
+    def forward(self, input_ids: torch.Tensor):
+        base = input_ids.float().unsqueeze(-1)
+        logits = base + self.weight.view(1, 1, -1)
+        return type("MockCausalLMOutput", (), {"logits": logits})()
+
+
+# -- Model loading ---------------------------------------------------------
+
+
+def _load_gpt2(
+    *,
+    device: str,
+    dtype: torch.dtype,
+    model_name: str = "gpt2",
+) -> tuple[torch.nn.Module, Any]:
+    """Load GPT-2 model/tokenizer lazily so tests can run without transformers."""
     from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-    model = GPT2LMHeadModel.from_pretrained("gpt2").to(device).half()
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    model = GPT2LMHeadModel.from_pretrained(model_name).to(device=device, dtype=dtype)
     model.eval()
     return model, tokenizer
 
 
-def _make_input(tokenizer, seq_len: int, device: str = "cuda") -> torch.Tensor:
-    """Create padded input_ids of exact seq_len."""
+def _load_mock_model(
+    *,
+    device: str,
+    dtype: torch.dtype,
+    model_name: str = "mock-gpt2",
+) -> tuple[torch.nn.Module, _MockTokenizer]:
+    del model_name
+    model = _MockGPT2().to(device=device, dtype=dtype)
+    model.eval()
+    return model, _MockTokenizer()
+
+
+def _make_input(tokenizer: Any, seq_len: int, *, device: str) -> torch.Tensor:
     text = "The future of artificial intelligence is"
-    inputs = tokenizer(text, return_tensors="pt").to(device)
-    input_ids = inputs["input_ids"]
+    inputs = tokenizer(text, return_tensors="pt")
+    input_ids = inputs["input_ids"].to(device)
     if input_ids.shape[1] < seq_len:
         pad = torch.zeros(
-            1, seq_len - input_ids.shape[1],
-            dtype=torch.long, device=device,
+            input_ids.shape[0],
+            seq_len - input_ids.shape[1],
+            dtype=torch.long,
+            device=device,
         )
         input_ids = torch.cat([input_ids, pad], dim=1)
     elif input_ids.shape[1] > seq_len:
@@ -85,34 +131,86 @@ def _make_input(tokenizer, seq_len: int, device: str = "cuda") -> torch.Tensor:
     return input_ids
 
 
-# ── Profiling ───────────────────────────────────────────────
+def _resolve_device(device: str) -> str:
+    if device == "auto":
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA requested but torch.cuda.is_available() is false")
+    return device
+
+
+def _resolve_dtype(dtype: str, device: str) -> torch.dtype:
+    if dtype == "auto":
+        return torch.float16 if device == "cuda" else torch.float32
+    mapping = {
+        "float16": torch.float16,
+        "f16": torch.float16,
+        "float32": torch.float32,
+        "f32": torch.float32,
+        "bfloat16": torch.bfloat16,
+        "bf16": torch.bfloat16,
+    }
+    if dtype not in mapping:
+        raise ValueError(f"Unsupported dtype: {dtype}")
+    return mapping[dtype]
+
+
+# -- Profiling -------------------------------------------------------------
+
+
+def _sync(device: str) -> None:
+    if device == "cuda":
+        torch.cuda.synchronize()
+
+
+def _reset_peak_memory(device: str) -> None:
+    if device == "cuda":
+        torch.cuda.reset_peak_memory_stats()
+
+
+def _peak_memory_mb(device: str) -> float:
+    if device == "cuda":
+        return torch.cuda.max_memory_allocated() / 1024**2
+    return 0.0
+
+
+def _get_logits(model: torch.nn.Module, input_ids: torch.Tensor) -> torch.Tensor:
+    with torch.no_grad():
+        return model(input_ids).logits.detach().clone()
 
 
 def _profile(
-    model,
+    model: torch.nn.Module,
     input_ids: torch.Tensor,
-    warmup: int = WARMUP_RUNS,
-    runs: int = MEASURE_RUNS,
+    *,
+    device: str,
+    warmup: int,
+    runs: int,
 ) -> dict[str, float]:
-    """Profile forward pass latency (ms)."""
     with torch.no_grad():
         for _ in range(warmup):
             model(input_ids)
+    _sync(device)
 
-    torch.cuda.synchronize()
-    start_events = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
-    end_events = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
+    if device == "cuda":
+        starts = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
+        ends = [torch.cuda.Event(enable_timing=True) for _ in range(runs)]
+        with torch.no_grad():
+            for idx in range(runs):
+                starts[idx].record()
+                model(input_ids)
+                ends[idx].record()
+        _sync(device)
+        times_ms = [start.elapsed_time(end) for start, end in zip(starts, ends)]
+    else:
+        times_ms = []
+        with torch.no_grad():
+            for _ in range(runs):
+                start = time.perf_counter()
+                model(input_ids)
+                times_ms.append((time.perf_counter() - start) * 1000.0)
 
-    with torch.no_grad():
-        for i in range(runs):
-            start_events[i].record()
-            model(input_ids)
-            end_events[i].record()
-
-    torch.cuda.synchronize()
-    times_ms = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
     times_ms.sort()
-
     return {
         "mean_ms": sum(times_ms) / len(times_ms),
         "min_ms": min(times_ms),
@@ -121,355 +219,334 @@ def _profile(
     }
 
 
-def _get_logits(model, input_ids: torch.Tensor) -> torch.Tensor:
-    """Get model output logits."""
-    with torch.no_grad():
-        return model(input_ids).logits.clone()
-
-
-# ── Mode runners ────────────────────────────────────────────
-
-
-def _run_eager(
-    model, input_ids: torch.Tensor,
-) -> tuple[dict[str, float], torch.Tensor, float]:
-    """Run eager mode benchmark."""
-    torch.cuda.reset_peak_memory_stats()
-    logits = _get_logits(model, input_ids)
-    perf = _profile(model, input_ids)
-    peak_mb = torch.cuda.max_memory_allocated() / 1024**2
-    return perf, logits, peak_mb
-
-
-def _run_compile(
-    model, input_ids: torch.Tensor,
-) -> tuple[dict[str, float], torch.Tensor, float] | None:
-    """Run torch.compile mode benchmark."""
-    try:
-        compiled = torch.compile(model, mode="reduce-overhead")
-        torch.cuda.reset_peak_memory_stats()
-        logits = _get_logits(compiled, input_ids)
-        perf = _profile(compiled, input_ids)
-        peak_mb = torch.cuda.max_memory_allocated() / 1024**2
-        return perf, logits, peak_mb
-    except Exception as e:
-        logger.warning(f"torch.compile failed: {e}")
-        return None
-
-
-def _run_arke(
-    model, input_ids: torch.Tensor, seq_len: int,
-) -> tuple[dict[str, float], torch.Tensor, float] | None:
-    """Run Arke-patched mode benchmark."""
-    try:
-        from arke.integration.gpt2_e2e import get_gpt2_shapes, patch_gpt2_fast
-        from arke.integration.kernel_cache import KernelCache
-
-        cache = KernelCache()
-        shapes = get_gpt2_shapes(seq_len)
-        cache.precompile_matmul(shapes["matmul"])
-
-        n_linear, n_softmax = patch_gpt2_fast(model, cache)
-        logger.info(f"  Arke patched: {n_linear} linear, {n_softmax} softmax")
-
-        torch.cuda.reset_peak_memory_stats()
-        logits = _get_logits(model, input_ids)
-        perf = _profile(model, input_ids)
-        peak_mb = torch.cuda.max_memory_allocated() / 1024**2
-        return perf, logits, peak_mb
-    except Exception as e:
-        logger.warning(f"Arke patching failed: {e}")
-        return None
-
-
-# ── Correctness ─────────────────────────────────────────────
-
-
 def _check_correctness(
     ref_logits: torch.Tensor,
     test_logits: torch.Tensor,
 ) -> tuple[bool, float, float, bool]:
-    """Compare logits; return (correct, max_diff, mean_diff, top1_match)."""
     diff = (test_logits.float() - ref_logits.float()).abs()
     max_diff = diff.max().item()
     mean_diff = diff.mean().item()
     ref_top = ref_logits[:, -1, :].argmax(dim=-1)
     test_top = test_logits[:, -1, :].argmax(dim=-1)
-    top1_match = (ref_top == test_top).all().item()
-    correct = max_diff < 5.0  # fp16 tolerance
+    top1_match = bool((ref_top == test_top).all().item())
+    correct = top1_match and max_diff < 5.0
     return correct, max_diff, mean_diff, top1_match
 
 
-# ── Main runner ─────────────────────────────────────────────
+def _run_mode(
+    mode: str,
+    *,
+    model_loader: Callable[..., tuple[torch.nn.Module, Any]],
+    tokenizer: Any,
+    input_ids: torch.Tensor,
+    device: str,
+    dtype: torch.dtype,
+    model_name: str,
+    warmup: int,
+    runs: int,
+    reference_logits: torch.Tensor | None = None,
+    eager_mean_ms: float | None = None,
+) -> tuple[E2EResult, torch.Tensor | None]:
+    try:
+        model, _ = model_loader(device=device, dtype=dtype, model_name=model_name)
+        if mode == "torch.compile":
+            if not hasattr(torch, "compile"):
+                raise RuntimeError("torch.compile is unavailable in this PyTorch build")
+            model = torch.compile(model, mode="reduce-overhead")
+
+        _reset_peak_memory(device)
+        logits = _get_logits(model, input_ids)
+        perf = _profile(model, input_ids, device=device, warmup=warmup, runs=runs)
+        peak_mb = _peak_memory_mb(device)
+
+        if reference_logits is None:
+            correct, max_diff, mean_diff, top1 = True, 0.0, 0.0, True
+        else:
+            correct, max_diff, mean_diff, top1 = _check_correctness(reference_logits, logits)
+
+        ratio = None
+        if eager_mean_ms and perf["mean_ms"] > 0:
+            ratio = eager_mean_ms / perf["mean_ms"]
+
+        source = _source_for_mode(mode)
+        return E2EResult(
+            model=model_name,
+            seq_len=input_ids.shape[1],
+            mode=mode,
+            source=source,
+            status="ok",
+            mean_ms=perf["mean_ms"],
+            min_ms=perf["min_ms"],
+            max_ms=perf["max_ms"],
+            median_ms=perf["median_ms"],
+            peak_memory_mb=peak_mb,
+            correct=correct,
+            max_logit_diff=max_diff,
+            mean_logit_diff=mean_diff,
+            top1_match=top1,
+            ratio_vs_eager=ratio or 1.0 if reference_logits is None else ratio,
+        ), logits
+    except Exception as exc:
+        return E2EResult(
+            model=model_name,
+            seq_len=input_ids.shape[1],
+            mode=mode,
+            source=_source_for_mode(mode),
+            status="error",
+            reason=str(exc),
+            correct=False,
+            top1_match=False,
+        ), None
+    finally:
+        if device == "cuda":
+            torch.cuda.empty_cache()
+
+
+def _source_for_mode(mode: str) -> str:
+    if mode == "eager":
+        return f"PyTorch {torch.__version__} eager | https://pytorch.org | BSD-3-Clause"
+    if mode == "torch.compile":
+        return (
+            f"torch.compile Inductor via PyTorch {torch.__version__} | "
+            "https://pytorch.org | BSD-3-Clause"
+        )
+    return mode
+
+
+# -- Runner / artifacts ----------------------------------------------------
 
 
 def run_l3_single(
     seq_len: int,
+    *,
+    model_name: str = "gpt2",
+    model_loader: Callable[..., tuple[torch.nn.Module, Any]] = _load_gpt2,
+    device: str = "auto",
+    dtype: str = "auto",
+    modes: list[str] | None = None,
+    warmup: int = DEFAULT_WARMUP_RUNS,
+    runs: int = DEFAULT_MEASURE_RUNS,
 ) -> list[E2EResult]:
-    """Run L3 benchmark for a single seq_len."""
-    logger.info(f"\n{'='*60}")
-    logger.info(f"L3 E2E Benchmark: GPT-2 Small, seq_len={seq_len}")
-    logger.info(f"{'='*60}")
+    device = _resolve_device(device)
+    torch_dtype = _resolve_dtype(dtype, device)
+    modes = modes or ["eager", "torch.compile"]
+
+    _, tokenizer = model_loader(device=device, dtype=torch_dtype, model_name=model_name)
+    input_ids = _make_input(tokenizer, seq_len, device=device)
 
     results: list[E2EResult] = []
-
-    # Load fresh model for each seq_len to avoid cross-contamination
-    model, tokenizer = _load_gpt2()
-    input_ids = _make_input(tokenizer, seq_len)
-
-    # 1. Eager mode (reference)
-    logger.info("\n--- Eager mode ---")
-    eager_perf, eager_logits, eager_mem = _run_eager(model, input_ids)
-    logger.info(
-        f"  Mean: {eager_perf['mean_ms']:.2f} ms, "
-        f"Peak mem: {eager_mem:.1f} MB"
+    eager_result, eager_logits = _run_mode(
+        "eager",
+        model_loader=model_loader,
+        tokenizer=tokenizer,
+        input_ids=input_ids,
+        device=device,
+        dtype=torch_dtype,
+        model_name=model_name,
+        warmup=warmup,
+        runs=runs,
     )
-    results.append(E2EResult(
-        model="GPT-2 Small",
-        seq_len=seq_len,
-        mode="eager",
-        source=(
-            f"PyTorch {torch.__version__} eager mode | "
-            "https://pytorch.org | License: BSD-3-Clause"
-        ),
-        mean_ms=eager_perf["mean_ms"],
-        min_ms=eager_perf["min_ms"],
-        max_ms=eager_perf["max_ms"],
-        median_ms=eager_perf["median_ms"],
-        peak_memory_mb=eager_mem,
-        correct=True,
-        max_logit_diff=0.0,
-        mean_logit_diff=0.0,
-        top1_match=True,
-    ))
+    del tokenizer
+    results.append(eager_result)
 
-    # 2. torch.compile
-    logger.info("\n--- torch.compile mode ---")
-    # Reload model to clear any state
-    del model
-    torch.cuda.empty_cache()
-    model, _ = _load_gpt2()
-    compile_result = _run_compile(model, input_ids)
-    if compile_result is not None:
-        comp_perf, comp_logits, comp_mem = compile_result
-        correct, max_d, mean_d, top1 = _check_correctness(
-            eager_logits, comp_logits
-        )
-        logger.info(
-            f"  Mean: {comp_perf['mean_ms']:.2f} ms, "
-            f"Peak mem: {comp_mem:.1f} MB, "
-            f"Correct: {correct}"
-        )
-        results.append(E2EResult(
-            model="GPT-2 Small",
-            seq_len=seq_len,
-            mode="torch.compile",
-            source=(
-                f"torch.compile (Inductor) via PyTorch {torch.__version__} | "
-                "https://pytorch.org | License: BSD-3-Clause"
-            ),
-            mean_ms=comp_perf["mean_ms"],
-            min_ms=comp_perf["min_ms"],
-            max_ms=comp_perf["max_ms"],
-            median_ms=comp_perf["median_ms"],
-            peak_memory_mb=comp_mem,
-            correct=correct,
-            max_logit_diff=max_d,
-            mean_logit_diff=mean_d,
-            top1_match=top1,
-        ))
+    if eager_result.status != "ok" or eager_logits is None or eager_result.mean_ms is None:
+        return results
 
-    # 3. Arke-patched
-    logger.info("\n--- Arke-patched mode ---")
-    del model
-    torch.cuda.empty_cache()
-    model, _ = _load_gpt2()
-    arke_result = _run_arke(model, input_ids, seq_len)
-    if arke_result is not None:
-        arke_perf, arke_logits, arke_mem = arke_result
-        correct, max_d, mean_d, top1 = _check_correctness(
-            eager_logits, arke_logits
+    for mode in modes:
+        if mode == "eager":
+            continue
+        result, _ = _run_mode(
+            mode,
+            model_loader=model_loader,
+            tokenizer=None,
+            input_ids=input_ids,
+            device=device,
+            dtype=torch_dtype,
+            model_name=model_name,
+            warmup=warmup,
+            runs=runs,
+            reference_logits=eager_logits,
+            eager_mean_ms=eager_result.mean_ms,
         )
-        arke_src = "unknown"
-        try:
-            import arke as _arke
-            arke_src = getattr(_arke, "__version__", "unknown")
-        except Exception:
-            pass
-        logger.info(
-            f"  Mean: {arke_perf['mean_ms']:.2f} ms, "
-            f"Peak mem: {arke_mem:.1f} MB, "
-            f"Correct: {correct}"
-        )
-        results.append(E2EResult(
-            model="GPT-2 Small",
-            seq_len=seq_len,
-            mode="arke",
-            source=(
-                f"Arke {arke_src} (KernelCache monkey-patch) | "
-                "https://github.com/arke-ai/arke | License: Apache-2.0"
-            ),
-            mean_ms=arke_perf["mean_ms"],
-            min_ms=arke_perf["min_ms"],
-            max_ms=arke_perf["max_ms"],
-            median_ms=arke_perf["median_ms"],
-            peak_memory_mb=arke_mem,
-            correct=correct,
-            max_logit_diff=max_d,
-            mean_logit_diff=mean_d,
-            top1_match=top1,
-        ))
-
-    # Cleanup
-    del model
-    torch.cuda.empty_cache()
-
+        results.append(result)
     return results
-
-
-def save_results(
-    results: list[E2EResult],
-    output_dir: Path,
-) -> Path:
-    """Save L3 results as CSV."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = output_dir / "gpt2_results.csv"
-
-    fieldnames = [
-        "model", "seq_len", "mode", "source",
-        "mean_ms", "min_ms", "max_ms", "median_ms",
-        "peak_memory_mb", "correct", "max_logit_diff",
-        "mean_logit_diff", "top1_match",
-    ]
-
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for r in results:
-            writer.writerow({
-                "model": r.model,
-                "seq_len": r.seq_len,
-                "mode": r.mode,
-                "source": r.source,
-                "mean_ms": f"{r.mean_ms:.2f}",
-                "min_ms": f"{r.min_ms:.2f}",
-                "max_ms": f"{r.max_ms:.2f}",
-                "median_ms": f"{r.median_ms:.2f}",
-                "peak_memory_mb": f"{r.peak_memory_mb:.1f}",
-                "correct": r.correct,
-                "max_logit_diff": f"{r.max_logit_diff:.4f}",
-                "mean_logit_diff": f"{r.mean_logit_diff:.6f}",
-                "top1_match": r.top1_match,
-            })
-
-    return csv_path
-
-
-def print_comparison_table(results: list[E2EResult]) -> None:
-    """Print a comparison table of L3 results."""
-    print(f"\n{'='*80}")
-    print("L3 E2E GPT-2 Small — Comparison")
-    print(f"{'='*80}")
-    print(
-        f"{'SeqLen':>7s} {'Mode':>15s} {'Mean(ms)':>10s} {'Min(ms)':>10s} "
-        f"{'Memory(MB)':>11s} {'Correct':>8s} {'Top1':>5s}"
-    )
-    print("-" * 80)
-
-    for r in results:
-        print(
-            f"{r.seq_len:>7d} {r.mode:>15s} {r.mean_ms:>10.2f} {r.min_ms:>10.2f} "
-            f"{r.peak_memory_mb:>11.1f} {'✅' if r.correct else '❌':>8s} "
-            f"{'✅' if r.top1_match else '❌':>5s}"
-        )
-
-    print(f"{'='*80}")
 
 
 def run_l3(
     seq_lens: list[int],
-    output_dir: str = "benchmarks/results",
+    *,
+    output_dir: str = DEFAULT_OUTPUT_DIR,
+    model: str = "gpt2",
+    device: str = "auto",
+    dtype: str = "auto",
+    modes: list[str] | None = None,
+    warmup: int = DEFAULT_WARMUP_RUNS,
+    runs: int = DEFAULT_MEASURE_RUNS,
+    mock: bool = False,
 ) -> list[E2EResult]:
-    """Run L3 benchmark suite across seq_lens."""
     timestamp = time.strftime("%Y-%m-%d_%H%M%S")
-    base_dir = Path(output_dir) / "L3" / timestamp
+    base_dir = Path(output_dir) / timestamp
     base_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save hardware info
-    hw = collect_hardware_info()
-    hw.save(str(base_dir / "hardware.json"))
+    resolved_device = _resolve_device(device)
+    model_loader = _load_mock_model if mock else _load_gpt2
+    model_name = "mock-gpt2" if mock else model
+    modes = modes or ["eager", "torch.compile"]
 
-    # Save sources manifest
-    sources_manifest: dict[str, dict[str, str]] = {
-        "eager": {
-            "description": "PyTorch eager mode (SDPA attention)",
-            "source": f"PyTorch {torch.__version__}",
-        },
-        "torch.compile": {
-            "description": "torch.compile (Inductor, reduce-overhead)",
-            "source": f"PyTorch {torch.__version__}",
-        },
-    }
-    try:
-        import arke as _arke
-        v = getattr(_arke, "__version__", "unknown")
-        sources_manifest["arke"] = {
-            "description": "Arke KernelCache monkey-patch",
-            "source": f"Arke {v}",
-        }
-    except ImportError:
-        pass
-
-    with open(base_dir / "sources.json", "w") as f:
-        json.dump(sources_manifest, f, indent=2)
-
-    # Save config
-    config = {
-        "timestamp": timestamp,
-        "model": "GPT-2 Small",
-        "seq_lens": seq_lens,
-        "warmup_runs": WARMUP_RUNS,
-        "measure_runs": MEASURE_RUNS,
-        "layer": "L3",
-    }
-    with open(base_dir / "config.json", "w") as f:
-        json.dump(config, f, indent=2)
+    _write_provenance(
+        base_dir,
+        model=model_name,
+        seq_lens=seq_lens,
+        device=resolved_device,
+        dtype=dtype,
+        modes=modes,
+        warmup=warmup,
+        runs=runs,
+        mock=mock,
+    )
 
     all_results: list[E2EResult] = []
     for seq_len in seq_lens:
-        results = run_l3_single(seq_len)
-        all_results.extend(results)
+        logger.info("Running L3 %s seq_len=%s modes=%s", model_name, seq_len, modes)
+        all_results.extend(run_l3_single(
+            seq_len,
+            model_name=model_name,
+            model_loader=model_loader,
+            device=resolved_device,
+            dtype=dtype,
+            modes=modes,
+            warmup=warmup,
+            runs=runs,
+        ))
 
-    csv_path = save_results(all_results, base_dir)
-    logger.info(f"Saved: {csv_path}")
-
+    save_results(all_results, base_dir)
+    summary = build_summary(all_results, target_ratio=G8_GPT2_TARGET_RATIO)
+    (base_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print_comparison_table(all_results)
     print(f"\nResults saved to: {base_dir}")
-
     return all_results
 
 
+def save_results(results: list[E2EResult], output_dir: Path) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = output_dir / "gpt2_results.csv"
+    fieldnames = list(asdict(results[0]).keys()) if results else list(asdict(E2EResult(
+        model="", seq_len=0, mode="", source="", status=""
+    )).keys())
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for result in results:
+            writer.writerow(result.to_csv_row())
+    (output_dir / "results.json").write_text(
+        json.dumps([asdict(result) for result in results], indent=2) + "\n"
+    )
+
+
+def build_summary(results: list[E2EResult], *, target_ratio: float) -> dict[str, Any]:
+    compile_rows = [r for r in results if r.mode == "torch.compile"]
+    eager_rows = [r for r in results if r.mode == "eager"]
+    successful_compile = [
+        r
+        for r in compile_rows
+        if r.status == "ok"
+        and r.correct
+        and r.top1_match
+        and (r.ratio_vs_eager or 0.0) >= target_ratio
+    ]
+    ratios = [r.ratio_vs_eager for r in compile_rows if r.ratio_vs_eager is not None]
+    return {
+        "schema": "stage8-l3-gpt2-v1",
+        "target_ratio_vs_eager": target_ratio,
+        "rows": len(results),
+        "eager_rows": len(eager_rows),
+        "compile_rows": len(compile_rows),
+        "compile_success_rows": len(successful_compile),
+        "g8_gpt2_pass": bool(compile_rows) and len(successful_compile) == len(compile_rows),
+        "min_compile_ratio_vs_eager": min(ratios) if ratios else None,
+        "geomean_compile_ratio_vs_eager": _geomean(ratios),
+        "all_correct": all((r.correct is not False) for r in results if r.status == "ok"),
+        "errors": [asdict(r) for r in results if r.status != "ok"],
+    }
+
+
+def _write_provenance(base_dir: Path, **config: Any) -> None:
+    try:
+        hw = collect_hardware_info()
+        if hasattr(hw, "save"):
+            hw.save(str(base_dir / "hardware.json"))
+        else:
+            (base_dir / "hardware.json").write_text(json.dumps(hw, indent=2, default=str))
+    except Exception as exc:
+        (base_dir / "hardware.json").write_text(json.dumps({"error": str(exc)}, indent=2))
+
+    (base_dir / "config.json").write_text(json.dumps(config, indent=2) + "\n")
+    (base_dir / "sources.json").write_text(json.dumps({
+        "eager": _source_for_mode("eager"),
+        "torch.compile": _source_for_mode("torch.compile"),
+    }, indent=2) + "\n")
+
+
+def _geomean(values: list[float]) -> float | None:
+    positives = [v for v in values if v and v > 0]
+    if not positives:
+        return None
+    return math.exp(sum(math.log(v) for v in positives) / len(positives))
+
+
+def print_comparison_table(results: list[E2EResult]) -> None:
+    print("\n" + "=" * 92)
+    print("L3 E2E GPT-2 — eager vs torch.compile")
+    print("=" * 92)
+    print(
+        f"{'SeqLen':>7s} {'Mode':>15s} {'Status':>8s} {'Mean(ms)':>10s} "
+        f"{'Ratio':>8s} {'Memory(MB)':>11s} {'Correct':>8s} {'Top1':>5s}"
+    )
+    print("-" * 92)
+    for result in results:
+        mean = "" if result.mean_ms is None else f"{result.mean_ms:.2f}"
+        ratio = "" if result.ratio_vs_eager is None else f"{result.ratio_vs_eager:.3f}"
+        mem = "" if result.peak_memory_mb is None else f"{result.peak_memory_mb:.1f}"
+        correct = "" if result.correct is None else ("yes" if result.correct else "no")
+        top1 = "" if result.top1_match is None else ("yes" if result.top1_match else "no")
+        print(
+            f"{result.seq_len:>7d} {result.mode:>15s} {result.status:>8s} "
+            f"{mean:>10s} {ratio:>8s} {mem:>11s} {correct:>8s} {top1:>5s}"
+        )
+    print("=" * 92)
+
+
+def _parse_int_list(value: str) -> list[int]:
+    return [int(part.strip()) for part in value.split(",") if part.strip()]
+
+
+def _parse_str_list(value: str) -> list[str]:
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="L3 E2E Model Benchmark (GPT-2 Small)"
-    )
+    parser = argparse.ArgumentParser(description="Stage 8 L3 GPT-2 benchmark")
+    parser.add_argument("--seq-len", type=str, default=None, help="Comma-separated seq lens")
+    parser.add_argument("--all", action="store_true", help="Run default seq lens")
+    parser.add_argument("--model", default="gpt2")
+    parser.add_argument("--modes", default="eager,torch.compile")
+    parser.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
+    parser.add_argument("--dtype", default="auto")
+    parser.add_argument("--output", default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--warmup", type=int, default=DEFAULT_WARMUP_RUNS)
+    parser.add_argument("--runs", type=int, default=DEFAULT_MEASURE_RUNS)
     parser.add_argument(
-        "--seq-len",
-        type=str,
-        default=None,
-        help="Comma-separated seq_lens (default: 128,256,512)",
-    )
-    parser.add_argument(
-        "--all",
+        "--mock",
         action="store_true",
-        help="Run all default seq_lens (128, 256, 512)",
+        help="Use CPU/GPU-safe mock GPT-2 contract model",
     )
     parser.add_argument(
-        "--output", default="benchmarks/results",
+        "--dry-run",
+        action="store_true",
+        help="Print planned config without loading models",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true",
-    )
+    parser.add_argument("--list-seq-lens", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -477,12 +554,42 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(message)s",
     )
 
-    if args.all or args.seq_len is None:
-        seq_lens = DEFAULT_SEQ_LENS
-    else:
-        seq_lens = [int(s.strip()) for s in args.seq_len.split(",")]
+    if args.list_seq_lens:
+        print(",".join(str(x) for x in DEFAULT_SEQ_LENS))
+        return
 
-    run_l3(seq_lens=seq_lens, output_dir=args.output)
+    seq_lens = (
+        DEFAULT_SEQ_LENS
+        if args.all or args.seq_len is None
+        else _parse_int_list(args.seq_len)
+    )
+    modes = _parse_str_list(args.modes)
+
+    if args.dry_run:
+        print(json.dumps({
+            "model": "mock-gpt2" if args.mock else args.model,
+            "seq_lens": seq_lens,
+            "modes": modes,
+            "device": args.device,
+            "dtype": args.dtype,
+            "output": args.output,
+            "warmup": args.warmup,
+            "runs": args.runs,
+            "mock": args.mock,
+        }, indent=2))
+        return
+
+    run_l3(
+        seq_lens,
+        output_dir=args.output,
+        model=args.model,
+        device=args.device,
+        dtype=args.dtype,
+        modes=modes,
+        warmup=args.warmup,
+        runs=args.runs,
+        mock=args.mock,
+    )
 
 
 if __name__ == "__main__":

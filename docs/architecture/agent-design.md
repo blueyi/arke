@@ -305,6 +305,22 @@ External agents interact with Arke through shell commands or the Python API.
 These are the primary "tools" available to external agents:
 
 **CLI — Optimization**:
+
+The implemented Stage 8 MVP entry point accepts `.ak` file input and writes
+agent-readable artifacts:
+
+```bash
+arke optimize examples/operators/01_matmul.ak --output /tmp/arke-opt --cycles 3 --json
+```
+
+Current MVP artifacts:
+- `strategy.json` — generated bounded StrategyIR with @rationale fields
+- `result.akir` — SemanticIR + generated StrategyIR + lowered schedule/instruction IR
+- `trajectory.jsonl` — compile→profile→adjust event stream
+- `summary.json` — compact machine-readable run summary
+
+Planned richer entries remain the target LLM-native interface:
+
 ```bash
 # Natural language entry (LLM-Native)
 arke optimize "matmul kernel, 1024x512x2048, f16, Ampere"

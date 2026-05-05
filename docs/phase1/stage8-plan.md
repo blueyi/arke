@@ -56,6 +56,18 @@ G8 PASS = AND ALL:
 | 6 | DeepSeek-V2 16B: correctness 100% + perf ≥0.85× eager (seq≤512, quantized) | `arke bench --bl 6 --model deepseek` — correct + ≥0.85× eager |
 | 7 | BL5 no regression: L1+L2 correctness and performance ≥ G7 results | `arke bench --bl 5 --layer l1 l2` — no regression vs G7 |
 
+### Stage 8 MVP Bootstrap (implemented)
+
+The first Stage 8 bootstrap slice is intentionally narrower than the locked full G8 exit criteria. It establishes stable, machine-checkable contracts for the two P0 tracks before wiring live LLM calls and full-model GPU validation:
+
+- `arke optimize <file.ak>`: deterministic heuristic auto-strategy generation for kernel-only `.ak` input.
+- Artifacts: `strategy.json`, `result.akir`, `trajectory.jsonl`, and `summary.json`.
+- Trajectory schema: `s8-compile-profile-adjust-v1` with at least three ordered `compile → profile → adjust` cycles.
+- `benchmarks.bench_l3`: GPT-2 eager vs `torch.compile` CSV/JSON artifact contract, with `--mock` for CPU-safe CI and contract testing.
+- Gate hook: `python -m benchmarks.gate G8` validates this MVP artifact contract and regression slice.
+
+This does **not** relax full G8. The remaining Stage 8 work is still the live LLM strategy path, multi-input routing, BL5 no-regression performance inheritance, GPT-2 GPU target validation, LLaMA-2, and DeepSeek-V2.
+
 ---
 
 ## Tasks
@@ -64,8 +76,8 @@ G8 PASS = AND ALL:
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| D7-A1 | Auto strategy generation (kernel-only `.ak` → LLM full strategy pipeline) | P0 | XL | ⬜ |
-| D7-A2 | Iterative optimization loop (auto-trigger ≥3 rounds compile→profile→adjust) | P0 | L | ⬜ |
+| D7-A1 | Auto strategy generation (kernel-only `.ak` → LLM full strategy pipeline; MVP heuristic path implemented) | P0 | XL | 🚧 |
+| D7-A2 | Iterative optimization loop (auto-trigger ≥3 rounds compile→profile→adjust; MVP trajectory implemented) | P0 | L | 🚧 |
 | D7-A3 | Multi-input type routing (`.ak` / natural language / existing code → unified parse) | P0 | L | ⬜ |
 | D7-A4 | E2E profile → kernel feedback loop (bottleneck op → re-optimize) | P1 | L | ⬜ |
 | D7-A5 | Batch optimize pipeline (full model op set batch optimization) | P1 | M | ⬜ |
@@ -94,13 +106,13 @@ G8 PASS = AND ALL:
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| D7-E1 | torch.compile Inductor backend | P0 | XL | ⬜ |
+| D7-E1 | torch.compile Inductor backend artifact contract (full GPU backend target still open) | P0 | XL | 🚧 |
 | D7-E2 | LLaMA-2 7B integration + bench_l3 runner | P0 | L | ⬜ |
 | D7-E3 | DeepSeek-V2 integration (seq≤512, quantized weights) | P2 | L | ⬜ |
 | D7-E4 | Triton MLA template (compressed KV, lora project) | P1 | L | ⬜ |
 | D7-E5 | Triton paged_attention template (block table scatter read) | P1 | L | ⬜ |
 | D7-E6 | bench runner OOM guard + CSV annotation | P2 | S | ⬜ |
-| D7-E7 | `bench_l3.py` (model forward + top-1 comparison + latency stats) | P0 | M | ⬜ |
+| D7-E7 | `bench_l3.py` (model forward + top-1 comparison + latency stats; GPT-2 eager/torch.compile MVP implemented) | P0 | M | 🚧 |
 
 ### Track 5: IR + Lang Extensions (P1)
 

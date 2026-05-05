@@ -16,7 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
@@ -62,22 +62,25 @@ class GateSummary:
 
 def run_gate(gate_id: str, tier: int = 2) -> GateSummary:
     """Run a specific Gate and return summary.
-    
+
     Args:
         gate_id: Gate identifier (e.g., "G0", "G6")
         tier: Benchmark tier (1-3, higher = more comprehensive)
-    
+
     Returns:
         GateSummary with all criterion results
     """
     gate_id = gate_id.upper()
-    
+
     if gate_id == "G6":
         from benchmarks.gate_g6 import run_g6
         return run_g6(tier=tier)
     elif gate_id == "G7":
         from benchmarks.gate_g7 import run_g7
         return run_g7(tier=tier)
+    elif gate_id == "G8":
+        from benchmarks.gate_g8 import run_g8
+        return run_g8(tier=tier)
     else:
         # Placeholder for other gates
         return GateSummary(
@@ -138,22 +141,22 @@ def main() -> None:
             f"{'='*80}",
             f"Gate {summary.gate} Verification (Tier {summary.tier})",
             f"{'='*80}",
-            f"",
+            "",
             f"Results: {summary.passed}/{summary.total} criteria passed ({summary.pass_rate:.1f}%)",
-            f"",
+            "",
         ]
-        
+
         # Group by category
         by_category = {}
         for result in summary.results:
             if result.category not in by_category:
                 by_category[result.category] = []
             by_category[result.category].append(result)
-        
+
         for category in ["function", "correctness", "performance", "regression"]:
             if category not in by_category:
                 continue
-            
+
             lines.append(f"[{category.upper()}]")
             for result in by_category[category]:
                 status = "✅ PASS" if result.passed else "❌ FAIL"
@@ -162,14 +165,14 @@ def main() -> None:
                 if result.details:
                     lines.append(f"    {result.details}")
             lines.append("")
-        
+
         lines.append(f"{'='*80}")
         if summary.failed == 0:
             lines.append(f"✅ Gate {summary.gate} PASSED")
         else:
             lines.append(f"❌ Gate {summary.gate} FAILED ({summary.failed} criteria)")
         lines.append(f"{'='*80}")
-        
+
         output = "\n".join(lines)
 
     # Output

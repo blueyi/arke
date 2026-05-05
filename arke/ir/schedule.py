@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from arke.ir.strategy import Decision, HardwareConstraints, Rationale
+from arke.version import IR_SCHEMA_VERSION, resolve_ir_schema_version
 
 
 @dataclass
@@ -42,7 +43,7 @@ class LoopNest:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "LoopNest":
+    def from_dict(cls, d: dict[str, Any]) -> LoopNest:
         return cls(
             loop=d["loop"],
             tile_factors=list(d.get("tile_factors", [])),
@@ -63,7 +64,7 @@ class MemoryPlacement:
         return {"tensor": self.tensor, "memory": self.memory}
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "MemoryPlacement":
+    def from_dict(cls, d: dict[str, Any]) -> MemoryPlacement:
         return cls(tensor=d["tensor"], memory=d["memory"])
 
 
@@ -91,7 +92,7 @@ class ResourceBinding:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "ResourceBinding":
+    def from_dict(cls, d: dict[str, Any]) -> ResourceBinding:
         return cls(
             warps=d.get("warps"),
             num_stages=d.get("num_stages"),
@@ -111,7 +112,7 @@ class FusionGroup:
         return {"ops": list(self.ops), "type": self.fusion_type}
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "FusionGroup":
+    def from_dict(cls, d: dict[str, Any]) -> FusionGroup:
         return cls(ops=list(d.get("ops", [])), fusion_type=d.get("type", "epilogue"))
 
 
@@ -134,7 +135,7 @@ class ScheduleDecisionRecord:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "ScheduleDecisionRecord":
+    def from_dict(cls, d: dict[str, Any]) -> ScheduleDecisionRecord:
         rat = None
         if d.get("rationale"):
             rat = Rationale(**d["rationale"])
@@ -149,7 +150,7 @@ class ScheduleDecisionRecord:
 @dataclass
 class ScheduleIR:
     """Layer 2 schedule representation."""
-    version: str = "2.0.0"
+    version: str = IR_SCHEMA_VERSION
     kernel_id: str = ""
     target_hw: str = ""
     loop_nests: list[LoopNest] = field(default_factory=list)
@@ -281,10 +282,13 @@ class ScheduleIR:
         return json.dumps(self.to_dict(), indent=indent)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ScheduleIR":
+    def from_dict(cls, data: dict[str, Any]) -> ScheduleIR:
         constraints = HardwareConstraints(**data.get("constraints", {}))
         return cls(
-            version=data.get("version", "2.0.0"),
+            version=resolve_ir_schema_version(
+                data.get("version"),
+                artifact="ScheduleIR",
+            ),
             kernel_id=data.get("kernel_id", ""),
             target_hw=data.get("target_hw", ""),
             loop_nests=[LoopNest.from_dict(x) for x in data.get("loop_nests", [])],
@@ -297,5 +301,5 @@ class ScheduleIR:
         )
 
     @classmethod
-    def from_json(cls, json_str: str) -> "ScheduleIR":
+    def from_json(cls, json_str: str) -> ScheduleIR:
         return cls.from_dict(json.loads(json_str))

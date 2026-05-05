@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any
 
+from arke.version import IR_SCHEMA_VERSION, resolve_ir_schema_version
 
 # ─── Scalar Types ──────────────────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ class SymbolicDim:
 
 
 # A dimension can be a concrete int or a symbolic variable
-Dim = Union[int, SymbolicDim]
+Dim = int | SymbolicDim
 
 
 def dim_to_json(d: Dim) -> int | dict:
@@ -210,7 +211,7 @@ class NodeRef:
         return cls(id=d["id"])
 
 
-InputRef = Union[ParamRef, NodeRef]
+InputRef = ParamRef | NodeRef
 
 
 def input_ref_from_dict(d: dict) -> InputRef:
@@ -330,7 +331,7 @@ class ConditionalNode:
 
 
 # AnyNode: a node in the SemanticIR DAG
-AnyNode = Union[Node, MultiOutputNode, ConditionalNode]
+AnyNode = Node | MultiOutputNode | ConditionalNode
 
 
 # ─── Edges & Fusion ────────────────────────────────────────────────────────
@@ -401,7 +402,7 @@ class SemanticIR:
     The LLM Agent reads this; StrategyIR is what the LLM writes.
     """
 
-    version: str = "1.0.0"
+    version: str = IR_SCHEMA_VERSION
     kernel_id: str = ""
     params: list[Param] = field(default_factory=list)
     symbolic_dims: list[SymbolicDim] = field(default_factory=list)
@@ -485,7 +486,10 @@ class SemanticIR:
     def from_dict(cls, data: dict) -> SemanticIR:
         """Deserialize SemanticIR from the current structured format."""
         ir = cls(
-            version=data.get("version", "1.0.0"),
+            version=resolve_ir_schema_version(
+                data.get("version"),
+                artifact="SemanticIR",
+            ),
             kernel_id=data.get("kernel_id", ""),
             return_node=data.get("return_node", ""),
             return_ports=data.get("return_ports", []),

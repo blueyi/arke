@@ -222,7 +222,7 @@ class TestSemanticIR:
 
     def test_construction(self):
         ir = self._make_simple_ir()
-        assert ir.version == "1.0.0"
+        assert ir.version == "2.0.0"
         assert len(ir.params) == 2
         assert len(ir.nodes) == 1
         assert len(ir.edges) == 2

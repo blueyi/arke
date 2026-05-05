@@ -105,6 +105,25 @@ class TestAkirFormat:
         with pytest.raises(ValueError, match="Unsupported .akir version"):
             akir_from_dict(d)
 
+    def test_akir_from_dict_rejects_legacy_nested_ir_versions(self):
+        d = {
+            "format": AKIR_FORMAT,
+            "version": AKIR_VERSION,
+            "semantic_ir": {
+                "version": "1.0.0",
+                "kernel_id": "test_relu",
+                "params": [],
+                "nodes": [],
+                "edges": [],
+                "return_node": "",
+            },
+            "strategy_ir": None,
+            "schedule_ir": None,
+            "instruction_ir": None,
+        }
+        with pytest.raises(ValueError, match="Unsupported SemanticIR version"):
+            akir_from_dict(d)
+
     def test_akir_from_dict_missing_semantic_ir(self):
         d = {"format": "akir", "version": AKIR_VERSION, "strategy_ir": None, "schedule_ir": None, "instruction_ir": None}
         with pytest.raises(ValueError, match="Missing 'semantic_ir'"):
@@ -192,7 +211,7 @@ class TestFileIO:
         with open(tmp_akir) as f:
             data = json.load(f)
         assert data["format"] == "akir"
-        assert data["version"] == "2.0.0"
+        assert data["version"] == AKIR_VERSION
         assert "schedule_ir" in data
         assert "instruction_ir" in data
 
@@ -353,7 +372,7 @@ class TestCLI:
         assert proc.returncode == 0, f"CLI failed: {proc.stderr}"
         data = json.loads(proc.stdout)
         assert data["format"] == "akir"
-        assert data["version"] == "2.0.0"
+        assert data["version"] == AKIR_VERSION
         assert data["semantic_ir"]["kernel_id"] == "relu_kernel"
         assert data["schedule_ir"] is not None
         assert data["instruction_ir"] is not None
@@ -373,7 +392,7 @@ class TestCLI:
         with open(out_file) as f:
             data = json.load(f)
         assert data["format"] == "akir"
-        assert data["version"] == "2.0.0"
+        assert data["version"] == AKIR_VERSION
 
     def test_cli_compile_invalid_file(self):
         import subprocess

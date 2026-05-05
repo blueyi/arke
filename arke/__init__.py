@@ -7,4 +7,6 @@ Phase 1 S6-S9 refactor in progress.
 Old IR implementation removed; foundations preserved for rebuild.
 """
 
-__version__ = "0.2.0-dev"
+from arke.version import PACKAGE_VERSION
+
+__version__ = PACKAGE_VERSION

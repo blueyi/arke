@@ -13,6 +13,8 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
+from arke.version import IR_SCHEMA_VERSION, resolve_ir_schema_version
+
 
 @dataclass
 class Instruction:
@@ -34,7 +36,7 @@ class Instruction:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "Instruction":
+    def from_dict(cls, d: dict[str, Any]) -> Instruction:
         return cls(
             opcode=d["opcode"],
             operands=list(d.get("operands", [])),
@@ -56,7 +58,7 @@ class InstructionBlock:
         }
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "InstructionBlock":
+    def from_dict(cls, d: dict[str, Any]) -> InstructionBlock:
         return cls(
             name=d["name"],
             instructions=[Instruction.from_dict(x) for x in d.get("instructions", [])],
@@ -66,7 +68,7 @@ class InstructionBlock:
 @dataclass
 class InstructionIR:
     """Layer 1 instruction representation."""
-    version: str = "2.0.0"
+    version: str = IR_SCHEMA_VERSION
     kernel_id: str = ""
     target_hw: str = ""
     blocks: list[InstructionBlock] = field(default_factory=list)
@@ -99,9 +101,12 @@ class InstructionIR:
         return json.dumps(self.to_dict(), indent=indent)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "InstructionIR":
+    def from_dict(cls, data: dict[str, Any]) -> InstructionIR:
         return cls(
-            version=data.get("version", "2.0.0"),
+            version=resolve_ir_schema_version(
+                data.get("version"),
+                artifact="InstructionIR",
+            ),
             kernel_id=data.get("kernel_id", ""),
             target_hw=data.get("target_hw", ""),
             blocks=[InstructionBlock.from_dict(x) for x in data.get("blocks", [])],
@@ -109,5 +114,5 @@ class InstructionIR:
         )
 
     @classmethod
-    def from_json(cls, json_str: str) -> "InstructionIR":
+    def from_json(cls, json_str: str) -> InstructionIR:
         return cls.from_dict(json.loads(json_str))
