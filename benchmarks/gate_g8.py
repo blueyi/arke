@@ -21,6 +21,8 @@ from benchmarks.gate import GateResult, GateSummary
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MATMUL_AK = REPO_ROOT / "examples" / "operators" / "01_matmul.ak"
+RELU_AK = REPO_ROOT / "examples" / "operators" / "00_relu.ak"
+SOFTMAX_AK = REPO_ROOT / "examples" / "operators" / "02_softmax.ak"
 
 
 def _run_cmd(args: list[str], timeout: int = 180) -> tuple[bool, str]:
@@ -73,6 +75,86 @@ def _check_optimize_cli_contract() -> tuple[bool, str]:
             f"cycles=3 decisions={summary['decision_count']} "
             f"trajectory_events={len(trajectory)}"
         )
+
+
+def _check_multi_input_routing_contract() -> tuple[bool, str]:
+    """Validate G8[3] MVP evidence: two ops for each routed input family."""
+    cases = [
+        ("ak_file_relu", [str(RELU_AK)], "ak_file", "relu_kernel"),
+        ("ak_file_softmax", [str(SOFTMAX_AK)], "ak_file", "softmax"),
+        (
+            "natural_language_relu",
+            ["optimize relu for shape 16x32 fp16"],
+            "natural_language",
+            "relu_kernel",
+        ),
+        (
+            "natural_language_softmax",
+            ["optimize softmax for shape 16x32 fp16"],
+            "natural_language",
+            "softmax_kernel",
+        ),
+        (
+            "code_snippet_relu",
+            ["def relu_kernel(x): return torch.relu(x)  # shape 16x32"],
+            "code_snippet",
+            "relu_kernel",
+        ),
+        (
+            "code_snippet_softmax",
+            ["def softmax_kernel(x): return torch.softmax(x, dim=-1)  # shape 16x32"],
+            "code_snippet",
+            "softmax_kernel",
+        ),
+        (
+            "structured_relu",
+            ["--kernel", "relu", "--shape", "16,32"],
+            "structured_args",
+            "relu_kernel",
+        ),
+        (
+            "structured_softmax",
+            ["--kernel", "softmax", "--shape", "16,32"],
+            "structured_args",
+            "softmax_kernel",
+        ),
+    ]
+    evidence: list[dict[str, str]] = []
+    with tempfile.TemporaryDirectory(prefix="arke-g8-multi-input-") as tmp:
+        tmp_root = Path(tmp)
+        for name, input_args, expected_kind, expected_kernel in cases:
+            out_dir = tmp_root / name
+            ok, detail = _run_cmd([
+                sys.executable,
+                "-m",
+                "arke.cli",
+                "optimize",
+                *input_args,
+                "--output",
+                str(out_dir),
+                "--cycles",
+                "1",
+                "--json",
+            ])
+            if not ok:
+                return False, f"{name} failed:\n{detail}"
+            summary = json.loads((out_dir / "summary.json").read_text())
+            if not summary.get("success"):
+                return False, f"{name} unsuccessful:\n{json.dumps(summary, indent=2)}"
+            if summary.get("input_kind") != expected_kind:
+                return False, f"{name} input_kind={summary.get('input_kind')} expected={expected_kind}"
+            if summary.get("kernel_id") != expected_kernel:
+                return False, f"{name} kernel_id={summary.get('kernel_id')} expected={expected_kernel}"
+            normalized_source = summary.get("normalized_source_path")
+            if not normalized_source or not Path(normalized_source).exists():
+                return False, f"{name} missing normalized source: {normalized_source}"
+            evidence.append({
+                "case": name,
+                "input_kind": expected_kind,
+                "kernel_id": expected_kernel,
+            })
+    kinds = sorted({item["input_kind"] for item in evidence})
+    return True, f"cases={len(evidence)} input_kinds={kinds} kernels={[item['kernel_id'] for item in evidence]}"
 
 
 def _check_bench_l3_mock_contract() -> tuple[bool, str]:
@@ -132,10 +214,20 @@ def run_g8(tier: int = 2) -> GateSummary:
         detail,
     ))
 
-    ok, detail = _check_bench_l3_mock_contract()
+    ok, detail = _check_multi_input_routing_contract()
     results.append(GateResult(
         "G8",
         "G8.MVP.2",
+        "arke optimize routes .ak, natural language, code snippet, and structured inputs for two ops each",
+        "function",
+        ok,
+        detail,
+    ))
+
+    ok, detail = _check_bench_l3_mock_contract()
+    results.append(GateResult(
+        "G8",
+        "G8.MVP.3",
         "bench_l3 emits GPT-2 eager vs torch.compile CSV/JSON artifacts",
         "function",
         ok,
@@ -148,7 +240,7 @@ def run_g8(tier: int = 2) -> GateSummary:
     ])
     results.append(GateResult(
         "G8",
-        "G8.MVP.3",
+        "G8.MVP.4",
         "Stage 8 MVP regression tests pass",
         "regression",
         ok,
