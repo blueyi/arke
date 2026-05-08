@@ -3,7 +3,7 @@
 
 """Arke AST — Abstract Syntax Tree node definitions.
 
-Maps to the Arke Language Spec v2.0 (docs/spec/arke-lang-spec-design.md).
+Maps to the Arke Language Spec v0.1.0 (docs/spec/arke-lang-spec-design.md).
 Terminology: uses 'Strategy' (not 'Schedule') per naming-system.md.
 """
 

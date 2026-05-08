@@ -99,8 +99,8 @@ def run_g7(tier: int = 2) -> GateSummary:
 
     spec_ok, spec_detail = _check_spec_docs()
     results.extend([
-        GateResult("G7", "G7.1", "Arke Lang Spec v2.0 finalized and present", "function", spec_ok, spec_detail),
-        GateResult("G7", "G7.2", "Arke IR Spec v2.0 finalized and present", "function", spec_ok, spec_detail),
+        GateResult("G7", "G7.1", "Arke Lang Spec v0.1.0 finalized and present", "function", spec_ok, spec_detail),
+        GateResult("G7", "G7.2", "Arke IR Spec v0.1.0 finalized and present", "function", spec_ok, spec_detail),
     ])
 
     passed, details = _run_pytest([

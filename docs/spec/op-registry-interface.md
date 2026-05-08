@@ -68,11 +68,11 @@ GPU Binary
 ### 2.2 Relationship to Lang & IR
 
 ```
-Arke Lang Spec v2.0
+Arke Lang Spec v0.1.0
     ├─ Defines universal syntax (kernel, strategy, where clause)
     └─ Does NOT enumerate operators
     
-Arke IR Spec v2.0
+Arke IR Spec v0.1.0
     ├─ Defines universal data structures (SemanticIR, StrategyIR, etc.)
     └─ Does NOT enumerate operators
     
@@ -641,8 +641,8 @@ class OpVersion:
     op_name: str
     version: str                        # semantic versioning (e.g., "1.0.0")
     created: str                        # ISO 8601 timestamp
-    deprecated: bool = False
-    replacement: str | None = None      # if deprecated, what to use instead
+    lifecycle: str = "active"              # active | experimental | retired
+    successor: str | None = None           # if retired, what to use instead
 ```
 
 ### 12.3 Op Discovery & Loading
@@ -675,8 +675,8 @@ Operators can be shared via:
 
 ## References
 
-- `docs/spec/arke-lang-spec.md` — Arke Language v2.0
-- `docs/spec/arke-ir-spec.md` — Arke IR v2.0
+- `docs/spec/arke-lang-spec.md` — Arke Language v0.1.0
+- `docs/spec/arke-ir-spec.md` — Arke IR v0.1.0
 - `docs/architecture/e2e-flow.md` — End-to-end flow
 - `docs/architecture/agent-design.md` — Agent design
 

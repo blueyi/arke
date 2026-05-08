@@ -10,11 +10,11 @@ Arke is a native LLM programming language, IR, compiler toolchain, and agent eng
 
 ## Status & Version Semantics
 
-- **Python package / CLI release:** `0.2.0.dev0` — the current prerelease line exposed by `pyproject.toml` and `arke.__version__`.
-- **Arke Language schema:** `2.0.0` — the canonical `.ak` surface documented in [docs/spec/arke-lang-spec.md](docs/spec/arke-lang-spec.md).
-- **Arke IR / `.akir` schema:** `2.0.0` — the active multi-layer IR contract documented in [docs/spec/arke-ir-spec.md](docs/spec/arke-ir-spec.md).
-- **Other version labels in the repo:** supporting specs may keep their own document revision numbers, and roadmap docs may mention project release tags such as `v1.0.0`; those are not the active `.ak` / `.akir` schema identifiers.
-- **Repository policy:** the active tree is **v2-only** for language/IR semantics. Historical drafts and migration notes live in git history, not in the active docs/code path.
+- **Release line:** `v0.1.0` — the current project, Python package, CLI, `.ak` language, and `.akir` IR contract all start from this version.
+- **Python package / CLI release:** `0.1.0` — exposed by `pyproject.toml`, `arke.__version__`, and CLI metadata.
+- **Arke Language schema:** `0.1.0` — the canonical `.ak` surface documented in [docs/spec/arke-lang-spec.md](docs/spec/arke-lang-spec.md).
+- **Arke IR / `.akir` schema:** `0.1.0` — the canonical multi-layer IR contract documented in [docs/spec/arke-ir-spec.md](docs/spec/arke-ir-spec.md).
+- **Repository policy:** the active tree describes the current Arke architecture directly as the clean starting point for Arke-Lang, Arke-IR, Arke-Compiler, and Arke-Agent.
 
 ## Key Features
 
@@ -221,7 +221,7 @@ Today, the documented package entry points in the current prerelease distributio
 
 Design documents describe richer optimization flows and agent-driven workflows; read those as architecture and roadmap material unless a specific interface is documented here and implemented in the package entry points.
 
-If you are checking versions: the package stays on a `0.x` prerelease track while the active language and IR schemas are both `2.0.0`. See [docs/spec/arke-lang-spec.md#11-versioning](docs/spec/arke-lang-spec.md#11-versioning) and [docs/spec/arke-ir-spec.md#15-versioning](docs/spec/arke-ir-spec.md#15-versioning).
+If you are checking versions: the project, package, language schema, and IR schema are aligned on the `v0.1.0` / `0.1.0` starting line. See [docs/spec/arke-lang-spec.md#11-versioning](docs/spec/arke-lang-spec.md#11-versioning) and [docs/spec/arke-ir-spec.md#15-versioning](docs/spec/arke-ir-spec.md#15-versioning).
 
 ## Roadmap Snapshot
 
@@ -273,7 +273,7 @@ The roadmap, Gate definitions, and benchmark terminology are maintained in the f
 ### Stage Plans
 
 - [docs/phase1/stage6-plan.md](docs/phase1/stage6-plan.md) — compiler infrastructure
-- [docs/phase1/stage7-plan.md](docs/phase1/stage7-plan.md) — Lang and IR v2
+- [docs/phase1/stage7-plan.md](docs/phase1/stage7-plan.md) — Lang and IR v0.1.0
 - [docs/phase1/stage8-plan.md](docs/phase1/stage8-plan.md) — agent autonomy
 - [docs/phase1/stage9-plan.md](docs/phase1/stage9-plan.md) — Phase 1 finalization
 - [docs/phase1/design-review.md](docs/phase1/design-review.md) — design review and risk analysis
@@ -281,7 +281,7 @@ The roadmap, Gate definitions, and benchmark terminology are maintained in the f
 
 ### Repository History Policy
 
-The active tree documents the current v2 language and IR surfaces only. Historical migration notes and superseded design drafts were removed during the Stage 7 spec cleanup so they do not compete with active references. Use git history when older drafts must be inspected for archaeology or provenance.
+The active tree documents the current Arke language and IR surfaces only. The repository is treated as a clean starting point for the Arke four-piece architecture: Arke-Lang, Arke-IR, Arke-Compiler, and Arke-Agent.
 
 ## Project Structure
 

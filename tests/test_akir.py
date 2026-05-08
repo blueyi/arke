@@ -105,7 +105,7 @@ class TestAkirFormat:
         with pytest.raises(ValueError, match="Unsupported .akir version"):
             akir_from_dict(d)
 
-    def test_akir_from_dict_rejects_legacy_nested_ir_versions(self):
+    def test_akir_from_dict_rejects_unsupported_nested_ir_versions(self):
         d = {
             "format": AKIR_FORMAT,
             "version": AKIR_VERSION,

@@ -13,8 +13,8 @@ import pytest
 from arke.agent.tools import (
     ArkeTool, ToolMeta, ToolResult, ToolRegistry,
     BudgetType, CostLevel,
-    GetHWProfileTool, AnalyzeComputeTool, CompileAndProfileTool,
-    TOOL_REGISTRY,
+    GetHWProfileTool, AnalyzeComputeTool, BenchmarkAdviceSummaryTool,
+    CompileAndProfileTool, TOOL_REGISTRY,
 )
 
 
@@ -116,6 +116,23 @@ class TestAnalyzeCompute:
         assert "Unknown op" in result.error
 
 
+
+class TestBenchmarkAdviceSummary:
+
+    def test_meta(self):
+        tool = BenchmarkAdviceSummaryTool()
+        assert tool.meta.concurrent_safe is True
+        assert tool.meta.idempotent is True
+        assert tool.meta.budget_type == BudgetType.FREE
+        assert tool.meta.cost == CostLevel.CHEAP
+
+    def test_schema(self):
+        schema = BenchmarkAdviceSummaryTool().parameters_schema()
+        assert schema["required"] == ["csv_path", "gpu_memory_mb"]
+        assert schema["properties"]["csv_path"]["type"] == "string"
+        assert schema["properties"]["gpu_memory_mb"]["type"] == "integer"
+
+
 class TestCompileAndProfile:
 
     def test_matmul_structured_json(self):
@@ -167,10 +184,11 @@ class TestCompileAndProfile:
 
 class TestToolRegistry:
 
-    def test_default_has_3_tools(self):
-        assert len(TOOL_REGISTRY) == 3
+    def test_default_has_4_tools(self):
+        assert len(TOOL_REGISTRY) == 4
         assert "get_hw_profile" in TOOL_REGISTRY
         assert "analyze_compute" in TOOL_REGISTRY
+        assert "benchmark_advice_summary" in TOOL_REGISTRY
         assert "compile_and_profile" in TOOL_REGISTRY
 
     def test_get_tool(self):
@@ -183,7 +201,7 @@ class TestToolRegistry:
 
     def test_all_schemas(self):
         schemas = TOOL_REGISTRY.all_schemas()
-        assert len(schemas) == 3
+        assert len(schemas) == 4
         for s in schemas:
             assert s["type"] == "function"
             assert "name" in s["function"]
@@ -214,4 +232,9 @@ class TestToolRegistry:
 
     def test_names(self):
         names = TOOL_REGISTRY.names()
-        assert sorted(names) == ["analyze_compute", "compile_and_profile", "get_hw_profile"]
+        assert sorted(names) == [
+            "analyze_compute",
+            "benchmark_advice_summary",
+            "compile_and_profile",
+            "get_hw_profile",
+        ]

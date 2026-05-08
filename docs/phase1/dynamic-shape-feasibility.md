@@ -417,7 +417,7 @@ Arke can attach symbolic dimension metadata to MLIR operations:
 
 ## References
 
-- `docs/spec/arke-lang-spec.md` — Arke Language v2.0 with `where` clause
+- `docs/spec/arke-lang-spec.md` — Arke Language v0.1.0 with `where` clause
 - `docs/spec/arke-ir-spec.md` — Arke IR multi-layer architecture
 - `docs/architecture/e2e-flow.md` — End-to-end LLM optimization flow
 

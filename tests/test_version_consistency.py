@@ -17,8 +17,8 @@ from arke.ir.schedule import ScheduleIR
 from arke.ir.semantic import SemanticIR
 from arke.ir.strategy import StrategyIR
 
-EXPECTED_PACKAGE_VERSION = "0.2.0.dev0"
-EXPECTED_IR_VERSION = "2.0.0"
+EXPECTED_PACKAGE_VERSION = "0.1.0"
+EXPECTED_IR_VERSION = "0.1.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -48,7 +48,7 @@ class TestVersionConsistency:
         assert ScheduleIR.from_dict({}).version == EXPECTED_IR_VERSION
         assert InstructionIR.from_dict({}).version == EXPECTED_IR_VERSION
 
-    def test_ir_layer_from_dict_rejects_legacy_schema_versions(self):
+    def test_ir_layer_from_dict_rejects_unsupported_schema_versions(self):
         with pytest.raises(ValueError, match="Unsupported SemanticIR version"):
             SemanticIR.from_dict({"version": "1.0.0"})
         with pytest.raises(ValueError, match="Unsupported StrategyIR version"):

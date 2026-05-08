@@ -18,7 +18,7 @@ class TestBenchmarkL2FusedCE:
         assert {r.shape_tag for r in results} == {"gpt2-seq128"}
         assert all(r.op == "linear_ce" for r in results)
 
-    def test_legacy_fused_linear_cross_entropy_alias_maps_to_linear_ce(self):
+    def test_fused_linear_cross_entropy_surface_maps_to_linear_ce(self):
         results = run_fused_op(
             "fused_linear_cross_entropy",
             warmup=1,

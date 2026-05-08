@@ -10,7 +10,7 @@ InstructionIR (Layer 1).
 File format (JSON):
     {
         "format": "akir",
-        "version": "2.0.0",
+        "version": "0.1.0",
         "semantic_ir": { ... SemanticIR.to_dict() ... },
         "strategy_ir": { ... StrategyIR.to_dict() ... },      // or null
         "schedule_ir": { ... ScheduleIR.to_dict() ... },      // or null

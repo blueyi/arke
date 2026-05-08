@@ -1,7 +1,7 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — StrategyIR v2.0 (Layer 3).
+"""Arke IR — StrategyIR v0.1.0 (Layer 3).
 
 Optimization decisions: "how to optimize."
 L1 (backend-agnostic) and L2 (resource / backend-bound) decision levels.
@@ -92,7 +92,7 @@ def _decision_to_dict(d: AnyDecision) -> dict:
 
 
 def _parse_decision(d: dict) -> Decision:
-    """Parse a single decision dict in the current v2 format."""
+    """Parse a single decision dict in the current v0.1.0 format."""
     rat = None
     if d.get("rationale"):
         rat_data = d["rationale"]
@@ -128,9 +128,9 @@ class HardwareConstraints:
 
 @dataclass
 class StrategyIR:
-    """Optimization strategy IR v2.0.
+    """Optimization strategy IR v0.1.0.
 
-    Current v2-oriented structure:
+    Current v0.1.0-oriented structure:
     - decisions list accepts AnyDecision (Decision | ConditionalDecision)
     - shape_regimes: named profiles for shape-based dispatch
     - level field on each Decision (L1 vs L2)
@@ -197,7 +197,7 @@ class StrategyIR:
                 num_stages: int | None = None,
                 shared_memory: int | None = None,
                 rationale: str | None = None) -> Decision:
-        """L2 decision: resource configuration in canonical v2 form."""
+        """L2 decision: resource configuration in canonical v0.1.0 form."""
         params: dict = {}
         if warps is not None:
             params["warps"] = warps

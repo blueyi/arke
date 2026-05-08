@@ -90,7 +90,7 @@ def test_registry_validate_coverage():
     """Test coverage validation — all 45 ops fully annotated after C1.2."""
     missing = REGISTRY.validate_coverage()
 
-    # All fields should be fully covered after C1.2 migration
+    # All fields should be fully covered after C1.2
     assert len(missing["shape_rule"]) == 0, f"Missing shape_rule: {missing['shape_rule']}"
     assert len(missing["template_hint"]) == 0, f"Missing template_hint: {missing['template_hint']}"
     assert len(missing["reference_impl"]) == 0, f"Missing reference_impl: {missing['reference_impl']}"

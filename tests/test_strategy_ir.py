@@ -153,7 +153,7 @@ class TestStrategyIRConvenience:
         assert d.params == {"ops": ["matmul", "gelu"], "type": "epilogue"}
         assert d.rationale.text == "eliminate round-trip"
 
-    def test_schedule_ir_accepts_legacy_and_surface_fusion_type_keys(self):
+    def test_schedule_ir_accepts_type_and_fusion_type_keys(self):
         schedule = ScheduleIR(kernel_id="test", target_hw="nvidia_ampere")
         schedule.apply_decision(Decision(kind="fuse", params={"ops": ["a", "b"], "type": "epilogue"}, step=1))
         schedule.apply_decision(

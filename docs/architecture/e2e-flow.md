@@ -1004,7 +1004,7 @@ Phase 1 共 **10 个 Gate（G0-G9）**，每个 Gate 的出口条件由 **BL×L 
 | G4 | BL2×L1 | Arke vs LLM-direct 对比 | ✅ |
 | G5 | BL3×L1 + BL6/GPT-2×L3 | 全基础算子 + E2E 正确性 | ✅ |
 | G6 | BL5×L1+L2 | **Compiler Infrastructure**（编译器基础设施） | ⬜ |
-| G7 | BL5×L1+L2 | **Lang & IR v2**（语言与 IR 第二版） | ⬜ |
+| G7 | BL5×L1+L2 | **Lang & IR v0.1.0**（当前语言与 IR） | ⬜ |
 | G8 | BL5×L1+L2 + BL6×L3 | **Agent Autonomy**（自主工程能力） | ⬜ |
 | G9 | BL6×L3 (4模型) | **Phase 1 最终验收** | ⬜ |
 
@@ -1074,4 +1074,4 @@ Gate 出口判定（G0-G9）
 
 ---
 
-*文档版本：v2.0 | 创建日期：2026-03-31 | 更新：2026-04-05（对齐 45 ops + BL/OT/ST/L 体系 + Gate 系统）*
+*文档版本：v0.1.0 | 创建日期：2026-03-31 | 更新：2026-04-05（对齐 45 ops + BL/OT/ST/L 体系 + Gate 系统）*

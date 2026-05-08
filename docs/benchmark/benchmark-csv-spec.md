@@ -23,7 +23,7 @@
 | 3 | `run_id` | str | ✅ | Unique run identifier (timestamp) | `2026-04-05_012345` |
 | 4 | `operator` | str | ✅ | Operator name | `matmul`, `flash_attention` |
 | 5 | `op_tier` | int | ✅ | Operator Tier (0–4, see benchmark-design.md §2) | `2` |
-| 6 | `category` | str | ✅ | Operator category (A–G, legacy compat) | `A` |
+| 6 | `category` | str | ✅ | Operator category (A–G) | `A` |
 | 7 | `shape_tag` | str | ✅ | Human-readable shape tag | `llama2-7b-512`, `ds-v2-2k` |
 | 8 | `shape_tier` | int | ✅ | Shape Tier (1–4, see benchmark-design.md §3) | `2` |
 | 9 | `benchmark_level` | int | ✅ | Benchmark Level (1–6, see benchmark-design.md §1) | `3` |

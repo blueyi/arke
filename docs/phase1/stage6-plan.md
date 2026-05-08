@@ -7,7 +7,7 @@
 **Objective:** Refactor the compiler toolchain into a clean, extensible architecture. OpRegistry as single source of truth, Pass pipeline for composable transformations, Backend abstraction for multi-target support. **Validated through full 45-op correctness and performance.**
 
 **Depends on:** S0-S5 (all passed)
-**Blocks:** S7 (Lang & IR v2 needs Pass pipeline, OpRegistry, Backend abstraction)
+**Blocks:** S7 (Lang & IR v0.1.0 needs Pass pipeline, OpRegistry, Backend abstraction)
 
 ---
 
@@ -35,7 +35,7 @@
 
 | Op | Issue | Root Cause | S7 Optimization Target |
 |:---|:------|:-----------|:----------------------|
-| flash_attention | OOM on tier-2 large shapes (llama2-7b-4k, llama3-7b-4k) | Triton kernel memory footprint exceeds 6GB VRAM; no memory optimization in current backend | Implement memory-efficient attention (block-wise computation, gradient checkpointing) in Arke-Lang v2 + Arke-Compiler v2 |
+| flash_attention | OOM on tier-2 large shapes (llama2-7b-4k, llama3-7b-4k) | Triton kernel memory footprint exceeds 6GB VRAM; no memory optimization in current backend | Implement memory-efficient attention (block-wise computation, gradient checkpointing) in Arke-Lang v0.1.0 + Arke-Compiler |
 
 ### Passing Operators (40/45) — All meet ≥1.00× P3 eager baseline
 
@@ -53,9 +53,9 @@
 
 ### S7 Action Items
 
-1. **Memory-Efficient Attention Design** — Redesign flash_attention in Arke-Lang v2 with explicit memory tiling strategy and shape constraints
+1. **Memory-Efficient Attention Design** — Redesign flash_attention in Arke-Lang v0.1.0 with explicit memory tiling strategy and shape constraints
 2. **Shape Tier Validation** — Ensure all tier-2 shapes fit within target hardware (6GB VRAM) constraints; adjust benchmark-shapes.md if needed
-3. **Backend Memory Optimization** — Implement memory pooling, kernel fusion, and gradient checkpointing in Arke-Compiler v2
+3. **Backend Memory Optimization** — Implement memory pooling, kernel fusion, and gradient checkpointing in Arke-Compiler
 
 ---
 
@@ -151,4 +151,4 @@ The following were completed under the **old architecture** before the Lang/IR/C
 ## Dependencies
 
 - **Depends on:** S0-S5 (all passed)
-- **Blocks:** S7 (Lang & IR v2 needs Pass pipeline, OpRegistry, Backend abstraction)
+- **Blocks:** S7 (Lang & IR v0.1.0 needs Pass pipeline, OpRegistry, Backend abstraction)

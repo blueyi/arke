@@ -906,7 +906,7 @@ class SemanticInterpreter:
 
 
 # ---------------------------------------------------------------------------
-# Backward-compat shim: expose the same interface as numerical_check.py
+# Numerical check bridge: expose the same interface as numerical_check.py
 # ---------------------------------------------------------------------------
 
 def check_numerical(
@@ -916,7 +916,7 @@ def check_numerical(
     atol: float = 1e-3,
     rtol: float = 1e-3,
 ) -> tuple[bool, str]:
-    """Drop-in replacement for the old numerical_check API.
+    """SemanticInterpreter-backed numerical_check API.
 
     Returns (passed, message). Uses SemanticInterpreter for reference.
     """
@@ -1441,7 +1441,7 @@ class SSAValidator:
 
 ## 9. Migration Plan
 
-Implementation should remain incremental, but active docs should describe the target architecture directly rather than preserving compatibility framing.
+Implementation should remain incremental, but active docs should describe the target architecture directly rather than preserving bridge framing.
 
 ### Phase 0 — Foundation (no behavior change)
 
@@ -1582,8 +1582,8 @@ Critical path: **T01 → T05 → T09 → T17 → T22 → T24** ≈ 11h sequentia
 ### 12.2 Engineering discipline
 
 - keep public APIs stable only where the active mainline still uses them
-- remove dead compatibility shims once replacement paths are proven
-- prefer rewriting tests to canonical current behavior over preserving migration-only assertions
+- remove dead bridge code once replacement paths are proven
+- prefer rewriting tests to canonical current behavior over preserving non-canonical assertions
 - record validation checkpoints in Stage 7 planning docs when architecture-facing changes land
 
 ### 12.3 Validation checkpoints

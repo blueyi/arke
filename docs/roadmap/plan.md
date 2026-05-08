@@ -46,7 +46,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
-| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v2 | ✅ |
+| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 | ✅ |
 | S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
@@ -102,7 +102,7 @@ GPT-2 Small E2E inference: top-1 token correctness 100%, 49/48 Conv1D replacemen
 
 **Objective:** Refactor the compiler toolchain into a clean, extensible architecture. OpRegistry as single source of truth, Pass pipeline for composable transformations, Backend abstraction for multi-target support.
 
-**Why this comes first:** All subsequent stages (IR v2, Agent autonomy, multi-model E2E) depend on a solid compiler foundation. Without OpRegistry, adding ops requires touching 6 files. Without Pass infrastructure, IR transformations are ad-hoc. Without Backend abstraction, Triton is hardcoded everywhere.
+**Why this comes first:** All subsequent stages (IR/Lang, Agent autonomy, multi-model E2E) depend on a solid compiler foundation. Without OpRegistry, adding ops requires touching 6 files. Without Pass infrastructure, IR transformations are ad-hoc. Without Backend abstraction, Triton is hardcoded everywhere.
 
 **BL Exit:** BL4×L1 — Full 45 ops correctness 100% via SemanticInterpreter + performance ≥1.00× P3 (eager).
 
@@ -123,7 +123,7 @@ AND ALL:
 
 ---
 
-### Stage 7 (G7): Lang & IR v2 ✅
+### Stage 7 (G7): Lang & IR v0.1.0 ✅
 
 **Objective:** Implement the multi-layer IR architecture (Layer 4/3/2/1), upgrade Arke Lang with where clause and backend-agnostic strategy, complete spec documents, assess dynamic shape feasibility, establish MLIR framework skeleton.
 
@@ -135,8 +135,8 @@ AND ALL:
 
 ```
 AND ALL:
-  [1] Arke Lang Spec v2.0 document finalized
-  [2] Arke IR Spec v2.0 document finalized (Layer 4/3/2/1 defined)
+  [1] Arke Lang Spec v0.1.0 document finalized
+  [2] Arke IR Spec v0.1.0 document finalized (Layer 4/3/2/1 defined)
   [3] where clause MVP: parses + SemanticIR symbolic_dims populated
   [4] Dynamic Shape feasibility assessment document complete
   [5] MLIR framework skeleton: MLIREmitter exists, BL1 matmul verified
@@ -161,7 +161,7 @@ AND ALL:
 
 **Objective:** Validate that the Arke Agent can autonomously generate strategies, iterate optimization, and produce correct kernels for real LLMs. Integrate torch.compile backend to eliminate dispatch overhead. Validate on LLaMA-2 7B and DeepSeek-V2 16B.
 
-**Why this follows S7:** Agent needs the v2 IR/Lang (from S7) to generate backend-agnostic strategies. torch.compile integration needs Backend abstraction (from S6) and Pass pipeline (from S6). Multi-model E2E needs full operator coverage and MLIR skeleton (from S7).
+**Why this follows S7:** Agent needs the v0.1.0 IR/Lang (from S7) to generate backend-agnostic strategies. torch.compile integration needs Backend abstraction (from S6) and Pass pipeline (from S6). Multi-model E2E needs full operator coverage and MLIR skeleton (from S7).
 
 **BL Exit:** BL5 inherited (no regression) + BL6×L3 (GPT-2 + LLaMA-2 + DeepSeek-V2).
 
@@ -211,7 +211,7 @@ AND ALL:
 ### Phase Dependency Chain
 
 ```
-S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v2) → S8 (Agent Autonomy) → S9 (Final)
+S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autonomy) → S9 (Final)
 ```
 
 ---

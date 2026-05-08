@@ -4,7 +4,7 @@
 """Arke Compiler — Minimal IR for S6 Pass Pipeline.
 
 Lightweight IR representation that the pass system operates on.
-This will be expanded in S7 (Lang & IR v2) into the full multi-layer architecture.
+This expands in S7 into the full multi-layer Lang & IR architecture.
 
 For S6, IR is a graph of nodes where each node is an op invocation.
 """

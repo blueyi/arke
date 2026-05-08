@@ -138,7 +138,7 @@ L3 weighted highest because real-world E2E impact matters most.
 The benchmark stack currently has **two supported entry paths**:
 
 1. `arke bench ...` — the canonical benchmark CLI for BL/OT/ST/layer selection.
-2. `python -m benchmarks ...` — compatibility entry point that routes to the same benchmark CLI, plus the `gate` subcommand.
+2. `python -m benchmarks ...` — module entry point that routes to the same benchmark CLI, plus the `gate` subcommand.
 
 Use them as follows:
 
@@ -181,7 +181,7 @@ python -m benchmarks gate G7 --tier 2
 
 ### Current Command Mapping Rules
 
-- `python -m benchmarks` is the compatibility wrapper for benchmark runs and is equivalent to `arke bench`.
+- `python -m benchmarks` is the module wrapper for benchmark runs and is equivalent to `arke bench`.
 - `python -m benchmarks gate ...` is **not** an `arke bench` alias; it dispatches to the dedicated gate runner.
 - Prefer uppercase layer names in docs and examples: `L1`, `L2`, `L3`.
 - Use `arke bench` in user-facing docs unless the context specifically needs the module form or gate runner.
@@ -282,12 +282,11 @@ arke bench history --op matmul --shape square-4k    # Performance trend
 - `--ot 4` requires `--st 4` (attention ops only have ST4 shapes)
 - `--bl 6 --op matmul` is valid (runs only matmul shapes from the model graph)
 
-### Current Implementation (python -m benchmarks)
+### Module Entry Equivalents
 
-Existing CLI is not yet aligned with BL/OT/ST. Migration path:
+`python -m benchmarks` routes to the same benchmark semantics as `arke bench`, while `python -m benchmarks gate ...` dispatches the dedicated Gate runner.
 
 ```bash
-# Current (legacy)                        # New equivalent
 python -m benchmarks --all                → arke bench --bl 6
 python -m benchmarks --layer L1           → arke bench --layer L1 --bl 2
 python -m benchmarks --op matmul          → arke bench --op matmul

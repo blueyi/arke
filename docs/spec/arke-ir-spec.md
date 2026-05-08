@@ -1,9 +1,9 @@
-# Arke IR Specification v2.0 — Multi-Layer Architecture
+# Arke IR Specification v0.1.0 — Multi-Layer Architecture
 
-> **Version:** 2.0.0  
-> **Status:** Final Specification  
-> **Date:** 2026-04-09  
-> **Based on:** Arke Lang Spec v2.0, E2E Flow Design, Agent Design  
+> **Version:** 0.1.0
+> **Status:** Final Specification
+> **Date:** 2026-04-09
+> **Based on:** Arke Lang Spec v0.1.0, E2E Flow Design, Agent Design
 > **Philosophy:** LLM-Native, algorithm-agnostic, multi-layer separation, MLIR/LLVM interoperable
 
 ---
@@ -37,7 +37,7 @@ Arke IR is the **central intermediate representation** of the Arke compiler tool
 Arke IR is **not** a replacement for MLIR or LLVM IR. It is a **complementary, LLM-facing layer** that sits above them:
 
 ```
-.ak (Arke Language v2.0)        ← Human / LLM authored
+.ak (Arke Language v0.1.0)      ← Human / LLM authored
     │
     ▼
 Arke IR (4 layers)              ← LLM-Native IR (this spec)
@@ -203,15 +203,15 @@ This graduated participation means the LLM focuses on high-value decisions (Laye
 Layer 4: SemanticIR      WHAT to compute
                           Pure operator DAG, symbolic shapes, no optimization
                           ↕ LLM: primary author
-                          
+
 Layer 3: StrategyIR      HOW to optimize
                           Optimization decisions, @rationale, conditional dispatch
                           ↕ LLM: decision-maker (bounded actions)
-                          
+
 Layer 2: ScheduleIR      WHERE to execute
                           Thread/block/warp mapping, memory hierarchy placement
                           ↕ LLM: observer only (compiler-generated)
-                          
+
 Layer 1: InstructionIR   WHAT instructions
                           Near-LLVM instructions, register allocation
                           ↕ LLM: none (fully automated)
@@ -587,21 +587,21 @@ Symbolic dimensions declared in SemanticIR propagate through all layers:
 Layer 4 (SemanticIR):
   symbolic_dims = [M: dynamic(max=4096), K: static, N: dynamic(max=4096)]
   nodes = [matmul(A:[M,K], B:[K,N]) → C:[M,N]]
-  
+
   ↓ shape inference
-  
+
 Layer 3 (StrategyIR):
   decisions reference M, N for conditional tiling
   e.g., "when M > 512 { tile(M, [256]) }"
-  
+
   ↓ schedule generation
-  
+
 Layer 2 (ScheduleIR):
   thread_mappings use M, N to compute grid/block sizes
   e.g., grid_size = ceil(M / 128)
-  
+
   ↓ instruction generation
-  
+
 Layer 1 (InstructionIR):
   concrete values substituted at runtime
 ```
@@ -633,23 +633,23 @@ Layer 4 → Layer 3:
     - All target_nodes exist in SemanticIR
     - Decision parameters are valid (e.g., tile factors > 0)
     - No conflicting decisions
-    
+
 Layer 3 → Layer 2:
   V0 Static: Check ScheduleIR against StrategyIR + hardware profile
     - Thread counts fit in hardware limits
     - Shared memory usage ≤ available
     - Grid dimensions are valid
-    
+
 Layer 2 → Layer 1:
   V0 Static: Check InstructionIR against ScheduleIR
     - Register allocation ≤ available
     - Memory footprint ≤ available
     - Instruction dependencies are valid
-    
+
 V1 Numerical: Execute on reference implementation (NumPy)
   - Output matches expected result
   - Numerical accuracy within tolerance
-  
+
 V2 Performance: Profile on actual hardware
   - Execution time measured
   - Memory bandwidth utilization
@@ -923,9 +923,9 @@ All IR documents include version metadata:
 
 ```json
 {
-  "version": "2.0.0",
+  "version": "0.1.0",
   "created": "2026-04-09",
-  "schema": "arke-ir-v2.0"
+  "schema": "arke-ir-v0.1.0"
 }
 ```
 
@@ -933,16 +933,16 @@ This `version` is the **IR schema version**. It identifies the active contract u
 
 ### 15.2 Package Version vs Schema Version
 
-- Python distribution metadata (for example `arke.__version__` / `pyproject.toml`) tracks the package release line, currently a prerelease series.
-- `2.0.0` is the canonical schema version for the active IR surface and serialized `.akir` artifacts.
-- The active codebase is v2-only for IR semantics: legacy compatibility shims and historical layer-name migrations are intentionally out of scope for the active tree.
-- Supporting docs and roadmap milestones may use their own document revisions or project release tags; those labels are separate from the active IR schema version.
+- Python distribution metadata (for example `arke.__version__` / `pyproject.toml`) tracks the package release line.
+- `0.1.0` is the canonical schema version for the active IR surface and serialized `.akir` artifacts.
+- The active codebase defines IR semantics directly through the Layer 4/3/2/1 model; non-canonical aliases and auto-translation paths are outside the active tree.
+- Supporting docs and roadmap milestones should reference the same active IR schema version unless they are explicitly about another subsystem.
 
 ---
 
 ## References
 
-- `docs/spec/arke-lang-spec.md` — Arke Language v2.0
+- `docs/spec/arke-lang-spec.md` — Arke Language v0.1.0
 - `docs/spec/arke-lang-vs-python-triton.md` — Comparative analysis
 - `docs/architecture/e2e-flow.md` — End-to-end LLM optimization flow
 - `docs/architecture/agent-design.md` — Agent architecture
@@ -950,4 +950,4 @@ This `version` is the **IR schema version**. It identifies the active contract u
 
 ---
 
-**End of Arke IR Specification v2.0**
+**End of Arke IR Specification v0.1.0**

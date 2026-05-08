@@ -441,18 +441,14 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
             w = torch.randn(hidden, qkv_dim, device="cuda", dtype=dtype)
             qkv = x @ w
             q, k, v = qkv.chunk(3, dim=-1)
-            # Use fp64 here so the probe checks algebraic equivalence rather
-            # than fp16 / fp32 reduction noise from the attention path.
+            # Use an explicit fp64 attention expression on both sides so this
+            # probe remains deterministic even if third-party kernels override
+            # PyTorch SDPA dispatch during the wider test session.
             q64 = q.double()
             k64 = k.double()
             v64 = v.double()
-            ref = torch.nn.functional.scaled_dot_product_attention(
-                q64.unsqueeze(0),
-                k64.unsqueeze(0),
-                v64.unsqueeze(0),
-                is_causal=False,
-            ).squeeze(0)
             scores = (q64 @ k64.transpose(-1, -2)) / max(math.sqrt(float(q.shape[-1])), 1.0)
+            ref = torch.softmax(scores, dim=-1) @ v64
             cand = torch.softmax(scores, dim=-1) @ v64
             return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
 

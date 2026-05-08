@@ -157,8 +157,8 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 
 ### 已满足的 Stage 7 关键文档面
 
-- Lang v2.0 语法与示例
-- IR v2.0 分层与 symbolic shape
+- Lang v0.1.0 语法与示例
+- IR v0.1.0 分层与 symbolic shape
 - Pass / validator 规范
 - Token efficiency 量化
 - BL5 coverage ledger / audit / dashboard
@@ -180,11 +180,11 @@ Stage 7 相关文档与实现现在已经足够支撑：
 
 - G7 gate evidence 记录
 - BL5 L1 / L2 benchmark artifact contract
-- Lang / IR v2.0 的主线开发
+- Lang / IR v0.1.0 的主线开发
 - 后续 S8 / S9 的继续推进
 
 **本次审视结论：Stage 7 的核心文档闭环已完成；Multi-Hardware 仍作为后续阶段的扩展项。**
 
 ---
 
-*版本：v2.0 | 创建：2026-04-26 | 审视者：Kitty*
+*版本：v0.1.0 | 创建：2026-04-26 | 审视者：Kitty*

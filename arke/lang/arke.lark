@@ -1,4 +1,4 @@
-// Arke Language v2.0 — Lark Grammar
+// Arke Language v0.1.0 — Lark Grammar
 // Translated from EBNF in docs/spec/arke-lang-spec-design.md §8
 
 start: top_level_item*
@@ -118,7 +118,7 @@ strategy_kwarg: IDENT "=" strategy_value
 
 strategy_map_entry: (STRING | IDENT) ":" strategy_value
 
-// ── Conditional Strategy (v2.0) ─────────────────────────
+// ── Conditional Strategy (v0.1.0) ─────────────────────────
 when_block: when_arm+ otherwise_arm?
 when_arm: "when" condition "{" strategy_body "}"
 otherwise_arm: "otherwise" "{" strategy_body "}"

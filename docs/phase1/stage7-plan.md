@@ -1,11 +1,11 @@
-# Phase 1 — Stage 7: Lang & IR v2
+# Phase 1 — Stage 7: Lang & IR v0.1.0
 
-> Gate G7 exit criteria → [plan.md](../roadmap/plan.md#stage-7-g7-lang--ir-v2-)
+> Gate G7 exit criteria → [plan.md](../roadmap/plan.md#stage-7-g7-lang--ir-v010-)
 
-**Objective:** Land the finalized Arke Lang v2.0 and Arke IR v2.0 architecture in code: `where` clause, symbolic dimensions, conditional/backend-agnostic StrategyIR, compiler round-trip for all 45 ops, and MLIR skeleton for future lowering. **Stage 7 is v2-only: do not preserve v1/v0.2 compatibility in code, tests, or examples. Remove legacy surface/tests instead of carrying migration shims. Stage 7 must end with Lang + IR + compiler support sufficient for BL5 full operator coverage and full shape coverage, and that support must be strong enough to pass the required L2 fused benchmarks rather than only L1 single-op checks.**
+**Objective:** Land the finalized Arke Lang v0.1.0 and Arke IR v0.1.0 architecture in code: `where` clause, symbolic dimensions, conditional/backend-agnostic StrategyIR, compiler round-trip for all 45 ops, and MLIR skeleton for future lowering. **Stage 7 must keep code, tests, and examples on the canonical current surface rather than preserving non-canonical aliases or translation shims. Stage 7 must end with Lang + IR + compiler support sufficient for BL5 full operator coverage and full shape coverage, and that support must be strong enough to pass the required L2 fused benchmarks rather than only L1 single-op checks.**
 
 **Depends on:** S6 (Pass pipeline, OpRegistry, Backend abstraction)
-**Blocks:** S8 (Agent Autonomy needs v2 Lang/IR semantics, symbolic shapes, MLIR skeleton, and full op coverage)
+**Blocks:** S8 (Agent Autonomy needs v0.1.0 Lang/IR semantics, symbolic shapes, MLIR skeleton, and full op coverage)
 
 ---
 
@@ -13,11 +13,11 @@
 
 S7 is the bridge from the S6 compiler-infrastructure baseline to the fully LLM-native architecture required by S8/S9.
 
-This stage is no longer about drafting the design. The Arke Lang Spec v2.0 and Arke IR Spec v2.0 are already finalized. The work now is to **make the implementation and verification stack match the spec**.
+This stage is no longer about drafting the design. The Arke Lang Spec v0.1.0 and Arke IR Spec v0.1.0 are already finalized. The work now is to **make the implementation and verification stack match the spec**.
 
 Concretely, S7 focuses on six outcomes:
 
-1. **Spec-to-code alignment** — parser, SemanticIR, StrategyIR, examples, and tests match the finalized v2.0 definitions.
+1. **Spec-to-code alignment** — parser, SemanticIR, StrategyIR, examples, and tests match the finalized v0.1.0 definitions.
 2. **Symbolic shape system, not just MVP syntax** — `where` clause and `symbolic_dims` work end-to-end in a way that can express and carry BL5 shape coverage requirements.
 3. **Backend-agnostic optimization semantics** — StrategyIR remains target-neutral in its core representation, with target-specific lowering pushed below Layer 3.
 4. **Layered compiler path** — explicit bridge from Layer 4/3 into MLIR-oriented Layer 2/1 skeleton.
@@ -28,7 +28,7 @@ Concretely, S7 focuses on six outcomes:
 
 ## Spec Alignment Summary
 
-### Arke Lang v2.0 implications for S7
+### Arke Lang v0.1.0 implications for S7
 
 From `docs/spec/arke-lang-spec.md`, S7 implementation must support:
 
@@ -41,7 +41,7 @@ From `docs/spec/arke-lang-spec.md`, S7 implementation must support:
 - `@rationale` preserved as first-class optimization metadata
 - operator definitions remaining algorithm-agnostic and Op Registry driven
 
-### Arke IR v2.0 implications for S7
+### Arke IR v0.1.0 implications for S7
 
 From `docs/spec/arke-ir-spec.md`, S7 implementation must establish:
 
@@ -76,7 +76,7 @@ For S7 planning purposes, this means the final Lang/IR design must support:
 - OT2–OT4 production-shape support strong enough to reach BL5, not merely BL4-style standard-shape support
 - the L2 fusion set required by BL5 (`matmul+relu`, `matmul+gelu`, `swiglu`, `geglu`, `linear+cross_entropy`, `QKV+flash_attention`)
 
-> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions. The active Gate contract lives in `docs/roadmap/plan.md`; historical derivation notes were retired from the active tree during the spec cleanup.
+> Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions. The active Gate contract lives in `docs/roadmap/plan.md`; non-normative derivation notes are outside the active Stage 7 contract.
 
 ### Benchmark Requirements (from Gate-Purpose Mapping)
 
@@ -120,8 +120,8 @@ G7 PASS = AND ALL:
 
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
-| 1 | Arke Lang Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-lang-spec.md` exists and current implementation matches required surface syntax |
-| 2 | Arke IR Spec v2.0 finalized and used as implementation contract | `docs/spec/arke-ir-spec.md` exists and Layer 4/3/2/1 terminology maps to code |
+| 1 | Arke Lang Spec v0.1.0 finalized and used as implementation contract | `docs/spec/arke-lang-spec.md` exists and current implementation matches required surface syntax |
+| 2 | Arke IR Spec v0.1.0 finalized and used as implementation contract | `docs/spec/arke-ir-spec.md` exists and Layer 4/3/2/1 terminology maps to code |
 | 3 | `where` clause + symbolic shape system supports BL5-relevant shape expression and propagation | `pytest tests/test_symbolic_shape.py` + BL5-oriented shape cases for OT2–OT4 |
 | 4 | Dynamic shape feasibility assessment complete | `docs/phase1/dynamic-shape-feasibility.md` exists |
 | 5 | MLIR framework skeleton exists with BL1 matmul path verified | MLIREmitter / lowering skeleton exists; BL1 matmul verified through skeleton path |
@@ -133,9 +133,9 @@ G7 PASS = AND ALL:
 
 ---
 
-## Pre-Refactor Reference (from G6 v1)
+## Pre-Refactor Reference (from G6 baseline)
 
-> ⚠️ All items below were completed under the old architecture. After the Lang/IR/Compiler redesign, they need re-implementation and re-validation. Tasks that overlap with S7 scope are marked ⬜ Reset.
+> ⚠️ All items below were completed before the current Lang/IR/Compiler architecture. After the redesign, they need re-implementation and re-validation. Tasks that overlap with S7 scope are marked ⬜ Reset.
 
 | ID | Description | Status |
 |:---|:------------|:------:|
@@ -153,7 +153,7 @@ G7 PASS = AND ALL:
 | D6-IR6 | StrategyIR JSON round-trip (all 46 ops) | ✅ Done |
 | D6-IR7 | MLA-specific fields (latent_dim, kv_lora_rank) | ⬜ Reset |
 | D6-E1 | 10 Triton template classes (OT3/OT4 full) | ⬜ Reset |
-| D6-E6 | V1 validator extension (attention + quantization tolerance) | ⬜ Reset |
+| D6-E6 | Validator extension (attention + quantization tolerance) | ⬜ Reset |
 
 ---
 
@@ -161,18 +161,18 @@ G7 PASS = AND ALL:
 
 ### Track 1: Spec-to-Code Alignment (P0)
 
-This track converts the finalized v2.0 specs into executable implementation contracts.
+This track converts the finalized v0.1.0 specs into executable implementation contracts.
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T1.1 | Audit parser / AST / examples against Lang v2.0 (`where`, tuple returns, `_`, conditional strategy, imports) | P0 | 1d | ✅ |
-| T1.2 | Audit SemanticIR / StrategyIR data model against IR v2.0 layer vocabulary and required fields | P0 | 1d | ✅ |
-| T1.3 | Replace outdated v1/v1.5 terminology in code/docs/tests with Layer 4/3/2/1 naming where applicable | P1 | 0.5d | ✅ |
+| T1.1 | Audit parser / AST / examples against Lang v0.1.0 (`where`, tuple returns, `_`, conditional strategy, imports) | P0 | 1d | ✅ |
+| T1.2 | Audit SemanticIR / StrategyIR data model against IR v0.1.0 layer vocabulary and required fields | P0 | 1d | ✅ |
+| T1.3 | Align outdated layer terminology in code/docs/tests with Layer 4/3/2/1 naming where applicable | P1 | 0.5d | ✅ |
 | T1.4 | Build a spec conformance checklist covering language features and IR structures used by all examples | P1 | 0.5d | ✅ — explicit checklist artifact added at `docs/phase1/stage7-conformance-checklist.md` |
 
 ### Track 2: Symbolic Shape System for BL5 (`where` + `symbolic_dims`) (P0)
 
-This is the core functional delta introduced by Lang/IR v2.0 and the primary unblocker for full BL5 operator/shape coverage.
+This is the core functional delta captured by Lang/IR v0.1.0 and the primary unblocker for full BL5 operator/shape coverage.
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
@@ -183,17 +183,17 @@ This is the core functional delta introduced by Lang/IR v2.0 and the primary unb
 | T2.5 | Add `tests/test_symbolic_shape.py` with BL5-oriented shape cases across OT2–OT4 | P0 | 0.5d | ✅ |
 | T2.6 | Verify symbolic constraints are sufficient to encode the ST4 production-shape families used in BL5 | P0 | 0.5d | ✅ — ST4 production-shape families are representable in current parser/SemanticIR; execution-pressure issues are tracked separately under T6.5 |
 
-### Track 3: StrategyIR v2 and Backend-Agnostic Decisions (P0)
+### Track 3: StrategyIR v0.1.0 and Backend-Agnostic Decisions (P0)
 
 Layer 3 must remain LLM-facing and target-neutral. Any Triton-specific configuration belongs below StrategyIR core.
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T3.1 | Normalize StrategyIR decision types to v2.0 core directives / annotations | P0 | 0.5d | ✅ |
+| T3.1 | Normalize StrategyIR decision types to v0.1.0 core directives / annotations | P0 | 0.5d | ✅ |
 | T3.2 | Implement conditional strategy representation for `when` / `otherwise` | P0 | 0.5d | ✅ |
 | T3.3 | Preserve `@rationale` on all StrategyIR decisions through parse → IR → serialization | P0 | 0.5d | ✅ |
 | T3.4 | Eliminate Triton-specific fields from StrategyIR core and move them to lowering adapters | P0 | 0.5d | ✅ — backend-agnostic StrategyIR core is in place; backend-specific resource binding now lives below Layer 3 |
-| T3.5 | Strengthen `scripts/check_backend_agnostic.py` to enforce the v2.0 boundary | P1 | 0.5d | ✅ |
+| T3.5 | Strengthen `scripts/check_backend_agnostic.py` to enforce the v0.1.0 boundary | P1 | 0.5d | ✅ |
 
 ### Track 4: Layered Lowering + MLIR Skeleton (P1)
 
@@ -212,11 +212,11 @@ S7 must convert the spec-aligned representation into full BL5 coverage, not just
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T5.1 | Refresh all 45 BL5 operator examples to valid v2.0 `.ak` surface syntax | P0 | 1d | ✅ |
+| T5.1 | Refresh all 45 BL5 operator examples to valid v0.1.0 `.ak` surface syntax | P0 | 1d | ✅ |
 | T5.2 | Verify all 45 BL5 ops pass `.ak → SemanticIR → StrategyIR` dry-run pipeline | P0 | 0.5d | ✅ |
-| T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v2.0 IR | P0 | 0.5d | ✅ |
+| T5.3 | Revalidate multi-output, attention, rope, quantize, and MLA-specific examples under v0.1.0 IR | P0 | 0.5d | ✅ |
 | T5.4 | Add coverage audit ensuring each BL5 shape family is representable in Lang + IR for the relevant ops | P0 | 0.5d | ✅ — coverage audit and shape-family evidence are recorded in `coverage_ledger.json` / `audit_report.json` |
-| T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ✅ — `scripts/check_token_efficiency.py` and `tests/test_token_efficiency.py` now include BL5 L2 fused examples (`examples/operators/l2/*.ak`) with dedicated `l2_fused` category and Triton reference lines; full suite passes with aggregate ratio ≈ 0.26 under v2.0 syntax (`where`, conditional strategy, production-shape annotations). |
+| T5.5 | Keep token-efficiency checks meaningful under new syntax features and larger production-shape annotations | P1 | 0.5d | ✅ — `scripts/check_token_efficiency.py` and `tests/test_token_efficiency.py` now include BL5 L2 fused examples (`examples/operators/l2/*.ak`) with dedicated `l2_fused` category and Triton reference lines; full suite passes with aggregate ratio ≈ 0.26 under v0.1.0 syntax (`where`, conditional strategy, production-shape annotations). |
 | T5.6 | Audit every BL5 operator / shape family against Stage 7 Lang surface (`where`, conditional strategy) and log unsupported cases | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_audit_report` now consumes `coverage_ledger.json` and emits `audit_report.json` with missing-example / missing-strategy / missing-shape evidence plus unsupported-case queues for T5.7/T6 follow-up. |
 | T5.7 | Add or update `.ak` examples for any patterns uncovered by the audit | P0 | 0.5d | ✅ — added explicit Stage 7 L2 surface examples for `matmul_relu`, `linear_ce`, and `qkv_fa` under `examples/operators/l2/`, and restored `examples/operators/01_matmul.ak` to an explicit strategy-backed L1 surface |
 | T5.8 | Maintain machine-readable coverage ledger linking BL5 targets to `.ak` artefacts (feeds Track 6 automation) | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_coverage_ledger` emits `coverage_ledger.json` linking target-matrix entries to `.ak` examples, dry-run pipeline evidence, and Track 6 PERF_ALL coverage |
@@ -253,7 +253,7 @@ That means every unfinished task in S7 should be justified by one of these bench
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T7.1 | Keep parser / IR / compiler / benchmark tests green during migration | P0 | continuous | ✅ — current Stage 7 parser/IR/roundtrip/backend-agnostic slices and G7 gate run are green |
+| T7.1 | Keep parser / IR / compiler / benchmark tests green while aligning implementation with the active spec | P0 | continuous | ✅ — current Stage 7 parser/IR/roundtrip/backend-agnostic slices and G7 gate run are green |
 | T7.2 | Add regression coverage for symbolic dims, conditional strategy, and rationale persistence | P0 | 0.5d | ✅ |
 | T7.3 | Run full stage verification checklist and record evidence in standard result locations | P0 | 0.5d | ✅ — verification evidence recorded in `benchmarks/results/phase1/stage7/track6/report.md` and the G7 gate run |
 
@@ -263,10 +263,10 @@ That means every unfinished task in S7 should be justified by one of these bench
 
 | Milestone | Scope | Exit Signal |
 |:----------|:------|:------------|
-| M1 | Track 1 complete | Spec terminology and required v2.0 features mapped to code | ✅ |
+| M1 | Track 1 complete | Spec terminology and required v0.1.0 features mapped to code | ✅ |
 | M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end | ✅ |
 | M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge | ✅ |
-| M4 | Track 5 complete | All 45 BL5 ops pass v2.0 dry-run round-trip and BL5 shape families are representable | ✅ — dry-run coverage is green; benchmark executability is tracked separately under Track 6 |
+| M4 | Track 5 complete | All 45 BL5 ops pass v0.1.0 dry-run round-trip and BL5 shape families are representable | ✅ — dry-run coverage is green; benchmark executability is tracked separately under Track 6 |
 | M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | ✅ — BL5 L1/L2 benchmark harness and memory-aware strategy are ready; G7 verification passed |
 | M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | ✅ — checklist/report artifacts recorded and G7 verification completed |
 
@@ -278,7 +278,7 @@ That means every unfinished task in S7 should be justified by one of these bench
 
 1. **Track 1: Spec-to-code alignment**
 2. **Track 2: Symbolic shape MVP**
-3. **Track 3: StrategyIR v2 cleanup**
+3. **Track 3: StrategyIR v0.1.0 cleanup**
 4. **Track 5: Full-op example + round-trip coverage**
 5. **Track 4: Layered lowering / MLIR skeleton**
 6. **Track 6: BL5 benchmark + memory readiness**
@@ -305,10 +305,10 @@ Rationale for this order:
 - **Track 6 memory-readiness is now broader than OT4:** the benchmark policy layer now emits explicit preflight evidence for OT4 attention, OT2 dense matmul/grouped matmul, and OT3 linear+cross_entropy-style logits pressure. L1/L2 artifacts persist `memory_bytes_required`, `memory_bytes_budget`, `memory_ratio`, and `memory_policy`, and summary/dashboard checks surface `memory_pressure_rows` / `memory_policy_counts` instead of hiding those shapes as silent omissions.
 - **Benchmark/test harness status for the current active slices is green:** `tests/test_backend_agnostic_script.py`, `tests/test_rationale_e2e.py`, `tests/test_bench*.py`, `tests/test_benchmark*.py`, and `benchmarks/` slice pass, with the single documented skip above.
 - **Remaining non-green area is benchmark/gate readiness, not parser/IR correctness:** OT4 / large attention-family benchmark execution still hits 6GB VRAM limits in full gate runs, so any FAIL/SKIP there must be recorded in plan/status with the concrete operator and memory reason instead of being hidden as partial completion.
-- **Active spec/benchmark-interface cleanup was revalidated after removing compat wording/aliases:** `tests/test_benchmark_cli.py`, `tests/test_op_registry.py`, `tests/test_converters.py`, `tests/test_semantic_ir.py`, `tests/test_symbolic_shape.py`, and `tests/test_stage7_roundtrip.py` passed together (`109 passed`).
-- **Active architecture docs were also rewritten as v2-only references:** `docs/architecture/arke-lang-spec-design.md`, `docs/architecture/arke-ir-spec-design.md`, `docs/architecture/arke-compiler-infrastructure.md`, and `docs/architecture/naming-system.md` no longer act as migration-preservation docs for the current mainline; related Stage 7 slice revalidated with `344 passed, 6 skipped`.
-- **Residual wording cleanup completed after the architecture rewrite:** `docs/spec/arke-lang-vs-python-triton.md` and remaining legacy examples/phrasing inside architecture docs were aligned to canonical `compute(...)` / v2-only wording, with the same Stage 7 validation slice staying green (`344 passed, 6 skipped`).
-- **Stage 7 closure artifacts added:** `docs/phase1/stage7-conformance-checklist.md` records the explicit v2 conformance checklist, and `benchmarks/results/phase1/stage7/track6/report.md` captures the latest gate / benchmark summary (focused regression `345 passed`, G7 `555 passed, 30 warnings, 0 failed`).
+- **Active spec/benchmark-interface cleanup was revalidated after removing non-canonical wording/aliases:** `tests/test_benchmark_cli.py`, `tests/test_op_registry.py`, `tests/test_converters.py`, `tests/test_semantic_ir.py`, `tests/test_symbolic_shape.py`, and `tests/test_stage7_roundtrip.py` passed together (`109 passed`).
+- **Active architecture docs were also rewritten as current-surface references:** `docs/architecture/arke-lang-spec-design.md`, `docs/architecture/arke-ir-spec-design.md`, `docs/architecture/arke-compiler-infrastructure.md`, and `docs/architecture/naming-system.md` document the current mainline directly; related Stage 7 slice revalidated with `344 passed, 6 skipped`.
+- **Residual wording cleanup completed after the architecture rewrite:** `docs/spec/arke-lang-vs-python-triton.md` and remaining non-canonical examples/phrasing inside architecture docs were aligned to canonical `compute(...)` / current-surface wording, with the same Stage 7 validation slice staying green (`344 passed, 6 skipped`).
+- **Stage 7 closure artifacts added:** `docs/phase1/stage7-conformance-checklist.md` records the explicit v0.1.0 conformance checklist, and `benchmarks/results/phase1/stage7/track6/report.md` captures the latest gate / benchmark summary (focused regression `345 passed`, G7 `555 passed, 30 warnings, 0 failed`).
 
 ## BL5 Gap Snapshot & Phased Closure
 
@@ -332,7 +332,7 @@ Remaining BL5 work is tracked under four component lenses, each feeding existing
 
 - **A. Lang / Parser** → feeds Track 2 / Track 5. Audit every BL5 op-family against current surface syntax, add `.ak` examples for any unsupported benchmark-driven patterns, and keep a coverage audit linking BL5 targets to parseable examples (T5.6–T5.8).
 - **B. SemanticIR / StrategyIR** → feeds Track 3 / Track 5. Validate every target-matrix op against SemanticIR / StrategyIR generation, add metadata hooks needed for benchmark evidence/diagnosability, and ensure fusion cases are represented canonically (T5.3, T6.3).
-- **C. Lowering / Compiler pipeline** → feeds Track 4 / Track 6. Build a per-op / per-fusion lowering compatibility audit from the target matrix, classify failures by stage (parse / semantic / strategy / lowering / emitter / runtime), and drive remaining lowering fixes directly from benchmark gaps (T6.1–T6.3, T6.7).
+- **C. Lowering / Compiler pipeline** → feeds Track 4 / Track 6. Build a per-op / per-fusion lowering coverage audit from the target matrix, classify failures by stage (parse / semantic / strategy / lowering / emitter / runtime), and drive remaining lowering fixes directly from benchmark gaps (T6.1–T6.3, T6.7).
 - **D. Benchmark / Gate / Evidence** → feeds Track 6 / Track 7. Persist correctness and performance fields into all artifacts, generate coverage dashboards from the target matrix, and promote these checks into formal gate criteria (T6.8–T6.12, T7.3).
 
 ### Phased closure roadmap
@@ -356,4 +356,4 @@ Remaining BL5 work is tracked under four component lenses, each feeding existing
 ## Dependencies
 
 - **Depends on:** S6 (Pass pipeline, OpRegistry, Backend abstraction)
-- **Blocks:** S8 (Agent Autonomy needs v2 Lang/IR semantics, symbolic shapes, full op coverage, and MLIR skeleton)
+- **Blocks:** S8 (Agent Autonomy needs v0.1.0 Lang/IR semantics, symbolic shapes, full op coverage, and MLIR skeleton)

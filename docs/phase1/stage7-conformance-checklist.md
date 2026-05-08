@@ -2,12 +2,12 @@
 
 > **Purpose:** Explicit closure artifact for Stage 7 Track 1.4 / Track 7.3.
 > **Date:** 2026-04-26
-> **Scope:** Lang v2.0, IR v2.0, BL5 coverage, and Gate G7 evidence.
+> **Scope:** Lang v0.1.0, IR v0.1.0, BL5 coverage, and Gate G7 evidence.
 
 ## Summary
 
-- ✅ Canonical `.ak` surface aligned to Lang v2.0
-- ✅ SemanticIR / StrategyIR aligned to IR v2.0 layering
+- ✅ Canonical `.ak` surface aligned to Lang v0.1.0
+- ✅ SemanticIR / StrategyIR aligned to IR v0.1.0 layering
 - ✅ `where` + symbolic dimensions implemented and tested
 - ✅ Conditional strategy and backend-agnostic StrategyIR implemented
 - ✅ MLIR skeleton path present for the Stage 7 bridge
@@ -19,7 +19,7 @@
 
 | Area | Status | Evidence |
 |:--|:--:|:--|
-| Lang v2 canonical kernel/strategy surface | ✅ | `docs/spec/arke-lang-spec.md`, `tests/test_stage7_roundtrip.py` |
+| Lang v0.1.0 canonical kernel/strategy surface | ✅ | `docs/spec/arke-lang-spec.md`, `tests/test_stage7_roundtrip.py` |
 | `where` clause + symbolic dimensions | ✅ | `docs/spec/symbolic-dimension-spec.md`, `tests/test_symbolic_shape.py` |
 | Conditional / shape-aware StrategyIR | ✅ | `arke/ir/strategy.py`, `tests/test_stage7_memory_aware_strategy.py` |
 | Backend-agnostic StrategyIR core | ✅ | `tests/test_backend_agnostic.py`, `tests/test_backend_agnostic_script.py` |

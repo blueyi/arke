@@ -541,7 +541,7 @@ Key relationships:
 
 ## Appendix B: Key Design Decisions from cc-inspired-update.md
 
-This appendix distills the core decisions from the deprecated `cc-inspired-update.md`
+This appendix distills the core decisions from `cc-inspired-update.md`
 to avoid needing to re-read the full document.
 
 **Decision 1 — AsyncGenerator as the loop primitive**

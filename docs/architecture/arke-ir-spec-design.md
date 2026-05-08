@@ -1,9 +1,9 @@
 # Arke IR Multi-Layer Architecture
 
-> **Version:** active design reference for IR spec v2.0
-> **Status:** Design Spec — active architecture reference after Stage 7 V2-only cleanup  
-> **Owner:** IR Architecture Team  
-> **Created:** 2026-04-06  
+> **Version:** active design reference for IR spec v0.1.0
+> **Status:** Design Spec — active architecture reference for the Stage 7 current-surface contract
+> **Owner:** IR Architecture Team
+> **Created:** 2026-04-06
 > **Applies to:** `arke/ir/` module, all IR-touching subsystems
 
 ---
@@ -249,16 +249,16 @@ entry:
 Arke IR in the active mainline is organized as four conceptual layers:
 
 - **Layer 4 — SemanticIR:** immutable operator semantics and symbolic shape information
-- **Layer 3 — StrategyIR:** optimization decisions and rationale, expressed in canonical v2 decision kinds
+- **Layer 3 — StrategyIR:** optimization decisions and rationale, expressed in canonical v0.1.0 decision kinds
 - **Layer 2 — ScheduleIR:** compiler-generated schedule mapping and hardware-near lowering layer
 - **Layer 1 — InstructionIR:** compiler-generated low-level representation near the backend boundary
 
-### Active V2-only rules
+### Active current-surface rules
 
 1. `SemanticIR` is the canonical Layer 4 name. `SemanticGraph` is not part of the active contract.
-2. `StrategyIR` uses canonical v2 decision names. `compute(...)` is the active resource decision surface.
-3. Legacy decision kinds such as `launch_config` and transitional names such as `compute_resource` are not part of the active Stage 7 mainline.
-4. Historical JSON auto-migration behavior is out of scope for the active design reference.
+2. `StrategyIR` uses canonical v0.1.0 decision names. `compute(...)` is the active resource decision surface.
+3. Non-canonical decision kinds such as `launch_config` and transitional names such as `compute_resource` are not part of the active Stage 7 mainline.
+4. JSON auto-translation behavior for non-canonical payloads is out of scope for the active design reference.
 5. Backend-specific lowering details belong below StrategyIR, not in the Layer 3 surface.
 
 ## 3. Layer 4: Semantic IR
@@ -267,7 +267,7 @@ SemanticIR represents **what to compute**: operator graph structure, typed tenso
 
 Design constraints:
 - immutable after construction for optimization work
-- structured refs only; active loaders should not accept legacy unstructured string refs
+- structured refs only; active loaders should reject unstructured string refs
 - symbolic dimensions are first-class and preserved through lowering boundaries until backend-specific materialization
 
 ## 4. Layer 3: Strategy IR
@@ -298,13 +298,13 @@ Layer 1 is the compiler-generated low-level representation near MLIR / LLVM / ba
 
 ## 7. Implementation Notes for Active Mainline
 
-This document is retained as an active architecture note, but its historical migration content has been removed.
+This document is retained as an active architecture note and describes the current IR contract directly.
 
 Current rules:
 - use `SemanticIR`, not `SemanticGraph`
-- use canonical v2 StrategyIR decisions only
-- remove migration shims from active code/tests/docs rather than preserving them in the mainline
-- keep historical compatibility discussion out of the active tree; use git history if old migration context is needed
+- use canonical v0.1.0 StrategyIR decisions only
+- reject non-canonical payloads in active code/tests/docs rather than preserving translation shims in the mainline
+- keep prior-design archaeology out of the active tree; use git history if old context is needed
 
 ### Terminology note
 

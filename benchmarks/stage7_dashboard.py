@@ -1,7 +1,7 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Stage 7 Track 6 dashboard synthesis compatibility wrapper.
+"""Stage 7 Track 6 dashboard synthesis wrapper.
 
 The benchmark dashboard implementation is stage-agnostic and lives in
 ``benchmarks.dashboard``. This module preserves the existing Stage 7 entrypoint

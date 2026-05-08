@@ -1,8 +1,8 @@
-# Arke Language Specification v2.0 — Design Document
+# Arke Language Specification v0.1.0 — Design Document
 
-> **Version:** active design note for spec v2.0
-> **Status:** Active design reference (historical migration content removed)  
-> **Author:** Kitty (Lead Engineer, Arke)  
+> **Version:** active design note for spec v0.1.0
+> **Status:** Active design reference
+> **Author:** Kitty (Lead Engineer, Arke)
 > **Date:** 2026-04-09
 
 ---
@@ -33,20 +33,20 @@ The Arke Language (`.ak`) is the top-level human- and LLM-facing interface to th
 
 Arke is intentionally **not** a loop-nest language. It operates at the operator abstraction level. A kernel is a named composition of semantic operators; the compiler translates it to efficient code for a target backend.
 
-### 1.2 v2.0 Design Goals
+### 1.2 v0.1.0 Design Goals
 
-This document describes the **canonical v2 language design** used by the active Stage 7 implementation. Historical compatibility and migration behavior are intentionally out of scope.
+This document describes the **canonical v0.1.0 language design** used by the active Stage 7 implementation.
 
 The key design goals are:
 
-| Gap | v1.0 Limitation | v2.0 Solution |
-|:----|:----------------|:--------------|
-| Shape generality | Shapes hardcoded: `Tensor<[1024,1024], f16>` | Symbolic shapes with `where` clause |
-| Multi-return ops | `topk` can't express `(values, indices)` | Tuple destructuring: `let (v, i) = topk(...)` |
-| Type verbosity | Every tensor needs full explicit type | Type inference: infer output shape/dtype from inputs |
-| Backend coupling | `launch_config(num_warps=4)` is Triton-specific | Backend-agnostic `compute(...)` directive |
-| Shape-regime conditionals | No conditional strategy selection | `when`/`otherwise` blocks in strategy |
-| Import system | Reserved but undefined | Defined module import syntax |
+| Need | v0.1.0 Design |
+|:-----|:--------------|
+| Shape generality | Symbolic shapes with `where` clause |
+| Multi-return ops | Tuple destructuring: `let (v, i) = topk(...)` |
+| Type inference | Infer output shape/dtype from inputs with `_` |
+| Backend-agnostic strategy | Backend-agnostic `compute(...)` directive |
+| Shape-regime conditionals | `when`/`otherwise` blocks in strategy |
+| Import system | Defined module import syntax |
 
 ### 1.3 Design Principles
 
@@ -55,12 +55,12 @@ The key design goals are:
 3. **Token efficiency** — Shorter than equivalent Triton. New features (symbolic shapes, type inference) should *reduce* token count for most kernels.
 4. **Single source of truth** — `.ak` is the canonical source format. JSON IR is the serialization format for compiler internals and Agent API, never a format humans author directly.
 5. **@rationale everywhere** — Every optimization decision can carry a rationale annotation. This feeds the learning loop for the LLM Agent.
-6. **Canonical surface** — Active language design should describe the current surface directly, not preserve legacy aliases or migration shims.
+6. **Canonical surface** — Active language design describes the current surface directly.
 
 ### 1.4 Relationship to IR Layers
 
 ```
-.ak (v2.0)
+.ak (v0.1.0)
     │
     ▼
 Layer 4 — SemanticIR     (operator graph + symbolic shapes)     [LLM: primary author]
@@ -78,7 +78,7 @@ Layer 1 — InstructionIR  (near-LLVM IR)                        [LLM: none]
 LLVM IR / MLIR standard dialects
 ```
 
-The `.ak` kernel block maps directly to Layer 4 (SemanticIR). The `.ak` strategy block maps directly to Layer 3 (StrategyIR decisions). v2 symbolic shapes and `where` clauses are first-class in Layer 4.
+The `.ak` kernel block maps directly to Layer 4 (SemanticIR). The `.ak` strategy block maps directly to Layer 3 (StrategyIR decisions). Symbolic shapes and `where` clauses are first-class in Layer 4.
 
 Arke IR can lower through MLIR standard dialects (`linalg`, `transform`, `scf`, `gpu`) or directly to LLVM IR. See `arke-ir-spec-design.md` §10 for MLIR integration details.
 
@@ -90,7 +90,7 @@ Arke IR can lower through MLIR standard dialects (`linalg`, `transform`, `scf`, 
 .ak file = (import_stmt | kernel_def | strategy_def)*
 ```
 
-Unchanged from v1.0. A file may contain zero or more top-level items in any order. The typical pattern is one `kernel` + one optional `strategy`.
+A file may contain zero or more top-level items in any order. The typical pattern is one `kernel` + one optional `strategy`.
 
 ### 2.1 Comments
 
@@ -120,7 +120,7 @@ kernel <name>(<param_list>) -> <return_type_or_tuple> <where_clause>? {
 }
 ```
 
-The `where` clause is new in v2.0 and is optional. It follows the return type and precedes the body.
+The optional `where` clause follows the return type and precedes the body.
 
 ### 3.2 Parameters
 
@@ -129,14 +129,14 @@ param_list = param ("," param)*
 param      = <name> : <type>
 ```
 
-Types are described in full in §7. The key addition in v2.0 is that dimension sizes can be symbolic names rather than integer literals:
+Types are described in full in §7. Dimension sizes can be symbolic names rather than integer literals:
 
 ```
-// v1.0 (still valid)
-kernel relu_v1(X: Tensor<[1024, 768], f16>) -> Tensor<[1024, 768], f16> { ... }
+// static concrete shape
+kernel relu_static(X: Tensor<[1024, 768], f16>) -> Tensor<[1024, 768], f16> { ... }
 
-// v2.0 with symbolic shapes
-kernel relu_v2(X: Tensor<[B, S, D], f16>) -> Tensor<[B, S, D], f16>
+// symbolic shapes
+kernel relu_symbolic(X: Tensor<[B, S, D], f16>) -> Tensor<[B, S, D], f16>
 where B: dynamic(max=64), S: dynamic(max=8192), D: static
 { ... }
 ```
@@ -150,7 +150,7 @@ The return type can be:
 - A tuple of types: `-> (Tensor<[B, K], f16>, Tensor<[B, K], i32>)`
 - A tuple with partial inference: `-> (_, _)` or omitted for fully-inferred multi-return
 
-**New in v2.0:** Tuple return types. If the return type uses symbolic names, those names must be declared in the `where` clause.
+Tuple return types are first-class. If the return type uses symbolic names, those names must be declared in the `where` clause.
 
 ### 3.4 Body
 
@@ -160,27 +160,27 @@ The body is a sequence of `let` statements followed by a `return`:
 body = let_stmt* return_stmt
 ```
 
-**v1.0 let (still valid):**
+**Single binding:**
 ```
 let <var> = <op_call> ;
 ```
 
-**v2.0 tuple destructuring (new):**
+**Tuple destructuring:**
 ```
 let (<var1>, <var2>) = <op_call> ;
 let (<var1>, <var2>, <var3>) = <op_call> ;
 ```
 
-**v2.0 type inference (new):**
+**Type inference:**
 
-In v1.0 the return type was always explicit. In v2.0 the return type may be `_` (a single underscore), signifying that the compiler should infer it from the body. The parser accepts `_` wherever a `tensor_type` is expected.
+The return type may be `_` (a single underscore), signifying that the compiler should infer it from the body. The parser accepts `_` wherever a `tensor_type` is expected.
 
 **Return statement:**
 ```
-// v1.0: single variable
+// single variable
 return <var> ;
 
-// v2.0: tuple return (new)
+// tuple return
 return (<var1>, <var2>) ;
 ```
 
@@ -194,7 +194,7 @@ named_arg = <name> = <value>
 
 Values: variable name, integer literal, float literal, string literal, bool (`true`/`false`), array literal `[v1, v2, ...]`.
 
-**New ops in v2.0 catalog:**
+**Core ops in the catalog:**
 
 | Op | Category | Inputs | Returns | Description |
 |:---|:---------|:-------|:--------|:------------|
@@ -207,9 +207,9 @@ Values: variable name, integer literal, float literal, string literal, bool (`tr
 | `dropout` | D | X, p | output | Dropout |
 | `sigmoid` | D | X | output | Sigmoid activation |
 
-All v1.0 operators remain supported and unchanged.
+The operator catalog defines the supported semantic operations for the active compiler pipeline.
 
-### 3.6 Annotations on Kernel (new in v2.0)
+### 3.6 Annotations on Kernel
 
 A kernel block may carry annotations immediately before the `kernel` keyword:
 
@@ -234,7 +234,7 @@ strategy <name> for target("<hw_target>") {
 }
 ```
 
-Unchanged structurally from v1.0. The changes are in the available directives and the addition of conditional blocks.
+The available directives include backend-agnostic resource choices and conditional blocks.
 
 ### 4.2 Hardware Targets
 
@@ -299,7 +299,7 @@ precision(accumulate="f32", output="f16")
     @rationale("accumulate in f32 for numerical stability, cast output to f16");
 ```
 
-### 4.4 Conditional Strategy Blocks (new in v2.0)
+### 4.4 Conditional Strategy Blocks
 
 A strategy can contain `when`/`otherwise` blocks to select optimization parameters based on shape regime at **compile time** (when shapes are static or known ranges):
 
@@ -502,13 +502,13 @@ The compiler emits an error if a constraint is violated by the build target.
 
 This annotation is on the kernel definition and applies to all inputs unless overridden per-parameter (future feature).
 
-#### `@deprecated`
+#### `@stability`
 
-**Purpose:** Mark a kernel or strategy as deprecated.
+**Purpose:** Mark support stability for a kernel or strategy.
 
 ```
-@deprecated(since="2.0", replace_with="scaled_dot_product_attention_v2")
-kernel scaled_dot_product_attention_v1(...) { ... }
+@stability(level="experimental", note="subject to tuning")
+kernel scaled_dot_product_attention(...) { ... }
 ```
 
 ### 6.4 Custom Annotations
@@ -545,13 +545,13 @@ tensor_type = "Tensor" "<" "[" dim_list "]" "," scalar_type ("," layout)? ">"
             | "_"
 
 dim_list = dim ("," dim)*
-dim      = INT               // static integer dimension (v1.0)
-         | IDENT             // symbolic dimension (v2.0, must be in where clause)
+dim      = INT               // static integer dimension
+         | IDENT             // symbolic dimension, must be in where clause
 
 layout   = "row_major" | "col_major"   // default: row_major
 ```
 
-**New in v2.0:** `dim` can be a symbolic name. The `_` type (inference hole) is also new.
+`dim` can be a symbolic name. The `_` type is the inference hole.
 
 ### 7.3 Tuple Types
 
@@ -563,7 +563,7 @@ Used in multi-return kernels. Only appears in return type position; parameters a
 
 ### 7.4 Type Inference Rules
 
-Type inference is a v2.0 feature. When a return type or intermediate binding uses `_`, the compiler infers the type according to these rules:
+When a return type or intermediate binding uses `_`, the compiler infers the type according to these rules:
 
 | Situation | Rule |
 |:----------|:-----|
@@ -584,7 +584,7 @@ When a tensor's dimension is symbolic, the compiler tracks the dimension name th
 - **Passthrough ops** (relu, gelu, softmax, etc.): output dimensions = input dimensions
 - **matmul(A, B)**: output dims = `[A.dim[0], B.dim[1]]`; inner dims must match
 - **topk(X, k)**: output dims = `[X.dim[0], ..., X.dim[-2], k]`
-- **transpose(X)**: output dims = reverse of input dims (2D only in v1.0/v2.0)
+- **transpose(X)**: output dims = reverse of input dims for the 2D case
 
 If the compiler cannot symbolically determine output shape from inputs, a type annotation is required.
 
@@ -596,7 +596,7 @@ The following grammar sketch highlights the canonical v2 surface used by the act
 
 ```ebnf
 (* ============================================================ *)
-(* Arke Language v2.0 — Complete EBNF                          *)
+(* Arke Language v0.1.0 — Complete EBNF                        *)
 (* ============================================================ *)
 
 start          = top_level_item*
@@ -689,7 +689,7 @@ strategy_value = STRING | INT | FLOAT | BOOL | IDENT
 
 strategy_map_entry = (STRING | IDENT) ":" strategy_value
 
-(* ── Conditional Strategy (new in v2.0) ──────────────────── *)
+(* ── Conditional Strategy ──────────────────────────────────── *)
 when_block     = when_arm+ otherwise_arm?
 when_arm       = "when" condition "{" strategy_body "}"
 otherwise_arm  = "otherwise" "{" strategy_body "}"
@@ -917,14 +917,14 @@ strategy rms_norm_strategy for target("nvidia_ampere") {
 
 ## 10. Implementation Notes
 
-This design document remains useful only as an **active architectural explanation** of the canonical v2 language surface.
+This design document remains useful only as an **active architectural explanation** of the canonical v0.1.0 language surface.
 
 Implementation rules for the current mainline:
 
 1. `compute(...)` is the only active resource directive surface in strategy blocks.
 2. `launch_config(...)` and other Triton-specific directive names are not part of the active language contract.
 3. `where` clauses, tuple returns, conditional strategies, and `@rationale` are first-class language features.
-4. Tests and examples should be rewritten to canonical v2 syntax rather than preserved through migration shims.
-5. If a historical syntax note is still needed, keep it in git history or an external archive, not in active design references.
+4. Tests and examples should use canonical current syntax rather than non-canonical translation shims.
+5. If prior syntax archaeology is needed, use git history or an external archive, not active design references.
 
 For the normative language definition, see `docs/spec/arke-lang-spec.md`.

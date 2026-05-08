@@ -209,7 +209,7 @@ class TestL2BackendSpecific:
 
     @pytest.mark.parametrize("ak_file", ALL_AK_FILES, ids=lambda p: p.name)
     def test_only_canonical_compute_used_for_l2_resources(self, ak_file: Path, pipeline):
-        """No legacy resource directives remain in StrategyIR."""
+        """StrategyIR accepts only canonical resource directives."""
         result = pipeline.compile_file(str(ak_file))
         if not result.success or result.strategy_ir is None:
             pytest.skip(f"No StrategyIR for {ak_file.name}")
@@ -217,7 +217,7 @@ class TestL2BackendSpecific:
         for d in result.strategy_ir.decisions:
             if isinstance(d, Decision):
                 assert d.kind not in {"launch_config", "compute_resource"}, (
-                    f"{ak_file.name}: found legacy resource decision kind '{d.kind}'"
+                    f"{ak_file.name}: found unsupported resource decision kind '{d.kind}'"
                 )
 
 

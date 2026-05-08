@@ -253,7 +253,7 @@ def ast_to_semantic(kernel_def: KernelDef) -> SemanticIR:
         kernel_def: KernelDef AST node from the parser.
 
     Returns:
-        SemanticIR v1.0 representation.
+        SemanticIR representation.
     """
     ir = SemanticIR(kernel_id=kernel_def.name)
 
@@ -522,7 +522,7 @@ def ast_to_strategy(strategy_def: StrategyDef) -> StrategyIR:
         strategy_def: StrategyDef AST node from the parser.
 
     Returns:
-        StrategyIR v1.0 representation.
+        StrategyIR representation.
     """
     kernel_id = strategy_def.name
     if kernel_id.endswith("_strategy"):

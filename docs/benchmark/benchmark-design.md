@@ -221,7 +221,7 @@ Each operator is benchmarked against multiple baseline tiers, ranked by expected
 The benchmark system is documented around `arke bench`, but the codebase currently supports two practical entry paths:
 
 - `arke bench ...` — canonical benchmark CLI.
-- `python -m benchmarks ...` — compatibility wrapper for the same benchmark CLI.
+- `python -m benchmarks ...` — module wrapper for the same benchmark CLI.
 
 Gate verification remains separate:
 
@@ -248,7 +248,7 @@ arke bench --bl 5 --ot 0 --layer L1
 arke bench --bl 5 --ot 4 --layer L1
 arke bench --bl 5 --layer L2
 
-# Compatibility form
+# Module-entry form
 python -m benchmarks --bl 5 --ot 4 --layer L1
 
 # Gate checks
@@ -260,10 +260,10 @@ python -m benchmarks gate G7 --tier 2
 ### Documentation convention
 
 - Use `arke bench` in benchmark design/spec examples by default.
-- Use `python -m benchmarks` when documenting module execution or compatibility behavior.
+- Use `python -m benchmarks` when documenting module execution behavior.
 - Use `python -m benchmarks gate ...` for Gate verification examples.
 
-For the full CLI contract, option semantics, and legacy/current mapping table, see [`benchmark-protocol.md`](./benchmark-protocol.md#cli-interface).
+For the full CLI contract and option semantics, see [`benchmark-protocol.md`](./benchmark-protocol.md#cli-interface).
 
 ---
 

@@ -61,11 +61,11 @@ Examples:
 - `tests/benchmark/test_dashboard.py`
   - Verifies the standardized benchmark dashboard builder in `benchmarks/dashboard.py`.
 - `tests/phase1/stage7/test_stage7_dashboard.py`
-  - Verifies the Stage 7 compatibility wrapper around the generic dashboard.
+  - Verifies the Stage 7 dashboard wrapper around the generic dashboard.
 - `tests/phase1/stage7/test_track6_contract.py`
   - Verifies Stage 7 Track 6 artifact presence in the committed result tree.
 
-## Migration Guidance
+## Test Organization Guidance
 
 When adding new tests:
 1. Ask whether the behavior is stage-specific or reusable.

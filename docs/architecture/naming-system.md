@@ -272,4 +272,4 @@ docs/architecture/     架构设计文档
 
 ---
 
-*版本：active naming for spec v2.0 | 创建日期：2026-03-31，更新：2026-04-09*
+*版本：active naming for spec v0.1.0 | 创建日期：2026-03-31，更新：2026-04-09*

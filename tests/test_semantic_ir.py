@@ -222,7 +222,7 @@ class TestSemanticIR:
 
     def test_construction(self):
         ir = self._make_simple_ir()
-        assert ir.version == "2.0.0"
+        assert ir.version == "0.1.0"
         assert len(ir.params) == 2
         assert len(ir.nodes) == 1
         assert len(ir.edges) == 2
@@ -309,7 +309,7 @@ class TestSemanticIR:
     def test_requires_structured_input_refs(self):
         payload = {
             "version": "1.0.0",
-            "kernel_id": "invalid_legacy_payload",
+            "kernel_id": "invalid_unstructured_payload",
             "params": [{"name": "X", "shape": [128], "dtype": "f32"}],
             "nodes": [{
                 "id": "relu_0",
@@ -326,7 +326,7 @@ class TestSemanticIR:
             raised = False
         except Exception:
             raised = True
-        assert raised, "legacy unstructured InputRef payload should be rejected"
+        assert raised, "unstructured InputRef payload should be rejected"
 
     def test_json_is_valid(self):
         ir = self._make_simple_ir()

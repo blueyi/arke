@@ -1,9 +1,9 @@
-# Arke Language Specification v2.0
+# Arke Language Specification v0.1.0
 
-> **Version:** 2.0.0  
-> **Status:** Final Specification  
-> **Date:** 2026-04-09  
-> **Scope:** Canonical v2.0 language surface for the active compiler pipeline  
+> **Version:** 0.1.0
+> **Status:** Final Specification
+> **Date:** 2026-04-09
+> **Scope:** Canonical v0.1.0 language surface for the active compiler pipeline
 > **Philosophy:** Universal operator abstraction, LLM-native, zero algorithm-specific constructs
 
 ---
@@ -44,7 +44,7 @@ Arke Language is **algorithm-agnostic**. It does not enumerate specific operator
 
 Specific operators are registered via the **Op Registry** (see `op-registry-interface.md`), not hardcoded in the language.
 
-### 1.3 v2.0 New Features
+### 1.3 Core Features
 
 | Feature | Purpose |
 |:--------|:--------|
@@ -66,13 +66,13 @@ Specific operators are registered via the **Op Registry** (see `op-registry-inte
 3. **Token efficient** — Shorter than equivalent Triton. Symbolic shapes and type inference reduce verbosity.
 4. **Single source of truth** — `.ak` is canonical; JSON IR is serialization only.
 5. **@rationale everywhere** — Every optimization decision carries rationale for LLM learning and knowledge transfer.
-6. **Canonical surface** — This spec describes the current language only. Historical aliases and migration shims are intentionally out of scope.
+6. **Canonical surface** — This spec describes the current language directly as the starting contract for Arke-Lang.
 7. **Algorithm-agnostic** — Language defines universal constructs; specific operators are registered externally.
 
 ### 2.2 Relationship to IR Layers
 
 ```
-.ak (v2.0)
+.ak (v0.1.0)
     │
     ├─ kernel block ──────────────────────────────────────────► Layer 4: SemanticIR
     │  (what to compute, pure math, no optimization)
@@ -608,29 +608,29 @@ Language-facing artifacts should identify the current schema version explicitly:
 
 ```json
 {
-  "version": "2.0.0",
-  "schema": "arke-lang-v2.0"
+  "version": "0.1.0",
+  "schema": "arke-lang-v0.1.0"
 }
 ```
 
-The `version` field above is the **language schema version**, not the Python package release version. The repository can ship prerelease package builds (for example `0.2.0.dev0`) while the active `.ak` schema remains `2.0.0`.
+The `version` field above is the **language schema version** and is aligned with the current Python package release line for the clean `v0.1.0` project start.
 
 ### 11.2 Relationship to Package Version
 
 - `arke.__version__` / `pyproject.toml` track the Python package release line.
-- `version: 2.0.0` and `schema: arke-lang-v2.0` identify the canonical `.ak` surface.
-- Package release cadence and schema evolution are intentionally decoupled so the implementation can iterate without renumbering the language contract on every prerelease.
-- Supporting design/spec documents may keep independent document revision numbers; those labels should not be read as the active `.ak` schema version.
+- `version: 0.1.0` and `schema: arke-lang-v0.1.0` identify the canonical `.ak` surface.
+- Package release cadence and schema evolution may diverge later, but the active starting contract is aligned at `0.1.0`.
+- Supporting design/spec documents should reference the same active `.ak` schema version unless they are explicitly about another subsystem.
 
 ### 11.3 Scope of This Specification
 
-This document defines the canonical v2.0 language surface used by the active compiler pipeline:
+This document defines the canonical v0.1.0 language surface used by the active compiler pipeline:
 
 - `compute(...)` is the resource directive surface
 - `where` clauses define symbolic dimensions
 - `when` / `otherwise` express conditional strategy branches
-- deprecated aliases and historical migration behavior are intentionally out of scope
-- legacy package-version history is not part of the language contract
+- non-canonical aliases are outside the language contract
+- package-version history is outside the language contract
 
 ---
 
@@ -644,4 +644,4 @@ This document defines the canonical v2.0 language surface used by the active com
 
 ---
 
-**End of Arke Language Specification v2.0**
+**End of Arke Language Specification v0.1.0**

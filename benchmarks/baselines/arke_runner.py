@@ -204,12 +204,23 @@ class ArkeRunner(BaselineRunner):
         if op == "rmsnorm_residual" and len(inputs) == 2:
             N = x.shape[-1]
             return [*inputs, torch.ones(N, device=device, dtype=dtype)]
+        if op == "rope" and len(inputs) == 1:
+            head_dim = x.shape[-1]
+            seq_len = x.shape[-2]
+            freqs = torch.einsum(
+                "i,j->ij",
+                torch.arange(seq_len, device=device, dtype=dtype),
+                1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=device, dtype=dtype) / head_dim)),
+            )
+            return [x, torch.cos(freqs), torch.sin(freqs)]
         return inputs
 
     @staticmethod
     def _default_attrs(op: str, dtype: torch.dtype) -> dict[str, Any]:
         if op == "cast":
             return {"target_dtype": str(dtype).replace("torch.", "")}
+        if op in {"flash_attention", "grouped_query_attention"}:
+            return {"is_causal": True}
         return {}
 
     @staticmethod
