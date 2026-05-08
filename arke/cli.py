@@ -14,7 +14,7 @@ import argparse
 import json
 import sys
 
-from arke.agent.optimize import optimize_file
+from arke.agent.optimize import optimize
 from arke.compiler.pipeline import ArkePipeline
 from arke.ir.akir import akir_to_dict
 
@@ -46,8 +46,11 @@ def _cmd_compile(args: argparse.Namespace) -> int:
 
 def _cmd_optimize(args: argparse.Namespace) -> int:
     """Handle 'arke optimize' subcommand."""
-    result = optimize_file(
+    result = optimize(
         args.input,
+        kernel=args.kernel,
+        shape=args.shape,
+        dtype=args.dtype,
         output_dir=args.output,
         cycles=args.cycles,
         dry_run=args.dry_run,
@@ -89,9 +92,13 @@ def _build_parser() -> argparse.ArgumentParser:
 
     optimize_parser = subparsers.add_parser(
         "optimize",
-        help="Generate a bounded StrategyIR and trajectory for a .ak kernel",
+        help="Generate a bounded StrategyIR and trajectory for .ak, natural language, code, or structured input",
     )
-    optimize_parser.add_argument("input", help="Path to .ak source file")
+    optimize_parser.add_argument(
+        "input",
+        nargs="?",
+        help="Path to .ak source file, inline .ak source, natural-language request, or code snippet",
+    )
     optimize_parser.add_argument(
         "-o", "--output",
         default="benchmarks/results/phase1/stage8/track1/optimize",
@@ -102,6 +109,21 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=3,
         help="Number of compile->profile->adjust cycles to record",
+    )
+    optimize_parser.add_argument(
+        "--kernel",
+        default=None,
+        help="Structured operator name (e.g. matmul, relu, softmax); requires --shape",
+    )
+    optimize_parser.add_argument(
+        "--shape",
+        default=None,
+        help="Structured shape, comma- or x-separated (e.g. 1024,2048,512)",
+    )
+    optimize_parser.add_argument(
+        "--dtype",
+        default="f16",
+        help="Input dtype for routed natural-language/code/structured kernels",
     )
     optimize_parser.add_argument(
         "--target",

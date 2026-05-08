@@ -8,7 +8,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from arke.agent.optimize import HeuristicStrategyGenerator, optimize_file
+from arke.agent.optimize import (
+    HeuristicStrategyGenerator,
+    OptimizeInputRouter,
+    optimize,
+    optimize_file,
+)
 from arke.compiler.pipeline import ArkePipeline
 
 OPERATORS_DIR = Path(__file__).resolve().parent.parent / "examples" / "operators"
@@ -43,6 +48,8 @@ def test_optimize_file_records_three_compile_profile_adjust_cycles(tmp_path):
     )
 
     assert result.success, result.errors
+    assert result.input_kind == "ak_file"
+    assert result.normalized_source_path == str(out_dir / "input.ak")
     assert result.cycles_completed == 3
     assert result.decision_count >= 6
     assert Path(result.strategy_path).exists()
@@ -55,5 +62,70 @@ def test_optimize_file_records_three_compile_profile_adjust_cycles(tmp_path):
 
     summary = json.loads(Path(result.summary_path).read_text())
     assert summary["success"] is True
+    assert summary["input_kind"] == "ak_file"
+    assert summary["normalized_source_path"] == str(out_dir / "input.ak")
     assert summary["cycles_completed"] == 3
     assert summary["decision_count"] == result.decision_count
+
+
+def test_optimize_routes_structured_args_to_compile_ready_source(tmp_path):
+    result = optimize(
+        kernel="matmul",
+        shape="16,32,64",
+        output_dir=tmp_path / "structured",
+        cycles=1,
+    )
+
+    assert result.success, result.errors
+    assert result.input_kind == "structured_args"
+    assert result.kernel_id == "matmul_kernel"
+    assert result.cycles_completed == 1
+
+    normalized = Path(result.normalized_source_path or "")
+    assert normalized.exists()
+    source = normalized.read_text()
+    assert "kernel matmul_kernel" in source
+    assert "A: Tensor<[16, 64], f16>" in source
+    assert "B: Tensor<[64, 32], f16>" in source
+
+
+def test_optimize_routes_natural_language_input(tmp_path):
+    result = optimize(
+        "optimize relu for shape 1024x2048 fp16",
+        output_dir=tmp_path / "nl",
+        cycles=1,
+    )
+
+    assert result.success, result.errors
+    assert result.input_kind == "natural_language"
+    assert result.kernel_id == "relu_kernel"
+    assert result.source_text_path is not None
+    assert Path(result.source_text_path).read_text() == "optimize relu for shape 1024x2048 fp16"
+
+    summary = json.loads(Path(result.summary_path).read_text())
+    assert summary["input_kind"] == "natural_language"
+    assert summary["source_text_path"] == result.source_text_path
+
+
+def test_optimize_routes_code_snippet_and_preserves_function_name(tmp_path):
+    snippet = (
+        "def fused(x, w): return torch.nn.functional.gelu("
+        "torch.matmul(x, w))  # m=16 n=32 k=64"
+    )
+    result = optimize(snippet, output_dir=tmp_path / "code", cycles=1)
+
+    assert result.success, result.errors
+    assert result.input_kind == "code_snippet"
+    assert result.kernel_id == "fused"
+    assert Path(result.source_text_path or "").read_text() == snippet
+    assert "kernel fused" in Path(result.normalized_source_path or "").read_text()
+
+
+def test_optimize_input_router_requires_disambiguation_for_unknown_text():
+    router = OptimizeInputRouter()
+    try:
+        router.route("please make this faster")
+    except ValueError as exc:
+        assert "Could not infer optimize input op" in str(exc)
+    else:
+        raise AssertionError("expected unknown natural-language input to fail")

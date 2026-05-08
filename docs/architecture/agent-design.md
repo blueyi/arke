@@ -306,11 +306,12 @@ These are the primary "tools" available to external agents:
 
 **CLI — Optimization**:
 
-The implemented Stage 8 MVP entry point accepts `.ak` file input and writes
-agent-readable artifacts:
+The implemented Stage 8 MVP entry point accepts `.ak` file input and now also routes inline `.ak`, natural-language requests, code snippets, and structured `--kernel/--shape` args into agent-readable artifacts:
 
 ```bash
 arke optimize examples/operators/01_matmul.ak --output /tmp/arke-opt --cycles 3 --json
+arke optimize "optimize relu for shape 1024x2048 fp16" --output /tmp/arke-opt --json
+arke optimize --kernel matmul --shape 1024,512,2048 --dtype f16 --target ampere
 ```
 
 Current MVP artifacts:
@@ -319,16 +320,11 @@ Current MVP artifacts:
 - `trajectory.jsonl` — compile→profile→adjust event stream
 - `summary.json` — compact machine-readable run summary
 
-Planned richer entries remain the target LLM-native interface:
+Natural language and structured entries are already supported by the MVP router.
+The live LLM provider path remains the planned LLM-native extension:
 
 ```bash
-# Natural language entry (LLM-Native)
-arke optimize "matmul kernel, 1024x512x2048, f16, Ampere"
-
-# Structured entry
-arke optimize --kernel matmul --shape 1024,512,2048 --dtype f16 --target ampere
-
-# With explicit LLM provider
+# With explicit LLM provider (planned)
 arke optimize --kernel matmul --shape 1024,512,2048 --llm anthropic
 ```
 

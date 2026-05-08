@@ -17,6 +17,7 @@ trajectory artifacts.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -47,12 +48,18 @@ class OptimizeResult:
     errors: list[str]
     warnings: list[str]
     best_score: float | None = None
+    input_kind: str = "ak_file"
+    normalized_source_path: str | None = None
+    source_text_path: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "success": self.success,
             "kernel_id": self.kernel_id,
             "input_path": self.input_path,
+            "input_kind": self.input_kind,
+            "normalized_source_path": self.normalized_source_path,
+            "source_text_path": self.source_text_path,
             "output_dir": self.output_dir,
             "strategy_path": self.strategy_path,
             "akir_path": self.akir_path,
@@ -64,6 +71,17 @@ class OptimizeResult:
             "errors": list(self.errors),
             "warnings": list(self.warnings),
         }
+
+
+@dataclass(frozen=True)
+class OptimizeInput:
+    """Normalized input payload for the Stage 8 optimization flow."""
+
+    kind: str
+    display_path: str
+    source: str
+    kernel_id_hint: str | None = None
+    source_text: str | None = None
 
 
 class HeuristicStrategyGenerator:
@@ -186,7 +204,11 @@ class HeuristicStrategyGenerator:
     def _add_elementwise_strategy(self, strategy: StrategyIR, loops: list[str]) -> None:
         loop = loops[-1]
         strategy.tile(loop, [256], f"coalesced elementwise tile for {loop}")
-        strategy.vectorize(loop, 4, "vectorize contiguous elementwise lanes")
+        strategy.add_decision(_decision(
+            "vectorize",
+            {"loop": loop, "width": 4},
+            "vectorize contiguous elementwise lanes",
+        ))
         strategy.parallel([loop], {loop: "blockIdx.x"}, "map flat tiles across CTAs")
         strategy.compute(warps=4, num_stages=1, rationale="single-stage memory-bound kernel")
 
@@ -245,6 +267,153 @@ class HeuristicStrategyGenerator:
         })
 
 
+_OP_ALIASES = {
+    "relu": "relu",
+    "gelu": "gelu",
+    "softmax": "softmax",
+    "matmul": "matmul",
+    "matrix_multiply": "matmul",
+    "matrix_multiplication": "matmul",
+    "linear": "matmul",
+    "matmul_gelu": "matmul_gelu",
+    "linear_gelu": "matmul_gelu",
+    "gemm_gelu": "matmul_gelu",
+    "reduce_sum": "reduce_sum",
+    "sum": "reduce_sum",
+    "reduce_max": "reduce_max",
+    "max": "reduce_max",
+    "reduce_mean": "reduce_mean",
+    "mean": "reduce_mean",
+}
+
+
+@dataclass(frozen=True)
+class _StructuredOptimizeSpec:
+    op: str
+    shape: tuple[int, ...]
+    dtype: str = "f16"
+    kernel: str | None = None
+
+
+class OptimizeInputRouter:
+    """Route ``arke optimize`` inputs into a compile-ready ``.ak`` source."""
+
+    def route(
+        self,
+        value: str | Path | None,
+        *,
+        kernel: str | None = None,
+        shape: str | list[int] | tuple[int, ...] | None = None,
+        dtype: str = "f16",
+    ) -> OptimizeInput:
+        if kernel is not None:
+            return self._from_structured(kernel=kernel, shape=shape, dtype=dtype)
+
+        if value is None:
+            raise ValueError("optimize input is required unless --kernel is provided")
+
+        raw = str(value)
+        path = Path(raw)
+        if path.exists() and path.is_file():
+            source = path.read_text(encoding="utf-8")
+            if path.suffix == ".ak" or _looks_like_ak_source(source):
+                return OptimizeInput(kind="ak_file", display_path=str(path), source=source)
+            return self._from_code(source, display_path=str(path), kind="code_file", dtype=dtype)
+
+        if _looks_like_ak_source(raw):
+            return OptimizeInput(
+                kind="ak_source",
+                display_path="<inline-ak>",
+                source=raw,
+                source_text=raw,
+            )
+
+        if _looks_like_code_source(raw):
+            return self._from_code(
+                raw,
+                display_path="<code-snippet>",
+                kind="code_snippet",
+                dtype=dtype,
+            )
+
+        return self._from_natural_language(raw, dtype=dtype)
+
+    def _from_code(
+        self,
+        code: str,
+        *,
+        display_path: str,
+        kind: str,
+        dtype: str,
+    ) -> OptimizeInput:
+        spec = _parse_code_spec(code, dtype=dtype)
+        source = _ak_source_from_spec(spec)
+        return OptimizeInput(
+            kind=kind,
+            display_path=display_path,
+            source=source,
+            kernel_id_hint=spec.kernel or f"{spec.op}_kernel",
+            source_text=code,
+        )
+
+    def _from_structured(
+        self,
+        *,
+        kernel: str,
+        shape: str | list[int] | tuple[int, ...] | None,
+        dtype: str,
+    ) -> OptimizeInput:
+        op = _normalize_op(kernel)
+        if shape is None:
+            raise ValueError("--shape is required when --kernel is provided")
+        spec = _StructuredOptimizeSpec(op=op, shape=_parse_shape(shape), dtype=dtype)
+        source = _ak_source_from_spec(spec)
+        return OptimizeInput(
+            kind="structured_args",
+            display_path=f"<structured:{op}>",
+            source=source,
+            kernel_id_hint=spec.kernel or f"{op}_kernel",
+        )
+
+    def _from_natural_language(self, text: str, *, dtype: str) -> OptimizeInput:
+        spec = _parse_natural_language_spec(text, dtype=dtype)
+        source = _ak_source_from_spec(spec)
+        return OptimizeInput(
+            kind="natural_language",
+            display_path="<natural-language>",
+            source=source,
+            kernel_id_hint=spec.kernel or f"{spec.op}_kernel",
+            source_text=text,
+        )
+
+
+def optimize(
+    input_value: str | Path | None = None,
+    *,
+    kernel: str | None = None,
+    shape: str | list[int] | tuple[int, ...] | None = None,
+    dtype: str = "f16",
+    output_dir: str | Path = "benchmarks/results/phase1/stage8/track1/optimize",
+    cycles: int = 3,
+    dry_run: bool = True,
+    target_hw: str = "nvidia_ampere",
+) -> OptimizeResult:
+    """Run Stage 8 optimization for .ak, inline source, NL, or structured input."""
+    routed = OptimizeInputRouter().route(
+        input_value,
+        kernel=kernel,
+        shape=shape,
+        dtype=dtype,
+    )
+    return _optimize_routed(
+        routed,
+        output_dir=output_dir,
+        cycles=cycles,
+        dry_run=dry_run,
+        target_hw=target_hw,
+    )
+
+
 def optimize_file(
     input_path: str | Path,
     *,
@@ -254,16 +423,40 @@ def optimize_file(
     target_hw: str = "nvidia_ampere",
 ) -> OptimizeResult:
     """Run the S8 MVP optimization flow for a kernel-only ``.ak`` file."""
-    input_path = Path(input_path)
+    return optimize(
+        input_path,
+        output_dir=output_dir,
+        cycles=cycles,
+        dry_run=dry_run,
+        target_hw=target_hw,
+    )
+
+
+def _optimize_routed(
+    routed: OptimizeInput,
+    *,
+    output_dir: str | Path = "benchmarks/results/phase1/stage8/track1/optimize",
+    cycles: int = 3,
+    dry_run: bool = True,
+    target_hw: str = "nvidia_ampere",
+) -> OptimizeResult:
+    """Run the S8 MVP optimization loop for a normalized input payload."""
     run_dir = Path(output_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    normalized_source_path = run_dir / "input.ak"
+    normalized_source_path.write_text(routed.source, encoding="utf-8")
+    source_text_path: Path | None = None
+    if routed.source_text is not None:
+        source_text_path = run_dir / "input.txt"
+        source_text_path.write_text(routed.source_text, encoding="utf-8")
+
     pipeline = ArkePipeline()
-    compile_result = pipeline.compile_file(str(input_path))
+    compile_result = pipeline.compile_string(routed.source)
     errors = list(compile_result.errors)
     warnings: list[str] = []
 
-    kernel_id = compile_result.kernel_name or input_path.stem
+    kernel_id = compile_result.kernel_name or routed.kernel_id_hint or Path(routed.display_path).stem
     trajectory_path = run_dir / "trajectory.jsonl"
     strategy_path = run_dir / "strategy.json"
     akir_path = run_dir / "result.akir"
@@ -273,7 +466,10 @@ def optimize_file(
         summary = _summary_dict(
             success=False,
             kernel_id=kernel_id,
-            input_path=input_path,
+            input_path=routed.display_path,
+            input_kind=routed.kind,
+            normalized_source_path=normalized_source_path,
+            source_text_path=source_text_path,
             run_dir=run_dir,
             cycles_completed=0,
             decision_count=0,
@@ -294,7 +490,10 @@ def optimize_file(
     with TrajectoryWriter(trajectory_path) as writer:
         writer.write_header({
             "kernel_id": kernel_id,
-            "input_path": str(input_path),
+            "input_path": routed.display_path,
+            "input_kind": routed.kind,
+            "normalized_source_path": str(normalized_source_path),
+            "source_text_path": str(source_text_path) if source_text_path is not None else None,
             "mode": "dry-run" if dry_run else "compile",
             "target_hw": target_hw,
             "schema": "s8-compile-profile-adjust-v1",
@@ -352,7 +551,10 @@ def optimize_file(
     summary = _summary_dict(
         success=cycles_completed == cycles and not errors,
         kernel_id=kernel_id,
-        input_path=input_path,
+        input_path=routed.display_path,
+        input_kind=routed.kind,
+        normalized_source_path=normalized_source_path,
+        source_text_path=source_text_path,
         run_dir=run_dir,
         cycles_completed=cycles_completed,
         decision_count=len(strategy.decisions),
@@ -362,6 +564,213 @@ def optimize_file(
     )
     _write_json(summary_path, summary)
     return OptimizeResult(**summary)
+
+
+def _looks_like_ak_source(text: str) -> bool:
+    return "kernel" in text and "Tensor" in text and "{" in text and "}" in text
+
+
+def _looks_like_code_source(text: str) -> bool:
+    lowered = text.lower()
+    return any(token in lowered for token in ["def ", "torch.", "triton", "tl.", "@triton"])
+
+
+def _normalize_op(name: str) -> str:
+    key = name.strip().lower().replace("-", "_").replace(" ", "_")
+    if key in _OP_ALIASES:
+        return _OP_ALIASES[key]
+    if key in set(_OP_ALIASES.values()):
+        return key
+    raise ValueError(f"Unsupported optimize kernel/op: {name!r}")
+
+
+def _parse_shape(shape: str | list[int] | tuple[int, ...]) -> tuple[int, ...]:
+    if isinstance(shape, str):
+        values = [int(part) for part in re.findall(r"\d+", shape)]
+    else:
+        values = [int(part) for part in shape]
+    if not values:
+        raise ValueError(f"Could not parse shape from {shape!r}")
+    return tuple(values)
+
+
+def _parse_natural_language_spec(text: str, *, dtype: str) -> _StructuredOptimizeSpec:
+    lowered = text.lower()
+    op = _detect_op(lowered)
+    detected_dtype = _detect_dtype(lowered) or dtype
+    shape = _parse_shape_from_text(lowered, op=op)
+    return _StructuredOptimizeSpec(op=op, shape=shape, dtype=detected_dtype)
+
+
+def _parse_code_spec(code: str, *, dtype: str) -> _StructuredOptimizeSpec:
+    lowered = code.lower()
+    op = _detect_op(lowered)
+    detected_dtype = _detect_dtype(lowered) or dtype
+    shape = _parse_shape_from_text(lowered, op=op)
+    match = re.search(r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", code)
+    kernel = match.group(1) if match else None
+    return _StructuredOptimizeSpec(op=op, shape=shape, dtype=detected_dtype, kernel=kernel)
+
+
+def _detect_op(text: str) -> str:
+    if re.search(r"matmul\s*\([^)]*\)\s*(?:\)|\s*)\+?\s*gelu|gelu\s*\([^)]*matmul", text):
+        return "matmul_gelu"
+    ordered = [
+        ("matmul_gelu", ["matmul_gelu", "linear_gelu", "gemm_gelu"]),
+        ("softmax", ["softmax"]),
+        ("reduce_sum", ["reduce_sum", "sum(", " sum "]),
+        ("reduce_max", ["reduce_max", "max(", " max "]),
+        ("reduce_mean", ["reduce_mean", "mean(", " mean "]),
+        ("matmul", ["matmul", "matrix multiply", "matrix multiplication", "torch.mm", "@"]),
+        ("gelu", ["gelu"]),
+        ("relu", ["relu"]),
+    ]
+    for op, needles in ordered:
+        if any(needle in text for needle in needles):
+            return op
+    raise ValueError("Could not infer optimize input op; provide --kernel and --shape")
+
+
+def _detect_dtype(text: str) -> str | None:
+    for dtype in ["bf16", "f16", "f32", "f64", "i8", "i32", "i64"]:
+        if dtype in text:
+            return dtype
+    aliases = {
+        "float16": "f16",
+        "fp16": "f16",
+        "half": "f16",
+        "float32": "f32",
+        "fp32": "f32",
+        "bfloat16": "bf16",
+    }
+    for alias, dtype in aliases.items():
+        if alias in text:
+            return dtype
+    return None
+
+
+def _parse_shape_from_text(text: str, *, op: str) -> tuple[int, ...]:
+    labeled = _parse_labeled_dims(text)
+    if op in {"matmul", "matmul_gelu"}:
+        if all(key in labeled for key in ["m", "n", "k"]):
+            return (labeled["m"], labeled["n"], labeled["k"])
+        values = _all_ints(text)
+        if len(values) >= 3:
+            return tuple(values[:3])
+        if len(values) == 2:
+            return (values[0], values[1], values[1])
+        raise ValueError("Matmul-like optimize input requires M,N,K or three dimensions")
+
+    if op in {"softmax", "reduce_sum", "reduce_max", "reduce_mean"}:
+        values = _all_ints(text)
+        if len(values) >= 2:
+            return tuple(values[:2])
+        if len(values) == 1:
+            return (values[0], values[0])
+        raise ValueError(f"{op} optimize input requires at least one dimension")
+
+    values = _all_ints(text)
+    if len(values) >= 2:
+        return tuple(values[:2])
+    if len(values) == 1:
+        return (values[0],)
+    raise ValueError(f"{op} optimize input requires a tensor shape")
+
+
+def _parse_labeled_dims(text: str) -> dict[str, int]:
+    dims: dict[str, int] = {}
+    for key, value in re.findall(r"\b([mnkbdsh])\s*=\s*(\d+)", text):
+        dims[key] = int(value)
+    return dims
+
+
+def _all_ints(text: str) -> list[int]:
+    return [int(value) for value in re.findall(r"\d+", text)]
+
+
+def _ak_source_from_spec(spec: _StructuredOptimizeSpec) -> str:
+    dtype = spec.dtype
+    if spec.op == "matmul":
+        m, n, k = _shape3(spec.shape, default_k_from_n=True)
+        return _render_kernel(
+            name=spec.kernel or "matmul_kernel",
+            params=[("A", [m, k], dtype), ("B", [k, n], dtype)],
+            output_shape=[m, n],
+            body=["let C = matmul(A=A, B=B);", "return C;"],
+        )
+    if spec.op == "matmul_gelu":
+        m, n, k = _shape3(spec.shape, default_k_from_n=True)
+        return _render_kernel(
+            name=spec.kernel or "matmul_gelu_kernel",
+            params=[("A", [m, k], dtype), ("B", [k, n], dtype)],
+            output_shape=[m, n],
+            body=["let Z = matmul(A=A, B=B);", "let Y = gelu(X=Z);", "return Y;"],
+        )
+    if spec.op == "softmax":
+        shape = _shape_at_least_2(spec.shape)
+        return _render_kernel(
+            name=spec.kernel or "softmax_kernel",
+            params=[("X", list(shape), dtype)],
+            output_shape=list(shape),
+            body=["let Y = softmax(X=X, axis=-1);", "return Y;"],
+        )
+    if spec.op in {"reduce_sum", "reduce_max", "reduce_mean"}:
+        shape = _shape_at_least_2(spec.shape)
+        return _render_kernel(
+            name=spec.kernel or f"{spec.op}_kernel",
+            params=[("X", list(shape), dtype)],
+            output_shape=list(shape[:-1]),
+            body=[f"let Y = {spec.op}(X=X, axis=-1);", "return Y;"],
+        )
+    if spec.op in {"relu", "gelu"}:
+        shape = spec.shape
+        return _render_kernel(
+            name=spec.kernel or f"{spec.op}_kernel",
+            params=[("X", list(shape), dtype)],
+            output_shape=list(shape),
+            body=[f"let Y = {spec.op}(X=X);", "return Y;"],
+        )
+    raise ValueError(f"Unsupported optimize op: {spec.op!r}")
+
+
+def _shape3(shape: tuple[int, ...], *, default_k_from_n: bool) -> tuple[int, int, int]:
+    if len(shape) >= 3:
+        return shape[0], shape[1], shape[2]
+    if len(shape) == 2 and default_k_from_n:
+        return shape[0], shape[1], shape[1]
+    raise ValueError("Expected at least two dimensions")
+
+
+def _shape_at_least_2(shape: tuple[int, ...]) -> tuple[int, ...]:
+    if len(shape) >= 2:
+        return shape
+    if len(shape) == 1:
+        return (shape[0], shape[0])
+    raise ValueError("Expected at least one dimension")
+
+
+def _render_kernel(
+    *,
+    name: str,
+    params: list[tuple[str, list[int], str]],
+    output_shape: list[int],
+    body: list[str],
+) -> str:
+    param_lines = []
+    for param_name, shape, dtype in params:
+        shape_text = ", ".join(str(dim) for dim in shape)
+        param_lines.append(f"    {param_name}: Tensor<[{shape_text}], {dtype}>")
+    joined_params = ",\n".join(param_lines)
+    output_text = ", ".join(str(dim) for dim in output_shape)
+    body_text = "\n".join(f"    {line}" for line in body)
+    return (
+        f"kernel {name}(\n"
+        f"{joined_params}\n"
+        f") -> Tensor<[{output_text}], {params[0][2]}>\n"
+        "{\n"
+        f"{body_text}\n"
+        "}\n"
+    )
 
 
 def _compile_cycle(
@@ -421,7 +830,10 @@ def _summary_dict(
     *,
     success: bool,
     kernel_id: str,
-    input_path: Path,
+    input_path: str,
+    input_kind: str,
+    normalized_source_path: Path | None,
+    source_text_path: Path | None,
     run_dir: Path,
     cycles_completed: int,
     decision_count: int,
@@ -432,7 +844,10 @@ def _summary_dict(
     return {
         "success": success,
         "kernel_id": kernel_id,
-        "input_path": str(input_path),
+        "input_path": input_path,
+        "input_kind": input_kind,
+        "normalized_source_path": str(normalized_source_path) if normalized_source_path is not None else None,
+        "source_text_path": str(source_text_path) if source_text_path is not None else None,
         "output_dir": str(run_dir),
         "strategy_path": str(run_dir / "strategy.json"),
         "akir_path": str(run_dir / "result.akir"),

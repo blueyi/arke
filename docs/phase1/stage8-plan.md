@@ -60,7 +60,7 @@ G8 PASS = AND ALL:
 
 The first Stage 8 bootstrap slice is intentionally narrower than the locked full G8 exit criteria. It establishes stable, machine-checkable contracts for the two P0 tracks before wiring live LLM calls and full-model GPU validation:
 
-- `arke optimize <file.ak>`: deterministic heuristic auto-strategy generation for kernel-only `.ak` input.
+- `arke optimize <input>`: deterministic heuristic auto-strategy generation for kernel-only `.ak` input, with unified routing for inline `.ak`, natural language, code snippets, and structured `--kernel/--shape` input.
 - Artifacts: `strategy.json`, `result.akir`, `trajectory.jsonl`, and `summary.json`.
 - Trajectory schema: `s8-compile-profile-adjust-v1` with at least three ordered `compile → profile → adjust` cycles.
 - `benchmarks.bench_l3`: GPT-2 eager vs `torch.compile` CSV/JSON artifact contract, with `--mock` for CPU-safe CI and contract testing.
@@ -78,7 +78,7 @@ This does **not** relax full G8. The remaining Stage 8 work is still the live LL
 |:---|:-----|:--------:|:--------:|:------:|
 | D7-A1 | Auto strategy generation (kernel-only `.ak` → LLM full strategy pipeline; MVP heuristic path implemented) | P0 | XL | 🚧 |
 | D7-A2 | Iterative optimization loop (auto-trigger ≥3 rounds compile→profile→adjust; MVP trajectory implemented) | P0 | L | 🚧 |
-| D7-A3 | Multi-input type routing (`.ak` / natural language / existing code → unified parse) | P0 | L | ⬜ |
+| D7-A3 | Multi-input type routing (`.ak` / natural language / existing code → unified parse; MVP router implemented, ≥2 ops/type evidence still open) | P0 | L | 🚧 |
 | D7-A4 | E2E profile → kernel feedback loop (bottleneck op → re-optimize) | P1 | L | ⬜ |
 | D7-A5 | Batch optimize pipeline (full model op set batch optimization) | P1 | M | ⬜ |
 
