@@ -247,15 +247,15 @@ That means every unfinished task in S7 should be justified by one of these bench
 | T6.9 | Persist performance target evaluation fields (`perf_target`, `perf_actual`, `perf_pass`, `perf_gap`) across artifacts | P0 | 0.5d | ✅ — `benchmarks.artifacts` now writes + aggregates these fields into `PERF_ALL.csv` / `summary.json` |
 | T6.10 | Build automation script to compute L1/L2 coverage gaps from `stage7_bl5_target_matrix.json` | P0 | 0.5d | ✅ — `python -m benchmarks.stage7_coverage_gap` |
 | T6.11 | Generate machine-readable coverage dashboards / reports from automation outputs | P1 | 0.5d | ✅ — `python -m benchmarks.stage7_dashboard` now consolidates `coverage_gap.json`, `audit_report.json`, and `stage7_operator_shape_stats.json` into `dashboard.json` with focus slices for evidence gaps, unsupported surface cases, perf-field gaps, memory-pressure ops, and priority actions. |
-| T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | ✅ — `benchmarks.gate_g7.check_stage7_track6_artifacts()` now enforces the full Track 6 artifact contract for `l1/`, `l2/`, and root dashboard artifacts (`coverage_gap.json`, `audit_report.json`, `stage7_operator_shape_stats.json`, `dashboard.json`). |
+| T6.12 | Integrate artifact field checks into Gate verification (scripts / CI) | P1 | 0.5d | ✅ — `benchmarks.gate_g7.check_stage7_track6_artifacts()` enforces the Track 6 result-tree contract for `l1/`, `l2/`, and root dashboard artifacts, and `G7.8b`/`G7.8c`/`G7.8d` now fail on incomplete BL5 coverage/correctness/performance evidence instead of treating artifact presence as closure. |
 
 ### Track 7: Non-Regression and Gate Closure (P0)
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T7.1 | Keep parser / IR / compiler / benchmark tests green while aligning implementation with the active spec | P0 | continuous | ✅ — current Stage 7 parser/IR/roundtrip/backend-agnostic slices and G7 gate run are green |
+| T7.1 | Keep parser / IR / compiler / benchmark tests green while aligning implementation with the active spec | P0 | continuous | 🚧 — parser/IR/roundtrip/backend-agnostic/non-regression slices are green, but the full G7 run now correctly fails on BL5 evidence criteria `G7.8b`/`G7.8c`/`G7.8d`. |
 | T7.2 | Add regression coverage for symbolic dims, conditional strategy, and rationale persistence | P0 | 0.5d | ✅ |
-| T7.3 | Run full stage verification checklist and record evidence in standard result locations | P0 | 0.5d | ✅ — verification evidence recorded in `benchmarks/results/phase1/stage7/track6/report.md` and the G7 gate run |
+| T7.3 | Run full stage verification checklist and record evidence in standard result locations | P0 | 0.5d | 🚧 — checklist/report artifacts exist, but current `python -m benchmarks.gate G7 --tier 2` is `11/14` with BL5 evidence failures; final G7 closure remains open. |
 
 ---
 
@@ -267,8 +267,8 @@ That means every unfinished task in S7 should be justified by one of these bench
 | M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end | ✅ |
 | M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge | ✅ |
 | M4 | Track 5 complete | All 45 BL5 ops pass v0.1.0 dry-run round-trip and BL5 shape families are representable | ✅ — dry-run coverage is green; benchmark executability is tracked separately under Track 6 |
-| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | ✅ — BL5 L1/L2 benchmark harness and memory-aware strategy are ready; G7 verification passed |
-| M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | ✅ — checklist/report artifacts recorded and G7 verification completed |
+| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | 🚧 — harness/artifact plumbing is ready, but canonical evidence is not yet BL5-complete (`G7.8b`/`G7.8c`/`G7.8d` fail) |
+| M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | 🚧 — non-regression slices are green, but final G7 closure is blocked by coverage/correctness/performance evidence gaps |
 
 **Critical path:** Track 1 → Tracks 2/3 → Track 4 → Track 5 → Track 6 → Track 7
 
@@ -297,7 +297,7 @@ Rationale for this order:
 
 ## Current Verification Notes
 
-- **Stage 7 parser/IR validation currently green:** `pytest -q tests/test_stage7_roundtrip.py tests/test_symbolic_shape.py tests/test_backend_agnostic.py tests/test_stage7_lowering.py tests/test_stage7_report.py tests/test_stage7_coverage_gap.py tests/phase1/stage7/test_stage7_dashboard.py tests/phase1/stage7/test_track6_contract.py` → `345 passed in 3.13s`; `python -m benchmarks gate G7 --tier 2` → `555 passed, 30 warnings, 0 failed`.
+- **Stage 7 parser/IR validation currently green, but G7 is not closed:** focused parser/IR/roundtrip/backend-agnostic slices remain green, and `pytest -q tests/test_gate_g7.py` passes (`8 passed`). The stricter `python -m benchmarks.gate G7 --tier 2` now reports `11/14` criteria passed and fails `G7.8b`/`G7.8c`/`G7.8d` against the canonical Track 6 evidence; this is expected until BL5 coverage, correctness, and performance are complete.
 - **Track 6 memory-policy slice currently green:** `tests/test_memory_policy.py`, `tests/test_benchmark_artifacts.py`, `tests/test_benchmark_cli.py`, `tests/test_benchmark_l1_attention_preflight.py`, `tests/test_benchmark_l2.py`, `tests/test_benchmark_l2_fused_ce.py`, `tests/test_benchmark_l2_qkv_fa.py`, `tests/test_benchmark_advice.py`, `tests/test_compiler_advice.py`, `tests/test_arke_runner_advice.py`, `tests/test_stage7_report.py`, `tests/test_stage7_coverage_gap.py`, `tests/phase1/stage7/test_stage7_dashboard.py`, `tests/phase1/stage7/test_track6_contract.py`, and Stage 7 strategy/advice slices → `52 passed`.
 - **Current skip reasons are explicit, not ignored:**
   - `tests/test_backend_agnostic.py` has 6 skips, all for `01_matmul.ak`, because that example intentionally omits an explicit strategy block and therefore has no authored `StrategyIR` to validate.
@@ -308,7 +308,7 @@ Rationale for this order:
 - **Active spec/benchmark-interface cleanup was revalidated after removing non-canonical wording/aliases:** `tests/test_benchmark_cli.py`, `tests/test_op_registry.py`, `tests/test_converters.py`, `tests/test_semantic_ir.py`, `tests/test_symbolic_shape.py`, and `tests/test_stage7_roundtrip.py` passed together (`109 passed`).
 - **Active architecture docs were also rewritten as current-surface references:** `docs/architecture/arke-lang-spec-design.md`, `docs/architecture/arke-ir-spec-design.md`, `docs/architecture/arke-compiler-infrastructure.md`, and `docs/architecture/naming-system.md` document the current mainline directly; related Stage 7 slice revalidated with `344 passed, 6 skipped`.
 - **Residual wording cleanup completed after the architecture rewrite:** `docs/spec/arke-lang-vs-python-triton.md` and remaining non-canonical examples/phrasing inside architecture docs were aligned to canonical `compute(...)` / current-surface wording, with the same Stage 7 validation slice staying green (`344 passed, 6 skipped`).
-- **Stage 7 closure artifacts added:** `docs/phase1/stage7-conformance-checklist.md` records the explicit v0.1.0 conformance checklist, and `benchmarks/results/phase1/stage7/track6/report.md` captures the latest gate / benchmark summary (focused regression `345 passed`, G7 `555 passed, 30 warnings, 0 failed`).
+- **Stage 7 closure artifacts are present but not final closure evidence:** `docs/phase1/stage7-conformance-checklist.md` records the explicit v0.1.0 conformance checklist, and `benchmarks/results/phase1/stage7/track6/report.md` captures Track 6 summaries. The current gate runner now treats these as inputs to evidence checks rather than proof of completion; final Stage 7 closure requires `G7.8b`/`G7.8c`/`G7.8d` to pass on canonical artifacts.
 
 ## BL5 Gap Snapshot & Phased Closure
 
@@ -341,16 +341,16 @@ Remaining BL5 work is tracked under four component lenses, each feeding existing
 |:------|:-------------|:------------------|
 | **S7-A** Target matrix & gap accounting | `benchmarks/stage7_bl5_target_matrix.json`, coverage snapshot above | Every required L1 op and L2 fusion has a machine-readable required-shape inventory; observed coverage is measurable, not anecdotal |
 | **S7-B** Correctness-first artifact schema | Benchmark runners write correctness metrics/tolerances; `PERF_ALL.csv` and per-op files include correctness fields; summaries aggregate correctness pass/fail | Every benchmark point has machine-readable correctness evidence (T6.8 ✅) |
-| **S7-C** Coverage closure | Stage 7 benchmark routing covers all BL5 L1 ops and all Stage 7 L2 fusions; missing points surfaced automatically | Required operator coverage = 100%; required shape coverage = 100% (with explicit OOM-policy evidence where applicable) |
-| **S7-D** Performance contract enforcement | Point-wise performance targets persisted in artifacts (T6.9); group/fusion pass logic implemented (T6.10–T6.12); gate-readable summaries expose coverage + correctness + performance status | Stage 7 can machine-check the BL5 performance contract, not just log raw latency |
-| **S7-E** Final BL5 exit | — | Full required coverage achieved; correctness pass for all required benchmark points; performance targets satisfied at group/fusion level; Stage 7 has gate-level evidence strong enough to claim BL5 closure |
+| **S7-C** Coverage closure | Stage 7 benchmark routing covers all BL5 L1 ops and all Stage 7 L2 fusions; missing points surfaced automatically | 🚧 Required operator coverage is present, but required shape coverage is not yet 100%; current canonical evidence is L1 `478/685` shapes (`0.6978`) and L2 `120/120` shapes (`1.0000`) |
+| **S7-D** Performance contract enforcement | Point-wise performance targets persisted in artifacts (T6.9); group/fusion pass logic implemented (T6.10–T6.12); gate-readable summaries expose coverage + correctness + performance status | 🚧 Machine checks are implemented and now fail honestly: current L1 weighted score is `0.6203 < 0.9500`, with incomplete `matmul_relu` / `matmul_gelu` L2 fusion performance |
+| **S7-E** Final BL5 exit | — | ⬜ Full required coverage, correctness, and performance are not yet achieved; Stage 7 remains open until `G7.8b`/`G7.8c`/`G7.8d` pass |
 
 ### Immediate next actions (carried over from gap report)
 
 1. Continue extending `run_with_inputs(...)` / reference coverage from the current verified L1 subset into the remaining unsupported BL5 operators (drives T5.6–T5.8, T6.1).
 2. Audit write/index ops for probe-semantics pitfalls (e.g. repeated-index nondeterminism) before counting mismatches as implementation bugs (drives T6.7).
 3. Extend artifact writing so performance pass/fail is preserved in `PERF_ALL.csv` and summaries alongside the new correctness fields (T6.9). ✅ Completed in `benchmarks.artifacts`; summaries now aggregate `perf_target` / `perf_actual` / `perf_pass` / `perf_gap`.
-4. Wire the coverage gap automation (`python -m benchmarks.stage7_coverage_gap`, written by T6.10) into Stage 7 dashboards and gate verification (drives T6.11 → T6.12). ✅ Initial integration is in place via persisted `coverage_gap.json`, CLI summaries, and green Track 6 contract/gate slices; remaining work is richer dashboarding + stricter CI enforcement.
+4. Wire the coverage gap automation (`python -m benchmarks.stage7_coverage_gap`, written by T6.10) into Stage 7 dashboards and gate verification (drives T6.11 → T6.12). ✅ Gate integration is now substantive: `G7.8b` checks coverage/audit completeness, `G7.8c` checks correctness rows with only explicit memory-policy exclusions, and `G7.8d` checks L1 weighted performance plus L2 fusion performance. Current canonical evidence fails those checks, so this item is implementation-complete but closure-blocking evidence remains.
 5. Run targeted missing-shape benchmarks into temporary directories, then merge only new/updated evidence into canonical Track 6 artifacts with `python -m benchmarks.artifacts merge-evidence --source <tmp>/phase1/stage7/track*/l1 --target benchmarks/results/phase1/stage7/track6/l1`. This avoids partial per-op reruns shrinking `PERF_ALL.csv` / `summary.json` by overwriting canonical evidence with an incomplete local run.
 
 ## Dependencies

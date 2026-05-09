@@ -11,9 +11,12 @@ real BL5 evidence.
 
 from __future__ import annotations
 
+import csv
+import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 from benchmarks.gate import GateResult, GateSummary
 from benchmarks.results_contract import check_result_tree_artifacts
@@ -92,6 +95,291 @@ def check_stage7_track6_artifacts(track6_root: Path = STAGE7_TRACK6_ROOT) -> tup
 
 def _check_benchmark_artifacts() -> tuple[bool, str]:
     return check_stage7_track6_artifacts(STAGE7_TRACK6_ROOT)
+
+
+def _load_json_artifact(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    if not path.exists():
+        return None, f"missing artifact: {path}"
+    try:
+        return json.loads(path.read_text()), None
+    except json.JSONDecodeError as exc:
+        return None, f"invalid JSON artifact {path}: {exc}"
+
+
+def _summarize_items(items: list[Any], limit: int = 8) -> str:
+    if not items:
+        return "none"
+    shown = items[:limit]
+    suffix = f", ... +{len(items) - limit} more" if len(items) > limit else ""
+    return ", ".join(str(item) for item in shown) + suffix
+
+
+def _check_bl5_coverage_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> tuple[bool, str]:
+    """Verify that persisted Track 6 artifacts close the BL5 coverage surface.
+
+    This is intentionally stricter than the older artifact-presence check: G7 is
+    not complete merely because CSV/JSON files exist. The target matrix must have
+    full L1/L2 required-shape evidence and the audit report must expose no
+    missing examples, strategy surfaces, benchmark rows, or unsupported surface
+    cases.
+    """
+
+    failures: list[str] = []
+    coverage, err = _load_json_artifact(track6_root / "coverage_gap.json")
+    if err:
+        failures.append(err)
+    audit, audit_err = _load_json_artifact(track6_root / "audit_report.json")
+    if audit_err:
+        failures.append(audit_err)
+
+    if coverage:
+        for layer in ("l1", "l2"):
+            layer_report = coverage.get(layer, {})
+            total = int(layer_report.get("ops_total", 0) or 0)
+            any_evidence = int(layer_report.get("ops_with_any_evidence", 0) or 0)
+            fully = int(layer_report.get("ops_fully_covered", 0) or 0)
+            required_shapes = int(layer_report.get("shapes_required_total", 0) or 0)
+            observed_shapes = int(layer_report.get("shapes_observed_total", 0) or 0)
+            ratio = float(layer_report.get("shape_coverage_ratio", 0.0) or 0.0)
+            if total <= 0:
+                failures.append(f"{layer}: no target entries found in coverage_gap.json")
+            if any_evidence != total:
+                failures.append(f"{layer}: op evidence {any_evidence}/{total}")
+            if fully != total:
+                partial = [
+                    entry.get("op", "<unknown>")
+                    for entry in layer_report.get("per_op", [])
+                    if entry.get("missing_shape_tags")
+                ]
+                failures.append(
+                    f"{layer}: full-shape coverage {fully}/{total}; partial={_summarize_items(partial)}"
+                )
+            if observed_shapes != required_shapes or ratio != 1.0:
+                failures.append(
+                    f"{layer}: shape coverage {observed_shapes}/{required_shapes} ({ratio:.4f})"
+                )
+            missing_perf_fields = [
+                entry.get("op", "<unknown>")
+                for entry in layer_report.get("per_op", [])
+                if entry.get("missing_perf_target_fields")
+            ]
+            if missing_perf_fields:
+                failures.append(
+                    f"{layer}: missing perf target fields for {_summarize_items(missing_perf_fields)}"
+                )
+
+    if audit:
+        summary = audit.get("summary", {})
+        for layer in ("l1", "l2"):
+            layer_summary = summary.get(layer, {})
+            for key in (
+                "missing_examples",
+                "missing_strategy_examples",
+                "missing_benchmark_evidence",
+                "missing_full_shape_evidence",
+                "unsupported_surface_cases",
+            ):
+                items = layer_summary.get(key, [])
+                if items:
+                    failures.append(
+                        f"{layer}: {key}={len(items)} ({_summarize_items(items)})"
+                    )
+
+    if failures:
+        return False, "; ".join(failures)
+    return True, "BL5 L1/L2 coverage evidence is complete with no audit gaps"
+
+
+def _parse_float(value: str | None) -> float | None:
+    if value in (None, "", "NA", "nan"):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _is_memory_excluded(row: dict[str, str]) -> bool:
+    """Return true for explicit 6GB-memory-policy exclusions.
+
+    G7 allows correctness accounting to exclude OOM-only rows, but only when the
+    row carries machine-readable memory preflight evidence. Ordinary failures,
+    unsupported correctness probes, and non-memory skips remain failures.
+    """
+
+    status = (row.get("status") or "").strip().lower()
+    correctness = (row.get("correctness_status") or "").strip().lower()
+    memory_policy = (row.get("memory_policy") or "").strip()
+    if status != "skipped" and correctness != "skipped":
+        return False
+    if not memory_policy:
+        return False
+
+    reason = f"{row.get('reason', '')} {row.get('correctness_reason', '')}".lower()
+    required = _parse_float(row.get("memory_bytes_required"))
+    budget = _parse_float(row.get("memory_bytes_budget"))
+    ratio = _parse_float(row.get("memory_ratio"))
+    has_memory_numbers = ratio is not None or (required is not None and budget is not None)
+    exceeds_budget = (ratio is not None and ratio >= 1.0) or (
+        required is not None and budget is not None and required >= budget
+    )
+    reason_mentions_memory = any(token in reason for token in ("oom", "memory", "vram", "preflight"))
+    return has_memory_numbers and (exceeds_budget or reason_mentions_memory)
+
+
+def _iter_perf_rows(track6_root: Path) -> tuple[list[tuple[str, dict[str, str]]], list[str]]:
+    rows: list[tuple[str, dict[str, str]]] = []
+    failures: list[str] = []
+    for layer in ("l1", "l2"):
+        path = track6_root / layer / "PERF_ALL.csv"
+        if not path.exists():
+            failures.append(f"{layer}: missing {path}")
+            continue
+        with path.open(newline="") as fh:
+            for row in csv.DictReader(fh):
+                rows.append((layer, row))
+    return rows, failures
+
+
+def _row_label(layer: str, row: dict[str, str]) -> str:
+    op = row.get("operator") or row.get("op") or "<unknown>"
+    shape = row.get("shape_tag") or "<shape?>"
+    return f"{layer}:{op}:{shape}"
+
+
+def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> tuple[bool, str]:
+    rows, failures = _iter_perf_rows(track6_root)
+    checked = 0
+    excluded = 0
+    bad_rows: list[str] = []
+
+    for layer, row in rows:
+        if _is_memory_excluded(row):
+            excluded += 1
+            continue
+        checked += 1
+        status = (row.get("status") or "").strip().lower()
+        correctness = (row.get("correctness_status") or "").strip().lower()
+        allclose = (row.get("allclose") or "").strip().lower()
+        if status != "ok":
+            bad_rows.append(f"{_row_label(layer, row)} status={status or '<empty>'}")
+            continue
+        if correctness != "ok":
+            bad_rows.append(
+                f"{_row_label(layer, row)} correctness={correctness or '<empty>'}"
+            )
+            continue
+        if allclose and allclose not in {"true", "1", "yes"}:
+            bad_rows.append(f"{_row_label(layer, row)} allclose={allclose}")
+
+    if bad_rows:
+        failures.append(
+            f"correctness failures={len(bad_rows)} checked={checked} memory_excluded={excluded}; "
+            f"first={_summarize_items(bad_rows)}"
+        )
+    if failures:
+        return False, "; ".join(failures)
+    return True, f"correctness rows passed: checked={checked}, memory_excluded={excluded}"
+
+
+def _load_l1_ot_map(matrix_path: Path) -> dict[str, int]:
+    matrix, err = _load_json_artifact(matrix_path)
+    if err or not matrix:
+        return {}
+    return {entry["op"]: int(entry.get("ot_tier", -1)) for entry in matrix.get("l1", [])}
+
+
+def _check_bl5_performance_evidence(
+    track6_root: Path = STAGE7_TRACK6_ROOT,
+    matrix_path: Path = REPO_ROOT / "benchmarks" / "stage7_bl5_target_matrix.json",
+) -> tuple[bool, str]:
+    rows, failures = _iter_perf_rows(track6_root)
+    ot_map = _load_l1_ot_map(matrix_path)
+    if not ot_map:
+        failures.append(f"missing L1 OT mapping from {matrix_path}")
+
+    group_counts = {
+        "ot0_1": {"passed": 0, "total": 0},
+        "ot2": {"passed": 0, "total": 0},
+        "ot3": {"passed": 0, "total": 0},
+        "ot4": {"passed": 0, "total": 0},
+    }
+    l2_counts: dict[str, dict[str, int]] = {}
+    excluded = 0
+    malformed: list[str] = []
+
+    for layer, row in rows:
+        if _is_memory_excluded(row):
+            excluded += 1
+            continue
+        if (row.get("status") or "").strip().lower() != "ok":
+            malformed.append(f"{_row_label(layer, row)} status={row.get('status') or '<empty>'}")
+            continue
+        perf_pass_raw = (row.get("perf_pass") or "").strip().lower()
+        if perf_pass_raw not in {"true", "false"}:
+            malformed.append(f"{_row_label(layer, row)} perf_pass={perf_pass_raw or '<empty>'}")
+            continue
+        passed = perf_pass_raw == "true"
+        op = row.get("operator") or row.get("op") or ""
+        if layer == "l1":
+            ot = ot_map.get(op)
+            if ot in (0, 1):
+                key = "ot0_1"
+            elif ot == 2:
+                key = "ot2"
+            elif ot == 3:
+                key = "ot3"
+            elif ot == 4:
+                key = "ot4"
+            else:
+                malformed.append(f"{_row_label(layer, row)} unknown_ot={ot}")
+                continue
+            group_counts[key]["total"] += 1
+            group_counts[key]["passed"] += int(passed)
+        else:
+            bucket = l2_counts.setdefault(op, {"passed": 0, "total": 0})
+            bucket["total"] += 1
+            bucket["passed"] += int(passed)
+
+    if malformed:
+        failures.append(f"malformed/non-ok perf rows={len(malformed)}; first={_summarize_items(malformed)}")
+
+    weights = {"ot0_1": 0.25, "ot2": 0.30, "ot3": 0.20, "ot4": 0.25}
+    weighted_score = 0.0
+    group_details: list[str] = []
+    for key, weight in weights.items():
+        total = group_counts[key]["total"]
+        passed = group_counts[key]["passed"]
+        if total == 0:
+            failures.append(f"L1 {key}: no evaluable performance rows")
+            rate = 0.0
+        else:
+            rate = passed / total
+        weighted_score += weight * rate
+        group_details.append(f"{key}={passed}/{total} ({rate:.3f})")
+    if weighted_score < 0.95:
+        failures.append(
+            f"L1 weighted performance score {weighted_score:.4f} < 0.9500; "
+            f"{'; '.join(group_details)}"
+        )
+
+    l2_failed = [
+        f"{op}={counts['passed']}/{counts['total']}"
+        for op, counts in sorted(l2_counts.items())
+        if counts["total"] == 0 or counts["passed"] != counts["total"]
+    ]
+    if l2_failed:
+        failures.append(f"L2 fusion performance incomplete: {_summarize_items(l2_failed)}")
+    if not l2_counts:
+        failures.append("L2: no evaluable fusion performance rows")
+
+    detail = (
+        f"L1 weighted_score={weighted_score:.4f}; {'; '.join(group_details)}; "
+        f"L2 fusions={len(l2_counts)}; memory_excluded={excluded}"
+    )
+    if failures:
+        return False, detail + "; " + "; ".join(failures)
+    return True, detail
 
 
 def run_g7(tier: int = 2) -> GateSummary:
@@ -178,6 +466,9 @@ def run_g7(tier: int = 2) -> GateSummary:
         "tests/phase1/stage7/test_stage7_dashboard.py",
     ])
     artifact_ok, artifact_detail = _check_benchmark_artifacts()
+    coverage_ok, coverage_detail = _check_bl5_coverage_evidence()
+    correctness_ok, correctness_detail = _check_bl5_correctness_evidence()
+    performance_ok, performance_detail = _check_bl5_performance_evidence()
     results.append(GateResult(
         "G7", "G7.8",
         "StrategyIR/lowering surface can represent the BL5 L2 fusion set",
@@ -187,6 +478,21 @@ def run_g7(tier: int = 2) -> GateSummary:
         "G7", "G7.8a",
         "Stage 7 benchmark standard result directories are recognized by gate",
         "function", artifact_ok, artifact_detail,
+    ))
+    results.append(GateResult(
+        "G7", "G7.8b",
+        "BL5 L1/L2 coverage evidence is complete against the target matrix",
+        "correctness", coverage_ok, coverage_detail,
+    ))
+    results.append(GateResult(
+        "G7", "G7.8c",
+        "BL5 correctness rows pass, excluding only explicit memory-policy OOM rows",
+        "correctness", correctness_ok, correctness_detail,
+    ))
+    results.append(GateResult(
+        "G7", "G7.8d",
+        "BL5 L1 weighted performance and L2 fusion performance meet the G7 contract",
+        "performance", performance_ok, performance_detail,
     ))
 
     passed, details = _run_pytest([
