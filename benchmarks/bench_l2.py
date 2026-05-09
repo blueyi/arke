@@ -411,14 +411,16 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
             return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
 
         if op in {"swiglu", "geglu"}:
-            # Gated benchmark shapes are recorded as input feature width
-            # (2 * ffn). Non-aligned stress shapes may intentionally be odd;
-            # define the benchmark/reference contract as "drop the tail feature"
-            # so both halves have deterministic, equal width.
-            ffn = max(N // 2, 1)
-            usable = 2 * ffn
-            x = torch.randn(M, usable, device="cuda", dtype=dtype)
-            x1, x2 = x.split(ffn, dim=-1)
+            # Gated benchmark shapes are recorded as the input feature width
+            # (2 * ffn). Non-aligned stress shapes intentionally exercise odd
+            # widths and are part of the BL5 contract -- they MUST NOT be
+            # silently rounded. The reference uses torch.chunk semantics:
+            # for an odd input width the first chunk is one feature wider than
+            # the second, matching PyTorch's documented behaviour. Any backend
+            # that cannot honor this should surface a real correctness/error
+            # signal in the benchmark, not be hidden behind a tail drop.
+            x = torch.randn(M, N, device="cuda", dtype=dtype)
+            x1, x2 = x.chunk(2, dim=-1)
             if op == "swiglu":
                 ref = torch.nn.functional.silu(x1) * x2
                 cand = torch.sigmoid(x1) * x1 * x2
@@ -442,14 +444,16 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
         if op == "qkv_fa":
             tokens = M
             hidden = K
-            # QKV projections require three equal chunks. If a caller passes a
-            # non-divisible stress width, drop the tail features consistently
-            # before chunking rather than letting torch.chunk create uneven Q/K/V.
-            qkv_dim = max((N // 3) * 3, 3)
+            # QKV projections need three chunks. Non-divisible stress widths are
+            # part of the BL5 contract and follow torch.chunk semantics (early
+            # chunks may be one feature wider). Backends that cannot handle the
+            # ragged split must surface that as a benchmark signal -- the
+            # benchmark itself does not silently round the projection width.
+            qkv_dim = N
             x = torch.randn(tokens, hidden, device="cuda", dtype=dtype)
             w = torch.randn(hidden, qkv_dim, device="cuda", dtype=dtype)
             qkv = x @ w
-            q, k, v = qkv.split(qkv_dim // 3, dim=-1)
+            q, k, v = qkv.chunk(3, dim=-1)
             # Use an explicit fp64 attention expression on both sides so this
             # probe remains deterministic even if third-party kernels override
             # PyTorch SDPA dispatch during the wider test session.
@@ -559,13 +563,15 @@ def _run_gated_fused_op(
 
     for shape in shapes:
         tag, M, N = shape.tag, shape.seq, shape.ffn_x2
-        # Non-aligned gated shapes can have an odd input feature count. The
-        # Stage-7 L2 contract is deterministic: benchmark the largest even
-        # prefix and drop the one-feature tail, matching the correctness probe.
-        ffn = max(N // 2, 1)
-        usable = 2 * ffn
-        X = torch.randn(M, usable, device="cuda", dtype=torch.float16)
-        x1, x2 = X.split(ffn, dim=-1)
+        # Honor the benchmark-defined input feature width exactly; non-aligned
+        # gated shapes are intentional stress cases. torch.chunk(2, -1)
+        # produces a (ceil(N/2), floor(N/2)) split for odd N, matching the
+        # PyTorch reference semantics. Backends that cannot consume an odd
+        # feature width must report it through the correctness/error channel
+        # rather than have the benchmark silently drop a tail feature.
+        X = torch.randn(M, N, device="cuda", dtype=torch.float16)
+        x1, x2 = X.chunk(2, dim=-1)
+        ffn = x2.shape[-1]
 
         def fn() -> torch.Tensor:
             return act_fn(x1) * x2
