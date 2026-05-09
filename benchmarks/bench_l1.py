@@ -118,8 +118,20 @@ def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tupl
     return 1e-5, 1e-6
 
 
+def _positive_dim(value: int, fallback: int = 1) -> int:
+    return value if value > 0 else fallback
+
+
+def _topk_k(inputs: tuple[torch.Tensor, ...]) -> int:
+    return min(4, inputs[0].shape[-1])
+
+
 def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dtype = torch.float16) -> tuple[torch.Tensor, ...]:
-    if op == "matmul" and K > 0:
+    M = _positive_dim(M)
+    N = _positive_dim(N)
+    K = max(K, 0)
+    if op == "matmul":
+        K = _positive_dim(K)
         return (
             torch.randn(M, K, device="cuda", dtype=dtype),
             torch.randn(K, N, device="cuda", dtype=dtype),
@@ -268,8 +280,7 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
     if op == "cumsum":
         return torch.cumsum(inputs[0], dim=-1)
     if op == "topk":
-        k = min(4, inputs[0].shape[-1])
-        return torch.topk(inputs[0], k=k, dim=-1).values
+        return torch.topk(inputs[0], k=_topk_k(inputs), dim=-1).values
     if op == "matmul" and len(inputs) == 2:
         return torch.matmul(inputs[0], inputs[1])
     if op == "batch_matmul" and len(inputs) == 2:
@@ -282,8 +293,7 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
     if op == "concat" and len(inputs) == 2:
         return torch.cat([inputs[0], inputs[1]], dim=-1)
     if op == "split":
-        split_size = max(inputs[0].shape[-1] // 2, 1)
-        return torch.split(inputs[0], split_size, dim=-1)
+        return torch.chunk(inputs[0], 2, dim=-1)
     if op == "gather" and len(inputs) == 2:
         return torch.gather(inputs[0], 1, inputs[1].long())
     if op == "scatter" and len(inputs) == 3:
@@ -343,12 +353,106 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
     raise NotImplementedError(f"No correctness reference for L1 op: {op}")
 
 
+def _compare_l1_outputs(
+    runner_name: str,
+    op: str,
+    ref: torch.Tensor | tuple[torch.Tensor, ...],
+    cand: torch.Tensor | tuple[torch.Tensor, ...],
+    rtol: float,
+    atol: float,
+) -> dict[str, object]:
+    if isinstance(ref, tuple) and isinstance(cand, tuple):
+        if len(ref) != len(cand):
+            return {
+                "allclose": False,
+                "max_abs_diff": None,
+                "mean_abs_diff": None,
+                "rtol": rtol,
+                "atol": atol,
+                "correctness_status": "mismatch",
+                "correctness_reason": f"tuple length mismatch: ref={len(ref)} cand={len(cand)}",
+            }
+        max_diff = 0.0
+        mean_diffs: list[float] = []
+        ok = True
+        for ref_i, cand_i in zip(ref, cand, strict=False):
+            if not isinstance(ref_i, torch.Tensor) or not isinstance(cand_i, torch.Tensor):
+                return {
+                    "allclose": None,
+                    "max_abs_diff": None,
+                    "mean_abs_diff": None,
+                    "rtol": rtol,
+                    "atol": atol,
+                    "correctness_status": "unsupported",
+                    "correctness_reason": f"runner {runner_name} returned non-tensor tuple correctness output for {op}",
+                }
+            ref32 = ref_i.detach().to(torch.float32)
+            cand32 = cand_i.detach().to(torch.float32)
+            if ref32.shape != cand32.shape:
+                return {
+                    "allclose": False,
+                    "max_abs_diff": None,
+                    "mean_abs_diff": None,
+                    "rtol": rtol,
+                    "atol": atol,
+                    "correctness_status": "mismatch",
+                    "correctness_reason": f"shape mismatch in tuple element: ref={tuple(ref32.shape)} cand={tuple(cand32.shape)}",
+                }
+            diff = (cand32 - ref32).abs()
+            max_diff = max(max_diff, float(diff.max().item()) if diff.numel() else 0.0)
+            mean_diffs.append(float(diff.mean().item()) if diff.numel() else 0.0)
+            ok = ok and torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
+        return {
+            "allclose": bool(ok),
+            "max_abs_diff": max_diff,
+            "mean_abs_diff": (sum(mean_diffs) / len(mean_diffs)) if mean_diffs else 0.0,
+            "rtol": rtol,
+            "atol": atol,
+            "correctness_status": "ok" if ok else "mismatch",
+            "correctness_reason": "",
+        }
+    if not isinstance(cand, torch.Tensor) or not isinstance(ref, torch.Tensor):
+        return {
+            "allclose": None,
+            "max_abs_diff": None,
+            "mean_abs_diff": None,
+            "rtol": rtol,
+            "atol": atol,
+            "correctness_status": "unsupported",
+            "correctness_reason": f"runner {runner_name} returned non-tensor correctness output for {op}",
+        }
+    ref32 = ref.detach().to(torch.float32)
+    cand32 = cand.detach().to(torch.float32)
+    if ref32.shape != cand32.shape:
+        return {
+            "allclose": False,
+            "max_abs_diff": None,
+            "mean_abs_diff": None,
+            "rtol": rtol,
+            "atol": atol,
+            "correctness_status": "mismatch",
+            "correctness_reason": f"shape mismatch: ref={tuple(ref32.shape)} cand={tuple(cand32.shape)}",
+        }
+    diff = (cand32 - ref32).abs()
+    ok = torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
+    return {
+        "allclose": bool(ok),
+        "max_abs_diff": float(diff.max().item()) if diff.numel() else 0.0,
+        "mean_abs_diff": float(diff.mean().item()) if diff.numel() else 0.0,
+        "rtol": rtol,
+        "atol": atol,
+        "correctness_status": "ok" if ok else "mismatch",
+        "correctness_reason": "",
+    }
+
+
 def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torch.dtype = torch.float16) -> dict[str, object]:
     rtol, atol = _correctness_tolerances(op, dtype)
     try:
         inputs = _make_l1_correctness_inputs(op, M, N, K, dtype)
         ref = _eval_l1_reference(op, inputs)
-        cand = runner.run_with_inputs(op, *inputs)
+        kwargs = {"k": _topk_k(inputs)} if op == "topk" else {}
+        cand = runner.run_with_inputs(op, *inputs, **kwargs)
         if cand is None:
             return {
                 "allclose": None,
@@ -359,89 +463,7 @@ def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torc
                 "correctness_status": "unsupported",
                 "correctness_reason": f"runner {runner.name} does not implement run_with_inputs for {op}",
             }
-        if isinstance(ref, tuple) and isinstance(cand, tuple):
-            if len(ref) != len(cand):
-                return {
-                    "allclose": False,
-                    "max_abs_diff": None,
-                    "mean_abs_diff": None,
-                    "rtol": rtol,
-                    "atol": atol,
-                    "correctness_status": "mismatch",
-                    "correctness_reason": f"tuple length mismatch: ref={len(ref)} cand={len(cand)}",
-                }
-            max_diff = 0.0
-            mean_diffs: list[float] = []
-            ok = True
-            for ref_i, cand_i in zip(ref, cand, strict=False):
-                if not isinstance(ref_i, torch.Tensor) or not isinstance(cand_i, torch.Tensor):
-                    return {
-                        "allclose": None,
-                        "max_abs_diff": None,
-                        "mean_abs_diff": None,
-                        "rtol": rtol,
-                        "atol": atol,
-                        "correctness_status": "unsupported",
-                        "correctness_reason": f"runner {runner.name} returned non-tensor tuple correctness output for {op}",
-                    }
-                ref32 = ref_i.detach().to(torch.float32)
-                cand32 = cand_i.detach().to(torch.float32)
-                if ref32.shape != cand32.shape:
-                    return {
-                        "allclose": False,
-                        "max_abs_diff": None,
-                        "mean_abs_diff": None,
-                        "rtol": rtol,
-                        "atol": atol,
-                        "correctness_status": "mismatch",
-                        "correctness_reason": f"shape mismatch in tuple element: ref={tuple(ref32.shape)} cand={tuple(cand32.shape)}",
-                    }
-                diff = (cand32 - ref32).abs()
-                max_diff = max(max_diff, float(diff.max().item()) if diff.numel() else 0.0)
-                mean_diffs.append(float(diff.mean().item()) if diff.numel() else 0.0)
-                ok = ok and torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
-            return {
-                "allclose": bool(ok),
-                "max_abs_diff": max_diff,
-                "mean_abs_diff": (sum(mean_diffs) / len(mean_diffs)) if mean_diffs else 0.0,
-                "rtol": rtol,
-                "atol": atol,
-                "correctness_status": "ok" if ok else "mismatch",
-                "correctness_reason": "",
-            }
-        if not isinstance(cand, torch.Tensor) or not isinstance(ref, torch.Tensor):
-            return {
-                "allclose": None,
-                "max_abs_diff": None,
-                "mean_abs_diff": None,
-                "rtol": rtol,
-                "atol": atol,
-                "correctness_status": "unsupported",
-                "correctness_reason": f"runner {runner.name} returned non-tensor correctness output for {op}",
-            }
-        ref32 = ref.detach().to(torch.float32)
-        cand32 = cand.detach().to(torch.float32)
-        if ref32.shape != cand32.shape:
-            return {
-                "allclose": False,
-                "max_abs_diff": None,
-                "mean_abs_diff": None,
-                "rtol": rtol,
-                "atol": atol,
-                "correctness_status": "mismatch",
-                "correctness_reason": f"shape mismatch: ref={tuple(ref32.shape)} cand={tuple(cand32.shape)}",
-            }
-        diff = (cand32 - ref32).abs()
-        ok = torch.allclose(cand32, ref32, rtol=rtol, atol=atol)
-        return {
-            "allclose": bool(ok),
-            "max_abs_diff": float(diff.max().item()) if diff.numel() else 0.0,
-            "mean_abs_diff": float(diff.mean().item()) if diff.numel() else 0.0,
-            "rtol": rtol,
-            "atol": atol,
-            "correctness_status": "ok" if ok else "mismatch",
-            "correctness_reason": "",
-        }
+        return _compare_l1_outputs(runner.name, op, ref, cand, rtol, atol)
     except NotImplementedError as e:
         return {
             "allclose": None,
@@ -462,7 +484,6 @@ def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torc
             "correctness_status": "error",
             "correctness_reason": str(e),
         }
-
 
 def run_op(
     op: str,

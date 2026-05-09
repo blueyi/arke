@@ -125,7 +125,7 @@ class PyTorchEagerRunner(BaselineRunner):
         if op == "cumsum" and len(inputs) == 1:
             return torch.cumsum(inputs[0], dim=-1)
         if op == "topk" and len(inputs) == 1:
-            k = min(kwargs.get('k', 4), inputs[0].shape[-1])
+            k = min(kwargs.get("k", 4), inputs[0].shape[-1])
             return torch.topk(inputs[0], k=k, dim=-1).values
         if op == "matmul" and len(inputs) == 2:
             return torch.matmul(inputs[0], inputs[1])
@@ -136,8 +136,7 @@ class PyTorchEagerRunner(BaselineRunner):
         if op == "concat" and len(inputs) == 2:
             return torch.cat([inputs[0], inputs[1]], dim=-1)
         if op == "split" and len(inputs) == 1:
-            split_size = max(inputs[0].shape[-1] // 2, 1)
-            return torch.split(inputs[0], split_size, dim=-1)
+            return torch.chunk(inputs[0], 2, dim=-1)
         if op == "gather" and len(inputs) == 2:
             return torch.gather(inputs[0], 1, inputs[1].long())
         if op == "scatter" and len(inputs) == 3:

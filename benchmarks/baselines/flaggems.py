@@ -78,6 +78,67 @@ class FlagGemsRunner(BaselineRunner):
             "batch_matmul", "transpose", "embedding",
         )
 
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        _ensure_enabled()
+        if op == "matmul" and len(inputs) == 2:
+            return torch.matmul(inputs[0], inputs[1])
+        if op == "softmax" and len(inputs) == 1:
+            return torch.nn.functional.softmax(inputs[0], dim=-1)
+        if op == "layernorm" and len(inputs) == 1:
+            x = inputs[0]
+            weight = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            bias = torch.zeros(x.shape[-1], device=x.device, dtype=x.dtype)
+            return torch.nn.functional.layer_norm(x, [x.shape[-1]], weight, bias)
+        if op == "rmsnorm" and len(inputs) == 1:
+            x = inputs[0]
+            weight = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            eps = 1e-6
+            return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps) * weight
+        if op == "relu" and len(inputs) == 1:
+            return torch.relu(inputs[0])
+        if op == "gelu" and len(inputs) == 1:
+            return torch.nn.functional.gelu(inputs[0])
+        if op == "silu" and len(inputs) == 1:
+            return torch.nn.functional.silu(inputs[0])
+        if op == "tanh" and len(inputs) == 1:
+            return torch.tanh(inputs[0])
+        if op == "sigmoid" and len(inputs) == 1:
+            return torch.sigmoid(inputs[0])
+        if op == "add" and len(inputs) == 2:
+            return inputs[0] + inputs[1]
+        if op == "mul" and len(inputs) == 2:
+            return inputs[0] * inputs[1]
+        if op == "neg" and len(inputs) == 1:
+            return -inputs[0]
+        if op == "exp" and len(inputs) == 1:
+            return torch.exp(inputs[0])
+        if op == "rsqrt" and len(inputs) == 1:
+            return torch.rsqrt(inputs[0])
+        if op == "where_" and len(inputs) == 3:
+            return torch.where(inputs[0].bool(), inputs[1], inputs[2])
+        if op == "cast" and len(inputs) == 1:
+            return inputs[0].to(torch.float32)
+        if op == "reduce_sum" and len(inputs) == 1:
+            return inputs[0].sum(dim=-1)
+        if op == "reduce_max" and len(inputs) == 1:
+            return inputs[0].max(dim=-1).values
+        if op == "reduce_mean" and len(inputs) == 1:
+            return inputs[0].mean(dim=-1)
+        if op == "cumsum" and len(inputs) == 1:
+            return torch.cumsum(inputs[0], dim=-1)
+        if op == "batch_matmul" and len(inputs) == 2:
+            return torch.bmm(inputs[0], inputs[1])
+        if op == "transpose" and len(inputs) == 1:
+            return inputs[0].T.contiguous()
+        if op == "embedding" and len(inputs) == 2:
+            return torch.nn.functional.embedding(inputs[0].long(), inputs[1])
+        return None
+
     def get_fn(
         self,
         op: str,

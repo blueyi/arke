@@ -1,25 +1,15 @@
 {
-  "timestamp": "2026-04-28_021703",
+  "timestamp": "2026-05-09_205221",
   "ops": [
-    "cumsum",
-    "swiglu",
-    "geglu"
+    "matmul",
+    "softmax",
+    "layernorm",
+    "gelu",
+    "add",
+    "topk"
   ],
-  "warmup": 2,
-  "reps": 3,
-  "tier": null,
-  "shape_tags": [
-    "gpt2-row",
-    "llama-row",
-    "llama-col",
-    "wide-row",
-    "non-align-1",
-    "non-align-2",
-    "non-align-3",
-    "extreme-long-row",
-    "extreme-tall-col",
-    "ds-v3-512",
-    "ds-v3-2k",
-    "qwen25-7b-2k"
-  ]
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1,
+  "shape_tags": null
 }

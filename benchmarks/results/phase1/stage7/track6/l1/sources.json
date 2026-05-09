@@ -25,6 +25,6 @@
   },
   "Arke": {
     "priority": "P5",
-    "source": "Arke 0.2.0-dev (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0"
+    "source": "Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0"
   }
 }

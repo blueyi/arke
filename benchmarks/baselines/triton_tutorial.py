@@ -274,6 +274,18 @@ class TritonTutorialRunner(BaselineRunner):
             return self._softmax_fn(M, N, dtype)
         return None
 
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        if op == "matmul" and len(inputs) == 2:
+            return _triton_matmul(inputs[0].contiguous(), inputs[1].contiguous())
+        if op == "softmax" and len(inputs) == 1:
+            return _triton_softmax(inputs[0].contiguous())
+        return None
+
     # ── private helpers ────────────────────────────────────────────
 
     @staticmethod

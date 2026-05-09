@@ -58,6 +58,9 @@ def _scan_perf_all(path: Path) -> tuple[dict[str, set[str]], dict[str, dict[str,
 
     Field presence is reported per operator: a field is considered present if at
     least one row under that operator populates it with a non-empty value.
+    Both normalized ``operator`` columns and raw benchmark ``op`` columns are
+    accepted so coverage can be computed from generated perf artifacts and raw
+    result CSVs with the same mapping semantics.
     """
 
     observed: dict[str, set[str]] = defaultdict(set)
@@ -71,7 +74,7 @@ def _scan_perf_all(path: Path) -> tuple[dict[str, set[str]], dict[str, dict[str,
     with path.open(newline="") as fh:
         reader = csv.DictReader(fh)
         for row in reader:
-            op = (row.get("operator") or "").strip()
+            op = (row.get("operator") or row.get("op") or "").strip()
             if not op:
                 continue
             shape_tag = (row.get("shape_tag") or "").strip()

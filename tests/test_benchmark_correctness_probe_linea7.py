@@ -20,11 +20,11 @@ from benchmarks.bench_l1 import _measure_l1_correctness
         (CuBLASRunner, "gelu", (128, 3072, 0), "ok"),
         (PyTorchEagerRunner, "gelu", (128, 3072, 0), "ok"),
         (InductorRunner, "gelu", (128, 3072, 0), "ok"),
-        (LigerRunner, "gelu", (128, 3072, 0), "unsupported"),
+        (LigerRunner, "gelu", (128, 3072, 0), "ok"),
         (CuBLASRunner, "silu", (128, 3072, 0), "ok"),
         (PyTorchEagerRunner, "silu", (128, 3072, 0), "ok"),
         (InductorRunner, "silu", (128, 3072, 0), "ok"),
-        (LigerRunner, "silu", (128, 3072, 0), "unsupported"),
+        (LigerRunner, "silu", (128, 3072, 0), "ok"),
     ],
 )
 def test_l1_correctness_probe_linea7_ops_ok(runner_cls, op, shape, expected_status):

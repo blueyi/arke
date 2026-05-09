@@ -1,7 +1,7 @@
 {
-  "overall_geomean": 0.9001,
+  "overall_geomean": 0.9099,
   "op_scores": {
-    "add": 1.0161,
+    "add": 0.9914,
     "argmax": 0.9295,
     "batch_matmul": 0.5038,
     "cast": 2.7531,
@@ -17,11 +17,11 @@
     "fused_linear_cross_entropy": 1.1164,
     "gather": 1.1351,
     "geglu": 0.8792,
-    "gelu": 0.8765,
+    "gelu": 0.7934,
     "grouped_matmul": 0.1524,
     "grouped_query_attention": 2.5051,
-    "layernorm": 0.4999,
-    "matmul": 0.8208,
+    "layernorm": 0.4979,
+    "matmul": 0.779,
     "mul": 0.9703,
     "neg": 0.9678,
     "permute": 1.0,
@@ -37,15 +37,15 @@
     "scatter": 1.0,
     "sigmoid": 0.9981,
     "silu": 0.7653,
-    "softmax": 0.7688,
+    "softmax": 0.6726,
     "split": 1.2376,
     "swiglu": 0.8996,
     "tanh": 0.9786,
-    "topk": 1.0946,
+    "topk": 1.8476,
     "transpose": 0.2522,
     "where_": 1.0183
   },
-  "total_shapes": 1636,
+  "total_shapes": 1370,
   "operators": [
     "add",
     "argmax",
@@ -92,32 +92,32 @@
     "where_"
   ],
   "status_counts": {
-    "ok": 1636,
-    "error": 4,
-    "skipped": 10
+    "ok": 1370,
+    "skipped": 10,
+    "error": 2
   },
   "correctness_counts": {
-    "ok": 1195,
-    "unsupported": 409,
-    "mismatch": 10,
-    "error": 24,
+    "ok": 1047,
+    "unsupported": 298,
+    "mismatch": 3,
+    "error": 22,
     "skipped": 10,
     "unknown": 2
   },
   "memory_policy_counts": {
-    "none": 1508,
-    "dense_matmul": 122,
+    "none": 1276,
+    "dense_matmul": 86,
     "linear_ce": 12,
     "attention": 8
   },
   "memory_pressure_rows": 10,
   "perf_target_counts": {
-    "with_target": 1650,
+    "with_target": 1382,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "false": 715,
-    "true": 935
+    "true": 791,
+    "false": 591
   },
   "perf_targets": {
     "add": 1.0,
@@ -167,7 +167,7 @@
     "where_": 1.0
   },
   "perf_actuals": {
-    "add": 1.0161,
+    "add": 0.9914,
     "argmax": 0.9295,
     "batch_matmul": 0.5038,
     "cast": 2.7531,
@@ -183,11 +183,11 @@
     "fused_linear_cross_entropy": 1.1164,
     "gather": 1.1351,
     "geglu": 0.8792,
-    "gelu": 0.8765,
+    "gelu": 0.7934,
     "grouped_matmul": 0.1524,
     "grouped_query_attention": 2.5051,
-    "layernorm": 0.4999,
-    "matmul": 0.8208,
+    "layernorm": 0.4979,
+    "matmul": 0.779,
     "mul": 0.9703,
     "neg": 0.9678,
     "permute": 1.0,
@@ -203,16 +203,16 @@
     "scatter": 1.0,
     "sigmoid": 0.9981,
     "silu": 0.7653,
-    "softmax": 0.7688,
+    "softmax": 0.6726,
     "split": 1.2376,
     "swiglu": 0.8996,
     "tanh": 0.9786,
-    "topk": 1.0946,
+    "topk": 1.8476,
     "transpose": 0.2522,
     "where_": 1.0183
   },
   "perf_gaps": {
-    "add": 0.0206,
+    "add": -0.0049,
     "argmax": -0.0456,
     "batch_matmul": -0.3301,
     "cast": 7.4406,
@@ -228,11 +228,11 @@
     "fused_linear_cross_entropy": 0.1365,
     "gather": 0.2947,
     "geglu": -0.112,
-    "gelu": -0.0307,
+    "gelu": -0.1259,
     "grouped_matmul": -0.4709,
     "grouped_query_attention": 2.6377,
-    "layernorm": -0.3287,
-    "matmul": -0.0964,
+    "layernorm": -0.3438,
+    "matmul": -0.1199,
     "mul": -0.0243,
     "neg": -0.0226,
     "permute": 0.0,
@@ -248,11 +248,11 @@
     "scatter": 0.0,
     "sigmoid": 0.0081,
     "silu": -0.1565,
-    "softmax": 0.1014,
+    "softmax": -0.2101,
     "split": 0.325,
     "swiglu": -0.0931,
     "tanh": -0.0166,
-    "topk": 0.1113,
+    "topk": 2.1687,
     "transpose": -0.5931,
     "where_": 0.0239
   }

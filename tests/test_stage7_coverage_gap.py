@@ -100,6 +100,34 @@ def test_compute_gap_counts_shapes_and_fields(sample_matrix: Path, results_root:
     assert "matmul_relu" in text_summary
 
 
+def test_compute_gap_handles_raw_op_column(sample_matrix: Path, tmp_path: Path):
+    root = tmp_path / "results"
+    (root / "l1").mkdir(parents=True)
+    (root / "l2").mkdir(parents=True)
+
+    (root / "l1" / "PERF_ALL.csv").write_text(
+        """op,shape_tag,correctness_status,allclose,rtol,atol,perf_target,perf_actual,perf_pass,perf_gap
+relu,shapeA,pass,true,1e-5,1e-6,1.0,1.1,true,0.1
+""".strip()
+    )
+    (root / "l2" / "PERF_ALL.csv").write_text(
+        """op,shape_tag,perf_target,perf_actual,perf_pass,perf_gap
+matmul_relu,shapeC,1.0,1.05,true,0.05
+""".strip()
+    )
+
+    report = coverage_gap.compute_gap(sample_matrix, root)
+
+    l1_entries = {entry["op"]: entry for entry in report["l1"]["per_op"]}
+    assert l1_entries["relu"]["observed_shape_tags"] == ["shapeA"]
+    assert l1_entries["relu"]["correctness_fields_present"] is True
+    assert l1_entries["relu"]["perf_target_fields_present"] is True
+
+    l2_entries = {entry["op"]: entry for entry in report["l2"]["per_op"]}
+    assert l2_entries["matmul_relu"]["observed_shape_tags"] == ["shapeC"]
+    assert l2_entries["matmul_relu"]["perf_target_fields_present"] is True
+
+
 def test_compute_gap_handles_missing_perf_files(sample_matrix: Path, tmp_path: Path):
     report = coverage_gap.compute_gap(sample_matrix, tmp_path / "missing")
     assert report["l1"]["ops_with_any_evidence"] == 0

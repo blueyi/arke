@@ -201,8 +201,14 @@ def _resolve_perf_fields(row: dict[str, str], ratio: float | None) -> dict[str, 
     }
 
 
+def _infer_op_from_path(raw_csv: Path) -> str:
+    stem = raw_csv.stem
+    return stem[:-8] if stem.endswith("_results") else stem
+
+
 def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
     rows = list(csv.DictReader(raw_csv.open()))
+    op_from_path = _infer_op_from_path(raw_csv)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "operator", "shape_tag", "baseline", "latency_us",
@@ -232,7 +238,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
                 ratio = baseline_lat / lat if baseline_lat and lat else None
                 perf_fields = _resolve_perf_fields(row, ratio)
                 writer.writerow({
-                    "operator": row.get("op", "unknown"),
+                    "operator": row.get("op") or op_from_path,
                     "shape_tag": shape_tag,
                     "baseline": row.get("baseline", "unknown"),
                     "latency_us": row.get("latency_us", ""),

@@ -68,6 +68,29 @@ class TestBenchmarkArtifacts:
         assert data["perf_actuals"]["relu"] > 1.0
         assert data["perf_gaps"]["relu"] == 0.125
 
+    def test_write_perf_csv_from_l1_infers_operator_from_raw_filename(self, tmp_path: Path):
+        raw = tmp_path / "relu_results.csv"
+        with raw.open("w", newline="") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "shape_tag", "baseline", "latency_us", "latency_min_us", "status",
+                    "correctness_status", "perf_target", "perf_actual", "perf_pass", "perf_gap",
+                ],
+            )
+            writer.writeheader()
+            writer.writerow(
+                {
+                    "shape_tag": "shapeA", "baseline": "PyTorch-eager", "latency_us": "10",
+                    "latency_min_us": "9", "status": "ok", "correctness_status": "pass",
+                    "perf_target": "1.0", "perf_actual": "1.0", "perf_pass": "true", "perf_gap": "0.0",
+                }
+            )
+
+        perf = write_perf_csv_from_l1(raw, tmp_path / "perf_relu.csv")
+        rows = list(csv.DictReader(perf.open()))
+        assert rows[0]["operator"] == "relu"
+
     def test_merge_perf_evidence_preserves_unrelated_rows(self, tmp_path: Path):
         canonical = tmp_path / "canonical"
         partial = tmp_path / "partial"

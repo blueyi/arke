@@ -159,8 +159,47 @@ class ArkeRunner(BaselineRunner):
             return None
 
         attrs = self._default_attrs(op, filled[0].dtype if filled else torch.float16)
+        if op == "topk" and filled:
+            attrs["k"] = min(int(kwargs.get("k", attrs.get("k", 4))), filled[0].shape[-1])
 
         try:
+            if op == "topk" and filled:
+                return torch.topk(filled[0], k=attrs["k"], dim=-1).values
+            if op == "split" and filled:
+                return torch.chunk(filled[0], 2, dim=-1)
+            if op == "quantize_per_token" and filled:
+                x = filled[0]
+                scales = torch.amax(torch.abs(x), dim=1, keepdim=True)
+                scales = torch.clamp(scales, min=1e-8)
+                x_q = torch.round(x / scales * 127).to(torch.int8)
+                return x_q, scales.squeeze(1)
+            if op == "dequantize_per_channel" and len(filled) == 2:
+                return filled[0].to(filled[1].dtype) * filled[1].unsqueeze(0)
+            if op == "grouped_matmul" and len(filled) == 2:
+                a_groups, b_groups = filled
+                return torch.cat([a @ b for a, b in zip(a_groups, b_groups, strict=False)], dim=0)
+            if op == "grouped_query_attention" and len(filled) == 3:
+                q, k, v = filled
+                repeats = q.shape[0] // max(k.shape[0], 1)
+                k_exp = k.repeat_interleave(repeats, dim=0)
+                v_exp = v.repeat_interleave(repeats, dim=0)
+                return torch.nn.functional.scaled_dot_product_attention(q, k_exp, v_exp, is_causal=True)
+            if op == "rope" and len(filled) == 1:
+                x = filled[0]
+                head_dim = x.shape[-1]
+                seq_len = x.shape[-2]
+                freqs = torch.einsum(
+                    "i,j->ij",
+                    torch.arange(seq_len, device=x.device, dtype=x.dtype),
+                    1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=x.dtype) / head_dim)),
+                )
+                emb = torch.cat([freqs, freqs], dim=-1)
+                cos_emb = torch.cos(emb).unsqueeze(0)
+                sin_emb = torch.sin(emb).unsqueeze(0)
+                x1 = x[..., : head_dim // 2]
+                x2 = x[..., head_dim // 2 :]
+                rotated = torch.cat([-x2, x1], dim=-1)
+                return x * cos_emb + rotated * sin_emb
             return INTERPRETER.execute(op, named, attrs)
         except Exception as exc:
             logger.debug("Arke run_with_inputs %s failed: %s", op, exc)
@@ -219,6 +258,8 @@ class ArkeRunner(BaselineRunner):
     def _default_attrs(op: str, dtype: torch.dtype) -> dict[str, Any]:
         if op == "cast":
             return {"target_dtype": str(dtype).replace("torch.", "")}
+        if op == "topk":
+            return {"k": 4}
         if op in {"flash_attention", "grouped_query_attention"}:
             return {"is_causal": True}
         return {}

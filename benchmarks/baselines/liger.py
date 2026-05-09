@@ -55,6 +55,38 @@ class LigerRunner(BaselineRunner):
     def supports(self, op: str) -> bool:
         return op in ("rmsnorm", "gelu", "silu", "rope")
 
+    def run_with_inputs(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        if op == "rmsnorm" and len(inputs) == 1:
+            from liger_kernel.ops.rms_norm import LigerRMSNormFunction
+
+            x = inputs[0]
+            weight = torch.ones(x.shape[-1], device=x.device, dtype=x.dtype)
+            return LigerRMSNormFunction.apply(x, weight, 1e-6)
+
+        if op == "gelu" and len(inputs) == 1:
+            from liger_kernel.ops.geglu import LigerGELUMulFunction
+
+            x = inputs[0]
+            gate = torch.ones_like(x)
+            return LigerGELUMulFunction.apply(x, gate)
+
+        if op == "silu" and len(inputs) == 1:
+            from liger_kernel.ops.swiglu import LigerSiLUMulFunction
+
+            x = inputs[0]
+            gate = torch.ones_like(x)
+            return LigerSiLUMulFunction.apply(x, gate)
+
+        if op == "rope" and len(inputs) == 1:
+            return None
+
+        return None
+
     def get_fn(
         self,
         op: str,

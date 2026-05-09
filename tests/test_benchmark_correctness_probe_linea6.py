@@ -20,7 +20,7 @@ from benchmarks.bench_l1 import _measure_l1_correctness
         (CuBLASRunner, "softmax", (12, 128, 0), "ok"),
         (PyTorchEagerRunner, "softmax", (12, 128, 0), "ok"),
         (InductorRunner, "softmax", (12, 128, 0), "ok"),
-        (TritonTutorialRunner, "softmax", (12, 128, 0), "unsupported"),
+        (TritonTutorialRunner, "softmax", (12, 128, 0), "ok"),
         (CuBLASRunner, "layernorm", (128, 768, 0), "ok"),
         (PyTorchEagerRunner, "layernorm", (128, 768, 0), "ok"),
         (InductorRunner, "layernorm", (128, 768, 0), "ok"),

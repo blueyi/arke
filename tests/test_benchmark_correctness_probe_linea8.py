@@ -20,7 +20,7 @@ from benchmarks.bench_l1 import _measure_l1_correctness
         (CuBLASRunner, "matmul", (128, 128, 128), "ok"),
         (PyTorchEagerRunner, "matmul", (128, 128, 128), "ok"),
         (InductorRunner, "matmul", (128, 128, 128), "ok"),
-        (TritonTutorialRunner, "matmul", (128, 128, 128), "unsupported"),
+        (TritonTutorialRunner, "matmul", (128, 128, 128), "ok"),
     ],
 )
 def test_l1_correctness_probe_linea8_matmul(runner_cls, op, shape, expected_status):

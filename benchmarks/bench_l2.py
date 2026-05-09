@@ -411,8 +411,14 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
             return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
 
         if op in {"swiglu", "geglu"}:
-            x = torch.randn(M, 2 * N, device="cuda", dtype=dtype)
-            x1, x2 = x.chunk(2, dim=-1)
+            # Gated benchmark shapes are recorded as input feature width
+            # (2 * ffn). Non-aligned stress shapes may intentionally be odd;
+            # define the benchmark/reference contract as "drop the tail feature"
+            # so both halves have deterministic, equal width.
+            ffn = max(N // 2, 1)
+            usable = 2 * ffn
+            x = torch.randn(M, usable, device="cuda", dtype=dtype)
+            x1, x2 = x.split(ffn, dim=-1)
             if op == "swiglu":
                 ref = torch.nn.functional.silu(x1) * x2
                 cand = torch.sigmoid(x1) * x1 * x2
@@ -436,11 +442,14 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
         if op == "qkv_fa":
             tokens = M
             hidden = K
-            qkv_dim = N
+            # QKV projections require three equal chunks. If a caller passes a
+            # non-divisible stress width, drop the tail features consistently
+            # before chunking rather than letting torch.chunk create uneven Q/K/V.
+            qkv_dim = max((N // 3) * 3, 3)
             x = torch.randn(tokens, hidden, device="cuda", dtype=dtype)
             w = torch.randn(hidden, qkv_dim, device="cuda", dtype=dtype)
             qkv = x @ w
-            q, k, v = qkv.chunk(3, dim=-1)
+            q, k, v = qkv.split(qkv_dim // 3, dim=-1)
             # Use an explicit fp64 attention expression on both sides so this
             # probe remains deterministic even if third-party kernels override
             # PyTorch SDPA dispatch during the wider test session.
@@ -550,8 +559,13 @@ def _run_gated_fused_op(
 
     for shape in shapes:
         tag, M, N = shape.tag, shape.seq, shape.ffn_x2
-        X = torch.randn(M, N, device="cuda", dtype=torch.float16)
-        x1, x2 = X.chunk(2, dim=-1)
+        # Non-aligned gated shapes can have an odd input feature count. The
+        # Stage-7 L2 contract is deterministic: benchmark the largest even
+        # prefix and drop the one-feature tail, matching the correctness probe.
+        ffn = max(N // 2, 1)
+        usable = 2 * ffn
+        X = torch.randn(M, usable, device="cuda", dtype=torch.float16)
+        x1, x2 = X.split(ffn, dim=-1)
 
         def fn() -> torch.Tensor:
             return act_fn(x1) * x2
@@ -562,7 +576,7 @@ def _run_gated_fused_op(
         )
         results.append(
             _measure_fused(
-                op, tag, M, N // 2, 0, "separate", source, fn, warmup, reps
+                op, tag, M, ffn, 0, "separate", source, fn, warmup, reps
             )
         )
 
