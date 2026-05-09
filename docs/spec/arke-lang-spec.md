@@ -254,15 +254,21 @@ compute(warps=8, num_stages=3, shared_memory=49152)
 #### 5.2.3 Fusion
 
 ```
-fuse(ops=[<op_name>, ...])
+fuse(ops=[<op_name>, ...], fusion_type=<fusion_kind>)
 ```
 
-Specifies which operations should be fused together.
+Specifies which operations should be fused together. `ops` may name explicit SemanticIR node ops, or a compact registered fused op's logical inner ops when the surface is represented as one canonical op (for example `swiglu` as `silu` + `mul`, or `geglu` as `gelu` + `mul`).
 
 Example:
 ```ak
-fuse(ops=["matmul", "relu"])
+fuse(ops=["matmul", "relu"], fusion_type="epilogue")
     @rationale("Fuse matmul+relu to reduce memory bandwidth");
+```
+
+Gated activation example:
+```ak
+fuse(ops=["silu", "mul"], fusion_type="epilogue")
+    @rationale("Keep SwiGLU split, activation, and multiply inside one kernel");
 ```
 
 #### 5.2.4 Memory Layout

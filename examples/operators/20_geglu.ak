@@ -17,6 +17,8 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 }
 
 strategy geglu_kernel_strategy for target("nvidia_ampere") {
+    fuse(ops=["gelu", "mul"], fusion_type="epilogue")
+        @rationale("Stage 7 L2 gated activation fusion: keep split, GELU, and multiply in one epilogue-style kernel");
     tile(loop="row", factors=[4])
         @rationale("4 rows per block — elementwise gated, maximize occupancy");
     tile(loop="col", factors=[256])

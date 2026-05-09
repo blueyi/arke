@@ -5,10 +5,12 @@ Generated: 2026-05-09 HKT
 ## Verification Summary
 
 - Focused G7 gate tests: `pytest -q tests/test_gate_g7.py` → `8 passed in 0.06s`
+- Focused L2 fusion/audit tests: `pytest -q tests/test_stage7_l2_fusion_surface.py tests/phase1/stage7/test_coverage_ledger.py tests/phase1/stage7/test_audit_report.py tests/test_gate_g7.py` → `17 passed in 2.03s`
 - Full G7 verification: `python -m benchmarks.gate G7 --tier 2` → ❌ `11/14` criteria passed
-- Non-regression slices inside G7 remain green: `555 passed, 30 warnings in 14.01s`
+- Non-regression slices inside G7 remain green: `556 passed, 30 warnings in 9.43s`
 - Result-tree contract: ✅ root dashboard artifacts and per-layer manifests are present
 - BL5 evidence contract: ❌ `G7.8b`, `G7.8c`, and `G7.8d` fail against canonical Track 6 artifacts
+- L2 audit unsupported-surface cases: ✅ cleared after explicit gated activation fusion strategy evidence for `swiglu` and `geglu`
 
 ## Failed G7 Evidence Criteria
 
@@ -17,7 +19,7 @@ Generated: 2026-05-09 HKT
 Current failure detail:
 
 ```text
-l1: full-shape coverage 22/45; partial=softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, ... +15 more; l1: shape coverage 478/685 (0.6978); l1: missing_full_shape_evidence=23 (softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, ... +15 more); l2: unsupported_surface_cases=2 ({'op': 'swiglu', 'reason': 'missing_fusion_strategy', 'missing_shape_tags': []}, {'op': 'geglu', 'reason': 'missing_fusion_strategy', 'missing_shape_tags': []})
+l1: full-shape coverage 22/45; partial=softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, ... +15 more; l1: shape coverage 478/685 (0.6978); l1: missing_full_shape_evidence=23 (softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, ... +15 more)
 ```
 
 ### G7.8c — Correctness evidence
@@ -52,7 +54,8 @@ L1 weighted_score=0.6203; ot0_1=778/1349 (0.577); ot2=125/232 (0.539); ot3=60/10
 - Fusion coverage: `6/6` (`100.0%`)
 - Shape coverage: `120/120` (`100.00%`)
 - Fully covered fusions: `6/6`
-- Unsupported surface cases in audit: `swiglu`, `geglu` missing fusion strategy evidence
+- Unsupported surface cases in audit: none
+- Explicit gated activation fusion evidence: `swiglu` → `fuse(ops=["silu", "mul"], fusion_type="epilogue")`; `geglu` → `fuse(ops=["gelu", "mul"], fusion_type="epilogue")`
 - Status counts: `error=4, ok=247, skipped=5`
 - Correctness counts: `error=4, ok=227, skipped=5, unsupported=20`
 - Performance pass counts: `false=126, true=130`
@@ -61,8 +64,9 @@ L1 weighted_score=0.6203; ot0_1=778/1349 (0.577); ot2=125/232 (0.539); ot3=60/10
 ## Interpretation
 
 - Stage 7 should not be marked complete yet. The stricter G7 runner now correctly distinguishes green implementation/test slices from incomplete BL5 benchmark evidence.
-- The remaining Stage 7 blocker is no longer artifact presence; it is substantive BL5 closure: L1 full-shape coverage, correctness support for all non-memory-excluded rows, L1 weighted performance ≥ `0.9500`, and complete L2 fusion performance.
-- L2 shape coverage is complete, but L2 correctness/performance evidence still has explicit failures/errors and incomplete `matmul_relu` / `matmul_gelu` performance.
+- The L2 strategy-surface audit gap for `swiglu`/`geglu` is closed: both compact gated activation examples now carry explicit fusion decisions and the audit report has no unsupported L2 surface cases.
+- The remaining Stage 7 blocker is substantive BL5 closure: L1 full-shape coverage, correctness support for all non-memory-excluded rows, L1 weighted performance ≥ `0.9500`, and complete L2 fusion performance.
+- L2 shape coverage is complete, but L2 correctness/performance evidence still has explicit non-align `swiglu` / `geglu` errors and incomplete `matmul_relu` / `matmul_gelu` performance.
 - Memory-policy exclusions are counted only when rows carry explicit memory preflight evidence.
 
 ## Artifact references

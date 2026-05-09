@@ -17,6 +17,8 @@ where B: dynamic(max=64), S: dynamic(max=8192), D: static
 }
 
 strategy swiglu_kernel_strategy for target("nvidia_ampere") {
+    fuse(ops=["silu", "mul"], fusion_type="epilogue")
+        @rationale("Stage 7 L2 gated activation fusion: keep split, SiLU, and multiply in one epilogue-style kernel");
     tile(loop="row", factors=[4])
         @rationale("4 rows per block — elementwise gated op, maximize occupancy");
     tile(loop="col", factors=[256])

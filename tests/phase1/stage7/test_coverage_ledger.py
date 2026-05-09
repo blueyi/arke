@@ -84,3 +84,21 @@ def test_build_stage7_coverage_ledger_links_matrix_examples_and_artifacts(tmp_pa
     assert matmul_gelu["pipeline"]["fusion_groups"][0]["type"] == "epilogue"
     assert matmul_gelu["evidence"]["observed_shape_tags"] == ["gpt2-ffn"]
     assert matmul_gelu["evidence"]["missing_shape_tags"] == []
+
+def test_stage7_gated_activation_examples_expose_l2_fusion_surface():
+    report = build_stage7_coverage_ledger()
+    l2_by_op = {entry["op"]: entry for entry in report["l2"]}
+
+    swiglu = l2_by_op["swiglu"]
+    geglu = l2_by_op["geglu"]
+
+    assert swiglu["pipeline"]["strategy_ok"] is True
+    assert swiglu["pipeline"]["has_fusion_decision"] is True
+    assert swiglu["pipeline"]["fusion_groups"] == [
+        {"ops": ["silu", "mul"], "type": "epilogue"}
+    ]
+    assert geglu["pipeline"]["strategy_ok"] is True
+    assert geglu["pipeline"]["has_fusion_decision"] is True
+    assert geglu["pipeline"]["fusion_groups"] == [
+        {"ops": ["gelu", "mul"], "type": "epilogue"}
+    ]

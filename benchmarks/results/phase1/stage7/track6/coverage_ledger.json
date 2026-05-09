@@ -2581,8 +2581,16 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false,
-        "fusion_groups": []
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "silu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [
@@ -2648,8 +2656,16 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false,
-        "fusion_groups": []
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "gelu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [
@@ -3603,8 +3619,16 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false,
-        "fusion_groups": []
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "silu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [
@@ -3670,8 +3694,16 @@
         "strategy_ok": true,
         "schedule_ok": true,
         "instruction_ok": true,
-        "has_fusion_decision": false,
-        "fusion_groups": []
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "gelu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
       },
       "evidence": {
         "observed_shape_tags": [

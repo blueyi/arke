@@ -1928,18 +1928,7 @@
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [],
       "missing_full_shape_evidence": [],
-      "unsupported_surface_cases": [
-        {
-          "op": "swiglu",
-          "reason": "missing_fusion_strategy",
-          "missing_shape_tags": []
-        },
-        {
-          "op": "geglu",
-          "reason": "missing_fusion_strategy",
-          "missing_shape_tags": []
-        }
-      ],
+      "unsupported_surface_cases": [],
       "perf_field_gaps": [],
       "memory_pressure_ops": [
         {
@@ -1997,5 +1986,5 @@
       }
     ]
   },
-  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=74.29%\n[L1] ops=45/45 fully_covered=22 missing_examples=0 unsupported=0\n  partial coverage: softmax (10/25), layernorm (9/21), rmsnorm (9/21), rmsnorm_residual (9/21), topk (7/13)\n  memory pressure / skipped: gelu, grouped_matmul, multi_latent_attention, paged_attention, rope, softmax\n[L2] ops=6/6 fully_covered=6 missing_examples=0 unsupported=2\n  memory pressure / skipped: geglu, qkv_fa, swiglu\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+  "text_summary": "Stage 7 dashboard \u2014 S7 / G7\n============================================================\nCombined coverage: ops=100.0% shapes=74.29%\n[L1] ops=45/45 fully_covered=22 missing_examples=0 unsupported=0\n  partial coverage: softmax (10/25), layernorm (9/21), rmsnorm (9/21), rmsnorm_residual (9/21), topk (7/13)\n  memory pressure / skipped: gelu, grouped_matmul, multi_latent_attention, paged_attention, rope, softmax\n[L2] ops=6/6 fully_covered=6 missing_examples=0 unsupported=0\n  memory pressure / skipped: geglu, qkv_fa, swiglu\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
 }

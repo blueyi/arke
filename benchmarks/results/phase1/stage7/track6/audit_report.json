@@ -41,18 +41,7 @@
       "missing_strategy_examples": [],
       "missing_benchmark_evidence": [],
       "missing_full_shape_evidence": [],
-      "unsupported_surface_cases": [
-        {
-          "op": "swiglu",
-          "reason": "missing_fusion_strategy",
-          "missing_shape_tags": []
-        },
-        {
-          "op": "geglu",
-          "reason": "missing_fusion_strategy",
-          "missing_shape_tags": []
-        }
-      ]
+      "unsupported_surface_cases": []
     }
   },
   "priority_actions": [

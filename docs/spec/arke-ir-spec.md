@@ -386,11 +386,21 @@ class StrategyIR:
 | Kind | Parameters | Example | Purpose |
 |:---|:---|:---|:---|
 | `tile` | `dim`, `factors` | `{"dim": "M", "factors": [128, 8]}` | Loop tiling for cache locality |
-| `fuse` | `nodes`, `type` | `{"nodes": ["n1", "n2"], "type": "epilogue"}` | Operator fusion |
+| `fuse` | `ops`, `type` | `{"ops": ["n1", "n2"], "type": "epilogue"}` | Operator fusion |
 | `parallelize` | `dim`, `num_threads` | `{"dim": "N", "num_threads": 256}` | Thread parallelization |
 | `compute` | `num_threads`, `num_stages`, `shared_mem` | `{"num_threads": 256, "num_stages": 3}` | Compute resource allocation |
 | `memory` | `tensor`, `layout`, `cache_level` | `{"tensor": "A", "layout": "col_major", "cache_level": "L1"}` | Memory layout & caching |
 | `compute_order` | `nodes` | `{"nodes": ["load_A", "load_B", "compute"]}` | Execution order |
+
+### 6.3.1 Compact Fused Operator Surfaces
+
+A Stage 7 L2 surface may be represented as either an explicit multi-node graph or as a compact registered fused op. In both cases, StrategyIR keeps the fusion intent explicit through `fuse` decisions:
+
+- Explicit graph: `matmul -> relu` uses `fuse(ops=["matmul", "relu"], type="epilogue")`.
+- Compact gated op: `swiglu` carries `fuse(ops=["silu", "mul"], type="epilogue")` to expose the logical inner activation/multiply fusion even when SemanticIR has one canonical `swiglu` node.
+- Compact gated op: `geglu` carries `fuse(ops=["gelu", "mul"], type="epilogue")`.
+
+This keeps audit/coverage checks tied to real strategy evidence without forcing every registered fused operator to expand into multiple SemanticIR nodes.
 
 ### 6.4 Example: matmul_relu strategy for Ampere
 

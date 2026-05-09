@@ -32,6 +32,11 @@ Arke Language (`.ak`) source files for all 46 operators across 5 categories:
 - `linear_ce.ak` — streamed linear + cross entropy fusion surface
 - `qkv_fa.ak` — QKV projection + flash attention producer/consumer fusion surface
 
+The gated activation examples are also Stage 7 L2 fusion surfaces while staying in the canonical OT3 example set:
+
+- `19_swiglu.ak` — compact SwiGLU op with explicit `fuse(ops=["silu", "mul"], fusion_type="epilogue")`
+- `20_geglu.ak` — compact GeGLU op with explicit `fuse(ops=["gelu", "mul"], fusion_type="epilogue")`
+
 ## ir/
 
 > **TODO:** Arke IR examples (`.akir` format) will be generated after G6 v2 implementation completes the multi-layer IR architecture. See `../docs/spec/arke-ir-spec-design.md` for the IR design.

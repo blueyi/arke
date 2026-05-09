@@ -34,6 +34,21 @@ strategy matmul_gelu_kernel for target("nvidia_ampere") {
         assert result.schedule_ir is not None
         assert result.schedule_ir.fusion_groups
 
+    def test_gated_activation_l2_fusion_surfaces_are_representable(self):
+        for path, expected_ops in (
+            ("examples/operators/19_swiglu.ak", ["silu", "mul"]),
+            ("examples/operators/20_geglu.ak", ["gelu", "mul"]),
+        ):
+            result = ArkePipeline().compile_file(path)
+            assert result.success, result.errors
+            assert result.semantic_ir is not None
+            assert result.strategy_ir is not None
+            assert any(getattr(d, "kind", None) == "fuse" for d in result.strategy_ir.decisions)
+            assert result.schedule_ir is not None
+            assert result.schedule_ir.fusion_groups
+            assert result.schedule_ir.fusion_groups[0].ops == expected_ops
+            assert result.schedule_ir.fusion_groups[0].fusion_type == "epilogue"
+
     def test_linear_ce_surface_is_representable(self):
         result = ArkePipeline().compile_file("examples/operators/41_fused_linear_cross_entropy.ak")
         assert result.success, result.errors
