@@ -955,7 +955,7 @@ This `version` is the **IR schema version**. It identifies the active contract u
 - `docs/spec/arke-lang-spec.md` — Arke Language v0.1.0
 - `docs/spec/arke-lang-vs-python-triton.md` — Comparative analysis
 - `docs/architecture/e2e-flow.md` — End-to-end LLM optimization flow
-- `docs/architecture/agent-design.md` — Agent architecture
+- `docs/architecture/arke-harness.md` — Arke Harness architecture
 - `docs/phase1/dynamic-shape-feasibility.md` — Symbolic shape design
 
 ---

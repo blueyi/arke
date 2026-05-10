@@ -15,10 +15,10 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 | 1 | LLM-Native Language | ✅ 完整 | `arke-lang-spec.md` | — |
 | 2 | Semantic/Strategy Separation | ✅ 完整 | `arke-ir-spec.md` | — |
 | 3 | Minimal-Token E2E | ✅ 完整 | `e2e-flow.md` + `token-efficiency-analysis.md` | 已补足 token 量化与预算系统 |
-| 4 | Bounded Action Space | ✅ 完整 | `agent-design.md` | — |
+| 4 | Bounded Action Space | ✅ 完整 | `arke-harness.md` | — |
 | 5 | @rationale Annotations | ✅ 完整 | `arke-lang-spec.md` + `arke-ir-spec.md` | — |
 | 6 | Compiler-as-Verifier | ✅ 完整 | `arke-compiler-infrastructure.md` + pass/validator docs | — |
-| 7 | Structured LLM-Compiler Protocol | ✅ 完整 | `agent-design.md` | — |
+| 7 | Structured LLM-Compiler Protocol | ✅ 完整 | `arke-harness.md` | — |
 | 8 | Multi-Hardware | 🟨 继续扩展 | `arke-ir-spec.md` + backend notes | Phase 2 / 3 的后续设计项 |
 
 **结论：**
@@ -64,7 +64,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 
 **现有文档：**
 - `docs/architecture/e2e-flow.md`
-- `docs/architecture/agent-design.md`
+- `docs/architecture/arke-harness.md`
 - `docs/architecture/token-efficiency-analysis.md`
 
 **补充完成的内容：**
@@ -82,7 +82,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 > LLMs select from compiler-enumerated legal actions, not free-form code
 
 **现有文档：**
-- `docs/architecture/agent-design.md`
+- `docs/architecture/arke-harness.md`
 - `docs/spec/arke-ir-spec.md`
 - `docs/phase1/stage7-plan.md`
 
@@ -98,7 +98,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 **现有文档：**
 - `docs/spec/arke-lang-spec.md`
 - `docs/spec/arke-ir-spec.md`
-- `docs/architecture/agent-design.md`
+- `docs/architecture/arke-harness.md`
 
 **覆盖度：** 100%
 
@@ -126,7 +126,7 @@ README 声称 8 个核心能力。当前 spec/docs 覆盖情况如下：
 > LLM and compiler interact through a closed-loop tool-use API
 
 **现有文档：**
-- `docs/architecture/agent-design.md`
+- `docs/architecture/arke-harness.md`
 - `docs/architecture/e2e-flow.md`
 - `docs/architecture/naming-system.md`
 

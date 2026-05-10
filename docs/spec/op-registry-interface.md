@@ -678,7 +678,7 @@ Operators can be shared via:
 - `docs/spec/arke-lang-spec.md` — Arke Language v0.1.0
 - `docs/spec/arke-ir-spec.md` — Arke IR v0.1.0
 - `docs/architecture/e2e-flow.md` — End-to-end flow
-- `docs/architecture/agent-design.md` — Agent design
+- `docs/architecture/arke-harness.md` — Arke Harness design
 
 ---
 
