@@ -40,6 +40,7 @@ from benchmarks.shapes import (
     Shape2D,
     get_shapes,
 )
+from benchmarks import progress as _progress
 
 logger = logging.getLogger(__name__)
 
@@ -514,6 +515,11 @@ def run_op(
 
     results: list[OpResult] = []
 
+    def _record(r: OpResult) -> None:
+        results.append(r)
+        if _RESULT_EMITTER is not None:
+            _RESULT_EMITTER(r)
+
     # IMPORTANT: FlagGems.enable() globally replaces ATen dispatch.
     # Run ALL non-FlagGems baselines first (for all shapes),
     # then FlagGems last. This prevents FlagGems from polluting
@@ -541,9 +547,21 @@ def run_op(
                 pass  # M, N already set
 
             for runner in runner_group:
+                # Resume short-circuit: replay cached row + skip work.
+                key = (op, tag, runner.name)
+                if key in _SKIP_KEYS:
+                    cached = _SKIPPED_ROWS.get(key)
+                    if cached is not None:
+                        results.append(_l1_row_to_result(cached))
+                        logger.info(
+                            f"  {tag:15s} {runner.name:15s} "
+                            f"[resume] cached status={cached.get('status', 'ok')}"
+                        )
+                        continue
+
                 preflight = maybe_memory_preflight(hw, op, shape)
                 if preflight is not None and preflight.status.status != "ok":
-                    results.append(OpResult(
+                    _record(OpResult(
                         op=op,
                         shape_tag=tag,
                         M=M,
@@ -608,7 +626,7 @@ def run_op(
                         memory_ratio=(preflight.estimate.ratio if preflight else None),
                         memory_policy=(preflight.estimate.category if preflight else ""),
                     )
-                    results.append(result)
+                    _record(result)
                     tflops_str = f" {tflops:.2f} TFLOPS" if tflops else ""
                     logger.info(
                         f"  {tag:15s} {runner.name:15s} "
@@ -617,7 +635,7 @@ def run_op(
                 except Exception as e:
                     status = classify_exception(e)
                     logger.warning(f"  {tag} {runner.name}: FAILED ({e})")
-                    results.append(OpResult(
+                    _record(OpResult(
                         op=op,
                         shape_tag=tag,
                         M=M,
@@ -643,54 +661,132 @@ def run_op(
     return results
 
 
+L1_FIELDNAMES = [
+    "op", "shape_tag", "M", "N", "K", "baseline", "priority", "source",
+    "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
+    "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
+    "correctness_status", "correctness_reason",
+    "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
+]
+L1_KEY_FIELDS = ("op", "shape_tag", "baseline")
+
+# Resume hooks (installed by run_l1).
+_SKIP_KEYS: set[tuple[str, str, str]] = set()
+_SKIPPED_ROWS: dict[tuple[str, str, str], dict[str, str]] = {}
+_RESULT_EMITTER = None  # type: ignore[assignment]
+
+
+def _l1_row_from_result(r: OpResult) -> dict[str, str]:
+    return {
+        "op": r.op,
+        "shape_tag": r.shape_tag,
+        "M": r.M,
+        "N": r.N,
+        "K": r.K,
+        "baseline": r.baseline,
+        "priority": r.priority,
+        "source": r.source,
+        "latency_us": f"{r.latency_us:.1f}",
+        "latency_min_us": f"{r.latency_min_us:.1f}",
+        "tflops": f"{r.tflops:.3f}" if r.tflops else "",
+        "status": r.status,
+        "reason": r.reason,
+        "retryable": "true" if r.retryable else "false",
+        "allclose": "" if r.allclose is None else ("true" if r.allclose else "false"),
+        "max_abs_diff": "" if r.max_abs_diff is None else f"{r.max_abs_diff:.6g}",
+        "mean_abs_diff": "" if r.mean_abs_diff is None else f"{r.mean_abs_diff:.6g}",
+        "rtol": "" if r.rtol is None else f"{r.rtol:.6g}",
+        "atol": "" if r.atol is None else f"{r.atol:.6g}",
+        "correctness_status": r.correctness_status,
+        "correctness_reason": r.correctness_reason,
+        "memory_bytes_required": "" if r.memory_bytes_required is None else str(r.memory_bytes_required),
+        "memory_bytes_budget": "" if r.memory_bytes_budget is None else str(r.memory_bytes_budget),
+        "memory_ratio": "" if r.memory_ratio is None else f"{r.memory_ratio:.4f}",
+        "memory_policy": r.memory_policy,
+    }
+
+
+def _l1_row_to_result(row: dict[str, str]) -> OpResult:
+    """Reconstruct an OpResult from a previously persisted CSV row."""
+    def _f(key: str, default: float = 0.0) -> float:
+        v = row.get(key, "")
+        if v == "" or v is None:
+            return default
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return default
+
+    def _opt_f(key: str) -> float | None:
+        v = row.get(key, "")
+        if v == "" or v is None:
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    def _opt_bool(key: str) -> bool | None:
+        v = (row.get(key, "") or "").strip().lower()
+        if v == "true":
+            return True
+        if v == "false":
+            return False
+        return None
+
+    def _opt_int(key: str) -> int | None:
+        v = row.get(key, "")
+        if v == "" or v is None:
+            return None
+        try:
+            return int(float(v))
+        except (TypeError, ValueError):
+            return None
+
+    return OpResult(
+        op=row.get("op", ""),
+        shape_tag=row.get("shape_tag", ""),
+        M=_opt_int("M") or 0,
+        N=_opt_int("N") or 0,
+        K=_opt_int("K") or 0,
+        baseline=row.get("baseline", ""),
+        priority=_opt_int("priority") or 0,
+        source=row.get("source", ""),
+        latency_us=_f("latency_us", float("inf")),
+        latency_min_us=_f("latency_min_us", float("inf")),
+        tflops=_opt_f("tflops"),
+        status=row.get("status", "") or "ok",
+        reason=row.get("reason", ""),
+        retryable=(row.get("retryable", "").strip().lower() == "true"),
+        allclose=_opt_bool("allclose"),
+        max_abs_diff=_opt_f("max_abs_diff"),
+        mean_abs_diff=_opt_f("mean_abs_diff"),
+        rtol=_opt_f("rtol"),
+        atol=_opt_f("atol"),
+        correctness_status=row.get("correctness_status", "unknown"),
+        correctness_reason=row.get("correctness_reason", ""),
+        memory_bytes_required=_opt_int("memory_bytes_required"),
+        memory_bytes_budget=_opt_int("memory_bytes_budget"),
+        memory_ratio=_opt_f("memory_ratio"),
+        memory_policy=row.get("memory_policy", ""),
+    )
+
+
 def save_results(
     results: list[OpResult],
     output_dir: Path,
     op: str,
 ) -> Path:
-    """Save results as CSV."""
+    """Save results as CSV (legacy whole-batch writer; resume path uses
+    incremental append in run_l1 instead)."""
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / f"{op}_results.csv"
 
-    fieldnames = [
-        "op", "shape_tag", "M", "N", "K", "baseline", "priority", "source",
-        "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
-        "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
-        "correctness_status", "correctness_reason",
-        "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
-    ]
-
     with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=L1_FIELDNAMES)
         writer.writeheader()
         for r in results:
-            writer.writerow({
-                "op": r.op,
-                "shape_tag": r.shape_tag,
-                "M": r.M,
-                "N": r.N,
-                "K": r.K,
-                "baseline": r.baseline,
-                "priority": r.priority,
-                "source": r.source,
-                "latency_us": f"{r.latency_us:.1f}",
-                "latency_min_us": f"{r.latency_min_us:.1f}",
-                "tflops": f"{r.tflops:.3f}" if r.tflops else "",
-                "status": r.status,
-                "reason": r.reason,
-                "retryable": "true" if r.retryable else "false",
-                "allclose": "" if r.allclose is None else ("true" if r.allclose else "false"),
-                "max_abs_diff": "" if r.max_abs_diff is None else f"{r.max_abs_diff:.6g}",
-                "mean_abs_diff": "" if r.mean_abs_diff is None else f"{r.mean_abs_diff:.6g}",
-                "rtol": "" if r.rtol is None else f"{r.rtol:.6g}",
-                "atol": "" if r.atol is None else f"{r.atol:.6g}",
-                "correctness_status": r.correctness_status,
-                "correctness_reason": r.correctness_reason,
-                "memory_bytes_required": "" if r.memory_bytes_required is None else str(r.memory_bytes_required),
-                "memory_bytes_budget": "" if r.memory_bytes_budget is None else str(r.memory_bytes_budget),
-                "memory_ratio": "" if r.memory_ratio is None else f"{r.memory_ratio:.4f}",
-                "memory_policy": r.memory_policy,
-            })
+            writer.writerow(_l1_row_from_result(r))
 
     return csv_path
 
@@ -756,29 +852,21 @@ def run_l1(
     stage: int = 6,
     track: int = 1,
     shape_tags: list[str] | None = None,
+    *,
+    resume: bool = True,
+    retry_policy: str = _progress.RETRY_POLICY_AUTO,
+    force_restart: bool = False,
 ) -> dict[str, list[OpResult]]:
-    """Run L1 benchmark suite."""
-    # Use phase/stage/gate structure instead of timestamp
-    base_dir = Path(output_dir) / f"phase{phase}" / f"stage{stage}" / f"track{track}" / "l1"
+    """Run L1 benchmark suite with incremental persistence + resume."""
+    global _SKIP_KEYS, _SKIPPED_ROWS, _RESULT_EMITTER
+
+    # Strip duplicate phase/stage/track tail from output_dir.
+    canonical_root = _progress.normalize_output_root(
+        output_dir, phase=phase, stage=stage, track=track, layer="l1"
+    )
+    base_dir = canonical_root / f"phase{phase}" / f"stage{stage}" / f"track{track}" / "l1"
     base_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save hardware info
-    hw = collect_hardware_info()
-    hw.save(str(base_dir / "hardware.json"))
-
-    # Save baseline sources manifest
-    all_runners = get_all_runners()
-    sources_manifest = {
-        r.name: {
-            "priority": f"P{r.priority}",
-            "source": r.source,
-        }
-        for r in all_runners
-    }
-    with open(base_dir / "sources.json", "w") as f:
-        json.dump(sources_manifest, f, indent=2)
-
-    # Save config
     config = {
         "timestamp": time.strftime("%Y-%m-%d_%H%M%S"),
         "ops": ops,
@@ -786,39 +874,177 @@ def run_l1(
         "reps": reps,
         "tier": tier,
         "shape_tags": shape_tags,
+        "phase": phase,
+        "stage": stage,
+        "track": track,
+        "layer": "L1",
     }
-    with open(base_dir / "config.json", "w") as f:
-        json.dump(config, f, indent=2)
+    config_check = _progress.validate_config(
+        base_dir, config, force=force_restart
+    )
+    if not config_check.compatible:
+        raise RuntimeError(
+            f"L1 resume aborted at {base_dir}: {config_check.reason} "
+            f"(stored={config_check.stored_fingerprint}, "
+            f"current={config_check.current_fingerprint})"
+        )
 
-    all_results: dict[str, list[OpResult]] = {}
+    _progress.acquire_lock(base_dir, layer="l1", force=force_restart)
+    tracker = _progress.ProgressTracker(
+        base_dir=base_dir,
+        layer="l1",
+        config_fingerprint=config_check.current_fingerprint,
+    )
 
-    # Print baseline sources
-    logger.info("Baseline Sources:")
-    for r in get_all_runners():
-        logger.info(f"  P{r.priority} {r.name}: {r.source}")
-    logger.info("")
+    try:
+        # Save hardware info
+        hw = collect_hardware_info()
+        hw.save(str(base_dir / "hardware.json"))
 
-    for op in ops:
-        logger.info(f"\n{'='*60}")
-        logger.info(f"L1 Benchmark: {op}")
-        logger.info(f"{'='*60}")
+        # Save baseline sources manifest
+        all_runners = get_all_runners()
+        sources_manifest = {
+            r.name: {
+                "priority": f"P{r.priority}",
+                "source": r.source,
+            }
+            for r in all_runners
+        }
+        with open(base_dir / "sources.json", "w") as f:
+            json.dump(sources_manifest, f, indent=2)
 
-        results = run_op(op, warmup=warmup, reps=reps, tier=tier, shape_tags=shape_tags)
-        all_results[op] = results
+        with open(base_dir / "config.json", "w") as f:
+            json.dump(config, f, indent=2)
 
-        csv_path = save_results(results, base_dir, op)
-        perf_path = write_perf_csv_from_l1(csv_path, base_dir / f"perf_{op}.csv")
-        logger.info(f"  Saved: {csv_path}")
-        logger.info(f"  Perf : {perf_path}")
+        tracker.emit(
+            "run_start", ops=list(ops), tier=tier,
+            resume=resume, retry_policy=retry_policy,
+        )
 
-        print_comparison_table(results, op)
+        all_results: dict[str, list[OpResult]] = {}
 
-    merge_perf_all(base_dir)
-    write_summary(base_dir)
+        # Print baseline sources
+        logger.info("Baseline Sources:")
+        for r in get_all_runners():
+            logger.info(f"  P{r.priority} {r.name}: {r.source}")
+        logger.info("")
 
-    # Summary
-    print(f"\nResults saved to: {base_dir}")
-    return all_results
+        for op in ops:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"L1 Benchmark: {op}")
+            logger.info(f"{'='*60}")
+
+            csv_path = base_dir / f"{op}_results.csv"
+            existing_rows = (
+                _progress.load_existing_rows(csv_path) if resume else []
+            )
+            existing_index = _progress.index_rows(existing_rows, L1_KEY_FIELDS)
+
+            skip_keys: set[tuple[str, str, str]] = set()
+            cached_rows: dict[tuple[str, str, str], dict[str, str]] = {}
+            for key, row in existing_index.items():
+                if _progress.should_skip(row, retry_policy):
+                    skip_keys.add(key)
+                    cached_rows[key] = row
+
+            if resume and skip_keys:
+                logger.info(
+                    f"  resume: skipping {len(skip_keys)} already-recorded test points "
+                    f"(policy={retry_policy})"
+                )
+                tracker.emit(
+                    "resume_skip",
+                    op=op,
+                    skipped=len(skip_keys),
+                    total_existing=len(existing_index),
+                )
+
+            kept_rows = [
+                row for key, row in existing_index.items() if key in skip_keys
+            ]
+            if kept_rows or not csv_path.exists():
+                tmp = csv_path.with_suffix(".csv.tmp")
+                with tmp.open("w", newline="") as f:
+                    writer = csv.DictWriter(
+                        f, fieldnames=L1_FIELDNAMES, extrasaction="ignore"
+                    )
+                    writer.writeheader()
+                    for row in kept_rows:
+                        writer.writerow(
+                            {k: row.get(k, "") for k in L1_FIELDNAMES}
+                        )
+                tmp.replace(csv_path)
+            else:
+                _progress.ensure_header(csv_path, L1_FIELDNAMES)
+
+            _SKIP_KEYS = skip_keys
+            _SKIPPED_ROWS = cached_rows
+            new_count = {"value": 0}
+
+            def _emit(result: OpResult, _csv=csv_path) -> None:
+                key = (result.op, result.shape_tag, result.baseline)
+                if key in _SKIP_KEYS:
+                    return
+                row = _l1_row_from_result(result)
+                _progress.append_row(_csv, L1_FIELDNAMES, row)
+                new_count["value"] += 1
+                tracker.emit(
+                    "measurement",
+                    op=result.op,
+                    shape_tag=result.shape_tag,
+                    baseline=result.baseline,
+                    status=result.status,
+                    latency_us=result.latency_us,
+                )
+
+            _RESULT_EMITTER = _emit
+            try:
+                results = run_op(
+                    op, warmup=warmup, reps=reps, tier=tier, shape_tags=shape_tags
+                )
+            finally:
+                _RESULT_EMITTER = None
+                _SKIP_KEYS = set()
+                _SKIPPED_ROWS = {}
+
+            all_results[op] = results
+
+            perf_path = write_perf_csv_from_l1(
+                csv_path, base_dir / f"perf_{op}.csv"
+            )
+            logger.info(f"  Saved: {csv_path}")
+            logger.info(f"  Perf : {perf_path}")
+            logger.info(
+                f"  resume summary: {len(skip_keys)} skipped, "
+                f"{new_count['value']} newly written, {len(results)} total in memory"
+            )
+
+            print_comparison_table(results, op)
+
+            tracker.emit(
+                "op_done",
+                op=op,
+                skipped=len(skip_keys),
+                new=new_count["value"],
+                total=len(results),
+            )
+
+        merge_perf_all(base_dir)
+        write_summary(base_dir)
+
+        per_op_summary = {
+            op: _progress.summarize_csv(
+                base_dir / f"{op}_results.csv", L1_KEY_FIELDS
+            )
+            for op in ops
+        }
+        tracker.snapshot({"per_op": per_op_summary})
+        tracker.emit("run_done", per_op=per_op_summary)
+
+        print(f"\nResults saved to: {base_dir}")
+        return all_results
+    finally:
+        _progress.release_lock(base_dir)
 
 
 def main() -> None:
@@ -868,6 +1094,22 @@ def main() -> None:
     parser.add_argument(
         "-v", "--verbose", action="store_true",
     )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Disable resume; ignore prior CSV rows (still preserves them).",
+    )
+    parser.add_argument(
+        "--retry-policy",
+        choices=list(_progress.RETRY_POLICIES),
+        default=_progress.RETRY_POLICY_AUTO,
+        help="Resume retry policy (default: auto = retry transient errors only)",
+    )
+    parser.add_argument(
+        "--force-restart",
+        action="store_true",
+        help="Force resume despite config fingerprint changes / live lock.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -888,6 +1130,9 @@ def main() -> None:
         ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps,
         tier=args.tier, phase=args.phase, stage=args.stage, track=args.track,
         shape_tags=shape_tags,
+        resume=not args.no_resume,
+        retry_policy=args.retry_policy,
+        force_restart=args.force_restart,
     )
 
 

@@ -19,6 +19,11 @@ def _main() -> None:
         from benchmarks.gate import main as gate_main
 
         gate_main()
+    elif len(sys.argv) > 1 and sys.argv[1] == "status":
+        # Resume / progress reporting CLI.
+        from benchmarks.progress_cli import main as status_main
+
+        sys.exit(status_main(sys.argv[2:]))
     else:
         from benchmarks.cli import main
 
