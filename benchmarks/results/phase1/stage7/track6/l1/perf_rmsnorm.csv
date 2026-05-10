@@ -1,37 +1,37 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-rmsnorm,gpt2-small,Liger-Kernel,128.6,107.3,,4.2939,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,4.2939,true,3.2939
-rmsnorm,gpt2-small,PyTorch-eager,552.2,509.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-small,Arke,1069.9,685.1,,0.5161,ok,,false,true,0.00298929,0.000200314,0.005,0.005,ok,,,,,,1.0,0.5161,false,-0.4839
-rmsnorm,gpt2-small,FlagGems,496.1,451.5,,1.1131,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.1131,true,0.1131
-rmsnorm,gpt2-ffn,Liger-Kernel,76.5,105.5,,6.7673,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.7673,true,5.7673
-rmsnorm,gpt2-ffn,PyTorch-eager,517.7,500.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-ffn,Arke,702.2,667.6,,0.7373,ok,,false,true,0.00294852,0.000208535,0.005,0.005,ok,,,,,,1.0,0.7373,false,-0.2627
-rmsnorm,gpt2-ffn,FlagGems,514.6,514.0,,1.0060,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0060,true,0.0060
-rmsnorm,gpt2-medium,Liger-Kernel,83.2,113.7,,5.9675,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,5.9675,true,4.9675
-rmsnorm,gpt2-medium,PyTorch-eager,496.5,406.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-medium,Arke,667.4,447.5,,0.7439,ok,,false,true,0.00259948,0.000208353,0.005,0.005,ok,,,,,,1.0,0.7439,false,-0.2561
-rmsnorm,gpt2-medium,FlagGems,492.1,508.9,,1.0089,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0089,true,0.0089
-rmsnorm,llama-7b,Liger-Kernel,78.8,16.4,,6.0901,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.0901,true,5.0901
-rmsnorm,llama-7b,PyTorch-eager,479.9,477.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama-7b,Arke,679.2,373.8,,0.7066,ok,,false,true,0.0029583,0.000202438,0.005,0.005,ok,,,,,,1.0,0.7066,false,-0.2934
-rmsnorm,llama-7b,FlagGems,519.0,506.9,,0.9247,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,0.9247,false,-0.0753
-rmsnorm,llama-13b,Liger-Kernel,89.0,53.3,,5.7292,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,5.7292,true,4.7292
-rmsnorm,llama-13b,PyTorch-eager,509.9,495.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama-13b,Arke,741.6,686.1,,0.6876,ok,,false,true,0.00317812,0.000194329,0.005,0.005,ok,,,,,,1.0,0.6876,false,-0.3124
-rmsnorm,llama-13b,FlagGems,491.6,490.5,,1.0372,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0372,true,0.0372
-rmsnorm,llama-long,Liger-Kernel,132.2,158.7,,4.5325,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,4.5325,true,3.5325
-rmsnorm,llama-long,PyTorch-eager,599.2,605.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama-long,Arke,974.2,980.0,,0.6151,ok,,false,true,0.00432062,0.000207049,0.005,0.005,ok,,,,,,1.0,0.6151,false,-0.3849
-rmsnorm,llama-long,FlagGems,553.6,609.3,,1.0824,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0824,true,0.0824
-rmsnorm,ds-v2,Liger-Kernel,76.5,91.2,,6.5346,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.5346,true,5.5346
-rmsnorm,ds-v2,PyTorch-eager,499.9,510.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,ds-v2,Arke,774.5,690.2,,0.6454,ok,,false,true,0.00352573,0.000195784,0.005,0.005,ok,,,,,,1.0,0.6454,false,-0.3546
-rmsnorm,ds-v2,FlagGems,538.8,221.2,,0.9278,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,0.9278,false,-0.0722
-rmsnorm,ds-v3,Liger-Kernel,76.4,111.6,,6.9359,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,6.9359,true,5.9359
-rmsnorm,ds-v3,PyTorch-eager,529.9,431.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,ds-v3,Arke,673.9,671.7,,0.7863,ok,,false,true,0.00335741,0.000208097,0.005,0.005,ok,,,,,,1.0,0.7863,false,-0.2137
-rmsnorm,ds-v3,FlagGems,481.8,489.5,,1.0998,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.0998,true,0.0998
-rmsnorm,mixtral-ffn,Liger-Kernel,76.6,108.5,,7.4269,ok,,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm,,,,,1.0,7.4269,true,6.4269
-rmsnorm,mixtral-ffn,PyTorch-eager,568.9,103.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,mixtral-ffn,Arke,723.6,686.1,,0.7862,ok,,false,true,0.00354385,0.000192876,0.005,0.005,ok,,,,,,1.0,0.7862,false,-0.2138
-rmsnorm,mixtral-ffn,FlagGems,488.0,490.5,,1.1658,ok,,false,,,,0.005,0.005,unsupported,runner FlagGems does not implement run_with_inputs for rmsnorm,,,,,1.0,1.1658,true,0.1658
+rmsnorm,gpt2-small,Liger-Kernel,92.1,110.7,,6.0554,ok,,false,true,0.00195312,0.000151296,0.005,0.005,ok,,,,,,1.0,6.0554,true,5.0554
+rmsnorm,gpt2-small,PyTorch-eager,557.7,504.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-small,Arke,816.0,729.1,,0.6835,ok,,false,true,0.00295401,0.000210339,0.005,0.005,ok,,,,,,1.0,0.6835,false,-0.3165
+rmsnorm,gpt2-small,FlagGems,572.3,540.7,,0.9745,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9745,false,-0.0255
+rmsnorm,gpt2-ffn,Liger-Kernel,89.5,78.8,,6.3642,ok,,false,true,0.00390625,0.000155171,0.005,0.005,ok,,,,,,1.0,6.3642,true,5.3642
+rmsnorm,gpt2-ffn,PyTorch-eager,569.6,441.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-ffn,Arke,802.1,662.5,,0.7101,ok,,false,true,0.00281477,0.000202034,0.005,0.005,ok,,,,,,1.0,0.7101,false,-0.2899
+rmsnorm,gpt2-ffn,FlagGems,616.6,522.2,,0.9238,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9238,false,-0.0762
+rmsnorm,gpt2-medium,Liger-Kernel,90.8,10.2,,6.3304,ok,,false,true,0.00390625,0.000147859,0.005,0.005,ok,,,,,,1.0,6.3304,true,5.3304
+rmsnorm,gpt2-medium,PyTorch-eager,574.8,428.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-medium,Arke,790.2,627.7,,0.7274,ok,,false,true,0.0027349,0.000226441,0.005,0.005,ok,,,,,,1.0,0.7274,false,-0.2726
+rmsnorm,gpt2-medium,FlagGems,603.3,504.8,,0.9528,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9528,false,-0.0472
+rmsnorm,llama-7b,Liger-Kernel,86.4,17.4,,6.6655,ok,,false,true,0.00390625,0.000147337,0.005,0.005,ok,,,,,,1.0,6.6655,true,5.6655
+rmsnorm,llama-7b,PyTorch-eager,575.9,427.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-7b,Arke,770.3,682.0,,0.7476,ok,,false,true,0.00284028,0.000209156,0.005,0.005,ok,,,,,,1.0,0.7476,false,-0.2524
+rmsnorm,llama-7b,FlagGems,597.0,418.8,,0.9647,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9647,false,-0.0353
+rmsnorm,llama-13b,Liger-Kernel,95.9,77.8,,5.9093,ok,,false,true,0.00390625,0.000143903,0.005,0.005,ok,,,,,,1.0,5.9093,true,4.9093
+rmsnorm,llama-13b,PyTorch-eager,566.7,541.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-13b,Arke,940.4,729.1,,0.6026,ok,,false,true,0.00355148,0.000215522,0.005,0.005,ok,,,,,,1.0,0.6026,false,-0.3974
+rmsnorm,llama-13b,FlagGems,574.6,455.7,,0.9863,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9863,false,-0.0137
+rmsnorm,llama-long,Liger-Kernel,134.4,189.4,,5.3460,ok,,false,true,0.00390625,0.000151672,0.005,0.005,ok,,,,,,1.0,5.3460,true,4.3460
+rmsnorm,llama-long,PyTorch-eager,718.5,676.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-long,Arke,1281.0,1163.3,,0.5609,ok,,false,true,0.00397205,0.00020458,0.005,0.005,ok,,,,,,1.0,0.5609,false,-0.4391
+rmsnorm,llama-long,FlagGems,698.4,720.9,,1.0288,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0288,true,0.0288
+rmsnorm,ds-v2,Liger-Kernel,103.6,57.3,,6.4681,ok,,false,true,0.00390625,0.00014597,0.005,0.005,ok,,,,,,1.0,6.4681,true,5.4681
+rmsnorm,ds-v2,PyTorch-eager,670.1,536.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v2,Arke,800.1,736.3,,0.8375,ok,,false,true,0.00318146,0.000209912,0.005,0.005,ok,,,,,,1.0,0.8375,false,-0.1625
+rmsnorm,ds-v2,FlagGems,572.9,543.7,,1.1697,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1697,true,0.1697
+rmsnorm,ds-v3,Liger-Kernel,88.5,84.0,,7.8169,ok,,false,true,0.00390625,0.000140926,0.005,0.005,ok,,,,,,1.0,7.8169,true,6.8169
+rmsnorm,ds-v3,PyTorch-eager,691.8,553.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v3,Arke,876.2,737.3,,0.7895,ok,,false,true,0.00350714,0.000189254,0.005,0.005,ok,,,,,,1.0,0.7895,false,-0.2105
+rmsnorm,ds-v3,FlagGems,582.8,485.4,,1.1870,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1870,true,0.1870
+rmsnorm,mixtral-ffn,Liger-Kernel,102.0,97.3,,5.8088,ok,,false,true,0.00390625,0.000138502,0.005,0.005,ok,,,,,,1.0,5.8088,true,4.8088
+rmsnorm,mixtral-ffn,PyTorch-eager,592.5,516.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,mixtral-ffn,Arke,815.4,746.5,,0.7266,ok,,false,true,0.00290823,0.000196981,0.005,0.005,ok,,,,,,1.0,0.7266,false,-0.2734
+rmsnorm,mixtral-ffn,FlagGems,587.3,556.0,,1.0089,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0089,true,0.0089

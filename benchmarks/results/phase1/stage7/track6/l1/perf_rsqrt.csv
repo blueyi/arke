@@ -1,81 +1,49 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-rsqrt,micro-tiny,cuBLAS/cuDNN,143.4,100.4,,0.7615,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7615,false,-0.2385
-rsqrt,micro-tiny,PyTorch-eager,109.2,96.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,micro-tiny,Arke,110.3,58.4,,0.9900,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9900,false,-0.0100
-rsqrt,micro-tiny,FlagGems,85.3,108.4,,1.2802,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.2802,true,0.2802
-rsqrt,micro-small,cuBLAS/cuDNN,83.3,103.2,,0.9832,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9832,false,-0.0168
-rsqrt,micro-small,PyTorch-eager,81.9,98.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,micro-small,Arke,108.9,106.5,,0.7521,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7521,false,-0.2479
-rsqrt,micro-small,FlagGems,86.8,99.3,,0.9435,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.9435,false,-0.0565
-rsqrt,gpt2-hidden,cuBLAS/cuDNN,97.3,118.5,,1.2107,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2107,true,0.2107
-rsqrt,gpt2-hidden,PyTorch-eager,117.8,100.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,gpt2-hidden,Arke,85.7,96.5,,1.3746,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3746,true,0.3746
-rsqrt,gpt2-hidden,FlagGems,88.1,98.3,,1.3371,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.3371,true,0.3371
-rsqrt,gpt2-ffn,cuBLAS/cuDNN,104.1,95.2,,1.5677,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.5677,true,0.5677
-rsqrt,gpt2-ffn,PyTorch-eager,163.2,54.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,gpt2-ffn,Arke,172.7,8.2,,0.9450,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9450,false,-0.0550
-rsqrt,gpt2-ffn,FlagGems,84.2,101.1,,1.9382,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.9382,true,0.9382
-rsqrt,square-1k,cuBLAS/cuDNN,84.3,100.4,,0.9680,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9680,false,-0.0320
-rsqrt,square-1k,PyTorch-eager,81.6,97.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,square-1k,Arke,88.4,102.5,,0.9231,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9231,false,-0.0769
-rsqrt,square-1k,FlagGems,89.8,99.4,,0.9087,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.9087,false,-0.0913
-rsqrt,llama-ffn,cuBLAS/cuDNN,100.0,143.4,,1.0440,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0440,true,0.0440
-rsqrt,llama-ffn,PyTorch-eager,104.4,78.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,llama-ffn,Arke,101.7,147.5,,1.0265,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0265,true,0.0265
-rsqrt,llama-ffn,FlagGems,101.7,149.5,,1.0265,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0265,true,0.0265
-rsqrt,llama-hidden,cuBLAS/cuDNN,99.3,105.5,,0.8721,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8721,false,-0.1279
-rsqrt,llama-hidden,PyTorch-eager,86.6,105.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,llama-hidden,Arke,89.4,31.7,,0.9687,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9687,false,-0.0313
-rsqrt,llama-hidden,FlagGems,84.0,100.0,,1.0310,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0310,true,0.0310
-rsqrt,llama-long,cuBLAS/cuDNN,231.8,261.1,,1.0440,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0440,true,0.0440
-rsqrt,llama-long,PyTorch-eager,242.0,219.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,llama-long,Arke,248.1,276.5,,0.9754,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9754,false,-0.0246
-rsqrt,llama-long,FlagGems,231.1,219.1,,1.0472,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0472,true,0.0472
-rsqrt,ds-ffn,cuBLAS/cuDNN,110.9,159.7,,0.9784,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9784,false,-0.0216
-rsqrt,ds-ffn,PyTorch-eager,108.5,152.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,ds-ffn,Arke,112.3,157.7,,0.9662,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9662,false,-0.0338
-rsqrt,ds-ffn,FlagGems,113.7,92.2,,0.9543,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.9543,false,-0.0457
-rsqrt,ds-ffn-large,cuBLAS/cuDNN,154.3,161.8,,0.9689,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9689,false,-0.0311
-rsqrt,ds-ffn-large,PyTorch-eager,149.5,130.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,ds-ffn-large,Arke,150.2,194.6,,0.9953,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9953,false,-0.0047
-rsqrt,ds-ffn-large,FlagGems,149.5,124.9,,1.0000,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0000,true,0.0000
-rsqrt,qwen-ffn,cuBLAS/cuDNN,155.3,186.4,,0.9762,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9762,false,-0.0238
-rsqrt,qwen-ffn,PyTorch-eager,151.6,176.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,qwen-ffn,Arke,156.3,192.5,,0.9699,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9699,false,-0.0301
-rsqrt,qwen-ffn,FlagGems,182.3,211.8,,0.8316,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.8316,false,-0.1684
-rsqrt,xlarge,cuBLAS/cuDNN,447.1,431.9,,1.0360,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0360,true,0.0360
-rsqrt,xlarge,PyTorch-eager,463.2,463.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,xlarge,Arke,447.8,434.2,,1.0344,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0344,true,0.0344
-rsqrt,xlarge,FlagGems,453.9,460.8,,1.0205,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0205,true,0.0205
-rsqrt,non-align-1,cuBLAS/cuDNN,109.6,91.1,,0.8184,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8184,false,-0.1816
-rsqrt,non-align-1,PyTorch-eager,89.7,99.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,non-align-1,Arke,86.4,102.4,,1.0382,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0382,true,0.0382
-rsqrt,non-align-1,FlagGems,85.6,95.2,,1.0479,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0479,true,0.0479
-rsqrt,non-align-2,cuBLAS/cuDNN,96.3,113.7,,0.9252,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9252,false,-0.0748
-rsqrt,non-align-2,PyTorch-eager,89.1,116.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,non-align-2,Arke,91.1,107.5,,0.9780,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9780,false,-0.0220
-rsqrt,non-align-2,FlagGems,88.7,111.6,,1.0045,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0045,true,0.0045
-rsqrt,non-align-3,cuBLAS/cuDNN,134.8,175.1,,0.9948,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9948,false,-0.0052
-rsqrt,non-align-3,PyTorch-eager,134.1,174.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,non-align-3,Arke,134.4,180.2,,0.9978,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9978,false,-0.0022
-rsqrt,non-align-3,FlagGems,134.5,157.7,,0.9970,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.9970,false,-0.0030
-rsqrt,non-align-4,cuBLAS/cuDNN,90.4,119.8,,0.9934,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9934,false,-0.0066
-rsqrt,non-align-4,PyTorch-eager,89.8,118.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,non-align-4,Arke,98.4,128.0,,0.9126,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9126,false,-0.0874
-rsqrt,non-align-4,FlagGems,108.5,117.5,,0.8276,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.8276,false,-0.1724
-rsqrt,non-align-5,cuBLAS/cuDNN,100.7,48.1,,0.8064,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8064,false,-0.1936
-rsqrt,non-align-5,PyTorch-eager,81.2,95.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,non-align-5,Arke,85.7,94.4,,0.9475,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9475,false,-0.0525
-rsqrt,non-align-5,FlagGems,83.6,99.4,,0.9713,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.9713,false,-0.0287
-rsqrt,extreme-flat,cuBLAS/cuDNN,90.2,93.5,,0.9412,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9412,false,-0.0588
-rsqrt,extreme-flat,PyTorch-eager,84.9,48.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,extreme-flat,Arke,86.4,18.4,,0.9826,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9826,false,-0.0174
-rsqrt,extreme-flat,FlagGems,99.7,81.8,,0.8516,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.8516,false,-0.1484
-rsqrt,extreme-tall,cuBLAS/cuDNN,146.4,103.4,,0.5874,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5874,false,-0.4126
-rsqrt,extreme-tall,PyTorch-eager,86.0,15.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,extreme-tall,Arke,84.3,48.8,,1.0202,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0202,true,0.0202
-rsqrt,extreme-tall,FlagGems,85.0,99.2,,1.0118,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,1.0118,true,0.0118
-rsqrt,extreme-wide,cuBLAS/cuDNN,91.1,131.1,,1.0450,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0450,true,0.0450
-rsqrt,extreme-wide,PyTorch-eager,95.2,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rsqrt,extreme-wide,Arke,150.5,59.4,,0.6326,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6326,false,-0.3674
-rsqrt,extreme-wide,FlagGems,99.7,131.1,,0.9549,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for rsqrt,,,,,1.0,0.9549,false,-0.0451
+rsqrt,micro-tiny,cuBLAS/cuDNN,75.8,82.9,,0.9947,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9947,false,-0.0053
+rsqrt,micro-tiny,PyTorch-eager,75.4,85.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,micro-tiny,Arke,77.2,98.3,,0.9767,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9767,false,-0.0233
+rsqrt,micro-tiny,FlagGems,92.9,64.5,,0.8116,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8116,false,-0.1884
+rsqrt,micro-small,cuBLAS/cuDNN,76.0,92.0,,0.9316,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9316,false,-0.0684
+rsqrt,micro-small,PyTorch-eager,70.8,95.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,micro-small,Arke,76.1,90.1,,0.9304,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9304,false,-0.0696
+rsqrt,micro-small,FlagGems,83.6,99.3,,0.8469,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8469,false,-0.1531
+rsqrt,gpt2-hidden,cuBLAS/cuDNN,71.8,8.2,,1.0097,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0097,true,0.0097
+rsqrt,gpt2-hidden,PyTorch-eager,72.5,88.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,gpt2-hidden,Arke,76.0,86.0,,0.9539,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9539,false,-0.0461
+rsqrt,gpt2-hidden,FlagGems,79.1,93.1,,0.9166,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9166,false,-0.0834
+rsqrt,gpt2-ffn,cuBLAS/cuDNN,72.1,92.3,,0.9861,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9861,false,-0.0139
+rsqrt,gpt2-ffn,PyTorch-eager,71.1,20.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,gpt2-ffn,Arke,77.5,20.5,,0.9174,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9174,false,-0.0826
+rsqrt,gpt2-ffn,FlagGems,82.8,91.0,,0.8587,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8587,false,-0.1413
+rsqrt,square-1k,cuBLAS/cuDNN,73.3,71.7,,0.9986,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9986,false,-0.0014
+rsqrt,square-1k,PyTorch-eager,73.2,90.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,square-1k,Arke,75.5,97.3,,0.9695,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9695,false,-0.0305
+rsqrt,square-1k,FlagGems,75.9,97.3,,0.9644,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9644,false,-0.0356
+rsqrt,llama-ffn,cuBLAS/cuDNN,81.6,129.0,,1.0355,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0355,true,0.0355
+rsqrt,llama-ffn,PyTorch-eager,84.5,135.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,llama-ffn,Arke,77.0,135.2,,1.0974,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0974,true,0.0974
+rsqrt,llama-ffn,FlagGems,78.1,140.3,,1.0819,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0819,true,0.0819
+rsqrt,llama-hidden,cuBLAS/cuDNN,70.8,92.2,,1.0169,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0169,true,0.0169
+rsqrt,llama-hidden,PyTorch-eager,72.0,96.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,llama-hidden,Arke,75.9,106.5,,0.9486,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9486,false,-0.0514
+rsqrt,llama-hidden,FlagGems,79.8,98.3,,0.9023,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9023,false,-0.0977
+rsqrt,llama-long,cuBLAS/cuDNN,217.8,226.3,,1.0289,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0289,true,0.0289
+rsqrt,llama-long,PyTorch-eager,224.1,225.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,llama-long,Arke,217.0,218.1,,1.0327,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0327,true,0.0327
+rsqrt,llama-long,FlagGems,277.1,271.3,,0.8087,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8087,false,-0.1913
+rsqrt,ds-ffn,cuBLAS/cuDNN,84.4,145.4,,1.0190,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0190,true,0.0190
+rsqrt,ds-ffn,PyTorch-eager,86.0,149.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,ds-ffn,Arke,84.5,155.6,,1.0178,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0178,true,0.0178
+rsqrt,ds-ffn,FlagGems,91.2,144.3,,0.9430,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9430,false,-0.0570
+rsqrt,ds-ffn-large,cuBLAS/cuDNN,124.0,195.5,,0.9984,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9984,false,-0.0016
+rsqrt,ds-ffn-large,PyTorch-eager,123.8,187.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,ds-ffn-large,Arke,124.4,127.0,,0.9952,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9952,false,-0.0048
+rsqrt,ds-ffn-large,FlagGems,156.0,158.7,,0.7936,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7936,false,-0.2064
+rsqrt,qwen-ffn,cuBLAS/cuDNN,127.9,135.2,,1.0070,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0070,true,0.0070
+rsqrt,qwen-ffn,PyTorch-eager,128.8,148.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,qwen-ffn,Arke,136.5,171.0,,0.9436,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9436,false,-0.0564
+rsqrt,qwen-ffn,FlagGems,156.5,187.4,,0.8230,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8230,false,-0.1770
+rsqrt,xlarge,cuBLAS/cuDNN,565.7,455.7,,0.9026,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9026,false,-0.0974
+rsqrt,xlarge,PyTorch-eager,510.6,443.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+rsqrt,xlarge,Arke,519.0,460.8,,0.9838,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9838,false,-0.0162
+rsqrt,xlarge,FlagGems,575.4,488.4,,0.8874,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8874,false,-0.1126

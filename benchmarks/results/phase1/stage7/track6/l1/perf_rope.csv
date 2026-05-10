@@ -1,7 +1,25 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-rope,gpt2-sm-128,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,unknown,,,,,,1.0,N/A,false,N/A
-rope,gpt2-sm-128,PyTorch-eager,296.3,275.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rope,gpt2-sm-128,Arke,113.4,66.6,,2.6129,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for rope,,,,,1.0,2.6129,true,1.6129
-rope,gpt2-sm-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,unknown,,,,,,1.0,N/A,false,N/A
-rope,gpt2-sm-512,PyTorch-eager,262.1,281.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-rope,gpt2-sm-512,Arke,121.2,111.5,,2.1625,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for rope,,,,,1.0,2.1625,true,1.1625
+rope,gpt2-sm-128,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',1179648,3542771302,0.0003,attention,1.0,N/A,false,N/A
+rope,gpt2-sm-128,PyTorch-eager,1811.2,1507.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-128,Arke,986.7,790.5,,1.8356,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.8356,true,0.8356
+rope,gpt2-sm-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',9437184,3542771302,0.0027,attention,1.0,N/A,false,N/A
+rope,gpt2-sm-512,PyTorch-eager,1880.8,1543.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-512,Arke,888.0,675.8,,2.1180,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,2.1180,true,1.1180
+rope,llama2-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',33554432,3542771302,0.0095,attention,1.0,N/A,false,N/A
+rope,llama2-512,PyTorch-eager,1930.7,1603.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama2-512,Arke,912.3,777.2,,2.1163,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,2.1163,true,1.1163
+rope,llama2-2k,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',335544320,3542771302,0.0947,attention,1.0,N/A,false,N/A
+rope,llama2-2k,PyTorch-eager,1820.3,1783.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
+rope,llama2-2k,Arke,907.6,958.5,,2.0056,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,2.0056,true,1.0056
+rope,llama3-q-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',33554432,3542771302,0.0095,attention,1.0,N/A,false,N/A
+rope,llama3-q-512,PyTorch-eager,1875.3,1660.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama3-q-512,Arke,948.4,793.6,,1.9773,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.9773,true,0.9773
+rope,llama3-kv-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',8388608,3542771302,0.0024,attention,1.0,N/A,false,N/A
+rope,llama3-kv-512,PyTorch-eager,1804.4,1503.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.0000,true,0.0000
+rope,llama3-kv-512,Arke,920.6,725.0,,1.9600,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.9600,true,0.9600
+rope,qwen25-q-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',29360128,3542771302,0.0083,attention,1.0,N/A,false,N/A
+rope,qwen25-q-512,PyTorch-eager,1823.9,1599.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
+rope,qwen25-q-512,Arke,872.2,795.8,,2.0911,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,2.0911,true,1.0911
+rope,qwen25-kv-512,Liger-Kernel,inf,inf,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',false,,,,,,error,LigerRopeFunction.forward() missing 1 required positional argument: 'sin',4194304,3542771302,0.0012,attention,1.0,N/A,false,N/A
+rope,qwen25-kv-512,PyTorch-eager,1768.7,1488.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,1.0000,true,0.0000
+rope,qwen25-kv-512,Arke,861.5,730.1,,2.0530,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,2.0530,true,1.0530

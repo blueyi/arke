@@ -1,25 +1,19 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-cumsum,gpt2-row,PyTorch-eager,16.4,21.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,gpt2-row,Arke,17.1,17.4,,0.9591,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9591,false,-0.0409
-cumsum,gpt2-row,FlagGems,57.0,65.5,,0.2877,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.2877,false,-0.7123
-cumsum,llama-row,PyTorch-eager,109.2,109.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,llama-row,Arke,109.6,110.6,,0.9964,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9964,false,-0.0036
-cumsum,llama-row,FlagGems,55.0,29.7,,1.9855,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.9855,true,0.9855
-cumsum,llama-col,PyTorch-eager,108.9,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,llama-col,Arke,109.6,111.5,,0.9936,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9936,false,-0.0064
-cumsum,llama-col,FlagGems,57.0,66.6,,1.9105,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.9105,true,0.9105
-cumsum,non-align-1,PyTorch-eager,22.2,23.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,non-align-1,Arke,22.1,19.5,,1.0045,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0045,true,0.0045
-cumsum,non-align-1,FlagGems,48.9,6.1,,0.4540,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.4540,false,-0.5460
-cumsum,non-align-2,PyTorch-eager,88.7,89.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,non-align-2,Arke,88.0,90.0,,1.0080,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0080,true,0.0080
-cumsum,non-align-2,FlagGems,48.1,43.0,,1.8441,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.8441,true,0.8441
-cumsum,non-align-3,PyTorch-eager,3561.4,3546.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,non-align-3,Arke,3491.2,3282.9,,1.0201,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0201,true,0.0201
-cumsum,non-align-3,FlagGems,2848.7,2766.8,,1.2502,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,1.2502,true,0.2502
-cumsum,extreme-long-row,PyTorch-eager,26.6,25.6,,1.0000,ok,,false,false,4,0.420621,0.001,0.001,mismatch,,,,,,1.0,1.0000,true,0.0000
-cumsum,extreme-long-row,Arke,26.3,32.8,,1.0114,ok,,false,false,6,0.511645,0.001,0.001,mismatch,,,,,,1.0,1.0114,true,0.0114
-cumsum,extreme-long-row,FlagGems,143.7,134.1,,0.1851,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,0.1851,false,-0.8149
-cumsum,extreme-tall-col,PyTorch-eager,2353.5,2161.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cumsum,extreme-tall-col,Arke,2343.9,2344.8,,1.0041,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0041,true,0.0041
-cumsum,extreme-tall-col,FlagGems,130.8,122.9,,17.9931,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for cumsum,,,,,1.0,17.9931,true,16.9931
+cumsum,small-row,PyTorch-eager,52.6,71.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,small-row,Arke,52.7,73.7,,0.9981,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9981,false,-0.0019
+cumsum,small-row,FlagGems,51.3,11.3,,1.0253,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0253,true,0.0253
+cumsum,gpt2-row,PyTorch-eager,49.8,67.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,gpt2-row,Arke,50.8,35.8,,0.9803,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9803,false,-0.0197
+cumsum,gpt2-row,FlagGems,48.7,12.3,,1.0226,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0226,true,0.0226
+cumsum,llama-row,PyTorch-eager,49.7,39.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,llama-row,Arke,113.6,52.2,,0.4375,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4375,false,-0.5625
+cumsum,llama-row,FlagGems,97.4,66.6,,0.5103,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5103,false,-0.4897
+cumsum,llama-col,PyTorch-eager,48.0,32.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,llama-col,Arke,53.4,52.2,,0.8989,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8989,false,-0.1011
+cumsum,llama-col,FlagGems,46.5,37.9,,1.0323,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0323,true,0.0323
+cumsum,sampling-probs,PyTorch-eager,139.2,154.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,sampling-probs,Arke,141.1,136.2,,0.9865,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9865,false,-0.0135
+cumsum,sampling-probs,FlagGems,137.2,160.8,,1.0146,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0146,true,0.0146
+cumsum,sampling-probs-llama3,PyTorch-eager,141.1,29.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+cumsum,sampling-probs-llama3,Arke,145.0,36.9,,0.9731,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9731,false,-0.0269
+cumsum,sampling-probs-llama3,FlagGems,136.6,120.8,,1.0329,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0329,true,0.0329

@@ -1,45 +1,25 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-reduce_max,small,cuBLAS/cuDNN,153.6,144.4,,1.4792,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.4792,true,0.4792
-reduce_max,small,PyTorch-eager,227.2,228.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,small,Arke,213.7,203.8,,1.0632,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0632,true,0.0632
-reduce_max,small,FlagGems,163.4,95.2,,1.3905,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.3905,true,0.3905
-reduce_max,medium,cuBLAS/cuDNN,136.2,145.4,,1.3605,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3605,true,0.3605
-reduce_max,medium,PyTorch-eager,185.3,139.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,medium,Arke,160.4,209.9,,1.1552,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1552,true,0.1552
-reduce_max,medium,FlagGems,163.4,145.5,,1.1340,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.1340,true,0.1340
-reduce_max,large,cuBLAS/cuDNN,146.2,134.1,,0.7750,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7750,false,-0.2250
-reduce_max,large,PyTorch-eager,113.3,122.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,large,Arke,178.2,163.0,,0.6358,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6358,false,-0.3642
-reduce_max,large,FlagGems,154.5,143.4,,0.7333,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,0.7333,false,-0.2667
-reduce_max,wide,cuBLAS/cuDNN,127.3,134.1,,1.8665,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.8665,true,0.8665
-reduce_max,wide,PyTorch-eager,237.6,165.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,wide,Arke,183.0,37.9,,1.2984,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2984,true,0.2984
-reduce_max,wide,FlagGems,127.1,138.2,,1.8694,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.8694,true,0.8694
-reduce_max,llama3-wide,cuBLAS/cuDNN,140.0,146.4,,1.1971,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1971,true,0.1971
-reduce_max,llama3-wide,PyTorch-eager,167.6,142.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,llama3-wide,Arke,189.4,255.9,,0.8849,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8849,false,-0.1151
-reduce_max,llama3-wide,FlagGems,172.7,145.2,,0.9705,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,0.9705,false,-0.0295
-reduce_max,qwen25-wide,cuBLAS/cuDNN,125.0,140.0,,1.5104,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.5104,true,0.5104
-reduce_max,qwen25-wide,PyTorch-eager,188.8,148.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,qwen25-wide,Arke,168.0,142.2,,1.1238,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1238,true,0.1238
-reduce_max,qwen25-wide,FlagGems,149.8,141.3,,1.2603,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.2603,true,0.2603
-reduce_max,non-align-1,cuBLAS/cuDNN,164.8,113.7,,0.9587,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9587,false,-0.0413
-reduce_max,non-align-1,PyTorch-eager,158.0,30.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,non-align-1,Arke,177.2,133.9,,0.8916,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8916,false,-0.1084
-reduce_max,non-align-1,FlagGems,127.7,143.4,,1.2373,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.2373,true,0.2373
-reduce_max,non-align-2,cuBLAS/cuDNN,157.0,106.5,,0.9694,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9694,false,-0.0306
-reduce_max,non-align-2,PyTorch-eager,152.2,35.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,non-align-2,Arke,152.6,171.7,,0.9974,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9974,false,-0.0026
-reduce_max,non-align-2,FlagGems,210.9,39.9,,0.7217,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,0.7217,false,-0.2783
-reduce_max,non-align-3,cuBLAS/cuDNN,195.9,150.5,,0.9357,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9357,false,-0.0643
-reduce_max,non-align-3,PyTorch-eager,183.3,150.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,non-align-3,Arke,176.1,210.8,,1.0409,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0409,true,0.0409
-reduce_max,non-align-3,FlagGems,174.4,213.0,,1.0510,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.0510,true,0.0510
-reduce_max,extreme-tall,cuBLAS/cuDNN,256.6,289.8,,0.9602,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9602,false,-0.0398
-reduce_max,extreme-tall,PyTorch-eager,246.4,285.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,extreme-tall,Arke,267.3,214.9,,0.9218,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9218,false,-0.0782
-reduce_max,extreme-tall,FlagGems,228.6,222.2,,1.0779,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.0779,true,0.0779
-reduce_max,extreme-flat,cuBLAS/cuDNN,559.4,547.8,,0.9970,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9970,false,-0.0030
-reduce_max,extreme-flat,PyTorch-eager,557.7,539.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_max,extreme-flat,Arke,549.4,488.1,,1.0151,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0151,true,0.0151
-reduce_max,extreme-flat,FlagGems,545.4,488.4,,1.0226,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_max,,,,,1.0,1.0226,true,0.0226
+reduce_max,small,cuBLAS/cuDNN,126.4,102.4,,1.0791,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0791,true,0.0791
+reduce_max,small,PyTorch-eager,136.4,141.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_max,small,Arke,130.9,111.6,,1.0420,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0420,true,0.0420
+reduce_max,small,FlagGems,130.9,55.3,,1.0420,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0420,true,0.0420
+reduce_max,medium,cuBLAS/cuDNN,121.2,123.9,,1.0520,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0520,true,0.0520
+reduce_max,medium,PyTorch-eager,127.5,144.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_max,medium,Arke,161.4,104.4,,0.7900,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7900,false,-0.2100
+reduce_max,medium,FlagGems,156.0,109.6,,0.8173,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8173,false,-0.1827
+reduce_max,large,cuBLAS/cuDNN,143.1,150.5,,0.8637,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8637,false,-0.1363
+reduce_max,large,PyTorch-eager,123.6,77.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_max,large,Arke,131.3,143.4,,0.9414,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9414,false,-0.0586
+reduce_max,large,FlagGems,150.5,105.5,,0.8213,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8213,false,-0.1787
+reduce_max,wide,cuBLAS/cuDNN,121.1,152.6,,1.3220,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3220,true,0.3220
+reduce_max,wide,PyTorch-eager,160.1,89.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_max,wide,Arke,166.9,144.4,,0.9593,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9593,false,-0.0407
+reduce_max,wide,FlagGems,158.0,144.4,,1.0133,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0133,true,0.0133
+reduce_max,llama3-wide,cuBLAS/cuDNN,156.2,153.6,,0.9712,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9712,false,-0.0288
+reduce_max,llama3-wide,PyTorch-eager,151.7,159.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_max,llama3-wide,Arke,154.7,207.9,,0.9806,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9806,false,-0.0194
+reduce_max,llama3-wide,FlagGems,158.3,155.6,,0.9583,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9583,false,-0.0417
+reduce_max,qwen25-wide,cuBLAS/cuDNN,176.1,235.5,,0.9841,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9841,false,-0.0159
+reduce_max,qwen25-wide,PyTorch-eager,173.3,205.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_max,qwen25-wide,Arke,171.0,238.6,,1.0135,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0135,true,0.0135
+reduce_max,qwen25-wide,FlagGems,178.4,188.4,,0.9714,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9714,false,-0.0286

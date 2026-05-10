@@ -1,11 +1,9 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-geglu,ds-v3-512,PyTorch-eager,35.5,3.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
-geglu,ds-v3-512,Arke,45.1,89.9,,0.7871,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7871,false,-0.2129
-geglu,ds-v3-2k,PyTorch-eager,54.6,73.5,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
-geglu,ds-v3-2k,Arke,72.4,83.6,,0.7541,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7541,false,-0.2459
-geglu,qwen25-7b-2k,PyTorch-eager,49.8,72.7,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
-geglu,qwen25-7b-2k,Arke,63.1,77.8,,0.7892,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.7892,false,-0.2108
-geglu,non-align-1,PyTorch-eager,42.1,68.8,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
-geglu,non-align-1,Arke,63.1,88.1,,0.6672,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.6672,false,-0.3328
-geglu,non-align-2,PyTorch-eager,52.7,53.6,,1.0000,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,1.0000,true,0.0000
-geglu,non-align-2,Arke,59.7,80.9,,0.8827,ok,,false,,,,0.001,0.001,error,integer division or modulo by zero,,,,,1.0,0.8827,false,-0.1173
+geglu,gpt2-sm,PyTorch-eager,39.4,4.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,gpt2-sm,Arke,48.5,6.1,,0.8124,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8124,false,-0.1876
+geglu,llama-7b-512,PyTorch-eager,42.0,3.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-512,Arke,50.6,76.9,,0.8300,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8300,false,-0.1700
+geglu,llama-7b-2k,PyTorch-eager,39.7,1.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-2k,Arke,49.9,83.6,,0.7956,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7956,false,-0.2044
+geglu,llama3-8b,PyTorch-eager,39.6,6.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,llama3-8b,Arke,45.7,3.1,,0.8665,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8665,false,-0.1335

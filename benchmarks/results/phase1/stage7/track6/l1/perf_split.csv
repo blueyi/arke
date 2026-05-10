@@ -1,5 +1,13 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-split,non-align-1,PyTorch-eager,11.3,6.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-split,non-align-1,Arke,10.9,4.4,,1.0367,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,,1.0,1.0367,true,0.0367
-split,non-align-2,PyTorch-eager,21.5,10.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-split,non-align-2,Arke,9.5,27.6,,2.2632,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for split,,,,,1.0,2.2632,true,1.2632
+split,tiny-2,PyTorch-eager,4.1,13.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,tiny-2,Arke,3.1,4.0,,1.3226,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3226,true,0.3226
+split,gpt2-qkv-split,PyTorch-eager,4.0,3.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,gpt2-qkv-split,Arke,3.1,2.9,,1.2903,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2903,true,0.2903
+split,llama-qkv-split,PyTorch-eager,4.1,1.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,llama-qkv-split,Arke,3.2,2.9,,1.2812,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2812,true,0.2812
+split,llama3-qkv-gqa,PyTorch-eager,4.4,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,llama3-qkv-gqa,Arke,3.3,3.0,,1.3333,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3333,true,0.3333
+split,qwen25-qkv-gqa,PyTorch-eager,4.2,4.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,qwen25-qkv-gqa,Arke,3.1,4.1,,1.3548,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3548,true,0.3548
+split,ffn-gate-up,PyTorch-eager,3.8,4.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,ffn-gate-up,Arke,3.2,4.1,,1.1875,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1875,true,0.1875

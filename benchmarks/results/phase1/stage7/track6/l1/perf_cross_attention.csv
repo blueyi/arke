@@ -1,5 +1,13 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-cross_attention,tiny,PyTorch-eager,55.3,61.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cross_attention,tiny,Arke,62.5,71.7,,0.8848,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8848,false,-0.1152
-cross_attention,whisper-enc-dec,PyTorch-eager,69.6,52.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-cross_attention,whisper-enc-dec,Arke,77.3,76.7,,0.9004,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9004,false,-0.0996
+cross_attention,tiny,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,whisper-enc-dec,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,whisper-decode-1,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,t5-small-enc128,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,t5-small-dec128,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,t5-base-dec512,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,sdxl-unet-64,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,sdxl-unet-128,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,llava-vision,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,batch4-cross,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,non-align-1,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,non-align-2,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A

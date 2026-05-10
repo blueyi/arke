@@ -1,9 +1,17 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-dequantize_per_channel,tiny-int8,PyTorch-eager,31.8,41.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-dequantize_per_channel,tiny-int8,Arke,51.5,63.8,,0.6175,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,,1.0,0.6175,false,-0.3825
-dequantize_per_channel,gpt2-int8,PyTorch-eager,42.0,19.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-dequantize_per_channel,gpt2-int8,Arke,85.3,62.5,,0.4924,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,,1.0,0.4924,false,-0.5076
-dequantize_per_channel,non-align-1,PyTorch-eager,33.5,42.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-dequantize_per_channel,non-align-1,Arke,67.3,71.6,,0.4978,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,,1.0,0.4978,false,-0.5022
-dequantize_per_channel,non-align-2,PyTorch-eager,45.1,47.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-dequantize_per_channel,non-align-2,Arke,110.9,117.8,,0.4067,ok,,false,,,,0.001,0.001,unsupported,runner Arke does not implement run_with_inputs for dequantize_per_channel,,,,,1.0,0.4067,false,-0.5933
+dequantize_per_channel,tiny-int8,PyTorch-eager,213.2,43.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,tiny-int8,Arke,447.1,307.2,,0.4769,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4769,false,-0.5231
+dequantize_per_channel,gpt2-int8,PyTorch-eager,222.3,228.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,gpt2-int8,Arke,419.2,246.8,,0.5303,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5303,false,-0.4697
+dequantize_per_channel,llama2-int4-ffn,PyTorch-eager,220.6,219.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,llama2-int4-ffn,Arke,425.1,400.4,,0.5189,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5189,false,-0.4811
+dequantize_per_channel,llama2-int8-hidden,PyTorch-eager,214.9,124.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,llama2-int8-hidden,Arke,423.9,415.7,,0.5070,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5070,false,-0.4930
+dequantize_per_channel,llama3-int4-ffn,PyTorch-eager,208.3,179.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,llama3-int4-ffn,Arke,519.8,636.9,,0.4007,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4007,false,-0.5993
+dequantize_per_channel,ds-v2-int4,PyTorch-eager,209.7,274.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,ds-v2-int4,Arke,451.5,491.5,,0.4645,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4645,false,-0.5355
+dequantize_per_channel,ds-v3-int4,PyTorch-eager,236.5,269.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,ds-v3-int4,Arke,646.4,712.7,,0.3659,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3659,false,-0.6341
+dequantize_per_channel,qwen25-int4-ffn,PyTorch-eager,241.7,277.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,qwen25-int4-ffn,Arke,662.7,733.1,,0.3647,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3647,false,-0.6353

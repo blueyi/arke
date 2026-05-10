@@ -1,45 +1,25 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-reduce_sum,small,cuBLAS/cuDNN,25.9,24.5,,0.8417,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8417,false,-0.1583
-reduce_sum,small,PyTorch-eager,21.8,27.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,small,Arke,20.1,28.7,,1.0846,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0846,true,0.0846
-reduce_sum,small,FlagGems,55.6,74.8,,0.3921,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.3921,false,-0.6079
-reduce_sum,medium,cuBLAS/cuDNN,20.5,28.7,,0.8634,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8634,false,-0.1366
-reduce_sum,medium,PyTorch-eager,17.7,27.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,medium,Arke,20.1,27.4,,0.8806,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8806,false,-0.1194
-reduce_sum,medium,FlagGems,62.7,81.9,,0.2823,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.2823,false,-0.7177
-reduce_sum,large,cuBLAS/cuDNN,36.1,34.8,,0.9280,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9280,false,-0.0720
-reduce_sum,large,PyTorch-eager,33.5,34.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,large,Arke,35.8,35.7,,0.9358,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9358,false,-0.0642
-reduce_sum,large,FlagGems,71.7,73.7,,0.4672,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.4672,false,-0.5328
-reduce_sum,wide,cuBLAS/cuDNN,17.4,26.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,wide,PyTorch-eager,17.4,26.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,wide,Arke,22.5,27.6,,0.7733,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7733,false,-0.2267
-reduce_sum,wide,FlagGems,60.8,46.0,,0.2862,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.2862,false,-0.7138
-reduce_sum,llama3-wide,cuBLAS/cuDNN,23.2,18.3,,0.8103,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8103,false,-0.1897
-reduce_sum,llama3-wide,PyTorch-eager,18.8,24.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,llama3-wide,Arke,21.5,27.6,,0.8744,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8744,false,-0.1256
-reduce_sum,llama3-wide,FlagGems,60.8,9.0,,0.3092,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.3092,false,-0.6908
-reduce_sum,qwen25-wide,cuBLAS/cuDNN,24.6,15.4,,0.9431,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9431,false,-0.0569
-reduce_sum,qwen25-wide,PyTorch-eager,23.2,32.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,qwen25-wide,Arke,23.6,32.5,,0.9831,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9831,false,-0.0169
-reduce_sum,qwen25-wide,FlagGems,61.1,51.4,,0.3797,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.3797,false,-0.6203
-reduce_sum,non-align-1,cuBLAS/cuDNN,18.5,27.6,,1.0324,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0324,true,0.0324
-reduce_sum,non-align-1,PyTorch-eager,19.1,27.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,non-align-1,Arke,19.9,26.6,,0.9598,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9598,false,-0.0402
-reduce_sum,non-align-1,FlagGems,51.5,38.9,,0.3709,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.3709,false,-0.6291
-reduce_sum,non-align-2,cuBLAS/cuDNN,19.1,25.6,,0.9162,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9162,false,-0.0838
-reduce_sum,non-align-2,PyTorch-eager,17.5,25.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,non-align-2,Arke,19.8,28.6,,0.8838,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8838,false,-0.1162
-reduce_sum,non-align-2,FlagGems,57.0,13.2,,0.3070,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.3070,false,-0.6930
-reduce_sum,non-align-3,cuBLAS/cuDNN,159.7,159.7,,0.9919,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9919,false,-0.0081
-reduce_sum,non-align-3,PyTorch-eager,158.4,159.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,non-align-3,Arke,158.0,158.7,,1.0025,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0025,true,0.0025
-reduce_sum,non-align-3,FlagGems,160.8,145.4,,0.9851,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.9851,false,-0.0149
-reduce_sum,extreme-tall,cuBLAS/cuDNN,90.5,92.2,,1.1050,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1050,true,0.1050
-reduce_sum,extreme-tall,PyTorch-eager,100.0,93.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,extreme-tall,Arke,93.2,93.2,,1.0730,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0730,true,0.0730
-reduce_sum,extreme-tall,FlagGems,146.1,135.2,,0.6845,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.6845,false,-0.3155
-reduce_sum,extreme-flat,cuBLAS/cuDNN,23.9,29.6,,0.9289,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9289,false,-0.0711
-reduce_sum,extreme-flat,PyTorch-eager,22.2,29.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-reduce_sum,extreme-flat,Arke,24.6,30.9,,0.9024,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9024,false,-0.0976
-reduce_sum,extreme-flat,FlagGems,66.9,42.0,,0.3318,ok,,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for reduce_sum,,,,,1.0,0.3318,false,-0.6682
+reduce_sum,small,cuBLAS/cuDNN,49.5,68.6,,1.3273,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3273,true,0.3273
+reduce_sum,small,PyTorch-eager,65.7,56.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_sum,small,Arke,49.8,66.6,,1.3193,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3193,true,0.3193
+reduce_sum,small,FlagGems,49.3,59.4,,1.3327,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3327,true,0.3327
+reduce_sum,medium,cuBLAS/cuDNN,54.1,71.7,,1.0776,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0776,true,0.0776
+reduce_sum,medium,PyTorch-eager,58.3,56.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_sum,medium,Arke,58.8,56.3,,0.9915,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9915,false,-0.0085
+reduce_sum,medium,FlagGems,46.0,39.9,,1.2674,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2674,true,0.2674
+reduce_sum,large,cuBLAS/cuDNN,90.2,33.8,,0.6364,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6364,false,-0.3636
+reduce_sum,large,PyTorch-eager,57.4,66.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_sum,large,Arke,62.7,78.8,,0.9155,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9155,false,-0.0845
+reduce_sum,large,FlagGems,46.5,61.4,,1.2344,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2344,true,0.2344
+reduce_sum,wide,cuBLAS/cuDNN,80.9,75.8,,0.5933,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5933,false,-0.4067
+reduce_sum,wide,PyTorch-eager,48.0,67.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_sum,wide,Arke,66.1,16.4,,0.7262,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7262,false,-0.2738
+reduce_sum,wide,FlagGems,51.1,65.5,,0.9393,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9393,false,-0.0607
+reduce_sum,llama3-wide,cuBLAS/cuDNN,55.3,62.5,,0.9222,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9222,false,-0.0778
+reduce_sum,llama3-wide,PyTorch-eager,51.0,55.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_sum,llama3-wide,Arke,50.1,30.7,,1.0180,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0180,true,0.0180
+reduce_sum,llama3-wide,FlagGems,74.5,72.7,,0.6846,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6846,false,-0.3154
+reduce_sum,qwen25-wide,cuBLAS/cuDNN,58.1,68.6,,0.9071,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9071,false,-0.0929
+reduce_sum,qwen25-wide,PyTorch-eager,52.7,54.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+reduce_sum,qwen25-wide,Arke,57.6,25.5,,0.9149,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9149,false,-0.0851
+reduce_sum,qwen25-wide,FlagGems,67.9,52.1,,0.7761,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7761,false,-0.2239

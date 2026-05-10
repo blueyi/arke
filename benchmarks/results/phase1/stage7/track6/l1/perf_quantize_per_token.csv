@@ -1,15 +1,17 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-quantize_per_token,tiny-int8,PyTorch-eager,84.0,58.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,tiny-int8,Arke,97.3,102.4,,0.8633,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for quantize_per_token,,,,,1.0,0.8633,false,-0.1367
-quantize_per_token,gpt2-int8,PyTorch-eager,96.2,98.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,gpt2-int8,Arke,106.5,88.9,,0.9033,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for quantize_per_token,,,,,1.0,0.9033,false,-0.0967
-quantize_per_token,llama2-int8-512,PyTorch-eager,174.8,175.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,llama2-int8-512,Arke,173.1,175.9,,1.0098,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for quantize_per_token,,,,,1.0,1.0098,true,0.0098
-quantize_per_token,llama2-fp8-512,PyTorch-eager,173.4,176.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,llama2-fp8-512,Arke,173.4,174.9,,1.0000,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for quantize_per_token,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,ds-v2-int8,PyTorch-eager,213.3,213.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,ds-v2-int8,Arke,242.0,213.0,,0.8814,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for quantize_per_token,,,,,1.0,0.8814,false,-0.1186
-quantize_per_token,non-align-1,PyTorch-eager,92.8,95.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,non-align-1,Arke,127.0,105.3,,0.7307,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for quantize_per_token,,,,,1.0,0.7307,false,-0.2693
-quantize_per_token,non-align-2,PyTorch-eager,123.1,123.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-quantize_per_token,non-align-2,Arke,123.6,123.9,,0.9960,ok,,false,,,,0.001,0.001,unsupported,runner Arke returned non-tensor correctness output for quantize_per_token,,,,,1.0,0.9960,false,-0.0040
+quantize_per_token,tiny-int8,PyTorch-eager,647.9,593.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,tiny-int8,Arke,706.1,87.0,,0.9176,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9176,false,-0.0824
+quantize_per_token,gpt2-int8,PyTorch-eager,697.2,565.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,gpt2-int8,Arke,653.7,606.2,,1.0665,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0665,true,0.0665
+quantize_per_token,llama2-int8-512,PyTorch-eager,656.3,592.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,llama2-int8-512,Arke,703.1,594.9,,0.9334,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9334,false,-0.0666
+quantize_per_token,llama2-fp8-512,PyTorch-eager,660.4,376.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,llama2-fp8-512,Arke,654.7,577.5,,1.0087,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0087,true,0.0087
+quantize_per_token,llama3-int8-512,PyTorch-eager,625.3,499.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,llama3-int8-512,Arke,687.7,603.1,,0.9093,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9093,false,-0.0907
+quantize_per_token,ds-v2-int8,PyTorch-eager,681.2,357.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,ds-v2-int8,Arke,621.0,386.0,,1.0969,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0969,true,0.0969
+quantize_per_token,ds-v3-int8,PyTorch-eager,638.1,556.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,ds-v3-int8,Arke,648.2,505.9,,0.9844,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9844,false,-0.0156
+quantize_per_token,qwen25-fp8,PyTorch-eager,628.8,395.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,qwen25-fp8,Arke,640.0,345.1,,0.9825,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9825,false,-0.0175
