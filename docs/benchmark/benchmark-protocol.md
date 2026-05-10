@@ -456,4 +456,58 @@ Missing baseline packages are skipped with a warning; results show `N/A`.
 
 ---
 
-*Last updated: 2026-04-05*
+## Resume / Incremental Persistence
+
+Long L1/L2 runs persist every measurement to disk as it completes, so a
+crash, OOM-kill, or terminal session loss never wastes more than the
+in-flight test point.
+
+### Behaviour
+
+* `bench_l1` / `bench_l2` append each `(op, shape_tag, baseline|approach)`
+  row to the canonical `<op>_results.csv` immediately and `fsync` it.
+* On re-launch, existing rows are scanned. The default `--retry-policy auto`
+  policy:
+  * **skips** rows with `status=ok` (already passing)
+  * **skips** rows with `status ∈ {oom, skipped, unsupported, incompatible}`
+    (a known limitation already recorded)
+  * **retries** rows with `status ∈ {error, timeout}` (likely transient)
+* Other policies: `--retry-policy none` (skip everything that has any row)
+  and `--retry-policy all` (rerun every non-`ok` row).
+* A `progress.jsonl` event log under the layer directory captures every
+  measurement, op start/finish, and resume skip count.
+* A `status.json` snapshot is written at run end, plus a `.bench.lock`
+  PID file while a process holds the directory.
+
+### Configuration drift guard
+
+The layer directory's `config.json` carries a fingerprint over
+`ops + shape_tags + tier + warmup + reps + phase + stage + track + layer`.
+A resume aborts with a clear error when the fingerprint changes; pass
+`--force-restart` to override (which also breaks live locks).
+
+### Output path normalization
+
+`--output` accepts either the bare results root
+(`benchmarks/results`) or any prefix that already contains
+`phase{N}/stage{N}/track{N}[/{layer}]`. The runner strips the duplicate
+suffix so artifacts always land at
+`<root>/phase{N}/stage{N}/track{N}/{layer}/`. This eliminates the
+former `track{N}/phase{N}/stage{N}/track{N}/{layer}/` nested directory
+bug that hid in-progress data from the gate / dashboard tooling.
+
+### Inspecting progress
+
+```bash
+python -m benchmarks status \
+    --output benchmarks/results \
+    --phase 1 --stage 7 --track 6 --layer l2 --recent 10
+```
+
+Reports per-op `rows / ok / permanent / retryable` counts, lock
+liveness, fingerprint, and the most recent progress events. Add
+`--json` for machine-readable output.
+
+---
+
+*Last updated: 2026-05-10*
