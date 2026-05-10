@@ -119,7 +119,7 @@ The following were completed under the **old architecture** before the Lang/IR/C
 | Agent-G6-M2 | Declarative `ToolMeta` + `ArkeTool` ABC (Migration 2) | P1 | 1d | `compile_and_profile` tool on `matmul` returns structured JSON | ⬜ |
 | Agent-G6-CLI | Structured `--json-log` output + consistent exit codes | P1 | 0.5d | `arke codegen matmul.ak --json-log` outputs valid JSON | ⬜ |
 
-**Design ref:** `docs/architecture/agent-design.md` §5.1 (Tool Declarative Interface)
+**Design ref:** `docs/architecture/arke-harness.md` §6 (Tools — declarative `ToolMeta`)
 
 ### Track 5: Full Operator Verification + Non-regression
 

@@ -668,7 +668,7 @@ if tokens_per_iteration > 1000:
 
 ## References
 
-- `docs/architecture/agent-design.md` — Agent design and tool-use protocol
+- `docs/architecture/arke-harness.md` — Arke Harness design and tool-use protocol
 - `docs/architecture/e2e-flow.md` — End-to-end flow
 - `docs/benchmark/benchmark-design.md` — Benchmark system
 

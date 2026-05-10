@@ -7,7 +7,7 @@ Defines ToolMeta + ArkeTool ABC for self-declaring tool capabilities.
 The orchestrator uses these declarations for concurrent batching,
 budget tracking, and serial/parallel execution decisions.
 
-Design ref: docs/architecture/agent-design.md §5.1
+Design ref: docs/architecture/arke-harness.md §6 (Tools — declarative ToolMeta)
 """
 
 from __future__ import annotations

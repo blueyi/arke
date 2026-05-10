@@ -256,7 +256,7 @@ The roadmap, Gate definitions, and benchmark terminology are maintained in the f
 - [docs/architecture/arke-lang-spec-design.md](docs/architecture/arke-lang-spec-design.md) — language design rationale
 - [docs/architecture/arke-ir-spec-design.md](docs/architecture/arke-ir-spec-design.md) — IR design rationale
 - [docs/architecture/arke-compiler-infrastructure.md](docs/architecture/arke-compiler-infrastructure.md) — compiler infrastructure design
-- [docs/architecture/agent-design.md](docs/architecture/agent-design.md) — agent architecture and integration modes
+- [docs/architecture/arke-harness.md](docs/architecture/arke-harness.md) — Arke Harness architecture and integration modes (A/B/C)
 - [docs/architecture/naming-system.md](docs/architecture/naming-system.md) — canonical terminology and naming
 - [docs/architecture/python-environment-setup.md](docs/architecture/python-environment-setup.md) — environment bootstrap details
 - [docs/architecture/token-efficiency-analysis.md](docs/architecture/token-efficiency-analysis.md) — token-cost analysis

@@ -82,16 +82,22 @@ This does **not** relax full G8. The remaining Stage 8 work is still the live LL
 | D7-A4 | E2E profile → kernel feedback loop (bottleneck op → re-optimize) | P1 | L | ⬜ |
 | D7-A5 | Batch optimize pipeline (full model op set batch optimization) | P1 | M | ⬜ |
 
-### Track 2: Agent Architecture Migrations (from agent-design.md §7)
+### Track 2: Harness Architecture Migrations (from arke-harness.md §18.2)
 
-| ID | Task | Priority | Estimate | Status |
-|:---|:-----|:--------:|:--------:|:------:|
-| Agent-G7-M1 | AsyncGenerator optimization loop (Migration 1) | P0 | L | ⬜ |
-| Agent-G7-M3 | Segmented prompt cache (Migration 3) | P1 | M | ⬜ |
-| Agent-G7-M4 | Context compact (predictive + reactive) (Migration 4) | P1 | M | ⬜ |
-| Agent-G7-M5 | Large result delta compression (Migration 5) | P2 | M | ⬜ |
-| Agent-G7-M6 | Provider fallback + retry chain (Migration 6) | P1 | M | ⬜ |
-| Agent-G7-M7 | Cross-compact ground truth state (Migration 7) | P2 | M | ⬜ |
+> ID prefix renamed from `Agent-G7-*` → `Harness-G8-*` together with the
+> agent→harness rename. Migration numbering (M1–M7) is preserved so prior
+> cross-refs still resolve. M2 (declarative `ToolMeta`) was completed in S6 and
+> is listed for traceability.
+
+| ID | Task | Ref | Priority | Estimate | Status |
+|:---|:-----|:---:|:--------:|:--------:|:------:|
+| Harness-G8-M1 | AsyncGenerator optimization loop | §4 | P0 | L | ⬜ |
+| Harness-G8-M2 | Tool self-description + concurrent batching | §6 | P0 | M | ✅ (S6) |
+| Harness-G8-M3 | Segmented prompt cache (4-segment cache_control) | §7 | P1 | M | ⬜ |
+| Harness-G8-M4 | Context compact (predictive + reactive) | §10.2 | P1 | M | ⬜ |
+| Harness-G8-M5 | Large-result delta compression (top-N + filter) | §6, §13 | P2 | M | ⬜ |
+| Harness-G8-M6 | Provider fallback + retry chain | §16.2 | P1 | M | ⬜ |
+| Harness-G8-M7 | Cross-compact ground-truth state | §8 | P2 | M | ⬜ |
 
 ### Track 3: Agent Prompts + Knowledge (P1)
 
@@ -127,6 +133,25 @@ This does **not** relax full G8. The remaining Stage 8 work is still the live LL
 | D7-L3 | moe_dispatch/combine high-level primitives | P2 | M | ⬜ |
 | D7-L4 | MLA parameter semantic nodes | P2 | S | ⬜ |
 | D7-L5 | @dtype int8/fp8 annotation extension | P2 | S | ⬜ |
+
+### Track 6: Harness Extensions (from arke-harness.md §11–§14)
+
+> Net-new runtime work introduced by the v0.2 Arke Harness redesign. None of
+> these are blockers for G8; they are P1/P2 follow-ups that bring Claude-Code
+> primitives (skills, hooks, subagents, MCP) into Arke. Track them here so the
+> design doesn't bit-rot once the migrations (Track 2) land.
+
+| ID | Task | Ref | Priority | Estimate | Status |
+|:---|:-----|:---:|:--------:|:--------:|:------:|
+| Harness-G8-X1 | `SKILL.md` loader + skill registry; lift `skills/arke-test-coverage` to the new schema | §11 | P1 | M | ⬜ |
+| Harness-G8-X2 | Built-in skills: `operator-coverage`, `bench-gate`, `tier-promotion`, `flash-attn` | §11.2 | P2 | L | ⬜ |
+| Harness-G8-X3 | Hook runtime (8 lifecycle points) + `arke.config.yaml` hook registration | §12 | P1 | M | ⬜ |
+| Harness-G8-X4 | Default trajectory writer rewritten as a hook bundle (replaces in-line writes) | §12.2, §15 | P1 | S | ⬜ |
+| Harness-G8-X5 | Subagent `spawn_subagents()` API with forked `OptimizationState` + budget split | §13 | P2 | L | ⬜ |
+| Harness-G8-X6 | Subagent: parallel tile-size sweep example + trajectory layout under `subagents/<name>/` | §13.1 | P2 | M | ⬜ |
+| Harness-G8-X7 | `arke mcp serve` (stdio transport) — auto-derive tool schemas from `ToolMeta` | §14.1, §14.2 | P2 | L | ⬜ |
+| Harness-G8-X8 | MCP resources: `arke://kernels/*`, `arke://hw/*`, `arke://trajectory/*` | §14.1 | P2 | M | ⬜ |
+| Harness-G8-X9 | `arke.config.yaml` schema + layered loader (`~/.arke/` → repo → CLI → env) | §17 | P1 | M | ⬜ |
 
 ---
 
