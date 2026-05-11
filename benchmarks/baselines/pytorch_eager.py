@@ -32,6 +32,7 @@ _SUPPORTED_OPS = frozenset({
     "swiglu", "geglu", "cross_entropy", "fused_linear_cross_entropy",
     # OT4 Attention
     "flash_attention", "grouped_query_attention", "cross_attention",
+    "multi_latent_attention", "paged_attention",
     # OT3 Quantization (new)
     "quantize_per_token", "dequantize_per_channel",
     # OT2 Special (new)
@@ -196,6 +197,19 @@ class PyTorchEagerRunner(BaselineRunner):
             k_exp = k.repeat_interleave(repeats, dim=0)
             v_exp = v.repeat_interleave(repeats, dim=0)
             return F.scaled_dot_product_attention(q, k_exp, v_exp, is_causal=True)
+        if op == "multi_latent_attention" and len(inputs) == 3:
+            # P3 degraded golden for MLA: treat (Q,K,V) as plain SDPA.
+            # The "latent" projection collapse is encoded in the input
+            # shapes upstream — here we just measure SDPA behavior on
+            # whatever rank-3 tensors arrive. Audit emits
+            # mla_golden_degraded=true at the bench_l1 layer.
+            return F.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2])
+        if op == "paged_attention" and len(inputs) == 3:
+            # P3 degraded golden for paged_attention: treat the KV cache
+            # as already gathered into contiguous (B,S,D) tensors and run
+            # SDPA. Real paged_attention does block-table indirection,
+            # which only vLLM/FlashInfer model exactly.
+            return F.scaled_dot_product_attention(inputs[0], inputs[1], inputs[2])
         return None
 
     def get_fn(
@@ -455,6 +469,38 @@ class PyTorchEagerRunner(BaselineRunner):
             K_ = torch.randn(batch_heads, kv_len, head_dim,
                              device="cuda", dtype=dtype)
             V = torch.randn(batch_heads, kv_len, head_dim,
+                            device="cuda", dtype=dtype)
+            return lambda: F.scaled_dot_product_attention(Q, K_, V)
+
+        elif op == "multi_latent_attention":
+            # P3 degraded golden — see run_with_inputs comment. Plain SDPA
+            # on (Q,K,V); the latent compression is encoded by the caller's
+            # shape choice (smaller K/V heads or compressed head_dim).
+            batch_heads = M
+            seq_len = N
+            head_dim = max(K, 64)
+            Q = torch.randn(batch_heads, seq_len, head_dim,
+                            device="cuda", dtype=dtype)
+            K_ = torch.randn(batch_heads, seq_len, head_dim,
+                             device="cuda", dtype=dtype)
+            V = torch.randn(batch_heads, seq_len, head_dim,
+                            device="cuda", dtype=dtype)
+            return lambda: F.scaled_dot_product_attention(
+                Q, K_, V, is_causal=True,
+            )
+
+        elif op == "paged_attention":
+            # P3 degraded golden — SDPA on already-gathered KV (no block
+            # table indirection). Real vLLM paged_attention does indexed
+            # gather; this gives the perf/correctness lower bound.
+            batch_heads = M
+            seq_len = N
+            head_dim = max(K, 64)
+            Q = torch.randn(batch_heads, 1, head_dim,
+                            device="cuda", dtype=dtype)
+            K_ = torch.randn(batch_heads, seq_len, head_dim,
+                             device="cuda", dtype=dtype)
+            V = torch.randn(batch_heads, seq_len, head_dim,
                             device="cuda", dtype=dtype)
             return lambda: F.scaled_dot_product_attention(Q, K_, V)
 

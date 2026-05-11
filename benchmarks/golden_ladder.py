@@ -101,6 +101,19 @@ def golden_runner_for(
 
     for r in runners:
         if r.supports(op):
+            # Architecture guard: P5 runners (Arke, LLM-direct) must NEVER
+            # serve as the Golden Kernel — they are *under test*, not the
+            # oracle. If ladder iteration reaches them, the catalog has a
+            # gap higher up: fail loudly so we audit + fix supports() rather
+            # than silently grading Arke against itself.
+            if r.priority >= 5:
+                raise GoldenUnavailable(
+                    op,
+                    f"ladder reached P{r.priority} runner {r.name!r} for "
+                    f"op={op!r}; P5 runners cannot be Golden (they are the "
+                    f"system under test). Add op to a P0-P3 runner's "
+                    f"supports() set or accept this as audit-only.",
+                )
             return r
 
     raise GoldenUnavailable(op)
