@@ -3,10 +3,24 @@
 
 """Parse benchmark-ops.md to extract the canonical operator catalog.
 
-This module is the **single source of truth** bridge: it reads the
-OT Summary table from ``docs/benchmark/benchmark-ops.md`` and
-exposes structured data that ``benchmarks/cli.py``, ``benchmarks/shapes.py``,
-and all test files consume.
+╔══════════════════════════════════════════════════════════════════════════╗
+║  *** SSOT — SINGLE SOURCE OF TRUTH FOR THE ARKE OP CATALOG ***           ║
+║                                                                          ║
+║  Authoritative document : docs/benchmark/benchmark-ops.md (OT table)     ║
+║  Authoritative parser   : THIS FILE (benchmarks/op_registry.py)          ║
+║  Compatibility shim     : arke/ir/op_registry.py (re-exports from here)  ║
+║                                                                          ║
+║  Every consumer (cli.py / shapes.py / bench_l1.py / baseline runners /   ║
+║  tests) MUST import from here.  Hardcoded op-name lists elsewhere are    ║
+║  shadow catalogs and will silently drift.                                ║
+║                                                                          ║
+║  Enforcement: tests/test_ssot_op_registry.py fails if any module         ║
+║  diverges (e.g. baseline runner claims an op not in benchmark-ops.md).   ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+This module is the bridge: it reads the OT Summary table from
+``docs/benchmark/benchmark-ops.md`` and exposes structured data that
+``benchmarks/cli.py``, ``benchmarks/shapes.py``, and all test files consume.
 
 If benchmark-ops.md is edited (operators added/removed/moved between tiers),
 every downstream consumer picks up the change automatically at import time.
