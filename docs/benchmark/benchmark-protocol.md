@@ -63,24 +63,88 @@ Same protocol as L1. Compares: (a) unfused sequential, (b) torch.compile fusion,
 
 ### Correctness Tolerances
 
+Per dtype the absolute / relative tolerances passed to `torch.allclose`:
+
 | Dtype | atol | rtol | Method |
 |:------|-----:|-----:|:-------|
-| f16 | 0.1 | 0.05 | `np.allclose` + max/mean diff |
-| f32 | 1e-5 | 1e-4 | `np.allclose` |
-| bf16 | 0.2 | 0.1 | `np.allclose` |
+| f16 | 0.1 | 0.05 | `torch.allclose` + max/mean diff |
+| f32 | 1e-5 | 1e-4 | `torch.allclose` |
+| bf16 | 0.2 | 0.1 | `torch.allclose` |
+
+The **reference output** that a candidate kernel is compared against
+comes from the **Golden Kernel** for that op (see below) — *not* from a
+hardcoded `torch.*` path. Picking a Golden per the locked ladder ensures
+correctness is measured against the closest available production kernel,
+the same one that anchors the perf ratio.
+
+### Golden Kernel Protocol
+
+For each op, **one designated Golden Kernel** plays both roles:
+
+1. **Correctness oracle** — its output on a given input is the expected
+   value all candidate kernels are compared against (within tolerances
+   above).
+2. **Perf denominator** — its latency on the same `(op, shape)` is the
+   baseline against which `ratio_vs_baseline` is computed.
+
+Selection is automatic: `benchmarks.golden_ladder.golden_runner_for(op)`
+iterates registered runners in priority order (P0 → P5) and returns the
+first one whose `supports(op)` is true and `available` is true.
+
+The complete per-op assignment is locked in
+[`golden-kernel-ladder.md`](./golden-kernel-ladder.md). At a glance:
+
+| Tier  | Default Golden          | Notes |
+|:------|:------------------------|:------|
+| P0    | `cuBLAS/cuDNN`          | PyTorch vendor backends — most OT0/OT1/OT2 |
+| P1    | `FlagGems` / `Liger-Kernel` | Liger preferred for OT3 fused ops |
+| P2    | `flash-attn`, `FlashMLA`, `vLLM` | Specific OT4 attention ops |
+| P3    | `PyTorch-eager`         | Fallback for ops with no production kernel |
+| P4    | `torch.compile`         | Inductor — separate runner, never the golden |
+| P5    | `Arke`, `LLM-direct`    | Our own — never the golden |
+
+#### Audit semantics
+
+Every PERF_ALL row carries `golden_runner` and `golden_priority` columns
+identifying which kernel served as oracle. When the designated Golden
+cannot produce an output:
+
+| Status | When emitted |
+|:-------|:-------------|
+| `golden_unavailable_pending_baseline` | No registered runner declares supports(op) AND available=true. Row falls back to PyTorch-eager reference and the gate flags the gap. |
+| `mla_golden_degraded=true` (in `correctness_reason`) | FlashMLA selected as primary for `multi_latent_attention` but returns None (e.g. on sm<9.0). Row uses PyTorch-eager fallback; gate-G7 surfaces the degradation. |
+| `golden_runner=<name> returned None; used PyTorch-eager reference fallback` | Picked Golden cannot service this shape; PyTorch-eager covers the gap. |
+
+#### Overrides
+
+`bench_l1` exposes two override mechanisms for ad-hoc experimentation:
+
+```bash
+# Pin a single op
+python -m benchmarks.bench_l1 --op softmax --golden softmax=FlagGems
+
+# Pin many ops via YAML
+python -m benchmarks.bench_l1 --all --golden-file ./golden_overrides.yaml
+```
+
+The override-pinned runner must declare `supports(op)` and be `available`;
+otherwise `GoldenUnavailable` fires and the row is marked
+`golden_unavailable_pending_baseline`.
 
 ### Metrics Collected Per Run
 
-See [`benchmark-csv-spec.md`](./benchmark-csv-spec.md) for the full 41-column CSV schema.
-Key metrics:
+See [`benchmark-csv-spec.md`](./benchmark-csv-spec.md) for the full CSV
+schema. Key metrics:
 
 | Metric | Unit | Description |
 |:-------|:-----|:------------|
 | `latency_us` | μs | Median kernel latency |
 | `tflops` | TFLOPS | Achieved throughput (compute-bound ops) |
 | `gbps` | GB/s | Achieved bandwidth (memory-bound ops) |
-| `ratio_vs_baseline` | ratio | `baseline_latency / arke_latency` (>1 = Arke faster) |
-| `correct` | bool | Passes numerical tolerance |
+| `ratio_vs_baseline` | ratio | `golden_latency / candidate_latency` (>1 = candidate faster than golden) |
+| `golden_runner` | str | Designated Golden Kernel for this row's op |
+| `golden_priority` | int | Ladder priority (0..5) of the chosen golden |
+| `correct` | bool | Passes numerical tolerance vs golden output |
 | `compile_time_s` | s | Time to generate + compile kernel |
 
 ---
@@ -89,16 +153,26 @@ Key metrics:
 
 ### Correctness Gate (binary)
 
-Every (operator, shape, dtype) must pass correctness. **No exceptions.**
-A single correctness failure blocks the entire benchmark level from passing.
+Every (operator, shape, dtype) must pass correctness against its Golden
+Kernel. **No exceptions.** A single correctness failure blocks the entire
+benchmark level from passing. Rows tagged
+`golden_unavailable_pending_baseline` are not failures themselves — they
+flag a *coverage gap* that gate-G7 audits separately.
 
 ### Performance Score (per shape)
 
 ```
-ratio = P0_baseline_latency / arke_latency     (>1.0 = Arke faster than vendor)
+ratio = golden_latency / candidate_latency     (>1.0 = candidate faster than golden)
 ```
 
-When P0 is unavailable, use the primary baseline defined in benchmark-ops.md.
+The `golden_latency` is the median latency of the runner identified by
+`golden_runner` on the same `(op, shape, dtype)`. Per the protocol it is
+*always* the same runner that produced the correctness reference — no
+divergence between the two roles.
+
+When the golden is `PyTorch-eager` (P3 fallback for ops without a
+production kernel), the ratio is informational only and the row is
+excluded from gate scoring.
 
 ### Aggregation
 

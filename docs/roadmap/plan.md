@@ -157,6 +157,15 @@ AND ALL:
 
 **Memory evidence note (current):** skipped benchmark rows now carry memory preflight metadata in artifact CSVs, including `memory_bytes_required`, `memory_bytes_budget`, `memory_ratio`, and `memory_policy`. The evidence path is no longer attention-only; OT2 / OT3 pressure is represented the same way as OT4 attention pressure, which keeps BL5 coverage accounting honest under 6GB VRAM constraints.
 
+**Golden Kernel protocol (2026-05-11):** L1 correctness/perf now follows
+the locked Golden Kernel ladder: per op, one designated production kernel
+(picked by priority + supports() at runtime) acts simultaneously as the
+correctness oracle and the perf denominator. New PERF_ALL columns
+`golden_runner` / `golden_priority` make the choice visible per row;
+audit statuses (`golden_unavailable_pending_baseline`,
+`mla_golden_degraded=true`) keep gaps observable without relaxing G7's
+thresholds. Specification: [`docs/benchmark/benchmark-protocol.md`](../benchmark/benchmark-protocol.md) and [`docs/benchmark/golden-kernel-ladder.md`](../benchmark/golden-kernel-ladder.md).
+
 ---
 
 ### Stage 8 (G8): Agent Autonomy ⬜
