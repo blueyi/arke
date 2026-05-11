@@ -1,0 +1,257 @@
+operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+geglu,gpt2-sm,separate,217.6,227.3,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-512,separate,257.4,303.1,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-2k,separate,745.0,745.5,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
+geglu,llama3-8b,separate,289.3,333.7,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-1,separate,inf,inf,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",false,,,,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",,,,,1.0,N/A,false,N/A
+geglu,non-align-2,separate,inf,inf,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",false,,,,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",,,,,1.0,N/A,false,N/A
+geglu,ds-v2-512,separate,244.7,245.6,,1.0000,ok,,false,true,0.0078125,6.86275e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v2-2k,separate,928.8,930.6,,1.0000,ok,,false,true,0.0078125,6.8519e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-512,separate,355.2,357.3,,1.0000,ok,,false,true,0.0078125,6.84148e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-2k,separate,1383.9,1387.5,,1.0000,ok,,false,true,0.0078125,6.8576e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b,separate,348.7,346.9,,1.0000,ok,,false,true,0.0078125,6.8468e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b-2k,separate,1351.2,1349.6,,1.0000,ok,,false,true,0.0078125,6.85608e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+linear_ce,gpt2-seq128,separate,4765.7,4777.0,2.073,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,103123968,3542771302,0.0291,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,gpt2-seq512,separate,12836.4,12796.9,3.079,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,180911616,3542771302,0.0511,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama2-seq512,separate,32493.1,32010.2,4.131,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,331878400,3542771302,0.0937,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama2-seq2k,separate,120433.7,118650.9,4.458,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,541081600,3542771302,0.1527,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama3-seq512,separate,362935.8,359052.3,1.482,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,1317539840,3542771302,0.3719,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama3-seq2k,separate,3002650.1,2987658.2,0.717,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,2118139904,3542771302,0.5979,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,qwen25-seq512,separate,28549.1,28449.8,4.114,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,298586112,3542771302,0.0843,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,qwen25-seq2k,separate,106187.8,106073.0,4.424,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,506216448,3542771302,0.1429,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,ds-v2-seq512,separate,39982.5,39985.2,4.196,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,398462976,3542771302,0.1125,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,non-align-1,separate,3694.6,3728.4,1.692,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,65668342,3542771302,0.0185,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,non-align-2,separate,27060.7,27288.6,3.227,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,307563266,3542771302,0.0868,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,extreme-large-vocab,separate,28525.6,28565.5,4.117,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,298586112,3542771302,0.0843,linear_ce,1.0,1.0000,true,0.0000
+matmul_gelu,tiny,separate,44.9,46.1,0.093,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,tiny,torch.compile,231.4,71.7,0.018,0.1940,ok,,false,true,3.8147e-06,4.42742e-09,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.1940,false,-0.8060
+matmul_gelu,tiny,FlagGems,252.8,152.6,0.017,0.1776,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.1776,false,-0.8224
+matmul_gelu,square-1k,separate,183.1,182.3,11.726,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,square-1k,torch.compile,364.4,315.4,5.893,0.5025,ok,,false,true,3.8147e-06,1.49606e-09,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.5025,false,-0.4975
+matmul_gelu,square-1k,FlagGems,262.1,232.4,8.192,0.6986,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.6986,false,-0.3014
+matmul_gelu,square-2k,separate,696.1,696.3,24.681,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,square-2k,torch.compile,903.2,815.1,19.022,0.7707,ok,,false,true,3.8147e-06,1.04866e-09,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.7707,false,-0.2293
+matmul_gelu,square-2k,FlagGems,794.6,780.3,21.620,0.8760,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.8760,false,-0.1240
+matmul_gelu,square-4k,separate,5800.8,5691.4,23.693,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,square-4k,torch.compile,6353.9,5835.5,21.631,0.9130,ok,,false,true,3.8147e-06,7.5341e-10,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9130,false,-0.0870
+matmul_gelu,square-4k,FlagGems,6934.5,6725.6,19.820,0.8365,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.8365,false,-0.1635
+matmul_gelu,rect-wide,separate,527.4,525.3,16.289,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,rect-wide,torch.compile,596.9,530.4,14.392,0.8836,ok,,false,true,3.8147e-06,1.46989e-09,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8836,false,-0.1164
+matmul_gelu,rect-wide,FlagGems,565.1,564.1,15.201,0.9333,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9333,false,-0.0667
+matmul_gelu,rect-tall,separate,403.5,396.3,21.291,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,rect-tall,torch.compile,553.0,539.6,15.534,0.7297,ok,,false,true,3.8147e-06,1.51124e-09,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.7297,false,-0.2703
+matmul_gelu,rect-tall,FlagGems,459.8,460.8,18.683,0.8776,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8776,false,-0.1224
+matmul_gelu,llama-q,separate,5283.9,5250.0,26.011,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,llama-q,torch.compile,6918.1,6773.8,19.866,0.7638,ok,,false,true,3.8147e-06,7.25326e-10,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.7638,false,-0.2362
+matmul_gelu,llama-q,FlagGems,7239.7,5887.0,18.984,0.7299,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.7299,false,-0.2701
+matmul_gelu,llama-ffn,separate,16779.2,15682.6,22.013,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,llama-ffn,torch.compile,17345.5,17115.9,21.295,0.9674,ok,,false,true,3.8147e-06,7.38941e-10,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9674,false,-0.0326
+matmul_gelu,llama-ffn,FlagGems,17130.4,17139.7,21.562,0.9795,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9795,false,-0.0205
+matmul_gelu,seq512,separate,110.6,105.5,16.384,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,seq512,torch.compile,239.6,205.8,7.562,0.4616,ok,,false,true,3.8147e-06,1.70454e-09,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.4616,false,-0.5384
+matmul_gelu,seq512,FlagGems,296.7,181.3,6.108,0.3728,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.3728,false,-0.6272
+matmul_gelu,non-align-1,separate,76.8,73.7,1.697,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,non-align-1,torch.compile,184.3,181.2,0.707,0.4167,ok,,false,true,3.8147e-06,2.13805e-09,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.4167,false,-0.5833
+matmul_gelu,non-align-1,FlagGems,189.4,160.8,0.688,0.4055,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.4055,false,-0.5945
+matmul_gelu,non-align-2,separate,52.2,53.2,5.499,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,non-align-2,torch.compile,401.3,195.6,0.716,0.1301,ok,,false,true,3.8147e-06,2.16174e-09,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.1301,false,-0.8699
+matmul_gelu,non-align-2,FlagGems,200.5,167.9,1.432,0.2603,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.2603,false,-0.7397
+matmul_gelu,non-align-3,separate,207.7,203.8,10.337,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,non-align-3,torch.compile,383.7,374.8,5.596,0.5413,ok,,false,true,3.8147e-06,1.4889e-09,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,0.5413,false,-0.4587
+matmul_gelu,non-align-3,FlagGems,236.5,234.5,9.079,0.8782,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,0.8782,false,-0.1218
+matmul_gelu,non-align-4,separate,189.4,161.8,10.557,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,non-align-4,torch.compile,364.4,316.4,5.488,0.5198,ok,,false,true,3.8147e-06,1.59216e-09,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.5198,false,-0.4802
+matmul_gelu,non-align-4,FlagGems,315.4,356.2,6.341,0.6005,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.6005,false,-0.3995
+matmul_gelu,non-align-5,separate,76.8,75.6,9.830,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,non-align-5,torch.compile,220.2,176.9,3.429,0.3488,ok,,false,true,3.8147e-06,1.15882e-09,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.3488,false,-0.6512
+matmul_gelu,non-align-5,FlagGems,198.7,188.4,3.800,0.3865,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.3865,false,-0.6135
+matmul_gelu,non-align-6,separate,937.0,916.2,18.354,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,non-align-6,torch.compile,1040.4,1031.2,16.529,0.9006,ok,,false,true,3.8147e-06,1.03022e-09,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.9006,false,-0.0994
+matmul_gelu,non-align-6,FlagGems,1250.3,1253.4,13.754,0.7494,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.7494,false,-0.2506
+matmul_gelu,non-align-7,separate,217.9,184.1,8.348,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,non-align-7,torch.compile,418.6,290.8,4.344,0.5205,ok,,false,true,3.8147e-06,1.63707e-09,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.5205,false,-0.4795
+matmul_gelu,non-align-7,FlagGems,289.5,233.5,6.281,0.7527,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.7527,false,-0.2473
+matmul_gelu,extreme-1row,separate,170.0,69.5,0.012,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,extreme-1row,torch.compile,316.5,198.7,0.007,0.5371,ok,,false,true,3.8147e-06,4.48199e-09,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.5371,false,-0.4629
+matmul_gelu,extreme-1row,FlagGems,273.2,206.8,0.008,0.6223,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.6223,false,-0.3777
+matmul_gelu,extreme-16,separate,197.6,195.6,2.717,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,extreme-16,torch.compile,500.7,497.4,1.072,0.3946,ok,,false,true,3.8147e-06,8.69477e-10,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,0.3946,false,-0.6054
+matmul_gelu,extreme-16,FlagGems,197.6,200.5,2.717,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,extreme-long,separate,295.9,314.3,14.513,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,extreme-long,torch.compile,800.8,768.0,5.364,0.3695,ok,,false,true,3.8147e-06,7.81711e-10,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.3695,false,-0.6305
+matmul_gelu,extreme-long,FlagGems,276.5,261.1,15.534,1.0702,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,1.0702,true,0.0702
+matmul_gelu,gpt2-c_proj,separate,49.0,40.1,3.082,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,gpt2-c_proj,torch.compile,156.5,141.4,0.965,0.3131,ok,,false,true,3.8147e-06,1.81838e-09,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.3131,false,-0.6869
+matmul_gelu,gpt2-c_proj,FlagGems,185.1,152.6,0.816,0.2647,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.2647,false,-0.7353
+matmul_gelu,gpt2-c_attn,separate,56.3,68.6,8.043,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,gpt2-c_attn,torch.compile,195.6,216.1,2.316,0.2878,ok,,false,true,3.8147e-06,1.79635e-09,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.2878,false,-0.7122
+matmul_gelu,gpt2-c_attn,FlagGems,380.9,187.4,1.189,0.1478,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.1478,false,-0.8522
+matmul_gelu,lm-head-gpt2,separate,781.3,764.9,12.647,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,lm-head-gpt2,torch.compile,1355.8,1333.2,7.288,0.5763,ok,,false,true,3.8147e-06,1.68027e-09,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,0.5763,false,-0.4237
+matmul_gelu,lm-head-gpt2,FlagGems,997.4,934.9,9.907,0.7833,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,0.7833,false,-0.2167
+matmul_gelu,ds-v2-attn,separate,1817.6,1800.0,14.769,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v2-attn,torch.compile,2264.1,2248.7,11.856,0.8028,ok,,false,true,3.8147e-06,6.93626e-10,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.8028,false,-0.1972
+matmul_gelu,ds-v2-attn,FlagGems,1348.6,1312.8,19.905,1.3478,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.3478,true,0.3478
+matmul_gelu,ds-v2-ffn-up,separate,3884.9,3884.0,16.583,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v2-ffn-up,torch.compile,4971.4,4759.6,12.959,0.7814,ok,,false,true,3.8147e-06,6.86602e-10,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.7814,false,-0.2186
+matmul_gelu,ds-v2-ffn-up,FlagGems,35372.0,35135.5,1.821,0.1098,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.1098,false,-0.8902
+matmul_gelu,ds-v2-ffn-down,separate,4213.8,4213.8,15.289,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v2-ffn-down,torch.compile,5145.4,4760.6,12.521,0.8189,ok,,false,true,3.8147e-06,4.3176e-10,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.8189,false,-0.1811
+matmul_gelu,ds-v2-ffn-down,FlagGems,32375.8,31466.5,1.990,0.1302,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.1302,false,-0.8698
+matmul_gelu,ds-v2-lmhead,separate,29406.2,29151.2,18.257,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v2-lmhead,torch.compile,36380.7,36289.5,14.757,0.8083,ok,,false,true,3.8147e-06,6.66066e-10,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.8083,false,-0.1917
+matmul_gelu,ds-v2-lmhead,FlagGems,313948.2,315492.3,1.710,0.0937,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.0937,false,-0.9063
+matmul_gelu,ds-v3-attn,separate,4694.0,4699.1,22.417,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v3-attn,torch.compile,5244.9,5043.9,20.063,0.8950,ok,,false,true,3.8147e-06,5.43415e-10,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.8950,false,-0.1050
+matmul_gelu,ds-v3-attn,FlagGems,4792.2,4666.4,21.958,0.9795,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.9795,false,-0.0205
+matmul_gelu,ds-v3-ffn-up,separate,12804.1,11081.7,21.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v3-ffn-up,torch.compile,14896.1,13245.2,18.165,0.8596,ok,,false,true,3.8147e-06,5.59646e-10,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,0.8596,false,-0.1404
+matmul_gelu,ds-v3-ffn-up,FlagGems,13022.2,12637.2,20.779,0.9833,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,0.9833,false,-0.0167
+matmul_gelu,ds-v3-lmhead,separate,49223.6,49014.8,19.278,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v3-lmhead,torch.compile,1343983.6,1151917.1,0.706,0.0366,ok,,false,true,3.8147e-06,5.63866e-10,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.0366,false,-0.9634
+matmul_gelu,ds-v3-lmhead,FlagGems,1053000.7,1056789.6,0.901,0.0467,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.0467,false,-0.9533
+matmul_gelu,qwen25-attn,separate,5591.0,5435.4,2.353,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,qwen25-attn,torch.compile,5281.6,4173.7,2.490,1.0586,ok,,false,true,3.8147e-06,7.68718e-10,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0586,true,0.0586
+matmul_gelu,qwen25-attn,FlagGems,659.5,628.7,19.946,8.4776,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,8.4776,true,7.4776
+matmul_gelu,qwen25-ffn-up,separate,3366.8,3111.8,20.650,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,qwen25-ffn-up,torch.compile,4863.8,4759.6,14.294,0.6922,ok,,false,true,3.8147e-06,7.92723e-10,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.6922,false,-0.3078
+matmul_gelu,qwen25-ffn-up,FlagGems,68589.6,68340.7,1.014,0.0491,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.0491,false,-0.9509
+matmul_gelu,qwen25-lmhead,separate,33936.4,33964.0,16.431,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,qwen25-lmhead,torch.compile,787789.7,767785.0,0.708,0.0431,ok,,false,true,3.8147e-06,7.93684e-10,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.0431,false,-0.9569
+matmul_gelu,qwen25-lmhead,FlagGems,693170.2,688762.9,0.804,0.0490,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.0490,false,-0.9510
+matmul_gelu,ds-v2-long-8k,separate,21564.2,21399.6,19.917,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v2-long-8k,torch.compile,22843.4,22594.5,18.802,0.9440,ok,,false,true,3.8147e-06,6.56553e-10,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,0.9440,false,-0.0560
+matmul_gelu,ds-v2-long-8k,FlagGems,39340.0,38055.9,10.918,0.5481,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,0.5481,false,-0.4519
+matmul_gelu,ds-v3-long-32k,separate,168629.2,169132.0,19.968,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0000,true,0.0000
+matmul_gelu,ds-v3-long-32k,torch.compile,174645.2,172093.2,19.281,0.9656,ok,,false,true,3.8147e-06,5.57191e-10,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.9656,false,-0.0344
+matmul_gelu,ds-v3-long-32k,FlagGems,1853722.5,1842669.6,1.816,0.0910,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.0910,false,-0.9090
+matmul_relu,tiny,separate,153.6,93.2,0.027,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,tiny,torch.compile,324.6,277.4,0.013,0.4732,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.4732,false,-0.5268
+matmul_relu,tiny,FlagGems,236.4,168.0,0.018,0.6497,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6497,false,-0.3503
+matmul_relu,square-1k,separate,262.1,262.1,8.192,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,square-1k,torch.compile,401.4,391.2,5.350,0.6530,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6530,false,-0.3470
+matmul_relu,square-1k,FlagGems,186.1,180.2,11.539,1.4084,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.4084,true,0.4084
+matmul_relu,square-2k,separate,951.3,907.3,18.059,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,square-2k,torch.compile,1089.5,1068.0,15.768,0.8732,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8732,false,-0.1268
+matmul_relu,square-2k,FlagGems,748.5,743.4,22.951,1.2709,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.2709,true,0.2709
+matmul_relu,square-4k,separate,6954.0,6952.8,19.764,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,square-4k,torch.compile,7239.6,6993.9,18.984,0.9606,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9606,false,-0.0394
+matmul_relu,square-4k,FlagGems,5254.1,5258.2,26.158,1.3235,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.3235,true,0.3235
+matmul_relu,rect-wide,separate,542.7,535.6,15.828,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,rect-wide,torch.compile,667.3,575.4,12.872,0.8133,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8133,false,-0.1867
+matmul_relu,rect-wide,FlagGems,409.6,396.3,20.972,1.3250,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.3250,true,0.3250
+matmul_relu,rect-tall,separate,404.5,400.4,21.237,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,rect-tall,torch.compile,600.1,603.1,14.315,0.6741,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6741,false,-0.3259
+matmul_relu,rect-tall,FlagGems,403.5,403.5,21.291,1.0025,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0025,true,0.0025
+matmul_relu,llama-q,separate,6029.1,5520.3,22.796,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,llama-q,torch.compile,6731.8,6645.8,20.416,0.8956,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8956,false,-0.1044
+matmul_relu,llama-q,FlagGems,6421.4,5251.9,21.403,0.9389,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9389,false,-0.0611
+matmul_relu,llama-ffn,separate,16452.6,16262.1,22.450,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,llama-ffn,torch.compile,16948.2,16811.0,21.794,0.9708,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9708,false,-0.0292
+matmul_relu,llama-ffn,FlagGems,16318.5,16157.7,22.635,1.0082,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0082,true,0.0082
+matmul_relu,seq512,separate,113.5,104.4,15.959,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,seq512,torch.compile,300.0,275.5,6.039,0.3783,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.3783,false,-0.6217
+matmul_relu,seq512,FlagGems,208.9,181.2,8.674,0.5433,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5433,false,-0.4567
+matmul_relu,non-align-1,separate,101.2,63.7,1.287,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,non-align-1,torch.compile,202.6,185.3,0.643,0.4995,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.4995,false,-0.5005
+matmul_relu,non-align-1,FlagGems,153.6,140.1,0.848,0.6589,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6589,false,-0.3411
+matmul_relu,non-align-2,separate,134.1,119.8,2.141,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,non-align-2,torch.compile,360.4,343.9,0.797,0.3721,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.3721,false,-0.6279
+matmul_relu,non-align-2,FlagGems,163.1,177.2,1.761,0.8222,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8222,false,-0.1778
+matmul_relu,non-align-3,separate,224.1,169.0,9.584,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,non-align-3,torch.compile,385.9,381.7,5.566,0.5807,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5807,false,-0.4193
+matmul_relu,non-align-3,FlagGems,227.3,221.0,9.447,0.9859,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9859,false,-0.0141
+matmul_relu,non-align-4,separate,197.6,175.1,10.120,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,non-align-4,torch.compile,338.9,329.7,5.901,0.5831,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5831,false,-0.4169
+matmul_relu,non-align-4,FlagGems,289.8,294.8,6.902,0.6818,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.6818,false,-0.3182
+matmul_relu,non-align-5,separate,51.2,50.9,14.746,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,non-align-5,torch.compile,196.8,181.2,3.836,0.2602,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.2602,false,-0.7398
+matmul_relu,non-align-5,FlagGems,195.7,158.6,3.858,0.2616,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.2616,false,-0.7384
+matmul_relu,non-align-6,separate,919.2,916.5,18.708,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,non-align-6,torch.compile,1036.3,1031.2,16.594,0.8870,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8870,false,-0.1130
+matmul_relu,non-align-6,FlagGems,1226.8,1227.8,14.018,0.7493,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.7493,false,-0.2507
+matmul_relu,non-align-7,separate,178.1,170.0,10.211,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,non-align-7,torch.compile,350.2,292.9,5.193,0.5086,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5086,false,-0.4914
+matmul_relu,non-align-7,FlagGems,347.0,343.0,5.241,0.5133,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5133,false,-0.4867
+matmul_relu,extreme-1row,separate,90.9,53.1,0.023,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,extreme-1row,torch.compile,159.8,157.8,0.013,0.5688,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5688,false,-0.4312
+matmul_relu,extreme-1row,FlagGems,165.9,158.7,0.013,0.5479,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.5479,false,-0.4521
+matmul_relu,extreme-16,separate,161.8,160.8,3.318,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,extreme-16,torch.compile,397.3,390.1,1.351,0.4072,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.4072,false,-0.5928
+matmul_relu,extreme-16,FlagGems,193.3,202.8,2.777,0.8370,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.8370,false,-0.1630
+matmul_relu,extreme-long,separate,302.1,300.0,14.218,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+matmul_relu,extreme-long,torch.compile,875.5,712.7,4.906,0.3451,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.3451,false,-0.6549
+matmul_relu,extreme-long,FlagGems,331.7,326.7,12.949,0.9108,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,0.9108,false,-0.0892
+matmul_relu,gpt2-c_proj,separate,63.6,44.0,2.372,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,gpt2-c_proj,torch.compile,301.2,286.6,0.501,0.2112,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.2112,false,-0.7888
+matmul_relu,gpt2-c_proj,FlagGems,186.4,175.8,0.810,0.3412,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.3412,false,-0.6588
+matmul_relu,gpt2-c_attn,separate,77.8,70.4,5.821,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,gpt2-c_attn,torch.compile,173.1,156.7,2.618,0.4495,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.4495,false,-0.5505
+matmul_relu,gpt2-c_attn,FlagGems,229.4,173.1,1.975,0.3391,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.3391,false,-0.6609
+matmul_relu,lm-head-gpt2,separate,702.5,699.4,14.066,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,lm-head-gpt2,torch.compile,1220.6,1217.5,8.095,0.5755,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,0.5755,false,-0.4245
+matmul_relu,lm-head-gpt2,FlagGems,920.6,902.1,10.733,0.7631,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,0.7631,false,-0.2369
+matmul_relu,ds-v2-attn,separate,1632.3,1625.1,16.446,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v2-attn,torch.compile,2081.8,2095.1,12.894,0.7841,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.7841,false,-0.2159
+matmul_relu,ds-v2-attn,FlagGems,1352.7,1276.9,19.844,1.2067,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.2067,true,0.2067
+matmul_relu,ds-v2-ffn-up,separate,3494.9,3490.8,18.434,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v2-ffn-up,torch.compile,4528.1,4549.6,14.228,0.7718,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.7718,false,-0.2282
+matmul_relu,ds-v2-ffn-up,FlagGems,35660.8,35215.4,1.807,0.0980,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.0980,false,-0.9020
+matmul_relu,ds-v2-ffn-down,separate,3777.5,3778.4,17.055,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v2-ffn-down,torch.compile,4815.9,4715.3,13.378,0.7844,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.7844,false,-0.2156
+matmul_relu,ds-v2-ffn-down,FlagGems,34991.1,35194.9,1.841,0.1080,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.1080,false,-0.8920
+matmul_relu,ds-v2-lmhead,separate,28394.5,28377.1,18.908,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v2-lmhead,torch.compile,35290.1,35317.8,15.213,0.8046,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.8046,false,-0.1954
+matmul_relu,ds-v2-lmhead,FlagGems,328323.1,327755.8,1.635,0.0865,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.0865,false,-0.9135
+matmul_relu,ds-v3-attn,separate,8497.2,8480.8,12.384,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v3-attn,torch.compile,7050.2,7147.5,14.925,1.2052,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.2052,true,0.2052
+matmul_relu,ds-v3-attn,FlagGems,4787.2,4763.6,21.981,1.7750,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.7750,true,0.7750
+matmul_relu,ds-v3-ffn-up,separate,17076.2,17077.2,15.846,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v3-ffn-up,torch.compile,14150.7,12521.5,19.122,1.2067,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.2067,true,0.2067
+matmul_relu,ds-v3-ffn-up,FlagGems,13048.8,12311.6,20.736,1.3086,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.3086,true,0.3086
+matmul_relu,ds-v3-lmhead,separate,48323.6,48130.0,19.637,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v3-lmhead,torch.compile,1400898.6,1163493.4,0.677,0.0345,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.0345,false,-0.9655
+matmul_relu,ds-v3-lmhead,FlagGems,1072331.8,1066981.3,0.885,0.0451,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.0451,false,-0.9549
+matmul_relu,qwen25-attn,separate,7646.2,7674.8,1.720,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,qwen25-attn,torch.compile,4317.0,4291.5,3.047,1.7712,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.7712,true,0.7712
+matmul_relu,qwen25-attn,FlagGems,580.6,578.2,22.654,13.1695,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,13.1695,true,12.1695
+matmul_relu,qwen25-ffn-up,separate,3184.6,3146.8,21.831,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,qwen25-ffn-up,torch.compile,4582.4,4510.7,15.172,0.6950,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.6950,false,-0.3050
+matmul_relu,qwen25-ffn-up,FlagGems,66633.7,66671.6,1.043,0.0478,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.0478,false,-0.9522
+matmul_relu,qwen25-lmhead,separate,29535.1,29375.5,18.879,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,qwen25-lmhead,torch.compile,599588.6,548906.7,0.930,0.0493,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.0493,false,-0.9507
+matmul_relu,qwen25-lmhead,FlagGems,700099.6,690408.4,0.796,0.0422,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.0422,false,-0.9578
+matmul_relu,ds-v2-long-8k,separate,25162.8,24071.2,17.069,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v2-long-8k,torch.compile,19206.1,18925.3,22.362,1.3101,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.3101,true,0.3101
+matmul_relu,ds-v2-long-8k,FlagGems,45242.3,43779.9,9.493,0.5562,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,0.5562,false,-0.4438
+matmul_relu,ds-v3-long-32k,separate,144923.6,143346.4,23.235,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0000,true,0.0000
+matmul_relu,ds-v3-long-32k,torch.compile,147333.1,149157.9,22.855,0.9836,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.9836,false,-0.0164
+matmul_relu,ds-v3-long-32k,FlagGems,1852025.9,1840237.5,1.818,0.0783,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.0783,false,-0.9217
+qkv_fa,gpt2-sm-128,separate,98.4,73.7,4.604,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+qkv_fa,gpt2-sm-512,separate,217.6,220.2,8.328,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+qkv_fa,gpt2-sm-1k,separate,543.2,544.6,6.671,1.0000,ok,,false,true,5.82077e-11,7.40149e-17,0.01,0.01,ok,,31457280,3542771302,0.0089,attention,1.0,1.0000,true,0.0000
+qkv_fa,gpt2-md-2k,separate,1814.5,1812.5,7.101,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,150994944,3542771302,0.0426,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-512,separate,2059.1,2024.2,25.030,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-2k,separate,12262.4,11357.0,16.812,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-4k,separate,30297.9,30128.1,13.609,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1207959552,3542771302,0.3410,attention,1.0,1.0000,true,0.0000
+qkv_fa,llama2-7b-batch,separate,9904.1,9888.8,20.815,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
+qkv_fa,ds-v2-512,separate,43724.8,43547.6,18.860,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
+qkv_fa,ds-v2-2k,separate,160261.1,158176.3,20.582,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0000,true,0.0000
+qkv_fa,ds-v2-4k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 4831838208 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4831838208 bytes > budget 3542771302 bytes,4831838208,3542771302,1.3639,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v2-8k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 18253611008 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 18253611008 bytes > budget 3542771302 bytes,18253611008,3542771302,5.1524,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v2-16k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 70866960384 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 70866960384 bytes > budget 3542771302 bytes,70866960384,3542771302,20.0033,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v3-32k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 279172874240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 279172874240 bytes > budget 3542771302 bytes,279172874240,3542771302,78.8007,attention,1.0,N/A,false,N/A
+qkv_fa,ds-v3-163k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 6893422510080 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 6893422510080 bytes > budget 3542771302 bytes,6893422510080,3542771302,1945.7712,attention,1.0,N/A,false,N/A
+qkv_fa,ds-batch-8,separate,344058.9,351453.2,19.174,1.0000,ok,,false,true,4.76837e-07,1.4707e-14,0.01,0.01,ok,,1073741824,3542771302,0.3031,attention,1.0,1.0000,true,0.0000
+swiglu,gpt2-sm,separate,240.1,238.8,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
+swiglu,llama-7b-512,separate,284.7,314.2,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
+swiglu,llama-7b-2k,separate,745.5,757.6,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
+swiglu,llama3-8b,separate,346.6,343.0,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
+swiglu,non-align-1,separate,inf,inf,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",false,,,,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",,,,,1.0,N/A,false,N/A
+swiglu,non-align-2,separate,inf,inf,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",false,,,,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",,,,,1.0,N/A,false,N/A
+swiglu,ds-v2-512,separate,231.9,231.4,,1.0000,ok,,false,true,0.0078125,5.03195e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v2-2k,separate,889.3,889.8,,1.0000,ok,,false,true,0.0078125,5.02853e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-512,separate,339.3,340.0,,1.0000,ok,,false,true,0.0078125,5.02715e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-2k,separate,1322.0,1325.1,,1.0000,ok,,false,true,0.015625,5.03611e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b,separate,351.7,349.2,,1.0000,ok,,false,true,0.0078125,5.03035e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b-2k,separate,1358.8,1358.8,,1.0000,ok,,false,true,0.015625,5.03307e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000

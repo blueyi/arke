@@ -1,0 +1,23 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+argmax,small,PyTorch-eager,65.3,68.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,small,Arke,72.5,72.7,,0.9007,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9007,false,-0.0993
+argmax,medium,PyTorch-eager,57.9,69.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,medium,Arke,86.2,56.4,,0.6717,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.6717,false,-0.3283
+argmax,large,PyTorch-eager,76.3,74.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,large,Arke,92.5,74.8,,0.8249,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.8249,false,-0.1751
+argmax,wide,PyTorch-eager,47.0,59.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,wide,Arke,56.7,66.6,,0.8289,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.8289,false,-0.1711
+argmax,llama3-wide,PyTorch-eager,53.9,60.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,llama3-wide,Arke,59.1,55.3,,0.9120,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9120,false,-0.0880
+argmax,qwen25-wide,PyTorch-eager,57.3,41.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,qwen25-wide,Arke,56.9,75.8,,1.0070,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0070,true,0.0070
+argmax,non-align-1,PyTorch-eager,49.4,56.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,non-align-1,Arke,50.3,73.6,,0.9821,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9821,false,-0.0179
+argmax,non-align-2,PyTorch-eager,56.0,63.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,non-align-2,Arke,62.5,82.9,,0.8960,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.8960,false,-0.1040
+argmax,non-align-3,PyTorch-eager,221.0,228.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,non-align-3,Arke,215.8,222.2,,1.0241,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0241,true,0.0241
+argmax,extreme-tall,PyTorch-eager,249.2,251.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,extreme-tall,Arke,250.0,250.9,,0.9968,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9968,false,-0.0032
+argmax,extreme-flat,PyTorch-eager,210.8,212.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+argmax,extreme-flat,Arke,210.6,210.9,,1.0009,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0009,true,0.0009

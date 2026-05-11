@@ -1,0 +1,35 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+topk,moe-top2-small,PyTorch-eager,97.6,49.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,moe-top2-small,Arke,107.0,13.2,,0.9121,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9121,false,-0.0879
+topk,moe-top2-gpt2,PyTorch-eager,508.3,456.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,moe-top2-gpt2,Arke,103.4,113.7,,4.9159,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,4.9159,true,3.9159
+topk,moe-top4-llama,PyTorch-eager,165.4,170.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,moe-top4-llama,Arke,145.8,109.4,,1.1344,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.1344,true,0.1344
+topk,moe-top2-ds,PyTorch-eager,163.7,167.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,moe-top2-ds,Arke,123.0,96.3,,1.3309,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3309,true,0.3309
+topk,sampling-top50,PyTorch-eager,159.4,163.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,sampling-top50,Arke,90.7,105.5,,1.7574,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.7574,true,0.7574
+topk,sampling-top50-llama3,PyTorch-eager,589.9,530.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,sampling-top50-llama3,Arke,116.9,119.8,,5.0462,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,5.0462,true,4.0462
+topk,sampling-top100-qwen,PyTorch-eager,516.5,517.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,sampling-top100-qwen,Arke,97.2,112.5,,5.3138,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,5.3138,true,4.3138
+topk,non-align-1,PyTorch-eager,155.0,165.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,non-align-1,Arke,116.0,107.8,,1.3362,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3362,true,0.3362
+topk,non-align-2,PyTorch-eager,510.7,503.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,non-align-2,Arke,128.8,113.9,,3.9651,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,3.9651,true,2.9651
+topk,non-align-3,PyTorch-eager,9675.1,9535.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,non-align-3,Arke,785.7,760.8,,12.3140,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,12.3140,true,11.3140
+topk,extreme-k1,PyTorch-eager,1258.9,1244.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,extreme-k1,Arke,135.3,161.8,,9.3045,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,9.3045,true,8.3045
+topk,extreme-kmax,PyTorch-eager,169.6,171.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+topk,extreme-kmax,Arke,126.4,100.4,,1.3418,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3418,true,0.3418
+topk,extreme-wide,PyTorch-eager,inf,inf,,,error,"`ptxas` failed with error code -9
+`ptxas` stderr:
+
+Repro command: /home/blueyi/.venvs/arke/lib/python3.10/site-packages/triton/backends/nvidia/bin/ptxas -lineinfo -v --gpu-name=sm_86 /tmp/tmpyseyjydv.ptx -o /tmp/tmpyseyjydv.ptx.o
+",false,,,,,,error,"`ptxas` failed with error code -9
+`ptxas` stderr:
+
+Repro command: /home/blueyi/.venvs/arke/lib/python3.10/site-packages/triton/backends/nvidia/bin/ptxas -lineinfo -v --gpu-name=sm_86 /tmp/tmpyseyjydv.ptx -o /tmp/tmpyseyjydv.ptx.o
+",,,,,1.0,N/A,false,N/A
+topk,extreme-wide,Arke,188.5,241.7,,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,,,

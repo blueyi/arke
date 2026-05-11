@@ -1,0 +1,13 @@
+operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+linear_ce,gpt2-seq128,separate,4765.7,4777.0,2.073,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,103123968,3542771302,0.0291,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,gpt2-seq512,separate,12836.4,12796.9,3.079,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,180911616,3542771302,0.0511,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama2-seq512,separate,32493.1,32010.2,4.131,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,331878400,3542771302,0.0937,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama2-seq2k,separate,120433.7,118650.9,4.458,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,541081600,3542771302,0.1527,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama3-seq512,separate,362935.8,359052.3,1.482,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,1317539840,3542771302,0.3719,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,llama3-seq2k,separate,3002650.1,2987658.2,0.717,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,2118139904,3542771302,0.5979,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,qwen25-seq512,separate,28549.1,28449.8,4.114,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,298586112,3542771302,0.0843,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,qwen25-seq2k,separate,106187.8,106073.0,4.424,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,506216448,3542771302,0.1429,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,ds-v2-seq512,separate,39982.5,39985.2,4.196,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,398462976,3542771302,0.1125,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,non-align-1,separate,3694.6,3728.4,1.692,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,65668342,3542771302,0.0185,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,non-align-2,separate,27060.7,27288.6,3.227,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,307563266,3542771302,0.0868,linear_ce,1.0,1.0000,true,0.0000
+linear_ce,extreme-large-vocab,separate,28525.6,28565.5,4.117,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,298586112,3542771302,0.0843,linear_ce,1.0,1.0000,true,0.0000

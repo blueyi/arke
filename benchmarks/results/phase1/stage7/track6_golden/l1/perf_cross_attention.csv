@@ -1,0 +1,25 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+cross_attention,tiny,PyTorch-eager,1038.7,892.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,73728,3542771302,0.0000,attention,1.0,1.0000,true,0.0000
+cross_attention,tiny,Arke,169.7,178.2,,6.1208,ok,,false,true,0,0,0.001,0.001,ok,,73728,3542771302,0.0000,attention,1.0,6.1208,true,5.1208
+cross_attention,whisper-enc-dec,PyTorch-eager,6508.5,5933.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,42144000,3542771302,0.0119,attention,1.0,1.0000,true,0.0000
+cross_attention,whisper-enc-dec,Arke,269.8,366.3,,24.1234,ok,,false,true,0,0,0.001,0.001,ok,,42144000,3542771302,0.0119,attention,1.0,24.1234,true,23.1234
+cross_attention,whisper-decode-1,PyTorch-eager,1023.4,915.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4112,3542771302,0.0000,attention,1.0,1.0000,true,0.0000
+cross_attention,whisper-decode-1,Arke,251.6,151.6,,4.0676,ok,,false,true,0,0,0.001,0.001,ok,,4112,3542771302,0.0000,attention,1.0,4.0676,true,3.0676
+cross_attention,t5-small-enc128,PyTorch-eager,1198.0,772.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,1.0000,true,0.0000
+cross_attention,t5-small-enc128,Arke,199.5,34.8,,6.0050,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,6.0050,true,5.0050
+cross_attention,t5-small-dec128,PyTorch-eager,1228.4,887.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,1.0000,true,0.0000
+cross_attention,t5-small-dec128,Arke,255.4,223.2,,4.8097,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,4.8097,true,3.8097
+cross_attention,t5-base-dec512,PyTorch-eager,1167.5,925.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+cross_attention,t5-base-dec512,Arke,179.0,181.2,,6.5223,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,6.5223,true,5.5223
+cross_attention,sdxl-unet-64,PyTorch-eager,1328.9,1185.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,570425344,3542771302,0.1610,attention,1.0,1.0000,true,0.0000
+cross_attention,sdxl-unet-64,Arke,177.3,230.3,,7.4952,ok,,false,true,0,0,0.001,0.001,ok,,570425344,3542771302,0.1610,attention,1.0,7.4952,true,6.4952
+cross_attention,sdxl-unet-128,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,8724152320,3542771302,2.4625,attention,1.0,N/A,false,N/A
+cross_attention,sdxl-unet-128,Arke,inf,inf,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,8724152320,3542771302,2.4625,attention,1.0,N/A,false,N/A
+cross_attention,llava-vision,PyTorch-eager,2146.9,2363.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,40108032,3542771302,0.0113,attention,1.0,1.0000,true,0.0000
+cross_attention,llava-vision,Arke,330.8,340.0,,6.4900,ok,,false,true,0,0,0.001,0.001,ok,,40108032,3542771302,0.0113,attention,1.0,6.4900,true,5.4900
+cross_attention,batch4-cross,PyTorch-eager,1179.3,1387.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,25165824,3542771302,0.0071,attention,1.0,1.0000,true,0.0000
+cross_attention,batch4-cross,Arke,206.2,234.3,,5.7192,ok,,false,true,0,0,0.001,0.001,ok,,25165824,3542771302,0.0071,attention,1.0,5.7192,true,4.7192
+cross_attention,non-align-1,PyTorch-eager,1091.4,876.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,688086,3542771302,0.0002,attention,1.0,1.0000,true,0.0000
+cross_attention,non-align-1,Arke,790.5,707.6,,1.3806,ok,,false,true,0,0,0.001,0.001,ok,,688086,3542771302,0.0002,attention,1.0,1.3806,true,0.3806
+cross_attention,non-align-2,PyTorch-eager,1610.4,1838.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,10129860,3542771302,0.0029,attention,1.0,1.0000,true,0.0000
+cross_attention,non-align-2,Arke,456.7,499.7,,3.5262,ok,,false,true,0,0,0.001,0.001,ok,,10129860,3542771302,0.0029,attention,1.0,3.5262,true,2.5262
