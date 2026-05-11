@@ -1,13 +1,25 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-cross_attention,tiny,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,whisper-enc-dec,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,whisper-decode-1,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,t5-small-enc128,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,t5-small-dec128,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,t5-base-dec512,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,sdxl-unet-64,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,sdxl-unet-128,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,llava-vision,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,batch4-cross,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,non-align-1,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
-cross_attention,non-align-2,PyTorch-eager,inf,inf,,,error,math domain error,false,,,,,,error,math domain error,,,,,1.0,N/A,false,N/A
+cross_attention,tiny,PyTorch-eager,144.0,151.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,73728,3542771302,0.0000,attention,1.0,1.0000,true,0.0000
+cross_attention,whisper-enc-dec,PyTorch-eager,3577.8,3445.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,42144000,3542771302,0.0119,attention,1.0,1.0000,true,0.0000
+cross_attention,whisper-decode-1,PyTorch-eager,169.4,181.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4112,3542771302,0.0000,attention,1.0,1.0000,true,0.0000
+cross_attention,t5-small-enc128,PyTorch-eager,184.5,180.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,1.0000,true,0.0000
+cross_attention,t5-small-dec128,PyTorch-eager,199.4,203.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,1.0000,true,0.0000
+cross_attention,t5-base-dec512,PyTorch-eager,654.2,653.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+cross_attention,sdxl-unet-64,PyTorch-eager,1461.9,1351.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,570425344,3542771302,0.1610,attention,1.0,1.0000,true,0.0000
+cross_attention,sdxl-unet-128,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,8724152320,3542771302,2.4625,attention,1.0,N/A,false,N/A
+cross_attention,llava-vision,PyTorch-eager,2445.0,2394.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,40108032,3542771302,0.0113,attention,1.0,1.0000,true,0.0000
+cross_attention,batch4-cross,PyTorch-eager,1556.0,1521.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,25165824,3542771302,0.0071,attention,1.0,1.0000,true,0.0000
+cross_attention,non-align-1,PyTorch-eager,188.6,163.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,688086,3542771302,0.0002,attention,1.0,1.0000,true,0.0000
+cross_attention,non-align-2,PyTorch-eager,2397.0,2318.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,10129860,3542771302,0.0029,attention,1.0,1.0000,true,0.0000
+cross_attention,tiny,Arke,20.5,34.8,,7.0244,ok,,false,true,0,0,0.001,0.001,ok,,73728,3542771302,0.0000,attention,1.0,7.0244,true,6.0244
+cross_attention,whisper-enc-dec,Arke,251.3,252.9,,14.2372,ok,,false,true,0,0,0.001,0.001,ok,,42144000,3542771302,0.0119,attention,1.0,14.2372,true,13.2372
+cross_attention,whisper-decode-1,Arke,28.7,34.8,,5.9024,ok,,false,true,0,0,0.001,0.001,ok,,4112,3542771302,0.0000,attention,1.0,5.9024,true,4.9024
+cross_attention,t5-small-enc128,Arke,19.9,34.1,,9.2714,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,9.2714,true,8.2714
+cross_attention,t5-small-dec128,Arke,27.5,29.9,,7.2509,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention,1.0,7.2509,true,6.2509
+cross_attention,t5-base-dec512,Arke,52.2,57.2,,12.5326,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,12.5326,true,11.5326
+cross_attention,sdxl-unet-64,Arke,129.0,136.1,,11.3326,ok,,false,true,0,0,0.001,0.001,ok,,570425344,3542771302,0.1610,attention,1.0,11.3326,true,10.3326
+cross_attention,sdxl-unet-128,Arke,inf,inf,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 8724152320 bytes > budget 3542771302 bytes,8724152320,3542771302,2.4625,attention,1.0,N/A,false,N/A
+cross_attention,llava-vision,Arke,309.8,310.3,,7.8922,ok,,false,true,0,0,0.001,0.001,ok,,40108032,3542771302,0.0113,attention,1.0,7.8922,true,6.8922
+cross_attention,batch4-cross,Arke,118.2,120.8,,13.1641,ok,,false,true,0,0,0.001,0.001,ok,,25165824,3542771302,0.0071,attention,1.0,13.1641,true,12.1641
+cross_attention,non-align-1,Arke,91.7,102.4,,2.0567,ok,,false,true,0,0,0.001,0.001,ok,,688086,3542771302,0.0002,attention,1.0,2.0567,true,1.0567
+cross_attention,non-align-2,Arke,248.8,250.9,,9.6342,ok,,false,true,0,0,0.001,0.001,ok,,10129860,3542771302,0.0029,attention,1.0,9.6342,true,8.6342

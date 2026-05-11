@@ -1,5 +1,5 @@
 {
-  "overall_geomean": 0.9751,
+  "overall_geomean": 0.9519,
   "op_scores": {
     "add": 1.0046,
     "argmax": 0.9981,
@@ -7,6 +7,7 @@
     "cast": 4.6861,
     "concat": 0.9859,
     "copy_": 1.0354,
+    "cross_attention": 2.8673,
     "cross_entropy": 0.8386,
     "cumsum": 0.9179,
     "dequantize_per_channel": 0.6701,
@@ -31,12 +32,12 @@
     "relu": 0.6335,
     "rmsnorm": 1.4567,
     "rmsnorm_residual": 0.8791,
-    "rope": 1.4204,
+    "rope": 1.4558,
     "rsqrt": 0.9628,
     "scatter": 1.0,
     "sigmoid": 0.9786,
     "silu": 0.8011,
-    "softmax": 0.6663,
+    "softmax": 0.5315,
     "split": 1.1374,
     "swiglu": 0.945,
     "tanh": 0.9891,
@@ -44,7 +45,7 @@
     "transpose": 0.03,
     "where_": 0.9943
   },
-  "total_shapes": 1237,
+  "total_shapes": 1359,
   "operators": [
     "add",
     "argmax",
@@ -52,6 +53,7 @@
     "cast",
     "concat",
     "copy_",
+    "cross_attention",
     "cross_entropy",
     "cumsum",
     "dequantize_per_channel",
@@ -90,29 +92,31 @@
     "where_"
   ],
   "status_counts": {
-    "ok": 1237,
-    "error": 21,
-    "skipped": 29
+    "ok": 1361,
+    "skipped": 40,
+    "error": 2
   },
   "correctness_counts": {
-    "ok": 1237,
-    "error": 21,
-    "skipped": 29
+    "ok": 1348,
+    "skipped": 40,
+    "unsupported": 11,
+    "error": 4
   },
   "memory_policy_counts": {
-    "none": 1075,
+    "none": 1145,
     "dense_matmul": 102,
-    "attention": 100,
+    "attention": 146,
     "linear_ce": 10
   },
-  "memory_pressure_rows": 29,
+  "memory_pressure_rows": 40,
   "perf_target_counts": {
-    "with_target": 1287,
+    "with_target": 1403,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "true": 734,
-    "false": 553
+    "true": 808,
+    "false": 593,
+    "unknown": 2
   },
   "perf_targets": {
     "add": 1.0,
@@ -168,6 +172,7 @@
     "cast": 4.6861,
     "concat": 0.9859,
     "copy_": 1.0354,
+    "cross_attention": 2.8673,
     "cross_entropy": 0.8386,
     "cumsum": 0.9179,
     "dequantize_per_channel": 0.6701,
@@ -192,12 +197,12 @@
     "relu": 0.6335,
     "rmsnorm": 1.4567,
     "rmsnorm_residual": 0.8791,
-    "rope": 1.4204,
+    "rope": 1.4558,
     "rsqrt": 0.9628,
     "scatter": 1.0,
     "sigmoid": 0.9786,
     "silu": 0.8011,
-    "softmax": 0.6663,
+    "softmax": 0.5315,
     "split": 1.1374,
     "swiglu": 0.945,
     "tanh": 0.9891,
@@ -212,6 +217,7 @@
     "cast": 41.9742,
     "concat": -0.0129,
     "copy_": 0.0559,
+    "cross_attention": 4.059,
     "cross_entropy": -0.1462,
     "cumsum": -0.0604,
     "dequantize_per_channel": -0.2732,
@@ -236,12 +242,12 @@
     "relu": -0.223,
     "rmsnorm": 1.2596,
     "rmsnorm_residual": -0.1129,
-    "rope": 0.5098,
+    "rope": 0.57,
     "rsqrt": -0.0347,
     "scatter": 0.0,
     "sigmoid": -0.0178,
     "silu": -0.127,
-    "softmax": -0.2122,
+    "softmax": -0.2927,
     "split": 0.1475,
     "swiglu": -0.0522,
     "tanh": -0.0085,
