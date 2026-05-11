@@ -1,0 +1,25 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+geglu,gpt2-sm,PyTorch-eager,3.5,2.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,gpt2-sm,Arke,7.8,3.2,,0.4487,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4487,false,-0.5513
+geglu,llama-7b-512,PyTorch-eager,3.6,3.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-512,Arke,8.1,25.8,,0.4444,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4444,false,-0.5556
+geglu,llama-7b-2k,PyTorch-eager,3.6,2.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-2k,Arke,8.2,3.3,,0.4390,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4390,false,-0.5610
+geglu,llama3-8b,PyTorch-eager,3.8,2.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,llama3-8b,Arke,7.9,1.6,,0.4810,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4810,false,-0.5190
+geglu,ds-v2-512,PyTorch-eager,3.8,28.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v2-512,Arke,7.7,3.7,,0.4935,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4935,false,-0.5065
+geglu,ds-v2-2k,PyTorch-eager,3.7,3.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v2-2k,Arke,7.9,10.6,,0.4684,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4684,false,-0.5316
+geglu,ds-v3-512,PyTorch-eager,3.4,7.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-512,Arke,7.8,4.6,,0.4359,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4359,false,-0.5641
+geglu,ds-v3-2k,PyTorch-eager,3.2,3.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-2k,Arke,7.9,40.9,,0.4051,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4051,false,-0.5949
+geglu,qwen25-7b,PyTorch-eager,3.4,3.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b,Arke,7.9,25.3,,0.4304,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4304,false,-0.5696
+geglu,qwen25-7b-2k,PyTorch-eager,3.6,3.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b-2k,Arke,7.8,25.5,,0.4615,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4615,false,-0.5385
+geglu,non-align-1,PyTorch-eager,3.7,14.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-1,Arke,8.0,7.5,,0.4625,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4625,false,-0.5375
+geglu,non-align-2,PyTorch-eager,3.3,5.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-2,Arke,7.9,67.9,,0.4177,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4177,false,-0.5823

@@ -1,0 +1,27 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+cross_entropy,tiny,PyTorch-eager,19.2,12.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,tiny,Arke,36.9,34.6,,0.5203,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.5203,false,-0.4797
+cross_entropy,gpt2-seq128,PyTorch-eager,318.0,315.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,gpt2-seq128,Arke,453.5,452.6,,0.7012,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7012,false,-0.2988
+cross_entropy,gpt2-seq512,PyTorch-eager,1225.6,1213.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,gpt2-seq512,Arke,1756.0,1735.7,,0.6979,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.6979,false,-0.3021
+cross_entropy,llama2-seq512,PyTorch-eager,829.4,821.1,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,llama2-seq512,Arke,1160.7,1156.1,,0.7146,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7146,false,-0.2854
+cross_entropy,llama2-seq2k,PyTorch-eager,3285.4,3279.9,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,llama2-seq2k,Arke,4615.8,4598.8,,0.7118,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7118,false,-0.2882
+cross_entropy,llama3-seq512,PyTorch-eager,3287.9,3284.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,llama3-seq512,Arke,4624.8,4603.8,,0.7109,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7109,false,-0.2891
+cross_entropy,qwen25-seq512,PyTorch-eager,3887.5,3881.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,qwen25-seq512,Arke,5469.9,5451.8,,0.7107,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7107,false,-0.2893
+cross_entropy,ds-v2-seq512,PyTorch-eager,2625.0,2619.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,ds-v2-seq512,Arke,3691.8,3682.0,,0.7110,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7110,false,-0.2890
+cross_entropy,batch4-seq512,PyTorch-eager,4800.3,4796.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,batch4-seq512,Arke,6904.9,6884.4,,0.6952,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.6952,false,-0.3048
+cross_entropy,non-align-1,PyTorch-eager,312.8,312.1,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,non-align-1,Arke,444.0,443.4,,0.7045,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7045,false,-0.2955
+cross_entropy,non-align-2,PyTorch-eager,2148.8,2138.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,non-align-2,Arke,3016.3,2997.2,,0.7124,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7124,false,-0.2876
+cross_entropy,extreme-large-vocab,PyTorch-eager,3889.0,3882.9,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,extreme-large-vocab,Arke,5471.5,5445.6,,0.7108,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7108,false,-0.2892
+cross_entropy,extreme-large-bs,PyTorch-eager,13114.2,13097.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+cross_entropy,extreme-large-bs,Arke,18451.1,18389.0,,0.7108,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7108,false,-0.2892

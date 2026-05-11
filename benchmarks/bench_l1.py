@@ -369,6 +369,17 @@ def _torch_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor 
     if op == "rope" and len(inputs) == 1:
         x = inputs[0]
         head_dim = x.shape[-1]
+        if head_dim % 2 != 0:
+            # RoPE rotates pairs of channels — head_dim must be even.
+            # Odd-D shapes (e.g. non-align-1 D=65, non-align-2 D=127)
+            # are mathematically ill-defined for RoPE. Raise so the
+            # caller treats this row as 'unsupported' rather than
+            # crashing in cat([-x2, x1]) with a confusing message.
+            # Mirror of the same guard in baselines/pytorch_eager.py.
+            raise NotImplementedError(
+                f"RoPE requires even head_dim; got {head_dim} (odd) "
+                f"for shape {tuple(x.shape)} — mathematically ill-defined"
+            )
         seq_len = x.shape[1]
         freqs = torch.einsum(
             "i,j->ij",
@@ -477,9 +488,21 @@ def _resolve_golden_for_correctness(
     try:
         out = _eval_l1_reference(op, inputs)
     except NotImplementedError as e:
-        return None, name, prio, (
-            audit_status or "golden_unavailable_pending_baseline"
-        ), (audit_reason or str(e))
+        msg = str(e)
+        # Distinguish two NotImplementedError sources:
+        #   (a) "No correctness reference for L1 op: <op>" — true
+        #       golden gap, the op has no reference impl at all → mark
+        #       golden_unavailable so the audit picks it up.
+        #   (b) Shape-specific opt-out (e.g. RoPE odd-D guard) — the op
+        #       has a reference, but this catalog shape is mathematically
+        #       incompatible. Mark unsupported and let the row carry the
+        #       typed reason; counted as a real fail until a baseline-
+        #       provided alternative exists.
+        if msg.startswith("No correctness reference for L1 op"):
+            return None, name, prio, (
+                audit_status or "golden_unavailable_pending_baseline"
+            ), (audit_reason or msg)
+        return None, name, prio, "unsupported", msg
 
     return out, name, prio, audit_status, audit_reason
 

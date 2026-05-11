@@ -62,3 +62,25 @@ def test_rope_odd_head_dim_returns_none(runner):
     assert out is None, (
         f"{runner.name} must return None for odd head_dim, got {type(out)}"
     )
+
+
+@pytest.mark.cuda
+def test_rope_odd_head_dim_reference_marks_unsupported():
+    """Reference (_eval_l1_reference) for RoPE on odd head_dim must
+    raise NotImplementedError so _measure_l1_correctness marks the row
+    as 'unsupported' (not 'error', not 'golden_unavailable')."""
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA required")
+
+    runner = PyTorchEagerRunner()
+    if not runner.available:
+        pytest.skip("PyTorch-eager unavailable")
+
+    # non-align-1 catalog shape: H=13, S=127, D=65 (odd)
+    result = _measure_l1_correctness(runner, "rope", 13, 127, 65, torch.float16)
+    assert result["correctness_status"] == "unsupported", (
+        f"Expected 'unsupported' for odd head_dim, got {result['correctness_status']!r}: "
+        f"{result.get('correctness_reason')!r}"
+    )
+    assert "even head_dim" in (result["correctness_reason"] or "").lower() \
+        or "odd" in (result["correctness_reason"] or "").lower()

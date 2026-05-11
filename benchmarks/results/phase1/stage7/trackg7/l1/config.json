@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-05-12_023641",
+  "ops": [
+    "rope",
+    "gelu"
+  ],
+  "warmup": 25,
+  "reps": 200,
+  "tier": 3,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "g7",
+  "layer": "L1"
+}

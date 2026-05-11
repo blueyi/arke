@@ -1,0 +1,25 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+quantize_per_token,tiny-int8,PyTorch-eager,100.8,21.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,tiny-int8,Arke,632.7,558.1,,0.1593,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.1593,false,-0.8407
+quantize_per_token,gpt2-int8,PyTorch-eager,585.2,429.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,gpt2-int8,Arke,621.1,547.7,,0.9422,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9422,false,-0.0578
+quantize_per_token,llama2-int8-512,PyTorch-eager,614.5,536.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,llama2-int8-512,Arke,634.6,550.9,,0.9683,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9683,false,-0.0317
+quantize_per_token,llama2-fp8-512,PyTorch-eager,627.7,504.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,llama2-fp8-512,Arke,593.3,551.9,,1.0580,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0580,true,0.0580
+quantize_per_token,llama3-int8-512,PyTorch-eager,602.0,540.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,llama3-int8-512,Arke,629.9,561.1,,0.9557,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9557,false,-0.0443
+quantize_per_token,ds-v2-int8,PyTorch-eager,616.5,533.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,ds-v2-int8,Arke,636.5,547.8,,0.9686,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9686,false,-0.0314
+quantize_per_token,ds-v3-int8,PyTorch-eager,599.6,544.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,ds-v3-int8,Arke,650.1,550.9,,0.9223,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9223,false,-0.0777
+quantize_per_token,qwen25-fp8,PyTorch-eager,629.8,514.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,qwen25-fp8,Arke,623.7,566.0,,1.0098,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0098,true,0.0098
+quantize_per_token,non-align-1,PyTorch-eager,607.3,558.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,non-align-1,Arke,596.3,563.2,,1.0184,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0184,true,0.0184
+quantize_per_token,non-align-2,PyTorch-eager,722.0,548.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,non-align-2,Arke,685.0,586.8,,1.0540,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0540,true,0.0540
+quantize_per_token,extreme-wide,PyTorch-eager,684.8,787.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,extreme-wide,Arke,682.3,819.2,,1.0037,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0037,true,0.0037
+quantize_per_token,extreme-long-batch,PyTorch-eager,2345.4,2251.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+quantize_per_token,extreme-long-batch,Arke,2248.0,2250.8,,1.0433,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0433,true,0.0433
