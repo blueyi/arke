@@ -87,6 +87,29 @@ class BaselineRunner(ABC):
         """
         return None
 
+    def run_for_output(
+        self,
+        op: str,
+        *inputs: torch.Tensor,
+        **kwargs: Any,
+    ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
+        """Golden Kernel hook: run the runner on given inputs and return the output(s).
+
+        This is the stable hook used by ``bench_l1``'s correctness oracle and
+        by ``gate_g7``'s L1 perf scorer. The designated Golden Kernel for an op
+        plays both roles simultaneously: correctness oracle (input → expected
+        output) and perf denominator (ratio_vs_baseline).
+
+        Default delegates to :meth:`run_with_inputs` so existing runners
+        inherit the behavior without modification. Subclasses implementing
+        this directly should bypass any timing/warmup overhead and just
+        compute the output tensor(s).
+
+        Returns ``None`` to signal "not supported" so the ladder can fall
+        through to a lower-priority runner.
+        """
+        return self.run_with_inputs(op, *inputs, **kwargs)
+
     def __repr__(self) -> str:
         return f"{self.name}(P{self.priority})"
 
