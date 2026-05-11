@@ -174,6 +174,15 @@ class PyTorchEagerRunner(BaselineRunner):
         if op == "rope" and len(inputs) == 1:
             x = inputs[0]
             head_dim = x.shape[-1]
+            if head_dim % 2 != 0:
+                # RoPE rotates pairs of channels — head_dim must be even.
+                # Odd-D shapes (e.g. non-align-1 D=65, non-align-2 D=127)
+                # exist in the catalog to stress allocation/tiling logic
+                # for *other* ops; for RoPE itself they're mathematically
+                # ill-defined. Return None so the harness records this
+                # row as 'unsupported' with a typed reason rather than
+                # crashing in cat([-x2, x1]) shape mismatch.
+                return None
             seq_len = x.shape[1]
             freqs = torch.einsum(
                 "i,j->ij",

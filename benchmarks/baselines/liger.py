@@ -77,8 +77,20 @@ class LigerRunner(BaselineRunner):
             from liger_kernel.ops.geglu import LigerGELUMulFunction
 
             x = inputs[0]
-            gate = torch.ones_like(x)
-            return LigerGELUMulFunction.apply(x, gate)
+            # Liger's GELU/SiLU Triton kernels block-tile the last
+            # dimension; the recommended block size is 65536. Shapes with
+            # last_dim > 65536 (e.g. extreme-flat 1×1048576, extreme-wide
+            # softmax) exceed the limit and raise at launch. Return None
+            # so the harness marks 'unsupported' with a typed reason; the
+            # higher-priority Golden (cuBLAS/cuDNN gelu) remains
+            # authoritative for those rows.
+            if x.shape[-1] > 65536:
+                return None
+            try:
+                gate = torch.ones_like(x)
+                return LigerGELUMulFunction.apply(x, gate)
+            except (RuntimeError, ValueError):
+                return None
 
         if op == "silu" and len(inputs) == 1:
             from liger_kernel.ops.swiglu import LigerSiLUMulFunction
@@ -87,7 +99,15 @@ class LigerRunner(BaselineRunner):
             gate = torch.ones_like(x)
             return LigerSiLUMulFunction.apply(x, gate)
 
-        if op == "rope" and len(inputs) == 1:
+        if op == "rope":
+            # rope is a known Golden-ladder gap: Liger is the P1 perf
+            # winner, but its (Q_rot, K_rot) tuple output and internal
+            # rotate convention diverge from the PyTorch-eager reference
+            # (which only rotates Q and uses cat([-x2, x1])). Producing
+            # a tensor here would cause a confusing 'mismatch' against
+            # the reference. We deliberately return None so the harness
+            # marks 'unsupported' with a typed reason and the gate's
+            # Golden-protocol exemption can audit it correctly.
             return None
 
         return None

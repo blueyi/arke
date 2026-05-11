@@ -16,6 +16,12 @@ from benchmarks.bench_l1 import _measure_l1_correctness
     ("runner", "expected_status"),
     [
         (PyTorchEagerRunner(), "ok"),
+        # Liger rope is the P1 perf winner but its tuple output and rotate
+        # convention diverge from the PyTorch-eager reference, so
+        # run_with_inputs returns None (status='unsupported') by design.
+        # Per docs/benchmark/golden-kernel-ladder.md this is a known
+        # ladder gap audited via golden_unavailable_pending_baseline at
+        # the gate layer rather than fixed at the runner.
         (LigerRunner(), "unsupported"),
     ],
 )
@@ -34,3 +40,25 @@ def test_l1_correctness_probe_linea12_rope(runner, expected_status):
         assert result["mean_abs_diff"] is not None
     else:
         assert result["allclose"] is None
+
+
+@pytest.mark.cuda
+@pytest.mark.parametrize(
+    ("runner",),
+    [(LigerRunner(),), (PyTorchEagerRunner(),)],
+)
+def test_rope_odd_head_dim_returns_none(runner):
+    """RoPE rotates pairs of channels — odd head_dim is mathematically
+    ill-defined. Both Liger and PyTorch-eager reference must return None
+    so the harness records 'unsupported' instead of crashing."""
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA required")
+    if not runner.available:
+        pytest.skip(f"{runner.name} unavailable")
+
+    # Mimic non-align-1: B=1, H=13, S=127, D=65 (odd)
+    Q = torch.randn(1, 13, 127, 65, device="cuda", dtype=torch.float16)
+    out = runner.run_with_inputs("rope", Q)
+    assert out is None, (
+        f"{runner.name} must return None for odd head_dim, got {type(out)}"
+    )
