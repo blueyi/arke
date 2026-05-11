@@ -1,5 +1,5 @@
 {
-  "overall_geomean": 0.9394,
+  "overall_geomean": 0.9388,
   "op_scores": {
     "add": 0.984,
     "argmax": 0.9983,
@@ -17,7 +17,7 @@
     "fused_linear_cross_entropy": 1.1826,
     "gather": 1.3385,
     "geglu": 0.6696,
-    "gelu": 0.7763,
+    "gelu": 0.7658,
     "grouped_matmul": 0.1691,
     "grouped_query_attention": 3.4713,
     "layernorm": 0.5282,
@@ -98,31 +98,32 @@
   "status_counts": {
     "ok": 2281,
     "skipped": 51,
-    "error": 7
+    "error": 4,
+    "unsupported": 5
   },
   "correctness_counts": {
     "ok": 2232,
     "skipped": 51,
-    "error": 30,
+    "error": 25,
+    "unsupported": 18,
     "mismatch": 5,
-    "golden_unavailable_pending_baseline": 10,
-    "unsupported": 11
+    "golden_unavailable_pending_baseline": 10
   },
   "memory_policy_counts": {
     "none": 1894,
     "dense_matmul": 255,
-    "attention": 166,
+    "attention": 168,
     "linear_ce": 24
   },
   "memory_pressure_rows": 51,
   "perf_target_counts": {
-    "with_target": 2339,
+    "with_target": 2341,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "false": 942,
+    "false": 939,
     "true": 1392,
-    "unknown": 5
+    "unknown": 10
   },
   "perf_targets": {
     "add": 1.0,
@@ -188,7 +189,7 @@
     "fused_linear_cross_entropy": 1.1826,
     "gather": 1.3385,
     "geglu": 0.6696,
-    "gelu": 0.7763,
+    "gelu": 0.7658,
     "grouped_matmul": 0.1691,
     "grouped_query_attention": 3.4713,
     "layernorm": 0.5282,
@@ -235,7 +236,7 @@
     "fused_linear_cross_entropy": 0.2295,
     "gather": 2.1389,
     "geglu": -0.2755,
-    "gelu": -0.1502,
+    "gelu": -0.1547,
     "grouped_matmul": -0.4665,
     "grouped_query_attention": 5.6611,
     "layernorm": -0.3295,

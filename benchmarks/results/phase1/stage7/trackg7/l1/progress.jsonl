@@ -2401,3 +2401,35 @@
 {"ts": 1778524603.6138265, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "Liger-Kernel", "status": "error", "latency_us": Infinity}
 {"ts": 1778524603.6184075, "event": "op_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "skipped": 119, "new": 1, "total": 120}
 {"ts": 1778524603.6732407, "event": "run_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "per_op": {"rope": {"rows": 46, "ok": 35, "permanent_failure": 9, "retryable_failure": 2, "other": 0}, "gelu": {"rows": 120, "ok": 119, "permanent_failure": 0, "retryable_failure": 1, "other": 0}}}
+{"ts": 1778525451.384964, "event": "run_start", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "ops": ["rope", "gelu"], "tier": 3, "resume": true, "retry_policy": "auto"}
+{"ts": 1778525451.3865123, "event": "resume_skip", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "skipped": 44, "total_existing": 46}
+{"ts": 1778525451.709947, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-1", "baseline": "PyTorch-eager", "status": "error", "latency_us": Infinity}
+{"ts": 1778525451.7154467, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-2", "baseline": "PyTorch-eager", "status": "error", "latency_us": Infinity}
+{"ts": 1778525451.7178068, "event": "op_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "skipped": 44, "new": 2, "total": 46}
+{"ts": 1778525451.7187393, "event": "resume_skip", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "skipped": 119, "total_existing": 120}
+{"ts": 1778525452.391013, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "Liger-Kernel", "status": "error", "latency_us": Infinity}
+{"ts": 1778525452.395117, "event": "op_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "skipped": 119, "new": 1, "total": 120}
+{"ts": 1778525452.4387827, "event": "run_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "per_op": {"rope": {"rows": 46, "ok": 35, "permanent_failure": 9, "retryable_failure": 2, "other": 0}, "gelu": {"rows": 120, "ok": 119, "permanent_failure": 0, "retryable_failure": 1, "other": 0}}}
+{"ts": 1778526686.599816, "event": "run_start", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "ops": ["rope", "gelu"], "tier": 3, "resume": true, "retry_policy": "auto"}
+{"ts": 1778526686.601342, "event": "resume_skip", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "skipped": 42, "total_existing": 42}
+{"ts": 1778526687.9018679, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-1", "baseline": "Liger-Kernel", "status": "ok", "latency_us": 119.34800148010254}
+{"ts": 1778526687.9061284, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-1", "baseline": "PyTorch-eager", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1778526687.9158256, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-1", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1778526688.040966, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-2", "baseline": "Liger-Kernel", "status": "ok", "latency_us": 133.93407821655273}
+{"ts": 1778526688.045224, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-2", "baseline": "PyTorch-eager", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1778526688.049463, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "shape_tag": "non-align-2", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1778526688.0511124, "event": "op_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "rope", "skipped": 42, "new": 6, "total": 48}
+{"ts": 1778526688.0520453, "event": "resume_skip", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "skipped": 114, "total_existing": 114}
+{"ts": 1778526688.198931, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "cuBLAS/cuDNN", "status": "ok", "latency_us": 19.092479944229126}
+{"ts": 1778526688.2039528, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "Liger-Kernel", "status": "error", "latency_us": Infinity}
+{"ts": 1778526688.2276323, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 16.076799631118774}
+{"ts": 1778526691.609967, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "torch.compile", "status": "ok", "latency_us": 110.10512351989746}
+{"ts": 1778526691.6377232, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "Arke", "status": "ok", "latency_us": 16.752159595489502}
+{"ts": 1778526692.4884155, "event": "measurement", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "FlagGems", "status": "ok", "latency_us": 91.02848052978516}
+{"ts": 1778526692.4911826, "event": "op_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "op": "gelu", "skipped": 114, "new": 6, "total": 120}
+{"ts": 1778526692.537633, "event": "run_done", "layer": "l1", "fingerprint": "04eff1b6f518fff4", "per_op": {"rope": {"rows": 48, "ok": 35, "permanent_failure": 13, "retryable_failure": 0, "other": 0}, "gelu": {"rows": 120, "ok": 119, "permanent_failure": 0, "retryable_failure": 1, "other": 0}}}
+{"ts": 1778527733.289793, "event": "run_start", "layer": "l1", "fingerprint": "1927c389b1d0303f", "ops": ["gelu"], "tier": 3, "resume": true, "retry_policy": "auto"}
+{"ts": 1778527733.291689, "event": "resume_skip", "layer": "l1", "fingerprint": "1927c389b1d0303f", "op": "gelu", "skipped": 119, "total_existing": 119}
+{"ts": 1778527734.0909116, "event": "measurement", "layer": "l1", "fingerprint": "1927c389b1d0303f", "op": "gelu", "shape_tag": "extreme-flat", "baseline": "Liger-Kernel", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1778527734.095031, "event": "op_done", "layer": "l1", "fingerprint": "1927c389b1d0303f", "op": "gelu", "skipped": 119, "new": 1, "total": 120}
+{"ts": 1778527734.1415038, "event": "run_done", "layer": "l1", "fingerprint": "1927c389b1d0303f", "per_op": {"gelu": {"rows": 120, "ok": 119, "permanent_failure": 1, "retryable_failure": 0, "other": 0}}}

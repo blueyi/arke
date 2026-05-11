@@ -1,7 +1,6 @@
 {
-  "timestamp": "2026-05-12_023641",
+  "timestamp": "2026-05-12_032853",
   "ops": [
-    "rope",
     "gelu"
   ],
   "warmup": 25,

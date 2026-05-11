@@ -1,21 +1,14 @@
 {
-  "ts": 1778524603.6731367,
+  "ts": 1778527734.1413918,
   "layer": "l1",
-  "fingerprint": "04eff1b6f518fff4",
-  "elapsed_s": 1.8103606700897217,
+  "fingerprint": "1927c389b1d0303f",
+  "elapsed_s": 0.970543384552002,
   "per_op": {
-    "rope": {
-      "rows": 46,
-      "ok": 35,
-      "permanent_failure": 9,
-      "retryable_failure": 2,
-      "other": 0
-    },
     "gelu": {
       "rows": 120,
       "ok": 119,
-      "permanent_failure": 0,
-      "retryable_failure": 1,
+      "permanent_failure": 1,
+      "retryable_failure": 0,
       "other": 0
     }
   }
