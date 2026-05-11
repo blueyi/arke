@@ -173,11 +173,14 @@ def test_l1_correctness_probe_reports_unsupported_when_reference_is_missing(monk
 
     result = _measure_l1_correctness(runner, "unknown_op", 1, 1, 0, dtype=torch.float16)
 
-    assert result["correctness_status"] == "unsupported"
+    # Under the Golden Kernel protocol, an op with no registered runner
+    # surfaces as ``golden_unavailable_pending_baseline`` (the unified
+    # audit status). Older error name was ``unsupported``.
+    assert result["correctness_status"] == "golden_unavailable_pending_baseline"
     assert result["allclose"] is None
     assert result["max_abs_diff"] is None
     assert result["mean_abs_diff"] is None
-    assert result["correctness_reason"] == "No correctness reference for L1 op: unknown_op"
+    assert "unknown_op" in result["correctness_reason"]
 
 
 def test_l1_correctness_probe_handles_empty_tensor_outputs(monkeypatch):

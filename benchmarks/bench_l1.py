@@ -25,11 +25,20 @@ import torch
 
 import benchmarks.baselines.arke_runner  # noqa: F401
 import benchmarks.baselines.cublas  # noqa: F401
+import benchmarks.baselines.flash_attn_runner  # noqa: F401
+import benchmarks.baselines.flash_mla_runner  # noqa: F401
 import benchmarks.baselines.inductor  # noqa: F401
 import benchmarks.baselines.liger  # noqa: F401
 import benchmarks.baselines.pytorch_eager  # noqa: F401
 import benchmarks.baselines.triton_tutorial  # noqa: F401
+import benchmarks.baselines.vllm_paged_runner  # noqa: F401
 from benchmarks.baselines.base import get_all_runners, get_runners_for_op
+from benchmarks.golden_ladder import (
+    GoldenUnavailable,
+    golden_runner_for,
+    parse_inline_overrides,
+    parse_overrides_file,
+)
 from benchmarks.baselines._runtime_ctx import (
     clear_current_shape,
     set_current_shape,
@@ -92,6 +101,8 @@ class OpResult:
     atol: float | None = None
     correctness_status: str = "unknown"
     correctness_reason: str = ""
+    golden_runner: str = ""
+    golden_priority: int | None = None
     memory_bytes_required: int | None = None
     memory_bytes_budget: int | None = None
     memory_ratio: float | None = None
@@ -242,7 +253,14 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
     return (torch.randn(M, N, device="cuda", dtype=dtype),)
 
 
-def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor | tuple[torch.Tensor, ...]:
+def _torch_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor | tuple[torch.Tensor, ...]:
+    """PyTorch-eager reference path (legacy, kept as final fall-back).
+
+    Used both by the PyTorch-eager runner (which is P3 in the Golden Kernel
+    ladder for ops with no production P0/P1/P2 kernel) and as the last-
+    resort safety net for :func:`_resolve_golden_for_correctness` when the
+    ladder's designated golden returns ``None``.
+    """
     if op == "relu":
         return torch.nn.functional.relu(inputs[0])
     if op == "gelu":
@@ -369,6 +387,103 @@ def _eval_l1_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tenso
     raise NotImplementedError(f"No correctness reference for L1 op: {op}")
 
 
+# Module-level overrides set by main() / run_l1() so that the inner
+# correctness loop doesn't need an extra argument threaded through every
+# call site. Test harnesses can set this directly.
+_GOLDEN_OVERRIDES: dict[str, str] = {}
+
+
+def _eval_l1_reference(
+    op: str,
+    inputs: tuple[torch.Tensor, ...],
+) -> torch.Tensor | tuple[torch.Tensor, ...]:
+    """Correctness reference for op `op` on `inputs`.
+
+    Consults the Golden Kernel ladder (:func:`golden_runner_for`) and asks
+    the designated runner to produce the expected output. If the runner
+    declines (returns ``None``) or no runner is available, falls through to
+    the PyTorch-eager path (:func:`_torch_reference`) — that is the P3
+    baseline in the ladder for ops without a production kernel.
+
+    Returns the reference tensor (or tuple). Tests can monkey-patch this
+    function to inject a synthetic oracle.
+    """
+    try:
+        golden = golden_runner_for(op, overrides=_GOLDEN_OVERRIDES)
+    except GoldenUnavailable:
+        return _torch_reference(op, inputs)
+    kwargs = {"k": _topk_k(inputs)} if op == "topk" else {}
+    try:
+        out = golden.run_for_output(op, *inputs, **kwargs)
+    except Exception:
+        out = None
+    if out is None:
+        return _torch_reference(op, inputs)
+    return out
+
+
+def _resolve_golden_for_correctness(
+    op: str,
+    inputs: tuple[torch.Tensor, ...],
+    *,
+    overrides: dict[str, str] | None = None,
+) -> tuple[torch.Tensor | tuple[torch.Tensor, ...] | None, str, int | None, str, str]:
+    """Compute correctness reference + Golden Kernel metadata.
+
+    Returns ``(output, golden_runner_name, golden_priority, audit_status,
+    audit_reason)``.
+
+    * The ``output`` tensor comes from :func:`_eval_l1_reference`, which
+      itself consults the ladder. Patching ``_eval_l1_reference`` in tests
+      thus controls the oracle source while still letting metadata flow.
+    * ``audit_status`` is ``""`` when the golden ran cleanly, or
+      ``"golden_unavailable_pending_baseline"`` when no ladder runner is
+      available for ``op`` (output then comes from the legacy PyTorch
+      reference so a row can still be emitted).
+    * Per-op audit reasons (e.g. ``mla_golden_degraded=true``) are encoded
+      inline in ``audit_reason``.
+    """
+    ov = overrides if overrides is not None else _GOLDEN_OVERRIDES
+    audit_status = ""
+    audit_reason = ""
+
+    try:
+        golden = golden_runner_for(op, overrides=ov)
+        name, prio = golden.name, golden.priority
+    except GoldenUnavailable as e:
+        name, prio = "", None
+        audit_status = "golden_unavailable_pending_baseline"
+        audit_reason = e.reason
+        golden = None
+
+    # Probe whether the golden actually services this shape — if it returns
+    # None we annotate the row as a degraded fall-through.
+    if golden is not None:
+        kwargs = {"k": _topk_k(inputs)} if op == "topk" else {}
+        try:
+            probe = golden.run_for_output(op, *inputs, **kwargs)
+        except Exception as e:
+            probe = None
+            audit_reason = f"golden runner {name!r} raised: {e!r}"
+        if probe is None:
+            if op == "multi_latent_attention" and name == "FlashMLA":
+                audit_reason = "mla_golden_degraded=true"
+            elif not audit_reason:
+                audit_reason = (
+                    f"golden_runner={name!r} returned None; "
+                    f"used PyTorch-eager reference fallback"
+                )
+
+    try:
+        out = _eval_l1_reference(op, inputs)
+    except NotImplementedError as e:
+        return None, name, prio, (
+            audit_status or "golden_unavailable_pending_baseline"
+        ), (audit_reason or str(e))
+
+    return out, name, prio, audit_status, audit_reason
+
+
 def _compare_l1_outputs(
     runner_name: str,
     op: str,
@@ -466,7 +581,21 @@ def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torc
     rtol, atol = _correctness_tolerances(op, dtype)
     try:
         inputs = _make_l1_correctness_inputs(op, M, N, K, dtype)
-        ref = _eval_l1_reference(op, inputs)
+        ref, golden_name, golden_prio, audit_status, audit_reason = (
+            _resolve_golden_for_correctness(op, inputs)
+        )
+        if ref is None:
+            return {
+                "allclose": None,
+                "max_abs_diff": None,
+                "mean_abs_diff": None,
+                "rtol": rtol,
+                "atol": atol,
+                "correctness_status": audit_status or "golden_unavailable_pending_baseline",
+                "correctness_reason": audit_reason,
+                "golden_runner": golden_name,
+                "golden_priority": golden_prio,
+            }
         kwargs = {"k": _topk_k(inputs)} if op == "topk" else {}
         cand = runner.run_with_inputs(op, *inputs, **kwargs)
         if cand is None:
@@ -478,8 +607,17 @@ def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torc
                 "atol": atol,
                 "correctness_status": "unsupported",
                 "correctness_reason": f"runner {runner.name} does not implement run_with_inputs for {op}",
+                "golden_runner": golden_name,
+                "golden_priority": golden_prio,
             }
-        return _compare_l1_outputs(runner.name, op, ref, cand, rtol, atol)
+        cmp_out = _compare_l1_outputs(runner.name, op, ref, cand, rtol, atol)
+        cmp_out["golden_runner"] = golden_name
+        cmp_out["golden_priority"] = golden_prio
+        if audit_status:
+            cmp_out["correctness_status"] = audit_status
+        if audit_reason and not cmp_out.get("correctness_reason"):
+            cmp_out["correctness_reason"] = audit_reason
+        return cmp_out
     except NotImplementedError as e:
         return {
             "allclose": None,
@@ -489,6 +627,8 @@ def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torc
             "atol": atol,
             "correctness_status": "unsupported",
             "correctness_reason": str(e),
+            "golden_runner": "",
+            "golden_priority": None,
         }
     except Exception as e:
         return {
@@ -499,6 +639,8 @@ def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torc
             "atol": atol,
             "correctness_status": "error",
             "correctness_reason": str(e),
+            "golden_runner": "",
+            "golden_priority": None,
         }
 
 def run_op(
@@ -645,6 +787,8 @@ def run_op(
                         atol=correctness["atol"],
                         correctness_status=correctness["correctness_status"],
                         correctness_reason=correctness["correctness_reason"],
+                        golden_runner=correctness.get("golden_runner", "") or "",
+                        golden_priority=correctness.get("golden_priority"),
                         memory_bytes_required=(preflight.estimate.bytes_required if preflight else None),
                         memory_bytes_budget=(preflight.estimate.bytes_budget if preflight else None),
                         memory_ratio=(preflight.estimate.ratio if preflight else None),
@@ -690,6 +834,7 @@ L1_FIELDNAMES = [
     "latency_us", "latency_min_us", "tflops", "status", "reason", "retryable",
     "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
     "correctness_status", "correctness_reason",
+    "golden_runner", "golden_priority",
     "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
 ]
 L1_KEY_FIELDS = ("op", "shape_tag", "baseline")
@@ -723,6 +868,8 @@ def _l1_row_from_result(r: OpResult) -> dict[str, str]:
         "atol": "" if r.atol is None else f"{r.atol:.6g}",
         "correctness_status": r.correctness_status,
         "correctness_reason": r.correctness_reason,
+        "golden_runner": r.golden_runner,
+        "golden_priority": "" if r.golden_priority is None else str(r.golden_priority),
         "memory_bytes_required": "" if r.memory_bytes_required is None else str(r.memory_bytes_required),
         "memory_bytes_budget": "" if r.memory_bytes_budget is None else str(r.memory_bytes_budget),
         "memory_ratio": "" if r.memory_ratio is None else f"{r.memory_ratio:.4f}",
@@ -789,6 +936,8 @@ def _l1_row_to_result(row: dict[str, str]) -> OpResult:
         atol=_opt_f("atol"),
         correctness_status=row.get("correctness_status", "unknown"),
         correctness_reason=row.get("correctness_reason", ""),
+        golden_runner=row.get("golden_runner", ""),
+        golden_priority=_opt_int("golden_priority"),
         memory_bytes_required=_opt_int("memory_bytes_required"),
         memory_bytes_budget=_opt_int("memory_bytes_budget"),
         memory_ratio=_opt_f("memory_ratio"),
@@ -1134,6 +1283,22 @@ def main() -> None:
         action="store_true",
         help="Force resume despite config fingerprint changes / live lock.",
     )
+    parser.add_argument(
+        "--golden",
+        action="append",
+        default=None,
+        metavar="op=runner_name",
+        help=(
+            "Pin a specific runner as Golden Kernel for an op (repeatable). "
+            "E.g. --golden softmax=FlagGems --golden matmul=cuBLAS"
+        ),
+    )
+    parser.add_argument(
+        "--golden-file",
+        type=str,
+        default=None,
+        help="YAML file mapping op→runner_name for Golden Kernel overrides.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -1149,6 +1314,17 @@ def main() -> None:
         ops = ["matmul", "softmax"]
 
     shape_tags = [s.strip() for s in args.shapes.split(",")] if args.shapes else None
+
+    # Wire Golden Kernel overrides into the module-level dict consulted by
+    # _eval_l1_reference. File entries are loaded first, then inline --golden
+    # specs win on collision.
+    global _GOLDEN_OVERRIDES
+    overrides: dict[str, str] = {}
+    overrides.update(parse_overrides_file(args.golden_file))
+    overrides.update(parse_inline_overrides(args.golden))
+    _GOLDEN_OVERRIDES = overrides
+    if overrides:
+        logger.info(f"Golden Kernel overrides: {overrides}")
 
     run_l1(
         ops=ops, output_dir=args.output, warmup=args.warmup, reps=args.reps,
