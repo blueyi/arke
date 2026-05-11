@@ -37,7 +37,10 @@ class InductorRunner(BaselineRunner):
         return torch.cuda.is_available() and hasattr(torch, "compile")
 
     def supports(self, op: str) -> bool:
-        return op in ("matmul", "softmax", "layernorm", "relu", "gelu", "silu")
+        return op in (
+            "matmul", "softmax", "layernorm", "rmsnorm", "rmsnorm_residual",
+            "relu", "gelu", "silu",
+        )
 
     def get_fn(
         self,

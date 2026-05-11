@@ -40,6 +40,7 @@ class CuBLASRunner(BaselineRunner):
     def supports(self, op: str) -> bool:
         return op in (
             "matmul", "batch_matmul", "softmax", "layernorm",
+            "rmsnorm", "rmsnorm_residual",
             "relu", "gelu", "silu", "dropout",
             "tanh", "sigmoid", "add", "mul", "neg", "exp", "rsqrt",
             "reduce_sum", "reduce_max", "reduce_mean",

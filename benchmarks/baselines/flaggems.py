@@ -74,8 +74,12 @@ class FlagGemsRunner(BaselineRunner):
             "where_", "cast",
             # OT1 reduction
             "reduce_sum", "reduce_max", "reduce_mean", "cumsum",
-            # OT2 data movement
+            "argmax", "topk",
+            # OT2 data movement & dense
             "batch_matmul", "transpose", "embedding",
+            "grouped_matmul", "concat", "gather", "scatter", "copy_",
+            # OT3 quantization
+            "quantize_per_token",
         )
 
     def run_with_inputs(

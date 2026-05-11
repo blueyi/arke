@@ -53,7 +53,12 @@ class LigerRunner(BaselineRunner):
         return _AVAILABLE and torch.cuda.is_available()
 
     def supports(self, op: str) -> bool:
-        return op in ("rmsnorm", "gelu", "silu", "rope")
+        return op in (
+            "rmsnorm", "rmsnorm_residual",
+            "gelu", "silu", "rope",
+            "swiglu", "geglu",
+            "cross_entropy", "fused_linear_cross_entropy",
+        )
 
     def run_with_inputs(
         self,
