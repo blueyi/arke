@@ -776,9 +776,46 @@ def run_op(
 
                 fn = runner.get_fn(op, M, N, K)
                 if fn is None:
-                    logger.debug(
-                        f"  {runner.name} does not support {op}@{tag}, skipping"
+                    # Runner declined this (op, shape) — almost always a
+                    # shape-specific opt-out (e.g. RoPE odd-D guard);
+                    # the broad 'runner doesn't implement op at all' case
+                    # is filtered upstream by runner.supports(op). Record
+                    # an 'unsupported' row so resume can mark the cell as
+                    # permanently declined (PERMANENT_FAILURE_STATUSES)
+                    # and the audit reads a typed correctness_reason.
+                    logger.info(
+                        f"  {tag:15s} {runner.name:15s} unsupported (get_fn returned None)"
                     )
+                    correctness = _measure_l1_correctness(runner, op, M, N, K)
+                    _record(OpResult(
+                        op=op,
+                        shape_tag=tag,
+                        M=M,
+                        N=N,
+                        K=K,
+                        baseline=runner.name,
+                        priority=runner.priority,
+                        source=runner.source,
+                        latency_us=float("inf"),
+                        latency_min_us=float("inf"),
+                        tflops=None,
+                        status="unsupported",
+                        reason=f"{runner.name}.get_fn declined {op}@{tag}",
+                        retryable=False,
+                        allclose=correctness["allclose"],
+                        max_abs_diff=correctness["max_abs_diff"],
+                        mean_abs_diff=correctness["mean_abs_diff"],
+                        rtol=correctness["rtol"],
+                        atol=correctness["atol"],
+                        correctness_status=correctness["correctness_status"] or "unsupported",
+                        correctness_reason=correctness["correctness_reason"] or f"{runner.name}.get_fn declined {op}@{tag}",
+                        golden_runner=correctness.get("golden_runner", "") or "",
+                        golden_priority=correctness.get("golden_priority"),
+                        memory_bytes_required=(preflight.estimate.bytes_required if preflight else None),
+                        memory_bytes_budget=(preflight.estimate.bytes_budget if preflight else None),
+                        memory_ratio=(preflight.estimate.ratio if preflight else None),
+                        memory_policy=(preflight.estimate.category if preflight else ""),
+                    ))
                     continue
 
                 try:
@@ -826,6 +863,10 @@ def run_op(
                 except Exception as e:
                     status = classify_exception(e)
                     logger.warning(f"  {tag} {runner.name}: FAILED ({e})")
+                    # Typed unsupported (e.g. RoPE odd-D NotImplementedError)
+                    # propagates to correctness_status so the row's
+                    # gate-audit reason is consistent across perf+probe.
+                    cstatus = "unsupported" if status.status == "unsupported" else "error"
                     _record(OpResult(
                         op=op,
                         shape_tag=tag,
@@ -841,7 +882,7 @@ def run_op(
                         status=status.status,
                         reason=status.reason,
                         retryable=status.retryable,
-                        correctness_status="error",
+                        correctness_status=cstatus,
                         correctness_reason=status.reason,
                         memory_bytes_required=(preflight.estimate.bytes_required if preflight else None),
                         memory_bytes_budget=(preflight.estimate.bytes_budget if preflight else None),

@@ -538,6 +538,14 @@ class PyTorchEagerRunner(BaselineRunner):
             batch_size = M
             seq_len = N
             head_dim = max(K, 64)
+            if head_dim % 2 != 0:
+                # RoPE rotates pairs of channels — head_dim must be even.
+                # Catalog shapes non-align-1 (D=65) / non-align-2 (D=127)
+                # exist to stress alignment for other ops; for rope itself
+                # they're mathematically ill-defined. Decline so the
+                # harness records this row as 'unsupported' rather than
+                # crashing in cat([-x2, x1]) shape mismatch.
+                return None
             X = torch.randn(batch_size, seq_len, head_dim, device="cuda", dtype=dtype)
             def rope():
                 inv_freq = 1.0 / (10000 ** (torch.arange(0, head_dim, 2, device="cuda", dtype=dtype) / head_dim))

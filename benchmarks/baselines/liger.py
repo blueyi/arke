@@ -131,7 +131,13 @@ class LigerRunner(BaselineRunner):
         elif op == "gelu":
             from liger_kernel.ops.geglu import LigerGELUMulFunction
 
-            # Liger's GELU is a fused GELU*gate, so we use a simple wrapper
+            # Liger's GELU is a fused GELU*gate, so we use a simple wrapper.
+            # Mirror the run_with_inputs guard: Liger's Triton kernel caps
+            # block size at 65536, so last_dim > 65536 (extreme-flat
+            # 1×1048576) raises at launch. Decline here so the harness
+            # records 'unsupported' instead of crashing in perf measure.
+            if N > 65536:
+                return None
             X = torch.randn(M, N, device="cuda", dtype=dtype)
             gate = torch.randn(M, N, device="cuda", dtype=dtype)
             return lambda: LigerGELUMulFunction.apply(X, gate)

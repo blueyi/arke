@@ -45,6 +45,15 @@ def classify_exception(exc: Exception) -> BenchmarkStatus:
             reason=str(exc),
             retryable=True,
         )
+    if isinstance(exc, NotImplementedError):
+        # Typed declines from the runner / reference (e.g. RoPE odd-D
+        # guard) — record as 'unsupported' so the gate audit can read
+        # the typed reason rather than treating it as a generic crash.
+        return BenchmarkStatus(
+            status="unsupported",
+            reason=str(exc),
+            retryable=False,
+        )
     return BenchmarkStatus(
         status="error",
         reason=str(exc),
