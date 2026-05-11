@@ -114,16 +114,26 @@ class LigerRunner(BaselineRunner):
         elif op == "rope":
             from liger_kernel.ops.rope import LigerRopeFunction
 
-            # RoPE expects [batch, seq, heads, head_dim]
-            batch = 1
-            seq = M
-            heads = 12
-            head_dim = N
-            X = torch.randn(
-                batch, seq, heads, head_dim, device="cuda", dtype=dtype
-            )
-            cos = torch.randn(seq, head_dim, device="cuda", dtype=dtype)
-            sin = torch.randn(seq, head_dim, device="cuda", dtype=dtype)
-            return lambda: LigerRopeFunction.apply(X, cos, sin)
+            # Liger 0.7.0 signature:
+            #   forward(ctx, q, k, cos, sin, position_ids=None, unsqueeze_dim=1)
+            # with q/k shape (bsz, n_head, seq_len, head_dim) and
+            # cos/sin shape (1, seq_len, head_dim).
+            from benchmarks.baselines._runtime_ctx import get_current_shape
+            shape = get_current_shape()
+            if shape is not None and hasattr(shape, "B"):
+                batch = shape.B
+                heads = shape.H
+                seq = shape.S
+                head_dim = shape.D
+            else:
+                batch = 1
+                heads = 12
+                seq = M
+                head_dim = N
+            Q = torch.randn(batch, heads, seq, head_dim, device="cuda", dtype=dtype)
+            K_ = torch.randn(batch, heads, seq, head_dim, device="cuda", dtype=dtype)
+            cos = torch.randn(1, seq, head_dim, device="cuda", dtype=dtype)
+            sin = torch.randn(1, seq, head_dim, device="cuda", dtype=dtype)
+            return lambda: LigerRopeFunction.apply(Q, K_, cos, sin)
 
         return None
