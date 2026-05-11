@@ -94,15 +94,23 @@ def test_baseline_runner_supports_subset_of_catalog():
     )
 
 
-def test_arke_ir_shim_redirects_to_canonical():
-    """The arke/ir/op_registry.py shim must re-export the same ALL_OPS.
+def test_no_op_registry_under_arke_ir():
+    """Architecture guard: ``arke/ir/`` must not host a benchmark op catalog.
 
-    This shim prevents agents from concluding "op_registry doesn't exist" when
-    they look in the obvious arke/ir/ location and find nothing.
+    ``arke/ir/`` is reserved for the future Arke-IR dialect primitives
+    (load/store/arith/control flow) — a *lower* abstraction than the 45
+    high-level benchmark ops. Aliasing the two layers (e.g. via a
+    re-export shim) hides this design distinction and invites accidental
+    coupling.
     """
-    from arke.ir.op_registry import ALL_OPS as SHIM_ALL_OPS  # noqa: PLC0415
-
-    assert SHIM_ALL_OPS is ALL_OPS or list(SHIM_ALL_OPS) == list(ALL_OPS), (
-        "arke/ir/op_registry.py shim drifted from benchmarks/op_registry.py — "
-        "the shim must re-export, not redefine."
+    bad_paths = [
+        REPO_ROOT / "arke" / "ir" / "op_registry.py",
+        REPO_ROOT / "arke" / "ir" / "op_catalog.py",
+    ]
+    found = [p for p in bad_paths if p.exists()]
+    assert not found, (
+        f"Found benchmark op catalog under arke/ir/: {found}\n"
+        "The benchmark op catalog lives at benchmarks/op_registry.py — "
+        "arke/ir/ is reserved for IR dialect primitives, which are a "
+        "different abstraction. Remove the offending file."
     )

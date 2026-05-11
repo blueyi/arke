@@ -4,18 +4,28 @@
 """Parse benchmark-ops.md to extract the canonical operator catalog.
 
 ╔══════════════════════════════════════════════════════════════════════════╗
-║  *** SSOT — SINGLE SOURCE OF TRUTH FOR THE ARKE OP CATALOG ***           ║
+║  *** SSOT — SINGLE SOURCE OF TRUTH FOR THE BENCHMARK OP CATALOG ***      ║
 ║                                                                          ║
 ║  Authoritative document : docs/benchmark/benchmark-ops.md (OT table)     ║
 ║  Authoritative parser   : THIS FILE (benchmarks/op_registry.py)          ║
-║  Compatibility shim     : arke/ir/op_registry.py (re-exports from here)  ║
+║                                                                          ║
+║  Scope: this catalog enumerates the 45 *high-level* operators that the   ║
+║  Arke benchmark suite measures (matmul / flash_attention / rmsnorm /     ║
+║  rope / ...). It is a **kernel-level** abstraction tied to the          ║
+║  benchmark/baseline-runner layer — NOT a compiler IR concept.            ║
+║                                                                          ║
+║  Do NOT look for this file under ``arke/ir/``.  ``arke/ir/`` is reserved ║
+║  for the future Arke-IR dialect primitives (load/store/arith/control     ║
+║  flow / etc.), which are a lower-level abstraction.  IR primitives       ║
+║  *lower to* this catalog's ops via the compiler — the two layers are    ║
+║  intentionally decoupled and must not be aliased.                        ║
 ║                                                                          ║
 ║  Every consumer (cli.py / shapes.py / bench_l1.py / baseline runners /   ║
-║  tests) MUST import from here.  Hardcoded op-name lists elsewhere are    ║
-║  shadow catalogs and will silently drift.                                ║
+║  benchmark tests) MUST import from here.  Hardcoded op-name lists        ║
+║  elsewhere are shadow catalogs and will silently drift.                  ║
 ║                                                                          ║
-║  Enforcement: tests/test_ssot_op_registry.py fails if any module         ║
-║  diverges (e.g. baseline runner claims an op not in benchmark-ops.md).   ║
+║  Enforcement: tests/test_ssot_op_registry.py fails if any benchmark      ║
+║  module diverges (e.g. baseline runner claims an op not in this list).   ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 
 This module is the bridge: it reads the OT Summary table from
