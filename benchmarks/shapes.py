@@ -451,6 +451,12 @@ def _dict_to_shape(op: str, row: dict):
     tag = str(row.get("tag", ""))
     tier_val = row.get("tier")
     try:
+        # ST4 sub-tables in benchmark-shapes.md don't carry a Tier column
+        # (e.g. softmax_st4, layernorm_st4, matmul_st4) — they are the
+        # production-shape extension of OT2–OT4 and are part of BL5 ST4
+        # by definition. Default missing-tier rows to 4 to preserve the
+        # ST tier semantics; the BL5 inclusion semantics is handled in
+        # _registry_shapes() filter, not by collapsing tier metadata.
         t = int(tier_val) if tier_val is not None else 4
     except (ValueError, TypeError):
         t = 4
@@ -503,7 +509,21 @@ def _dict_to_shape(op: str, row: dict):
 
 
 def _registry_shapes(op: str, tier: int | None) -> list | None:
-    """Return registry-derived dataclass shapes for *op*, or None if unavailable."""
+    """Return registry-derived dataclass shapes for *op*, or None if unavailable.
+
+    Tier semantics (per docs/phase1/stage7-plan.md L62-64 +
+    docs/benchmark/benchmark-shapes.md L11-21):
+
+    * ``tier=1`` → ST1 only (Micro / smoke)
+    * ``tier=2`` → ST1 + ST2 (Standard / daily CI)
+    * ``tier=3`` → ST1 + ST2 + ST3 + **ST4** (Gate validation / BL5 full coverage)
+    * ``tier=None`` → all tiers (identical to tier=3 in practice; kept for symmetry)
+
+    ST4 is the production-shape extension of OT2–OT4 and is part of the BL5
+    surface that Stage 7 G7.8b coverage requires. We therefore treat
+    ``tier=3`` (the documented "Gate validation" level) as **BL5-complete**
+    and include ST4 rows. Lower tiers (1/2) still hard-filter as before.
+    """
     if not _REGISTRY_AVAILABLE:
         return None
     canon = _SHAPE_MAP.get(op.lower(), op.lower())
@@ -511,7 +531,8 @@ def _registry_shapes(op: str, tier: int | None) -> list | None:
     if not rows:
         return None
     shapes = [_dict_to_shape(canon, row) for row in rows]
-    if tier is not None:
+    if tier is not None and tier < 3:
+        # tier 1 → ST1; tier 2 → ST1+ST2; tier 3+ → all (BL5 full)
         shapes = [s for s in shapes if s.tier <= tier]
     return shapes
 
