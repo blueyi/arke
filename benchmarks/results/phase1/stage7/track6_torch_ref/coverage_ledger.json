@@ -1,0 +1,3907 @@
+{
+  "stage": "S7",
+  "gate": "G7",
+  "sources": {
+    "matrix": "benchmarks/stage7_bl5_target_matrix.json",
+    "examples_root": "examples",
+    "results_root": "benchmarks/results/phase1/stage7/track6"
+  },
+  "summary": {
+    "l1": {
+      "entries": 45,
+      "with_examples": 45,
+      "with_strategy_examples": 45,
+      "with_benchmark_evidence": 45,
+      "with_full_required_shape_evidence": 22
+    },
+    "l2": {
+      "entries": 6,
+      "with_examples": 6,
+      "with_strategy_examples": 6,
+      "with_benchmark_evidence": 6,
+      "with_full_required_shape_evidence": 6
+    }
+  },
+  "l1": [
+    {
+      "op": "relu",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/00_relu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "gelu",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/03_gelu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "silu",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/07_silu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "tanh",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/21_tanh.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "sigmoid",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/22_sigmoid.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "add",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/09_add.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "mul",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/10_mul.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "where_",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/23_where_.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "cast",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/24_cast.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "neg",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/25_neg.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "exp",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/26_exp.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "rsqrt",
+      "layer": "l1",
+      "ot_tier": 0,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/27_rsqrt.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "softmax",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 25,
+      "required_shape_tags": [
+        "attn-gpt2-128",
+        "attn-gpt2-256",
+        "attn-gpt2-512",
+        "attn-llama-512",
+        "attn-llama-2k",
+        "attn-llama-4k",
+        "wide-vocab-gpt2",
+        "wide-vocab-llama3",
+        "batch-large",
+        "square-4k",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-tiny",
+        "extreme-wide",
+        "extreme-tall",
+        "ds-v2-attn-8k",
+        "ds-v2-attn-16k",
+        "ds-v3-attn-32k",
+        "llama3-attn-8k",
+        "qwen25-attn-32k",
+        "wide-vocab-ds-v2",
+        "wide-vocab-qwen25"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/02_softmax.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "attn-gpt2-128",
+          "attn-gpt2-256",
+          "attn-gpt2-512",
+          "attn-llama-2k",
+          "attn-llama-4k",
+          "attn-llama-512",
+          "batch-large",
+          "square-4k",
+          "wide-vocab-gpt2",
+          "wide-vocab-llama3"
+        ],
+        "observed_required_shape_tags": [
+          "attn-gpt2-128",
+          "attn-gpt2-256",
+          "attn-gpt2-512",
+          "attn-llama-2k",
+          "attn-llama-4k",
+          "attn-llama-512",
+          "batch-large",
+          "square-4k",
+          "wide-vocab-gpt2",
+          "wide-vocab-llama3"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-attn-16k",
+          "ds-v2-attn-8k",
+          "ds-v3-attn-32k",
+          "extreme-tall",
+          "extreme-tiny",
+          "extreme-wide",
+          "llama3-attn-8k",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen25-attn-32k",
+          "wide-vocab-ds-v2",
+          "wide-vocab-qwen25"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "layernorm",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 21,
+      "required_shape_tags": [
+        "gpt2-small",
+        "gpt2-ffn",
+        "gpt2-medium",
+        "llama-7b",
+        "llama-13b",
+        "llama-long",
+        "ds-v2",
+        "ds-v3",
+        "mixtral-ffn",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "extreme-small",
+        "extreme-large",
+        "llama3-8b-norm",
+        "llama3-8b-long",
+        "qwen25-7b-norm",
+        "qwen25-7b-long",
+        "ds-v2-long",
+        "ds-v3-long"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/04_layernorm.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2",
+          "ds-v3",
+          "gpt2-ffn",
+          "gpt2-medium",
+          "gpt2-small",
+          "llama-13b",
+          "llama-7b",
+          "llama-long",
+          "mixtral-ffn"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2",
+          "ds-v3",
+          "gpt2-ffn",
+          "gpt2-medium",
+          "gpt2-small",
+          "llama-13b",
+          "llama-7b",
+          "llama-long",
+          "mixtral-ffn"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-long",
+          "ds-v3-long",
+          "extreme-large",
+          "extreme-small",
+          "llama3-8b-long",
+          "llama3-8b-norm",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "qwen25-7b-long",
+          "qwen25-7b-norm"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "rmsnorm",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 21,
+      "required_shape_tags": [
+        "gpt2-small",
+        "gpt2-ffn",
+        "gpt2-medium",
+        "llama-7b",
+        "llama-13b",
+        "llama-long",
+        "ds-v2",
+        "ds-v3",
+        "mixtral-ffn",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "extreme-small",
+        "extreme-large",
+        "llama3-8b-norm",
+        "llama3-8b-long",
+        "qwen25-7b-norm",
+        "qwen25-7b-long",
+        "ds-v2-long",
+        "ds-v3-long"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/06_rmsnorm.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2",
+          "ds-v3",
+          "gpt2-ffn",
+          "gpt2-medium",
+          "gpt2-small",
+          "llama-13b",
+          "llama-7b",
+          "llama-long",
+          "mixtral-ffn"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2",
+          "ds-v3",
+          "gpt2-ffn",
+          "gpt2-medium",
+          "gpt2-small",
+          "llama-13b",
+          "llama-7b",
+          "llama-long",
+          "mixtral-ffn"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-long",
+          "ds-v3-long",
+          "extreme-large",
+          "extreme-small",
+          "llama3-8b-long",
+          "llama3-8b-norm",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "qwen25-7b-long",
+          "qwen25-7b-norm"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "rmsnorm_residual",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 21,
+      "required_shape_tags": [
+        "gpt2-small",
+        "gpt2-ffn",
+        "gpt2-medium",
+        "llama-7b",
+        "llama-13b",
+        "llama-long",
+        "ds-v2",
+        "ds-v3",
+        "mixtral-ffn",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "extreme-small",
+        "extreme-large",
+        "llama3-8b-norm",
+        "llama3-8b-long",
+        "qwen25-7b-norm",
+        "qwen25-7b-long",
+        "ds-v2-long",
+        "ds-v3-long"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/18_rmsnorm_residual.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2",
+          "ds-v3",
+          "gpt2-ffn",
+          "gpt2-medium",
+          "gpt2-small",
+          "llama-13b",
+          "llama-7b",
+          "llama-long",
+          "mixtral-ffn"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2",
+          "ds-v3",
+          "gpt2-ffn",
+          "gpt2-medium",
+          "gpt2-small",
+          "llama-13b",
+          "llama-7b",
+          "llama-long",
+          "mixtral-ffn"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-long",
+          "ds-v3-long",
+          "extreme-large",
+          "extreme-small",
+          "llama3-8b-long",
+          "llama3-8b-norm",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "qwen25-7b-long",
+          "qwen25-7b-norm"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "reduce_sum",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 11,
+      "required_shape_tags": [
+        "small",
+        "medium",
+        "large",
+        "wide",
+        "llama3-wide",
+        "qwen25-wide",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "extreme-tall",
+        "extreme-flat"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/11_reduce_sum.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "reduce_max",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 11,
+      "required_shape_tags": [
+        "small",
+        "medium",
+        "large",
+        "wide",
+        "llama3-wide",
+        "qwen25-wide",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "extreme-tall",
+        "extreme-flat"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/12_reduce_max.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "reduce_mean",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 11,
+      "required_shape_tags": [
+        "small",
+        "medium",
+        "large",
+        "wide",
+        "llama3-wide",
+        "qwen25-wide",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "extreme-tall",
+        "extreme-flat"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/28_reduce_mean.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "argmax",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 11,
+      "required_shape_tags": [
+        "small",
+        "medium",
+        "large",
+        "wide",
+        "llama3-wide",
+        "qwen25-wide",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "extreme-tall",
+        "extreme-flat"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/29_argmax.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-flat",
+          "extreme-tall",
+          "large",
+          "llama3-wide",
+          "medium",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "qwen25-wide",
+          "small",
+          "wide"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "topk",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 13,
+      "required_shape_tags": [
+        "moe-top2-small",
+        "moe-top2-gpt2",
+        "moe-top4-llama",
+        "moe-top2-ds",
+        "sampling-top50",
+        "sampling-top50-llama3",
+        "sampling-top100-qwen",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "extreme-k1",
+        "extreme-kmax",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/30_topk.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "extreme-k1",
+          "moe-top2-gpt2",
+          "moe-top2-small",
+          "moe-top4-llama",
+          "non-align-1",
+          "non-align-2",
+          "sampling-top50"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-k1",
+          "moe-top2-gpt2",
+          "moe-top2-small",
+          "moe-top4-llama",
+          "non-align-1",
+          "non-align-2",
+          "sampling-top50"
+        ],
+        "missing_shape_tags": [
+          "extreme-kmax",
+          "extreme-wide",
+          "moe-top2-ds",
+          "non-align-3",
+          "sampling-top100-qwen",
+          "sampling-top50-llama3"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "cumsum",
+      "layer": "l1",
+      "ot_tier": 1,
+      "required_shape_count": 11,
+      "required_shape_tags": [
+        "small-row",
+        "gpt2-row",
+        "llama-row",
+        "llama-col",
+        "sampling-probs",
+        "sampling-probs-llama3",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "extreme-long-row",
+        "extreme-tall-col"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/31_cumsum.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "extreme-long-row",
+          "extreme-tall-col",
+          "gpt2-row",
+          "llama-col",
+          "llama-row",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-long-row",
+          "extreme-tall-col",
+          "gpt2-row",
+          "llama-col",
+          "llama-row",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3"
+        ],
+        "missing_shape_tags": [
+          "sampling-probs",
+          "sampling-probs-llama3",
+          "small-row"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "matmul",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 34,
+      "required_shape_tags": [
+        "tiny",
+        "gpt2-c_proj",
+        "gpt2-c_attn",
+        "square-1k",
+        "square-2k",
+        "square-4k",
+        "rect-wide",
+        "rect-tall",
+        "lm-head-gpt2",
+        "llama-q",
+        "llama-ffn",
+        "seq512",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "non-align-6",
+        "non-align-7",
+        "extreme-1row",
+        "extreme-16",
+        "extreme-long",
+        "ds-v2-attn",
+        "ds-v2-ffn-up",
+        "ds-v2-ffn-down",
+        "ds-v2-lmhead",
+        "ds-v3-attn",
+        "ds-v3-ffn-up",
+        "ds-v3-lmhead",
+        "qwen25-attn",
+        "qwen25-ffn-up",
+        "qwen25-lmhead",
+        "ds-v2-long-8k",
+        "ds-v3-long-32k"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/01_matmul.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-c_attn",
+          "gpt2-c_proj",
+          "llama-ffn",
+          "llama-q",
+          "lm-head-gpt2",
+          "rect-tall",
+          "rect-wide",
+          "seq512",
+          "square-1k",
+          "square-2k",
+          "square-4k",
+          "tiny"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-c_attn",
+          "gpt2-c_proj",
+          "llama-ffn",
+          "llama-q",
+          "lm-head-gpt2",
+          "rect-tall",
+          "rect-wide",
+          "seq512",
+          "square-1k",
+          "square-2k",
+          "square-4k",
+          "tiny"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-attn",
+          "ds-v2-ffn-down",
+          "ds-v2-ffn-up",
+          "ds-v2-lmhead",
+          "ds-v2-long-8k",
+          "ds-v3-attn",
+          "ds-v3-ffn-up",
+          "ds-v3-lmhead",
+          "ds-v3-long-32k",
+          "extreme-16",
+          "extreme-1row",
+          "extreme-long",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "non-align-6",
+          "non-align-7",
+          "qwen25-attn",
+          "qwen25-ffn-up",
+          "qwen25-lmhead"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "batch_matmul",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 9,
+      "required_shape_tags": [
+        "gpt2-attn-128",
+        "gpt2-attn-512",
+        "llama-attn-512",
+        "llama-attn-2k",
+        "batched-8",
+        "batched-32",
+        "non-align-1",
+        "non-align-2",
+        "extreme-bsz"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/08_batch_matmul.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "batched-32",
+          "batched-8",
+          "extreme-bsz",
+          "gpt2-attn-128",
+          "gpt2-attn-512",
+          "llama-attn-2k",
+          "llama-attn-512",
+          "non-align-1",
+          "non-align-2"
+        ],
+        "observed_required_shape_tags": [
+          "batched-32",
+          "batched-8",
+          "extreme-bsz",
+          "gpt2-attn-128",
+          "gpt2-attn-512",
+          "llama-attn-2k",
+          "llama-attn-512",
+          "non-align-1",
+          "non-align-2"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "grouped_matmul",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 7,
+      "required_shape_tags": [
+        "moe-tiny",
+        "moe-small",
+        "moe-medium",
+        "ds-moe-512",
+        "ds-moe-2k",
+        "ds-v3-moe",
+        "non-align-1"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/14_grouped_matmul.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-moe-2k",
+          "ds-moe-512",
+          "ds-v3-moe",
+          "moe-medium",
+          "moe-small",
+          "moe-tiny",
+          "non-align-1"
+        ],
+        "observed_required_shape_tags": [
+          "ds-moe-2k",
+          "ds-moe-512",
+          "ds-v3-moe",
+          "moe-medium",
+          "moe-small",
+          "moe-tiny",
+          "non-align-1"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "transpose",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 6,
+      "required_shape_tags": [
+        "small",
+        "square-1k",
+        "llama-kv",
+        "wide",
+        "non-align-1",
+        "extreme-tall"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/13_transpose.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "extreme-tall",
+          "llama-kv",
+          "non-align-1",
+          "small",
+          "square-1k",
+          "wide"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-tall",
+          "llama-kv",
+          "non-align-1",
+          "small",
+          "square-1k",
+          "wide"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "concat",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 11,
+      "required_shape_tags": [
+        "tiny-2",
+        "gpt2-qkv-merge",
+        "llama-qkv-merge",
+        "llama3-qkv-gqa",
+        "kvcache-append-512",
+        "kvcache-append-2k",
+        "batch-concat-4",
+        "non-align-1",
+        "non-align-2",
+        "extreme-many-small",
+        "extreme-unbalanced"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/32_concat.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-qkv-merge",
+          "non-align-1",
+          "non-align-2",
+          "tiny-2"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-qkv-merge",
+          "non-align-1",
+          "non-align-2",
+          "tiny-2"
+        ],
+        "missing_shape_tags": [
+          "batch-concat-4",
+          "extreme-many-small",
+          "extreme-unbalanced",
+          "kvcache-append-2k",
+          "kvcache-append-512",
+          "llama-qkv-merge",
+          "llama3-qkv-gqa"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "split",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 9,
+      "required_shape_tags": [
+        "tiny-2",
+        "gpt2-qkv-split",
+        "llama-qkv-split",
+        "llama3-qkv-gqa",
+        "qwen25-qkv-gqa",
+        "ffn-gate-up",
+        "non-align-1",
+        "non-align-2",
+        "extreme-many"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/33_split.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-qkv-split",
+          "non-align-1",
+          "non-align-2",
+          "tiny-2"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-qkv-split",
+          "non-align-1",
+          "non-align-2",
+          "tiny-2"
+        ],
+        "missing_shape_tags": [
+          "extreme-many",
+          "ffn-gate-up",
+          "llama-qkv-split",
+          "llama3-qkv-gqa",
+          "qwen25-qkv-gqa"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "gather",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 11,
+      "required_shape_tags": [
+        "tiny",
+        "moe-dispatch-top2",
+        "moe-dispatch-top4",
+        "kvcache-read-256",
+        "kvcache-read-2k",
+        "ds-moe-top2",
+        "embed-lookup-512",
+        "non-align-1",
+        "non-align-2",
+        "extreme-k-large",
+        "extreme-m-large"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/34_gather.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "moe-dispatch-top2",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "observed_required_shape_tags": [
+          "moe-dispatch-top2",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "missing_shape_tags": [
+          "ds-moe-top2",
+          "embed-lookup-512",
+          "extreme-k-large",
+          "extreme-m-large",
+          "kvcache-read-256",
+          "kvcache-read-2k",
+          "moe-dispatch-top4"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "scatter",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 10,
+      "required_shape_tags": [
+        "tiny",
+        "moe-combine-top2",
+        "moe-combine-top4",
+        "kvcache-write-256",
+        "kvcache-write-2k",
+        "ds-moe-combine",
+        "non-align-1",
+        "non-align-2",
+        "extreme-k-large",
+        "extreme-atomic"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/35_scatter.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "moe-combine-top2",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "observed_required_shape_tags": [
+          "moe-combine-top2",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "missing_shape_tags": [
+          "ds-moe-combine",
+          "extreme-atomic",
+          "extreme-k-large",
+          "kvcache-write-256",
+          "kvcache-write-2k",
+          "moe-combine-top4"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "embedding",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 13,
+      "required_shape_tags": [
+        "tiny",
+        "gpt2-small",
+        "gpt2-medium",
+        "llama2-seq512",
+        "llama2-seq2k",
+        "llama3-seq512",
+        "llama3-seq2k",
+        "qwen25-seq512",
+        "batched-b4",
+        "non-align-1",
+        "non-align-2",
+        "extreme-large-vocab",
+        "extreme-short-seq"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/36_embedding.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-medium",
+          "gpt2-small",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-medium",
+          "gpt2-small",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "missing_shape_tags": [
+          "batched-b4",
+          "extreme-large-vocab",
+          "extreme-short-seq",
+          "llama2-seq2k",
+          "llama2-seq512",
+          "llama3-seq2k",
+          "llama3-seq512",
+          "qwen25-seq512"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "permute",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "small-3d",
+        "gpt2-bhsd",
+        "gpt2-bshd",
+        "llama-bhsd-512",
+        "llama-bhsd-2k",
+        "llama3-gqa-512",
+        "llama3-kv-512",
+        "qwen25-q",
+        "qwen25-kv",
+        "non-align-1",
+        "non-align-2",
+        "extreme-5d"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/37_permute.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-bhsd",
+          "gpt2-bshd",
+          "non-align-1",
+          "non-align-2",
+          "small-3d"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-bhsd",
+          "gpt2-bshd",
+          "non-align-1",
+          "non-align-2",
+          "small-3d"
+        ],
+        "missing_shape_tags": [
+          "extreme-5d",
+          "llama-bhsd-2k",
+          "llama-bhsd-512",
+          "llama3-gqa-512",
+          "llama3-kv-512",
+          "qwen25-kv",
+          "qwen25-q"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "copy_",
+      "layer": "l1",
+      "ot_tier": 2,
+      "required_shape_count": 20,
+      "required_shape_tags": [
+        "micro-tiny",
+        "micro-small",
+        "gpt2-hidden",
+        "gpt2-ffn",
+        "square-1k",
+        "llama-ffn",
+        "llama-hidden",
+        "llama-long",
+        "ds-ffn",
+        "ds-ffn-large",
+        "qwen-ffn",
+        "xlarge",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "extreme-flat",
+        "extreme-tall",
+        "extreme-wide"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/38_copy_.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "observed_required_shape_tags": [
+          "ds-ffn",
+          "ds-ffn-large",
+          "extreme-flat",
+          "extreme-tall",
+          "extreme-wide",
+          "gpt2-ffn",
+          "gpt2-hidden",
+          "llama-ffn",
+          "llama-hidden",
+          "llama-long",
+          "micro-small",
+          "micro-tiny",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "qwen-ffn",
+          "square-1k",
+          "xlarge"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "swiglu",
+      "layer": "l1",
+      "ot_tier": 3,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "gpt2-sm",
+        "llama-7b-512",
+        "llama-7b-2k",
+        "llama3-8b",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v3-512",
+        "ds-v3-2k",
+        "qwen25-7b",
+        "qwen25-7b-2k",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/19_swiglu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "silu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "geglu",
+      "layer": "l1",
+      "ot_tier": 3,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "gpt2-sm",
+        "llama-7b-512",
+        "llama-7b-2k",
+        "llama3-8b",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v3-512",
+        "ds-v3-2k",
+        "qwen25-7b",
+        "qwen25-7b-2k",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/20_geglu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "gelu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "rope",
+      "layer": "l1",
+      "ot_tier": 3,
+      "required_shape_count": 16,
+      "required_shape_tags": [
+        "gpt2-sm-128",
+        "gpt2-sm-512",
+        "llama2-512",
+        "llama2-2k",
+        "llama3-q-512",
+        "llama3-kv-512",
+        "qwen25-q-512",
+        "qwen25-kv-512",
+        "ds-v2-512",
+        "ds-v3-2k",
+        "llama3-8k",
+        "qwen25-32k",
+        "non-align-1",
+        "non-align-2",
+        "extreme-long",
+        "extreme-batch"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/39_rope.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-sm-128",
+          "gpt2-sm-512"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-sm-128",
+          "gpt2-sm-512"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-512",
+          "ds-v3-2k",
+          "extreme-batch",
+          "extreme-long",
+          "llama2-2k",
+          "llama2-512",
+          "llama3-8k",
+          "llama3-kv-512",
+          "llama3-q-512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-32k",
+          "qwen25-kv-512",
+          "qwen25-q-512"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "fused_linear_cross_entropy",
+      "layer": "l1",
+      "ot_tier": 3,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "gpt2-seq128",
+        "gpt2-seq512",
+        "llama2-seq512",
+        "llama2-seq2k",
+        "llama3-seq512",
+        "llama3-seq2k",
+        "qwen25-seq512",
+        "qwen25-seq2k",
+        "ds-v2-seq512",
+        "non-align-1",
+        "non-align-2",
+        "extreme-large-vocab"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/41_fused_linear_cross_entropy.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-seq128",
+          "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-seq128",
+          "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-seq512",
+          "extreme-large-vocab",
+          "llama2-seq2k",
+          "llama3-seq2k",
+          "qwen25-seq2k",
+          "qwen25-seq512"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "cross_entropy",
+      "layer": "l1",
+      "ot_tier": 3,
+      "required_shape_count": 13,
+      "required_shape_tags": [
+        "tiny",
+        "gpt2-seq128",
+        "gpt2-seq512",
+        "llama2-seq512",
+        "llama2-seq2k",
+        "llama3-seq512",
+        "qwen25-seq512",
+        "ds-v2-seq512",
+        "batch4-seq512",
+        "non-align-1",
+        "non-align-2",
+        "extreme-large-vocab",
+        "extreme-large-bs"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/40_cross_entropy.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-seq128",
+          "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-seq128",
+          "gpt2-seq512",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "missing_shape_tags": [
+          "batch4-seq512",
+          "ds-v2-seq512",
+          "extreme-large-bs",
+          "extreme-large-vocab",
+          "llama2-seq2k",
+          "qwen25-seq512"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "quantize_per_token",
+      "layer": "l1",
+      "ot_tier": 3,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "tiny-int8",
+        "gpt2-int8",
+        "llama2-int8-512",
+        "llama2-fp8-512",
+        "llama3-int8-512",
+        "ds-v2-int8",
+        "ds-v3-int8",
+        "qwen25-fp8",
+        "non-align-1",
+        "non-align-2",
+        "extreme-wide",
+        "extreme-long-batch"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/42_quantize_per_token.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-int8",
+          "gpt2-int8",
+          "llama2-fp8-512",
+          "llama2-int8-512",
+          "non-align-1",
+          "non-align-2",
+          "tiny-int8"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-int8",
+          "gpt2-int8",
+          "llama2-fp8-512",
+          "llama2-int8-512",
+          "non-align-1",
+          "non-align-2",
+          "tiny-int8"
+        ],
+        "missing_shape_tags": [
+          "ds-v3-int8",
+          "extreme-long-batch",
+          "extreme-wide",
+          "llama3-int8-512",
+          "qwen25-fp8"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "dequantize_per_channel",
+      "layer": "l1",
+      "ot_tier": 3,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "tiny-int8",
+        "gpt2-int8",
+        "llama2-int4-ffn",
+        "llama2-int8-hidden",
+        "llama3-int4-ffn",
+        "ds-v2-int4",
+        "ds-v3-int4",
+        "qwen25-int4-ffn",
+        "non-align-1",
+        "non-align-2",
+        "extreme-ffn-large",
+        "extreme-lmhead"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/43_dequantize_per_channel.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-int8",
+          "non-align-1",
+          "non-align-2",
+          "tiny-int8"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-int8",
+          "non-align-1",
+          "non-align-2",
+          "tiny-int8"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-int4",
+          "ds-v3-int4",
+          "extreme-ffn-large",
+          "extreme-lmhead",
+          "llama2-int4-ffn",
+          "llama2-int8-hidden",
+          "llama3-int4-ffn",
+          "qwen25-int4-ffn"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "flash_attention",
+      "layer": "l1",
+      "ot_tier": 4,
+      "required_shape_count": 16,
+      "required_shape_tags": [
+        "gpt2-sm-128",
+        "gpt2-sm-512",
+        "gpt2-sm-1k",
+        "gpt2-md-2k",
+        "llama2-7b-512",
+        "llama2-7b-2k",
+        "llama2-7b-4k",
+        "llama2-7b-batch",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v2-4k",
+        "ds-v2-8k",
+        "ds-v2-16k",
+        "ds-v3-32k",
+        "ds-v3-163k",
+        "ds-batch-8"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/15_flash_attention.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "gpt2-sm-128"
+        ],
+        "observed_required_shape_tags": [
+          "gpt2-sm-128"
+        ],
+        "missing_shape_tags": [
+          "ds-batch-8",
+          "ds-v2-16k",
+          "ds-v2-2k",
+          "ds-v2-4k",
+          "ds-v2-512",
+          "ds-v2-8k",
+          "ds-v3-163k",
+          "ds-v3-32k",
+          "gpt2-md-2k",
+          "gpt2-sm-1k",
+          "gpt2-sm-512",
+          "llama2-7b-2k",
+          "llama2-7b-4k",
+          "llama2-7b-512",
+          "llama2-7b-batch"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "grouped_query_attention",
+      "layer": "l1",
+      "ot_tier": 4,
+      "required_shape_count": 10,
+      "required_shape_tags": [
+        "llama3-8b-512",
+        "llama3-8b-2k",
+        "llama3-8b-8k",
+        "mistral-7b-512",
+        "qwen25-7b-512",
+        "qwen25-7b-2k",
+        "qwen25-7b-8k",
+        "qwen25-7b-32k",
+        "ds-v2-mha-512",
+        "llama3-batch4"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/16_grouped_query_attention.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "llama3-8b-512"
+        ],
+        "observed_required_shape_tags": [
+          "llama3-8b-512"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-mha-512",
+          "llama3-8b-2k",
+          "llama3-8b-8k",
+          "llama3-batch4",
+          "mistral-7b-512",
+          "qwen25-7b-2k",
+          "qwen25-7b-32k",
+          "qwen25-7b-512",
+          "qwen25-7b-8k"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "multi_latent_attention",
+      "layer": "l1",
+      "ot_tier": 4,
+      "required_shape_count": 8,
+      "required_shape_tags": [
+        "ds-v2-mla-512",
+        "ds-v2-mla-2k",
+        "ds-v2-mla-4k",
+        "ds-v2-mla-8k",
+        "ds-v3-mla-512",
+        "ds-v3-mla-2k",
+        "ds-v3-mla-4k",
+        "ds-v3-mla-8k"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/17_multi_latent_attention.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-mla-4k",
+          "ds-v2-mla-8k",
+          "ds-v3-mla-4k",
+          "ds-v3-mla-8k"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-mla-4k",
+          "ds-v2-mla-8k",
+          "ds-v3-mla-4k",
+          "ds-v3-mla-8k"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-mla-2k",
+          "ds-v2-mla-512",
+          "ds-v3-mla-2k",
+          "ds-v3-mla-512"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "cross_attention",
+      "layer": "l1",
+      "ot_tier": 4,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "tiny",
+        "whisper-enc-dec",
+        "whisper-decode-1",
+        "t5-small-enc128",
+        "t5-small-dec128",
+        "t5-base-dec512",
+        "sdxl-unet-64",
+        "sdxl-unet-128",
+        "llava-vision",
+        "batch4-cross",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/44_cross_attention.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "tiny",
+          "whisper-enc-dec"
+        ],
+        "observed_required_shape_tags": [
+          "tiny",
+          "whisper-enc-dec"
+        ],
+        "missing_shape_tags": [
+          "batch4-cross",
+          "llava-vision",
+          "non-align-1",
+          "non-align-2",
+          "sdxl-unet-128",
+          "sdxl-unet-64",
+          "t5-base-dec512",
+          "t5-small-dec128",
+          "t5-small-enc128",
+          "whisper-decode-1"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "paged_attention",
+      "layer": "l1",
+      "ot_tier": 4,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "tiny",
+        "llama2-ctx512",
+        "llama2-ctx2k",
+        "llama2-ctx4k",
+        "llama3-ctx8k",
+        "llama3-ctx8k-gqa",
+        "qwen25-ctx32k",
+        "vllm-batch16",
+        "vllm-batch32-ctx4k",
+        "blksize32-ctx4k",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/45_paged_attention.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": false,
+        "fusion_groups": []
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "llama3-ctx8k",
+          "qwen25-ctx32k",
+          "vllm-batch16",
+          "vllm-batch32-ctx4k"
+        ],
+        "observed_required_shape_tags": [
+          "llama3-ctx8k",
+          "qwen25-ctx32k",
+          "vllm-batch16",
+          "vllm-batch32-ctx4k"
+        ],
+        "missing_shape_tags": [
+          "blksize32-ctx4k",
+          "llama2-ctx2k",
+          "llama2-ctx4k",
+          "llama2-ctx512",
+          "llama3-ctx8k-gqa",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    }
+  ],
+  "l2": [
+    {
+      "op": "matmul_relu",
+      "layer": "l2",
+      "ot_tier": null,
+      "required_shape_count": 34,
+      "required_shape_tags": [
+        "tiny",
+        "gpt2-c_proj",
+        "gpt2-c_attn",
+        "square-1k",
+        "square-2k",
+        "square-4k",
+        "rect-wide",
+        "rect-tall",
+        "lm-head-gpt2",
+        "llama-q",
+        "llama-ffn",
+        "seq512",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "non-align-6",
+        "non-align-7",
+        "extreme-1row",
+        "extreme-16",
+        "extreme-long",
+        "ds-v2-attn",
+        "ds-v2-ffn-up",
+        "ds-v2-ffn-down",
+        "ds-v2-lmhead",
+        "ds-v3-attn",
+        "ds-v3-ffn-up",
+        "ds-v3-lmhead",
+        "qwen25-attn",
+        "qwen25-ffn-up",
+        "qwen25-lmhead",
+        "ds-v2-long-8k",
+        "ds-v3-long-32k"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/l2/matmul_relu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "relu"
+            ],
+            "type": "epilogue"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-attn",
+          "ds-v2-ffn-down",
+          "ds-v2-ffn-up",
+          "ds-v2-lmhead",
+          "ds-v2-long-8k",
+          "ds-v3-attn",
+          "ds-v3-ffn-up",
+          "ds-v3-lmhead",
+          "ds-v3-long-32k",
+          "extreme-16",
+          "extreme-1row",
+          "extreme-long",
+          "gpt2-c_attn",
+          "gpt2-c_proj",
+          "llama-ffn",
+          "llama-q",
+          "lm-head-gpt2",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "non-align-6",
+          "non-align-7",
+          "qwen25-attn",
+          "qwen25-ffn-up",
+          "qwen25-lmhead",
+          "rect-tall",
+          "rect-wide",
+          "seq512",
+          "square-1k",
+          "square-2k",
+          "square-4k",
+          "tiny"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-attn",
+          "ds-v2-ffn-down",
+          "ds-v2-ffn-up",
+          "ds-v2-lmhead",
+          "ds-v2-long-8k",
+          "ds-v3-attn",
+          "ds-v3-ffn-up",
+          "ds-v3-lmhead",
+          "ds-v3-long-32k",
+          "extreme-16",
+          "extreme-1row",
+          "extreme-long",
+          "gpt2-c_attn",
+          "gpt2-c_proj",
+          "llama-ffn",
+          "llama-q",
+          "lm-head-gpt2",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "non-align-6",
+          "non-align-7",
+          "qwen25-attn",
+          "qwen25-ffn-up",
+          "qwen25-lmhead",
+          "rect-tall",
+          "rect-wide",
+          "seq512",
+          "square-1k",
+          "square-2k",
+          "square-4k",
+          "tiny"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "matmul_gelu",
+      "layer": "l2",
+      "ot_tier": null,
+      "required_shape_count": 34,
+      "required_shape_tags": [
+        "tiny",
+        "gpt2-c_proj",
+        "gpt2-c_attn",
+        "square-1k",
+        "square-2k",
+        "square-4k",
+        "rect-wide",
+        "rect-tall",
+        "lm-head-gpt2",
+        "llama-q",
+        "llama-ffn",
+        "seq512",
+        "non-align-1",
+        "non-align-2",
+        "non-align-3",
+        "non-align-4",
+        "non-align-5",
+        "non-align-6",
+        "non-align-7",
+        "extreme-1row",
+        "extreme-16",
+        "extreme-long",
+        "ds-v2-attn",
+        "ds-v2-ffn-up",
+        "ds-v2-ffn-down",
+        "ds-v2-lmhead",
+        "ds-v3-attn",
+        "ds-v3-ffn-up",
+        "ds-v3-lmhead",
+        "qwen25-attn",
+        "qwen25-ffn-up",
+        "qwen25-lmhead",
+        "ds-v2-long-8k",
+        "ds-v3-long-32k"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/05_matmul_gelu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "gelu"
+            ],
+            "type": "epilogue"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-attn",
+          "ds-v2-ffn-down",
+          "ds-v2-ffn-up",
+          "ds-v2-lmhead",
+          "ds-v2-long-8k",
+          "ds-v3-attn",
+          "ds-v3-ffn-up",
+          "ds-v3-lmhead",
+          "ds-v3-long-32k",
+          "extreme-16",
+          "extreme-1row",
+          "extreme-long",
+          "gpt2-c_attn",
+          "gpt2-c_proj",
+          "llama-ffn",
+          "llama-q",
+          "lm-head-gpt2",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "non-align-6",
+          "non-align-7",
+          "qwen25-attn",
+          "qwen25-ffn-up",
+          "qwen25-lmhead",
+          "rect-tall",
+          "rect-wide",
+          "seq512",
+          "square-1k",
+          "square-2k",
+          "square-4k",
+          "tiny"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-attn",
+          "ds-v2-ffn-down",
+          "ds-v2-ffn-up",
+          "ds-v2-lmhead",
+          "ds-v2-long-8k",
+          "ds-v3-attn",
+          "ds-v3-ffn-up",
+          "ds-v3-lmhead",
+          "ds-v3-long-32k",
+          "extreme-16",
+          "extreme-1row",
+          "extreme-long",
+          "gpt2-c_attn",
+          "gpt2-c_proj",
+          "llama-ffn",
+          "llama-q",
+          "lm-head-gpt2",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "non-align-6",
+          "non-align-7",
+          "qwen25-attn",
+          "qwen25-ffn-up",
+          "qwen25-lmhead",
+          "rect-tall",
+          "rect-wide",
+          "seq512",
+          "square-1k",
+          "square-2k",
+          "square-4k",
+          "tiny"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "swiglu",
+      "layer": "l2",
+      "ot_tier": null,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "gpt2-sm",
+        "llama-7b-512",
+        "llama-7b-2k",
+        "llama3-8b",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v3-512",
+        "ds-v3-2k",
+        "qwen25-7b",
+        "qwen25-7b-2k",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/19_swiglu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "silu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "geglu",
+      "layer": "l2",
+      "ot_tier": null,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "gpt2-sm",
+        "llama-7b-512",
+        "llama-7b-2k",
+        "llama3-8b",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v3-512",
+        "ds-v3-2k",
+        "qwen25-7b",
+        "qwen25-7b-2k",
+        "non-align-1",
+        "non-align-2"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/20_geglu.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "gelu",
+              "mul"
+            ],
+            "type": "epilogue"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
+          "gpt2-sm",
+          "llama-7b-2k",
+          "llama-7b-512",
+          "llama3-8b",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-7b",
+          "qwen25-7b-2k"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "linear_ce",
+      "layer": "l2",
+      "ot_tier": null,
+      "required_shape_count": 12,
+      "required_shape_tags": [
+        "gpt2-seq128",
+        "gpt2-seq512",
+        "llama2-seq512",
+        "llama2-seq2k",
+        "llama3-seq512",
+        "llama3-seq2k",
+        "qwen25-seq512",
+        "qwen25-seq2k",
+        "ds-v2-seq512",
+        "non-align-1",
+        "non-align-2",
+        "extreme-large-vocab"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/l2/linear_ce.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "cross_entropy"
+            ],
+            "type": "producer_consumer"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-v2-seq512",
+          "extreme-large-vocab",
+          "gpt2-seq128",
+          "gpt2-seq512",
+          "llama2-seq2k",
+          "llama2-seq512",
+          "llama3-seq2k",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-seq2k",
+          "qwen25-seq512"
+        ],
+        "observed_required_shape_tags": [
+          "ds-v2-seq512",
+          "extreme-large-vocab",
+          "gpt2-seq128",
+          "gpt2-seq512",
+          "llama2-seq2k",
+          "llama2-seq512",
+          "llama3-seq2k",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-seq2k",
+          "qwen25-seq512"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    },
+    {
+      "op": "qkv_fa",
+      "layer": "l2",
+      "ot_tier": null,
+      "required_shape_count": 16,
+      "required_shape_tags": [
+        "gpt2-sm-128",
+        "gpt2-sm-512",
+        "gpt2-sm-1k",
+        "gpt2-md-2k",
+        "llama2-7b-512",
+        "llama2-7b-2k",
+        "llama2-7b-4k",
+        "llama2-7b-batch",
+        "ds-v2-512",
+        "ds-v2-2k",
+        "ds-v2-4k",
+        "ds-v2-8k",
+        "ds-v2-16k",
+        "ds-v3-32k",
+        "ds-v3-163k",
+        "ds-batch-8"
+      ],
+      "example": {
+        "found": true,
+        "relative_path": "operators/l2/qkv_fa.ak"
+      },
+      "pipeline": {
+        "compile_success": true,
+        "errors": [],
+        "semantic_ok": true,
+        "strategy_ok": true,
+        "schedule_ok": true,
+        "instruction_ok": true,
+        "has_fusion_decision": true,
+        "fusion_groups": [
+          {
+            "ops": [
+              "matmul",
+              "matmul",
+              "matmul",
+              "flash_attention"
+            ],
+            "type": "producer_consumer"
+          }
+        ]
+      },
+      "evidence": {
+        "observed_shape_tags": [
+          "ds-batch-8",
+          "ds-v2-16k",
+          "ds-v2-2k",
+          "ds-v2-4k",
+          "ds-v2-512",
+          "ds-v2-8k",
+          "ds-v3-163k",
+          "ds-v3-32k",
+          "gpt2-md-2k",
+          "gpt2-sm-128",
+          "gpt2-sm-1k",
+          "gpt2-sm-512",
+          "llama2-7b-2k",
+          "llama2-7b-4k",
+          "llama2-7b-512",
+          "llama2-7b-batch"
+        ],
+        "observed_required_shape_tags": [
+          "ds-batch-8",
+          "ds-v2-16k",
+          "ds-v2-2k",
+          "ds-v2-4k",
+          "ds-v2-512",
+          "ds-v2-8k",
+          "ds-v3-163k",
+          "ds-v3-32k",
+          "gpt2-md-2k",
+          "gpt2-sm-128",
+          "gpt2-sm-1k",
+          "gpt2-sm-512",
+          "llama2-7b-2k",
+          "llama2-7b-4k",
+          "llama2-7b-512",
+          "llama2-7b-batch"
+        ],
+        "missing_shape_tags": [],
+        "correctness_evidence_present": true,
+        "performance_evidence_present": true
+      }
+    }
+  ]
+}

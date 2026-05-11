@@ -1,0 +1,9 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+swiglu,gpt2-sm,PyTorch-eager,48.7,66.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,gpt2-sm,Arke,48.3,3.6,,1.0083,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0083,true,0.0083
+swiglu,llama-7b-512,PyTorch-eager,39.6,2.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,llama-7b-512,Arke,47.7,2.9,,0.8302,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8302,false,-0.1698
+swiglu,llama-7b-2k,PyTorch-eager,41.5,1.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,llama-7b-2k,Arke,46.5,67.3,,0.8925,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8925,false,-0.1075
+swiglu,llama3-8b,PyTorch-eager,40.1,5.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,llama3-8b,Arke,47.1,51.4,,0.8514,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8514,false,-0.1486

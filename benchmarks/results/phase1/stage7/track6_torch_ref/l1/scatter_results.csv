@@ -1,0 +1,7 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy
+scatter,tiny,64,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,135.9,141.3,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+scatter,moe-combine-top2,512,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,336.1,341.0,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+scatter,moe-combine-top4,512,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,348.3,325.6,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+scatter,kvcache-write-256,256,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,182.7,186.4,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+scatter,kvcache-write-2k,2048,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,1051.4,862.2,,ok,,false,true,0,0,0.001,0.001,ok,,,,,
+scatter,ds-moe-combine,512,5120,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,439.4,401.4,,ok,,false,true,0,0,0.001,0.001,ok,,,,,

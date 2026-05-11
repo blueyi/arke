@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-09_210638",
+  "timestamp": "2026-05-11_183454",
   "ops": [
     "relu",
     "gelu",
@@ -49,6 +49,10 @@
   ],
   "warmup": 200,
   "reps": 500,
-  "tier": 2,
-  "shape_tags": null
+  "tier": 3,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "g7",
+  "layer": "L1"
 }

@@ -1,0 +1,79 @@
+{
+  "stage": "S7",
+  "gate": "G7",
+  "source": "benchmarks/results/phase1/stage7/track6/coverage_ledger.json",
+  "summary": {
+    "l1": {
+      "entries": 45,
+      "missing_examples": [],
+      "missing_strategy_examples": [],
+      "missing_benchmark_evidence": [],
+      "missing_full_shape_evidence": [
+        "softmax",
+        "layernorm",
+        "rmsnorm",
+        "rmsnorm_residual",
+        "topk",
+        "cumsum",
+        "matmul",
+        "concat",
+        "split",
+        "gather",
+        "scatter",
+        "embedding",
+        "permute",
+        "rope",
+        "fused_linear_cross_entropy",
+        "cross_entropy",
+        "quantize_per_token",
+        "dequantize_per_channel",
+        "flash_attention",
+        "grouped_query_attention",
+        "multi_latent_attention",
+        "cross_attention",
+        "paged_attention"
+      ],
+      "unsupported_surface_cases": []
+    },
+    "l2": {
+      "entries": 6,
+      "missing_examples": [],
+      "missing_strategy_examples": [],
+      "missing_benchmark_evidence": [],
+      "missing_full_shape_evidence": [],
+      "unsupported_surface_cases": []
+    }
+  },
+  "priority_actions": [
+    {
+      "category": "missing_l1_shape_evidence",
+      "layer": "l1",
+      "ops": [
+        "softmax",
+        "layernorm",
+        "rmsnorm",
+        "rmsnorm_residual",
+        "topk",
+        "cumsum",
+        "matmul",
+        "concat",
+        "split",
+        "gather",
+        "scatter",
+        "embedding",
+        "permute",
+        "rope",
+        "fused_linear_cross_entropy",
+        "cross_entropy",
+        "quantize_per_token",
+        "dequantize_per_channel",
+        "flash_attention",
+        "grouped_query_attention",
+        "multi_latent_attention",
+        "cross_attention",
+        "paged_attention"
+      ]
+    }
+  ],
+  "text_summary": "Stage 7 audit report \u2014 S7 / G7\n============================================================\n[L1] entries=45, missing examples=0, missing strategy examples=0, missing benchmark evidence=0, missing full shape evidence=23\n[L2] entries=6, missing examples=0, missing strategy examples=0, missing benchmark evidence=0, missing full shape evidence=0\n------------------------------------------------------------\nPriority actions:\n- missing_l1_shape_evidence: softmax, layernorm, rmsnorm, rmsnorm_residual, topk, cumsum, matmul, concat, split, gather, scatter, embedding, permute, rope, fused_linear_cross_entropy, cross_entropy, quantize_per_token, dequantize_per_channel, flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention"
+}

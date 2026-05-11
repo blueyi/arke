@@ -1,15 +1,23 @@
 operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-concat,tiny-2,PyTorch-eager,49.9,38.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-concat,tiny-2,Arke,50.8,72.8,,0.9823,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9823,false,-0.0177
-concat,gpt2-qkv-merge,PyTorch-eager,51.7,2.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-concat,gpt2-qkv-merge,Arke,46.8,3.5,,1.1047,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1047,true,0.1047
-concat,llama-qkv-merge,PyTorch-eager,47.0,52.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-concat,llama-qkv-merge,Arke,47.3,61.2,,0.9937,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9937,false,-0.0063
-concat,llama3-qkv-gqa,PyTorch-eager,46.2,4.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-concat,llama3-qkv-gqa,Arke,47.2,2.9,,0.9788,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9788,false,-0.0212
-concat,kvcache-append-512,PyTorch-eager,47.8,63.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-concat,kvcache-append-512,Arke,49.7,3.0,,0.9618,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9618,false,-0.0382
-concat,kvcache-append-2k,PyTorch-eager,45.6,7.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-concat,kvcache-append-2k,Arke,48.9,37.5,,0.9325,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9325,false,-0.0675
-concat,batch-concat-4,PyTorch-eager,47.8,8.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
-concat,batch-concat-4,Arke,55.2,48.6,,0.8659,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8659,false,-0.1341
+concat,tiny-2,PyTorch-eager,43.4,4.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,tiny-2,Arke,47.9,1.6,,0.9061,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9061,false,-0.0939
+concat,gpt2-qkv-merge,PyTorch-eager,44.6,2.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,gpt2-qkv-merge,Arke,47.8,5.1,,0.9331,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9331,false,-0.0669
+concat,llama-qkv-merge,PyTorch-eager,46.1,8.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,llama-qkv-merge,Arke,47.1,2.2,,0.9788,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9788,false,-0.0212
+concat,llama3-qkv-gqa,PyTorch-eager,46.1,1.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,llama3-qkv-gqa,Arke,50.2,29.9,,0.9183,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9183,false,-0.0817
+concat,kvcache-append-512,PyTorch-eager,47.6,9.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,kvcache-append-512,Arke,48.1,7.7,,0.9896,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9896,false,-0.0104
+concat,kvcache-append-2k,PyTorch-eager,47.6,20.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,kvcache-append-2k,Arke,48.3,24.0,,0.9855,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9855,false,-0.0145
+concat,batch-concat-4,PyTorch-eager,45.9,5.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,batch-concat-4,Arke,46.2,10.5,,0.9935,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9935,false,-0.0065
+concat,non-align-1,PyTorch-eager,43.9,36.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,non-align-1,Arke,47.5,1.5,,0.9242,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9242,false,-0.0758
+concat,non-align-2,PyTorch-eager,45.1,13.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,non-align-2,Arke,45.7,2.2,,0.9869,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9869,false,-0.0131
+concat,extreme-many-small,PyTorch-eager,44.4,1.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,extreme-many-small,Arke,46.2,2.3,,0.9610,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9610,false,-0.0390
+concat,extreme-unbalanced,PyTorch-eager,44.0,2.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,extreme-unbalanced,Arke,46.6,2.3,,0.9442,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9442,false,-0.0558

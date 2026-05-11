@@ -12,7 +12,7 @@
       "with_examples": 45,
       "with_strategy_examples": 45,
       "with_benchmark_evidence": 45,
-      "with_full_required_shape_evidence": 22
+      "with_full_required_shape_evidence": 35
     },
     "l2": {
       "entries": 6,
@@ -1170,6 +1170,14 @@
           "attn-llama-4k",
           "attn-llama-512",
           "batch-large",
+          "extreme-tall",
+          "extreme-tiny",
+          "extreme-wide",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
           "square-4k",
           "wide-vocab-gpt2",
           "wide-vocab-llama3"
@@ -1182,6 +1190,14 @@
           "attn-llama-4k",
           "attn-llama-512",
           "batch-large",
+          "extreme-tall",
+          "extreme-tiny",
+          "extreme-wide",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
           "square-4k",
           "wide-vocab-gpt2",
           "wide-vocab-llama3"
@@ -1190,15 +1206,7 @@
           "ds-v2-attn-16k",
           "ds-v2-attn-8k",
           "ds-v3-attn-32k",
-          "extreme-tall",
-          "extreme-tiny",
-          "extreme-wide",
           "llama3-attn-8k",
-          "non-align-1",
-          "non-align-2",
-          "non-align-3",
-          "non-align-4",
-          "non-align-5",
           "qwen25-attn-32k",
           "wide-vocab-ds-v2",
           "wide-vocab-qwen25"
@@ -1253,36 +1261,42 @@
         "observed_shape_tags": [
           "ds-v2",
           "ds-v3",
+          "extreme-large",
+          "extreme-small",
           "gpt2-ffn",
           "gpt2-medium",
           "gpt2-small",
           "llama-13b",
           "llama-7b",
           "llama-long",
-          "mixtral-ffn"
+          "mixtral-ffn",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4"
         ],
         "observed_required_shape_tags": [
           "ds-v2",
           "ds-v3",
+          "extreme-large",
+          "extreme-small",
           "gpt2-ffn",
           "gpt2-medium",
           "gpt2-small",
           "llama-13b",
           "llama-7b",
           "llama-long",
-          "mixtral-ffn"
+          "mixtral-ffn",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4"
         ],
         "missing_shape_tags": [
           "ds-v2-long",
           "ds-v3-long",
-          "extreme-large",
-          "extreme-small",
           "llama3-8b-long",
           "llama3-8b-norm",
-          "non-align-1",
-          "non-align-2",
-          "non-align-3",
-          "non-align-4",
           "qwen25-7b-long",
           "qwen25-7b-norm"
         ],
@@ -1336,36 +1350,42 @@
         "observed_shape_tags": [
           "ds-v2",
           "ds-v3",
+          "extreme-large",
+          "extreme-small",
           "gpt2-ffn",
           "gpt2-medium",
           "gpt2-small",
           "llama-13b",
           "llama-7b",
           "llama-long",
-          "mixtral-ffn"
+          "mixtral-ffn",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4"
         ],
         "observed_required_shape_tags": [
           "ds-v2",
           "ds-v3",
+          "extreme-large",
+          "extreme-small",
           "gpt2-ffn",
           "gpt2-medium",
           "gpt2-small",
           "llama-13b",
           "llama-7b",
           "llama-long",
-          "mixtral-ffn"
+          "mixtral-ffn",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4"
         ],
         "missing_shape_tags": [
           "ds-v2-long",
           "ds-v3-long",
-          "extreme-large",
-          "extreme-small",
           "llama3-8b-long",
           "llama3-8b-norm",
-          "non-align-1",
-          "non-align-2",
-          "non-align-3",
-          "non-align-4",
           "qwen25-7b-long",
           "qwen25-7b-norm"
         ],
@@ -1419,36 +1439,42 @@
         "observed_shape_tags": [
           "ds-v2",
           "ds-v3",
+          "extreme-large",
+          "extreme-small",
           "gpt2-ffn",
           "gpt2-medium",
           "gpt2-small",
           "llama-13b",
           "llama-7b",
           "llama-long",
-          "mixtral-ffn"
+          "mixtral-ffn",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4"
         ],
         "observed_required_shape_tags": [
           "ds-v2",
           "ds-v3",
+          "extreme-large",
+          "extreme-small",
           "gpt2-ffn",
           "gpt2-medium",
           "gpt2-small",
           "llama-13b",
           "llama-7b",
           "llama-long",
-          "mixtral-ffn"
+          "mixtral-ffn",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4"
         ],
         "missing_shape_tags": [
           "ds-v2-long",
           "ds-v3-long",
-          "extreme-large",
-          "extreme-small",
           "llama3-8b-long",
           "llama3-8b-norm",
-          "non-align-1",
-          "non-align-2",
-          "non-align-3",
-          "non-align-4",
           "qwen25-7b-long",
           "qwen25-7b-norm"
         ],
@@ -1749,30 +1775,35 @@
       "evidence": {
         "observed_shape_tags": [
           "extreme-k1",
-          "moe-top2-gpt2",
-          "moe-top2-small",
-          "moe-top4-llama",
-          "non-align-1",
-          "non-align-2",
-          "sampling-top50"
-        ],
-        "observed_required_shape_tags": [
-          "extreme-k1",
-          "moe-top2-gpt2",
-          "moe-top2-small",
-          "moe-top4-llama",
-          "non-align-1",
-          "non-align-2",
-          "sampling-top50"
-        ],
-        "missing_shape_tags": [
           "extreme-kmax",
           "extreme-wide",
           "moe-top2-ds",
+          "moe-top2-gpt2",
+          "moe-top2-small",
+          "moe-top4-llama",
+          "non-align-1",
+          "non-align-2",
           "non-align-3",
           "sampling-top100-qwen",
+          "sampling-top50",
           "sampling-top50-llama3"
         ],
+        "observed_required_shape_tags": [
+          "extreme-k1",
+          "extreme-kmax",
+          "extreme-wide",
+          "moe-top2-ds",
+          "moe-top2-gpt2",
+          "moe-top2-small",
+          "moe-top4-llama",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "sampling-top100-qwen",
+          "sampling-top50",
+          "sampling-top50-llama3"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -1818,7 +1849,10 @@
           "llama-row",
           "non-align-1",
           "non-align-2",
-          "non-align-3"
+          "non-align-3",
+          "sampling-probs",
+          "sampling-probs-llama3",
+          "small-row"
         ],
         "observed_required_shape_tags": [
           "extreme-long-row",
@@ -1828,13 +1862,12 @@
           "llama-row",
           "non-align-1",
           "non-align-2",
-          "non-align-3"
-        ],
-        "missing_shape_tags": [
+          "non-align-3",
           "sampling-probs",
           "sampling-probs-llama3",
           "small-row"
         ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -1896,11 +1929,21 @@
       },
       "evidence": {
         "observed_shape_tags": [
+          "extreme-16",
+          "extreme-1row",
+          "extreme-long",
           "gpt2-c_attn",
           "gpt2-c_proj",
           "llama-ffn",
           "llama-q",
           "lm-head-gpt2",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "non-align-6",
+          "non-align-7",
           "rect-tall",
           "rect-wide",
           "seq512",
@@ -1910,11 +1953,21 @@
           "tiny"
         ],
         "observed_required_shape_tags": [
+          "extreme-16",
+          "extreme-1row",
+          "extreme-long",
           "gpt2-c_attn",
           "gpt2-c_proj",
           "llama-ffn",
           "llama-q",
           "lm-head-gpt2",
+          "non-align-1",
+          "non-align-2",
+          "non-align-3",
+          "non-align-4",
+          "non-align-5",
+          "non-align-6",
+          "non-align-7",
           "rect-tall",
           "rect-wide",
           "seq512",
@@ -1933,16 +1986,6 @@
           "ds-v3-ffn-up",
           "ds-v3-lmhead",
           "ds-v3-long-32k",
-          "extreme-16",
-          "extreme-1row",
-          "extreme-long",
-          "non-align-1",
-          "non-align-2",
-          "non-align-3",
-          "non-align-4",
-          "non-align-5",
-          "non-align-6",
-          "non-align-7",
           "qwen25-attn",
           "qwen25-ffn-up",
           "qwen25-lmhead"
@@ -2039,24 +2082,22 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "ds-moe-2k",
-          "ds-moe-512",
-          "ds-v3-moe",
           "moe-medium",
           "moe-small",
           "moe-tiny",
           "non-align-1"
         ],
         "observed_required_shape_tags": [
-          "ds-moe-2k",
-          "ds-moe-512",
-          "ds-v3-moe",
           "moe-medium",
           "moe-small",
           "moe-tiny",
           "non-align-1"
         ],
-        "missing_shape_tags": [],
+        "missing_shape_tags": [
+          "ds-moe-2k",
+          "ds-moe-512",
+          "ds-v3-moe"
+        ],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2144,26 +2185,32 @@
       },
       "evidence": {
         "observed_shape_tags": [
+          "batch-concat-4",
+          "extreme-many-small",
+          "extreme-unbalanced",
           "gpt2-qkv-merge",
+          "kvcache-append-2k",
+          "kvcache-append-512",
+          "llama-qkv-merge",
+          "llama3-qkv-gqa",
           "non-align-1",
           "non-align-2",
           "tiny-2"
         ],
         "observed_required_shape_tags": [
+          "batch-concat-4",
+          "extreme-many-small",
+          "extreme-unbalanced",
           "gpt2-qkv-merge",
+          "kvcache-append-2k",
+          "kvcache-append-512",
+          "llama-qkv-merge",
+          "llama3-qkv-gqa",
           "non-align-1",
           "non-align-2",
           "tiny-2"
         ],
-        "missing_shape_tags": [
-          "batch-concat-4",
-          "extreme-many-small",
-          "extreme-unbalanced",
-          "kvcache-append-2k",
-          "kvcache-append-512",
-          "llama-qkv-merge",
-          "llama3-qkv-gqa"
-        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2200,24 +2247,28 @@
       },
       "evidence": {
         "observed_shape_tags": [
+          "extreme-many",
+          "ffn-gate-up",
           "gpt2-qkv-split",
+          "llama-qkv-split",
+          "llama3-qkv-gqa",
           "non-align-1",
           "non-align-2",
+          "qwen25-qkv-gqa",
           "tiny-2"
         ],
         "observed_required_shape_tags": [
-          "gpt2-qkv-split",
-          "non-align-1",
-          "non-align-2",
-          "tiny-2"
-        ],
-        "missing_shape_tags": [
           "extreme-many",
           "ffn-gate-up",
+          "gpt2-qkv-split",
           "llama-qkv-split",
           "llama3-qkv-gqa",
-          "qwen25-qkv-gqa"
+          "non-align-1",
+          "non-align-2",
+          "qwen25-qkv-gqa",
+          "tiny-2"
         ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2256,26 +2307,32 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "moe-dispatch-top2",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "observed_required_shape_tags": [
-          "moe-dispatch-top2",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "missing_shape_tags": [
           "ds-moe-top2",
           "embed-lookup-512",
           "extreme-k-large",
           "extreme-m-large",
           "kvcache-read-256",
           "kvcache-read-2k",
-          "moe-dispatch-top4"
+          "moe-dispatch-top2",
+          "moe-dispatch-top4",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
         ],
+        "observed_required_shape_tags": [
+          "ds-moe-top2",
+          "embed-lookup-512",
+          "extreme-k-large",
+          "extreme-m-large",
+          "kvcache-read-256",
+          "kvcache-read-2k",
+          "moe-dispatch-top2",
+          "moe-dispatch-top4",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2313,25 +2370,30 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "moe-combine-top2",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "observed_required_shape_tags": [
-          "moe-combine-top2",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "missing_shape_tags": [
           "ds-moe-combine",
           "extreme-atomic",
           "extreme-k-large",
           "kvcache-write-256",
           "kvcache-write-2k",
-          "moe-combine-top4"
+          "moe-combine-top2",
+          "moe-combine-top4",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
         ],
+        "observed_required_shape_tags": [
+          "ds-moe-combine",
+          "extreme-atomic",
+          "extreme-k-large",
+          "kvcache-write-256",
+          "kvcache-write-2k",
+          "moe-combine-top2",
+          "moe-combine-top4",
+          "non-align-1",
+          "non-align-2",
+          "tiny"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2372,29 +2434,36 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-medium",
-          "gpt2-small",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-medium",
-          "gpt2-small",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "missing_shape_tags": [
           "batched-b4",
           "extreme-large-vocab",
           "extreme-short-seq",
+          "gpt2-medium",
+          "gpt2-small",
           "llama2-seq2k",
           "llama2-seq512",
           "llama3-seq2k",
           "llama3-seq512",
-          "qwen25-seq512"
+          "non-align-1",
+          "non-align-2",
+          "qwen25-seq512",
+          "tiny"
         ],
+        "observed_required_shape_tags": [
+          "batched-b4",
+          "extreme-large-vocab",
+          "extreme-short-seq",
+          "gpt2-medium",
+          "gpt2-small",
+          "llama2-seq2k",
+          "llama2-seq512",
+          "llama3-seq2k",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-seq512",
+          "tiny"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2434,28 +2503,34 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-bhsd",
-          "gpt2-bshd",
-          "non-align-1",
-          "non-align-2",
-          "small-3d"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-bhsd",
-          "gpt2-bshd",
-          "non-align-1",
-          "non-align-2",
-          "small-3d"
-        ],
-        "missing_shape_tags": [
           "extreme-5d",
+          "gpt2-bhsd",
+          "gpt2-bshd",
           "llama-bhsd-2k",
           "llama-bhsd-512",
           "llama3-gqa-512",
           "llama3-kv-512",
+          "non-align-1",
+          "non-align-2",
           "qwen25-kv",
-          "qwen25-q"
+          "qwen25-q",
+          "small-3d"
         ],
+        "observed_required_shape_tags": [
+          "extreme-5d",
+          "gpt2-bhsd",
+          "gpt2-bshd",
+          "llama-bhsd-2k",
+          "llama-bhsd-512",
+          "llama3-gqa-512",
+          "llama3-kv-512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-kv",
+          "qwen25-q",
+          "small-3d"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2594,34 +2669,29 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "ds-v2-2k",
-          "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
           "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
-          "non-align-2",
-          "qwen25-7b",
-          "qwen25-7b-2k"
+          "non-align-2"
         ],
         "observed_required_shape_tags": [
-          "ds-v2-2k",
-          "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
           "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
-          "non-align-2",
+          "non-align-2"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
           "qwen25-7b",
           "qwen25-7b-2k"
         ],
-        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2669,34 +2739,29 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "ds-v2-2k",
-          "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
           "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
-          "non-align-2",
-          "qwen25-7b",
-          "qwen25-7b-2k"
+          "non-align-2"
         ],
         "observed_required_shape_tags": [
-          "ds-v2-2k",
-          "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
           "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
-          "non-align-2",
+          "non-align-2"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
           "qwen25-7b",
           "qwen25-7b-2k"
         ],
-        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2740,28 +2805,38 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-sm-128",
-          "gpt2-sm-512"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-sm-128",
-          "gpt2-sm-512"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-512",
-          "ds-v3-2k",
           "extreme-batch",
           "extreme-long",
+          "gpt2-sm-128",
+          "gpt2-sm-512",
           "llama2-2k",
           "llama2-512",
-          "llama3-8k",
           "llama3-kv-512",
           "llama3-q-512",
           "non-align-1",
           "non-align-2",
-          "qwen25-32k",
           "qwen25-kv-512",
           "qwen25-q-512"
+        ],
+        "observed_required_shape_tags": [
+          "extreme-batch",
+          "extreme-long",
+          "gpt2-sm-128",
+          "gpt2-sm-512",
+          "llama2-2k",
+          "llama2-512",
+          "llama3-kv-512",
+          "llama3-q-512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-kv-512",
+          "qwen25-q-512"
+        ],
+        "missing_shape_tags": [
+          "ds-v2-512",
+          "ds-v3-2k",
+          "llama3-8k",
+          "qwen25-32k"
         ],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
@@ -2802,16 +2877,20 @@
       },
       "evidence": {
         "observed_shape_tags": [
+          "extreme-large-vocab",
           "gpt2-seq128",
           "gpt2-seq512",
+          "llama2-seq2k",
           "llama2-seq512",
           "llama3-seq512",
           "non-align-1",
           "non-align-2"
         ],
         "observed_required_shape_tags": [
+          "extreme-large-vocab",
           "gpt2-seq128",
           "gpt2-seq512",
+          "llama2-seq2k",
           "llama2-seq512",
           "llama3-seq512",
           "non-align-1",
@@ -2819,8 +2898,6 @@
         ],
         "missing_shape_tags": [
           "ds-v2-seq512",
-          "extreme-large-vocab",
-          "llama2-seq2k",
           "llama3-seq2k",
           "qwen25-seq2k",
           "qwen25-seq512"
@@ -2865,31 +2942,36 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-seq128",
-          "gpt2-seq512",
-          "llama2-seq512",
-          "llama3-seq512",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-seq128",
-          "gpt2-seq512",
-          "llama2-seq512",
-          "llama3-seq512",
-          "non-align-1",
-          "non-align-2",
-          "tiny"
-        ],
-        "missing_shape_tags": [
           "batch4-seq512",
           "ds-v2-seq512",
           "extreme-large-bs",
           "extreme-large-vocab",
+          "gpt2-seq128",
+          "gpt2-seq512",
           "llama2-seq2k",
-          "qwen25-seq512"
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-seq512",
+          "tiny"
         ],
+        "observed_required_shape_tags": [
+          "batch4-seq512",
+          "ds-v2-seq512",
+          "extreme-large-bs",
+          "extreme-large-vocab",
+          "gpt2-seq128",
+          "gpt2-seq512",
+          "llama2-seq2k",
+          "llama2-seq512",
+          "llama3-seq512",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-seq512",
+          "tiny"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2930,29 +3012,33 @@
       "evidence": {
         "observed_shape_tags": [
           "ds-v2-int8",
+          "ds-v3-int8",
+          "extreme-long-batch",
+          "extreme-wide",
           "gpt2-int8",
           "llama2-fp8-512",
           "llama2-int8-512",
+          "llama3-int8-512",
           "non-align-1",
           "non-align-2",
+          "qwen25-fp8",
           "tiny-int8"
         ],
         "observed_required_shape_tags": [
           "ds-v2-int8",
-          "gpt2-int8",
-          "llama2-fp8-512",
-          "llama2-int8-512",
-          "non-align-1",
-          "non-align-2",
-          "tiny-int8"
-        ],
-        "missing_shape_tags": [
           "ds-v3-int8",
           "extreme-long-batch",
           "extreme-wide",
+          "gpt2-int8",
+          "llama2-fp8-512",
+          "llama2-int8-512",
           "llama3-int8-512",
-          "qwen25-fp8"
+          "non-align-1",
+          "non-align-2",
+          "qwen25-fp8",
+          "tiny-int8"
         ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -2992,27 +3078,34 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-int8",
-          "non-align-1",
-          "non-align-2",
-          "tiny-int8"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-int8",
-          "non-align-1",
-          "non-align-2",
-          "tiny-int8"
-        ],
-        "missing_shape_tags": [
           "ds-v2-int4",
           "ds-v3-int4",
           "extreme-ffn-large",
           "extreme-lmhead",
+          "gpt2-int8",
           "llama2-int4-ffn",
           "llama2-int8-hidden",
           "llama3-int4-ffn",
-          "qwen25-int4-ffn"
+          "non-align-1",
+          "non-align-2",
+          "qwen25-int4-ffn",
+          "tiny-int8"
         ],
+        "observed_required_shape_tags": [
+          "ds-v2-int4",
+          "ds-v3-int4",
+          "extreme-ffn-large",
+          "extreme-lmhead",
+          "gpt2-int8",
+          "llama2-int4-ffn",
+          "llama2-int8-hidden",
+          "llama3-int4-ffn",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-int4-ffn",
+          "tiny-int8"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -3056,12 +3149,6 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "gpt2-sm-128"
-        ],
-        "observed_required_shape_tags": [
-          "gpt2-sm-128"
-        ],
-        "missing_shape_tags": [
           "ds-batch-8",
           "ds-v2-16k",
           "ds-v2-2k",
@@ -3071,6 +3158,7 @@
           "ds-v3-163k",
           "ds-v3-32k",
           "gpt2-md-2k",
+          "gpt2-sm-128",
           "gpt2-sm-1k",
           "gpt2-sm-512",
           "llama2-7b-2k",
@@ -3078,6 +3166,25 @@
           "llama2-7b-512",
           "llama2-7b-batch"
         ],
+        "observed_required_shape_tags": [
+          "ds-batch-8",
+          "ds-v2-16k",
+          "ds-v2-2k",
+          "ds-v2-4k",
+          "ds-v2-512",
+          "ds-v2-8k",
+          "ds-v3-163k",
+          "ds-v3-32k",
+          "gpt2-md-2k",
+          "gpt2-sm-128",
+          "gpt2-sm-1k",
+          "gpt2-sm-512",
+          "llama2-7b-2k",
+          "llama2-7b-4k",
+          "llama2-7b-512",
+          "llama2-7b-batch"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -3115,14 +3222,9 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "llama3-8b-512"
-        ],
-        "observed_required_shape_tags": [
-          "llama3-8b-512"
-        ],
-        "missing_shape_tags": [
           "ds-v2-mha-512",
           "llama3-8b-2k",
+          "llama3-8b-512",
           "llama3-8b-8k",
           "llama3-batch4",
           "mistral-7b-512",
@@ -3131,6 +3233,19 @@
           "qwen25-7b-512",
           "qwen25-7b-8k"
         ],
+        "observed_required_shape_tags": [
+          "ds-v2-mha-512",
+          "llama3-8b-2k",
+          "llama3-8b-512",
+          "llama3-8b-8k",
+          "llama3-batch4",
+          "mistral-7b-512",
+          "qwen25-7b-2k",
+          "qwen25-7b-32k",
+          "qwen25-7b-512",
+          "qwen25-7b-8k"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -3166,23 +3281,26 @@
       },
       "evidence": {
         "observed_shape_tags": [
+          "ds-v2-mla-2k",
           "ds-v2-mla-4k",
+          "ds-v2-mla-512",
           "ds-v2-mla-8k",
+          "ds-v3-mla-2k",
           "ds-v3-mla-4k",
+          "ds-v3-mla-512",
           "ds-v3-mla-8k"
         ],
         "observed_required_shape_tags": [
+          "ds-v2-mla-2k",
           "ds-v2-mla-4k",
+          "ds-v2-mla-512",
           "ds-v2-mla-8k",
+          "ds-v3-mla-2k",
           "ds-v3-mla-4k",
+          "ds-v3-mla-512",
           "ds-v3-mla-8k"
         ],
-        "missing_shape_tags": [
-          "ds-v2-mla-2k",
-          "ds-v2-mla-512",
-          "ds-v3-mla-2k",
-          "ds-v3-mla-512"
-        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -3222,14 +3340,6 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "tiny",
-          "whisper-enc-dec"
-        ],
-        "observed_required_shape_tags": [
-          "tiny",
-          "whisper-enc-dec"
-        ],
-        "missing_shape_tags": [
           "batch4-cross",
           "llava-vision",
           "non-align-1",
@@ -3239,8 +3349,25 @@
           "t5-base-dec512",
           "t5-small-dec128",
           "t5-small-enc128",
-          "whisper-decode-1"
+          "tiny",
+          "whisper-decode-1",
+          "whisper-enc-dec"
         ],
+        "observed_required_shape_tags": [
+          "batch4-cross",
+          "llava-vision",
+          "non-align-1",
+          "non-align-2",
+          "sdxl-unet-128",
+          "sdxl-unet-64",
+          "t5-base-dec512",
+          "t5-small-dec128",
+          "t5-small-enc128",
+          "tiny",
+          "whisper-decode-1",
+          "whisper-enc-dec"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }
@@ -3280,27 +3407,34 @@
       },
       "evidence": {
         "observed_shape_tags": [
-          "llama3-ctx8k",
-          "qwen25-ctx32k",
-          "vllm-batch16",
-          "vllm-batch32-ctx4k"
-        ],
-        "observed_required_shape_tags": [
-          "llama3-ctx8k",
-          "qwen25-ctx32k",
-          "vllm-batch16",
-          "vllm-batch32-ctx4k"
-        ],
-        "missing_shape_tags": [
           "blksize32-ctx4k",
           "llama2-ctx2k",
           "llama2-ctx4k",
           "llama2-ctx512",
+          "llama3-ctx8k",
           "llama3-ctx8k-gqa",
           "non-align-1",
           "non-align-2",
-          "tiny"
+          "qwen25-ctx32k",
+          "tiny",
+          "vllm-batch16",
+          "vllm-batch32-ctx4k"
         ],
+        "observed_required_shape_tags": [
+          "blksize32-ctx4k",
+          "llama2-ctx2k",
+          "llama2-ctx4k",
+          "llama2-ctx512",
+          "llama3-ctx8k",
+          "llama3-ctx8k-gqa",
+          "non-align-1",
+          "non-align-2",
+          "qwen25-ctx32k",
+          "tiny",
+          "vllm-batch16",
+          "vllm-batch32-ctx4k"
+        ],
+        "missing_shape_tags": [],
         "correctness_evidence_present": true,
         "performance_evidence_present": true
       }

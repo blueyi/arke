@@ -1,0 +1,11 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+fused_linear_cross_entropy,gpt2-seq128,PyTorch-eager,494.7,353.3,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,103123968,3542771302,0.0291,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,gpt2-seq128,Arke,510.0,356.4,,0.9700,ok,,false,true,0,0,0.01,0.01,ok,,103123968,3542771302,0.0291,linear_ce,1.0,0.9700,false,-0.0300
+fused_linear_cross_entropy,gpt2-seq512,PyTorch-eager,500.1,427.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,180911616,3542771302,0.0511,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,gpt2-seq512,Arke,520.9,475.1,,0.9601,ok,,false,true,0,0,0.01,0.01,ok,,180911616,3542771302,0.0511,linear_ce,1.0,0.9601,false,-0.0399
+fused_linear_cross_entropy,llama2-seq512,PyTorch-eager,499.6,576.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,331878400,3542771302,0.0937,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,llama2-seq512,Arke,481.9,479.2,,1.0367,ok,,false,true,0,0,0.01,0.01,ok,,331878400,3542771302,0.0937,linear_ce,1.0,1.0367,true,0.0367
+fused_linear_cross_entropy,llama2-seq2k,PyTorch-eager,1289.3,1286.1,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,541081600,3542771302,0.1527,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,llama2-seq2k,Arke,772.3,915.4,,1.6694,ok,,false,true,1.52588e-05,1.52588e-05,0.01,0.01,ok,,541081600,3542771302,0.1527,linear_ce,1.0,1.6694,true,0.6694
+fused_linear_cross_entropy,llama3-seq512,PyTorch-eager,477.5,672.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1317539840,3542771302,0.3719,linear_ce,1.0,1.0000,true,0.0000
+fused_linear_cross_entropy,llama3-seq512,Arke,500.4,458.8,,0.9542,ok,,false,true,0,0,0.01,0.01,ok,,1317539840,3542771302,0.3719,linear_ce,1.0,0.9542,false,-0.0458

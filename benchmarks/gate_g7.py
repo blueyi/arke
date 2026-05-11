@@ -199,6 +199,27 @@ def _parse_float(value: str | None) -> float | None:
         return None
 
 
+_GOLDEN_PROTOCOL_EXEMPT_CORRECTNESS = {
+    # Per docs/benchmark/benchmark-protocol.md and golden-kernel-ladder.md:
+    # rows where the priority-aware Golden Kernel ladder cannot bind a P<=4
+    # baseline are recorded with this status. They are evidence-of-gap, NOT
+    # correctness regressions, and the protocol mandates audit-only treatment.
+    "golden_unavailable_pending_baseline",
+}
+
+
+def _is_golden_unavailable(row: dict[str, str]) -> bool:
+    """Audit-only rows where ladder could not bind a P<=4 baseline.
+
+    These are correctness-equivalent (we lack a trustworthy oracle), so the
+    Golden Kernel protocol exempts them from correctness fail counting while
+    still surfacing them in the coverage / audit artifacts.
+    """
+
+    correctness = (row.get("correctness_status") or "").strip().lower()
+    return correctness in _GOLDEN_PROTOCOL_EXEMPT_CORRECTNESS
+
+
 def _is_memory_excluded(row: dict[str, str]) -> bool:
     """Return true for explicit 6GB-memory-policy exclusions.
 
@@ -251,11 +272,15 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
     rows, failures = _iter_perf_rows(track6_root)
     checked = 0
     excluded = 0
+    golden_exempted = 0
     bad_rows: list[str] = []
 
     for layer, row in rows:
         if _is_memory_excluded(row):
             excluded += 1
+            continue
+        if _is_golden_unavailable(row):
+            golden_exempted += 1
             continue
         checked += 1
         status = (row.get("status") or "").strip().lower()
@@ -274,12 +299,16 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
 
     if bad_rows:
         failures.append(
-            f"correctness failures={len(bad_rows)} checked={checked} memory_excluded={excluded}; "
+            f"correctness failures={len(bad_rows)} checked={checked} "
+            f"memory_excluded={excluded} golden_exempted={golden_exempted}; "
             f"first={_summarize_items(bad_rows)}"
         )
     if failures:
         return False, "; ".join(failures)
-    return True, f"correctness rows passed: checked={checked}, memory_excluded={excluded}"
+    return True, (
+        f"correctness rows passed: checked={checked}, "
+        f"memory_excluded={excluded}, golden_exempted={golden_exempted}"
+    )
 
 
 def _load_l1_ot_map(matrix_path: Path) -> dict[str, int]:
@@ -310,6 +339,11 @@ def _check_bl5_performance_evidence(
 
     for layer, row in rows:
         if _is_memory_excluded(row):
+            excluded += 1
+            continue
+        if _is_golden_unavailable(row):
+            # No trustworthy golden ⇒ no trustworthy perf denominator.
+            # Audit-only per protocol; do not count toward perf scoring.
             excluded += 1
             continue
         if (row.get("status") or "").strip().lower() != "ok":
