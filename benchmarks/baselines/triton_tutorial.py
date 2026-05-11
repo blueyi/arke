@@ -234,6 +234,30 @@ if _TRITON_AVAILABLE:
 # ---------------------------------------------------------------------------
 
 
+def _softmax_fits_in_shmem(N: int, dtype: torch.dtype) -> bool:
+    """Whether the tutorial softmax kernel can fit a row in shared memory.
+
+    Triton tutorial softmax stages one fp32 row (BLOCK = next pow-2 of N)
+    per program in shmem. We compare against the active device's shmem
+    cap with a small headroom for kernel scratch.
+    """
+    if not torch.cuda.is_available():
+        return False
+    try:
+        props = torch.cuda.get_device_properties(torch.cuda.current_device())
+        shmem_cap = int(getattr(props, "shared_memory_per_block_optin", 0)
+                        or props.shared_memory_per_block)
+    except Exception:
+        shmem_cap = 48 * 1024  # conservative fallback
+    block = 1
+    while block < max(N, 1):
+        block <<= 1
+    # fp32 accumulator inside the kernel regardless of input dtype
+    needed = block * 4
+    headroom = 4 * 1024
+    return needed + headroom <= shmem_cap
+
+
 @register_baseline
 class TritonTutorialRunner(BaselineRunner):
     """P2: Reference Triton Tutorial kernels (matmul, softmax)."""
@@ -271,6 +295,13 @@ class TritonTutorialRunner(BaselineRunner):
         if op == "matmul":
             return self._matmul_fn(M, N, K, dtype)
         if op == "softmax":
+            # The tutorial softmax kernel uses a static block size = next
+            # power-of-two of N, with one BLOCK-sized fp32 row in shared
+            # memory per program. On RTX 3060 (101376 B shmem cap), N
+            # beyond ~24576 (= 96 KiB / 4 B) cannot fit. Skip cleanly
+            # rather than letting Triton raise OutOfResources at compile.
+            if not _softmax_fits_in_shmem(N, dtype):
+                return None
             return self._softmax_fn(M, N, dtype)
         return None
 
