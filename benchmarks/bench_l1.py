@@ -30,6 +30,10 @@ import benchmarks.baselines.liger  # noqa: F401
 import benchmarks.baselines.pytorch_eager  # noqa: F401
 import benchmarks.baselines.triton_tutorial  # noqa: F401
 from benchmarks.baselines.base import get_all_runners, get_runners_for_op
+from benchmarks.baselines._runtime_ctx import (
+    clear_current_shape,
+    set_current_shape,
+)
 from benchmarks.artifacts import merge_perf_all, write_perf_csv_from_l1, write_summary
 from benchmarks.hardware import collect_hardware_info
 from benchmarks.measure import BenchResult, bench_fn, compute_matmul_tflops
@@ -209,12 +213,23 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
     if op == "rope":
         return (torch.randn(M, N, max(K, 64), device="cuda", dtype=dtype),)
     if op == "cross_attention":
-        q_len = max(N // 2, 1)
-        head_dim = max(K, 64)
+        # cross_attention: Sq != Skv; pull both from the active shape if set.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and getattr(shape, "Skv", None) is not None:
+            q_len = shape.S
+            kv_len = shape.Skv
+            head_dim = shape.D
+            batch_heads = shape.B * shape.H
+        else:
+            batch_heads = M
+            q_len = max(N // 2, 1)
+            kv_len = N
+            head_dim = max(K, 64)
         return (
-            torch.randn(M, q_len, head_dim, device="cuda", dtype=dtype),
-            torch.randn(M, N, head_dim, device="cuda", dtype=dtype),
-            torch.randn(M, N, head_dim, device="cuda", dtype=dtype),
+            torch.randn(batch_heads, q_len, head_dim, device="cuda", dtype=dtype),
+            torch.randn(batch_heads, kv_len, head_dim, device="cuda", dtype=dtype),
+            torch.randn(batch_heads, kv_len, head_dim, device="cuda", dtype=dtype),
         )
     if op == "quantize_per_token":
         return (torch.randn(M, N, device="cuda", dtype=dtype),)
@@ -539,6 +554,11 @@ def run_op(
                 M = shape.B * shape.H
                 N = shape.S
                 K = getattr(shape, 'D', 64)
+                # cross_attention: K/V seq length (Skv) differs from query Sq (=S)
+                # — allocations need the larger dim, so expose Skv via N
+                skv = getattr(shape, 'Skv', None)
+                if skv is not None and op == "cross_attention":
+                    N = skv
             # BatchMatmul: use B as M
             elif hasattr(shape, 'B') and not hasattr(shape, 'H'):
                 M = getattr(shape, 'B', M)
@@ -547,6 +567,10 @@ def run_op(
                 pass  # M, N already set
 
             for runner in runner_group:
+                # Expose the full shape to runners whose get_fn signature
+                # is fixed at (op, M, N, K) but need extra dims (e.g.
+                # cross_attention needs both Sq and Skv).
+                set_current_shape(shape)
                 # Resume short-circuit: replay cached row + skip work.
                 key = (op, tag, runner.name)
                 if key in _SKIP_KEYS:

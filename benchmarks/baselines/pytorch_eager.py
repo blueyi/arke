@@ -437,11 +437,19 @@ class PyTorchEagerRunner(BaselineRunner):
             )
 
         elif op == "cross_attention":
-            # Cross-attention: Q from decoder, K/V from encoder
-            batch_heads = M
-            q_len = max(N // 2, 1)
-            kv_len = N
-            head_dim = max(K, 64)
+            # Cross-attention: Q from decoder, K/V from encoder (Sq != Skv).
+            from benchmarks.baselines._runtime_ctx import get_current_shape
+            shape = get_current_shape()
+            if shape is not None and getattr(shape, "Skv", None) is not None:
+                batch_heads = shape.B * shape.H
+                q_len = shape.S
+                kv_len = shape.Skv
+                head_dim = shape.D
+            else:
+                batch_heads = M
+                q_len = max(N // 2, 1)
+                kv_len = N
+                head_dim = max(K, 64)
             Q = torch.randn(batch_heads, q_len, head_dim,
                             device="cuda", dtype=dtype)
             K_ = torch.randn(batch_heads, kv_len, head_dim,

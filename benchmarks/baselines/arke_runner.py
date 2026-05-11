@@ -368,13 +368,23 @@ class ArkeRunner(BaselineRunner):
 
         # ── attention (OT4) ────────────────────────────────────────
         if op in ("flash_attention", "cross_attention"):
-            B_dim = max(1, M // max(N, 1))
-            H_dim = max(1, M // max(B_dim, 1))
-            S = N
-            D = max(K, 64)
-            Q = torch.randn(B_dim, H_dim, S, D, device=device, dtype=dtype)
-            Kk = torch.randn(B_dim, H_dim, S, D, device=device, dtype=dtype)
-            V = torch.randn(B_dim, H_dim, S, D, device=device, dtype=dtype)
+            from benchmarks.baselines._runtime_ctx import get_current_shape
+            shape = get_current_shape()
+            if (op == "cross_attention" and shape is not None
+                    and getattr(shape, "Skv", None) is not None):
+                B_dim = shape.B
+                H_dim = shape.H
+                Sq = shape.S
+                Skv = shape.Skv
+                D = shape.D
+            else:
+                B_dim = max(1, M // max(N, 1))
+                H_dim = max(1, M // max(B_dim, 1))
+                Sq = Skv = N
+                D = max(K, 64)
+            Q = torch.randn(B_dim, H_dim, Sq, D, device=device, dtype=dtype)
+            Kk = torch.randn(B_dim, H_dim, Skv, D, device=device, dtype=dtype)
+            V = torch.randn(B_dim, H_dim, Skv, D, device=device, dtype=dtype)
             return (Q, Kk, V)
         if op == "grouped_query_attention":
             B_dim = max(1, M // max(N, 1))

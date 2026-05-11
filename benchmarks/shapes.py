@@ -188,6 +188,7 @@ class AttentionShape:
     D: int
     Hkv: int | None = None    # GQA: KV heads (< H)
     D_c: int | None = None    # MLA: KV compressed dim
+    Skv: int | None = None    # cross-attention: K/V seq length (S holds query Sq)
     notes: str = ""
     tier: int = field(default=4)
 
@@ -471,8 +472,12 @@ def _dict_to_shape(op: str, row: dict):
         return BatchMatmulShape(tag=tag, B=_i("b"), M=_i("m"), K=_i("k"), N=_i("n"), notes=notes, tier=t)
     elif canon == "grouped_matmul":
         return GroupedMatmulShape(tag=tag, B=_i("b"), E=_i("e"), M=_i("m"), K=_i("k"), N=_i("n"), notes=notes, tier=t)
-    elif canon in ("flash_attention", "rope", "cross_attention"):
+    elif canon in ("flash_attention", "rope"):
         return AttentionShape(tag=tag, B=_i("b"), H=_i("h"), S=_i("s"), D=_i("d"), notes=notes, tier=t)
+    elif canon == "cross_attention":
+        # cross_attention table uses b, hq, sq, skv, d (Sq ≠ Skv)
+        return AttentionShape(tag=tag, B=_i("b"), H=_i("hq"), S=_i("sq"), D=_i("d"),
+                              Skv=_i("skv"), notes=notes, tier=t)
     elif canon == "grouped_query_attention":
         hkv = row.get("hkv")
         return AttentionShape(tag=tag, B=_i("b"), H=_i("hq"), S=_i("s"), D=_i("d"),
