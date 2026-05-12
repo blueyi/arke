@@ -23,12 +23,29 @@ the only mechanism is *priority ordering + supports()*; per-op preferences
 are encoded by tweaking individual runners' ``supports()`` sets so that the
 desired golden naturally wins the ladder.
 
+Ladder preferences (G7.8c, locked)
+-----------------------------------
+A small number of ops have **protocol-mandated** preferences that override
+strict P0-first selection. These are not user overrides — they are
+permanent SSOT decisions documented in the protocol:
+
+- ``rope`` → ``PyTorch-eager`` (G7.8c, 2026-05-12)
+    Liger-Kernel rope is P1 but has shape constraints (odd-D head dims
+    crash, see commit ad28665 + c80d182) that disqualify it as a stable
+    oracle. PyTorch-eager rope is the well-defined numerical reference;
+    Liger and other runners are still benchmarked against it as
+    candidates. See ``docs/benchmark/benchmark-protocol.md`` § rope.
+
 Overrides
 ---------
 Callers (e.g. ``bench_l1 --golden op=name``) can pass a mapping
 ``{op: runner_name}`` to ``golden_runner_for`` that pins a specific runner
 regardless of priority. The pinned runner must still be available; if it
 isn't, :class:`GoldenUnavailable` is raised with a descriptive reason.
+
+Override precedence: caller-supplied ``overrides`` argument wins over
+``LADDER_PREFERENCES`` so ad-hoc experiments aren't blocked by the locked
+defaults.
 """
 
 from __future__ import annotations
@@ -51,6 +68,13 @@ class GoldenUnavailable(Exception):
         super().__init__(self.reason)
 
 
+# Locked protocol-level ladder preferences. See module docstring for rationale.
+# Treated as defaults when the caller does not supply an explicit override.
+LADDER_PREFERENCES: dict[str, str] = {
+    "rope": "PyTorch-eager",  # G7.8c — Liger rope odd-D unstable; eager is the numerical reference
+}
+
+
 def golden_runner_for(
     op: str,
     *,
@@ -69,7 +93,8 @@ def golden_runner_for(
     overrides : dict[str, str], optional
         Map ``{op: runner_name}`` pinning a specific runner. The pinned
         runner must still be available; otherwise :class:`GoldenUnavailable`
-        fires (no silent fall-through).
+        fires (no silent fall-through). Caller-supplied entries take
+        precedence over :data:`LADDER_PREFERENCES`.
 
     Raises
     ------
@@ -83,8 +108,13 @@ def golden_runner_for(
 
     runners = get_all_runners()  # already sorted by priority ascending
 
-    if overrides and op in overrides:
-        pinned = overrides[op]
+    # Merge protocol-level defaults with caller overrides (caller wins).
+    effective_overrides: dict[str, str] = dict(LADDER_PREFERENCES)
+    if overrides:
+        effective_overrides.update(overrides)
+
+    if op in effective_overrides:
+        pinned = effective_overrides[op]
         for r in runners:
             if r.name == pinned:
                 if not r.supports(op):

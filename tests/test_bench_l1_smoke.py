@@ -26,6 +26,7 @@ from benchmarks.bench_l1 import (
 )
 from benchmarks.golden_ladder import (
     GoldenUnavailable,
+    LADDER_PREFERENCES,
     golden_runner_for,
     parse_inline_overrides,
     parse_overrides_file,
@@ -38,6 +39,24 @@ from benchmarks.golden_ladder import (
 def test_inline_override_parser():
     out = parse_inline_overrides(["matmul=cuBLAS", "softmax=FlagGems"])
     assert out == {"matmul": "cuBLAS", "softmax": "FlagGems"}
+
+
+def test_ladder_preferences_pin_rope_to_pytorch_eager():
+    """G7.8c locked: rope must resolve to PyTorch-eager regardless of P-order."""
+    assert LADDER_PREFERENCES.get("rope") == "PyTorch-eager"
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA required for live ladder resolution")
+    runner = golden_runner_for("rope")
+    assert runner.name == "PyTorch-eager"
+    assert runner.priority == 3
+
+
+def test_caller_overrides_take_precedence_over_ladder_preferences():
+    """Caller --golden rope=Liger-Kernel must override the locked default."""
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA required for live ladder resolution")
+    runner = golden_runner_for("rope", overrides={"rope": "Liger-Kernel"})
+    assert runner.name == "Liger-Kernel"
 
 
 def test_inline_override_parser_rejects_malformed():

@@ -131,6 +131,25 @@ The override-pinned runner must declare `supports(op)` and be `available`;
 otherwise `GoldenUnavailable` fires and the row is marked
 `golden_unavailable_pending_baseline`.
 
+#### Locked ladder preferences (`LADDER_PREFERENCES`)
+
+A small protocol-level dict in `benchmarks/golden_ladder.py` pins a Golden
+for ops where the strict P0-first rule chooses a runner that is *fast but
+not a stable oracle*. These pins are part of the design contract;
+adding/removing entries requires Leon's sign-off.
+
+| Op   | Pinned Golden       | Rationale (commit / date)                            |
+|:-----|:--------------------|:-----------------------------------------------------|
+| rope | `PyTorch-eager` (P3) | Liger rope crashes on odd-D head dims and select non-aligned shapes (`tests/test_benchmark_correctness_probe_linea12.py::test_rope_odd_head_dim*`, commits `ad28665`+`c80d182`). A Golden must cover every measured shape; eager satisfies the entire OT3 grid and is the analytical reference. Liger remains a benchmark candidate — only its Golden role is removed. (G7.8c, 2026-05-12) |
+
+Caller-supplied `--golden` / `--golden-file` overrides take precedence
+over `LADDER_PREFERENCES` so ad-hoc experiments aren't blocked. To
+benchmark Liger as Golden for one run:
+
+```bash
+python -m benchmarks.bench_l1 --op rope --golden rope=Liger-Kernel
+```
+
 ### Metrics Collected Per Run
 
 See [`benchmark-csv-spec.md`](./benchmark-csv-spec.md) for the full CSV

@@ -84,11 +84,23 @@ where `runner.supports(op) and runner.available`.
 |:----------------------------|:--------------------------|:-------------------|
 | swiglu                      | Liger (P1)                | PyTorch-eager      |
 | geglu                       | Liger (P1)                | PyTorch-eager      |
-| rope                        | Liger (P1)                | PyTorch-eager      |
+| rope                        | **PyTorch-eager (P3)** †  | Liger (P1, candidate) |
 | fused_linear_cross_entropy  | Liger (P1)                | PyTorch-eager      |
 | cross_entropy               | Liger (P1)                | FlagGems / PyTorch |
 | quantize_per_token          | FlagGems (P1)             | PyTorch-eager      |
 | dequantize_per_channel      | PyTorch-eager (P3)        | —                  | no production kernel; audit-degraded |
+
+> † **G7.8c locked preference (2026-05-12).** rope is the one OT3 op whose
+> Golden is *not* the strict P-winner. Liger-Kernel rope is the fastest
+> production kernel (and remains a benchmark candidate), but it raises on
+> odd-D head dimensions and a handful of non-aligned shape combinations
+> (see `tests/test_benchmark_correctness_probe_linea12.py::test_rope_odd_head_dim*`
+> and commits `ad28665`, `c80d182`). A Golden Kernel must be defined for
+> every shape we measure; PyTorch-eager rope satisfies that across the
+> entire OT3 shape grid and matches the analytical reference. The pin is
+> encoded in `benchmarks/golden_ladder.LADDER_PREFERENCES` and exempt
+> from the per-op P-order rule. To ad-hoc swap back to Liger for an
+> experiment, use `--golden rope=Liger-Kernel`.
 
 ### OT4 — Attention (5)
 
@@ -107,6 +119,24 @@ requires Leon's explicit sign-off (cf. `~/workspace/AGENTS.md` "Must
 confirm with Leon"). Code-side, the assignment is *implicit* — it follows
 from each runner's `supports()` set + `priority`. To shift a golden,
 change the runner's `supports()` declaration, not this table.
+
+## Locked ladder preferences (`LADDER_PREFERENCES`)
+
+A small protocol-level dict in
+[`benchmarks/golden_ladder.py`](../../benchmarks/golden_ladder.py) pins a
+Golden for ops where the strict P0-first rule chooses a runner that is
+*fast but not a stable oracle*. These pins are part of this design
+contract — adding/removing entries requires Leon's sign-off, just like
+table edits.
+
+Current entries:
+
+| Op   | Pinned Golden     | Why                                                |
+|:-----|:------------------|:---------------------------------------------------|
+| rope | PyTorch-eager (P3) | Liger rope odd-D & non-aligned shapes raise; eager covers full grid (G7.8c, 2026-05-12) |
+
+Caller-supplied `--golden` / `--golden-file` overrides take precedence
+over `LADDER_PREFERENCES` so ad-hoc experiments aren't blocked.
 
 ## Overrides
 
