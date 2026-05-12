@@ -748,7 +748,7 @@ def run_op(
                         )
                         continue
 
-                preflight = maybe_memory_preflight(hw, op, shape)
+                preflight = maybe_memory_preflight(hw, op, shape, baseline=runner.name)
                 if preflight is not None and preflight.status.status != "ok":
                     _record(OpResult(
                         op=op,

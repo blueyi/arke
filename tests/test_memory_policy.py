@@ -104,3 +104,78 @@ class TestMemoryPolicy:
         status = maybe_attention_preflight(hw, "paged_attention", shape)
         assert status is not None
         assert status.status == "skipped"
+
+    # ── a9: baseline-aware attention peak (Q1) ──────────────────
+
+    def test_attention_estimate_drops_score_buffer_when_fused(self):
+        """Fused kernels (flash, liger, flaggems) never materialize [B,H,S,S]."""
+        bh_s_d = dict(batch=2, heads=16, seq=8192, head_dim=128)
+        materialized = estimate_attention_bytes(**bh_s_d, materialize_scores=True)
+        fused = estimate_attention_bytes(**bh_s_d, materialize_scores=False)
+        # At S=8192, score buffer dominates: 2*16*8192*8192*2 = ~4.3 GB
+        # whereas QKV+output is only 2*16*8192*128*2 * 4 = ~268 MB.
+        assert materialized > fused * 10
+        # Sanity: fused estimate is just QKV (×3) + output
+        expected_fused = 2 * 16 * 8192 * 128 * 2 * 3 + 2 * 16 * 8192 * 128 * 2
+        assert fused == expected_fused
+
+    def test_maybe_memory_preflight_uses_baseline_for_attention(self):
+        """A shape that would be skipped under torch-eager passes under fused."""
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        # B=2 H=16 S=4096 D=128: scores = 2*16*4096*4096*2 = 1 GB, QKV+out = 96 MB.
+        # Budget @ 0.55 ratio = ~3.4 GB; total materialized ~1.1 GB (passes),
+        # but bump to S=8192 and materialized hits ~4.4 GB (>budget).
+        shape = AttentionShape(tag="oom-edge", B=2, H=16, S=8192, D=128)
+
+        eager = maybe_memory_preflight(hw, "flash_attention", shape, baseline="PyTorch-eager")
+        fused = maybe_memory_preflight(hw, "flash_attention", shape, baseline="Liger-Kernel")
+        assert eager is not None and fused is not None
+        assert eager.status.status == "skipped"
+        assert fused.status.status == "ok"
+        assert eager.estimate.bytes_required > fused.estimate.bytes_required * 10
+        assert fused.estimate.category == "attention_fused"
+
+    def test_score_materialization_baseline_set_case_insensitive(self):
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        shape = AttentionShape(tag="t", B=2, H=16, S=8192, D=128)
+        for name in ["PyTorch-eager", "pytorch-eager", "_torch_reference"]:
+            pf = maybe_memory_preflight(hw, "flash_attention", shape, baseline=name)
+            assert pf is not None
+            assert pf.estimate.category == "attention", f"{name!r} should be materialized"
+
+    def test_no_baseline_defaults_conservative(self):
+        """Backward-compat: callers that don't pass baseline get the old behavior."""
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        shape = AttentionShape(tag="t", B=2, H=16, S=8192, D=128)
+        pf = maybe_memory_preflight(hw, "flash_attention", shape)
+        assert pf is not None
+        assert pf.estimate.category == "attention"  # materialized = default
+
+    # ── a9: topk/argmax/cumsum N cap (Q3) ────────────────────────
+
+    def test_topk_preflight_skips_giant_n(self):
+        """Large [M,N] topk with fp32 sort workspace exceeds 6 GB budget."""
+        from benchmarks.memory_policy import estimate_topk_like_bytes, topk_like_preflight
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        # M=4096, N=524288 fp16: input 4 GB, workspace 8 GB → 12 GB total
+        status, estimate = topk_like_preflight(hw, m=4096, n=524288)
+        assert status.status == "skipped"
+        assert status.retryable is True
+        assert estimate.category == "topk_like"
+        assert estimate.bytes_required == estimate_topk_like_bytes(m=4096, n=524288)
+
+    def test_topk_preflight_allows_normal_shape(self):
+        from benchmarks.memory_policy import topk_like_preflight
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        status, estimate = topk_like_preflight(hw, m=1024, n=4096)
+        assert status.status == "ok"
+        assert estimate.bytes_required < estimate.bytes_budget
+
+    def test_maybe_memory_preflight_handles_topk_family(self):
+        hw = HardwareInfo(gpu_memory_mb=6143)
+        shape = Shape2D(tag="oom-topk", M=4096, N=524288)
+        for op in ("topk", "argmax", "cumsum"):
+            pf = maybe_memory_preflight(hw, op, shape)
+            assert pf is not None, f"op={op}"
+            assert pf.status.status == "skipped"
+            assert pf.estimate.category == "topk_like"
