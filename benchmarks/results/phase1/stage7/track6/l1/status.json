@@ -1,13 +1,13 @@
 {
-  "ts": 1778607390.2507071,
+  "ts": 1778695613.3572598,
   "layer": "l1",
-  "fingerprint": "a21e986cc37d4193",
-  "elapsed_s": 105.50631999969482,
+  "fingerprint": "bc3b5bec131d0e2e",
+  "elapsed_s": 327.811092376709,
   "per_op": {
-    "rope": {
-      "rows": 36,
-      "ok": 31,
-      "permanent_failure": 5,
+    "flash_attention": {
+      "rows": 48,
+      "ok": 33,
+      "permanent_failure": 15,
       "retryable_failure": 0,
       "other": 0
     }

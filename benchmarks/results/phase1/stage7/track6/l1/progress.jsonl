@@ -2366,3 +2366,11 @@
 {"ts": 1778607390.1996534, "event": "measurement", "layer": "l1", "fingerprint": "a21e986cc37d4193", "op": "rope", "shape_tag": "extreme-batch", "baseline": "Arke", "status": "ok", "latency_us": 1225.7628173828125}
 {"ts": 1778607390.2014406, "event": "op_done", "layer": "l1", "fingerprint": "a21e986cc37d4193", "op": "rope", "skipped": 0, "new": 36, "total": 36}
 {"ts": 1778607390.250832, "event": "run_done", "layer": "l1", "fingerprint": "a21e986cc37d4193", "per_op": {"rope": {"rows": 36, "ok": 31, "permanent_failure": 5, "retryable_failure": 0, "other": 0}}}
+{"ts": 1778694975.3972797, "event": "run_start", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "ops": ["flash_attention"], "tier": 2, "resume": false, "retry_policy": "auto"}
+{"ts": 1778694991.8393214, "event": "measurement", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "op": "flash_attention", "shape_tag": "ds-v2-2k", "baseline": "cuBLAS/cuDNN", "status": "ok", "latency_us": 6828.53173828125}
+{"ts": 1778695286.3075683, "event": "run_start", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "ops": ["flash_attention"], "tier": 2, "resume": false, "retry_policy": "auto"}
+{"ts": 1778695302.7885466, "event": "measurement", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "op": "flash_attention", "shape_tag": "ds-v2-2k", "baseline": "cuBLAS/cuDNN", "status": "ok", "latency_us": 6924.48681640625}
+{"ts": 1778695597.335787, "event": "measurement", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "op": "flash_attention", "shape_tag": "ds-v2-2k", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 134060.03125}
+{"ts": 1778695613.295268, "event": "measurement", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "op": "flash_attention", "shape_tag": "ds-v2-2k", "baseline": "Arke", "status": "ok", "latency_us": 6947.36279296875}
+{"ts": 1778695613.297854, "event": "op_done", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "op": "flash_attention", "skipped": 0, "new": 3, "total": 3}
+{"ts": 1778695613.3574023, "event": "run_done", "layer": "l1", "fingerprint": "bc3b5bec131d0e2e", "per_op": {"flash_attention": {"rows": 48, "ok": 33, "permanent_failure": 15, "retryable_failure": 0, "other": 0}}}

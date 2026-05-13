@@ -1,5 +1,5 @@
 {
-  "overall_geomean": 0.9525,
+  "overall_geomean": 0.9561,
   "op_scores": {
     "add": 1.0254,
     "argmax": 0.9523,
@@ -13,7 +13,7 @@
     "dequantize_per_channel": 0.6723,
     "embedding": 1.6446,
     "exp": 1.0023,
-    "flash_attention": 5.2366,
+    "flash_attention": 5.3749,
     "fused_linear_cross_entropy": 1.0344,
     "gather": 1.5046,
     "geglu": 0.9234,
@@ -47,7 +47,7 @@
     "transpose": 0.0267,
     "where_": 1.0278
   },
-  "total_shapes": 2064,
+  "total_shapes": 2068,
   "operators": [
     "add",
     "argmax",
@@ -96,13 +96,13 @@
     "where_"
   ],
   "status_counts": {
-    "ok": 2069,
+    "ok": 2073,
     "skipped": 40,
     "error": 2,
     "unsupported": 4
   },
   "correctness_counts": {
-    "ok": 2041,
+    "ok": 2045,
     "skipped": 40,
     "error": 5,
     "golden_unavailable_pending_baseline": 12,
@@ -112,18 +112,18 @@
   "memory_policy_counts": {
     "none": 1767,
     "dense_matmul": 176,
-    "attention": 132,
-    "linear_ce": 16,
-    "attention_fused": 24
+    "attention": 133,
+    "attention_fused": 27,
+    "linear_ce": 16
   },
   "memory_pressure_rows": 40,
   "perf_target_counts": {
-    "with_target": 2115,
+    "with_target": 2119,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "false": 890,
-    "true": 1216,
+    "false": 891,
+    "true": 1219,
     "unknown": 9
   },
   "perf_targets": {
@@ -186,7 +186,7 @@
     "dequantize_per_channel": 0.6723,
     "embedding": 1.6446,
     "exp": 1.0023,
-    "flash_attention": 5.2366,
+    "flash_attention": 5.3749,
     "fused_linear_cross_entropy": 1.0344,
     "gather": 1.5046,
     "geglu": 0.9234,
@@ -233,7 +233,7 @@
     "dequantize_per_channel": -0.2699,
     "embedding": 1.069,
     "exp": 0.0065,
-    "flash_attention": 7.4753,
+    "flash_attention": 7.7131,
     "fused_linear_cross_entropy": 0.0451,
     "gather": 3.5048,
     "geglu": -0.0734,

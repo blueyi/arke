@@ -1,24 +1,13 @@
 {
-  "timestamp": "2026-05-13_013444",
+  "timestamp": "2026-05-14_020125",
   "ops": [
-    "rope"
+    "flash_attention"
   ],
   "warmup": 200,
   "reps": 500,
-  "tier": null,
+  "tier": 2,
   "shape_tags": [
-    "gpt2-sm-128",
-    "gpt2-sm-512",
-    "llama2-512",
-    "llama2-2k",
-    "llama3-q-512",
-    "llama3-kv-512",
-    "qwen25-q-512",
-    "qwen25-kv-512",
-    "non-align-1",
-    "non-align-2",
-    "extreme-long",
-    "extreme-batch"
+    "ds-v2-2k"
   ],
   "phase": 1,
   "stage": 7,
