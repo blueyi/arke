@@ -178,6 +178,32 @@ benchmark level from passing. Rows tagged
 `golden_unavailable_pending_baseline` are not failures themselves — they
 flag a *coverage gap* that gate-G7 audits separately.
 
+#### Typed `unsupported` rows (audit-only)
+
+A row with `correctness_status="unsupported"` is exempted from
+correctness fail counting **only** when `correctness_reason` matches one
+of the recognised typed-decline templates:
+
+| Template (regex, case-insensitive)            | Semantics                                                                 |
+|-----------------------------------------------|---------------------------------------------------------------------------|
+| `\.get_fn\s+declined\b`                       | Runner refused the (op, shape) at dispatch — typed runner-side decline.   |
+| `does not implement\s+run_with_inputs\b`      | Runner has no probe implementation for this op — infra-side decline.      |
+| `requires even head_dim`                      | Op-level math guard (e.g. RoPE) — shape mathematically ill-defined.       |
+| `mathematically ill-defined`                  | Generic op-level math guard.                                              |
+| `no correctness probe for`                    | Harness has no correctness probe for a fused op yet — probe-infra gap.    |
+
+Untyped `unsupported` rows — empty `correctness_reason` or any reason
+that does not match a typed template — **remain correctness failures**.
+This keeps the silent-decline escape hatch closed: a runner cannot opt
+out of correctness checking without writing a machine-readable
+justification. Typed-unsupported rows are surfaced in the gate summary
+under `typed_unsupported=N` for audit visibility.
+
+The same rule applies to performance scoring: typed-unsupported rows
+have no Arke-vs-baseline comparison (empty `perf_pass` / `perf_actual`)
+and are excluded from the perf denominator rather than flagged as
+malformed. Implementation: `benchmarks/gate_g7.py::_is_typed_unsupported`.
+
 ### Performance Score (per shape)
 
 ```

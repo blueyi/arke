@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -220,6 +221,53 @@ def _is_golden_unavailable(row: dict[str, str]) -> bool:
     return correctness in _GOLDEN_PROTOCOL_EXEMPT_CORRECTNESS
 
 
+# Typed-decline reason templates. A row is recognised as a *typed*
+# `unsupported` (a deliberate, machine-readable declaration of "cannot run this
+# combination") only if `correctness_status == "unsupported"` AND
+# `correctness_reason` matches one of these patterns. Free-form / empty reasons
+# remain failures so runners cannot silently opt out of correctness checking.
+#
+# Per benchmark-protocol.md, `status ∈ {unsupported, incompatible, oom, skipped}`
+# is treated as a known limitation by the retry policy. The Gate must apply the
+# same lens to its correctness/perf accounting: a typed decline is evidence of
+# an intentional gap, not a regression.
+_TYPED_UNSUPPORTED_REASON_PATTERNS: tuple[re.Pattern[str], ...] = (
+    # Runner-side typed declines.
+    #   "<Runner>.get_fn declined <op>@<shape>"  — runner explicitly refused
+    re.compile(r"\.get_fn\s+declined\b", re.IGNORECASE),
+    #   "runner <Runner> does not implement run_with_inputs for <op>"
+    re.compile(r"does not implement\s+run_with_inputs\b", re.IGNORECASE),
+    # Op-level mathematical shape guards (ill-defined inputs).
+    #   "RoPE requires even head_dim; got N (odd) ..."
+    re.compile(r"requires even head_dim", re.IGNORECASE),
+    re.compile(r"mathematically ill-defined", re.IGNORECASE),
+    # Probe-infra gap: harness has no correctness probe for this fused op yet.
+    #   "No correctness probe for fused op: <op>"
+    re.compile(r"no correctness probe for", re.IGNORECASE),
+)
+
+
+def _is_typed_unsupported(row: dict[str, str]) -> bool:
+    """Return True iff this row is a *typed* unsupported declaration.
+
+    Required conditions:
+      1. `correctness_status == "unsupported"`
+      2. `correctness_reason` matches one of `_TYPED_UNSUPPORTED_REASON_PATTERNS`
+
+    Untyped unsupported rows (empty / unrecognised reason) are NOT exempted —
+    that would let a runner silently skip correctness checking by writing
+    `unsupported` without justification.
+    """
+
+    correctness = (row.get("correctness_status") or "").strip().lower()
+    if correctness != "unsupported":
+        return False
+    reason = (row.get("correctness_reason") or "").strip()
+    if not reason:
+        return False
+    return any(pat.search(reason) for pat in _TYPED_UNSUPPORTED_REASON_PATTERNS)
+
+
 def _is_memory_excluded(row: dict[str, str]) -> bool:
     """Return true for explicit 6GB-memory-policy exclusions.
 
@@ -273,6 +321,7 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
     checked = 0
     excluded = 0
     golden_exempted = 0
+    typed_unsupported = 0
     bad_rows: list[str] = []
 
     for layer, row in rows:
@@ -281,6 +330,13 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
             continue
         if _is_golden_unavailable(row):
             golden_exempted += 1
+            continue
+        if _is_typed_unsupported(row):
+            # Typed `unsupported` rows: runner declined or op math guard
+            # refused this shape with a machine-readable reason. These are
+            # intentional, auditable gaps — NOT correctness regressions.
+            # Untyped/empty-reason unsupported still falls through to fail.
+            typed_unsupported += 1
             continue
         checked += 1
         status = (row.get("status") or "").strip().lower()
@@ -300,14 +356,16 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
     if bad_rows:
         failures.append(
             f"correctness failures={len(bad_rows)} checked={checked} "
-            f"memory_excluded={excluded} golden_exempted={golden_exempted}; "
+            f"memory_excluded={excluded} golden_exempted={golden_exempted} "
+            f"typed_unsupported={typed_unsupported}; "
             f"first={_summarize_items(bad_rows)}"
         )
     if failures:
         return False, "; ".join(failures)
     return True, (
         f"correctness rows passed: checked={checked}, "
-        f"memory_excluded={excluded}, golden_exempted={golden_exempted}"
+        f"memory_excluded={excluded}, golden_exempted={golden_exempted}, "
+        f"typed_unsupported={typed_unsupported}"
     )
 
 
@@ -344,6 +402,14 @@ def _check_bl5_performance_evidence(
         if _is_golden_unavailable(row):
             # No trustworthy golden ⇒ no trustworthy perf denominator.
             # Audit-only per protocol; do not count toward perf scoring.
+            excluded += 1
+            continue
+        if _is_typed_unsupported(row):
+            # Typed unsupported correctness probe: either the baseline runner
+            # declined this combination, or an op-level math guard refused the
+            # shape. In PERF_ALL such rows carry no `perf_actual` / `perf_pass`
+            # because there's no Arke-vs-baseline comparison to run. Audit-only
+            # per protocol; exclude from perf denominator.
             excluded += 1
             continue
         if (row.get("status") or "").strip().lower() != "ok":

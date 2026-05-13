@@ -403,3 +403,138 @@ def test_is_golden_unavailable_helper():
     assert not gate_g7._is_golden_unavailable({"correctness_status": "ok"})
     assert not gate_g7._is_golden_unavailable({"correctness_status": ""})
     assert not gate_g7._is_golden_unavailable({"correctness_status": "error"})
+
+
+def test_is_typed_unsupported_helper():
+    """Typed-decline reasons are exempted; untyped/empty `unsupported` is not."""
+    # Recognised typed-decline reason templates.
+    typed_cases = [
+        "Liger-Kernel.get_fn declined rope@non-align-1",
+        "runner Liger-Kernel does not implement run_with_inputs for rope",
+        "RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65)",
+        "mathematically ill-defined for this shape",
+        "No correctness probe for fused op: linear_ce",
+    ]
+    for reason in typed_cases:
+        assert gate_g7._is_typed_unsupported(
+            {"correctness_status": "unsupported", "correctness_reason": reason}
+        ), f"should be typed: {reason}"
+
+    # Negative cases — must NOT be exempted.
+    assert not gate_g7._is_typed_unsupported(
+        {"correctness_status": "unsupported", "correctness_reason": ""}
+    ), "empty reason — silent decline not allowed"
+    assert not gate_g7._is_typed_unsupported(
+        {"correctness_status": "unsupported", "correctness_reason": "something broke"}
+    ), "free-form reason — silent decline not allowed"
+    assert not gate_g7._is_typed_unsupported(
+        {"correctness_status": "ok", "correctness_reason": "RoPE requires even head_dim"}
+    ), "status must be unsupported, not just any status"
+    assert not gate_g7._is_typed_unsupported(
+        {"correctness_status": "error", "correctness_reason": "RoPE requires even head_dim"}
+    ), "errors are never typed unsupported"
+    assert not gate_g7._is_typed_unsupported({"correctness_status": ""})
+
+
+def test_correctness_evidence_exempts_typed_unsupported(tmp_path: Path):
+    """Typed-decline unsupported rows are audit-only, NOT correctness failures."""
+    root = tmp_path
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv",
+        [
+            # Two real ok rows.
+            {"operator": "relu", "shape_tag": "s1", "status": "ok",
+             "correctness_status": "ok", "allclose": "true", "perf_pass": "true"},
+            {"operator": "gelu", "shape_tag": "s1", "status": "ok",
+             "correctness_status": "ok", "allclose": "true", "perf_pass": "true"},
+            # Runner-side typed decline (Liger doesn't implement rope probe).
+            {"operator": "rope", "shape_tag": "gpt2-sm-128", "status": "ok",
+             "correctness_status": "unsupported",
+             "correctness_reason": "runner Liger-Kernel does not implement run_with_inputs for rope",
+             "allclose": "", "perf_pass": "true"},
+            # Op math guard (odd head_dim).
+            {"operator": "rope", "shape_tag": "non-align-1", "status": "unsupported",
+             "correctness_status": "unsupported",
+             "correctness_reason": "RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",
+             "allclose": "", "perf_pass": ""},
+            # Probe-infra gap.
+            {"operator": "linear_ce", "shape_tag": "ce-512", "status": "ok",
+             "correctness_status": "unsupported",
+             "correctness_reason": "No correctness probe for fused op: linear_ce",
+             "allclose": "", "perf_pass": "true"},
+        ],
+    )
+    _write_perf_all(root / "l2" / "PERF_ALL.csv", [])
+
+    ok, detail = gate_g7._check_bl5_correctness_evidence(root)
+
+    assert ok is True, f"correctness should pass with typed-unsupported rows: {detail}"
+    assert "typed_unsupported=3" in detail
+    assert "checked=2" in detail
+
+
+def test_correctness_evidence_still_fails_on_untyped_unsupported(tmp_path: Path):
+    """Untyped/empty-reason `unsupported` rows MUST still count as failures —
+    otherwise a runner could silently opt out of correctness checking."""
+    root = tmp_path
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv",
+        [
+            # One real ok row.
+            {"operator": "relu", "shape_tag": "s1", "status": "ok",
+             "correctness_status": "ok", "allclose": "true", "perf_pass": "true"},
+            # Untyped unsupported — no reason given. MUST fail.
+            {"operator": "foo", "shape_tag": "s1", "status": "ok",
+             "correctness_status": "unsupported", "correctness_reason": "",
+             "allclose": "", "perf_pass": "true"},
+            # Free-form reason that doesn't match any typed pattern. MUST fail.
+            {"operator": "bar", "shape_tag": "s1", "status": "ok",
+             "correctness_status": "unsupported",
+             "correctness_reason": "something went wrong",
+             "allclose": "", "perf_pass": "true"},
+        ],
+    )
+    _write_perf_all(root / "l2" / "PERF_ALL.csv", [])
+
+    ok, detail = gate_g7._check_bl5_correctness_evidence(root)
+
+    assert ok is False
+    assert "correctness=unsupported" in detail
+    assert "typed_unsupported=0" in detail
+
+
+def test_perf_evidence_excludes_typed_unsupported(tmp_path: Path):
+    """Typed-unsupported rows have no Arke-vs-baseline perf comparison and must
+    be audit-only excluded from perf scoring, not flagged as malformed."""
+    root = tmp_path
+    # Need ot_map; bypass by writing a matrix path with relu mapped to OT0/1.
+    matrix_path = root / "matrix.json"
+    matrix_path.write_text(
+        '{"l1": [{"op": "relu", "ot_tier": 0}, {"op": "rope", "ot_tier": 4}]}'
+    )
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv",
+        [
+            {"operator": "relu", "shape_tag": "s1", "status": "ok",
+             "correctness_status": "ok", "allclose": "true", "perf_pass": "true"},
+            # Typed unsupported with empty perf_pass — should be EXCLUDED, not malformed.
+            {"operator": "rope", "shape_tag": "non-align-1", "status": "unsupported",
+             "correctness_status": "unsupported",
+             "correctness_reason": "RoPE requires even head_dim; got 65 (odd)",
+             "allclose": "", "perf_pass": ""},
+            {"operator": "rope", "shape_tag": "extreme-long", "status": "ok",
+             "correctness_status": "unsupported",
+             "correctness_reason": "runner Liger-Kernel does not implement run_with_inputs for rope",
+             "allclose": "", "perf_pass": ""},
+        ],
+    )
+    _write_perf_all(root / "l2" / "PERF_ALL.csv", [])
+
+    ok, detail = gate_g7._check_bl5_performance_evidence(root, matrix_path)
+
+    # OT0/1 will be 1/1 (relu passes); ot2/ot3 empty so still fails the gate,
+    # but the critical assertion is that the typed-unsupported rows are
+    # excluded, NOT reported as malformed.
+    assert "malformed/non-ok perf rows" not in detail, (
+        f"typed-unsupported rows must not be flagged malformed: {detail}"
+    )
