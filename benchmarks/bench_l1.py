@@ -438,6 +438,8 @@ def _resolve_golden_for_correctness(
     inputs: tuple[torch.Tensor, ...],
     *,
     overrides: dict[str, str] | None = None,
+    golden_preflight_failed: bool = False,
+    golden_preflight_reason: str = "",
 ) -> tuple[torch.Tensor | tuple[torch.Tensor, ...] | None, str, int | None, str, str]:
     """Compute correctness reference + Golden Kernel metadata.
 
@@ -465,6 +467,21 @@ def _resolve_golden_for_correctness(
         name, prio = "", None
         audit_status = "golden_unavailable_pending_baseline"
         audit_reason = e.reason
+        golden = None
+
+    # Q1c: if the caller pre-computed a golden-preflight verdict and it
+    # failed (e.g. golden=PyTorch-eager rope @ extreme-long would need 277GB
+    # of attention scratch on a 6GB GPU), drop the oracle and emit an
+    # `golden_unavailable_pending_baseline` audit row. Computing the
+    # preflight here would require reconstructing a Shape object from the
+    # raw tensors; the harness main loop already has the right Shape in
+    # hand, so we accept the verdict as a parameter instead.
+    if golden is not None and golden_preflight_failed:
+        audit_status = "golden_unavailable_pending_baseline"
+        audit_reason = (
+            f"golden runner {name!r} skipped by memory preflight"
+            + (f": {golden_preflight_reason}" if golden_preflight_reason else "")
+        )
         golden = None
 
     # Probe whether the golden actually services this shape — if it returns
@@ -600,12 +617,26 @@ def _compare_l1_outputs(
     }
 
 
-def _measure_l1_correctness(runner, op: str, M: int, N: int, K: int, dtype: torch.dtype = torch.float16) -> dict[str, object]:
+def _measure_l1_correctness(
+    runner,
+    op: str,
+    M: int,
+    N: int,
+    K: int,
+    dtype: torch.dtype = torch.float16,
+    *,
+    golden_preflight_failed: bool = False,
+    golden_preflight_reason: str = "",
+) -> dict[str, object]:
     rtol, atol = _correctness_tolerances(op, dtype)
     try:
         inputs = _make_l1_correctness_inputs(op, M, N, K, dtype)
         ref, golden_name, golden_prio, audit_status, audit_reason = (
-            _resolve_golden_for_correctness(op, inputs)
+            _resolve_golden_for_correctness(
+                op, inputs,
+                golden_preflight_failed=golden_preflight_failed,
+                golden_preflight_reason=golden_preflight_reason,
+            )
         )
         if ref is None:
             return {
@@ -731,6 +762,26 @@ def run_op(
             elif hasattr(shape, 'M') and hasattr(shape, 'N'):
                 pass  # M, N already set
 
+            # Q1c: pre-compute golden preflight verdict for this (op, shape).
+            # If the ladder-designated golden cannot run this shape on the host
+            # memory budget (e.g. PyTorch-eager rope @ extreme-long → 277GB on
+            # 6GB GPU), every Arke row for this shape must be marked
+            # `golden_unavailable_pending_baseline` — no oracle = no allclose
+            # check possible. Compute once here (golden choice is per-op,
+            # independent of which runner is benchmarked).
+            golden_preflight_failed = False
+            golden_preflight_reason = ""
+            try:
+                _golden = golden_runner_for(op, overrides=_GOLDEN_OVERRIDES)
+                _gpf = maybe_memory_preflight(hw, op, shape, baseline=_golden.name)
+                if _gpf is not None and _gpf.status.status != "ok":
+                    golden_preflight_failed = True
+                    golden_preflight_reason = _gpf.status.reason
+            except GoldenUnavailable:
+                # No ladder runner bound — _resolve_golden_for_correctness
+                # already marks audit_status accordingly via its own path.
+                pass
+
             for runner in runner_group:
                 # Expose the full shape to runners whose get_fn signature
                 # is fixed at (op, M, N, K) but need extra dims (e.g.
@@ -786,7 +837,11 @@ def run_op(
                     logger.info(
                         f"  {tag:15s} {runner.name:15s} unsupported (get_fn returned None)"
                     )
-                    correctness = _measure_l1_correctness(runner, op, M, N, K)
+                    correctness = _measure_l1_correctness(
+                        runner, op, M, N, K,
+                        golden_preflight_failed=golden_preflight_failed,
+                        golden_preflight_reason=golden_preflight_reason,
+                    )
                     _record(OpResult(
                         op=op,
                         shape_tag=tag,
@@ -827,7 +882,11 @@ def run_op(
                             M, N, K, bench_result.latency_us
                         )
 
-                    correctness = _measure_l1_correctness(runner, op, M, N, K)
+                    correctness = _measure_l1_correctness(
+                        runner, op, M, N, K,
+                        golden_preflight_failed=golden_preflight_failed,
+                        golden_preflight_reason=golden_preflight_reason,
+                    )
                     result = OpResult(
                         op=op,
                         shape_tag=tag,

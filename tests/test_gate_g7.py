@@ -318,6 +318,7 @@ def _write_perf_all(path: Path, rows: list[dict[str, str]]) -> None:
     fieldnames = [
         "operator",
         "shape_tag",
+        "baseline",
         "status",
         "correctness_status",
         "allclose",
@@ -538,3 +539,106 @@ def test_perf_evidence_excludes_typed_unsupported(tmp_path: Path):
     assert "malformed/non-ok perf rows" not in detail, (
         f"typed-unsupported rows must not be flagged malformed: {detail}"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Q2a — non-Arke baseline rows are oracles, not the SUT. Their crashes must
+# never enter the correctness `bad_rows` denominator (or Arke is held
+# responsible for PyTorch-eager / cuBLAS / FlagGems failures).
+# ──────────────────────────────────────────────────────────────────────────
+def test_correctness_evidence_skips_non_arke_baseline_failures(tmp_path: Path):
+    """A baseline crash on a reference runner (e.g. PyTorch-eager ptxas SIGKILL
+    on extreme-wide topk) is NOT an Arke regression. Only the Arke row counts.
+    """
+    root = tmp_path
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv",
+        [
+            # Arke row passes — system-under-test is clean.
+            {"operator": "topk", "shape_tag": "extreme-wide", "baseline": "Arke",
+             "status": "ok", "correctness_status": "ok",
+             "allclose": "true", "perf_pass": "true"},
+            # PyTorch-eager (oracle) crashed in compiler — must not fail Arke.
+            {"operator": "topk", "shape_tag": "extreme-wide", "baseline": "PyTorch-eager",
+             "status": "ok", "correctness_status": "error",
+             "correctness_reason": "ptxas died with -9 (SIGKILL)",
+             "allclose": "", "perf_pass": ""},
+            # FlagGems (ladder reference) declined this shape.
+            {"operator": "topk", "shape_tag": "extreme-wide", "baseline": "FlagGems",
+             "status": "unsupported",
+             "correctness_status": "unsupported",
+             "correctness_reason": "FlagGems.get_fn declined topk@extreme-wide",
+             "allclose": "", "perf_pass": ""},
+        ],
+    )
+    _write_perf_all(root / "l2" / "PERF_ALL.csv", [])
+
+    ok, detail = gate_g7._check_bl5_correctness_evidence(root)
+
+    assert ok is True, f"non-Arke baseline failures must be skipped: {detail}"
+    assert "non_arke_baseline_skipped=2" in detail, detail
+    assert "checked=1" in detail, detail
+
+
+def test_correctness_evidence_still_fails_on_arke_baseline_failure(tmp_path: Path):
+    """The Arke row is the source of truth. If Arke crashes, gate must fail
+    even if oracle baselines all pass.
+    """
+    root = tmp_path
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv",
+        [
+            {"operator": "matmul", "shape_tag": "square-1k", "baseline": "Arke",
+             "status": "ok", "correctness_status": "ok",
+             "allclose": "false", "perf_pass": "false"},
+            {"operator": "matmul", "shape_tag": "square-1k", "baseline": "cuBLAS/cuDNN",
+             "status": "ok", "correctness_status": "ok",
+             "allclose": "true", "perf_pass": "true"},
+        ],
+    )
+    _write_perf_all(root / "l2" / "PERF_ALL.csv", [])
+
+    ok, detail = gate_g7._check_bl5_correctness_evidence(root)
+
+    assert ok is False, f"Arke regression must fail: {detail}"
+    assert "failures=1" in detail, detail
+
+
+def test_correctness_evidence_treats_empty_baseline_as_arke(tmp_path: Path):
+    """L2 fusion rows have empty baseline (only one row per fused op). They
+    must be treated as Arke-side and counted, so a real L2 regression cannot
+    hide behind a missing baseline label.
+    """
+    root = tmp_path
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv", []
+    )
+    _write_perf_all(
+        root / "l2" / "PERF_ALL.csv",
+        [
+            {"operator": "geglu", "shape_tag": "non-align-1", "baseline": "",
+             "status": "error", "correctness_status": "error",
+             "correctness_reason": "Unbroadcastable Size([127, 3073])",
+             "allclose": "", "perf_pass": ""},
+        ],
+    )
+
+    ok, detail = gate_g7._check_bl5_correctness_evidence(root)
+    assert ok is False, f"empty-baseline L2 row must NOT be skipped: {detail}"
+    assert "failures=1" in detail, detail
+
+
+def test_is_non_arke_baseline_helper():
+    """Direct unit coverage for the helper."""
+    assert gate_g7._is_non_arke_baseline({"baseline": "PyTorch-eager"}) is True
+    assert gate_g7._is_non_arke_baseline({"baseline": "FlagGems"}) is True
+    assert gate_g7._is_non_arke_baseline({"baseline": "cuBLAS/cuDNN"}) is True
+    # Case-insensitive match for Arke.
+    assert gate_g7._is_non_arke_baseline({"baseline": "Arke"}) is False
+    assert gate_g7._is_non_arke_baseline({"baseline": "arke"}) is False
+    assert gate_g7._is_non_arke_baseline({"baseline": "ARKE"}) is False
+    # Empty/missing → Arke-side (L2 fusion path).
+    assert gate_g7._is_non_arke_baseline({"baseline": ""}) is False
+    assert gate_g7._is_non_arke_baseline({}) is False
+    assert gate_g7._is_non_arke_baseline({"baseline": "  "}) is False
+

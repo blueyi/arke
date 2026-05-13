@@ -268,6 +268,27 @@ def _is_typed_unsupported(row: dict[str, str]) -> bool:
     return any(pat.search(reason) for pat in _TYPED_UNSUPPORTED_REASON_PATTERNS)
 
 
+def _is_non_arke_baseline(row: dict[str, str]) -> bool:
+    """Return True for baseline rows that are NOT the system-under-test (Arke).
+
+    Per the BL5 Track-6 evidence protocol, every (op, shape) target has one row
+    per baseline (Arke + reference baselines such as PyTorch-eager, cuBLAS/cuDNN,
+    FlagGems, Liger-Kernel, torch.compile, Triton-Tutorial). Correctness and
+    performance evidence is about Arke's behaviour; the other baselines exist
+    only as oracles and ladder references. A baseline crash (e.g. PyTorch-eager
+    ptxas SIGKILL on extreme-wide topk) is NOT a regression for Arke and must
+    not enter the correctness `bad_rows` denominator.
+
+    Empty baseline strings (some L2 fusion rows) are treated as Arke-side rows
+    because they originate from the harness's L2 fusion path which produces
+    only the system-under-test row (no per-baseline replication).
+    """
+    baseline = (row.get("baseline") or "").strip()
+    if not baseline:
+        return False
+    return baseline.lower() != "arke"
+
+
 def _is_memory_excluded(row: dict[str, str]) -> bool:
     """Return true for explicit 6GB-memory-policy exclusions.
 
@@ -322,9 +343,16 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
     excluded = 0
     golden_exempted = 0
     typed_unsupported = 0
+    non_arke_baseline_skipped = 0
     bad_rows: list[str] = []
 
     for layer, row in rows:
+        if _is_non_arke_baseline(row):
+            # Reference-baseline rows are oracles, not the system-under-test.
+            # Their crashes / unsupported declarations are not Arke regressions
+            # and must not enter the failure denominator. See _is_non_arke_baseline.
+            non_arke_baseline_skipped += 1
+            continue
         if _is_memory_excluded(row):
             excluded += 1
             continue
@@ -357,7 +385,8 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
         failures.append(
             f"correctness failures={len(bad_rows)} checked={checked} "
             f"memory_excluded={excluded} golden_exempted={golden_exempted} "
-            f"typed_unsupported={typed_unsupported}; "
+            f"typed_unsupported={typed_unsupported} "
+            f"non_arke_baseline_skipped={non_arke_baseline_skipped}; "
             f"first={_summarize_items(bad_rows)}"
         )
     if failures:
@@ -365,7 +394,8 @@ def _check_bl5_correctness_evidence(track6_root: Path = STAGE7_TRACK6_ROOT) -> t
     return True, (
         f"correctness rows passed: checked={checked}, "
         f"memory_excluded={excluded}, golden_exempted={golden_exempted}, "
-        f"typed_unsupported={typed_unsupported}"
+        f"typed_unsupported={typed_unsupported}, "
+        f"non_arke_baseline_skipped={non_arke_baseline_skipped}"
     )
 
 
