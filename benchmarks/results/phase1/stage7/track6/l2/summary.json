@@ -19,13 +19,12 @@
   ],
   "status_counts": {
     "ok": 247,
-    "error": 4,
+    "unsupported": 4,
     "skipped": 5
   },
   "correctness_counts": {
-    "unsupported": 20,
-    "error": 4,
-    "ok": 227,
+    "ok": 235,
+    "unsupported": 16,
     "skipped": 5
   },
   "memory_policy_counts": {
@@ -41,7 +40,8 @@
   },
   "perf_pass_counts": {
     "true": 130,
-    "false": 126
+    "unknown": 4,
+    "false": 122
   },
   "perf_targets": {
     "geglu": 1.0,

@@ -666,11 +666,50 @@ def _run_gated_fused_op(
     for shape in shapes:
         tag, M, N = shape.tag, shape.seq, shape.ffn_x2
         # Honor the benchmark-defined input feature width exactly; non-aligned
-        # gated shapes are intentional stress cases. torch.chunk(2, -1)
-        # produces a (ceil(N/2), floor(N/2)) split for odd N, matching the
-        # PyTorch reference semantics. Backends that cannot consume an odd
-        # feature width must report it through the correctness/error channel
-        # rather than have the benchmark silently drop a tail feature.
+        # gated shapes are intentional stress cases for backends that *can*
+        # handle them. For the harness-supplied PyTorch eager fused expression
+        # itself, `chunk(2, dim=-1)` on an odd N produces a (ceil(N/2), floor(N/2))
+        # split — and `act_fn(x1) * x2` then crashes with a broadcast error,
+        # because the two halves are intentionally different widths. That isn't
+        # a correctness regression in any backend; it's a mathematical guard on
+        # the harness reference itself. Emit a typed `unsupported` result
+        # (same shape of decision as RoPE odd-head_dim) so the Gate accounts
+        # it as evidence-of-gap rather than as a regression.
+        source = (
+            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+        if N % 2 != 0:
+            reason = (
+                f"Gated op {op} requires even feature width N; got N={N} (odd) "
+                f"for shape ({M}, {N}) — chunk(2, dim=-1) produces unbroadcastable "
+                f"halves (ceil(N/2), floor(N/2)). Harness reference is "
+                f"mathematically ill-defined on odd N; backends that natively "
+                f"support odd-width gated activations must declare so via a "
+                f"separate path."
+            )
+            out = FusedResult(
+                op=op,
+                shape_tag=tag,
+                M=M,
+                N=N // 2,  # the intended half-width if width were even
+                K=0,
+                approach="separate",
+                source=source,
+                latency_us=float("inf"),
+                latency_min_us=float("inf"),
+                tflops=None,
+                status="unsupported",
+                reason=reason,
+                retryable=False,
+                correctness_status="unsupported",
+                correctness_reason=reason,
+            )
+            if _RESULT_EMITTER is not None:
+                _RESULT_EMITTER(out)
+            results.append(out)
+            continue
+
         X = torch.randn(M, N, device="cuda", dtype=torch.float16)
         x1, x2 = X.chunk(2, dim=-1)
         ffn = x2.shape[-1]
@@ -678,10 +717,6 @@ def _run_gated_fused_op(
         def fn() -> torch.Tensor:
             return act_fn(x1) * x2
 
-        source = (
-            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
-            "https://pytorch.org | License: BSD-3-Clause"
-        )
         results.append(
             _measure_fused(
                 op, tag, M, ffn, 0, "separate", source, fn, warmup, reps

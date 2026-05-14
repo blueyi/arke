@@ -1,16 +1,16 @@
 operator,shape_tag,approach,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
-geglu,gpt2-sm,separate,217.6,227.3,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
-geglu,llama-7b-512,separate,257.4,303.1,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
-geglu,llama-7b-2k,separate,745.0,745.5,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
-geglu,llama3-8b,separate,289.3,333.7,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: geglu,,,,,1.0,1.0000,true,0.0000
-geglu,non-align-1,separate,inf,inf,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",false,,,,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",,,,,1.0,N/A,false,N/A
-geglu,non-align-2,separate,inf,inf,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",false,,,,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",,,,,1.0,N/A,false,N/A
-geglu,ds-v2-512,separate,244.7,245.6,,1.0000,ok,,false,true,0.0078125,6.86275e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,ds-v2-2k,separate,928.8,930.6,,1.0000,ok,,false,true,0.0078125,6.8519e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,ds-v3-512,separate,355.2,357.3,,1.0000,ok,,false,true,0.0078125,6.84148e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,ds-v3-2k,separate,1383.9,1387.5,,1.0000,ok,,false,true,0.0078125,6.8576e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,qwen25-7b,separate,348.7,346.9,,1.0000,ok,,false,true,0.0078125,6.8468e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-geglu,qwen25-7b-2k,separate,1351.2,1349.6,,1.0000,ok,,false,true,0.0078125,6.85608e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,gpt2-sm,separate,68.9,23.6,,1.0000,ok,,false,true,0.0078125,6.91798e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-512,separate,216.4,218.1,,1.0000,ok,,false,true,0.0078125,6.83672e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,llama-7b-2k,separate,830.0,831.3,,1.0000,ok,,false,true,0.0117188,6.86459e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,llama3-8b,separate,287.4,280.6,,1.0000,ok,,false,true,0.0078125,6.84047e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v2-512,separate,241.3,242.7,,1.0000,ok,,false,true,0.0078125,6.84309e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v2-2k,separate,928.1,930.6,,1.0000,ok,,false,true,0.0078125,6.87386e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-512,separate,374.1,356.4,,1.0000,ok,,false,true,0.015625,6.85791e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,ds-v3-2k,separate,1330.1,1321.9,,1.0000,ok,,false,true,0.0078125,6.85476e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b,separate,352.9,354.1,,1.0000,ok,,false,true,0.0078125,6.86897e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,qwen25-7b-2k,separate,1353.4,1352.6,,1.0000,ok,,false,true,0.015625,6.85529e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+geglu,non-align-1,separate,inf,inf,,,unsupported,"Gated op geglu requires even feature width N; got N=6145 (odd) for shape (127, 6145) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",false,,,,,,unsupported,"Gated op geglu requires even feature width N; got N=6145 (odd) for shape (127, 6145) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",,,,,1.0,,,
+geglu,non-align-2,separate,inf,inf,,,unsupported,"Gated op geglu requires even feature width N; got N=22017 (odd) for shape (333, 22017) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",false,,,,,,unsupported,"Gated op geglu requires even feature width N; got N=22017 (odd) for shape (333, 22017) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",,,,,1.0,,,
 linear_ce,gpt2-seq128,separate,4765.7,4777.0,2.073,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,103123968,3542771302,0.0291,linear_ce,1.0,1.0000,true,0.0000
 linear_ce,gpt2-seq512,separate,12836.4,12796.9,3.079,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,180911616,3542771302,0.0511,linear_ce,1.0,1.0000,true,0.0000
 linear_ce,llama2-seq512,separate,32493.1,32010.2,4.131,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: linear_ce,331878400,3542771302,0.0937,linear_ce,1.0,1.0000,true,0.0000
@@ -243,15 +243,15 @@ qkv_fa,ds-v2-16k,separate,inf,inf,,,skipped,memory preflight: estimated attentio
 qkv_fa,ds-v3-32k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 279172874240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 279172874240 bytes > budget 3542771302 bytes,279172874240,3542771302,78.8007,attention,1.0,N/A,false,N/A
 qkv_fa,ds-v3-163k,separate,inf,inf,,,skipped,memory preflight: estimated attention footprint 6893422510080 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 6893422510080 bytes > budget 3542771302 bytes,6893422510080,3542771302,1945.7712,attention,1.0,N/A,false,N/A
 qkv_fa,ds-batch-8,separate,344058.9,351453.2,19.174,1.0000,ok,,false,true,4.76837e-07,1.4707e-14,0.01,0.01,ok,,1073741824,3542771302,0.3031,attention,1.0,1.0000,true,0.0000
-swiglu,gpt2-sm,separate,240.1,238.8,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
-swiglu,llama-7b-512,separate,284.7,314.2,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
-swiglu,llama-7b-2k,separate,745.5,757.6,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
-swiglu,llama3-8b,separate,346.6,343.0,,1.0000,ok,,false,,,,,,unsupported,No correctness probe for fused op: swiglu,,,,,1.0,1.0000,true,0.0000
-swiglu,non-align-1,separate,inf,inf,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",false,,,,,,error,"Unbroadcastable torch.Size([127, 3073]) and torch.Size([127, 3072])",,,,,1.0,N/A,false,N/A
-swiglu,non-align-2,separate,inf,inf,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",false,,,,,,error,"Unbroadcastable torch.Size([333, 11009]) and torch.Size([333, 11008])",,,,,1.0,N/A,false,N/A
-swiglu,ds-v2-512,separate,231.9,231.4,,1.0000,ok,,false,true,0.0078125,5.03195e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,ds-v2-2k,separate,889.3,889.8,,1.0000,ok,,false,true,0.0078125,5.02853e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,ds-v3-512,separate,339.3,340.0,,1.0000,ok,,false,true,0.0078125,5.02715e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,ds-v3-2k,separate,1322.0,1325.1,,1.0000,ok,,false,true,0.015625,5.03611e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,qwen25-7b,separate,351.7,349.2,,1.0000,ok,,false,true,0.0078125,5.03035e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
-swiglu,qwen25-7b-2k,separate,1358.8,1358.8,,1.0000,ok,,false,true,0.015625,5.03307e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,gpt2-sm,separate,19.8,21.5,,1.0000,ok,,false,true,0.00390625,5.02598e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,llama-7b-512,separate,198.3,199.7,,1.0000,ok,,false,true,0.0078125,5.0382e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,llama-7b-2k,separate,761.2,761.9,,1.0000,ok,,false,true,0.0078125,5.03881e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,llama3-8b,separate,254.0,256.0,,1.0000,ok,,false,true,0.0078125,5.03353e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v2-512,separate,220.4,222.2,,1.0000,ok,,false,true,0.0078125,5.03248e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v2-2k,separate,846.8,847.9,,1.0000,ok,,false,true,0.0078125,5.02632e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-512,separate,332.1,332.8,,1.0000,ok,,false,true,0.0078125,5.02871e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-2k,separate,1276.6,1279.0,,1.0000,ok,,false,true,0.0078125,5.04105e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b,separate,355.7,358.2,,1.0000,ok,,false,true,0.0078125,5.04177e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b-2k,separate,1331.2,1332.2,,1.0000,ok,,false,true,0.0078125,5.03983e-05,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu,non-align-1,separate,inf,inf,,,unsupported,"Gated op swiglu requires even feature width N; got N=6145 (odd) for shape (127, 6145) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",false,,,,,,unsupported,"Gated op swiglu requires even feature width N; got N=6145 (odd) for shape (127, 6145) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",,,,,1.0,,,
+swiglu,non-align-2,separate,inf,inf,,,unsupported,"Gated op swiglu requires even feature width N; got N=22017 (odd) for shape (333, 22017) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",false,,,,,,unsupported,"Gated op swiglu requires even feature width N; got N=22017 (odd) for shape (333, 22017) — chunk(2, dim=-1) produces unbroadcastable halves (ceil(N/2), floor(N/2)). Harness reference is mathematically ill-defined on odd N; backends that natively support odd-width gated activations must declare so via a separate path.",,,,,1.0,,,

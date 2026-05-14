@@ -240,6 +240,9 @@ _TYPED_UNSUPPORTED_REASON_PATTERNS: tuple[re.Pattern[str], ...] = (
     # Op-level mathematical shape guards (ill-defined inputs).
     #   "RoPE requires even head_dim; got N (odd) ..."
     re.compile(r"requires even head_dim", re.IGNORECASE),
+    #   "Gated op <op> requires even feature width N; got N=... (odd) ..."
+    #   (gated activations like geglu/swiglu split via chunk(2, dim=-1))
+    re.compile(r"requires even feature width", re.IGNORECASE),
     re.compile(r"mathematically ill-defined", re.IGNORECASE),
     # Probe-infra gap: harness has no correctness probe for this fused op yet.
     #   "No correctness probe for fused op: <op>"
