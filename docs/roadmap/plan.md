@@ -46,7 +46,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
-| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 | 🚧 11/14 (G7.8b–d open) |
+| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 | 🚧 12/14 (G7.8b + G7.8d open) |
 | S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
@@ -153,7 +153,7 @@ AND ALL:
 
 **Track 6 artifact status (current):** Stage 7 benchmark automation emits a consolidated root-level dashboard artifact set under `benchmarks/results/phase1/stage7/track6/` — `coverage_gap.json`, `audit_report.json`, `stage7_operator_shape_stats.json`, and `dashboard.json` — plus per-layer `l1/` and `l2/` benchmark manifests. `benchmarks.gate_g7` now validates both the result-tree contract and the substantive BL5 evidence contract: coverage completeness, correctness rows, memory-policy exclusions, L1 weighted performance, and L2 fusion performance.
 
-**Current G7 evidence status:** The implementation/test slices for Lang, IR, MLIR skeleton, examples, backend-agnostic StrategyIR, and non-regression are green, but canonical Track 6 artifacts still fail the BL5 evidence criteria. Current `python -m benchmarks.gate G7 --tier 2` result is `11/14` criteria passed, with `G7.8b` coverage, `G7.8c` correctness, and `G7.8d` performance failing against the persisted evidence. This keeps Stage 7 open until the BL5 artifact set reaches full required coverage, correctness, and performance.
+**Current G7 evidence status:** The implementation/test slices for Lang, IR, MLIR skeleton, examples, backend-agnostic StrategyIR, and non-regression are green. After the 2026-05-14 Q5a (rope fp32, commit `82b635b`) + Q6a (gated odd-N typed-unsupported, commit `160ebf4`) fixes, canonical Track 6 evidence now passes G7.8c (correctness 827/827 ok). Current `python -m benchmarks.gate G7 --tier 2` result is `12/14` criteria passed, with `G7.8b` coverage and `G7.8d` performance still failing. This keeps Stage 7 open until BL5 coverage closes (P1) and L1 weighted perf reaches ≥0.95 with L2 fusion completeness (P3).
 
 **Memory evidence note (current):** skipped benchmark rows now carry memory preflight metadata in artifact CSVs, including `memory_bytes_required`, `memory_bytes_budget`, `memory_ratio`, and `memory_policy`. The evidence path is no longer attention-only; OT2 / OT3 pressure is represented the same way as OT4 attention pressure, which keeps BL5 coverage accounting honest under 6GB VRAM constraints.
 

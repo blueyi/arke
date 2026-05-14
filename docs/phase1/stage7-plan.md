@@ -253,9 +253,9 @@ That means every unfinished task in S7 should be justified by one of these bench
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| T7.1 | Keep parser / IR / compiler / benchmark tests green while aligning implementation with the active spec | P0 | continuous | 🚧 — parser/IR/roundtrip/backend-agnostic/non-regression slices are green, but the full G7 run now correctly fails on BL5 evidence criteria `G7.8b`/`G7.8c`/`G7.8d`. |
+| T7.1 | Keep parser / IR / compiler / benchmark tests green while aligning implementation with the active spec | P0 | continuous | 🚧 — parser/IR/roundtrip/backend-agnostic/non-regression slices are green; G7 currently 12/14 — `G7.8c` ✅ PASS after Q5a (rope fp32) + Q6a (gated odd-N typed-unsupported); `G7.8b` (coverage) and `G7.8d` (perf) remain open. |
 | T7.2 | Add regression coverage for symbolic dims, conditional strategy, and rationale persistence | P0 | 0.5d | ✅ |
-| T7.3 | Run full stage verification checklist and record evidence in standard result locations | P0 | 0.5d | 🚧 — checklist/report artifacts exist, but current `python -m benchmarks.gate G7 --tier 2` is `11/14` with BL5 evidence failures; final G7 closure remains open. |
+| T7.3 | Run full stage verification checklist and record evidence in standard result locations | P0 | 0.5d | 🚧 — checklist/report artifacts exist; current `python -m benchmarks.gate G7 --tier 2` is `12/14` (G7.8b coverage + G7.8d perf still open). Final G7 closure pending P1 + P3 in `docs/plans/2026-05-14-g78bd-coverage-and-perf.md`. |
 
 ---
 
@@ -267,8 +267,8 @@ That means every unfinished task in S7 should be justified by one of these bench
 | M2 | Tracks 2+3 complete | `where` / `symbolic_dims` / conditional backend-agnostic StrategyIR working end-to-end | ✅ |
 | M3 | Track 4 complete | BL1 matmul traverses Layer 4 → 3 → 2/1 skeleton → MLIR bridge | ✅ |
 | M4 | Track 5 complete | All 45 BL5 ops pass v0.1.0 dry-run round-trip and BL5 shape families are representable | ✅ — dry-run coverage is green; benchmark executability is tracked separately under Track 6 |
-| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | 🚧 — harness/artifact plumbing is ready, but canonical evidence is not yet BL5-complete (`G7.8b`/`G7.8c`/`G7.8d` fail) |
-| M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | 🚧 — non-regression slices are green, but final G7 closure is blocked by coverage/correctness/performance evidence gaps |
+| M5 | Track 6 complete | BL5 L1/L2 benchmark harness ready with full fusion coverage and 6GB-aware execution strategy | 🚧 — harness/artifact plumbing is ready and `G7.8c` ✅ PASS, but `G7.8b` (coverage) + `G7.8d` (perf) still open |
+| M6 | Track 7 complete | Gate evidence assembled; no regressions; ready to run G7 verification | 🚧 — non-regression slices green; G7 at 12/14, blocked by coverage (P1) + perf (P3) |
 
 **Critical path:** Track 1 → Tracks 2/3 → Track 4 → Track 5 → Track 6 → Track 7
 

@@ -22,13 +22,24 @@ Stage 7 Track 6 benchmark harness.
 
 ## Reconnaissance summary (2026-05-14)
 
-Background runs after commit `d74beea` (1a typed-unsupported fix):
+Initial reconnaissance after commit `d74beea` (1a typed-unsupported fix):
 
 | Criterion | Status   | Quantitative gap                                         |
 |-----------|----------|----------------------------------------------------------|
 | G7.8b     | ❌ FAIL  | 10 ops × 60 missing shape rows                           |
 | G7.8c     | ❌ FAIL  | 10 real failures (post-1a; was 46)                       |
 | G7.8d     | ❌ FAIL  | L1 weighted=0.6921 (req ≥0.95); L2 matmul_gelu=39/102, matmul_relu=48/102 |
+
+**Update 2026-05-14 14:30** — after Q5a (rope fp32) + Q6a (gated odd-N typed-unsupported):
+
+| Criterion | Status   | Quantitative gap                                         |
+|-----------|----------|----------------------------------------------------------|
+| G7.8b     | ❌ FAIL  | 10 ops × 60 missing shape rows (unchanged)               |
+| G7.8c     | ✅ PASS  | correctness=827/827 ok; memory_excluded=22, golden_exempted=3, typed_unsupported=18 |
+| G7.8d     | ❌ FAIL  | L1 weighted=0.6866 (req ≥0.95); L2 matmul_gelu=39/102, matmul_relu=48/102; **3 malformed/non-ok perf rows** (gelu:extreme-flat status=error, topk:extreme-wide status=error, topk:extreme-wide perf_pass=<empty>) |
+
+Gate G7 overall: **11/14 → 12/14** (78.6% → 85.7%). Remaining: G7.8b (P1) + G7.8d (P3).
+Q5a commit `82b635b`, Q6a commit `160ebf4` (both pushed).
 
 ### G7.8b — 10 ops × 60 missing L1 shape rows
 
@@ -61,14 +72,18 @@ making them all pass.**
 
 ### G7.8c — 10 real failures after 1a
 
-| # | shape                                | failure mode                  | likely cause                                  |
+| # | shape                                | failure mode                  | resolution                                    |
 |---|--------------------------------------|-------------------------------|-----------------------------------------------|
-| 1-3 | `flash_attention @ ds-v2-2k` (×3)  | `correctness=error`           | runner exception (need traceback)             |
-| 4 | `gelu @ extreme-flat`                | `status=error`                | runner exception                              |
-| 5 | `rope @ extreme-long`                | `correctness=mismatch`        | numerical drift on extreme seq                |
-| 6 | `topk @ extreme-wide`                | `status=error`                | runner exception                              |
-| 7-8 | `geglu @ non-align-{1,2}` (L2)     | `status=error`                | non-aligned shape runner crash                |
-| 9-10 | `swiglu @ non-align-{1,2}` (L2)   | `status=error`                | non-aligned shape runner crash                |
+| 1-3 | `flash_attention @ ds-v2-2k` (×3)  | `correctness=error`           | ✅ stale handle assert cleared (commit `31e7275`) |
+| 4 | `gelu @ extreme-flat`                | `status=error`                | ⏭️ remains in G7.8d (perf row malformed) — Q6b/Q7 |
+| 5 | `rope @ extreme-long`                | `correctness=mismatch`        | ✅ Q5a fp16→fp32 sin/cos (commit `82b635b`, 5 sites) |
+| 6 | `topk @ extreme-wide`                | `status=error`                | ⏭️ remains in G7.8d (perf row malformed) — Q6b/Q7 |
+| 7-8 | `geglu @ non-align-{1,2}` (L2)     | `status=error`                | ✅ Q6a typed-unsupported emit (commit `160ebf4`)   |
+| 9-10 | `swiglu @ non-align-{1,2}` (L2)   | `status=error`                | ✅ Q6a typed-unsupported emit (commit `160ebf4`)   |
+
+**Net G7.8c result:** correctness failures 10 → **0**, gate criterion now ✅ PASS. The
+two `status=error` rows from gelu:extreme-flat / topk:extreme-wide migrate into G7.8d
+as malformed perf rows; tracked under Q6b (triage) / Q7 (extreme-shape preflight scope).
 
 ### G7.8d — perf root cause
 
@@ -286,13 +301,31 @@ python -m benchmarks.gate G7 --tier 2 2>&1 | tail -30
 
 ---
 
-## Phase P2 — G7.8c real-failure fixups
+## Phase P2 — G7.8c real-failure fixups ✅ CLOSED (2026-05-14)
 
 **Goal:** Drive `correctness failures` from 10 → 0 by either (a) fixing the
 underlying bug, or (b) classifying the failure as a typed/memory exclusion if
 appropriate.
 
-### P2.T1 — Triage each of the 10 failures
+**Outcome:** ✅ G7.8c now PASSES. Correctness failures 10 → 0 across two commits
+plus three prior commits (`a5508b2`, `fa14fd0`, `31e7275`):
+
+| Commit    | Scope                                              | Class | Verified |
+|-----------|----------------------------------------------------|:-----:|:--------:|
+| `a5508b2` | Pin rope Golden to PyTorch-eager via LADDER_PREFERENCES | C | ✅ |
+| `fa14fd0` | Regenerate rope L1 data (post-Golden pin)          | C     | ✅ |
+| `31e7275` | flash_attention @ ds-v2-2k stale-handle assert cleared | B | ✅ |
+| `82b635b` (Q5a) | rope fp16→fp32 sin/cos across 5 sites (extreme-long) | C | ✅ |
+| `160ebf4` (Q6a) | bench_l2 emits typed-unsupported for gated odd-N (geglu/swiglu non-align-{1,2}) | D | ✅ |
+
+The two remaining `status=error` rows (`gelu @ extreme-flat`, `topk @ extreme-wide`)
+graduated from G7.8c (correctness count) into G7.8d (malformed perf rows). They are
+tracked separately under Q6b (root-cause triage) and Q7 (extreme-shape preflight
+scope narrowing — Leon flagged Q1c's "no oracle → audit" line as too aggressive for
+point-wise ops like rope; rerun for `gelu:extreme-flat` and `topk:extreme-wide`
+needs to repeat that distinction).
+
+### P2.T1 — Triage each of the 10 failures (historical)
 
 **Objective:** get a one-line root-cause for each. Run each failing op-shape
 individually with full logging:
