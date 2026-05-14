@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-05-12_032853",
+  "timestamp": "2026-05-14_141049",
   "ops": [
-    "gelu"
+    "rope"
   ],
-  "warmup": 25,
-  "reps": 200,
+  "warmup": 2,
+  "reps": 3,
   "tier": 3,
   "shape_tags": null,
   "phase": 1,

@@ -1,13 +1,13 @@
 {
-  "ts": 1778527734.1413918,
+  "ts": 1778739082.9052846,
   "layer": "l1",
-  "fingerprint": "1927c389b1d0303f",
-  "elapsed_s": 0.970543384552002,
+  "fingerprint": "f429368aa40c42fe",
+  "elapsed_s": 33.12543058395386,
   "per_op": {
-    "gelu": {
-      "rows": 120,
-      "ok": 119,
-      "permanent_failure": 1,
+    "rope": {
+      "rows": 48,
+      "ok": 41,
+      "permanent_failure": 7,
       "retryable_failure": 0,
       "other": 0
     }

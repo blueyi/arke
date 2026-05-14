@@ -1,5 +1,5 @@
 {
-  "overall_geomean": 0.9388,
+  "overall_geomean": 0.938,
   "op_scores": {
     "add": 0.984,
     "argmax": 0.9983,
@@ -34,7 +34,7 @@
     "relu": 0.5979,
     "rmsnorm": 1.4325,
     "rmsnorm_residual": 0.8627,
-    "rope": 1.6013,
+    "rope": 1.5152,
     "rsqrt": 1.039,
     "scatter": 1.0,
     "sigmoid": 0.9846,
@@ -96,34 +96,35 @@
     "where_"
   ],
   "status_counts": {
-    "ok": 2281,
-    "skipped": 51,
+    "ok": 2287,
+    "skipped": 45,
     "error": 4,
     "unsupported": 5
   },
   "correctness_counts": {
     "ok": 2232,
-    "skipped": 51,
+    "skipped": 45,
     "error": 25,
-    "unsupported": 18,
+    "unsupported": 21,
     "mismatch": 5,
-    "golden_unavailable_pending_baseline": 10
+    "golden_unavailable_pending_baseline": 13
   },
   "memory_policy_counts": {
     "none": 1894,
     "dense_matmul": 255,
-    "attention": 168,
-    "linear_ce": 24
+    "attention": 136,
+    "linear_ce": 24,
+    "attention_fused": 32
   },
-  "memory_pressure_rows": 51,
+  "memory_pressure_rows": 45,
   "perf_target_counts": {
     "with_target": 2341,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "false": 939,
-    "true": 1392,
-    "unknown": 10
+    "false": 934,
+    "true": 1391,
+    "unknown": 16
   },
   "perf_targets": {
     "add": 1.0,
@@ -206,7 +207,7 @@
     "relu": 0.5979,
     "rmsnorm": 1.4325,
     "rmsnorm_residual": 0.8627,
-    "rope": 1.6013,
+    "rope": 1.5152,
     "rsqrt": 1.039,
     "scatter": 1.0,
     "sigmoid": 0.9846,
@@ -253,7 +254,7 @@
     "relu": -0.2514,
     "rmsnorm": 1.1144,
     "rmsnorm_residual": -0.1247,
-    "rope": 0.8095,
+    "rope": 0.7098,
     "rsqrt": 0.051,
     "scatter": 0.0,
     "sigmoid": -0.0072,

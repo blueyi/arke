@@ -184,14 +184,22 @@ class PyTorchEagerRunner(BaselineRunner):
                 # crashing in cat([-x2, x1]) shape mismatch.
                 return None
             seq_len = x.shape[1]
+            # Numerical-stability fix (2026-05-14, Q5a): compute sin/cos in
+            # fp32 then cast back. fp16 torch.arange(seq) loses integer
+            # precision at seq>=2048 and overflows past fp16_max≈65504, so at
+            # extreme-long (seq=65536) freqs decays to NaN/inf and the rope
+            # output is all NaN. Same fix mirrored in bench_l1._torch_reference
+            # and arke_runner (run_with_inputs + _fill_missing_inputs). Matches
+            # HF Transformers / Liger-Kernel / FlashInfer rotary convention
+            # (fp32 trig, fp16 hadamard).
             freqs = torch.einsum(
                 "i,j->ij",
-                torch.arange(seq_len, device=x.device, dtype=x.dtype),
-                1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=x.dtype) / head_dim)),
+                torch.arange(seq_len, device=x.device, dtype=torch.float32),
+                1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=torch.float32) / head_dim)),
             )
             emb = torch.cat([freqs, freqs], dim=-1)
-            cos_emb = torch.cos(emb).unsqueeze(0)
-            sin_emb = torch.sin(emb).unsqueeze(0)
+            cos_emb = torch.cos(emb).unsqueeze(0).to(x.dtype)
+            sin_emb = torch.sin(emb).unsqueeze(0).to(x.dtype)
             x1 = x[..., : head_dim // 2]
             x2 = x[..., head_dim // 2 :]
             rotated = torch.cat([-x2, x1], dim=-1)
@@ -548,12 +556,17 @@ class PyTorchEagerRunner(BaselineRunner):
                 return None
             X = torch.randn(batch_size, seq_len, head_dim, device="cuda", dtype=dtype)
             def rope():
-                inv_freq = 1.0 / (10000 ** (torch.arange(0, head_dim, 2, device="cuda", dtype=dtype) / head_dim))
-                t = torch.arange(seq_len, device="cuda", dtype=dtype)
+                # Numerical-stability fix (2026-05-14, Q5a): compute sin/cos in
+                # fp32 then cast back. fp16 arange(seq) loses integer precision
+                # at seq>=2048 and overflows past fp16_max≈65504, so at
+                # extreme-long (seq=65536) the entire rope output is NaN. Same
+                # fix mirrored in bench_l1._torch_reference and arke_runner.
+                inv_freq = 1.0 / (10000 ** (torch.arange(0, head_dim, 2, device="cuda", dtype=torch.float32) / head_dim))
+                t = torch.arange(seq_len, device="cuda", dtype=torch.float32)
                 freqs = torch.einsum("i,j->ij", t, inv_freq)
                 emb = torch.cat([freqs, freqs], dim=-1)
-                cos_emb = torch.cos(emb).unsqueeze(0)
-                sin_emb = torch.sin(emb).unsqueeze(0)
+                cos_emb = torch.cos(emb).unsqueeze(0).to(dtype)
+                sin_emb = torch.sin(emb).unsqueeze(0).to(dtype)
                 x1 = X[..., :head_dim // 2]
                 x2 = X[..., head_dim // 2:]
                 rotated = torch.cat([-x2, x1], dim=-1)

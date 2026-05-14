@@ -1,14 +1,12 @@
 {
-  "timestamp": "2026-05-14_020125",
+  "timestamp": "2026-05-14_141421",
   "ops": [
-    "flash_attention"
+    "rope"
   ],
-  "warmup": 200,
-  "reps": 500,
-  "tier": 2,
-  "shape_tags": [
-    "ds-v2-2k"
-  ],
+  "warmup": 2,
+  "reps": 3,
+  "tier": 3,
+  "shape_tags": null,
   "phase": 1,
   "stage": 7,
   "track": "6",

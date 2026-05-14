@@ -589,72 +589,144 @@ gelu,micro-tiny,PyTorch-eager,73.5,89.0,,1.0000,ok,,false,true,0,0,0.001,0.001,o
 gelu,micro-tiny,torch.compile,262.4,257.9,,0.2801,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2801,false,-0.7199
 gelu,micro-tiny,Arke,77.8,73.7,,0.9447,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9447,false,-0.0553
 gelu,micro-tiny,FlagGems,81.1,88.1,,0.9063,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9063,false,-0.0937
+gelu,micro-tiny,cuBLAS/cuDNN,139.2,148.7,,0.5280,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5280,false,-0.4720
+gelu,micro-tiny,Liger-Kernel,61.2,77.9,,1.2010,ok,,false,true,0.00195312,8.8245e-05,0.001,0.001,ok,,,,,,1.0,1.2010,true,0.2010
+gelu,micro-tiny,PyTorch-eager,132.3,151.5,,0.5556,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5556,false,-0.4444
+gelu,micro-tiny,torch.compile,377.6,276.5,,0.1947,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.1947,false,-0.8053
+gelu,micro-tiny,Arke,147.9,48.1,,0.4970,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4970,false,-0.5030
+gelu,micro-tiny,FlagGems,149.0,159.7,,0.4933,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4933,false,-0.5067
 gelu,micro-small,cuBLAS/cuDNN,73.7,27.6,,1.0760,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0760,true,0.0760
 gelu,micro-small,Liger-Kernel,60.9,11.3,,1.3021,ok,,false,true,0.00195312,8.34005e-05,0.001,0.001,ok,,,,,,1.0,1.3021,true,0.3021
 gelu,micro-small,PyTorch-eager,79.3,11.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,micro-small,torch.compile,328.1,192.5,,0.2417,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2417,false,-0.7583
 gelu,micro-small,Arke,78.3,10.2,,1.0128,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0128,true,0.0128
 gelu,micro-small,FlagGems,76.9,71.7,,1.0312,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0312,true,0.0312
+gelu,micro-small,cuBLAS/cuDNN,142.3,15.4,,0.5573,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5573,false,-0.4427
+gelu,micro-small,Liger-Kernel,151.1,12.3,,0.5248,ok,,false,true,0.00195312,8.39551e-05,0.001,0.001,ok,,,,,,1.0,0.5248,false,-0.4752
+gelu,micro-small,PyTorch-eager,159.0,56.3,,0.4987,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4987,false,-0.5013
+gelu,micro-small,torch.compile,440.1,316.4,,0.1802,ok,,false,true,5.96046e-08,1.81899e-12,0.001,0.001,ok,,,,,,1.0,0.1802,false,-0.8198
+gelu,micro-small,Arke,142.2,36.9,,0.5577,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5577,false,-0.4423
+gelu,micro-small,FlagGems,144.9,144.7,,0.5473,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5473,false,-0.4527
 gelu,gpt2-hidden,cuBLAS/cuDNN,75.2,11.3,,0.9907,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9907,false,-0.0093
 gelu,gpt2-hidden,Liger-Kernel,66.8,12.3,,1.1153,ok,,false,true,0.00195312,8.4684e-05,0.001,0.001,ok,,,,,,1.0,1.1153,true,0.1153
 gelu,gpt2-hidden,PyTorch-eager,74.5,10.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,gpt2-hidden,torch.compile,288.8,197.6,,0.2580,ok,,false,true,5.96046e-08,2.42532e-12,0.001,0.001,ok,,,,,,1.0,0.2580,false,-0.7420
 gelu,gpt2-hidden,Arke,81.4,11.3,,0.9152,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9152,false,-0.0848
 gelu,gpt2-hidden,FlagGems,73.6,87.0,,1.0122,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0122,true,0.0122
+gelu,gpt2-hidden,cuBLAS/cuDNN,138.8,116.7,,0.5367,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5367,false,-0.4633
+gelu,gpt2-hidden,Liger-Kernel,73.4,82.7,,1.0150,ok,,false,true,0.00195312,8.47722e-05,0.001,0.001,ok,,,,,,1.0,1.0150,true,0.0150
+gelu,gpt2-hidden,PyTorch-eager,143.1,157.5,,0.5206,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5206,false,-0.4794
+gelu,gpt2-hidden,torch.compile,412.4,41.0,,0.1806,ok,,false,true,5.96046e-08,1.81899e-12,0.001,0.001,ok,,,,,,1.0,0.1806,false,-0.8194
+gelu,gpt2-hidden,Arke,139.6,156.7,,0.5337,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5337,false,-0.4663
+gelu,gpt2-hidden,FlagGems,144.0,162.5,,0.5174,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5174,false,-0.4826
 gelu,gpt2-ffn,cuBLAS/cuDNN,74.9,18.4,,1.0668,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0668,true,0.0668
 gelu,gpt2-ffn,Liger-Kernel,63.8,23.6,,1.2524,ok,,false,true,0.00195312,8.4493e-05,0.001,0.001,ok,,,,,,1.0,1.2524,true,0.2524
 gelu,gpt2-ffn,PyTorch-eager,79.9,18.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,gpt2-ffn,torch.compile,287.6,223.2,,0.2778,ok,,false,true,5.96046e-08,1.21266e-12,0.001,0.001,ok,,,,,,1.0,0.2778,false,-0.7222
 gelu,gpt2-ffn,Arke,78.3,20.5,,1.0204,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0204,true,0.0204
 gelu,gpt2-ffn,FlagGems,73.8,88.1,,1.0827,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0827,true,0.0827
+gelu,gpt2-ffn,cuBLAS/cuDNN,135.5,159.9,,0.5897,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5897,false,-0.4103
+gelu,gpt2-ffn,Liger-Kernel,58.5,56.3,,1.3658,ok,,false,true,0.00195312,8.44863e-05,0.001,0.001,ok,,,,,,1.0,1.3658,true,0.3658
+gelu,gpt2-ffn,PyTorch-eager,137.7,162.8,,0.5802,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5802,false,-0.4198
+gelu,gpt2-ffn,torch.compile,410.7,415.7,,0.1945,ok,,false,true,5.96046e-08,2.12215e-12,0.001,0.001,ok,,,,,,1.0,0.1945,false,-0.8055
+gelu,gpt2-ffn,Arke,140.1,105.5,,0.5703,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5703,false,-0.4297
+gelu,gpt2-ffn,FlagGems,142.8,6.1,,0.5595,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5595,false,-0.4405
 gelu,square-1k,cuBLAS/cuDNN,218.9,82.9,,0.3454,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3454,false,-0.6546
 gelu,square-1k,Liger-Kernel,63.1,70.7,,1.1981,ok,,false,true,0.00195312,8.46718e-05,0.001,0.001,ok,,,,,,1.0,1.1981,true,0.1981
 gelu,square-1k,PyTorch-eager,75.6,87.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,square-1k,torch.compile,312.8,292.9,,0.2417,ok,,false,true,5.96046e-08,1.93268e-12,0.001,0.001,ok,,,,,,1.0,0.2417,false,-0.7583
 gelu,square-1k,Arke,76.1,60.4,,0.9934,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9934,false,-0.0066
 gelu,square-1k,FlagGems,73.1,82.9,,1.0342,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0342,true,0.0342
+gelu,square-1k,cuBLAS/cuDNN,140.3,142.5,,0.5388,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5388,false,-0.4612
+gelu,square-1k,Liger-Kernel,56.3,77.1,,1.3428,ok,,false,true,0.00195312,8.47405e-05,0.001,0.001,ok,,,,,,1.0,1.3428,true,0.3428
+gelu,square-1k,PyTorch-eager,135.5,15.4,,0.5579,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5579,false,-0.4421
+gelu,square-1k,torch.compile,419.4,413.7,,0.1803,ok,,false,true,5.96046e-08,1.64846e-12,0.001,0.001,ok,,,,,,1.0,0.1803,false,-0.8197
+gelu,square-1k,Arke,138.6,134.2,,0.5455,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5455,false,-0.4545
+gelu,square-1k,FlagGems,141.5,137.4,,0.5343,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5343,false,-0.4657
 gelu,llama-ffn,cuBLAS/cuDNN,98.0,111.5,,1.0388,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0388,true,0.0388
 gelu,llama-ffn,Liger-Kernel,140.0,192.5,,0.7271,ok,,false,true,0.00195312,8.43923e-05,0.001,0.001,ok,,,,,,1.0,0.7271,false,-0.2729
 gelu,llama-ffn,PyTorch-eager,101.8,166.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,llama-ffn,torch.compile,291.7,318.5,,0.3490,ok,,false,true,5.96046e-08,1.79784e-12,0.001,0.001,ok,,,,,,1.0,0.3490,false,-0.6510
 gelu,llama-ffn,Arke,99.9,138.2,,1.0190,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0190,true,0.0190
 gelu,llama-ffn,FlagGems,108.7,116.7,,0.9365,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9365,false,-0.0635
+gelu,llama-ffn,cuBLAS/cuDNN,135.5,199.7,,0.7513,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7513,false,-0.2487
+gelu,llama-ffn,Liger-Kernel,118.2,131.1,,0.8613,ok,,false,true,0.00195312,8.4391e-05,0.001,0.001,ok,,,,,,1.0,0.8613,false,-0.1387
+gelu,llama-ffn,PyTorch-eager,136.2,77.8,,0.7474,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7474,false,-0.2526
+gelu,llama-ffn,torch.compile,431.0,416.8,,0.2362,ok,,false,true,5.96046e-08,1.76611e-12,0.001,0.001,ok,,,,,,1.0,0.2362,false,-0.7638
+gelu,llama-ffn,Arke,141.0,151.6,,0.7220,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7220,false,-0.2780
+gelu,llama-ffn,FlagGems,145.2,181.2,,0.7011,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7011,false,-0.2989
 gelu,llama-hidden,cuBLAS/cuDNN,77.0,31.7,,1.0026,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0026,true,0.0026
 gelu,llama-hidden,Liger-Kernel,63.2,46.1,,1.2215,ok,,false,true,0.00195312,8.46083e-05,0.001,0.001,ok,,,,,,1.0,1.2215,true,0.2215
 gelu,llama-hidden,PyTorch-eager,77.2,68.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,llama-hidden,torch.compile,300.1,284.7,,0.2572,ok,,false,true,5.96046e-08,1.27898e-12,0.001,0.001,ok,,,,,,1.0,0.2572,false,-0.7428
 gelu,llama-hidden,Arke,81.2,65.5,,0.9507,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9507,false,-0.0493
 gelu,llama-hidden,FlagGems,92.0,80.8,,0.8391,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8391,false,-0.1609
+gelu,llama-hidden,cuBLAS/cuDNN,139.3,146.2,,0.5542,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5542,false,-0.4458
+gelu,llama-hidden,Liger-Kernel,60.6,47.1,,1.2739,ok,,false,true,0.00195312,8.4332e-05,0.001,0.001,ok,,,,,,1.0,1.2739,true,0.2739
+gelu,llama-hidden,PyTorch-eager,136.4,120.8,,0.5660,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5660,false,-0.4340
+gelu,llama-hidden,torch.compile,417.4,394.2,,0.1850,ok,,false,true,5.96046e-08,1.62004e-12,0.001,0.001,ok,,,,,,1.0,0.1850,false,-0.8150
+gelu,llama-hidden,Arke,139.2,142.3,,0.5546,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5546,false,-0.4454
+gelu,llama-hidden,FlagGems,143.6,160.8,,0.5376,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5376,false,-0.4624
 gelu,llama-long,cuBLAS/cuDNN,346.1,322.6,,0.7735,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7735,false,-0.2265
 gelu,llama-long,Liger-Kernel,366.5,347.1,,0.7304,ok,,false,true,0.00195312,8.43901e-05,0.001,0.001,ok,,,,,,1.0,0.7304,false,-0.2696
 gelu,llama-long,PyTorch-eager,267.7,263.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,llama-long,torch.compile,504.4,568.3,,0.5307,ok,,false,true,5.96046e-08,1.79057e-12,0.001,0.001,ok,,,,,,1.0,0.5307,false,-0.4693
 gelu,llama-long,Arke,273.9,276.4,,0.9774,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9774,false,-0.0226
 gelu,llama-long,FlagGems,344.9,310.3,,0.7762,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7762,false,-0.2238
+gelu,llama-long,cuBLAS/cuDNN,286.8,276.5,,0.9334,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9334,false,-0.0666
+gelu,llama-long,Liger-Kernel,322.9,324.5,,0.8290,ok,,false,true,0.00195312,8.43625e-05,0.001,0.001,ok,,,,,,1.0,0.8290,false,-0.1710
+gelu,llama-long,PyTorch-eager,255.4,297.0,,1.0482,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0482,true,0.0482
+gelu,llama-long,torch.compile,505.1,598.9,,0.5300,ok,,false,true,5.96046e-08,1.74794e-12,0.001,0.001,ok,,,,,,1.0,0.5300,false,-0.4700
+gelu,llama-long,Arke,284.6,287.7,,0.9406,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9406,false,-0.0594
+gelu,llama-long,FlagGems,276.2,276.5,,0.9692,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9692,false,-0.0308
 gelu,ds-ffn,cuBLAS/cuDNN,95.9,88.1,,1.0156,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0156,true,0.0156
 gelu,ds-ffn,Liger-Kernel,130.1,190.5,,0.7487,ok,,false,true,0.00195312,8.46313e-05,0.001,0.001,ok,,,,,,1.0,0.7487,false,-0.2513
 gelu,ds-ffn,PyTorch-eager,97.4,158.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,ds-ffn,torch.compile,298.9,319.5,,0.3259,ok,,false,true,5.96046e-08,1.79057e-12,0.001,0.001,ok,,,,,,1.0,0.3259,false,-0.6741
 gelu,ds-ffn,Arke,116.4,185.3,,0.8368,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8368,false,-0.1632
 gelu,ds-ffn,FlagGems,115.7,151.6,,0.8418,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8418,false,-0.1582
+gelu,ds-ffn,cuBLAS/cuDNN,134.1,200.7,,0.7263,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7263,false,-0.2737
+gelu,ds-ffn,Liger-Kernel,127.8,130.0,,0.7621,ok,,false,true,0.00195312,8.44556e-05,0.001,0.001,ok,,,,,,1.0,0.7621,false,-0.2379
+gelu,ds-ffn,PyTorch-eager,136.2,173.1,,0.7151,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7151,false,-0.2849
+gelu,ds-ffn,torch.compile,420.8,374.5,,0.2315,ok,,false,true,5.96046e-08,1.59162e-12,0.001,0.001,ok,,,,,,1.0,0.2315,false,-0.7685
+gelu,ds-ffn,Arke,143.8,188.2,,0.6773,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6773,false,-0.3227
+gelu,ds-ffn,FlagGems,145.9,213.0,,0.6676,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6676,false,-0.3324
 gelu,ds-ffn-large,cuBLAS/cuDNN,185.7,182.3,,1.0032,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0032,true,0.0032
 gelu,ds-ffn-large,Liger-Kernel,260.1,264.2,,0.7163,ok,,false,true,0.00195312,8.45461e-05,0.001,0.001,ok,,,,,,1.0,0.7163,false,-0.2837
 gelu,ds-ffn-large,PyTorch-eager,186.3,207.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,ds-ffn-large,torch.compile,315.9,427.0,,0.5897,ok,,false,true,5.96046e-08,1.9011e-12,0.001,0.001,ok,,,,,,1.0,0.5897,false,-0.4103
 gelu,ds-ffn-large,Arke,201.4,231.4,,0.9250,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9250,false,-0.0750
 gelu,ds-ffn-large,FlagGems,171.8,240.6,,1.0844,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0844,true,0.0844
+gelu,ds-ffn-large,cuBLAS/cuDNN,161.9,236.5,,1.1507,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1507,true,0.1507
+gelu,ds-ffn-large,Liger-Kernel,207.2,233.5,,0.8991,ok,,false,true,0.00195312,8.44659e-05,0.001,0.001,ok,,,,,,1.0,0.8991,false,-0.1009
+gelu,ds-ffn-large,PyTorch-eager,143.1,227.3,,1.3019,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3019,true,0.3019
+gelu,ds-ffn-large,torch.compile,438.3,494.6,,0.4251,ok,,false,true,5.96046e-08,1.81267e-12,0.001,0.001,ok,,,,,,1.0,0.4251,false,-0.5749
+gelu,ds-ffn-large,Arke,163.6,283.6,,1.1388,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1388,true,0.1388
+gelu,ds-ffn-large,FlagGems,144.6,265.2,,1.2884,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2884,true,0.2884
 gelu,qwen-ffn,cuBLAS/cuDNN,203.4,209.9,,0.9454,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9454,false,-0.0546
 gelu,qwen-ffn,Liger-Kernel,279.2,241.5,,0.6888,ok,,false,true,0.00195312,8.44673e-05,0.001,0.001,ok,,,,,,1.0,0.6888,false,-0.3112
 gelu,qwen-ffn,PyTorch-eager,192.3,233.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,qwen-ffn,torch.compile,333.8,418.8,,0.5761,ok,,false,true,5.96046e-08,1.72681e-12,0.001,0.001,ok,,,,,,1.0,0.5761,false,-0.4239
 gelu,qwen-ffn,Arke,189.0,212.0,,1.0175,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0175,true,0.0175
 gelu,qwen-ffn,FlagGems,175.6,185.3,,1.0951,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0951,true,0.0951
+gelu,qwen-ffn,cuBLAS/cuDNN,150.5,198.7,,1.2777,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2777,true,0.2777
+gelu,qwen-ffn,Liger-Kernel,212.0,249.9,,0.9071,ok,,false,true,0.00195312,8.43819e-05,0.001,0.001,ok,,,,,,1.0,0.9071,false,-0.0929
+gelu,qwen-ffn,PyTorch-eager,143.8,229.4,,1.3373,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3373,true,0.3373
+gelu,qwen-ffn,torch.compile,442.1,512.0,,0.4350,ok,,false,true,5.96046e-08,1.78212e-12,0.001,0.001,ok,,,,,,1.0,0.4350,false,-0.5650
+gelu,qwen-ffn,Arke,157.0,265.2,,1.2248,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2248,true,0.2248
+gelu,qwen-ffn,FlagGems,160.1,252.9,,1.2011,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2011,true,0.2011
 gelu,xlarge,cuBLAS/cuDNN,617.3,556.0,,0.8594,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8594,false,-0.1406
 gelu,xlarge,Liger-Kernel,766.9,639.0,,0.6917,ok,,false,true,0.00195312,8.43799e-05,0.001,0.001,ok,,,,,,1.0,0.6917,false,-0.3083
 gelu,xlarge,PyTorch-eager,530.5,493.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 gelu,xlarge,torch.compile,1140.9,1034.2,,0.4650,ok,,false,true,5.96046e-08,1.85452e-12,0.001,0.001,ok,,,,,,1.0,0.4650,false,-0.5350
 gelu,xlarge,Arke,583.5,493.6,,0.9092,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9092,false,-0.0908
 gelu,xlarge,FlagGems,671.0,532.5,,0.7906,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7906,false,-0.2094
+gelu,xlarge,cuBLAS/cuDNN,510.6,523.1,,1.0390,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0390,true,0.0390
+gelu,xlarge,Liger-Kernel,638.7,638.0,,0.8306,ok,,false,true,0.00195312,8.44602e-05,0.001,0.001,ok,,,,,,1.0,0.8306,false,-0.1694
+gelu,xlarge,PyTorch-eager,511.9,462.8,,1.0363,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0363,true,0.0363
+gelu,xlarge,torch.compile,1039.4,981.0,,0.5104,ok,,false,true,5.96046e-08,1.81721e-12,0.001,0.001,ok,,,,,,1.0,0.5104,false,-0.4896
+gelu,xlarge,Arke,515.1,524.3,,1.0299,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0299,true,0.0299
+gelu,xlarge,FlagGems,562.7,549.9,,0.9428,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9428,false,-0.0572
 gelu,non-align-1,cuBLAS/cuDNN,74.6,96.0,,1.0188,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0188,true,0.0188
 gelu,non-align-1,Liger-Kernel,75.8,8.2,,1.0026,ok,,false,true,0.00195312,8.48101e-05,0.001,0.001,ok,,,,,,1.0,1.0026,true,0.0026
 gelu,non-align-1,PyTorch-eager,76.0,94.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
@@ -1484,42 +1556,54 @@ rmsnorm_residual,extreme-small,PyTorch-eager,767.1,659.5,,1.0000,ok,,false,true,
 rmsnorm_residual,extreme-small,Arke,934.9,807.9,,0.8205,ok,,false,true,0.00205398,0.00020923,0.005,0.005,ok,,,,,,1.0,0.8205,false,-0.1795
 rmsnorm_residual,extreme-large,PyTorch-eager,3163.6,3089.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
 rmsnorm_residual,extreme-large,Arke,5518.1,5520.4,,0.5733,ok,,false,true,0.00537395,0.000244205,0.005,0.005,ok,,,,,,1.0,0.5733,false,-0.4267
-rope,gpt2-sm-128,Liger-Kernel,112.5,117.8,,2.1884,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,2.1884,true,1.1884
-rope,gpt2-sm-128,PyTorch-eager,246.2,244.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
-rope,gpt2-sm-128,Arke,87.9,88.1,,2.8009,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.8009,true,1.8009
-rope,gpt2-sm-512,Liger-Kernel,113.8,120.8,,2.1634,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,2.1634,true,1.1634
-rope,gpt2-sm-512,PyTorch-eager,246.2,105.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
-rope,gpt2-sm-512,Arke,94.5,108.5,,2.6053,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,2.6053,true,1.6053
-rope,llama2-512,Liger-Kernel,133.6,138.2,,1.9379,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,1.9379,true,0.9379
-rope,llama2-512,PyTorch-eager,258.9,340.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
-rope,llama2-512,Arke,181.8,183.3,,1.4241,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.4241,true,0.4241
-rope,llama2-2k,Liger-Kernel,530.4,516.1,,1.5300,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.5300,true,0.5300
-rope,llama2-2k,PyTorch-eager,811.5,787.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
-rope,llama2-2k,Arke,735.2,623.5,,1.1038,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.1038,true,0.1038
-rope,llama3-q-512,Liger-Kernel,127.6,133.0,,2.0470,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,2.0470,true,1.0470
-rope,llama3-q-512,PyTorch-eager,261.2,313.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
-rope,llama3-q-512,Arke,180.4,183.2,,1.4479,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.4479,true,0.4479
-rope,llama3-kv-512,Liger-Kernel,107.7,105.7,,2.4958,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,2.4958,true,1.4958
-rope,llama3-kv-512,PyTorch-eager,268.8,248.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.0000,true,0.0000
-rope,llama3-kv-512,Arke,98.3,53.5,,2.7345,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,2.7345,true,1.7345
-rope,qwen25-q-512,Liger-Kernel,122.2,129.0,,2.0769,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,2.0769,true,1.0769
-rope,qwen25-q-512,PyTorch-eager,253.8,333.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
-rope,qwen25-q-512,Arke,160.9,167.9,,1.5774,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,1.5774,true,0.5774
-rope,qwen25-kv-512,Liger-Kernel,108.2,118.8,,2.5453,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,2.5453,true,1.5453
-rope,qwen25-kv-512,PyTorch-eager,275.4,255.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,1.0000,true,0.0000
-rope,qwen25-kv-512,Arke,91.4,101.3,,3.0131,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,3.0131,true,2.0131
-rope,non-align-1,Liger-Kernel,148.7,115.4,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
+rope,gpt2-sm-128,Liger-Kernel,113.7,125.8,,2.3659,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,2.3659,true,1.3659
+rope,gpt2-sm-128,PyTorch-eager,269.0,274.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-128,Arke,89.8,99.3,,2.9955,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.9955,true,1.9955
+rope,gpt2-sm-512,Liger-Kernel,129.7,124.9,,2.3971,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,2.3971,true,1.3971
+rope,gpt2-sm-512,PyTorch-eager,310.9,291.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-512,Arke,93.8,102.4,,3.3145,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,3.3145,true,2.3145
+rope,llama2-512,Liger-Kernel,233.1,256.0,,1.3840,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,1.3840,true,0.3840
+rope,llama2-512,PyTorch-eager,322.6,390.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama2-512,Arke,172.0,164.9,,1.8756,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.8756,true,0.8756
+rope,llama2-2k,Liger-Kernel,474.1,474.1,,1.6157,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.6157,true,0.6157
+rope,llama2-2k,PyTorch-eager,766.0,815.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
+rope,llama2-2k,Arke,594.3,594.9,,1.2889,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.2889,true,0.2889
+rope,llama3-q-512,Liger-Kernel,147.8,159.7,,4.5609,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,4.5609,true,3.5609
+rope,llama3-q-512,PyTorch-eager,674.1,398.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama3-q-512,Arke,280.2,315.3,,2.4058,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.4058,true,1.4058
+rope,llama3-kv-512,Liger-Kernel,120.1,128.0,,2.4696,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,2.4696,true,1.4696
+rope,llama3-kv-512,PyTorch-eager,296.6,285.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.0000,true,0.0000
+rope,llama3-kv-512,Arke,264.1,106.6,,1.1231,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,1.1231,true,0.1231
+rope,qwen25-q-512,Liger-Kernel,125.3,144.4,,2.4214,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,2.4214,true,1.4214
+rope,qwen25-q-512,PyTorch-eager,303.4,368.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
+rope,qwen25-q-512,Arke,138.2,149.5,,2.1954,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,2.1954,true,1.1954
+rope,qwen25-kv-512,Liger-Kernel,135.6,133.1,,2.1018,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,2.1018,true,1.1018
+rope,qwen25-kv-512,PyTorch-eager,285.0,297.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,1.0000,true,0.0000
+rope,qwen25-kv-512,Arke,97.2,122.1,,2.9321,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,2.9321,true,1.9321
+rope,ds-v2-512,Liger-Kernel,452.9,453.6,,1.7598,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.7598,true,0.7598
+rope,ds-v2-512,PyTorch-eager,797.0,783.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
+rope,ds-v2-512,Arke,551.9,551.6,,1.4441,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.4441,true,0.4441
+rope,ds-v3-2k,Liger-Kernel,1830.6,1800.2,,1.5055,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,1.5055,true,0.5055
+rope,ds-v3-2k,PyTorch-eager,2755.9,2647.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0000,true,0.0000
+rope,ds-v3-2k,Arke,2239.1,2174.0,,1.2308,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention_fused,1.0,1.2308,true,0.2308
+rope,llama3-8k,Liger-Kernel,1859.2,1828.9,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,llama3-8k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,4563402752,3542771302,1.2881,attention,1.0,N/A,false,N/A
+rope,llama3-8k,Arke,2428.9,2420.7,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,qwen25-32k,Liger-Kernel,6530.4,6300.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,qwen25-32k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,61069066240,3542771302,17.2377,attention,1.0,N/A,false,N/A
+rope,qwen25-32k,Arke,9132.4,9036.8,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,non-align-1,Liger-Kernel,215.7,255.1,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
 rope,non-align-1,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",1277874,3542771302,0.0004,attention,1.0,,,
 rope,non-align-1,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
-rope,non-align-2,Liger-Kernel,120.8,126.0,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
+rope,non-align-2,Liger-Kernel,122.1,138.2,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
 rope,non-align-2,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",16803180,3542771302,0.0047,attention,1.0,,,
 rope,non-align-2,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
-rope,extreme-long,Liger-Kernel,15040.9,14853.1,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-long,Liger-Kernel,567308.3,564467.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2147483648,3542771302,0.6062,attention_fused,1.0,,,
 rope,extreme-long,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,277025390592,3542771302,78.1945,attention,1.0,N/A,false,N/A
-rope,extreme-long,Arke,21132.0,20891.6,,,ok,,false,false,nan,nan,0.001,0.001,mismatch,,2147483648,3542771302,0.6062,attention_fused,1.0,,,
-rope,extreme-batch,Liger-Kernel,1014.8,988.2,,1.3792,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,134217728,3542771302,0.0379,attention_fused,1.0,1.3792,true,0.3792
-rope,extreme-batch,PyTorch-eager,1399.6,1404.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention,1.0,1.0000,true,0.0000
-rope,extreme-batch,Arke,1225.8,1210.4,,1.1418,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention_fused,1.0,1.1418,true,0.1418
+rope,extreme-long,Arke,201090.0,201132.0,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-batch,Liger-Kernel,897.0,898.0,,1.5099,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,134217728,3542771302,0.0379,attention_fused,1.0,1.5099,true,0.5099
+rope,extreme-batch,PyTorch-eager,1354.4,1380.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention,1.0,1.0000,true,0.0000
+rope,extreme-batch,Arke,1116.2,1105.9,,1.2134,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention_fused,1.0,1.2134,true,0.2134
 rsqrt,micro-tiny,cuBLAS/cuDNN,72.3,77.0,,1.0733,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0733,true,0.0733
 rsqrt,micro-tiny,PyTorch-eager,77.6,69.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 rsqrt,micro-tiny,Arke,76.1,91.1,,1.0197,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0197,true,0.0197
@@ -2006,18 +2090,39 @@ tanh,extreme-wide,Arke,77.4,115.7,,0.9121,ok,,false,true,0,0,0.001,0.001,ok,,,,,
 tanh,extreme-wide,FlagGems,101.4,88.9,,0.6963,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6963,false,-0.3037
 topk,moe-top2-small,PyTorch-eager,97.6,49.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,moe-top2-small,Arke,107.0,13.2,,0.9121,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9121,false,-0.0879
+topk,moe-top2-small,PyTorch-eager,19.1,14.2,,5.1099,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,54272,3542771302,0.0000,topk_like,1.0,5.1099,true,4.1099
+topk,moe-top2-small,Arke,168.4,126.0,,0.5796,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,54272,3542771302,0.0000,topk_like,1.0,0.5796,false,-0.4204
+topk,moe-top2-small,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined topk@moe-top2-small,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for topk,54272,3542771302,0.0000,topk_like,1.0,,,
 topk,moe-top2-gpt2,PyTorch-eager,508.3,456.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,moe-top2-gpt2,Arke,103.4,113.7,,4.9159,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,4.9159,true,3.9159
+topk,moe-top2-gpt2,PyTorch-eager,493.3,482.3,,1.0304,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,2379776,3542771302,0.0007,topk_like,1.0,1.0304,true,0.0304
+topk,moe-top2-gpt2,Arke,172.7,146.6,,2.9433,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,2379776,3542771302,0.0007,topk_like,1.0,2.9433,true,1.9433
+topk,moe-top2-gpt2,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined topk@moe-top2-gpt2,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for topk,2379776,3542771302,0.0007,topk_like,1.0,,,
 topk,moe-top4-llama,PyTorch-eager,165.4,170.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,moe-top4-llama,Arke,145.8,109.4,,1.1344,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.1344,true,0.1344
+topk,moe-top4-llama,PyTorch-eager,169.2,231.4,,0.9775,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,217088,3542771302,0.0001,topk_like,1.0,0.9775,false,-0.0225
+topk,moe-top4-llama,Arke,174.6,20.3,,0.9473,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,217088,3542771302,0.0001,topk_like,1.0,0.9473,false,-0.0527
+topk,moe-top4-llama,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined topk@moe-top4-llama,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for topk,217088,3542771302,0.0001,topk_like,1.0,,,
 topk,moe-top2-ds,PyTorch-eager,163.7,167.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,moe-top2-ds,Arke,123.0,96.3,,1.3309,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3309,true,0.3309
+topk,moe-top2-ds,PyTorch-eager,169.8,231.4,,0.9641,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,806912,3542771302,0.0002,topk_like,1.0,0.9641,false,-0.0359
+topk,moe-top2-ds,Arke,175.6,136.2,,0.9322,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,806912,3542771302,0.0002,topk_like,1.0,0.9322,false,-0.0678
+topk,moe-top2-ds,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined topk@moe-top2-ds,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for topk,806912,3542771302,0.0002,topk_like,1.0,,,
 topk,sampling-top50,PyTorch-eager,159.4,163.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,sampling-top50,Arke,90.7,105.5,,1.7574,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.7574,true,0.7574
+topk,sampling-top50,PyTorch-eager,165.8,265.2,,0.9614,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,301582,3542771302,0.0001,topk_like,1.0,0.9614,false,-0.0386
+topk,sampling-top50,Arke,166.3,169.7,,0.9585,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,301582,3542771302,0.0001,topk_like,1.0,0.9585,false,-0.0415
+topk,sampling-top50,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined topk@sampling-top50,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for topk,301582,3542771302,0.0001,topk_like,1.0,,,
 topk,sampling-top50-llama3,PyTorch-eager,589.9,530.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,sampling-top50-llama3,Arke,116.9,119.8,,5.0462,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,5.0462,true,4.0462
+topk,sampling-top50-llama3,PyTorch-eager,586.4,573.4,,1.0060,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,769576,3542771302,0.0002,topk_like,1.0,1.0060,true,0.0060
+topk,sampling-top50-llama3,Arke,154.7,150.5,,3.8132,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,769576,3542771302,0.0002,topk_like,1.0,3.8132,true,2.8132
+topk,sampling-top50-llama3,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined topk@sampling-top50-llama3,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for topk,769576,3542771302,0.0002,topk_like,1.0,,,
 topk,sampling-top100-qwen,PyTorch-eager,516.5,517.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,sampling-top100-qwen,Arke,97.2,112.5,,5.3138,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,5.3138,true,4.3138
+topk,sampling-top100-qwen,PyTorch-eager,575.0,516.1,,0.8983,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,911656,3542771302,0.0003,topk_like,1.0,0.8983,false,-0.1017
+topk,sampling-top100-qwen,Arke,160.2,170.0,,3.2241,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,911656,3542771302,0.0003,topk_like,1.0,3.2241,true,2.2241
+topk,sampling-top100-qwen,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined topk@sampling-top100-qwen,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for topk,911656,3542771302,0.0003,topk_like,1.0,,,
 topk,non-align-1,PyTorch-eager,155.0,165.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 topk,non-align-1,Arke,116.0,107.8,,1.3362,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3362,true,0.3362
 topk,non-align-2,PyTorch-eager,510.7,503.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000

@@ -381,14 +381,21 @@ def _torch_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor 
                 f"for shape {tuple(x.shape)} — mathematically ill-defined"
             )
         seq_len = x.shape[1]
+        # Numerical-stability fix (2026-05-14, Q5a): compute sin/cos in fp32
+        # then cast back. With fp16 + seq_len >= 2048, torch.arange in fp16
+        # loses integer precision (max exactly-representable int in fp16 is
+        # 2048; fp16_max ≈ 65504), so at seq=65536 freqs decays to NaN/inf
+        # and the entire rope output becomes NaN. This mirrors how HF
+        # Transformers / Liger-Kernel / FlashInfer all compute the rotary
+        # frequencies (fp32 trig, fp16 hadamard product).
         freqs = torch.einsum(
             "i,j->ij",
-            torch.arange(seq_len, device=x.device, dtype=x.dtype),
-            1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=x.dtype) / head_dim)),
+            torch.arange(seq_len, device=x.device, dtype=torch.float32),
+            1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=torch.float32) / head_dim)),
         )
         emb = torch.cat([freqs, freqs], dim=-1)
-        cos_emb = torch.cos(emb).unsqueeze(0)
-        sin_emb = torch.sin(emb).unsqueeze(0)
+        cos_emb = torch.cos(emb).unsqueeze(0).to(x.dtype)
+        sin_emb = torch.sin(emb).unsqueeze(0).to(x.dtype)
         x1 = x[..., : head_dim // 2]
         x2 = x[..., head_dim // 2 :]
         rotated = torch.cat([-x2, x1], dim=-1)

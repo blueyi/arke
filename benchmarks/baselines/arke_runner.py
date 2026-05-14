@@ -188,14 +188,21 @@ class ArkeRunner(BaselineRunner):
                 x = filled[0]
                 head_dim = x.shape[-1]
                 seq_len = x.shape[-2]
+                # Numerical-stability fix (2026-05-14, Q5a): compute sin/cos
+                # in fp32 then cast back. fp16 torch.arange(seq) loses integer
+                # precision at seq>=2048 and overflows past fp16_max≈65504, so
+                # at extreme-long (seq=65536) freqs → NaN and the rope output
+                # collapses to NaN. Same fix mirrored in bench_l1._torch_reference
+                # and baselines/pytorch_eager.py. Matches HF Transformers /
+                # Liger-Kernel / FlashInfer rotary-frequency convention.
                 freqs = torch.einsum(
                     "i,j->ij",
-                    torch.arange(seq_len, device=x.device, dtype=x.dtype),
-                    1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=x.dtype) / head_dim)),
+                    torch.arange(seq_len, device=x.device, dtype=torch.float32),
+                    1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=x.device, dtype=torch.float32) / head_dim)),
                 )
                 emb = torch.cat([freqs, freqs], dim=-1)
-                cos_emb = torch.cos(emb).unsqueeze(0)
-                sin_emb = torch.sin(emb).unsqueeze(0)
+                cos_emb = torch.cos(emb).unsqueeze(0).to(x.dtype)
+                sin_emb = torch.sin(emb).unsqueeze(0).to(x.dtype)
                 x1 = x[..., : head_dim // 2]
                 x2 = x[..., head_dim // 2 :]
                 rotated = torch.cat([-x2, x1], dim=-1)
@@ -246,12 +253,21 @@ class ArkeRunner(BaselineRunner):
         if op == "rope" and len(inputs) == 1:
             head_dim = x.shape[-1]
             seq_len = x.shape[-2]
+            # Numerical-stability fix (2026-05-14, Q5a): compute the rotary
+            # frequencies in fp32 then cast cos/sin back to the input dtype.
+            # fp16 torch.arange(seq) loses integer precision at seq>=2048 and
+            # overflows past fp16_max≈65504, so for extreme-long (seq=65536)
+            # freqs decays to NaN/inf and downstream SemanticInterpreter
+            # produces a NaN tensor. This path FEEDS THE SEMANTIC INTERPRETER —
+            # the (cos, sin) tensors it synthesizes are what ref_rope multiplies
+            # against the fp16 x. Matches HF Transformers / Liger-Kernel /
+            # FlashInfer rotary-frequency convention (fp32 trig, fp16 hadamard).
             freqs = torch.einsum(
                 "i,j->ij",
-                torch.arange(seq_len, device=device, dtype=dtype),
-                1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=device, dtype=dtype) / head_dim)),
+                torch.arange(seq_len, device=device, dtype=torch.float32),
+                1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=device, dtype=torch.float32) / head_dim)),
             )
-            return [x, torch.cos(freqs), torch.sin(freqs)]
+            return [x, torch.cos(freqs).to(dtype), torch.sin(freqs).to(dtype)]
         return inputs
 
     @staticmethod

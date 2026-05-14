@@ -1,5 +1,5 @@
 {
-  "overall_geomean": 0.9561,
+  "overall_geomean": 0.9433,
   "op_scores": {
     "add": 1.0254,
     "argmax": 0.9523,
@@ -13,11 +13,11 @@
     "dequantize_per_channel": 0.6723,
     "embedding": 1.6446,
     "exp": 1.0023,
-    "flash_attention": 5.3749,
+    "flash_attention": 5.1873,
     "fused_linear_cross_entropy": 1.0344,
     "gather": 1.5046,
     "geglu": 0.9234,
-    "gelu": 0.7946,
+    "gelu": 0.7316,
     "grouped_matmul": 0.2498,
     "grouped_query_attention": 2.5103,
     "layernorm": 0.522,
@@ -34,7 +34,7 @@
     "relu": 0.6137,
     "rmsnorm": 1.422,
     "rmsnorm_residual": 0.8809,
-    "rope": 1.5462,
+    "rope": 1.5649,
     "rsqrt": 1.0033,
     "scatter": 1.0,
     "sigmoid": 0.9767,
@@ -43,11 +43,11 @@
     "split": 1.1497,
     "swiglu": 0.9322,
     "tanh": 0.9735,
-    "topk": 1.6812,
+    "topk": 1.5562,
     "transpose": 0.0267,
     "where_": 1.0278
   },
-  "total_shapes": 2068,
+  "total_shapes": 2156,
   "operators": [
     "add",
     "argmax",
@@ -96,35 +96,35 @@
     "where_"
   ],
   "status_counts": {
-    "ok": 2073,
-    "skipped": 40,
+    "ok": 2165,
+    "skipped": 42,
     "error": 2,
-    "unsupported": 4
+    "unsupported": 11
   },
   "correctness_counts": {
-    "ok": 2045,
-    "skipped": 40,
-    "error": 5,
-    "golden_unavailable_pending_baseline": 12,
-    "unsupported": 16,
-    "mismatch": 1
+    "ok": 2134,
+    "skipped": 42,
+    "error": 2,
+    "golden_unavailable_pending_baseline": 15,
+    "unsupported": 27
   },
   "memory_policy_counts": {
-    "none": 1767,
+    "none": 1839,
     "dense_matmul": 176,
-    "attention": 133,
-    "attention_fused": 27,
-    "linear_ce": 16
+    "attention": 134,
+    "attention_fused": 34,
+    "linear_ce": 16,
+    "topk_like": 21
   },
-  "memory_pressure_rows": 40,
+  "memory_pressure_rows": 42,
   "perf_target_counts": {
-    "with_target": 2119,
+    "with_target": 2220,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "false": 891,
-    "true": 1219,
-    "unknown": 9
+    "false": 956,
+    "true": 1244,
+    "unknown": 20
   },
   "perf_targets": {
     "add": 1.0,
@@ -186,11 +186,11 @@
     "dequantize_per_channel": 0.6723,
     "embedding": 1.6446,
     "exp": 1.0023,
-    "flash_attention": 5.3749,
+    "flash_attention": 5.1873,
     "fused_linear_cross_entropy": 1.0344,
     "gather": 1.5046,
     "geglu": 0.9234,
-    "gelu": 0.7946,
+    "gelu": 0.7316,
     "grouped_matmul": 0.2498,
     "grouped_query_attention": 2.5103,
     "layernorm": 0.522,
@@ -207,7 +207,7 @@
     "relu": 0.6137,
     "rmsnorm": 1.422,
     "rmsnorm_residual": 0.8809,
-    "rope": 1.5462,
+    "rope": 1.5649,
     "rsqrt": 1.0033,
     "scatter": 1.0,
     "sigmoid": 0.9767,
@@ -216,7 +216,7 @@
     "split": 1.1497,
     "swiglu": 0.9322,
     "tanh": 0.9735,
-    "topk": 1.6812,
+    "topk": 1.5562,
     "transpose": 0.0267,
     "where_": 1.0278
   },
@@ -233,11 +233,11 @@
     "dequantize_per_channel": -0.2699,
     "embedding": 1.069,
     "exp": 0.0065,
-    "flash_attention": 7.7131,
+    "flash_attention": 7.4738,
     "fused_linear_cross_entropy": 0.0451,
     "gather": 3.5048,
     "geglu": -0.0734,
-    "gelu": -0.1366,
+    "gelu": -0.1904,
     "grouped_matmul": -0.4591,
     "grouped_query_attention": 2.8173,
     "layernorm": -0.3261,
@@ -254,7 +254,7 @@
     "relu": -0.2374,
     "rmsnorm": 1.1535,
     "rmsnorm_residual": -0.11,
-    "rope": 0.6745,
+    "rope": 0.7306,
     "rsqrt": 0.0064,
     "scatter": 0.0,
     "sigmoid": -0.0198,
@@ -263,7 +263,7 @@
     "split": 0.1631,
     "swiglu": -0.0653,
     "tanh": -0.0232,
-    "topk": 1.528,
+    "topk": 1.2373,
     "transpose": -0.7432,
     "where_": 0.0314
   }
