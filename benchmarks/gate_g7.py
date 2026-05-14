@@ -292,6 +292,50 @@ def _is_non_arke_baseline(row: dict[str, str]) -> bool:
     return baseline.lower() != "arke"
 
 
+_PERF_ORACLE_UNAVAILABLE_REASON_PATTERN = re.compile(
+    # Emitted by `bench_l1` when the priority-1 Golden Kernel ladder runner
+    # returns None and the harness falls back to PyTorch-eager as reference.
+    # When PyTorch-eager itself also crashed for this shape (e.g. ptxas SIGKILL
+    # on extreme-wide topk), the resulting Arke row carries:
+    #   correctness_status = ok        (fallback ran and produced an oracle)
+    #   correctness_reason = "...used PyTorch-eager reference fallback"
+    #   perf_actual / perf_pass = empty (no usable baseline_latency to ratio against)
+    # That is a *perf oracle gap*, not a malformed row.
+    r"used PyTorch-eager reference fallback",
+    re.IGNORECASE,
+)
+
+
+def _is_perf_oracle_unavailable(row: dict[str, str]) -> bool:
+    """Return True for Arke rows whose perf comparison has no usable oracle.
+
+    Distinct from `_is_golden_unavailable` (which keys on correctness_status =
+    ``golden_unavailable_pending_baseline``). Here correctness *did* succeed
+    via a fallback reference, but the priority-1 reference baseline crashed
+    for this shape, so `perf_actual` / `perf_pass` are empty and there is no
+    meaningful perf ratio to score.
+
+    Required conditions:
+      1. row is the Arke system-under-test (not a baseline oracle)
+      2. status == "ok" (Arke itself ran)
+      3. perf_actual / perf_pass are empty (no ratio was computable)
+      4. correctness_reason documents the fallback (machine-readable marker)
+    """
+    if _is_non_arke_baseline(row):
+        return False
+    status = (row.get("status") or "").strip().lower()
+    if status != "ok":
+        return False
+    perf_pass = (row.get("perf_pass") or "").strip()
+    perf_actual = (row.get("perf_actual") or "").strip()
+    if perf_pass or (perf_actual and perf_actual.upper() not in {"N/A", "NA"}):
+        return False
+    reason = (row.get("correctness_reason") or "").strip()
+    if not reason:
+        return False
+    return bool(_PERF_ORACLE_UNAVAILABLE_REASON_PATTERN.search(reason))
+
+
 def _is_memory_excluded(row: dict[str, str]) -> bool:
     """Return true for explicit 6GB-memory-policy exclusions.
 
@@ -426,9 +470,21 @@ def _check_bl5_performance_evidence(
     }
     l2_counts: dict[str, dict[str, int]] = {}
     excluded = 0
+    non_arke_baseline_skipped = 0
+    perf_oracle_unavailable = 0
     malformed: list[str] = []
 
     for layer, row in rows:
+        if _is_non_arke_baseline(row):
+            # Reference-baseline rows (PyTorch-eager / cuBLAS / FlagGems / Liger /
+            # torch.compile / Triton-Tutorial) are oracles and ladder references,
+            # not the system-under-test. A baseline crash or self-rejection
+            # (e.g. Liger declining n=1M > Triton blocksize, PyTorch-eager
+            # ptxas SIGKILL on extreme-wide topk) is NOT an Arke perf regression
+            # and must not enter the malformed denominator. Mirrors the same
+            # treatment in `_check_bl5_correctness_evidence`.
+            non_arke_baseline_skipped += 1
+            continue
         if _is_memory_excluded(row):
             excluded += 1
             continue
@@ -444,6 +500,14 @@ def _check_bl5_performance_evidence(
             # because there's no Arke-vs-baseline comparison to run. Audit-only
             # per protocol; exclude from perf denominator.
             excluded += 1
+            continue
+        if _is_perf_oracle_unavailable(row):
+            # Arke row whose priority-1 reference baseline crashed for this
+            # shape (e.g. topk:extreme-wide where PyTorch-eager ptxas SIGKILL
+            # leaves no usable ratio). Correctness was verified via fallback,
+            # but the perf comparison genuinely has no oracle latency.
+            # Audit-only per Golden Kernel protocol.
+            perf_oracle_unavailable += 1
             continue
         if (row.get("status") or "").strip().lower() != "ok":
             malformed.append(f"{_row_label(layer, row)} status={row.get('status') or '<empty>'}")
@@ -508,7 +572,9 @@ def _check_bl5_performance_evidence(
 
     detail = (
         f"L1 weighted_score={weighted_score:.4f}; {'; '.join(group_details)}; "
-        f"L2 fusions={len(l2_counts)}; memory_excluded={excluded}"
+        f"L2 fusions={len(l2_counts)}; memory_excluded={excluded}; "
+        f"non_arke_baseline_skipped={non_arke_baseline_skipped}; "
+        f"perf_oracle_unavailable={perf_oracle_unavailable}"
     )
     if failures:
         return False, detail + "; " + "; ".join(failures)

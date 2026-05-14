@@ -642,3 +642,173 @@ def test_is_non_arke_baseline_helper():
     assert gate_g7._is_non_arke_baseline({}) is False
     assert gate_g7._is_non_arke_baseline({"baseline": "  "}) is False
 
+
+# ──────────────────────────────────────────────────────────────────────────
+# Q6b — perf path must mirror the correctness path's exclusions:
+#   1. non-Arke baseline crashes / declines are oracle gaps, not malformed
+#   2. Arke rows with no usable perf oracle (priority-1 baseline crashed,
+#      correctness verified via PyTorch-eager fallback) are audit-only
+# Both eliminate the historical "malformed/non-ok perf rows=3" failure on
+# extreme-flat gelu (Liger n>65k) + extreme-wide topk (PyTorch ptxas SIGKILL).
+# ──────────────────────────────────────────────────────────────────────────
+def test_perf_evidence_skips_non_arke_baseline_failures(tmp_path: Path):
+    """Reference-baseline rows in PERF_ALL — Liger declining n>65k blocksize
+    and PyTorch-eager dying with ptxas SIGKILL — are oracle gaps. They must
+    NOT inflate the malformed/non-ok perf row count, mirroring the same
+    treatment in `_check_bl5_correctness_evidence`.
+    """
+    root = tmp_path
+    matrix_path = root / "matrix.json"
+    matrix_path.write_text(
+        '{"l1": [{"op": "gelu", "ot_tier": 1}, {"op": "topk", "ot_tier": 2}]}'
+    )
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv",
+        [
+            # Arke rows — system-under-test is healthy.
+            {"operator": "gelu", "shape_tag": "extreme-flat", "baseline": "Arke",
+             "status": "ok", "correctness_status": "ok",
+             "allclose": "true", "perf_pass": "true"},
+            {"operator": "topk", "shape_tag": "extreme-wide", "baseline": "Arke",
+             "status": "ok", "correctness_status": "ok",
+             "allclose": "true", "perf_pass": "true"},
+            # Liger declined the shape (baseline self-rejection on n>65k).
+            {"operator": "gelu", "shape_tag": "extreme-flat", "baseline": "Liger-Kernel",
+             "status": "error",
+             "reason": "Cannot launch Triton kernel since n = 1048576 exceeds the recommended Triton blocksize = 65536.",
+             "correctness_status": "error",
+             "correctness_reason": "Cannot launch Triton kernel since n = 1048576 exceeds the recommended Triton blocksize = 65536.",
+             "allclose": "", "perf_pass": ""},
+            # PyTorch-eager ptxas SIGKILL on extreme-wide topk.
+            {"operator": "topk", "shape_tag": "extreme-wide", "baseline": "PyTorch-eager",
+             "status": "error",
+             "reason": "`ptxas` failed with error code -9",
+             "correctness_status": "error",
+             "correctness_reason": "`ptxas` failed with error code -9",
+             "allclose": "", "perf_pass": ""},
+        ],
+    )
+    _write_perf_all(
+        root / "l2" / "PERF_ALL.csv",
+        [
+            # Need at least one L2 row to satisfy the "no evaluable fusion" check.
+            {"operator": "geglu_fused", "shape_tag": "s1", "baseline": "",
+             "status": "ok", "correctness_status": "ok",
+             "allclose": "true", "perf_pass": "true"},
+        ],
+    )
+
+    ok, detail = gate_g7._check_bl5_performance_evidence(root, matrix_path)
+
+    # Critical: the two non-Arke baseline crash rows must NOT be flagged as
+    # malformed/non-ok perf rows.
+    assert "malformed/non-ok perf rows" not in detail, (
+        f"non-Arke baseline crashes must not be flagged malformed: {detail}"
+    )
+    # And the counter should report we skipped exactly 2 oracle-side rows.
+    assert "non_arke_baseline_skipped=2" in detail, detail
+
+
+def test_perf_evidence_skips_perf_oracle_unavailable_arke_row(tmp_path: Path):
+    """When the priority-1 reference baseline crashed AND Arke's correctness
+    was verified via PyTorch-eager fallback (correctness_reason carries the
+    'used PyTorch-eager reference fallback' marker), the Arke row has no
+    usable perf ratio. It must be excluded as audit-only, not malformed.
+    """
+    root = tmp_path
+    matrix_path = root / "matrix.json"
+    matrix_path.write_text('{"l1": [{"op": "topk", "ot_tier": 2}]}')
+    _write_perf_all(
+        root / "l1" / "PERF_ALL.csv",
+        [
+            # Arke row: correctness ok via fallback, perf_pass empty (no oracle).
+            {"operator": "topk", "shape_tag": "extreme-wide", "baseline": "Arke",
+             "status": "ok",
+             "correctness_status": "ok",
+             "correctness_reason": "golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback",
+             "allclose": "true",
+             "perf_target": "1.0", "perf_actual": "", "perf_pass": ""},
+            # The PyTorch-eager oracle crashed for this shape; non-Arke skip
+            # already covered by the previous test.
+            {"operator": "topk", "shape_tag": "extreme-wide", "baseline": "PyTorch-eager",
+             "status": "error",
+             "correctness_status": "error",
+             "correctness_reason": "`ptxas` failed with error code -9",
+             "allclose": "", "perf_pass": ""},
+        ],
+    )
+    _write_perf_all(
+        root / "l2" / "PERF_ALL.csv",
+        [
+            {"operator": "geglu_fused", "shape_tag": "s1", "baseline": "",
+             "status": "ok", "correctness_status": "ok",
+             "allclose": "true", "perf_pass": "true"},
+        ],
+    )
+
+    ok, detail = gate_g7._check_bl5_performance_evidence(root, matrix_path)
+
+    assert "malformed/non-ok perf rows" not in detail, (
+        f"perf-oracle-unavailable rows must not be flagged malformed: {detail}"
+    )
+    assert "perf_oracle_unavailable=1" in detail, detail
+
+
+def test_is_perf_oracle_unavailable_helper():
+    """Direct unit coverage for the new helper."""
+    # Positive: Arke row with fallback marker and empty perf fields.
+    assert gate_g7._is_perf_oracle_unavailable({
+        "baseline": "Arke",
+        "status": "ok",
+        "correctness_reason": "golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback",
+        "perf_actual": "",
+        "perf_pass": "",
+    }) is True
+    # Negative: Arke row with healthy perf_pass — the oracle worked.
+    assert gate_g7._is_perf_oracle_unavailable({
+        "baseline": "Arke",
+        "status": "ok",
+        "correctness_reason": "used PyTorch-eager reference fallback",
+        "perf_actual": "0.95",
+        "perf_pass": "false",
+    }) is False
+    # Negative: not the Arke SUT (oracle row shouldn't trip this rule).
+    assert gate_g7._is_perf_oracle_unavailable({
+        "baseline": "PyTorch-eager",
+        "status": "ok",
+        "correctness_reason": "used PyTorch-eager reference fallback",
+        "perf_actual": "",
+        "perf_pass": "",
+    }) is False
+    # Negative: status not ok (a real Arke crash must remain visible).
+    assert gate_g7._is_perf_oracle_unavailable({
+        "baseline": "Arke",
+        "status": "error",
+        "correctness_reason": "used PyTorch-eager reference fallback",
+        "perf_actual": "",
+        "perf_pass": "",
+    }) is False
+    # Negative: empty/missing fallback marker — don't silently exempt.
+    assert gate_g7._is_perf_oracle_unavailable({
+        "baseline": "Arke",
+        "status": "ok",
+        "correctness_reason": "",
+        "perf_actual": "",
+        "perf_pass": "",
+    }) is False
+    assert gate_g7._is_perf_oracle_unavailable({
+        "baseline": "Arke",
+        "status": "ok",
+        "correctness_reason": "some other reason",
+        "perf_actual": "",
+        "perf_pass": "",
+    }) is False
+    # Edge: perf_actual=N/A is treated as empty (legacy harness output).
+    assert gate_g7._is_perf_oracle_unavailable({
+        "baseline": "Arke",
+        "status": "ok",
+        "correctness_reason": "used PyTorch-eager reference fallback",
+        "perf_actual": "N/A",
+        "perf_pass": "",
+    }) is True
+
