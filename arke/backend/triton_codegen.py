@@ -52,7 +52,13 @@ def _ctx_elementwise(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, 
 
 
 def _ctx_elementwise_binary(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
-    return {"op_variant": hint.extra_ctx.get("op_variant", op_name)}
+    # Template variable is `binary_op` (not `op_variant`).
+    # Special case: `where_` op has catalog op_variant="where" but the
+    # template's where branch matches the literal string "where_".
+    variant = hint.extra_ctx.get("op_variant", op_name)
+    if op_name == "where_" or variant == "where":
+        variant = "where_"
+    return {"binary_op": variant}
 
 
 def _ctx_matmul(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
@@ -215,4 +221,21 @@ def generate_kernel(
         kernel_name = f"arke_{op_name}"
     ctx = build_template_ctx(op_name, template_hint, dtype)
     source = render_kernel_source(template_hint.template_name, kernel_name, ctx)
-    return compile_kernel_source(source, kernel_name)
+    raw_callable = compile_kernel_source(source, kernel_name)
+
+    # Adapter shims for op→template signature mismatches.
+    #
+    # `rmsnorm` shares the `rmsnorm_residual` template (which requires a
+    # residual tensor argument). Inject a zero residual so plain rmsnorm
+    # calls match the template signature. TODO(C3): split into a dedicated
+    # rmsnorm.py.j2 template to avoid this runtime branch.
+    if op_name == "rmsnorm" and template_hint.template_name == "rmsnorm_residual":
+        import torch as _torch
+
+        def _rmsnorm_shim(x: _torch.Tensor, weight: _torch.Tensor, eps: float = 1e-5):
+            zero_res = _torch.zeros_like(x)
+            return raw_callable(x, zero_res, weight, eps=eps)
+        _rmsnorm_shim.__name__ = kernel_name
+        return _rmsnorm_shim
+
+    return raw_callable
