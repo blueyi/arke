@@ -85,6 +85,56 @@ def _ctx_default(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]
     return dict(hint.extra_ctx)
 
 
+def _ctx_data_movement(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # Template variable is `data_op`. Catalog gives op_variant.
+    # copy_ op has variant="copy" (no underscore) which the template branch matches.
+    return {"data_op": hint.extra_ctx.get("op_variant", op_name)}
+
+
+def _ctx_gated_activation(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # Template variable is `gate_activation` and branches on "silu"/"gelu".
+    # Catalog gives op_variant="swiglu"/"geglu" — translate the gate function.
+    variant = hint.extra_ctx.get("op_variant", op_name)
+    gate = {"swiglu": "silu", "geglu": "gelu"}.get(variant, variant)
+    return {"gate_activation": gate}
+
+
+def _ctx_index_ops(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    return {"index_op": hint.extra_ctx.get("op_variant", op_name)}
+
+
+def _ctx_quantize(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # quantize_per_token → "quantize", dequantize_per_channel → "dequantize"
+    if "dequantize" in op_name:
+        variant = "dequantize"
+    else:
+        variant = "quantize"
+    return {"quant_op": variant}
+
+
+def _ctx_transpose(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # Default: 2D transpose. Template branches on transpose_op ("2d" vs "permute")
+    return {"transpose_op": hint.extra_ctx.get("op_variant", "2d")}
+
+
+def _ctx_cross_entropy(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # fused_linear=True for `fused_linear_cross_entropy`, False for plain `cross_entropy`.
+    fused_linear = (op_name == "fused_linear_cross_entropy")
+    return {"fused_linear": fused_linear}
+
+
+def _ctx_flash_attention(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # flash_attention (MHA): causal=True, gqa_groups=1
+    # grouped_query_attention: causal=True, gqa_groups>1 (default 4 for smoke; runtime picks real value)
+    # cross_attention: causal=False, gqa_groups=1
+    variant = hint.extra_ctx.get("op_variant", op_name)
+    if variant == "cross":
+        return {"causal": False, "gqa_groups": 1}
+    if variant == "gqa":
+        return {"causal": True, "gqa_groups": 4}
+    return {"causal": True, "gqa_groups": 1}
+
+
 _CTX_BUILDERS: dict[str, Callable[[str, TemplateHint, str], dict[str, Any]]] = {
     "elementwise": _ctx_elementwise,
     "elementwise_binary": _ctx_elementwise_binary,
@@ -93,6 +143,13 @@ _CTX_BUILDERS: dict[str, Callable[[str, TemplateHint, str], dict[str, Any]]] = {
     "grouped_matmul": _ctx_matmul,
     "layernorm": _ctx_layernorm,
     "reduction": _ctx_reduction,
+    "data_movement": _ctx_data_movement,
+    "gated_activation": _ctx_gated_activation,
+    "index_ops": _ctx_index_ops,
+    "quantize": _ctx_quantize,
+    "transpose": _ctx_transpose,
+    "cross_entropy": _ctx_cross_entropy,
+    "flash_attention": _ctx_flash_attention,
 }
 
 
