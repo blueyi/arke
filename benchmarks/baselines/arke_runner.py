@@ -26,12 +26,34 @@ logger = logging.getLogger(__name__)
 
 _AVAILABLE = False
 try:
+    from arke.backend.kernel_cache import KERNEL_CACHE  # noqa: F401
+    from arke.backend.triton_backend import TritonBackend
+    from arke.ir.graph import IRGraph, IRNode
     from arke.ir.ops.interpreter import INTERPRETER  # noqa: F401
     from arke.ir.ops.registry import REGISTRY  # noqa: F401
 
     _AVAILABLE = True
 except ImportError:  # pragma: no cover - defensive
     pass
+
+
+# Module-level TritonBackend singleton (cheap to instantiate, but the
+# KERNEL_CACHE it consults is process-global so all benchmarks share the
+# same compiled kernels regardless of how many ArkeRunner instances exist).
+_TRITON_BACKEND: "TritonBackend | None" = None
+
+
+def _get_triton_backend() -> "TritonBackend | None":
+    global _TRITON_BACKEND
+    if not _AVAILABLE:
+        return None
+    if _TRITON_BACKEND is None:
+        try:
+            _TRITON_BACKEND = TritonBackend()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("ArkeRunner: failed to construct TritonBackend: %s", exc)
+            _TRITON_BACKEND = None
+    return _TRITON_BACKEND
 
 
 @register_baseline
@@ -120,7 +142,20 @@ class ArkeRunner(BaselineRunner):
 
         attrs = self._default_attrs(op, dtype)
 
-        # Warmup
+        # ── Path A: TritonBackend (real codegen) ──────────────────────────
+        #
+        # Build a single-node IRGraph wrapping `op`, lower it through
+        # TritonBackend, and only commit to the Triton path if codegen
+        # actually produced a real kernel (num_real_kernels == 1). If the
+        # template has a known broken kernel (grouped_matmul Python break,
+        # quantize_per_token tl.math.nearbyint, etc.) lower() will have
+        # marked the node as fallback — we transparently retry via the
+        # interpreter path below so bench_l1 perf data stays populated.
+        triton_runner = self._try_triton_runner(op, named, attrs, dtype)
+        if triton_runner is not None:
+            return triton_runner
+
+        # ── Path B: SemanticInterpreter (PyTorch eager) ───────────────────
         try:
             for _ in range(3):
                 INTERPRETER.execute(op, named, attrs)
@@ -137,6 +172,123 @@ class ArkeRunner(BaselineRunner):
             return out
 
         return _run
+
+    def _try_triton_runner(
+        self,
+        op: str,
+        named: dict[str, torch.Tensor],
+        attrs: dict[str, Any],
+        dtype: torch.dtype,
+    ) -> Callable[[], torch.Tensor] | None:
+        """Build + warmup a Triton-backed zero-arg callable for ``op``.
+
+        Returns None if:
+          - the op has no template_hint (no real kernel possible)
+          - codegen failed at lower() time (recorded as fallback)
+          - warmup raised (e.g. shape outside what the template handles)
+        In any of those cases the caller falls back to the INTERPRETER path.
+        """
+        backend = _get_triton_backend()
+        if backend is None:
+            return None
+
+        # Skip ops without a template — no point in roundtripping through
+        # TritonBackend just to hit the interpreter fallback.
+        try:
+            schema = REGISTRY.get(op)
+        except Exception:
+            return None
+        if schema.template_hint is None:
+            return None
+
+        # Build a single-node IRGraph wrapping this op.
+        dtype_str = self._torch_dtype_to_ir(dtype)
+        graph = IRGraph(name=f"bench_{op}")
+        for input_name, tensor in named.items():
+            graph.add_input(input_name, dtype=dtype_str, shape=list(tensor.shape))
+        node_inputs = {k: k for k in named.keys()}
+        graph.add_node(IRNode(
+            id="n0", op=op,
+            inputs=node_inputs, outputs=["out"],
+            attrs=dict(attrs),
+        ))
+        graph.set_outputs(["out"])
+
+        try:
+            artifact = backend.lower(graph)
+        except Exception as exc:
+            logger.debug("Arke triton.lower(%s) failed: %s", op, exc)
+            return None
+
+        # If lower() couldn't produce a real kernel for this single node,
+        # bail and let the interpreter path run.
+        if artifact.metadata.get("num_real_kernels", 0) != 1:
+            return None
+
+        try:
+            kernel = backend.compile(artifact)
+        except Exception as exc:
+            logger.debug("Arke triton.compile(%s) failed: %s", op, exc)
+            return None
+        if not kernel.success:
+            return None
+
+        # Warmup. If the wrapper crashes here (shape mismatch under a
+        # tighter codegen variant), give up on the Triton path entirely
+        # so bench_l1 doesn't time an exception-laden hot loop.
+        try:
+            for _ in range(3):
+                out = backend.run(kernel, named)
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+        except Exception as exc:
+            logger.debug("Arke triton.warmup(%s) failed: %s — falling back", op, exc)
+            return None
+
+        # If the wrapper raised during warmup and got latched to
+        # interpreter-fallback inside TritonBackend.run, abandon the
+        # Triton path — we don't want bench_l1 timing the interpreter
+        # via a TritonBackend wrapper round-trip when it can call the
+        # interpreter directly.
+        plans = artifact.metadata.get("plans")
+        if plans and any(getattr(p, "use_interpreter", False) for p in plans):
+            logger.debug(
+                "Arke triton.warmup(%s) latched to interpreter — falling back",
+                op,
+            )
+            return None
+
+        # Sanity: warmup result must contain the graph output.
+        if "out" not in out:
+            logger.debug("Arke triton.run(%s) missing 'out' in result — falling back", op)
+            return None
+
+        def _run() -> torch.Tensor:
+            result = backend.run(kernel, named)
+            val = result.get("out")
+            if isinstance(val, (tuple, list)):
+                return val[0]
+            return val
+
+        return _run
+
+    @staticmethod
+    def _torch_dtype_to_ir(dtype: torch.dtype) -> str:
+        """Map torch.dtype → the string keys IRValue.dtype expects."""
+        if dtype == torch.float16:
+            return "float16"
+        if dtype == torch.bfloat16:
+            return "bfloat16"
+        if dtype == torch.float32:
+            return "float32"
+        if dtype == torch.int64:
+            return "int64"
+        if dtype == torch.int32:
+            return "int32"
+        if dtype == torch.int8:
+            return "int8"
+        # Fallback: stringify and strip torch. prefix.
+        return str(dtype).replace("torch.", "")
 
     # ── run_with_inputs: correctness-oriented execution ────────────────────
     def run_with_inputs(

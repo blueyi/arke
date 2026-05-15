@@ -297,9 +297,15 @@ class TritonBackend:
                     result = plan.wrapper(*pos_args)
                 except Exception as exc:
                     logger.warning(
-                        "run: Triton wrapper %s raised %s — retrying via interpreter",
+                        "run: Triton wrapper %s raised %s — retrying via interpreter "
+                        "(future calls on this kernel will skip the Triton path)",
                         plan.op_name, exc,
                     )
+                    # Latch the failure: subsequent invocations on this
+                    # compiled artifact skip straight to the interpreter
+                    # instead of paying the wrapper-exception cost on every
+                    # call. The wrapper itself stays in place for debugging.
+                    plan.use_interpreter = True
                     result = INTERPRETER.execute(plan.op_name, named_inputs, node.attrs)
 
             # Handle tuple / list returns (e.g. split, topk, quantize_per_token).
