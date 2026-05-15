@@ -11,3 +11,21 @@ swiglu,non-align-1,PyTorch-eager,37.3,2.9,,1.0000,ok,,false,true,0,0,0.001,0.001
 swiglu,non-align-1,Arke,43.3,2.9,,0.8614,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.8614,false,-0.1386
 swiglu,non-align-2,PyTorch-eager,37.8,3.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 swiglu,non-align-2,Arke,43.7,2.9,,0.8650,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.8650,false,-0.1350
+swiglu,ds-v2-512,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined swiglu@ds-v2-512,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for swiglu,,,,,1.0,,,
+swiglu,ds-v2-512,PyTorch-eager,3.1,2.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v2-512,Arke,7.5,1.7,,0.4133,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4133,false,-0.5867
+swiglu,ds-v2-2k,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined swiglu@ds-v2-2k,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for swiglu,,,,,1.0,,,
+swiglu,ds-v2-2k,PyTorch-eager,3.0,3.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v2-2k,Arke,7.3,25.9,,0.4110,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4110,false,-0.5890
+swiglu,ds-v3-512,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined swiglu@ds-v3-512,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for swiglu,,,,,1.0,,,
+swiglu,ds-v3-512,PyTorch-eager,3.2,3.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-512,Arke,7.3,25.6,,0.4384,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4384,false,-0.5616
+swiglu,ds-v3-2k,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined swiglu@ds-v3-2k,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for swiglu,,,,,1.0,,,
+swiglu,ds-v3-2k,PyTorch-eager,3.0,21.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+swiglu,ds-v3-2k,Arke,7.4,26.4,,0.4054,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4054,false,-0.5946
+swiglu,qwen25-7b,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined swiglu@qwen25-7b,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for swiglu,,,,,1.0,,,
+swiglu,qwen25-7b,PyTorch-eager,3.2,7.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b,Arke,7.3,14.3,,0.4384,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4384,false,-0.5616
+swiglu,qwen25-7b-2k,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined swiglu@qwen25-7b-2k,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for swiglu,,,,,1.0,,,
+swiglu,qwen25-7b-2k,PyTorch-eager,3.2,15.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+swiglu,qwen25-7b-2k,Arke,7.2,2.9,,0.4444,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4444,false,-0.5556

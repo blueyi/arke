@@ -59,3 +59,39 @@ rmsnorm,extreme-large,Liger-Kernel,427.7,431.0,,5.1845,ok,,false,true,0.00390625
 rmsnorm,extreme-large,PyTorch-eager,2217.4,1882.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
 rmsnorm,extreme-large,Arke,3615.9,3618.8,,0.6132,ok,,false,true,0.00407124,0.000205747,0.005,0.005,ok,,,,,,1.0,0.6132,false,-0.3868
 rmsnorm,extreme-large,FlagGems,2244.8,1956.8,,0.9878,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9878,false,-0.0122
+rmsnorm,llama3-8b-norm,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-norm,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-norm,,,,,1.0,,,
+rmsnorm,llama3-8b-norm,Liger-Kernel,82.6,99.3,,1.5993,ok,,false,true,0.00390625,0.000163187,0.005,0.005,ok,,,,,,1.0,1.5993,true,0.5993
+rmsnorm,llama3-8b-norm,PyTorch-eager,132.1,122.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama3-8b-norm,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama3-8b-norm,false,true,0.00390625,0.000156413,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama3-8b-norm,,,,,1.0,,,
+rmsnorm,llama3-8b-norm,Arke,266.2,268.3,,0.4962,ok,,false,true,0.00348139,0.000205213,0.005,0.005,ok,,,,,,1.0,0.4962,false,-0.5038
+rmsnorm,llama3-8b-norm,FlagGems,634.7,528.4,,0.2081,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2081,false,-0.7919
+rmsnorm,llama3-8b-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-long,,,,,1.0,,,
+rmsnorm,llama3-8b-long,Liger-Kernel,466.1,435.2,,3.6089,ok,,false,true,0.00390625,0.000156847,0.005,0.005,ok,,,,,,1.0,3.6089,true,2.6089
+rmsnorm,llama3-8b-long,PyTorch-eager,1682.1,1640.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama3-8b-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama3-8b-long,false,true,0.00390625,0.000154878,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama3-8b-long,,,,,1.0,,,
+rmsnorm,llama3-8b-long,Arke,3675.9,3668.0,,0.4576,ok,,false,true,0.00416422,0.000203552,0.005,0.005,ok,,,,,,1.0,0.4576,false,-0.5424
+rmsnorm,llama3-8b-long,FlagGems,2029.8,1852.4,,0.8287,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8287,false,-0.1713
+rmsnorm,qwen25-7b-norm,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-norm,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-norm,,,,,1.0,,,
+rmsnorm,qwen25-7b-norm,Liger-Kernel,91.4,105.5,,1.3348,ok,,false,true,0.00390625,0.000162144,0.005,0.005,ok,,,,,,1.0,1.3348,true,0.3348
+rmsnorm,qwen25-7b-norm,PyTorch-eager,122.0,106.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,qwen25-7b-norm,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@qwen25-7b-norm,false,true,0.00390625,0.00014996,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@qwen25-7b-norm,,,,,1.0,,,
+rmsnorm,qwen25-7b-norm,Arke,224.4,228.4,,0.5437,ok,,false,true,0.00325966,0.00020813,0.005,0.005,ok,,,,,,1.0,0.5437,false,-0.4563
+rmsnorm,qwen25-7b-norm,FlagGems,635.5,552.8,,0.1920,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1920,false,-0.8080
+rmsnorm,qwen25-7b-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-long,,,,,1.0,,,
+rmsnorm,qwen25-7b-long,Liger-Kernel,375.1,375.8,,4.0882,ok,,false,true,0.00390625,0.000154158,0.005,0.005,ok,,,,,,1.0,4.0882,true,3.0882
+rmsnorm,qwen25-7b-long,PyTorch-eager,1533.5,1443.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,qwen25-7b-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@qwen25-7b-long,false,true,0.00390625,0.00015324,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@qwen25-7b-long,,,,,1.0,,,
+rmsnorm,qwen25-7b-long,Arke,3222.6,3212.3,,0.4759,ok,,false,true,0.00419426,0.000204674,0.005,0.005,ok,,,,,,1.0,0.4759,false,-0.5241
+rmsnorm,qwen25-7b-long,FlagGems,1889.1,1650.7,,0.8118,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8118,false,-0.1882
+rmsnorm,ds-v2-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2-long,,,,,1.0,,,
+rmsnorm,ds-v2-long,Liger-Kernel,534.6,537.6,,3.9291,ok,,false,true,0.00390625,0.000151877,0.005,0.005,ok,,,,,,1.0,3.9291,true,2.9291
+rmsnorm,ds-v2-long,PyTorch-eager,2100.5,2064.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v2-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v2-long,false,true,0.00390625,0.000154728,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v2-long,,,,,1.0,,,
+rmsnorm,ds-v2-long,Arke,4590.7,4575.2,,0.4576,ok,,false,true,0.00442219,0.000203747,0.005,0.005,ok,,,,,,1.0,0.4576,false,-0.5424
+rmsnorm,ds-v2-long,FlagGems,3181.5,3054.6,,0.6602,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6602,false,-0.3398
+rmsnorm,ds-v3-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3-long,,,,,1.0,,,
+rmsnorm,ds-v3-long,Liger-Kernel,374.5,379.9,,3.9525,ok,,false,true,0.00390625,0.000150922,0.005,0.005,ok,,,,,,1.0,3.9525,true,2.9525
+rmsnorm,ds-v3-long,PyTorch-eager,1480.2,1453.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v3-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v3-long,false,true,0.00390625,0.000152963,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v3-long,,,,,1.0,,,
+rmsnorm,ds-v3-long,Arke,3224.0,3209.2,,0.4591,ok,,false,true,0.00482082,0.000204111,0.005,0.005,ok,,,,,,1.0,0.4591,false,-0.5409
+rmsnorm,ds-v3-long,FlagGems,1730.9,1674.2,,0.8552,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8552,false,-0.1448

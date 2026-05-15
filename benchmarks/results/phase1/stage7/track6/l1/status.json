@@ -1,13 +1,13 @@
 {
-  "ts": 1778739291.3161771,
+  "ts": 1778806295.625615,
   "layer": "l1",
-  "fingerprint": "4c46f5ac13fd6130",
-  "elapsed_s": 29.3122501373291,
+  "fingerprint": "14d8250a4680e0c8",
+  "elapsed_s": 7.2741546630859375,
   "per_op": {
-    "rope": {
-      "rows": 48,
-      "ok": 41,
-      "permanent_failure": 7,
+    "fused_linear_cross_entropy": {
+      "rows": 28,
+      "ok": 24,
+      "permanent_failure": 4,
       "retryable_failure": 0,
       "other": 0
     }

@@ -11,11 +11,11 @@
   "l1": {
     "ops_total": 45,
     "ops_with_any_evidence": 45,
-    "ops_fully_covered": 35,
+    "ops_fully_covered": 45,
     "op_coverage_ratio": 1.0,
     "shapes_required_total": 685,
-    "shapes_observed_total": 625,
-    "shape_coverage_ratio": 0.9124,
+    "shapes_observed_total": 685,
+    "shape_coverage_ratio": 1.0,
     "per_op": [
       {
         "op": "relu",
@@ -404,8 +404,8 @@
       {
         "op": "softmax",
         "required_shape_count": 25,
-        "observed_shape_count": 18,
-        "coverage_ratio": 0.72,
+        "observed_shape_count": 25,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
           "attn-gpt2-128",
           "attn-gpt2-256",
@@ -414,27 +414,26 @@
           "attn-llama-4k",
           "attn-llama-512",
           "batch-large",
+          "ds-v2-attn-16k",
+          "ds-v2-attn-8k",
+          "ds-v3-attn-32k",
           "extreme-tall",
           "extreme-tiny",
           "extreme-wide",
+          "llama3-attn-8k",
           "non-align-1",
           "non-align-2",
           "non-align-3",
           "non-align-4",
           "non-align-5",
-          "square-4k",
-          "wide-vocab-gpt2",
-          "wide-vocab-llama3"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-attn-16k",
-          "ds-v2-attn-8k",
-          "ds-v3-attn-32k",
-          "llama3-attn-8k",
           "qwen25-attn-32k",
+          "square-4k",
           "wide-vocab-ds-v2",
+          "wide-vocab-gpt2",
+          "wide-vocab-llama3",
           "wide-vocab-qwen25"
         ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -442,11 +441,13 @@
       {
         "op": "layernorm",
         "required_shape_count": 21,
-        "observed_shape_count": 15,
-        "coverage_ratio": 0.7142857142857143,
+        "observed_shape_count": 21,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
           "ds-v2",
+          "ds-v2-long",
           "ds-v3",
+          "ds-v3-long",
           "extreme-large",
           "extreme-small",
           "gpt2-ffn",
@@ -455,20 +456,17 @@
           "llama-13b",
           "llama-7b",
           "llama-long",
+          "llama3-8b-long",
+          "llama3-8b-norm",
           "mixtral-ffn",
           "non-align-1",
           "non-align-2",
           "non-align-3",
-          "non-align-4"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-long",
-          "ds-v3-long",
-          "llama3-8b-long",
-          "llama3-8b-norm",
+          "non-align-4",
           "qwen25-7b-long",
           "qwen25-7b-norm"
         ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -476,11 +474,13 @@
       {
         "op": "rmsnorm",
         "required_shape_count": 21,
-        "observed_shape_count": 15,
-        "coverage_ratio": 0.7142857142857143,
+        "observed_shape_count": 21,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
           "ds-v2",
+          "ds-v2-long",
           "ds-v3",
+          "ds-v3-long",
           "extreme-large",
           "extreme-small",
           "gpt2-ffn",
@@ -489,20 +489,17 @@
           "llama-13b",
           "llama-7b",
           "llama-long",
+          "llama3-8b-long",
+          "llama3-8b-norm",
           "mixtral-ffn",
           "non-align-1",
           "non-align-2",
           "non-align-3",
-          "non-align-4"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-long",
-          "ds-v3-long",
-          "llama3-8b-long",
-          "llama3-8b-norm",
+          "non-align-4",
           "qwen25-7b-long",
           "qwen25-7b-norm"
         ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -510,11 +507,13 @@
       {
         "op": "rmsnorm_residual",
         "required_shape_count": 21,
-        "observed_shape_count": 15,
-        "coverage_ratio": 0.7142857142857143,
+        "observed_shape_count": 21,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
           "ds-v2",
+          "ds-v2-long",
           "ds-v3",
+          "ds-v3-long",
           "extreme-large",
           "extreme-small",
           "gpt2-ffn",
@@ -523,20 +522,17 @@
           "llama-13b",
           "llama-7b",
           "llama-long",
+          "llama3-8b-long",
+          "llama3-8b-norm",
           "mixtral-ffn",
           "non-align-1",
           "non-align-2",
           "non-align-3",
-          "non-align-4"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-long",
-          "ds-v3-long",
-          "llama3-8b-long",
-          "llama3-8b-norm",
+          "non-align-4",
           "qwen25-7b-long",
           "qwen25-7b-norm"
         ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -684,9 +680,18 @@
       {
         "op": "matmul",
         "required_shape_count": 34,
-        "observed_shape_count": 22,
-        "coverage_ratio": 0.6470588235294118,
+        "observed_shape_count": 34,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
+          "ds-v2-attn",
+          "ds-v2-ffn-down",
+          "ds-v2-ffn-up",
+          "ds-v2-lmhead",
+          "ds-v2-long-8k",
+          "ds-v3-attn",
+          "ds-v3-ffn-up",
+          "ds-v3-lmhead",
+          "ds-v3-long-32k",
           "extreme-16",
           "extreme-1row",
           "extreme-long",
@@ -702,6 +707,9 @@
           "non-align-5",
           "non-align-6",
           "non-align-7",
+          "qwen25-attn",
+          "qwen25-ffn-up",
+          "qwen25-lmhead",
           "rect-tall",
           "rect-wide",
           "seq512",
@@ -710,20 +718,7 @@
           "square-4k",
           "tiny"
         ],
-        "missing_shape_tags": [
-          "ds-v2-attn",
-          "ds-v2-ffn-down",
-          "ds-v2-ffn-up",
-          "ds-v2-lmhead",
-          "ds-v2-long-8k",
-          "ds-v3-attn",
-          "ds-v3-ffn-up",
-          "ds-v3-lmhead",
-          "ds-v3-long-32k",
-          "qwen25-attn",
-          "qwen25-ffn-up",
-          "qwen25-lmhead"
-        ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -752,19 +747,18 @@
       {
         "op": "grouped_matmul",
         "required_shape_count": 7,
-        "observed_shape_count": 4,
-        "coverage_ratio": 0.5714285714285714,
+        "observed_shape_count": 7,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
+          "ds-moe-2k",
+          "ds-moe-512",
+          "ds-v3-moe",
           "moe-medium",
           "moe-small",
           "moe-tiny",
           "non-align-1"
         ],
-        "missing_shape_tags": [
-          "ds-moe-2k",
-          "ds-moe-512",
-          "ds-v3-moe"
-        ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -960,24 +954,23 @@
       {
         "op": "swiglu",
         "required_shape_count": 12,
-        "observed_shape_count": 6,
-        "coverage_ratio": 0.5,
+        "observed_shape_count": 12,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
           "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
-          "non-align-2"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-2k",
-          "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
+          "non-align-2",
           "qwen25-7b",
           "qwen25-7b-2k"
         ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -985,24 +978,23 @@
       {
         "op": "geglu",
         "required_shape_count": 12,
-        "observed_shape_count": 6,
-        "coverage_ratio": 0.5,
+        "observed_shape_count": 12,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
+          "ds-v2-2k",
+          "ds-v2-512",
+          "ds-v3-2k",
+          "ds-v3-512",
           "gpt2-sm",
           "llama-7b-2k",
           "llama-7b-512",
           "llama3-8b",
           "non-align-1",
-          "non-align-2"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-2k",
-          "ds-v2-512",
-          "ds-v3-2k",
-          "ds-v3-512",
+          "non-align-2",
           "qwen25-7b",
           "qwen25-7b-2k"
         ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -1010,28 +1002,27 @@
       {
         "op": "rope",
         "required_shape_count": 16,
-        "observed_shape_count": 12,
-        "coverage_ratio": 0.75,
+        "observed_shape_count": 16,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
+          "ds-v2-512",
+          "ds-v3-2k",
           "extreme-batch",
           "extreme-long",
           "gpt2-sm-128",
           "gpt2-sm-512",
           "llama2-2k",
           "llama2-512",
+          "llama3-8k",
           "llama3-kv-512",
           "llama3-q-512",
           "non-align-1",
           "non-align-2",
+          "qwen25-32k",
           "qwen25-kv-512",
           "qwen25-q-512"
         ],
-        "missing_shape_tags": [
-          "ds-v2-512",
-          "ds-v3-2k",
-          "llama3-8k",
-          "qwen25-32k"
-        ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -1039,24 +1030,23 @@
       {
         "op": "fused_linear_cross_entropy",
         "required_shape_count": 12,
-        "observed_shape_count": 8,
-        "coverage_ratio": 0.6666666666666666,
+        "observed_shape_count": 12,
+        "coverage_ratio": 1.0,
         "observed_shape_tags": [
+          "ds-v2-seq512",
           "extreme-large-vocab",
           "gpt2-seq128",
           "gpt2-seq512",
           "llama2-seq2k",
           "llama2-seq512",
+          "llama3-seq2k",
           "llama3-seq512",
           "non-align-1",
-          "non-align-2"
-        ],
-        "missing_shape_tags": [
-          "ds-v2-seq512",
-          "llama3-seq2k",
+          "non-align-2",
           "qwen25-seq2k",
           "qwen25-seq512"
         ],
+        "missing_shape_tags": [],
         "correctness_fields_present": true,
         "perf_target_fields_present": true,
         "missing_perf_target_fields": []
@@ -1459,6 +1449,6 @@
   },
   "combined": {
     "op_coverage_ratio": 1.0,
-    "shape_coverage_ratio": 0.9255
+    "shape_coverage_ratio": 1.0
   }
 }
