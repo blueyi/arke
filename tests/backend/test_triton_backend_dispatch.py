@@ -158,12 +158,18 @@ class TestFallbackSafetyNet:
         """If generate_kernel raises, the node must be marked as fallback
         and the dispatcher must still produce correct output via the
         SemanticInterpreter."""
-        import arke.backend.triton_backend as tb_mod
+        from arke.backend.kernel_cache import KERNEL_CACHE
+        import arke.backend.kernel_cache as kc_mod
+
+        # Clear cache so the monkeypatch actually intercepts (a previous
+        # test may have cached the real matmul wrapper).
+        KERNEL_CACHE.clear()
 
         def _boom(*args, **kwargs):
             raise RuntimeError("synthetic codegen failure")
 
-        monkeypatch.setattr(tb_mod, "generate_kernel", _boom)
+        # KernelCache.get_or_build → generate_kernel inside kernel_cache module
+        monkeypatch.setattr(kc_mod, "generate_kernel", _boom)
 
         tb = TritonBackend()
         art = tb.lower(_matmul_graph(64, 32, 64))
@@ -180,8 +186,11 @@ class TestFallbackSafetyNet:
     def test_runtime_wrapper_exception_falls_back(self, monkeypatch):
         """If the compiled wrapper raises at run time, the dispatcher
         retries via the SemanticInterpreter — graph still produces output."""
-        import arke.backend.triton_backend as tb_mod
-        orig_gen = tb_mod.generate_kernel
+        from arke.backend.kernel_cache import KERNEL_CACHE
+        import arke.backend.kernel_cache as kc_mod
+        KERNEL_CACHE.clear()
+
+        orig_gen = kc_mod.generate_kernel
 
         def _wrap(*args, **kwargs):
             real = orig_gen(*args, **kwargs)
@@ -190,7 +199,7 @@ class TestFallbackSafetyNet:
                 raise RuntimeError("synthetic runtime failure")
             return _bad
 
-        monkeypatch.setattr(tb_mod, "generate_kernel", _wrap)
+        monkeypatch.setattr(kc_mod, "generate_kernel", _wrap)
 
         tb = TritonBackend()
         art = tb.lower(_matmul_graph(64, 32, 64))
@@ -202,6 +211,8 @@ class TestFallbackSafetyNet:
         # Wrapper raises at run-time → interpreter takes over.
         out = tb.run(ker, {"A": A, "B": B})
         assert torch.allclose(out["C"], A @ B, rtol=1e-2, atol=1e-2)
+        # Clean up cache so the bogus wrapper doesn't pollute subsequent tests.
+        KERNEL_CACHE.clear()
 
 
 # ── 4. compile() packaging ────────────────────────────────────

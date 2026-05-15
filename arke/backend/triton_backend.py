@@ -30,6 +30,7 @@ from typing import Any, Callable
 
 import torch
 
+from arke.backend.kernel_cache import KERNEL_CACHE
 from arke.backend.protocol import ArkeBackend, BackendArtifact, CompiledKernel
 from arke.backend.triton_codegen import generate_kernel
 from arke.ir.graph import IRGraph, IRNode
@@ -141,22 +142,26 @@ class TritonBackend:
                 num_fallback += 1
                 continue
 
-            # Try real codegen.
+            # Try real codegen (via KernelCache — wrappers are shared across
+            # nodes that want the same op+template+dtype, so the next IRGraph
+            # to lower this op is a pure cache hit).
             dtype = self._dtype_for_node(graph, node)
             try:
-                wrapper = generate_kernel(
+                wrapper = KERNEL_CACHE.get_or_build(
                     node.op, op.template_hint, dtype=dtype,
-                    kernel_name=f"arke_{node.op}_{node.id}",
                 )
-                # Render the source again for the artifact (cheap; the
-                # codegen call already did it once during compile).
+                # Render the source again for the artifact (cheap; for
+                # diagnostic / forensics purposes). We pass the per-node
+                # kernel name purely for the rendered comment header so
+                # `source_code` still differentiates nodes — it does NOT
+                # influence the cached callable.
                 from arke.backend.triton_codegen import (
                     build_template_ctx, render_kernel_source,
                 )
                 ctx = build_template_ctx(node.op, op.template_hint, dtype)
                 rendered = render_kernel_source(
                     op.template_hint.template_name,
-                    f"arke_{node.op}_{node.id}",
+                    f"arke_{node.op}",
                     ctx,
                 )
                 source_chunks.append(rendered)
