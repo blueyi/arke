@@ -282,17 +282,6 @@ def generate_kernel(
 
     # Adapter shims for op→template signature mismatches.
     #
-    # `rmsnorm` shares the `rmsnorm_residual` template (which requires a
-    # residual tensor argument). Inject a zero residual so plain rmsnorm
-    # calls match the template signature. TODO(C3): split into a dedicated
-    # rmsnorm.py.j2 template to avoid this runtime branch.
-    if op_name == "rmsnorm" and template_hint.template_name == "rmsnorm_residual":
-        import torch as _torch
-
-        def _rmsnorm_shim(x: _torch.Tensor, weight: _torch.Tensor, eps: float = 1e-5):
-            zero_res = _torch.zeros_like(x)
-            return raw_callable(x, zero_res, weight, eps=eps)
-        _rmsnorm_shim.__name__ = kernel_name
-        return _rmsnorm_shim
+    # (None currently needed — `rmsnorm` now has its own dedicated template.)
 
     return raw_callable
