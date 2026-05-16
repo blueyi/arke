@@ -18,6 +18,25 @@ Roadmap > Phase > Stage > Feature > Task
 >
 > All Gate criteria that involve operator-level performance or correctness **must** align to the BL/OT/ST/L benchmark system defined in `docs/benchmark/benchmark-design.md`. The Gate-Purpose Mapping below specifies which benchmark levels each Stage's Gate must satisfy.
 
+### Benchmark vs Gate Thresholds — Separation of Concerns
+
+> **Locked principle (2026-05-16, Leon-approved):** the Benchmark **measurement** layer and the Gate **acceptance** layer are decoupled.
+>
+> - **Benchmark design is frozen** — BL/OT/ST/L framework, measurement protocol, shape sets, baseline-ladder collection, and PERF_ALL schema do **not** change to accommodate Gate pass/fail outcomes.
+> - **Gate thresholds may be re-calibrated against theoretical performance** — when a Phase/Stage/Track's compiler-backend ceiling is bounded by the chosen backend's physical capability (e.g. Triton kernel-launch overhead vs PyTorch fused CUDA dispatch on tiny elementwise), the **Gate exit criteria** may be adjusted to reflect what is *physically achievable on that backend*, without weakening the benchmark itself.
+> - Every Gate threshold adjustment must (a) cite the physical/theoretical reason, (b) preserve the benchmark measurement faithfully (no shape removal, no op exclusion from PERF_ALL), and (c) carry the project lead's explicit approval before merging.
+
+### Same-Backend Fairness — Triton Path
+
+> **Locked principle (2026-05-16, Leon-approved):** when the compiler backend under test is **Triton**, the Gate performance comparison **denominator is the corresponding operator's Triton implementation**, not a cross-backend reference.
+>
+> - **Numerator:** Arke-generated Triton kernel latency
+> - **Denominator:** the **fastest Triton-only implementation** of the same operator available in the ladder for this op (e.g. FlagGems Triton kernel, Liger Triton kernel, Unsloth Triton kernel, vLLM Triton kernel, flash-attn Triton kernel — picked per-op by the ladder's PRIMARY+FALLBACK ordering in `docs/benchmark/golden-kernel-ladder.md`)
+> - **Pass criterion:** `arke_latency ≤ triton_reference_latency × (1 + ε)` with `ε = 0.03` (3% measurement-noise tolerance)
+> - **Audit-only:** when no Triton-only implementation exists for the op-shape, the row is **audit-only** (excluded from Gate scoring) and recorded with `perf_oracle_unavailable_triton=true` for future review.
+> - **Why same-backend:** cross-backend comparisons (Arke-Triton vs cuBLAS / FlagGems-CUDA / torch.compile-Inductor / PyTorch-eager-fused-dispatch) conflate compiler-quality with backend-architectural advantages. Same-backend fairness isolates Arke's compilation quality.
+> - **When the backend changes:** Phase 2 (Triton-Ascend) compares against Ascend-Triton baselines; Phase 3 (MLIR) compares against MLIR-native baselines; Phase 4 (C-like kernel DSL) compares against hand-tuned CUDA-C / CCE-C / Bang-C references; Phase 5 (LLVM IR) compares against LLVM-IR-direct references. The same-backend principle applies uniformly.
+
 ---
 
 ## Phase 1: Arke → Triton → NVIDIA GPU (SIMT Validation)
@@ -46,7 +65,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
-| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 | 🚧 12/14 (G7.8b + G7.8d open) |
+| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 (high-level IR ready for Phase-3 MLIR consumption) | 🚧 13/14 (G7.8d under same-backend re-calibration) |
 | S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
@@ -63,7 +82,7 @@ Roadmap > Phase > Stage > Feature > Task
 | G4 | BL2×L1 | L1 | 6 tasks: Arke correctness ≥ LLM-direct, geomean ~P1 | P0, P1, P5 |
 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | OT0-2×ST1-3 correctness 100%; GPT-2 top-1 correct | P0, P3 |
 | **G6** | **BL4×L1** | **L1** | 45 ops correctness 100% via SemanticInterpreter; perf ≥1.00× P3 | P3 |
-| **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness 100%; OT0 ≥1.05 P1, matmul ≥1.00 P0; 4/4 fusions | P0, P1 |
+| **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness 100%; **same-backend Triton fairness**: Arke-Triton ≥ (1−ε)·Triton-ref with ε=0.03; 4/4 fusions; per-op denominator = best Triton-only implementation in ladder | Triton-only ladder (FlagGems / Liger / Unsloth / vLLM-Triton / flash-attn) |
 | **G8** | **BL5 inherit + BL6×L3** | **L1+L2+L3** | GPT-2 ≥0.95× eager; LLaMA-2 ≥0.90×; DS-V2 ≥0.85×; auto-strategy ≥0.95× P0 | P0, P1, P3 |
 | **G9** | **BL6×L3 (4 models) + BL5 regression** | **L1+L2+L3** | GPT-2 ≥1.00× eager; LLaMA-2/3 ≥0.95×; Qwen2.5 ≥0.90×; Arke ≥1.05× P5 | P0, P1, P5 |
 
@@ -125,27 +144,29 @@ AND ALL:
 
 ### Stage 7 (G7): Lang & IR v0.1.0 🚧
 
-**Objective:** Implement the multi-layer IR architecture (Layer 4/3/2/1), upgrade Arke Lang with where clause and backend-agnostic strategy, complete spec documents, assess dynamic shape feasibility, establish MLIR framework skeleton.
+**Objective:** Land the finalized Arke Lang v0.1.0 and the **high-level Arke IR v0.1.0** (Layer 4 SemanticIR + Layer 3 StrategyIR) as the implementation contract for Phase 1's Triton path **and** as the IR surface that Phase 3 will lower through MLIR. Implement the `where` clause + symbolic shape system end-to-end. Upgrade StrategyIR to be backend-agnostic in its core. Complete spec documents. Assess dynamic shape feasibility. Establish the MLIR framework skeleton as a forward-compatibility checkpoint (concrete MLIR lowering work belongs to Phase 3).
 
 **Why this follows S6:** Pass pipeline (from S6) is needed for IR layer transformations. Backend abstraction (from S6) is needed for backend-agnostic strategy validation. OpRegistry (from S6) is needed for spec completeness verification.
 
-**BL Exit:** BL5×L1+L2 — All 45 ops (OT0-4) × all shapes (ST1-4) correctness + performance at L1 single-op and L2 fused-op levels.
+**Scope clarification (locked 2026-05-16):** Stage 7 owns the **high-level IR spec + its in-tree implementation**. Stage 7 does **not** own concrete MLIR lowering — that is Phase 3's contract. G7.5 (MLIR framework skeleton) remains in scope as a forward-compatibility artifact: it proves the high-level IR can be lowered to MLIR-shaped surface, but full MLIR-dialect engineering is deferred.
+
+**BL Exit:** BL5×L1+L2 — All 45 ops (OT0-4) × all shapes (ST1-4) correctness + performance at L1 single-op and L2 fused-op levels, evaluated under the **Same-Backend Fairness (Triton)** rule (see Gate Governance).
 
 **Gate G7 PASS Criteria:**
 
 ```
 AND ALL:
   [1] Arke Lang Spec v0.1.0 document finalized
-  [2] Arke IR Spec v0.1.0 document finalized (Layer 4/3/2/1 defined)
+  [2] Arke IR Spec v0.1.0 document finalized (Layer 4/3/2/1 defined; Layer 4+3 implemented)
   [3] where clause MVP: parses + SemanticIR symbolic_dims populated
   [4] Dynamic Shape feasibility assessment document complete
-  [5] MLIR framework skeleton: MLIREmitter exists, BL1 matmul verified
+  [5] MLIR framework skeleton: MLIREmitter exists, BL1 matmul verified (forward-compatibility checkpoint; full MLIR lowering deferred to Phase 3)
   [6] All 45 ops: .ak → SemanticIR → StrategyIR full round-trip
   [7] Token efficiency: .ak lines < Triton lines for all OT0-OT4
   [8] Backend-agnostic strategy: 0 Triton-specific fields in StrategyIR core
   [9] L1 BL5 correctness: 100%(ST1-4, excl. OOM) for all OT0-OT4
-  [10] L1 BL5 performance: OT0 ≥1.05 P1, OT1 ≥0.95 P1, OT2 matmul ≥1.00 P0, OT3 ≥0.95 P1, OT4 ≥0.90 P1
-  [11] L2 BL5: 4/4 fusion combinations pass
+  [10] L1 BL5 performance (Same-Backend Triton Fairness): for each OT group, ≥97% of evaluable rows pass `arke_latency ≤ triton_ref_latency × 1.03`; weighted_score ≥ 0.95 with the same OT0_1/OT2/OT3/OT4 = 0.25/0.30/0.20/0.25 weights. Rows with no Triton-only reference in the ladder are audit-only.
+  [11] L2 BL5: 4/4 fusion combinations pass under Same-Backend Triton Fairness
   [12] Non-regression: ≥422 tests, 0 new failures
 ```
 
@@ -153,7 +174,7 @@ AND ALL:
 
 **Track 6 artifact status (current):** Stage 7 benchmark automation emits a consolidated root-level dashboard artifact set under `benchmarks/results/phase1/stage7/track6/` — `coverage_gap.json`, `audit_report.json`, `stage7_operator_shape_stats.json`, and `dashboard.json` — plus per-layer `l1/` and `l2/` benchmark manifests. `benchmarks.gate_g7` now validates both the result-tree contract and the substantive BL5 evidence contract: coverage completeness, correctness rows, memory-policy exclusions, L1 weighted performance, and L2 fusion performance.
 
-**Current G7 evidence status:** The implementation/test slices for Lang, IR, MLIR skeleton, examples, backend-agnostic StrategyIR, and non-regression are green. After the 2026-05-14 Q5a (rope fp32, commit `82b635b`) + Q6a (gated odd-N typed-unsupported, commit `160ebf4`) fixes, canonical Track 6 evidence now passes G7.8c (correctness 827/827 ok). Current `python -m benchmarks.gate G7 --tier 2` result is `12/14` criteria passed, with `G7.8b` coverage and `G7.8d` performance still failing. This keeps Stage 7 open until BL5 coverage closes (P1) and L1 weighted perf reaches ≥0.95 with L2 fusion completeness (P3).
+**Current G7 evidence status (2026-05-16):** Implementation/test slices for Lang, IR, MLIR skeleton, examples, backend-agnostic StrategyIR, and non-regression are green. After the 2026-05-14 rope-fp32 (commit `82b635b`) + gated odd-N typed-unsupported (commit `160ebf4`) + 2026-05-15 G7.8b coverage closure (commit `13d42e6`) fixes, canonical Track 6 evidence passes G7.8c (correctness 827/827 ok) and G7.8b (BL5 L1 coverage 45/45 ops, 685/685 shapes). G7.8d is being re-calibrated under the **Same-Backend Fairness (Triton)** rule locked on 2026-05-16: the perf denominator switches from "best baseline across the full ladder" to "best Triton-only implementation per op", with ε=0.03 tolerance and audit-only handling when no Triton reference is available. Implementation under `benchmarks/gate_g7.py` and `benchmarks/artifacts.py` is in flight.
 
 **Memory evidence note (current):** skipped benchmark rows now carry memory preflight metadata in artifact CSVs, including `memory_bytes_required`, `memory_bytes_budget`, `memory_ratio`, and `memory_policy`. The evidence path is no longer attention-only; OT2 / OT3 pressure is represented the same way as OT4 attention pressure, which keeps BL5 coverage accounting honest under 6GB VRAM constraints.
 
@@ -298,32 +319,62 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ---
 
-## Phase 4: Arke → LLVM IR (100% Hardware Completeness)
+## Phase 4: Arke → C-like Kernel Language (CUDA C / CCE-C / Bang-C / etc.)
 
-**Goal:** Achieve maximum hardware expression completeness and performance headroom. Arke IR lowers directly to LLVM IR, bypassing all high-level abstractions. Support 100% of hardware ISA features.
+**Goal:** Generate vendor-supplied C-like kernel languages directly from Arke IR. This phase fills the gap between the MLIR abstraction layer (Phase 3) and the bare LLVM IR layer (Phase 5): vendor C-like DSLs (CUDA C for NVIDIA, CCE-C for Ascend, Bang-C for Cambricon, etc.) are the productionized, vendor-stable kernel surface, with the largest body of hand-tuned reference kernels and the most direct access to vendor toolchains, intrinsics, and tuning practices.
 
-**Backend:** LLVM IR → PTX/AMDGPU/CANN/ROCm
-**Benchmark baseline:** Phase 3 MLIR performance
+**Backend:** Arke IR → C-like kernel source (vendor DSL) → vendor compiler (nvcc / ccec / cncc) → executable
+**Benchmark baseline:** vendor hand-tuned C-like kernels for each operator (e.g. CUTLASS CUDA C kernels, vendor sample CCE-C / Bang-C kernels) — denominator under the Same-Backend Fairness rule
+
+### Why a separate Phase between MLIR and LLVM IR
+
+- **MLIR (Phase 3)** gives compiler-level control but the dialect ecosystem and lowering paths are still maturing; vendor kernel ecosystems live primarily in C-like DSLs, not in MLIR yet
+- **LLVM IR (Phase 5)** is the lowest level, but writing LLVM IR directly bypasses vendor-optimization expertise encoded in their C-like SDKs
+- **C-like vendor DSLs** are where the vast majority of production kernel engineering happens (CUTLASS, Cutlass3, vendor samples, FlagAttention, FlashInfer source), and where Arke can leverage the most existing tuned reference material
 
 ### Stage Structure
 
-
-| Stage          | Milestone               | Exit Criteria                                                     |
-| -------------- | ----------------------- | ----------------------------------------------------------------- |
-| **P4-S1**      | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct                              |
-| **P4-S2**      | Cat A-F via LLVM        | All 60+ ops correct + geomean ≥ Phase 3 MLIR                      |
-| **P4-S3**      | LLVM performance ≥ MLIR | LLVM geomean ≥ MLIR + 5% (Cat A+C+D)                              |
-| **P4-S4**      | Multi-hardware LLVM     | ≥3 backends ≥90% respective vendor libs                           |
-| **P4-S5**      | LLM Level 3 decisions   | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
-| **P4-S_FINAL** | v1.0.0 release          | @rationale KB ≥200 entries, cross-hardware coverage               |
-
+| Stage | Milestone | Exit Criteria |
+| --- | --- | --- |
+| **P4-S1** | CUDA-C lowering framework | SemanticIR + StrategyIR → CUDA C source for matmul; correctness verified |
+| **P4-S2** | Cat A+B+C via CUDA-C | 30 ops correct + geomean ≥ Phase 3 MLIR (Same-Backend CUDA-C fairness) |
+| **P4-S3** | CCE-C / Bang-C cross-vendor | matmul + rmsnorm + flash_attention correct on ≥1 non-NVIDIA vendor C-like DSL |
+| **P4-S4** | Performance ≥ MLIR | C-like geomean ≥ MLIR geomean across Cat A+B+C (per-vendor) |
+| **P4-S_FINAL** | Phase 4 acceptance | Multi-vendor C-like DSL coverage validated; H5 (vendor-DSL portability via Arke IR) demonstrated |
 
 ### Key Design Points
 
-- **StrategyIR L3 → LLVM IR**: Instruction-level decisions (e.g., warp shuffle, tensor core intrinsics) map directly to LLVM intrinsics
-- **100% ISA coverage**: No abstraction ceiling — full access to PTX/AMDGPU/CANN instruction sets
-- **LLM Level 1-3 full stack**: LLM makes decisions at all three StrategyIR layers
-- **@rationale knowledge base**: ≥200 cross-hardware optimization patterns
+- **Backend abstraction extension:** add `CLikeBackend` siblings to `TritonBackend` / `MLIRBackend`; pluggable per-vendor codegen
+- **Same-Backend Fairness:** Arke-CUDA-C vs hand-tuned CUDA-C reference; Arke-CCE-C vs CCE-C reference; etc. — cross-vendor comparisons audit-only
+- **@rationale grounding:** vendor-DSL optimization patterns (CUTLASS-style tiling, vendor-specific memory hints) feed back into @rationale KB
+- **Phase ordering rationale:** the high-level Arke IR (Layer 4 + Layer 3) from Phase 1 → Phase 2 stays unchanged; Phase 3 (MLIR) consumes it; Phase 4 (C-like) consumes the same IR through a parallel codegen path; Phase 5 (LLVM IR) provides the lowest-level escape hatch
+
+---
+
+## Phase 5: Arke → LLVM IR (100% Hardware Completeness)
+
+**Goal:** Achieve maximum hardware expression completeness and performance headroom. Arke IR lowers directly to LLVM IR, bypassing all high-level abstractions. Support 100% of hardware ISA features. This is the final phase of the multi-backend roadmap.
+
+**Backend:** LLVM IR → PTX/AMDGPU/CANN/ROCm
+**Benchmark baseline:** Phase 4 C-like kernel performance (per-vendor) under Same-Backend Fairness for the LLVM-IR target.
+
+### Stage Structure
+
+| Stage | Milestone | Exit Criteria |
+| --- | --- | --- |
+| **P5-S1** | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct |
+| **P5-S2** | Cat A-F via LLVM | All 60+ ops correct + geomean ≥ Phase 4 C-like (per-vendor) |
+| **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) |
+| **P5-S4** | Multi-hardware LLVM | ≥3 backends ≥90% respective vendor libs |
+| **P5-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
+| **P5-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage |
+
+### Key Design Points
+
+- **StrategyIR L3 → LLVM IR:** Instruction-level decisions (e.g., warp shuffle, tensor core intrinsics) map directly to LLVM intrinsics
+- **100% ISA coverage:** No abstraction ceiling — full access to PTX/AMDGPU/CANN instruction sets
+- **LLM Level 1-3 full stack:** LLM makes decisions at all three StrategyIR layers
+- **@rationale knowledge base:** ≥200 cross-hardware optimization patterns
 
 ---
 
@@ -355,7 +406,8 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | API timeout / rate limit                    | Phase 1 S7-S9 | Retry + fallback + prefer Sonnet over Opus                        |
 | Ascend Triton backend unavailable           | Phase 2       | Fallback: validate H4 on AMD via ROCm Triton                      |
 | MLIR learning curve too steep               | Phase 3       | Hire MLIR expert consultant; allocate 2× time buffer              |
-| LLVM IR complexity explosion                | Phase 4       | Incremental: start with matmul only, expand gradually             |
+| C-like vendor SDK lock-in / availability    | Phase 4       | Start with CUDA C (most stable SDK); add CCE-C / Bang-C incrementally |
+| LLVM IR complexity explosion                | Phase 5       | Incremental: start with matmul only, expand gradually             |
 | torch.compile integration breaks            | Phase 1 S8    | Maintain standalone CLI as fallback; Inductor backend is optional |
 
 

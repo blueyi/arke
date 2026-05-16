@@ -80,38 +80,41 @@ For S7 planning purposes, this means the final Lang/IR design must support:
 
 ### Benchmark Requirements (from Gate-Purpose Mapping)
 
-#### L1 @ BL5 (OT0-4, ST1-4) — Single Operator Performance
+> **Locked 2026-05-16 — Same-Backend Triton Fairness:** the L1/L2 BL5 performance denominator is the **best Triton-only implementation per op** in the ladder (FlagGems / Liger / Unsloth / vLLM-Triton / flash-attn / etc.), not a cross-backend reference. Pass criterion: `arke_latency ≤ triton_ref_latency × (1 + ε)` with `ε = 0.03`. Rows with no Triton-only reference are **audit-only** (excluded from Gate scoring). See `docs/roadmap/plan.md` § Same-Backend Fairness and `docs/benchmark/benchmark-protocol.md` for the full protocol.
 
-| Op Group | Correctness Requirement | Performance Requirement | Baseline | Measurement |
-|:---------|:------------------------|:------------------------|:---------|:------------|
-| **OT0** Elementwise (12 ops) | 100%(ST1-4, excl. OOM) | geomean ≥ 1.05× P1 (FlagGems elem) | P1 | `arke bench --bl 5 --ot 0 --layer l1` |
-| **OT1** Reduction (10 ops) | 100%(ST1-4, excl. OOM) | geomean ≥ 0.95× P1 (FlagGems norm/softmax) | P1 | `arke bench --bl 5 --ot 1 --layer l1` |
-| **OT2** Compute-Dense (11 ops) | 100%(ST1-4, excl. OOM) | matmul geomean ≥ 1.00× P0 (cuBLAS); others ≥ 0.95× P1 | P0, P1 | `arke bench --bl 5 --ot 2 --layer l1` |
-| **OT3** Gated Activation (7 ops) | 100%(ST1-4, excl. OOM) | swiglu/rope geomean ≥ 0.95× P1 (Liger/FlagGems) | P1 | `arke bench --bl 5 --ot 3 --layer l1` |
-| **OT4** Attention (5 ops) | 100%(ST1-4, excl. OOM) | FA geomean ≥ 0.90× P1 (FlashAttn-2); GQA ≥ 0.90 | P1 | `arke bench --bl 5 --ot 4 --layer l1` |
+#### L1 @ BL5 (OT0-4, ST1-4) — Single Operator Performance (Same-Backend Triton)
+
+| Op Group | Correctness Requirement | Performance Requirement (Same-Backend Triton) | Triton Reference | Measurement |
+|:---------|:------------------------|:----------------------------------------------|:-----------------|:------------|
+| **OT0** Elementwise (12 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | FlagGems Triton elem | `arke bench --bl 5 --ot 0 --layer l1` |
+| **OT1** Reduction (10 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | FlagGems Triton norm/softmax | `arke bench --bl 5 --ot 1 --layer l1` |
+| **OT2** Compute-Dense (11 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | best Triton matmul/conv in ladder (FlagGems / vLLM-Triton matmul) | `arke bench --bl 5 --ot 2 --layer l1` |
+| **OT3** Gated Activation (7 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | Liger / FlagGems Triton (swiglu/geglu/rope) | `arke bench --bl 5 --ot 3 --layer l1` |
+| **OT4** Attention (5 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | flash-attn Triton / FlashInfer Triton / vLLM-Triton attention | `arke bench --bl 5 --ot 4 --layer l1` |
 
 > **OOM note:** BL5 cannot rely on “accept incomplete coverage” logic. If a shape is inherently impossible on 6GB VRAM, the benchmark harness must record it consistently and the stage must provide a shape/memory strategy compatible with the Gate definition.
 
-#### L2 @ BL5 — Fused Operator Performance
+> **Audit-only note:** an op-shape with no Triton-only reference in the ladder is recorded with `perf_oracle_unavailable_triton=true` and excluded from Gate scoring. These rows must still appear in PERF_ALL (Benchmark design is frozen — only the Gate scoring layer changes).
 
-| Fusion Combination | Requirement | Baseline | Measurement |
-|:-------------------|:------------|:---------|:------------|
-| matmul+relu, matmul+gelu | ≥ 1.10× unfused (fusion benefit verifiable) | P3 unfused | `arke bench --bl 5 --layer l2 --fusion matmul_relu,matmul_gelu` |
-| swiglu, geglu | ≥ 0.95× Liger | P1 | `arke bench --bl 5 --layer l2 --fusion swiglu,geglu` |
-| linear+cross_entropy | ≥ 1.10× unfused | P3 | `arke bench --bl 5 --layer l2 --fusion linear_ce` |
+#### L2 @ BL5 — Fused Operator Performance (Same-Backend Triton)
 
-> **Naming note:** the Stage 7 canonical L2 fusion slot name is `linear_ce`. Historical/internal code paths may still mention `fused_linear_cross_entropy`, but Gate/G7-facing benchmark selection should use `linear_ce` consistently.
-| QKV+flash_attention | ≥ 0.85× FlashAttn-2 | P1 | `arke bench --bl 5 --layer l2 --fusion qkv_fa` |
+| Fusion Combination | Requirement (Same-Backend Triton) | Triton Reference | Measurement |
+|:-------------------|:----------------------------------|:-----------------|:------------|
+| matmul+relu, matmul+gelu | per-row `arke ≤ triton_ref × 1.03` (fusion must beat unfused Triton) | best Triton fused matmul+act in ladder; if absent → unfused Triton sequential | `arke bench --bl 5 --layer l2 --fusion matmul_relu,matmul_gelu` |
+| swiglu, geglu | per-row `arke ≤ triton_ref × 1.03` | Liger Triton swiglu/geglu | `arke bench --bl 5 --layer l2 --fusion swiglu,geglu` |
+| linear+cross_entropy | per-row `arke ≤ triton_ref × 1.03` | Liger Triton fused_linear_cross_entropy (canonical L2 slot name: `linear_ce`) | `arke bench --bl 5 --layer l2 --fusion linear_ce` |
+| QKV+flash_attention | per-row `arke ≤ triton_ref × 1.03` | flash-attn Triton (FA-2 Triton kernel) | `arke bench --bl 5 --layer l2 --fusion qkv_fa` |
 
 #### G7 Combined PASS Formula
 
 ```text
 G7 PASS = AND ALL:
   [BL5-L1] L1 BL5 correctness: 100%(ST1-4, excl. OOM) for all OT0-OT4
-  [BL5-L1] L1 BL5 performance weighted_score ≥ 0.95
-           weighted_score = 0.25×score(OT0-1) + 0.30×score(OT2) + 0.20×score(OT3) + 0.25×score(OT4)
-           where score(OTn) = geomean pass rate for that OT group (0.0~1.0)
-  [BL5-L2] L2 BL5: 4/4 fusion combinations pass
+  [BL5-L1] L1 BL5 performance under Same-Backend Triton Fairness:
+           per-row: arke_latency ≤ triton_ref_latency × 1.03 (rows without Triton-ref are audit-only)
+           per-group pass rate: ≥ 0.97 for each of OT0_1 / OT2 / OT3 / OT4
+           weighted_score = 0.25×rate(OT0_1) + 0.30×rate(OT2) + 0.20×rate(OT3) + 0.25×rate(OT4) ≥ 0.95
+  [BL5-L2] L2 BL5: 4/4 fusion combinations pass under Same-Backend Triton Fairness
   [Spec]   Criteria [1]-[5] below
   [Impl]   Criteria [6]-[9] below
 ```
