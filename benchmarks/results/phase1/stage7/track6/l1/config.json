@@ -1,17 +1,14 @@
 {
-  "timestamp": "2026-05-15_085128",
+  "timestamp": "2026-05-16_224142",
   "ops": [
-    "fused_linear_cross_entropy"
+    "rope",
+    "batch_matmul",
+    "matmul"
   ],
   "warmup": 200,
   "reps": 500,
   "tier": null,
-  "shape_tags": [
-    "ds-v2-seq512",
-    "llama3-seq2k",
-    "qwen25-seq2k",
-    "qwen25-seq512"
-  ],
+  "shape_tags": null,
   "phase": 1,
   "stage": 7,
   "track": "6",

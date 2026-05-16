@@ -2,48 +2,96 @@ operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,s
 rope,gpt2-sm-128,Liger-Kernel,113.7,125.8,,2.3659,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,2.3659,true,1.3659
 rope,gpt2-sm-128,PyTorch-eager,269.0,274.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
 rope,gpt2-sm-128,Arke,89.8,99.3,,2.9955,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.9955,true,1.9955
+rope,gpt2-sm-128,Liger-Kernel,109.2,14.3,,2.4634,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,2.4634,true,1.4634
+rope,gpt2-sm-128,PyTorch-eager,287.3,274.4,,0.9363,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,0.9363,false,-0.0637
+rope,gpt2-sm-128,Arke,90.1,33.8,,2.9856,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.9856,true,1.9856
 rope,gpt2-sm-512,Liger-Kernel,129.7,124.9,,2.3971,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,2.3971,true,1.3971
 rope,gpt2-sm-512,PyTorch-eager,310.9,291.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
 rope,gpt2-sm-512,Arke,93.8,102.4,,3.3145,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,3.3145,true,2.3145
+rope,gpt2-sm-512,Liger-Kernel,104.1,64.5,,2.9866,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,2.9866,true,1.9866
+rope,gpt2-sm-512,PyTorch-eager,285.8,260.0,,1.0878,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0878,true,0.0878
+rope,gpt2-sm-512,Arke,96.4,66.6,,3.2251,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,3.2251,true,2.2251
 rope,llama2-512,Liger-Kernel,233.1,256.0,,1.3840,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,1.3840,true,0.3840
 rope,llama2-512,PyTorch-eager,322.6,390.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
 rope,llama2-512,Arke,172.0,164.9,,1.8756,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.8756,true,0.8756
+rope,llama2-512,Liger-Kernel,140.4,139.3,,2.2977,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,2.2977,true,1.2977
+rope,llama2-512,PyTorch-eager,288.8,267.3,,1.1170,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.1170,true,0.1170
+rope,llama2-512,Arke,203.4,179.1,,1.5860,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.5860,true,0.5860
 rope,llama2-2k,Liger-Kernel,474.1,474.1,,1.6157,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.6157,true,0.6157
 rope,llama2-2k,PyTorch-eager,766.0,815.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
 rope,llama2-2k,Arke,594.3,594.9,,1.2889,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.2889,true,0.2889
+rope,llama2-2k,Liger-Kernel,547.8,548.9,,1.3983,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.3983,true,0.3983
+rope,llama2-2k,PyTorch-eager,806.0,796.7,,0.9504,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,0.9504,false,-0.0496
+rope,llama2-2k,Arke,752.3,650.2,,1.0182,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.0182,true,0.0182
 rope,llama3-q-512,Liger-Kernel,147.8,159.7,,4.5609,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,4.5609,true,3.5609
 rope,llama3-q-512,PyTorch-eager,674.1,398.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
 rope,llama3-q-512,Arke,280.2,315.3,,2.4058,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.4058,true,1.4058
+rope,llama3-q-512,Liger-Kernel,132.1,158.7,,5.1030,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,5.1030,true,4.1030
+rope,llama3-q-512,PyTorch-eager,272.7,360.4,,2.4719,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,2.4719,true,1.4719
+rope,llama3-q-512,Arke,176.2,178.2,,3.8258,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,3.8258,true,2.8258
 rope,llama3-kv-512,Liger-Kernel,120.1,128.0,,2.4696,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,2.4696,true,1.4696
 rope,llama3-kv-512,PyTorch-eager,296.6,285.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.0000,true,0.0000
 rope,llama3-kv-512,Arke,264.1,106.6,,1.1231,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,1.1231,true,0.1231
+rope,llama3-kv-512,Liger-Kernel,115.0,68.6,,2.5791,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,2.5791,true,1.5791
+rope,llama3-kv-512,PyTorch-eager,302.6,270.3,,0.9802,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,0.9802,false,-0.0198
+rope,llama3-kv-512,Arke,93.9,55.3,,3.1587,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,3.1587,true,2.1587
 rope,qwen25-q-512,Liger-Kernel,125.3,144.4,,2.4214,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,2.4214,true,1.4214
 rope,qwen25-q-512,PyTorch-eager,303.4,368.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
 rope,qwen25-q-512,Arke,138.2,149.5,,2.1954,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,2.1954,true,1.1954
+rope,qwen25-q-512,Liger-Kernel,126.7,141.3,,2.3946,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,2.3946,true,1.3946
+rope,qwen25-q-512,PyTorch-eager,299.8,233.5,,1.0120,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0120,true,0.0120
+rope,qwen25-q-512,Arke,172.9,159.7,,1.7548,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,1.7548,true,0.7548
 rope,qwen25-kv-512,Liger-Kernel,135.6,133.1,,2.1018,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,2.1018,true,1.1018
 rope,qwen25-kv-512,PyTorch-eager,285.0,297.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,1.0000,true,0.0000
 rope,qwen25-kv-512,Arke,97.2,122.1,,2.9321,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,2.9321,true,1.9321
+rope,qwen25-kv-512,Liger-Kernel,110.5,15.4,,2.5792,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,2.5792,true,1.5792
+rope,qwen25-kv-512,PyTorch-eager,296.5,187.3,,0.9612,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,0.9612,false,-0.0388
+rope,qwen25-kv-512,Arke,90.7,44.9,,3.1422,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,3.1422,true,2.1422
 rope,ds-v2-512,Liger-Kernel,452.9,453.6,,1.7598,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.7598,true,0.7598
 rope,ds-v2-512,PyTorch-eager,797.0,783.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
 rope,ds-v2-512,Arke,551.9,551.6,,1.4441,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.4441,true,0.4441
+rope,ds-v2-512,Liger-Kernel,594.2,531.5,,1.3413,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.3413,true,0.3413
+rope,ds-v2-512,PyTorch-eager,799.7,848.9,,0.9966,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,0.9966,false,-0.0034
+rope,ds-v2-512,Arke,881.2,696.3,,0.9044,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,0.9044,false,-0.0956
 rope,ds-v3-2k,Liger-Kernel,1830.6,1800.2,,1.5055,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,1.5055,true,0.5055
 rope,ds-v3-2k,PyTorch-eager,2755.9,2647.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0000,true,0.0000
 rope,ds-v3-2k,Arke,2239.1,2174.0,,1.2308,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention_fused,1.0,1.2308,true,0.2308
+rope,ds-v3-2k,Liger-Kernel,1880.7,1846.0,,1.4654,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,1.4654,true,0.4654
+rope,ds-v3-2k,PyTorch-eager,2693.0,2632.6,,1.0234,ok,,false,true,0,0,0.001,0.001,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0234,true,0.0234
+rope,ds-v3-2k,Arke,2419.6,2345.0,,1.1390,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention_fused,1.0,1.1390,true,0.1390
 rope,llama3-8k,Liger-Kernel,1859.2,1828.9,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,,,
 rope,llama3-8k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,4563402752,3542771302,1.2881,attention,1.0,N/A,false,N/A
 rope,llama3-8k,Arke,2428.9,2420.7,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,llama3-8k,Liger-Kernel,1895.6,1860.6,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,llama3-8k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,4563402752,3542771302,1.2881,attention,1.0,N/A,false,N/A
+rope,llama3-8k,Arke,2529.6,2468.9,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,268435456,3542771302,0.0758,attention_fused,1.0,,,
 rope,qwen25-32k,Liger-Kernel,6530.4,6300.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,939524096,3542771302,0.2652,attention_fused,1.0,,,
 rope,qwen25-32k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,61069066240,3542771302,17.2377,attention,1.0,N/A,false,N/A
 rope,qwen25-32k,Arke,9132.4,9036.8,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,qwen25-32k,Liger-Kernel,6602.2,6501.4,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,qwen25-32k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,61069066240,3542771302,17.2377,attention,1.0,N/A,false,N/A
+rope,qwen25-32k,Arke,9206.2,9051.1,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,939524096,3542771302,0.2652,attention_fused,1.0,,,
 rope,non-align-1,Liger-Kernel,215.7,255.1,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
+rope,non-align-1,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",1277874,3542771302,0.0004,attention,1.0,,,
+rope,non-align-1,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
+rope,non-align-1,Liger-Kernel,107.9,119.6,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
 rope,non-align-1,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",1277874,3542771302,0.0004,attention,1.0,,,
 rope,non-align-1,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
 rope,non-align-2,Liger-Kernel,122.1,138.2,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
 rope,non-align-2,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",16803180,3542771302,0.0047,attention,1.0,,,
 rope,non-align-2,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
+rope,non-align-2,Liger-Kernel,107.2,104.4,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
+rope,non-align-2,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",16803180,3542771302,0.0047,attention,1.0,,,
+rope,non-align-2,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
 rope,extreme-long,Liger-Kernel,567308.3,564467.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2147483648,3542771302,0.6062,attention_fused,1.0,,,
 rope,extreme-long,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,277025390592,3542771302,78.1945,attention,1.0,N/A,false,N/A
 rope,extreme-long,Arke,201090.0,201132.0,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-long,Liger-Kernel,549728.1,541190.1,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-long,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,277025390592,3542771302,78.1945,attention,1.0,N/A,false,N/A
+rope,extreme-long,Arke,213395.0,201728.0,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,2147483648,3542771302,0.6062,attention_fused,1.0,,,
 rope,extreme-batch,Liger-Kernel,897.0,898.0,,1.5099,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,134217728,3542771302,0.0379,attention_fused,1.0,1.5099,true,0.5099
 rope,extreme-batch,PyTorch-eager,1354.4,1380.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention,1.0,1.0000,true,0.0000
 rope,extreme-batch,Arke,1116.2,1105.9,,1.2134,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention_fused,1.0,1.2134,true,0.2134
+rope,extreme-batch,Liger-Kernel,1006.5,969.7,,1.3457,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,134217728,3542771302,0.0379,attention_fused,1.0,1.3457,true,0.3457
+rope,extreme-batch,PyTorch-eager,1387.5,1422.3,,0.9761,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention,1.0,0.9761,false,-0.0239
+rope,extreme-batch,Arke,1214.4,1198.1,,1.1153,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention_fused,1.0,1.1153,true,0.1153
