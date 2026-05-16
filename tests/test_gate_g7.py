@@ -240,19 +240,59 @@ def test_check_bl5_correctness_evidence_respects_memory_exclusions(monkeypatch):
 
 
 def test_check_bl5_performance_evidence_enforces_group_targets(monkeypatch):
+    """Same-Backend Triton Fairness (locked 2026-05-16): Arke rows are scored
+    against the fastest Triton-only baseline at (layer, op, shape_tag) with
+    epsilon = 0.03 tolerance. Cross-backend baselines (PyTorch-eager / cuBLAS /
+    torch.compile) are audit-only.
+
+    This fixture pairs each Arke row with a Triton-only reference row at a
+    latency Arke beats by >=3%, so every group passes per-group >=0.97 and
+    weighted_score = 1.0.
+    """
+    def arke(op, st, lat):
+        return ("l1", {"operator": op, "shape_tag": st, "baseline": "Arke",
+                       "status": "ok", "correctness_status": "ok",
+                       "latency_us": str(lat), "perf_pass": "true",
+                       "memory_policy": "", "reason": "", "correctness_reason": ""})
+
+    def triton_ref(op, st, lat, name="FlagGems"):
+        return ("l1", {"operator": op, "shape_tag": st, "baseline": name,
+                       "status": "ok", "correctness_status": "ok",
+                       "latency_us": str(lat), "perf_pass": "",
+                       "memory_policy": "", "reason": "", "correctness_reason": ""})
+
+    def arke_l2(op, st, lat):
+        return ("l2", {"operator": op, "shape_tag": st, "baseline": "Arke",
+                       "status": "ok", "correctness_status": "ok",
+                       "latency_us": str(lat), "perf_pass": "true",
+                       "memory_policy": "", "reason": "", "correctness_reason": ""})
+
+    def triton_ref_l2(op, st, lat, name="Liger-Kernel"):
+        return ("l2", {"operator": op, "shape_tag": st, "baseline": name,
+                       "status": "ok", "correctness_status": "ok",
+                       "latency_us": str(lat), "perf_pass": "",
+                       "memory_policy": "", "reason": "", "correctness_reason": ""})
+
+    # Arke at 100, Triton ref at 110 → arke <= 110 * 1.03 = 113.3 ✅
     rows = [
-        ("l1", {"operator": "relu", "shape_tag": "square-1k", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l1", {"operator": "gelu", "shape_tag": "square-1k", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l1", {"operator": "matmul", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l1", {"operator": "softmax", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l1", {"operator": "rope", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l1", {"operator": "flash_attention", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l2", {"operator": "matmul_relu", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l2", {"operator": "matmul_gelu", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l2", {"operator": "swiglu", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l2", {"operator": "geglu", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l2", {"operator": "linear_ce", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l2", {"operator": "qkv_fa", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "true", "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        # OT0 (elementwise)
+        arke("relu", "square-1k", 100.0),         triton_ref("relu", "square-1k", 110.0),
+        arke("gelu", "square-1k", 100.0),         triton_ref("gelu", "square-1k", 110.0, "Liger-Kernel"),
+        # OT1 (reduction): softmax
+        arke("softmax", "gpt2-sm", 100.0),        triton_ref("softmax", "gpt2-sm", 110.0),
+        # OT2 (compute-dense): matmul
+        arke("matmul", "gpt2-sm", 100.0),         triton_ref("matmul", "gpt2-sm", 110.0, "Triton-Tutorial"),
+        # OT3 (gated activation): rope
+        arke("rope", "gpt2-sm", 100.0),           triton_ref("rope", "gpt2-sm", 110.0, "Liger-Kernel"),
+        # OT4 (attention)
+        arke("flash_attention", "gpt2-sm", 100.0),triton_ref("flash_attention", "gpt2-sm", 110.0, "flash-attn-triton"),
+        # L2 fusions, all 6 with Triton ref
+        arke_l2("matmul_relu", "gpt2-sm", 100.0), triton_ref_l2("matmul_relu", "gpt2-sm", 110.0),
+        arke_l2("matmul_gelu", "gpt2-sm", 100.0), triton_ref_l2("matmul_gelu", "gpt2-sm", 110.0),
+        arke_l2("swiglu", "gpt2-sm", 100.0),      triton_ref_l2("swiglu", "gpt2-sm", 110.0),
+        arke_l2("geglu", "gpt2-sm", 100.0),       triton_ref_l2("geglu", "gpt2-sm", 110.0),
+        arke_l2("linear_ce", "gpt2-sm", 100.0),   triton_ref_l2("linear_ce", "gpt2-sm", 110.0),
+        arke_l2("qkv_fa", "gpt2-sm", 100.0),      triton_ref_l2("qkv_fa", "gpt2-sm", 110.0, "flash-attn-triton"),
     ]
     monkeypatch.setattr(gate_g7, "_iter_perf_rows", lambda _root: (rows, []))
     monkeypatch.setattr(
@@ -270,15 +310,29 @@ def test_check_bl5_performance_evidence_enforces_group_targets(monkeypatch):
 
     ok, detail = gate_g7._check_bl5_performance_evidence(Path("/tmp/unused"))
 
-    assert ok is True
+    assert ok is True, detail
     assert "weighted_score=1.0000" in detail
+    assert "Same-Backend Triton" in detail
     assert "L2 fusions=6" in detail
 
 
 def test_check_bl5_performance_evidence_rejects_gap(monkeypatch):
+    """Arke slower than Triton ref by >3% → fail; L2 with zero Triton baseline → fail."""
     rows = [
-        ("l1", {"operator": "relu", "shape_tag": "square-1k", "status": "ok", "correctness_status": "ok", "perf_pass": "false", "memory_policy": "", "reason": "", "correctness_reason": ""}),
-        ("l2", {"operator": "matmul_relu", "shape_tag": "gpt2-sm", "status": "ok", "correctness_status": "ok", "perf_pass": "false", "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        # OT0: Arke 200us vs Triton 100us → ratio 2.0× slower → fail
+        ("l1", {"operator": "relu", "shape_tag": "square-1k", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "200.0", "perf_pass": "false",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "relu", "shape_tag": "square-1k", "baseline": "FlagGems",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        # L2: Arke row but NO Triton ref → audit-only → L2 evaluable=0 → fail
+        ("l2", {"operator": "matmul_relu", "shape_tag": "gpt2-sm", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "false",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
     ]
     monkeypatch.setattr(gate_g7, "_iter_perf_rows", lambda _root: (rows, []))
     monkeypatch.setattr(gate_g7, "_load_l1_ot_map", lambda _matrix: {"relu": 0})
@@ -287,6 +341,117 @@ def test_check_bl5_performance_evidence_rejects_gap(monkeypatch):
 
     assert ok is False
     assert "weighted_score" in detail
+    # Per-group floor violation OR weighted_score < 0.95
+    assert ("below 0.97" in detail) or ("< 0.9500" in detail)
+
+
+def test_check_bl5_performance_evidence_audit_only_when_no_triton_ref(monkeypatch):
+    """Arke rows with no Triton-only baseline at (layer, op, shape) are audit-only.
+
+    Audit-only rows do NOT count toward Gate scoring (Same-Backend Fairness rule).
+    When every Arke row is audit-only, the gate reports zero evaluable rows.
+    """
+    rows = [
+        # Arke at OT0 but only cross-backend baselines available (PyTorch-eager, cuBLAS).
+        # No FlagGems/Liger/Triton-Tutorial entry → audit-only.
+        ("l1", {"operator": "relu", "shape_tag": "s1", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "true",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "relu", "shape_tag": "s1", "baseline": "PyTorch-eager",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "120.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "relu", "shape_tag": "s1", "baseline": "cuBLAS/cuDNN",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "115.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+    ]
+    monkeypatch.setattr(gate_g7, "_iter_perf_rows", lambda _root: (rows, []))
+    monkeypatch.setattr(gate_g7, "_load_l1_ot_map", lambda _matrix: {"relu": 0})
+
+    ok, detail = gate_g7._check_bl5_performance_evidence(Path("/tmp/unused"))
+
+    assert ok is False  # zero evaluable rows
+    assert "perf_oracle_unavailable_triton=1" in detail
+    assert "no evaluable performance rows" in detail or "no Triton-only baseline" in detail
+
+
+def test_check_bl5_performance_evidence_epsilon_boundary(monkeypatch):
+    """ε = 0.03 boundary: arke <= triton_ref * 1.03 passes; > 1.03 fails."""
+    # Arke at 103, Triton ref at 100 → ratio = 1.03 → arke <= 100 * 1.03 = 103 ✅ PASS
+    rows_at_boundary = [
+        ("l1", {"operator": "relu", "shape_tag": "s1", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "103.0", "perf_pass": "true",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "relu", "shape_tag": "s1", "baseline": "FlagGems",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        # And cover remaining 3 groups + L2 with passing data so only OT0 matters
+        ("l1", {"operator": "matmul", "shape_tag": "s1", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "true",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "matmul", "shape_tag": "s1", "baseline": "FlagGems",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "rope", "shape_tag": "s1", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "true",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "rope", "shape_tag": "s1", "baseline": "Liger-Kernel",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "flash_attention", "shape_tag": "s1", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "true",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "flash_attention", "shape_tag": "s1", "baseline": "flash-attn-triton",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l2", {"operator": "matmul_relu", "shape_tag": "s1", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "true",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l2", {"operator": "matmul_relu", "shape_tag": "s1", "baseline": "Liger-Kernel",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+    ]
+    monkeypatch.setattr(gate_g7, "_iter_perf_rows", lambda _root: (rows_at_boundary, []))
+    monkeypatch.setattr(
+        gate_g7, "_load_l1_ot_map",
+        lambda _matrix: {"relu": 0, "matmul": 2, "rope": 3, "flash_attention": 4},
+    )
+
+    ok, detail = gate_g7._check_bl5_performance_evidence(Path("/tmp/unused"))
+    # At boundary (103 vs 100 * 1.03 = 103) → arke == budget → passes (<=)
+    # L2 fusions=1 (only matmul_relu); rest 3 fusions absent → l2 fail
+    # But L1 should weighted_score = 1.0
+    assert "weighted_score=1.0000" in detail
+    # Now: just over boundary → should fail
+    rows_over = [
+        ("l1", {"operator": "relu", "shape_tag": "s1", "baseline": "Arke",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "103.5", "perf_pass": "false",  # 103.5 > 100 * 1.03 = 103.0
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+        ("l1", {"operator": "relu", "shape_tag": "s1", "baseline": "FlagGems",
+                "status": "ok", "correctness_status": "ok",
+                "latency_us": "100.0", "perf_pass": "",
+                "memory_policy": "", "reason": "", "correctness_reason": ""}),
+    ]
+    monkeypatch.setattr(gate_g7, "_iter_perf_rows", lambda _root: (rows_over, []))
+    monkeypatch.setattr(gate_g7, "_load_l1_ot_map", lambda _matrix: {"relu": 0})
+
+    ok2, detail2 = gate_g7._check_bl5_performance_evidence(Path("/tmp/unused"))
+    assert ok2 is False
+    # ot0_1 rate = 0/1 = 0.0 → per-group floor 0.97 violated AND weighted_score below 0.95
+    assert "ot0_1=0/1" in detail2
 
 
 def test_run_g7_returns_standard_gate_summary(monkeypatch):
@@ -751,7 +916,10 @@ def test_perf_evidence_skips_perf_oracle_unavailable_arke_row(tmp_path: Path):
     assert "malformed/non-ok perf rows" not in detail, (
         f"perf-oracle-unavailable rows must not be flagged malformed: {detail}"
     )
-    assert "perf_oracle_unavailable=1" in detail, detail
+    # Two oracle-gap rows: (1) the topk Arke row whose priority-1 baseline
+    # crashed and was fallback-verified, (2) the legacy L2 placeholder with
+    # no latency_us column — both audit-only per Golden Kernel protocol.
+    assert "perf_oracle_unavailable=2" in detail, detail
 
 
 def test_is_perf_oracle_unavailable_helper():

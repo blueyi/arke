@@ -40,6 +40,32 @@ REQUIRED_TRACK6_ROOT_ARTIFACTS = (
 )
 RESULT_TREE_NAME = "phase1/stage7/track6"
 
+# --- Same-Backend Triton Fairness (locked 2026-05-16) --------------------------
+#
+# Gate G7 performance scoring compares Arke-Triton latency against the
+# best Triton-only baseline available for the same (op, shape_tag) tuple.
+# This isolates Arke's compilation quality from cross-backend architectural
+# advantages. Cross-backend baselines (PyTorch-eager / cuBLAS-cuDNN /
+# torch.compile) are recorded in PERF_ALL for audit but excluded from
+# Gate scoring.
+#
+# See docs/roadmap/plan.md § Same-Backend Fairness and
+# docs/benchmark/benchmark-protocol.md § Same-Backend Fairness for rules.
+_TRITON_ONLY_BASELINES: frozenset[str] = frozenset({
+    "flaggems",
+    "liger-kernel",
+    "triton-tutorial",
+    "unsloth",
+    "flash-attn-triton",
+    "vllm-triton",
+    "flashinfer-triton",
+})
+
+# Universal measurement-noise tolerance. Pass criterion:
+#   arke_latency <= triton_ref_latency * (1 + _PERF_EPSILON)
+# equivalently ratio = triton_ref_latency / arke_latency >= 1 / (1 + _PERF_EPSILON)
+_PERF_EPSILON: float = 0.03
+
 
 def _run_cmd(args: list[str], timeout: int = 300) -> tuple[bool, str]:
     proc = subprocess.run(
@@ -336,6 +362,63 @@ def _is_perf_oracle_unavailable(row: dict[str, str]) -> bool:
     return bool(_PERF_ORACLE_UNAVAILABLE_REASON_PATTERN.search(reason))
 
 
+def _baseline_is_triton_only(row: dict[str, str]) -> bool:
+    """Return True iff this row's baseline is a same-backend (Triton) reference.
+
+    Same-Backend Triton Fairness (locked 2026-05-16): the Gate perf denominator
+    is the fastest Triton-only kernel across the ladder. Cross-backend
+    baselines (PyTorch-eager / cuBLAS-cuDNN / torch.compile) are excluded
+    from Gate scoring (but remain in PERF_ALL for audit).
+
+    Matching is case-insensitive against the canonical baseline names used
+    in PERF_ALL.csv (e.g. ``FlagGems``, ``Liger-Kernel``, ``Triton-Tutorial``).
+    """
+    baseline = (row.get("baseline") or "").strip().lower()
+    if not baseline:
+        return False
+    return baseline in _TRITON_ONLY_BASELINES
+
+
+def _build_triton_ref_index(
+    rows: list[tuple[str, dict[str, str]]],
+) -> dict[tuple[str, str, str], float]:
+    """Build a ``(layer, op, shape_tag) -> min_triton_ref_latency_us`` index.
+
+    For each (op, shape_tag) target we keep the fastest Triton-only baseline
+    latency, mirroring the PRIMARY+FALLBACK ladder ordering in
+    `docs/benchmark/golden-kernel-ladder.md` (the ladder is curated so the
+    PRIMARY entry should be the fastest; min() over all Triton-only entries
+    is a robust safety net against ladder-ordering bugs).
+
+    Only rows with ``status == "ok"`` and a parseable ``latency_us`` are
+    considered. Returns an empty dict when no Triton-only references are
+    available (callers must then route every Arke row to audit-only).
+    """
+    index: dict[tuple[str, str, str], float] = {}
+    for layer, row in rows:
+        if not _baseline_is_triton_only(row):
+            continue
+        status = (row.get("status") or "").strip().lower()
+        if status != "ok":
+            continue
+        op = row.get("operator") or row.get("op") or ""
+        shape_tag = row.get("shape_tag") or ""
+        if not op or not shape_tag:
+            continue
+        lat_raw = (row.get("latency_us") or "").strip()
+        try:
+            lat = float(lat_raw)
+        except (TypeError, ValueError):
+            continue
+        if lat <= 0:
+            continue
+        key = (layer, op, shape_tag)
+        prev = index.get(key)
+        if prev is None or lat < prev:
+            index[key] = lat
+    return index
+
+
 def _is_memory_excluded(row: dict[str, str]) -> bool:
     """Return true for explicit 6GB-memory-policy exclusions.
 
@@ -462,6 +545,14 @@ def _check_bl5_performance_evidence(
     if not ot_map:
         failures.append(f"missing L1 OT mapping from {matrix_path}")
 
+    # Same-Backend Triton Fairness (locked 2026-05-16): build per-(layer, op,
+    # shape_tag) Triton reference index from the rows, then re-score every
+    # Arke row against `triton_ref_lat * (1 + _PERF_EPSILON)`. This deliberately
+    # bypasses `perf_pass` written by `benchmarks/artifacts.py` (which is
+    # computed against PyTorch-eager) — Benchmark measurement stays frozen,
+    # only the Gate scoring layer changes.
+    triton_ref_index = _build_triton_ref_index(rows)
+
     group_counts = {
         "ot0_1": {"passed": 0, "total": 0},
         "ot2": {"passed": 0, "total": 0},
@@ -472,6 +563,7 @@ def _check_bl5_performance_evidence(
     excluded = 0
     non_arke_baseline_skipped = 0
     perf_oracle_unavailable = 0
+    perf_oracle_unavailable_triton = 0
     malformed: list[str] = []
 
     for layer, row in rows:
@@ -512,12 +604,49 @@ def _check_bl5_performance_evidence(
         if (row.get("status") or "").strip().lower() != "ok":
             malformed.append(f"{_row_label(layer, row)} status={row.get('status') or '<empty>'}")
             continue
-        perf_pass_raw = (row.get("perf_pass") or "").strip().lower()
-        if perf_pass_raw not in {"true", "false"}:
-            malformed.append(f"{_row_label(layer, row)} perf_pass={perf_pass_raw or '<empty>'}")
-            continue
-        passed = perf_pass_raw == "true"
+
+        # --- Same-Backend Triton Fairness scoring ----------------------------
+        #
+        # Score Arke against the fastest Triton-only baseline for this
+        # (layer, op, shape_tag). Rows with no Triton-only baseline available
+        # are audit-only (perf_oracle_unavailable_triton).
         op = row.get("operator") or row.get("op") or ""
+        shape_tag = row.get("shape_tag") or ""
+        arke_lat_raw = (row.get("latency_us") or "").strip()
+        if not arke_lat_raw:
+            # Legacy PERF_ALL artifacts (and historical L2 fusion rows) often
+            # omit the `latency_us` column entirely. Under Same-Backend Triton
+            # Fairness we cannot score these rows — but they are an *oracle gap*
+            # (no measurement available), not a malformed Arke regression.
+            # Audit-only per Golden Kernel protocol, mirroring the perf_oracle
+            # exclusion above. This also keeps legacy tests stable when the
+            # column was not yet plumbed.
+            perf_oracle_unavailable += 1
+            continue
+        try:
+            arke_lat = float(arke_lat_raw)
+        except (TypeError, ValueError):
+            malformed.append(
+                f"{_row_label(layer, row)} latency_us={arke_lat_raw or '<empty>'}"
+            )
+            continue
+        if arke_lat <= 0:
+            malformed.append(
+                f"{_row_label(layer, row)} latency_us={arke_lat_raw} (non-positive)"
+            )
+            continue
+
+        triton_ref_lat = triton_ref_index.get((layer, op, shape_tag))
+        if triton_ref_lat is None:
+            # No same-backend Triton reference for this op-shape → audit-only.
+            # Recorded but not counted toward Gate scoring per the locked
+            # Same-Backend Fairness rule (Benchmark stays frozen, Gate
+            # scoring drops the row).
+            perf_oracle_unavailable_triton += 1
+            continue
+
+        passed = arke_lat <= triton_ref_lat * (1.0 + _PERF_EPSILON)
+
         if layer == "l1":
             ot = ot_map.get(op)
             if ot in (0, 1):
@@ -544,16 +673,25 @@ def _check_bl5_performance_evidence(
     weights = {"ot0_1": 0.25, "ot2": 0.30, "ot3": 0.20, "ot4": 0.25}
     weighted_score = 0.0
     group_details: list[str] = []
+    per_group_threshold = 0.97  # per-group floor under Same-Backend Triton Fairness
+    per_group_violations: list[str] = []
     for key, weight in weights.items():
         total = group_counts[key]["total"]
         passed = group_counts[key]["passed"]
         if total == 0:
-            failures.append(f"L1 {key}: no evaluable performance rows")
+            failures.append(f"L1 {key}: no evaluable performance rows (no Triton-only baseline available)")
             rate = 0.0
         else:
             rate = passed / total
+            if rate < per_group_threshold:
+                per_group_violations.append(f"{key}={rate:.3f}<{per_group_threshold:.2f}")
         weighted_score += weight * rate
         group_details.append(f"{key}={passed}/{total} ({rate:.3f})")
+    if per_group_violations:
+        failures.append(
+            f"L1 per-group pass rate below {per_group_threshold:.2f}: "
+            f"{'; '.join(per_group_violations)}"
+        )
     if weighted_score < 0.95:
         failures.append(
             f"L1 weighted performance score {weighted_score:.4f} < 0.9500; "
@@ -571,10 +709,12 @@ def _check_bl5_performance_evidence(
         failures.append("L2: no evaluable fusion performance rows")
 
     detail = (
-        f"L1 weighted_score={weighted_score:.4f}; {'; '.join(group_details)}; "
+        f"L1 weighted_score={weighted_score:.4f} (Same-Backend Triton, eps={_PERF_EPSILON:.2f}); "
+        f"{'; '.join(group_details)}; "
         f"L2 fusions={len(l2_counts)}; memory_excluded={excluded}; "
         f"non_arke_baseline_skipped={non_arke_baseline_skipped}; "
-        f"perf_oracle_unavailable={perf_oracle_unavailable}"
+        f"perf_oracle_unavailable={perf_oracle_unavailable}; "
+        f"perf_oracle_unavailable_triton={perf_oracle_unavailable_triton}"
     )
     if failures:
         return False, detail + "; " + "; ".join(failures)
