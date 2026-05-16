@@ -1265,7 +1265,17 @@ def run_l1(
             kept_rows = [
                 row for key, row in existing_index.items() if key in skip_keys
             ]
-            if kept_rows or not csv_path.exists():
+            # Bug fix (2026-05-16): when resume=False, we must TRUNCATE the
+            # op-specific CSV to its header only — otherwise the prior run's
+            # rows survive and the next run appends fresh rows on top, silently
+            # double-counting (or worse, mixing stale + fresh measurements for
+            # the same key when the new run's row count differs).
+            #
+            # Note: PERF_ALL.csv is intentionally NOT truncated here. PERF_ALL
+            # is built by aggregating perf_<op>.csv across all ops (see
+            # bench_l1.py:write_perf_all near end of run); per-op CSV truncation
+            # propagates correctly through that pipeline.
+            if kept_rows or not csv_path.exists() or not resume:
                 tmp = csv_path.with_suffix(".csv.tmp")
                 with tmp.open("w", newline="") as f:
                     writer = csv.DictWriter(
@@ -1400,7 +1410,12 @@ def main() -> None:
     parser.add_argument(
         "--no-resume",
         action="store_true",
-        help="Disable resume; ignore prior CSV rows (still preserves them).",
+        help=(
+            "Disable resume. Truncates the per-op CSV "
+            "(<op>_results.csv) to header before measuring so the new run's "
+            "rows do not stack on top of stale ones. PERF_ALL.csv is rebuilt "
+            "from per-op CSVs at end of run and is unaffected by this flag."
+        ),
     )
     parser.add_argument(
         "--retry-policy",
