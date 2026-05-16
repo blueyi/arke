@@ -35,6 +35,46 @@ DEFAULT_MEASURE_RUNS = 20
 G8_GPT2_TARGET_RATIO = 0.95
 
 
+# Canonical mode names used throughout bench_l3 (CSV `mode` column, summary.json
+# filter keys, tests). The CLI accepts a few common aliases (underscore,
+# hyphen, dotted) and normalizes them via `_normalize_mode` so summary.json's
+# filter expression (`r.mode == MODE_TORCH_COMPILE`) doesn't silently miss rows.
+# Bug fix 2026-05-17: previously `--modes eager,torch_compile` (an ergonomic
+# spelling that avoids shell-dot quirks) produced compile_rows=0 because the
+# build_summary filter expected `torch.compile`.
+MODE_EAGER = "eager"
+MODE_TORCH_COMPILE = "torch.compile"
+
+_MODE_ALIASES: dict[str, str] = {
+    "eager": MODE_EAGER,
+    "torch.compile": MODE_TORCH_COMPILE,
+    "torch_compile": MODE_TORCH_COMPILE,
+    "torch-compile": MODE_TORCH_COMPILE,
+    "torchcompile": MODE_TORCH_COMPILE,
+}
+
+
+def _normalize_mode(mode: str) -> str:
+    """Map a user-supplied --modes token to the canonical bench_l3 mode name.
+
+    Raises ValueError if the token doesn't match a known mode — better to fail
+    loud at parse time than to silently produce empty compile_rows in summary.
+    """
+    canonical = _MODE_ALIASES.get(mode.strip().lower())
+    if canonical is None:
+        known = sorted(set(_MODE_ALIASES.values()))
+        aliases = sorted(_MODE_ALIASES.keys())
+        raise ValueError(
+            f"Unknown bench_l3 mode {mode!r}; "
+            f"canonical modes: {known}; accepted aliases: {aliases}"
+        )
+    return canonical
+
+
+def _normalize_modes(modes: list[str]) -> list[str]:
+    return [_normalize_mode(m) for m in modes]
+
+
 @dataclass
 class E2EResult:
     """Result of one model x sequence length x execution mode."""
@@ -329,7 +369,7 @@ def run_l3_single(
 ) -> list[E2EResult]:
     device = _resolve_device(device)
     torch_dtype = _resolve_dtype(dtype, device)
-    modes = modes or ["eager", "torch.compile"]
+    modes = modes or [MODE_EAGER, MODE_TORCH_COMPILE]
 
     _, tokenizer = model_loader(device=device, dtype=torch_dtype, model_name=model_name)
     input_ids = _make_input(tokenizer, seq_len, device=device)
@@ -391,7 +431,7 @@ def run_l3(
     resolved_device = _resolve_device(device)
     model_loader = _load_mock_model if mock else _load_gpt2
     model_name = "mock-gpt2" if mock else model
-    modes = modes or ["eager", "torch.compile"]
+    modes = modes or [MODE_EAGER, MODE_TORCH_COMPILE]
 
     _write_provenance(
         base_dir,
@@ -444,8 +484,8 @@ def save_results(results: list[E2EResult], output_dir: Path) -> None:
 
 
 def build_summary(results: list[E2EResult], *, target_ratio: float) -> dict[str, Any]:
-    compile_rows = [r for r in results if r.mode == "torch.compile"]
-    eager_rows = [r for r in results if r.mode == "eager"]
+    compile_rows = [r for r in results if r.mode == MODE_TORCH_COMPILE]
+    eager_rows = [r for r in results if r.mode == MODE_EAGER]
     successful_compile = [
         r
         for r in compile_rows
@@ -563,7 +603,7 @@ def main() -> None:
         if args.all or args.seq_len is None
         else _parse_int_list(args.seq_len)
     )
-    modes = _parse_str_list(args.modes)
+    modes = _normalize_modes(_parse_str_list(args.modes))
 
     if args.dry_run:
         print(json.dumps({

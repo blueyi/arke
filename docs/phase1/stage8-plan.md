@@ -112,7 +112,12 @@ This does **not** relax full G8. The remaining Stage 8 work is still the live LL
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| D7-E1 | torch.compile Inductor backend artifact contract (full GPU backend target still open) | P0 | XL | 🚧 |
+| D7-E1 | torch.compile Inductor backend artifact contract (full GPU backend target still open) — umbrella; see D7-E1.1..E1.5 | P0 | XL | 🚧 |
+| D7-E1.1 | **Diagnose 0.811× regression**: profile GPT-2 eager vs torch.compile (seq=128/256/512) with `torch._dynamo.config.verbose=True` + `TORCH_LOGS=output_code` + `nvprof`; categorize overhead sources (graph breaks, recompiles, Inductor codegen gaps, dispatch tax); produce `diagnosis.md` with ranked root causes and which fixable in-stage vs upstream. | P0 | S | ⬜ |
+| D7-E1.2 | **Eliminate graph breaks**: enumerate dynamo graph breaks via `torch._dynamo.explain()`; patch the `transformers` GPT-2 forward path (or our adapter shim) so the model compiles to ≤2 graph regions; assert via `dynamo_explain.json` artifact. Target: ≥0.85× eager at seq=128 after this task. | P0 | M | ⬜ |
+| D7-E1.3 | **CUDA Graph + reduce-overhead tuning**: validate `mode="reduce-overhead"` path with explicit `torch.cuda.graph` capture for the steady-state decode loop; rule out warmup/recompile contamination by separating eager/compile timing into (warmup_excluded, steady_state) buckets in `bench_l3`. Target: ≥0.90× eager at seq=128. | P0 | M | ⬜ |
+| D7-E1.4 | **Arke→torch.compile bridge MVP**: implement minimum `arke.backend.torch_compile` shim that registers Arke-generated Triton kernels as `torch.library` custom ops, routable from `torch.compile`'d models via `@torch.compile(backend="inductor")` + custom op dispatch table; ship 2 ops end-to-end (rmsnorm + matmul) with correctness tests. | P0 | L | ⬜ |
+| D7-E1.5 | **Hit G8[4] target**: combine E1.2 + E1.3 + E1.4 fixes; rerun `bench_l3 --model gpt2 --seq-len 128,256,512 --runs 20 --warmup 10`; require ratio_vs_eager ≥0.95 at all three seq lens; commit fresh CSV+summary.json under `benchmarks/results/phase1/stage8/track4/l3/` and update `docs/phase1/stage8-plan.md` M1/M4 status. | P0 | S | ⬜ |
 | D7-E2 | LLaMA-2 7B integration + bench_l3 runner | P0 | L | ⬜ |
 | D7-E3 | DeepSeek-V2 integration (seq≤512, quantized weights) | P2 | L | ⬜ |
 | D7-E4 | Triton MLA template (compressed KV, lora project) | P1 | L | ⬜ |
@@ -173,10 +178,10 @@ These are the core autonomy criteria that S8 must satisfy:
 
 | Milestone | Tracks | Day Estimate | Gate Criteria |
 |:----------|:------:|:------------:|:-------------|
-| M1: torch.compile backend MVP | Track 4 (D7-E1) | Day 5 | G8[4] partial |
+| M1: torch.compile backend MVP | Track 4 (D7-E1.1–E1.4) | Day 5 | G8[4] partial |
 | M2: Auto strategy generation | Track 1 (D7-A1, D7-A2) | Day 8 | G8[1], G8[2] |
 | M3: Multi-input support | Track 1 (D7-A3) | Day 10 | G8[3] |
-| M4: GPT-2 perf ≥0.95× eager | Track 4 (D7-E1) | Day 6 | G8[4] |
+| M4: GPT-2 perf ≥0.95× eager | Track 4 (D7-E1.5) | Day 6 | G8[4] |
 | M5: LLaMA-2 E2E | Track 4 (D7-E2, D7-E7) | Day 12 | G8[5] |
 | M6: DeepSeek-V2 E2E | Track 4 (D7-E3) | Day 15 | G8[6] |
 | M7: BL5 non-regression | — | Day 16 | G8[7] |

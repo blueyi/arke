@@ -66,7 +66,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
 | S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 (high-level IR ready for Phase-3 MLIR consumption) | ✅ 13/14 closed (G7.8d honest-gap accepted per Gate Governance v2; S7.followup.1–3 open) |
-| S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
+| S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | 🚧 entry-scout done (MVP G8 tier 1/2 4/4 ✅; GPT-2 torch.compile 0.811× eager ❌; M1 critical path open) |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
 ### Gate-Purpose Mapping
@@ -197,7 +197,7 @@ thresholds. Specification: [`docs/benchmark/benchmark-protocol.md`](../benchmark
 
 ---
 
-### Stage 8 (G8): Agent Autonomy ⬜
+### Stage 8 (G8): Agent Autonomy 🚧
 
 **Objective:** Validate that the Arke Agent can autonomously generate strategies, iterate optimization, and produce correct kernels for real LLMs. Integrate torch.compile backend to eliminate dispatch overhead. Validate on LLaMA-2 7B and DeepSeek-V2 16B.
 
@@ -221,6 +221,8 @@ AND ALL:
 → Detailed plan: [docs/phase1/stage8-plan.md](../phase1/stage8-plan.md)
 
 **Stage 8 MVP status (current):** the initial G8 bootstrap path is implemented and validated by `python -m benchmarks.gate G8`. It is intentionally an MVP subset of the locked full G8 criteria: `arke optimize <file.ak>` now generates bounded backend-agnostic StrategyIR with a deterministic heuristic, records three compile→profile→adjust cycles in `trajectory.jsonl`, writes `strategy.json` / `result.akir` / `summary.json`, and `benchmarks.bench_l3` now emits the GPT-2 eager vs `torch.compile` artifact contract with a CPU-safe `--mock` path. Full G8 remains open until the live LLM strategy path, multi-input routing, BL5 performance inheritance, LLaMA-2, and DeepSeek-V2 criteria above are satisfied.
+
+**Stage 8 entry-scout findings (2026-05-17):** Gate G8 contract validation tier 1/2 → 4/4 PASS (MVP.1 trajectory contract, MVP.2 multi-input cases, MVP.3 L3 artifact contract, MVP.4 pytest gate). First real GPT-2 measurement on the laptop RTX 3060 (seq=128, runs=5, warmup=3) showed **eager 7.26 ms / torch.compile 8.95 ms = ratio 0.811× ❌** against the locked G8[4] target ≥0.95×. This confirms the S5 known-fail signal and locks M1 (torch.compile backend MVP) + M4 (GPT-2 perf ≥0.95× eager) as the Stage 8 critical-path entry. Two cheap-fix bugs found during scout and closed in the same commit pack: (a) `bench_l1 --no-resume` was silently appending to per-op CSVs instead of truncating (commit `7b74abc`); (b) `bench_l3 build_summary` filtered on `r.mode == "torch.compile"` while CLI `--modes eager,torch_compile` wrote rows with `mode="torch_compile"`, producing `compile_rows=0` in summary.json despite a successful compile run. Fix: introduce `MODE_EAGER`/`MODE_TORCH_COMPILE` constants + `_normalize_mode()` alias map at the CLI parse layer, plus 5 regression tests. After this fix the same run reports `compile_rows=1` honestly.
 
 ---
 
