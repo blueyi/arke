@@ -76,21 +76,85 @@ documented in `AGENTS.md`.
 
 ---
 
-## 3. Architecture Overview
+## 3. Architecture Overview — Two-Layer Design
 
-The harness has three integration **modes** that share one underlying substrate.
+> **Locked principle (2026-05-17, Leon-approved):** Arke Harness is a **two-layer system**, not a monolith. The split between *Public Façade* (vendor-agnostic public contract) and *Arke Substrate* (Arke-internal compiler/IR coupling) is the **defining architectural commitment** that lets Arke simultaneously:
+>
+> 1. Plug into any MCP-compatible agent runtime (Claude Code, OpenClaw, Hermes, Cline, Continue, future Anthropic agents, custom in-house agents) — via the Public Façade.
+> 2. Retain deep IR/Compiler/V0-V1-V2 coupling for decision quality and cross-architecture portability — via the Arke Substrate.
+>
+> Without this split, Arke either (a) becomes "yet another vendor-locked optimizer" with no ecosystem reach, or (b) gets dragged into the lowest common denominator of public agent API contracts and loses the IR-coupling advantage. The two-layer design preserves both.
 
-### 3.1 The three modes
+### 3.0 The two layers
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Layer 1: Public Harness Façade                                      │
+│  ─────────────────────────────                                       │
+│  Vendor-agnostic, stable contract. Any MCP-compatible agent          │
+│  (Claude Code, OpenClaw, Hermes, Cline, Continue, …) talks to this   │
+│  surface. Version-locked. Backward-compatible across Arke releases   │
+│  within the same Façade major version.                               │
+│                                                                      │
+│  • 8 tools (§6) — `ToolMeta`-described, JSON-schema discoverable     │
+│  • OptimizationEvent stream (§4) — AsyncGenerator                    │
+│  • Trajectory JSONL (§15) — schema `s8-compile-profile-adjust-v1`    │
+│  • SKILL.md (§11) — Claude-Code-compatible recipe format             │
+│  • Hook spec (§12) — 8 lifecycle points, MAY register externally     │
+│  • MCP transport (§14) — stdio / sse, surfaces Tools/Resources/Prompts│
+│  • CLI verbs (`arke optimize`, `arke bench`, `arke mcp serve`)        │
+│  • Python API (`arke.optimize(...)`)                                  │
+│                                                                      │
+│  ↑ LLM provider is REPLACEABLE: Anthropic / OpenAI / OSS / in-house  │
+│  ↑ Agent runtime is REPLACEABLE: any MCP-speaking client             │
+└──────────────────────────────────────────────────────────────────────┘
+                          ↓  (internal ABI — may evolve per Stage)
+┌──────────────────────────────────────────────────────────────────────┐
+│  Layer 2: Arke Substrate                                             │
+│  ───────────────────────                                             │
+│  Arke-internal. Not exposed as a stable public API. Free to evolve   │
+│  across Phases (Triton → MLIR → vendor-DSL → LLVM-IR).                │
+│                                                                      │
+│  • SemanticIR / StrategyIR (docs/spec/arke-ir-spec-design.md)        │
+│  • Op registry + 45-op OT catalog (benchmarks/op_registry.py)        │
+│  • V0 (static) / V1 (numeric) / V2 (profile) validators              │
+│  • HeuristicStrategyGenerator — the always-on floor                  │
+│  • Backend codegen: Triton (Phase 1) → Ascend → MLIR → DSL → LLVM-IR │
+│  • Per-target hardware envelopes + legality computation              │
+│  • OptimizationState (ground truth outside the message log)          │
+└──────────────────────────────────────────────────────────────────────┘
+                          ↓
+                  GPU / NPU / CPU hardware
+```
+
+### 3.0.1 What may cross the layer boundary
+
+The Façade-to-Substrate boundary is enforced by **`arke/agent/tools.py` (ABC) + JSON-schema tool descriptors**. Crossing rules:
+
+| Direction | Allowed | Forbidden |
+|:---|:---|:---|
+| Façade → Substrate | Tool calls (8 tools), config (§17), hooks | Direct `StrategyIR` mutation, direct op-registry inspection, raw codegen invocation |
+| Substrate → Façade | Tool results (typed), `OptimizationEvent`s, structured errors with legal alternatives | Substrate-internal types (`Decision`, `StrategyIR`, op-registry handles) as opaque blobs in tool results |
+
+**Rule of thumb:** if a third-party agent (Claude Code, OpenClaw) needs it, it crosses the boundary as a typed Façade artifact. If only Arke's own compiler/codegen consumes it, it stays in the Substrate.
+
+### 3.0.2 Versioning policy
+
+- **Façade contract** is versioned `arke-harness-facade-vX.Y.Z`. Within `X`, all changes are backward-compatible (add tools, add event kinds, add hook points — never remove or break-signature). Breaking changes bump `X`.
+- **Substrate ABI** has no public contract. It evolves at Stage cadence. Each Phase may rewrite it entirely (e.g. Phase 3 introduces MLIR dialect; Substrate ABI re-shaped accordingly). The Façade absorbs the change.
+- **Compatibility test suite** verifies that every Façade version supports the locked 8-tool semantics, event stream, and trajectory schema. Lives in `tests/test_facade_contract_v*.py` (added Stage 9).
+
+### 3.1 The three integration modes (all on the same Façade)
 
 | Mode | Owns the loop | Entry point | Use case |
 |---|---|---|---|
 | **A. Built-in** | Arke | `arke optimize ...` (CLI) / `arke.optimize(...)` (Python) | Automated CI, batch optimization, scheduled benchmark runs |
 | **B. External agent** | The agent (Claude Code, Cursor, etc.) | Agent shells out to `arke <verb>` and reads JSON | AI dev assistants that already own LLM access and project context |
-| **C. MCP server** *(new)* | The MCP client (Claude Desktop, Cline, Continue, …) | `arke mcp serve --target ampere` | Any MCP-compatible client drives the 8-tool surface directly — no shell intermediation |
+| **C. MCP server** | The MCP client (Claude Desktop, Cline, Continue, OpenClaw, Hermes, …) | `arke mcp serve --target ampere` | Any MCP-compatible client drives the 8-tool surface directly — no shell intermediation |
 
-Modes A and B exist today (B at MVP fidelity via the heuristic generator). Mode C
-is a planned addition that closes the gap between Arke and the broader
-MCP-tooling ecosystem.
+Modes A and B exist today (B at MVP fidelity via the heuristic generator). Mode C is a planned addition that closes the gap between Arke and the broader MCP-tooling ecosystem.
+
+All three modes consume the **same Façade** — same 8 tools, same events, same trajectory schema. The Substrate sees no mode distinction.
 
 ### 3.2 Shared substrate
 

@@ -8,6 +8,47 @@
 
 Roadmap > Phase > Stage > Feature > Task
 
+## Core Thesis — Three-Level Decomposition
+
+> **Locked principle (2026-05-17, Leon-approved):** the Arke project's claim — *"LLM-as-decision-maker + structured IR + compiler verification produces correct, high-performance AI operators across architectures and abstraction layers"* — is split into three falsifiable sub-theses. Each level has an independent **kill criterion**. This prevents the global thesis from being indefinitely deferred to "the next Phase".
+
+### Thesis L1 — Single-Architecture, Single-Backend (Phase 1)
+
+**Claim:** The paradigm produces correct + high-performance AI operators on **SIMT** architecture via the **Triton** backend (one abstraction layer).
+
+- **Validation window:** Phase 1 (S0–S9)
+- **Pass evidence:** G8 + G9 — GPT-2 / LLaMA-2 / DS-V2 all meet correctness=100% + perf thresholds; BL5 inheritance holds; autonomous engineering (G7-AE) reproducible end-to-end.
+- **Kill criterion:** If G8[4]/[5]/[6] cannot pass *with reasonable engineering* (≤ 2 Stage 8 extensions), or LLM-best ≤ heuristic-floor in ≥ 50% of trajectories, the LLM-decision pillar is falsified for SIMT/Triton.
+- **Current status (2026-05-17):** L1 partially validated — G7 ✅, G8[4] GPT-2 ✅ (vanilla `torch.compile` path); G8[1]/[2]/[3]/[5]/[6]/[7] still open.
+
+### Thesis L2 — Cross-Architecture, Same Abstraction Layer (Phase 2)
+
+**Claim:** The same `SemanticIR + StrategyIR` schema, the same harness, and the same trajectory corpus can be **re-used** to drive a **SIMD/heterogeneous-pipeline** backend (Ascend 910B Cube/Vector via Triton-Ascend) without rewriting the IR.
+
+- **Validation window:** Phase 2 (Stage 10–11+, TBD)
+- **Pass evidence:** ≥80% of Phase 1 ops port to Ascend with **no new `Decision` kinds**, and ≥1 LLM-decided strategy on Ascend outperforms the Ascend heuristic floor.
+- **Kill criterion:** If StrategyIR must add ≥3 architecture-specific decision kinds (e.g. `cube_pipeline_stage`, `vector_buffer_double_buffer`) just to express Ascend strategy, or if SIMT trajectories provide **zero** transfer learning to SIMD decisions, L2 is falsified — IR is not architecture-agnostic, must redesign.
+- **Status:** ⬜ unstarted.
+
+### Thesis L3 — Cross-Abstraction-Layer (Phase 3-5)
+
+**Claim:** As Arke lowers further down the stack (MLIR → vendor-DSL → LLVM-IR), **performance improves monotonically** while correctness and LLM-decision quality hold.
+
+- **Validation window:** Phase 3 / Phase 4 / Phase 5
+- **Pass evidence:** Per Phase, geomean perf on the BL6 model set strictly improves vs the previous Phase's same-backend baseline (e.g. Phase 3 MLIR-direct geomean ≥ 1.05× Phase 1 Triton geomean on identical hardware).
+- **Kill criterion:** If **lowering loss** (information lost across each compiler stage) exceeds **LLM-decision gain** at any Phase — i.e. deeper stack yields worse performance — the "cross-abstraction-layer" claim collapses; the project halts or backtracks to the last winning Phase.
+- **Status:** ⬜ unstarted.
+
+### Why three levels matter
+
+- **L1 is the floor.** If L1 fails, the entire thesis fails — no need to start Phase 2.
+- **L2 tests IR generality.** This is where the bet "structured IR can abstract over architectures" gets tested with hard data, not aspirational wording.
+- **L3 tests compiler-stack value.** Without L3, Arke could collapse into "yet another Triton frontend"; L3 forces the value-add of going deeper to be measured.
+
+Each Stage Gate cites which Thesis level it advances. See per-Stage docs for the explicit mapping.
+
+---
+
 ## Gate Governance
 
 > **Gates are the contract between design and development.**
@@ -66,7 +107,7 @@ Roadmap > Phase > Stage > Feature > Task
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
 | S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 (high-level IR ready for Phase-3 MLIR consumption) | ✅ 13/14 closed (G7.8d honest-gap accepted per Gate Governance v2; S7.followup.1–3 open) |
-| S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | 🚧 G8[4] GPT-2 ✅ PASS (2026-05-17, D7-E1.6: cache_size_limit=64 + dynamic=True → seq={128/256/512} ratios 1.024/1.070/1.072, summary.json g8_gpt2_pass=true). Next critical path = D7-E1.4 Arke→torch.compile bridge MVP, then D7-E2 LLaMA-2. |
+| S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy (Thesis L1 — Phase 1) | 🚧 G8[4a] vanilla `torch.compile` GPT-2 ✅ PASS (2026-05-17, D7-E1.6: cache_size_limit=64 + dynamic=True → seq={128/256/512} ratios 1.024/1.070/1.072). **G8[4] split into [4a] vanilla ✅ + [4b] Arke→torch.compile bridge ⬜ (Leon-approved 2026-05-17, Q1=a)** to enforce explicit "Arke is doing work" evidence. Next critical path = D7-E1.4 Arke→torch.compile bridge MVP → D7-E2 LLaMA-2 → D7-E3.0 DS-V2 reachability probe. |
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
 ### Gate-Purpose Mapping
