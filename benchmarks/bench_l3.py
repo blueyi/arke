@@ -30,9 +30,26 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SEQ_LENS = [128, 512, 1024]
 DEFAULT_OUTPUT_DIR = "benchmarks/results/phase1/stage8/track4/l3"
-DEFAULT_WARMUP_RUNS = 5
+# D7-E1.6 (commit 145d772 follow-up): bumped from 5 → 10 because the diagnostic
+# script proved warmup=5 still lets the first-call compile overhead bleed into
+# the measurement window, producing apparent ~0.81x regressions that vanish at
+# warmup=10. See diagnosis.md in benchmarks/results/phase1/stage8/track4/diagnose_2026-05-16/.
+DEFAULT_WARMUP_RUNS = 10
 DEFAULT_MEASURE_RUNS = 20
 G8_GPT2_TARGET_RATIO = 0.95
+
+# D7-E1.6: GPT-2 has 12 transformer layers + lm_head + embeddings, so a single
+# forward pass under multiple seq_lens can register >8 distinct dynamo cache
+# entries (the default ``torch._dynamo.config.cache_size_limit``). Once the
+# limit is hit, dynamo evicts entries → re-compilation thrash → false-negative
+# regressions vs eager. Diagnostic dynamo_explain.txt confirmed the eviction
+# path. 64 is comfortably above 12 layers × 3 seq_lens × a few side-paths.
+_DYNAMO_CACHE_SIZE_LIMIT = 64
+try:
+    import torch._dynamo  # noqa: F401  (registers config)
+    torch._dynamo.config.cache_size_limit = _DYNAMO_CACHE_SIZE_LIMIT
+except Exception as _e:  # pragma: no cover  (older torch w/o _dynamo)
+    logger.warning("Could not bump torch._dynamo.config.cache_size_limit: %s", _e)
 
 
 # Canonical mode names used throughout bench_l3 (CSV `mode` column, summary.json
@@ -292,7 +309,13 @@ def _run_mode(
         if mode == "torch.compile":
             if not hasattr(torch, "compile"):
                 raise RuntimeError("torch.compile is unavailable in this PyTorch build")
-            model = torch.compile(model, mode="reduce-overhead")
+            # D7-E1.6: dynamic=True compiles a single shape-generic graph instead
+            # of one Inductor kernel per seq_len. With static specialization the
+            # per-seq forward generates fresh dynamo entries (12 layers × N seqs)
+            # which thrashes the cache even after bumping cache_size_limit on
+            # tight VRAM. dynamic=True keeps compile reused across {128,256,512}
+            # and is supported alongside mode="reduce-overhead" in torch >= 2.5.
+            model = torch.compile(model, mode="reduce-overhead", dynamic=True)
 
         _reset_peak_memory(device)
         logits = _get_logits(model, input_ids)
