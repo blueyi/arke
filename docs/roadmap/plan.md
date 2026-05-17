@@ -107,7 +107,7 @@ Each Stage Gate cites which Thesis level it advances. See per-Stage docs for the
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
 | S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 (high-level IR ready for Phase-3 MLIR consumption) | ✅ 13/14 closed (G7.8d honest-gap accepted per Gate Governance v2; S7.followup.1–3 open) |
-| S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy (Thesis L1 — Phase 1) | 🚧 G8[4a] vanilla `torch.compile` GPT-2 ✅ PASS (2026-05-17, D7-E1.6: cache_size_limit=64 + dynamic=True → seq={128/256/512} ratios 1.024/1.070/1.072). **G8[4] split into [4a] vanilla ✅ + [4b] Arke→torch.compile bridge ⬜ (Leon-approved 2026-05-17, Q1=a)** to enforce explicit "Arke is doing work" evidence. Next critical path = D7-E1.4 Arke→torch.compile bridge MVP → D7-E2 LLaMA-2 → D7-E3.0 DS-V2 reachability probe. |
+| S8 | G8 | **Harness system (Tier 1)** + BL5 inherit + BL6×L3 endpoint validation (Tier 2) | L1+L2+L3 | **Build extensible Arke Harness** for LLM-driven op auto-gen/tune (Stage 8 primary deliverable); BL6×L3 = Thesis L1 endpoint validation | 🚧 **Tier 1 in progress** (Harness Façade/Substrate); Tier 2: G8[4a] vanilla `torch.compile` GPT-2 ✅ PASS (2026-05-17, D7-E1.6); G8[4b] Arke bridge ⬜ (scope-guarded transient artifact); G8[1]/[2]/[3]/[5]/[6]/[7] open. **G8 PASS split into Tier 1 (Harness) + Tier 2 (L1 endpoints), Leon-approved 2026-05-17.**
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
 ### Gate-Purpose Mapping
@@ -124,7 +124,7 @@ Each Stage Gate cites which Thesis level it advances. See per-Stage docs for the
 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | OT0-2×ST1-3 correctness 100%; GPT-2 top-1 correct | P0, P3 |
 | **G6** | **BL4×L1** | **L1** | 45 ops correctness 100% via SemanticInterpreter; perf ≥1.00× P3 | P3 |
 | **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness 100%; **same-backend Triton fairness**: Arke-Triton ≥ (1−ε)·Triton-ref with ε=0.03; 4/4 fusions; per-op denominator = best Triton-only implementation in ladder | Triton-only ladder (FlagGems / Liger / Unsloth / vLLM-Triton / flash-attn) |
-| **G8** | **BL5 inherit + BL6×L3** | **L1+L2+L3** | GPT-2 ≥0.95× eager; LLaMA-2 ≥0.90×; DS-V2 ≥0.85×; auto-strategy ≥0.95× P0 | P0, P1, P3 |
+| **G8** | **Harness system (Tier 1) + BL5 inherit + BL6×L3 endpoint (Tier 2)** | **L1+L2+L3** | **Tier 1**: Façade v1.0 + LLM autonomy + extensibility (1 new op ≤300 LOC + 1 new baseline ≤200 LOC). **Tier 2**: GPT-2 ≥0.95× eager; LLaMA-2 ≥0.90×; DS-V2 ≥0.85×; auto-strategy ≥0.95× P0 | P0, P1, P3 |
 | **G9** | **BL6×L3 (4 models) + BL5 regression** | **L1+L2+L3** | GPT-2 ≥1.00× eager; LLaMA-2/3 ≥0.95×; Qwen2.5 ≥0.90×; Arke ≥1.05× P5 | P0, P1, P5 |
 
 
@@ -240,24 +240,53 @@ thresholds. Specification: [`docs/benchmark/benchmark-protocol.md`](../benchmark
 
 ### Stage 8 (G8): Agent Autonomy 🚧
 
-**Objective:** Validate that the Arke Agent can autonomously generate strategies, iterate optimization, and produce correct kernels for real LLMs. Integrate torch.compile backend to eliminate dispatch overhead. Validate on LLaMA-2 7B and DeepSeek-V2 16B.
+**Objective:** Build a **highly extensible Arke Harness system** for LLM-driven auto-generation and auto-tuning of AI operators. The Harness (Façade + Substrate) is the **primary Stage 8 deliverable**. Multi-model BL6 end-to-end results (GPT-2 / LLaMA-2 / DS-V2) serve as **Thesis L1 endpoint validation**, demonstrating that the Harness produces real wins on real LLMs.
 
 **Why this follows S7:** Agent needs the v0.1.0 IR/Lang (from S7) to generate backend-agnostic strategies. torch.compile integration needs Backend abstraction (from S6) and Pass pipeline (from S6). Multi-model E2E needs full operator coverage and MLIR skeleton (from S7).
 
 **BL Exit:** BL5 inherited (no regression) + BL6×L3 (GPT-2 + LLaMA-2 + DeepSeek-V2).
 
-**Gate G8 PASS Criteria:**
+**Stage 8 Core Mission (locked 2026-05-17, Leon-approved):**
+Stage 8 builds a **highly extensible Arke Harness system** capable of LLM-driven auto-generation and auto-tuning of AI operators. The Harness itself (Façade + Substrate) is the **primary deliverable**; multi-model BL6 end-to-end results are **Thesis L1 endpoint validation**, not the Stage 8 product. G8 PASS therefore splits into two tiers:
+
+**Gate G8 PASS Criteria (Tier 1 + Tier 2, both must hold):**
 
 ```
-AND ALL:
+Tier 1 — Harness system (Stage 8 primary deliverable):
+  [HARNESS-1] Façade interfaces locked: 8 tools schema + OptimizationEvent stream
+              + trajectory schema v1.0 frozen (≤1 breaking change budget for the tier).
+  [HARNESS-2] LLM autonomy:  G7-AE.1~AE.5 reproducibly pass — Agent independently
+              completes op-generation + autotune trajectory end-to-end.
+  [HARNESS-3] Extensibility (mid-tier, Leon-approved 2026-05-17, Q3=b):
+              - Onboard 1 *new* operator end-to-end: ≤300 LOC (incl. tests)
+                + 1 SKILL.md + 1 audit entry + registered in op_registry.py,
+                runs through BL1.
+              - Onboard 1 *new* baseline runner: ≤200 LOC + documented
+                BaselineRunner subclass protocol + plugged into benchmarks/baselines/.
+              - Both demos shipped under benchmarks/results/phase1/stage8/extensibility/.
+
+Tier 2 — Thesis L1 endpoint validation (Harness produces real wins):
   [1] Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥0.95× P0 (cuBLAS)
   [2] Iterative optimization: ≥3 compile→profile→adjust cycles in trajectory
   [3] Multi-input: .ak file + natural language + code snippet → all work E2E
-  [4] torch.compile backend: GPT-2 correctness 100% + perf ≥0.95× eager (fixes S5 known-fail)
+  [4a] Vanilla torch.compile baseline: GPT-2 correctness 100% + perf ≥0.95× eager
+  [4b] Arke→torch.compile bridge active: ≥1 Arke kernel on GPT-2's critical path,
+        correctness 100% + perf ≥0.95× eager + bridge-invocation-evidence.
+        ⚠ Bridge is a *transient Substrate artifact* scoped to ≤3 ops, inference-only,
+        single-file under arke/integration/torch_bridge.py. It is NOT part of the
+        Façade and is not a permanent product capability — see stage8-plan.md
+        "D7-E1.4 scope guardrails".
   [5] LLaMA-2 7B: correctness 100% + perf ≥0.90× eager
-  [6] DeepSeek-V2 16B: correctness 100% + perf ≥0.85× eager (seq≤512, quantized)
+  [6] DeepSeek-V2 16B: correctness 100% + perf ≥0.85× eager (seq≤512, quantized;
+       gated on D7-E3.0 reachability probe)
   [7] BL5 no regression: L1+L2 correctness and performance ≥ G7 results
 ```
+
+> **Tiering rationale:** Tier 1 measures whether Stage 8 *built the right thing*
+> (a usable, extensible LLM-driven optimization Harness). Tier 2 measures whether
+> what was built *actually delivers* on the L1 thesis (end-to-end perf wins on
+> real LLMs). Tier 1 cannot be degraded; Tier 2 model selection (e.g. DS-V2)
+> may be relaxed per D7-E3.0 outcome with Leon approval.
 
 → Detailed plan: [docs/phase1/stage8-plan.md](../phase1/stage8-plan.md)
 

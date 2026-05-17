@@ -144,6 +144,19 @@ The Façade-to-Substrate boundary is enforced by **`arke/agent/tools.py` (ABC) +
 - **Substrate ABI** has no public contract. It evolves at Stage cadence. Each Phase may rewrite it entirely (e.g. Phase 3 introduces MLIR dialect; Substrate ABI re-shaped accordingly). The Façade absorbs the change.
 - **Compatibility test suite** verifies that every Façade version supports the locked 8-tool semantics, event stream, and trajectory schema. Lives in `tests/test_facade_contract_v*.py` (added Stage 9).
 
+### 3.0.3 Transient artifacts (Phase-1-only Substrate workstreams)
+
+Some Substrate workstreams exist **for the duration of a single Phase** to provide endpoint-validation evidence, and are explicitly **not** intended to grow into permanent Arke capabilities. These artifacts are governed by Phase-specific scope guardrails (documented in the Stage plan that introduces them) and are frozen or replaced at Phase boundaries.
+
+| Artifact | Phase | Purpose | Scope guardrails |
+|:---------|:------|:--------|:-----------------|
+| `arke/integration/torch_bridge.py` | Phase 1 only | BL6 G8[4b] endpoint validation — show Arke kernels can be embedded in `torch.compile`'d HF transformers forward graphs via `torch.library.custom_op` | Single file; ≤ 3 ops (rmsnorm + matmul + 1 optional fused); inference-only (no autograd backward); **not** exported from `arke.__init__`; **not** part of the Façade contract. Full guardrails: `docs/phase1/stage8-plan.md` "D7-E1.4 Scope Guardrails". |
+| (future) `arke/integration/ascend_bridge.py` | Phase 2 only | Equivalent endpoint validation for Ascend / Triton-Ascend pipeline | TBD at Phase 2 entry |
+
+**Why this category exists:** the Arke core thesis is *architecture-agnostic* LLM-driven optimization. Letting integration shims (PyTorch dispatcher, Ascend ACL, future MLIR runtime hooks) grow into the core would couple Arke to per-Phase host frameworks. By isolating them as **transient Substrate artifacts** with explicit scope guardrails and lifecycle bounds, Arke retains a clean architecture-agnostic core, while still being able to produce real end-to-end evidence on each Phase's native host framework.
+
+**Lifecycle rule:** After the gate that consumes the transient artifact PASSes, the artifact is **frozen** — no new feature additions until either (a) the introducing Stage plan explicitly re-opens it, or (b) Phase boundary review. At Phase boundary, the artifact is either deleted (replaced by the next Phase's bridge) or kept as a legacy reference.
+
 ### 3.1 The three integration modes (all on the same Façade)
 
 | Mode | Owns the loop | Entry point | Use case |
