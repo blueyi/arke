@@ -201,7 +201,7 @@ Pick **one baseline framework not currently wrapped** (e.g. a new vendor kernel 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
 | D8-F1 | Lock 8-tool schema at `arke-harness-facade-v1.0.0` (frozen `arke/agent/facade_v1_schema.json` + `tests/test_facade_contract_v1.py` 51/51 PASS + regen script) | P0 | M | ✅ |
-| D8-F2 | Lock OptimizationEvent stream schema v1.0 (event kinds enum + payload schemas + golden trajectory fixtures) | P0 | M | ⬜ |
+| D8-F2 | Lock OptimizationEvent stream schema v1.0 (`arke-harness-events-v1.0.0`, 9 kinds: decision/compile/profile/verify/checkpoint/rollback/compact/fallback/done; frozen `arke/agent/events_v1_schema.json` + `tests/test_facade_events_contract_v1.py` 68/68 PASS + regen script + golden trajectory fixture; §4 doc-bug reconciled to include `checkpoint`) | P0 | M | ✅ |
 | D8-F3 | Lock trajectory.jsonl schema v1.0 (`s8-compile-profile-adjust-v1` → bump to `v1.0.0` with frozen field set) | P0 | S | ⬜ |
 | D8-X1 | **Extensibility Demo A — new operator onboarding** (≤300 LOC, 1 SKILL, 1 audit, BL1 evidence; see "Tier 1 Extensibility Acceptance" above) | P0 | M | ⬜ |
 | D8-X2 | **Extensibility Demo B — new baseline runner onboarding** (≤200 LOC, BaselineRunner protocol doc, BL1+BL3 evidence) | P0 | M | ⬜ |
