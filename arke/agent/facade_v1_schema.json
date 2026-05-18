@@ -1,0 +1,270 @@
+{
+  "facade_version": "1.0.0",
+  "contract_id": "arke-harness-facade-v1.0.0",
+  "design_ref": "docs/architecture/arke-harness.md §6.1",
+  "locked_on": "2026-05-18",
+  "tool_count": 8,
+  "tools": [
+    {
+      "name": "get_hw_profile",
+      "description": "Get the target hardware profile (compute capability, VRAM, SM count, etc.)",
+      "meta": {
+        "concurrent_safe": true,
+        "idempotent": true,
+        "requires_compile": false,
+        "mutates_strategy": false,
+        "budget_type": "free",
+        "cost": "cheap"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "name": "analyze_compute",
+      "description": "Analyze an operator's compute pattern, shape rule, and template hints",
+      "meta": {
+        "concurrent_safe": true,
+        "idempotent": true,
+        "requires_compile": false,
+        "mutates_strategy": false,
+        "budget_type": "free",
+        "cost": "cheap"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "op_name": {
+            "type": "string",
+            "description": "Operator name"
+          }
+        },
+        "required": [
+          "op_name"
+        ]
+      }
+    },
+    {
+      "name": "list_legal_actions",
+      "description": "List legal next-decisions for the current optimization state. Returns candidates of kind tile/unroll/vectorize/parallel/place (filterable via filter_kind). Redundant candidates already in decision_log are filtered out.",
+      "meta": {
+        "concurrent_safe": true,
+        "idempotent": true,
+        "requires_compile": false,
+        "mutates_strategy": false,
+        "budget_type": "free",
+        "cost": "cheap"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "top_n": {
+            "type": "integer",
+            "description": "Max candidates to return",
+            "default": 10
+          },
+          "filter_kind": {
+            "type": "string",
+            "description": "Restrict to one decision kind (tile/unroll/vectorize/parallel/place)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "apply_decision",
+      "description": "Apply an optimization decision to the current strategy. Mutates OptimizationState (strategy + decision_log) and consumes 1 decision budget unit.",
+      "meta": {
+        "concurrent_safe": false,
+        "idempotent": false,
+        "requires_compile": false,
+        "mutates_strategy": true,
+        "budget_type": "decision",
+        "cost": "cheap"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "Decision kind (tile/unroll/vectorize/parallel/place/fuse/reorder/compute/algorithm)"
+          },
+          "params": {
+            "type": "object",
+            "description": "Kind-specific parameters (e.g. {loop, factors} for tile)"
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "lang": {
+                    "type": "string"
+                  }
+                }
+              }
+            ],
+            "description": "Optional natural-language justification (required by @rationale convention for non-trivial decisions)"
+          },
+          "level": {
+            "type": "integer",
+            "description": "1 = L1 backend-agnostic, 2 = L2 backend-specific",
+            "default": 1
+          }
+        },
+        "required": [
+          "kind",
+          "params"
+        ]
+      }
+    },
+    {
+      "name": "verify_correctness",
+      "description": "Numerically verify that the current strategy (optionally after applying a trial decision) produces outputs matching the operator's reference implementation. Trial decisions are rolled back automatically.",
+      "meta": {
+        "concurrent_safe": false,
+        "idempotent": true,
+        "requires_compile": true,
+        "mutates_strategy": false,
+        "budget_type": "compile",
+        "cost": "medium"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "object",
+            "description": "Optional trial decision (applied + rolled back automatically). Same shape as apply_decision params.",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "params": {
+                "type": "object"
+              },
+              "rationale": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object"
+                  }
+                ]
+              },
+              "level": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "rtol": {
+            "type": "number",
+            "description": "Relative tolerance (default per-dtype)"
+          },
+          "atol": {
+            "type": "number",
+            "description": "Absolute tolerance (default per-dtype)"
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Input generation seed (default: env.seed)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "compile_and_profile",
+      "description": "Compile an operator from IR graph through the pass pipeline and MockBackend, then validate correctness against reference implementation",
+      "meta": {
+        "concurrent_safe": false,
+        "idempotent": true,
+        "requires_compile": true,
+        "mutates_strategy": false,
+        "budget_type": "compile",
+        "cost": "expensive"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "op_name": {
+            "type": "string",
+            "description": "Operator name"
+          },
+          "shapes": {
+            "type": "object",
+            "description": "Optional shape overrides per input",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "required": [
+          "op_name"
+        ]
+      }
+    },
+    {
+      "name": "checkpoint",
+      "description": "Snapshot the current optimization state under a label. Free operation.",
+      "meta": {
+        "concurrent_safe": false,
+        "idempotent": false,
+        "requires_compile": false,
+        "mutates_strategy": false,
+        "budget_type": "free",
+        "cost": "cheap"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Checkpoint label (overwrites if exists)"
+          }
+        },
+        "required": [
+          "label"
+        ]
+      }
+    },
+    {
+      "name": "rollback",
+      "description": "Restore optimization state from a labelled checkpoint. Mutates strategy, decision_log, best_result, and budget counters back to the snapshot. Compile history is preserved (audit trail).",
+      "meta": {
+        "concurrent_safe": false,
+        "idempotent": true,
+        "requires_compile": false,
+        "mutates_strategy": true,
+        "budget_type": "free",
+        "cost": "cheap"
+      },
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Checkpoint label to restore"
+          }
+        },
+        "required": [
+          "label"
+        ]
+      }
+    }
+  ]
+}

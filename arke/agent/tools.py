@@ -902,15 +902,19 @@ class ToolRegistry:
 
     @classmethod
     def default(cls) -> ToolRegistry:
-        """Create registry with all built-in (stateless) tools.
+        """Create registry with the 3 stateless Façade v1.0 tools.
 
-        For the full Façade v1.0 contract (stateless + env-bound), use
-        `ToolRegistry.with_env(env)`.
+        For the full Façade v1.0 contract (stateless + env-bound 8 tools),
+        use `ToolRegistry.with_env(env)`.
+
+        Note: `BenchmarkAdviceSummaryTool` is intentionally NOT registered here.
+        It is a Phase-1 internal helper used by `benchmarks/` CLI flows, not part
+        of the locked Façade v1.0 contract (arke-harness.md §6.1). The class
+        remains importable for those internal call sites.
         """
         reg = cls()
         reg.register(GetHWProfileTool())
         reg.register(AnalyzeComputeTool())
-        reg.register(BenchmarkAdviceSummaryTool())
         reg.register(CompileAndProfileTool())
         return reg
 
@@ -918,17 +922,19 @@ class ToolRegistry:
     def with_env(cls, env: Any) -> ToolRegistry:
         """Create the full Façade v1.0 registry bound to an ArkeEnv.
 
-        Wires up all 8 tools from arke-harness.md §6:
+        Wires up the 8 locked tools from arke-harness.md §6.1
+        (Façade contract version: `arke-harness-facade-v1.0.0`):
+
           1. get_hw_profile           (stateless)
           2. analyze_compute          (stateless)
           3. list_legal_actions       (env-bound)
-          4. apply_decision           (env-bound)
+          4. apply_decision           (env-bound, mutates)
           5. verify_correctness       (env-bound)
-          6. compile_and_profile      (stateless; D8-F1.3 will upgrade)
+          6. compile_and_profile      (stateless; D8-F1.3 will upgrade backend)
           7. checkpoint               (env-bound)
-          8. rollback                 (env-bound)
+          8. rollback                 (env-bound, mutates)
 
-        Plus `benchmark_advice_summary` carried over from S6.
+        No additional tools are registered — the Façade is exactly 8.
         """
         reg = cls.default()
         reg.register(ListLegalActionsTool(env))

@@ -184,12 +184,14 @@ class TestCompileAndProfile:
 
 class TestToolRegistry:
 
-    def test_default_has_4_tools(self):
-        assert len(TOOL_REGISTRY) == 4
+    def test_default_has_3_tools(self):
+        # Façade v1.0 stateless tools only — benchmark_advice_summary
+        # is intentionally not in TOOL_REGISTRY (see ToolRegistry.default docstring).
+        assert len(TOOL_REGISTRY) == 3
         assert "get_hw_profile" in TOOL_REGISTRY
         assert "analyze_compute" in TOOL_REGISTRY
-        assert "benchmark_advice_summary" in TOOL_REGISTRY
         assert "compile_and_profile" in TOOL_REGISTRY
+        assert "benchmark_advice_summary" not in TOOL_REGISTRY
 
     def test_get_tool(self):
         tool = TOOL_REGISTRY.get("get_hw_profile")
@@ -201,7 +203,7 @@ class TestToolRegistry:
 
     def test_all_schemas(self):
         schemas = TOOL_REGISTRY.all_schemas()
-        assert len(schemas) == 4
+        assert len(schemas) == 3
         for s in schemas:
             assert s["type"] == "function"
             assert "name" in s["function"]
@@ -234,7 +236,6 @@ class TestToolRegistry:
         names = TOOL_REGISTRY.names()
         assert sorted(names) == [
             "analyze_compute",
-            "benchmark_advice_summary",
             "compile_and_profile",
             "get_hw_profile",
         ]

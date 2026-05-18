@@ -84,13 +84,14 @@ def reg(env: ArkeEnv) -> ToolRegistry:
 
 def test_registry_with_env_has_all_8_tools(reg: ToolRegistry):
     names = set(reg.names())
-    # The 8 façade tools + benchmark_advice_summary carry-over
+    # The 8 façade tools per arke-harness.md §6.1 (Façade v1.0 contract).
+    # No other tools — benchmark_advice_summary is intentionally not registered.
     expected_8 = {
         "get_hw_profile", "analyze_compute",
         "list_legal_actions", "apply_decision", "verify_correctness",
         "compile_and_profile", "checkpoint", "rollback",
     }
-    assert expected_8.issubset(names), f"missing: {expected_8 - names}"
+    assert names == expected_8, f"missing: {expected_8 - names}, extra: {names - expected_8}"
 
 
 def test_registry_default_omits_env_tools():

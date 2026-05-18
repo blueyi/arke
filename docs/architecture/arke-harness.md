@@ -318,6 +318,8 @@ contract that file implements. *This section subsumes the former `agent-design.m
 | 7 | `checkpoint` | Snapshot current StrategyIR + best metrics under a label | no | free |
 | 8 | `rollback` | Restore a previous checkpoint | **yes** | free |
 
+**Frozen contract (D8-F1, locked 2026-05-18):** The exact descriptions, `ToolMeta` flags, and `parameters_schema` for these 8 tools are pinned in `arke/agent/facade_v1_schema.json` (regenerated deterministically by `scripts/regen_facade_v1_schema.py`) and enforced by `tests/test_facade_contract_v1.py` (51 tests). Version constants live in `arke.agent.facade`. Any change to a tool's name/description/meta/schema is a Façade-level event subject to the §3.0.2 versioning policy. `benchmark_advice_summary` is *not* a Façade tool — it is a Phase-1 internal helper used by `benchmarks/` CLI flows only.
+
 ### 6.2 `ToolMeta` schema
 
 Every tool self-declares (see `arke/agent/tools.py`):
