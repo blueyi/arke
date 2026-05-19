@@ -1,0 +1,14 @@
+{"t": 0.001, "kind": "header", "data": {"schema": "s8-compile-profile-adjust-v1", "trajectory_version": "1.0.0", "contract_id": "arke-trajectory-v1.0.0", "kernel_id": "matmul", "target_hw": "nvidia-sm86", "mode": "compile", "input_kind": "ak_file", "input_path": "examples/operators/01_matmul.ak", "required_cycle_order": ["compile", "profile", "adjust"], "semantic_ir": {"kernel_id": "matmul", "node_count": 7, "param_count": 3, "symbolic_dims": ["M", "N", "K"]}}}
+{"t": 0.012, "kind": "decision", "data": {"decision": {"kind": "tile", "params": {"loop": "M", "factors": [128]}, "rationale": "tile M for L2 reuse"}, "rationale": "tile M for L2 reuse", "step": 1, "decisions_used": 1}}
+{"t": 0.014, "kind": "verify", "data": {"tier": "v0", "pass": true}}
+{"t": 0.241, "kind": "compile", "data": {"backend": "triton", "success": true, "build_ms": 227.3, "artifact_path": "/tmp/arke/build/matmul_v1.bin"}}
+{"t": 1.840, "kind": "profile", "data": {"latency_ms": 0.41, "vs_baseline": 1.18, "baseline_name": "pytorch", "samples": 50, "bottleneck": "memory_bandwidth"}}
+{"t": 1.841, "kind": "checkpoint", "data": {"label": "best", "score": 1.18, "decision_count_at": 1, "compile_count_at": 1}}
+{"t": 1.902, "kind": "adjust", "data": {"cycle": 1, "decisions_before": 1, "decisions_after": 2, "changed": true, "bottleneck": "memory_bandwidth"}}
+{"t": 1.910, "kind": "decision", "data": {"decision": {"kind": "vectorize", "params": {"loop": "K", "width": 4}, "rationale": "widen K vector lanes"}, "rationale": "widen K vector lanes", "step": 2, "decisions_used": 2}}
+{"t": 2.001, "kind": "compact", "data": {"removed": 12, "kept": 5, "tokens_before": 18432, "tokens_after": 6201}}
+{"t": 2.118, "kind": "verify", "data": {"tier": "v1", "pass": false, "max_diff": 0.083, "tolerance": 0.001, "error": "max_diff exceeds tolerance"}}
+{"t": 2.142, "kind": "rollback", "data": {"label": "best", "discarded_decisions": 1, "reason": "v1 verification regressed"}}
+{"t": 2.190, "kind": "fallback", "data": {"layer": "provider", "from": "claude-opus-4-7", "to": "claude-sonnet-4-6", "reason": "primary provider unreachable"}}
+{"t": 2.300, "kind": "adjust", "data": {"cycle": 2, "decisions_before": 2, "decisions_after": 2, "changed": false, "bottleneck": "memory_bandwidth"}}
+{"t": 2.512, "kind": "done", "data": {"final_score": 1.18, "decisions": 2, "compiles": 1, "termination": "llm_no_more_tool_use", "chosen": "llm"}}

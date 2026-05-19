@@ -488,6 +488,9 @@ def _optimize_routed(
     cycles_completed = 0
 
     with TrajectoryWriter(trajectory_path) as writer:
+        # Trajectory v1.0 (D8-F3): header → stream events → adjust marker.
+        # The header carries the legacy `schema` pin plus the locked
+        # `trajectory_version` / `contract_id` via build_header_data().
         writer.write_header({
             "kernel_id": kernel_id,
             "input_path": routed.display_path,
@@ -496,10 +499,7 @@ def _optimize_routed(
             "source_text_path": str(source_text_path) if source_text_path is not None else None,
             "mode": "dry-run" if dry_run else "compile",
             "target_hw": target_hw,
-            "schema": "s8-compile-profile-adjust-v1",
             "required_cycle_order": ["compile", "profile", "adjust"],
-        })
-        writer.write_observation(0, {
             "semantic_ir": {
                 "kernel_id": compile_result.semantic_ir.kernel_id,
                 "node_count": len(compile_result.semantic_ir.nodes),
@@ -509,41 +509,62 @@ def _optimize_routed(
         })
 
         for cycle in range(1, cycles + 1):
-            step = cycle
             compile_event = _compile_cycle(
                 compile_result,
                 strategy,
                 dry_run=dry_run,
             )
-            writer.write_action(step, "compile", {
+            # Emit a single `compile` event per cycle carrying the
+            # producer-side build outcome (D8-F2 stream kind).
+            writer.write_compile({
+                "backend": "mock" if dry_run else "triton",
+                "success": bool(compile_event["success"]),
                 "cycle": cycle,
                 "decision_count": len(strategy.decisions),
                 "dry_run": dry_run,
+                **{k: v for k, v in compile_event.items() if k != "success"},
             })
-            writer.write_result(step, compile_event["success"], compile_event)
             if not compile_event["success"]:
                 errors.extend(compile_event.get("errors", []))
                 break
 
             profile = _mock_profile(strategy, cycle=cycle)
-            writer.write_action(step, "profile", {"cycle": cycle, "source": "mock"})
-            writer.write_result(step, True, profile)
+            # Map mock profile fields onto the D8-F2 `profile` kind:
+            # latency_ms + vs_baseline are the required pair, score is
+            # carried as vs_baseline so downstream best-score tracking
+            # remains a single-field read.
+            writer.write_profile({
+                "latency_ms": float(profile.get("latency_ms", 0.0)),
+                "vs_baseline": float(profile.get("score", 0.0)),
+                "baseline_name": "mock",
+                "bottleneck": profile.get("bottleneck", ""),
+                "cycle": cycle,
+                "source": "mock",
+            })
             best_score = max(best_score or 0.0, profile["score"])
 
-            writer.write_action(step, "adjust", {
-                "cycle": cycle,
-                "bottleneck": profile["bottleneck"],
-            })
             before = len(strategy.decisions)
             generator.refine(strategy, cycle=cycle, profile=profile)
-            adjustment = {
+            # Record-only `adjust` marks the cycle boundary.
+            writer.write_adjust({
                 "cycle": cycle,
                 "decisions_before": before,
                 "decisions_after": len(strategy.decisions),
                 "changed": len(strategy.decisions) != before,
-            }
-            writer.write_result(step, True, adjustment)
+                "bottleneck": profile.get("bottleneck", ""),
+            })
             cycles_completed = cycle
+
+        # Terminal `done` event closes the trajectory deterministically.
+        writer.write_done({
+            "final_score": float(best_score or 0.0),
+            "decisions": len(strategy.decisions),
+            "compiles": cycles_completed,
+            "termination": (
+                "hard_error" if errors else "llm_no_more_tool_use"
+            ),
+            "chosen": "heuristic_floor",
+        })
 
     strategy.to_file(str(strategy_path))
     _save_optimized_akir(compile_result, strategy, akir_path)

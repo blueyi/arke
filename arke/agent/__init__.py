@@ -25,7 +25,21 @@ from arke.agent.facade import (
     FACADE_VERSION,
     load_facade_v1_schema,
 )
-from arke.agent.optimize import HeuristicStrategyGenerator, OptimizeResult, optimize_file
+
+# Lazy re-export of the heavy ``optimize`` module to avoid a circular
+# import chain (``arke.agent`` ← ``arke.agent.optimize`` ←
+# ``arke.learn.trajectory`` ← ``arke.learn.trajectory_schema`` ←
+# ``arke.agent.events`` ← ``arke.agent``). Contract modules
+# (``events``, ``facade``) stay eager because they are leaf-light and
+# constitute the Façade public surface.
+
+def __getattr__(name: str):  # PEP 562 module-level lazy attribute hook
+    if name in {"HeuristicStrategyGenerator", "OptimizeResult", "optimize_file"}:
+        from arke.agent import optimize as _optimize
+        value = getattr(_optimize, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     "HeuristicStrategyGenerator",

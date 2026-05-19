@@ -98,7 +98,7 @@ documented in `AGENTS.md`.
 │                                                                      │
 │  • 8 tools (§6) — `ToolMeta`-described, JSON-schema discoverable     │
 │  • OptimizationEvent stream (§4) — AsyncGenerator                    │
-│  • Trajectory JSONL (§15) — schema `s8-compile-profile-adjust-v1`    │
+│  • Trajectory JSONL (§15) — schema `arke-trajectory-v1.0.0` (D8-F3)  │
 │  • SKILL.md (§11) — Claude-Code-compatible recipe format             │
 │  • Hook spec (§12) — 8 lifecycle points, MAY register externally     │
 │  • MCP transport (§14) — stdio / sse, surfaces Tools/Resources/Prompts│
@@ -649,18 +649,49 @@ Mode C is symmetric to how Claude Code consumes MCP servers from its side.
 
 ## 15. Trajectory & Learning
 
-Every run produces `trajectory.jsonl` (schema `s8-compile-profile-adjust-v1`).
+Every run produces `trajectory.jsonl` — the **record-level** sibling of the §4
+stream contract. The two share a single envelope by design::
+
+    {"t": <float>, "kind": <string>, "data": <object>}
+
+The record format is a **strict superset** of the §4 stream: every stream event
+kind is also a valid trajectory record, plus two record-only kinds:
+
+* `header` — exactly one line, always the first line; carries session metadata
+  (`kernel_id`, `target_hw`, `mode`, optional `semantic_ir` snapshot) plus the
+  three frozen version pins (`schema`, `trajectory_version`, `contract_id`).
+* `adjust` — emitted once per `compile → profile → adjust` cycle to mark the
+  StrategyIR refinement boundary. Stream consumers fold this into the next
+  `decision` burst; the record persists it explicitly so post-hoc cycle
+  attribution stays unambiguous.
+
 Records are emitted by the default hook bundle (§12) — never by special-case code.
 
 ```jsonl
+{"t": 0.001, "kind": "header",    "data": {"schema": "s8-compile-profile-adjust-v1", "trajectory_version": "1.0.0", "contract_id": "arke-trajectory-v1.0.0", "kernel_id": "matmul", "target_hw": "nvidia-sm86", "mode": "compile", "semantic_ir": {"kernel_id": "matmul", "node_count": 7}}}
 {"t": 0.012, "kind": "decision",  "data": {"decision": {...}, "rationale": "..."}}
-{"t": 0.014, "kind": "verify",    "data": {"v0": "pass"}}
-{"t": 0.241, "kind": "compile",   "data": {"backend": "triton", "build_ms": 227}}
+{"t": 0.014, "kind": "verify",    "data": {"tier": "v0", "pass": true}}
+{"t": 0.241, "kind": "compile",   "data": {"backend": "triton", "success": true, "build_ms": 227}}
 {"t": 1.840, "kind": "profile",   "data": {"latency_ms": 0.41, "vs_baseline": 1.18}}
 {"t": 1.841, "kind": "checkpoint","data": {"label": "best", "score": 1.18}}
+{"t": 1.902, "kind": "adjust",    "data": {"cycle": 1, "decisions_before": 1, "decisions_after": 2, "changed": true}}
 {"t": 2.001, "kind": "compact",   "data": {"removed": 12, "kept": 5}}
-{"t": 2.512, "kind": "done",      "data": {"final_score": 1.18, "decisions": 17, "compiles": 4}}
+{"t": 2.512, "kind": "done",      "data": {"final_score": 1.18, "decisions": 17, "compiles": 4, "termination": "llm_no_more_tool_use"}}
 ```
+
+**Frozen contract (D8-F3, locked 2026-05-19):** The 11 record kinds (the 9
+stream kinds from §4 plus `header` and `adjust`) and their payload field
+schemas are pinned in `arke/learn/trajectory_v1_schema.json` (regenerated
+deterministically by `scripts/regen_trajectory_v1_schema.py`) and enforced by
+`tests/test_facade_trajectory_contract_v1.py` (39 tests, including a golden
+fixture round-trip). Version constants
+(`TRAJECTORY_VERSION="1.0.0"` / `TRAJECTORY_CONTRACT_ID="arke-trajectory-v1.0.0"`)
+live in `arke.learn.trajectory_schema`. Within MAJOR `1.y.z`, new record kinds
+and new optional payload fields MAY be added; existing kind names and required
+payload fields MUST NOT change. Breaking changes bump MAJOR. The legacy
+`schema = "s8-compile-profile-adjust-v1"` string is pinned in the header for
+backward-compat parsers but is no longer the authoritative identifier — newer
+consumers should key off `contract_id`.
 
 Downstream consumers:
 
@@ -786,7 +817,7 @@ Honest assessment as of 2026-05-10. Contract is **frozen** for §1–§10, §15,
 | Bounded action space | ✅ implemented | `arke/agent/tools.py`, `list_legal_actions` impls |
 | ToolMeta declarative interface | ✅ implemented | `arke/agent/tools.py` |
 | Heuristic strategy floor | ✅ implemented | `arke/agent/optimize.py::HeuristicStrategyGenerator` |
-| Trajectory (`s8-compile-profile-adjust-v1`) | ✅ implemented | `arke/learn/trajectory.py` |
+| Trajectory (`arke-trajectory-v1.0.0`, D8-F3) | ✅ implemented | `arke/learn/trajectory.py` + `arke/learn/trajectory_schema.py` |
 | `arke optimize` CLI MVP | ✅ implemented | `arke/agent/optimize.py` (deterministic path) |
 | Sync turn loop with LLM | 🚧 partial | aspirational `LLMRunner` |
 | AsyncGenerator loop | ⬜ planned | Migration M1 |
