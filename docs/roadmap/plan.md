@@ -257,13 +257,27 @@ Tier 1 — Harness system (Stage 8 primary deliverable):
               + trajectory schema v1.0 frozen (≤1 breaking change budget for the tier).
   [HARNESS-2] LLM autonomy:  G7-AE.1~AE.5 reproducibly pass — Agent independently
               completes op-generation + autotune trajectory end-to-end.
-  [HARNESS-3] Extensibility (mid-tier, Leon-approved 2026-05-17, Q3=b):
-              - Onboard 1 *new* operator end-to-end: ≤300 LOC (incl. tests)
+  [HARNESS-3] Extensibility (mid-tier, Leon-approved 2026-05-17, Q3=b;
+              LOC cap raised 300→400 on 2026-05-22 to absorb D8-X1 rename
+              refactor + true-fused swiglu_packed in a single demo — see
+              D8-X1 entry below):
+              - Onboard 1 *new* operator end-to-end: ≤400 LOC (incl. tests)
                 + 1 SKILL.md + 1 audit entry + registered in op_registry.py,
                 runs through BL1.
               - Onboard 1 *new* baseline runner: ≤200 LOC + documented
                 BaselineRunner subclass protocol + plugged into benchmarks/baselines/.
               - Both demos shipped under benchmarks/results/phase1/stage8/extensibility/.
+
+              D8-X1 (Demo A, 2026-05-22 Leon-approved Aa1/Bb1/Cc2):
+                Discovered current "swiglu" / "geglu" baseline impls are
+                misnomers — they actually compute silu(x)*y and gelu(x)*y
+                (no input split, no down_proj). Demo A path:
+                  1. Hard-rename swiglu → silu_and_mul, geglu → gelu_and_mul
+                     across op_registry + downstream (no alias kept).
+                  2. Register new OT3 op `swiglu_packed`: true fused
+                     split → silu*mul → matmul(down_proj).
+                  3. Single-commit-chain demo; total LOC budget 400 (above
+                     original 300 — justified by rename-refactor surface).
 
 Tier 2 — Thesis L1 endpoint validation (Harness produces real wins):
   [1] Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥0.95× P0 (cuBLAS)
