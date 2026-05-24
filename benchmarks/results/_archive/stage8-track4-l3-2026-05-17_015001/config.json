@@ -1,0 +1,15 @@
+{
+  "model": "gpt2",
+  "seq_lens": [
+    128
+  ],
+  "device": "cuda",
+  "dtype": "auto",
+  "modes": [
+    "eager",
+    "torch_compile"
+  ],
+  "warmup": 3,
+  "runs": 5,
+  "mock": false
+}
