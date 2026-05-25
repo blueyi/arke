@@ -1,12 +1,23 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — PyTorch Reference Implementations for all 45 operators.
+"""Arke IR — PyTorch reference implementations for the kernel catalog.
+
+One ``ref_<kernel>`` function per kernel in the SSOT
+(``docs/benchmark/benchmark-ops.md``, parsed by
+``benchmarks.op_registry``). Each is wired into the kernel-schema view
+(``arke/ir/ops/catalog.py``) via ``OpSchema.reference_impl`` and called
+by ``SemanticInterpreter`` for numerical validation.
 
 Each function has signature:
     fn(inputs: dict[str, torch.Tensor], attrs: dict) -> torch.Tensor
 
-These are used by SemanticInterpreter for numerical validation.
+Layer boundary: these are **kernel-level** reference implementations
+(matmul, flash_attention, rmsnorm, …) — semantically aligned with the
+benchmark catalog, not with future low-level IR primitives. When a new
+kernel is added to the SSOT, also add a ``ref_<name>`` here and wire it
+in ``catalog.py``; ``test_ir_ops_schema_covers_kernel_catalog`` will
+guard the coverage relationship.
 """
 
 from __future__ import annotations

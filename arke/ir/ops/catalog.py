@@ -1,10 +1,46 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — Operator Catalog (45 operators, S6 OpSchema).
+"""Arke IR — Kernel Schema View (S6 OpSchema).
 
-Single Source of Truth for all operator metadata.
-Adding a new op requires only this file + one Jinja2 template.
+This file enriches each *kernel name* from the benchmark SSOT
+(``docs/benchmark/benchmark-ops.md``, parsed by
+``benchmarks.op_registry``) with the metadata that the compiler /
+interpreter / codegen need: ``shape_rule``, ``template_hint``,
+``reference_impl``, ``input_gen``.
+
+╔══════════════════════════════════════════════════════════════════════╗
+║  Layer boundary — read before extending this file                    ║
+║                                                                      ║
+║  This catalog is a **kernel-schema view**, not the kernel SSOT, and  ║
+║  not the future IR-dialect primitive registry.                       ║
+║                                                                      ║
+║    • Kernel SSOT          : ``docs/benchmark/benchmark-ops.md``      ║
+║      Authoritative parser : ``benchmarks/op_registry.py``            ║
+║      Layer                : *high-level kernels* (matmul,            ║
+║                             flash_attention, rmsnorm, rope, …)       ║
+║      Use ``total_ops() / ALL_OPS / OT_OPS`` to enumerate.            ║
+║                                                                      ║
+║    • Kernel schema view   : THIS FILE + ``arke/ir/ops/registry.py``  ║
+║      Purpose              : attach compiler/runtime metadata to each ║
+║                             SSOT kernel name. Derives from SSOT,     ║
+║                             must not invent new kernel names. Tests  ║
+║                             ``test_ir_ops_schema_covers_kernel_catalog`` ║
+║                             and ``test_ir_ops_schema_no_shadow_kernels`` ║
+║                             enforce this in both directions.         ║
+║                                                                      ║
+║    • IR dialect primitives: *not built yet* (Stage 8 / 9 + later     ║
+║      MLIR dialect). Will live under a separate registry — e.g.       ║
+║      ``arke/ir/dialects/...`` — and enumerate *low-level* ops        ║
+║      (load, store, arith.*, scf.*, …). IR primitives will *lower    ║
+║      to* the kernel schemas in this file; the two layers stay        ║
+║      decoupled by design.                                            ║
+║                                                                      ║
+║  Adding a new kernel: (1) edit the SSOT markdown, (2) register an    ║
+║  OpSchema here, (3) add a ``ref_*`` function in reference_impls.py.  ║
+║  Never hardcode the catalog size in this file or its consumers —    ║
+║  call ``benchmarks.op_registry.total_ops()`` instead.                ║
+╚══════════════════════════════════════════════════════════════════════╝
 """
 
 from __future__ import annotations
