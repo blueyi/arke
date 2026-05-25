@@ -171,14 +171,23 @@ def run_arke_pipeline(op_name: str, inputs: dict, attrs: dict, shapes: dict) -> 
 # ── Coverage Check ────────────────────────────────────────────
 
 def test_coverage_all_45_ops():
-    """Verify we have exactly 45 ops in registry."""
-    assert len(ALL_OP_NAMES) == 45, f"Expected 45 ops, got {len(ALL_OP_NAMES)}"
+    """Verify registry size matches the SSOT kernel catalog total."""
+    from benchmarks.op_registry import total_ops
+    expected = total_ops()
+    assert len(ALL_OP_NAMES) == expected, (
+        f"Expected {expected} ops (per SSOT benchmark-ops.md), "
+        f"got {len(ALL_OP_NAMES)}"
+    )
 
 
 def test_baseline_coverage():
     """Check how many ops have independent baseline."""
+    from benchmarks.op_registry import total_ops
+    expected = total_ops()
     covered = [op for op in ALL_OP_NAMES if op in BASELINE_REGISTRY]
-    assert len(covered) == 45, f"Expected 45 baselines, got {len(covered)}"
+    assert len(covered) == expected, (
+        f"Expected {expected} baselines (per SSOT), got {len(covered)}"
+    )
 
 
 # ── BL4-L1: Correctness vs Independent Baseline ──────────────

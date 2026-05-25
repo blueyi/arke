@@ -3,12 +3,14 @@
 
 """G6: Compiler Infrastructure gate runner.
 
-Gate G6 验证标准：
-- G6.1: OpRegistry 包含所有 45 ops，元数据完整
-- G6.2: SemanticInterpreter 正确执行所有 45 ops
+Gate G6 验证标准（op 总数由 ``benchmarks.op_registry.total_ops()`` 提供，
+权威源 ``docs/benchmark/benchmark-ops.md``）：
+
+- G6.1: OpRegistry 包含 SSOT 中所有 kernel，元数据完整
+- G6.2: SemanticInterpreter 正确执行所有 kernel
 - G6.3: Pass Pipeline 实现并集成
 - G6.4: Backend Abstraction 实现并集成
-- G6.5: 所有 45 ops 正确性 100%（通过 SemanticInterpreter）
+- G6.5: 所有 kernel 正确性 100%（通过 SemanticInterpreter）
 - G6.6: 性能基准 ≥1.00× P3 eager baseline（BL4×L1）
 - G6.7: 非回归测试通过（≥422 tests, 0 new failures）
 """
@@ -20,6 +22,7 @@ import sys
 from pathlib import Path
 
 from benchmarks.gate import GateResult, GateSummary
+from benchmarks.op_registry import ALL_OPS as KERNEL_NAMES, total_ops
 
 
 def run_g6(tier: int = 2) -> GateSummary:
@@ -34,40 +37,55 @@ def run_g6(tier: int = 2) -> GateSummary:
     results: list[GateResult] = []
     repo_root = Path(__file__).parent.parent
     python_exe = sys.executable
+    expected_total = total_ops()  # SSOT — never hardcode
 
-    # ── G6.1: OpRegistry 包含所有 45 ops ────────────────────────────────
+    # ── G6.1: OpRegistry covers full kernel catalog ─────────────────────
     try:
         from arke.ir.ops.registry import REGISTRY
         
-        total_ops = len(REGISTRY)
+        # Coverage relationship: every SSOT kernel must have an OpSchema entry.
+        # We don't assert numerical equality — REGISTRY is a view, not a SSOT.
+        missing = [k for k in KERNEL_NAMES if k not in REGISTRY]
         stats = REGISTRY.stats()
-        
-        g6_1_pass = total_ops == 45
-        g6_1_details = f"{total_ops} ops registered"
-        
+
+        g6_1_pass = (not missing)
+        g6_1_details = f"{len(REGISTRY)} ops registered (catalog declares {expected_total})"
+
         if g6_1_pass:
-            # 验证元数据完整性
+            # 验证元数据完整性：每个 catalog kernel 都要有 template/reference/shape_rule
             with_template = stats.get('with_template', 0)
             with_reference = stats.get('with_reference', 0)
             with_shape_rule = stats.get('with_shape_rule', 0)
-            
-            if with_template == 45 and with_reference == 45 and with_shape_rule == 45:
+
+            full_meta = (
+                with_template >= expected_total
+                and with_reference >= expected_total
+                and with_shape_rule >= expected_total
+            )
+            if full_meta:
                 g6_1_details += " (all with template, reference, shape_rule)"
             else:
                 g6_1_pass = False
-                g6_1_details += f" (template={with_template}, ref={with_reference}, shape={with_shape_rule})"
-        
+                g6_1_details += (
+                    f" (template={with_template}, ref={with_reference}, "
+                    f"shape={with_shape_rule}; expected ≥{expected_total} each)"
+                )
+        else:
+            g6_1_details += f"; missing schemas for {len(missing)} kernels: {missing[:5]}"
+
         results.append(GateResult(
-            "G6", "G6.1", "OpRegistry: 45 ops registered with complete metadata",
+            "G6", "G6.1",
+            "OpRegistry: full catalog coverage with complete metadata",
             "function", g6_1_pass, g6_1_details
         ))
     except Exception as e:
         results.append(GateResult(
-            "G6", "G6.1", "OpRegistry: 45 ops registered with complete metadata",
+            "G6", "G6.1",
+            "OpRegistry: full catalog coverage with complete metadata",
             "function", False, f"Error: {e}"
         ))
 
-    # ── G6.2: SemanticInterpreter 正确执行所有 45 ops ──────────────────
+    # ── G6.2: SemanticInterpreter executes all kernels correctly ────────
     try:
         from arke.ir.ops.interpreter import SemanticInterpreter
         from arke.ir.ops.registry import REGISTRY
@@ -98,12 +116,14 @@ def run_g6(tier: int = 2) -> GateSummary:
         g6_2_details = f"{ops_passed}/{ops_tested} representative ops verified"
         
         results.append(GateResult(
-            "G6", "G6.2", "SemanticInterpreter: executes all 45 ops correctly",
+            "G6", "G6.2",
+            "SemanticInterpreter: executes full kernel catalog correctly",
             "correctness", g6_2_pass, g6_2_details
         ))
     except Exception as e:
         results.append(GateResult(
-            "G6", "G6.2", "SemanticInterpreter: executes all 45 ops correctly",
+            "G6", "G6.2",
+            "SemanticInterpreter: executes full kernel catalog correctly",
             "correctness", False, f"Error: {e}"
         ))
 
@@ -152,7 +172,7 @@ def run_g6(tier: int = 2) -> GateSummary:
             "function", False, f"Error: {type(e).__name__}"
         ))
 
-    # ── G6.5: 所有 45 ops 正确性 100% ────────────────────────────────
+    # ── G6.5: full kernel-catalog correctness 100% ─────────────────────
     try:
         result = subprocess.run(
             [python_exe, "-m", "pytest", "tests/test_semantic_interpreter.py", "-q"],
@@ -173,12 +193,14 @@ def run_g6(tier: int = 2) -> GateSummary:
             g6_5_details = "SemanticInterpreter tests"
         
         results.append(GateResult(
-            "G6", "G6.5", "Correctness: all 45 ops verified (100%)",
+            "G6", "G6.5",
+            "Correctness: full kernel catalog verified (100%)",
             "correctness", g6_5_pass, g6_5_details
         ))
     except Exception as e:
         results.append(GateResult(
-            "G6", "G6.5", "Correctness: all 45 ops verified (100%)",
+            "G6", "G6.5",
+            "Correctness: full kernel catalog verified (100%)",
             "correctness", False, f"Error: {type(e).__name__}"
         ))
 
@@ -213,8 +235,11 @@ def run_g6(tier: int = 2) -> GateSummary:
                 
                 ops_count = len(ops_found)
                 passing_count = len(ops_passing)
-                g6_6_pass = ops_count >= 45 and passing_count >= 45
-                g6_6_details = f"{ops_count} ops with results, {passing_count} with eager baseline"
+                g6_6_pass = ops_count >= expected_total and passing_count >= expected_total
+                g6_6_details = (
+                    f"{ops_count} ops with results, {passing_count} with eager baseline "
+                    f"(expected ≥{expected_total} from SSOT)"
+                )
             else:
                 g6_6_details = "No CSV results found"
         else:
