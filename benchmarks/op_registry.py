@@ -9,10 +9,13 @@
 ║  Authoritative document : docs/benchmark/benchmark-ops.md (OT table)     ║
 ║  Authoritative parser   : THIS FILE (benchmarks/op_registry.py)          ║
 ║                                                                          ║
-║  Scope: this catalog enumerates the 45 *high-level* operators that the   ║
-║  Arke benchmark suite measures (matmul / flash_attention / rmsnorm /     ║
-║  rope / ...). It is a **kernel-level** abstraction tied to the          ║
-║  benchmark/baseline-runner layer — NOT a compiler IR concept.            ║
+║  Scope: this catalog enumerates the *high-level* kernel operators that   ║
+║  the Arke benchmark suite measures (matmul / flash_attention / rmsnorm / ║
+║  rope / ...). The total count is whatever the OT Summary table in        ║
+║  benchmark-ops.md currently declares — never hardcode it.  Use           ║
+║  ``total_ops()`` to query at runtime.  It is a **kernel-level**          ║
+║  abstraction tied to the benchmark/baseline-runner layer — NOT a         ║
+║  compiler IR concept.                                                    ║
 ║                                                                          ║
 ║  Do NOT look for this file under ``arke/ir/``.  ``arke/ir/`` is reserved ║
 ║  for the future Arke-IR dialect primitives (load/store/arith/control     ║
@@ -118,6 +121,54 @@ def all_ops(ot_ops: dict[int, list[str]] | None = None) -> list[str]:
     if ot_ops is None:
         ot_ops = parse_ops_md()
     return [op for tier in sorted(ot_ops) for op in ot_ops[tier]]
+
+
+# ── Public SSOT query API ─────────────────────────────────────────────────
+#
+# These functions are the *only* sanctioned way to ask "how many ops?" or
+# "what ops are in OT2?". Hardcoding numbers (e.g. ``== 45``) anywhere else
+# in the repo is a SSOT violation and will be caught by
+# ``tests/test_ssot_op_registry.py``.
+
+def total_ops() -> int:
+    """Authoritative operator total.
+
+    Reads from the parsed OT Summary table — never hardcode this number.
+
+    Returns
+    -------
+    int
+        Count of operators currently declared in benchmark-ops.md.
+    """
+    return len(ALL_OPS)
+
+
+def ops_by_tier(tier: int) -> list[str]:
+    """Return the operator list for a given OT tier.
+
+    Parameters
+    ----------
+    tier : int
+        OT tier index (0-4).
+
+    Returns
+    -------
+    list[str]
+        Operators in that tier, in declaration order. Empty list if tier
+        is not present.
+    """
+    return list(OT_OPS.get(tier, []))
+
+
+def tier_counts() -> dict[int, int]:
+    """Return ``{tier: count}`` for reporting / dashboard / log lines.
+
+    Returns
+    -------
+    dict[int, int]
+        Mapping from OT tier to operator count, sorted by tier.
+    """
+    return {t: len(ops) for t, ops in sorted(OT_OPS.items())}
 
 
 # ── Module-level singletons (computed once at import) ────────────────────
