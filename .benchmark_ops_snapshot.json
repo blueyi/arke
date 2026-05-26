@@ -40,7 +40,7 @@
   ],
   "3": [
     "silu_and_mul",
-    "geglu",
+    "gelu_and_mul",
     "rope",
     "fused_linear_cross_entropy",
     "cross_entropy",

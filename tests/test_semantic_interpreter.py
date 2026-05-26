@@ -195,9 +195,9 @@ class TestSemanticInterpreterOT3:
         expected = torch.nn.functional.silu(gate) * up
         assert torch.allclose(result, expected)
 
-    def test_geglu(self):
+    def test_gelu_and_mul(self):
         x = torch.randn(4, 256)
-        result = INTERPRETER.execute("geglu", {"X": x})
+        result = INTERPRETER.execute("gelu_and_mul", {"X": x})
         assert result.shape == (4, 128)
 
     def test_rmsnorm_residual(self):
@@ -291,7 +291,7 @@ class TestAllOpsExecute:
         "add", "mul", "softmax", "layernorm", "rmsnorm",
         "reduce_sum", "reduce_max", "reduce_mean", "cumsum",
         "matmul", "batch_matmul", "transpose", "copy_",
-        "silu_and_mul", "geglu",
+        "silu_and_mul", "gelu_and_mul",
     ])
     def test_op_executes(self, op_name):
         """Each op should execute without error on simple inputs."""

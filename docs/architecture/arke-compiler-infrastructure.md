@@ -152,7 +152,7 @@ class ShapeRule:
       "gather_rule"       shape from index tensor
       "embedding_rule"    [vocab,dim] indexed by [seq] -> [seq,dim]
       "permute_rule"      reorder dims per dims_attr
-      "gated_halve_rule"  halve last dim (silu_and_mul/geglu)
+      "gated_halve_rule"  halve last dim (silu_and_mul/gelu_and_mul)
       "attention_rule"    [B,H,S,D] from Q shape
       "custom"            delegate to fn(input_shapes, attrs) -> list[int]
     """
@@ -978,7 +978,7 @@ Replaces the 401-line `shape_inference.py` if/elif chain with a declarative rule
 | `gather_rule` | shape from index tensor | gather, scatter |
 | `embedding_rule` | `[*index_shape, embed_dim]` | embedding |
 | `permute_rule` | reorder dims per `attrs[dims_attr]` | permute, transpose |
-| `gated_halve_rule` | halve last dim | silu_and_mul, geglu |
+| `gated_halve_rule` | halve last dim | silu_and_mul, gelu_and_mul |
 | `attention_rule` | `[B, H, S, S]` from Q shape | flash_attention, etc. |
 | `custom` | delegate to `shape_rule.fn` | special cases |
 

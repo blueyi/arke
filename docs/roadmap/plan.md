@@ -273,8 +273,8 @@ Tier 1 — Harness system (Stage 8 primary deliverable):
                 misnomers — they actually compute silu(x)*y and gelu(x)*y
                 (no input split, no down_proj). Demo A path:
                   1. Hard-rename legacy `swiglu` benchmark op → `silu_and_mul`,
-                     and `geglu` → `gelu_and_mul` across op_registry + downstream
-                     (no aliases kept).
+                     and legacy `geglu` benchmark op → `gelu_and_mul` across
+                     op_registry + downstream (no aliases kept).
                   2. Register new OT3 op `swiglu_packed`: true fused
                      split → silu*mul → matmul(down_proj).
                   3. Single-commit-chain demo; total LOC budget 400 (above

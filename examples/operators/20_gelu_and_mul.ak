@@ -1,22 +1,22 @@
-// Example 20: GeGLU (Category D — activation, gated GELU variant)
+// Example 20: GELU-and-Mul (Category D — gated activation)
 //
 // Natural Language:
-//   "GeGLU: split X 后半做 GELU gate，X:[128, 6144] → Y:[128, 3072]"
-//   "Y = gelu(x1) * x2，x1 和 x2 是 split 的两半"
+//   "GELU-and-Mul: split X into two halves, apply gelu to x1, multiply by x2; X:[128, 6144] → Y:[128, 3072]"
+//   "Y = gelu(x1) * x2; x1 and x2 are two halves of the split input"
 //
 // Semantics: x1, x2 = split(X, dim=-1); Y = gelu(x1) * x2
-// Category: D (activation — gated, GeGLU)
+// Category: D (activation — gated, GELU-and-Mul)
 
-kernel geglu_kernel(
+kernel gelu_and_mul_kernel(
     X: Tensor<[128, 6144], f16>
 ) -> Tensor<[128, 3072], f16> 
 where B: dynamic(max=64), S: dynamic(max=8192), D: static
 {
-    let Y = geglu(X=X);
+    let Y = gelu_and_mul(X=X);
     return Y;
 }
 
-strategy geglu_kernel_strategy for target("nvidia_ampere") {
+strategy gelu_and_mul_kernel_strategy for target("nvidia_ampere") {
     fuse(ops=["gelu", "mul"], fusion_type="epilogue")
         @rationale("Stage 7 L2 gated activation fusion: keep split, GELU, and multiply in one epilogue-style kernel");
     tile(loop="row", factors=[4])

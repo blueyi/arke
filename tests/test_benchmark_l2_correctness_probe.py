@@ -14,7 +14,7 @@ from benchmarks.bench_l2 import _measure_fused_correctness
     ("op", "shape"),
     [
         ("silu_and_mul", (16, 128, 0)),
-        ("geglu", (16, 128, 0)),
+        ("gelu_and_mul", (16, 128, 0)),
         ("linear_ce", (8, 64, 128)),
         ("qkv_fa", (16, 192, 64)),
     ],

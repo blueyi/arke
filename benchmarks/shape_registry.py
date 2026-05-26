@@ -61,7 +61,7 @@ def _normalize_table_key(heading: str) -> str:
         '### TopK: ...' → 'topk'
         '### LayerNorm / RMSNorm / RMSNorm-Residual: ...' → 'layernorm'
         '### Reduce Sum / Max / Mean: ...' → 'reduce'
-        '### SiLU-and-Mul / GeGLU: ...' → 'silu_and_mul'
+        '### SiLU-and-Mul / GELU-and-Mul: ...' → 'silu_and_mul'
         '### Batch Matmul: ...' → 'batch_matmul'
         '### Grouped Matmul: ...' → 'grouped_matmul'
         '### Fused Linear Cross Entropy: ...' → 'fused_linear_cross_entropy'
@@ -104,9 +104,10 @@ def _normalize_table_key(heading: str) -> str:
         "scatter": "scatter",
         "embedding": "embedding",
         "permute": "permute",
-        "silu-and-mul / geglu": "silu_and_mul",
-        "silu_and_mul / geglu": "silu_and_mul",
-        "swiglu / geglu": "silu_and_mul",  # legacy heading before D8-X1 C1 rename
+        "silu-and-mul / gelu-and-mul": "silu_and_mul",
+        "silu-and-mul / gelu_and_mul": "silu_and_mul",
+        "silu_and_mul / gelu_and_mul": "silu_and_mul",
+        "swiglu / geglu": "silu_and_mul",  # legacy heading before D8-X1 C1/C2 rename
         "rope": "rope",
         "cross entropy": "cross_entropy",
         "fused linear cross entropy": "fused_linear_cross_entropy",
@@ -412,7 +413,7 @@ _OP_TO_TABLE_KEYS: dict[str, list[str]] = {
     "copy_": ["elementwise"],  # copy_ reuses elementwise shapes
     # OT3 — Fused Compound
     "silu_and_mul": ["silu_and_mul"],
-    "geglu": ["silu_and_mul"],
+    "gelu_and_mul": ["silu_and_mul"],
     "rope": ["rope"],
     "cross_entropy": ["cross_entropy"],
     "fused_linear_cross_entropy": ["fused_linear_cross_entropy"],

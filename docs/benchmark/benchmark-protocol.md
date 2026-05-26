@@ -536,7 +536,7 @@ The benchmark is the **target state definition** for Arke development.
 | L1 transpose | PyTorch (P3) | ✅ | 🔶 | ❌ | ⬜ |
 | **OT3 Gated Activation** | | | | | |
 | L1 silu_and_mul ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
-| L1 geglu ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 gelu_and_mul ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
 | **OT4 Attention** | | | | | |
 | L1 flash_attention ≥ P1 | FlashAttention (P1) | ✅ | 🔶 | ❌ | ⬜ |
 | L1 grouped_query_attention | FlashAttention (P1) | ✅ | 🔶 | ❌ | ⬜ |
@@ -551,7 +551,7 @@ The benchmark is the **target state definition** for Arke development.
 | DeepSeek-V2 ≤ eager | E2E eager | partial | 🔶 | ❌ | ⬜ |
 
 **Summary:** 11/20 operators have working codegen (Triton template). 9 operators
-(reduce_sum/max, transpose, rmsnorm_residual, grouped_matmul, silu_and_mul, geglu,
+(reduce_sum/max, transpose, rmsnorm_residual, grouped_matmul, silu_and_mul, gelu_and_mul,
 flash_attention, GQA, MLA) have IR + numerical validation but no Triton
 template yet — this is the primary Phase 2 codegen gap.
 

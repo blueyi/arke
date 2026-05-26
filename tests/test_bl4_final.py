@@ -101,7 +101,7 @@ def generate_inputs(op_name: str, dtype=torch.float32) -> tuple[dict, dict]:
         shapes = {"A": [M, N], "B": [M, N]}
     elif op_name == "where_":
         shapes = {"cond": [M, N], "A": [M, N], "B": [M, N]}
-    elif op_name in ("silu_and_mul", "geglu"):
+    elif op_name in ("silu_and_mul", "gelu_and_mul"):
         shapes = {"X": [M, N * 2]}
     elif op_name == "topk":
         shapes = {"X": [M, N]}

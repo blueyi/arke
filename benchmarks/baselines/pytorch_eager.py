@@ -29,7 +29,7 @@ _SUPPORTED_OPS = frozenset({
     "matmul", "batch_matmul", "transpose", "concat", "split",
     "gather", "scatter", "embedding", "permute", "copy_",
     # OT3 Fused Compound
-    "silu_and_mul", "geglu", "cross_entropy", "fused_linear_cross_entropy",
+    "silu_and_mul", "gelu_and_mul", "cross_entropy", "fused_linear_cross_entropy",
     # OT4 Attention
     "flash_attention", "grouped_query_attention", "cross_attention",
     "multi_latent_attention", "paged_attention",
@@ -151,7 +151,7 @@ class PyTorchEagerRunner(BaselineRunner):
         if op == "silu_and_mul" and len(inputs) == 1:
             x1, x2 = inputs[0].chunk(2, dim=-1)
             return F.silu(x1) * x2
-        if op == "geglu" and len(inputs) == 1:
+        if op == "gelu_and_mul" and len(inputs) == 1:
             x1, x2 = inputs[0].chunk(2, dim=-1)
             return F.gelu(x1) * x2
         if op == "cross_entropy" and len(inputs) == 2:
@@ -409,7 +409,7 @@ class PyTorchEagerRunner(BaselineRunner):
             x1, x2 = X.chunk(2, dim=-1)
             return lambda: F.silu(x1) * x2
 
-        elif op == "geglu":
+        elif op == "gelu_and_mul":
             X = torch.randn(M, 2 * N, device="cuda", dtype=dtype)
             x1, x2 = X.chunk(2, dim=-1)
             return lambda: F.gelu(x1) * x2

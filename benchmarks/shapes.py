@@ -195,7 +195,7 @@ class AttentionShape:
 
 @dataclass(frozen=True)
 class GatedShape:
-    """Shape for gated activations (silu_and_mul, geglu): [seq, ffn×2] → [seq, ffn]."""
+    """Shape for gated activations (silu_and_mul, gelu_and_mul): [seq, ffn×2] → [seq, ffn]."""
     tag: str
     seq: int
     ffn_x2: int  # Input dim = 2 × FFN dim
@@ -243,7 +243,7 @@ TRANSPOSE_SHAPES: list[Shape2D] = [
     Shape2D("extreme-tall", 65536, 64, "Extreme aspect ratio", tier=3),
 ]
 
-# ── Gated activation shapes (silu_and_mul, geglu) ─────────────────────────────
+# ── Gated activation shapes (silu_and_mul, gelu_and_mul) ─────────────────────────────
 
 GATED_SHAPES: list[GatedShape] = [
     # Tier 1
@@ -317,7 +317,7 @@ OP_TIER: dict[str, int] = {
     "concat": 2, "split": 2, "gather": 2, "scatter": 2,
     "embedding": 2, "permute": 2, "copy_": 2,
     # OT3 — Fused Compound (7)
-    "silu_and_mul": 3, "geglu": 3, "rope": 3,
+    "silu_and_mul": 3, "gelu_and_mul": 3, "rope": 3,
     "fused_linear_cross_entropy": 3, "cross_entropy": 3,
     "quantize_per_token": 3, "dequantize_per_channel": 3,
     # OT4 — Attention (5)
@@ -391,7 +391,7 @@ def get_shapes(  # noqa: F811 — intentional override of the original above
         shapes = REDUCE_SHAPES
     elif op == "transpose":
         shapes = TRANSPOSE_SHAPES
-    elif op in ("silu_and_mul", "geglu"):
+    elif op in ("silu_and_mul", "gelu_and_mul"):
         shapes = GATED_SHAPES
     elif op == "flash_attention":
         shapes = FLASH_ATTENTION_SHAPES
@@ -496,7 +496,7 @@ def _dict_to_shape(op: str, row: dict):
         # paged_attention has no Hq/Hkv distinction; map to AttentionShape
         return AttentionShape(tag=tag, B=_i("b"), H=_i("h"), S=_i("context_len"), D=_i("d"),
                               notes=notes, tier=t)
-    elif canon in ("silu_and_mul", "geglu"):
+    elif canon in ("silu_and_mul", "gelu_and_mul"):
         return GatedShape(tag=tag, seq=_i("seq"), ffn_x2=_i("ffn\u00d72"), notes=notes, tier=t)
     else:
         # Generic Shape2D: pick M, N heuristically
@@ -586,7 +586,7 @@ def _hardcoded_get_shapes(op: str, *, tier: int | None = None) -> list:
         shapes = REDUCE_SHAPES
     elif op == "transpose":
         shapes = TRANSPOSE_SHAPES
-    elif op in ("silu_and_mul", "geglu"):
+    elif op in ("silu_and_mul", "gelu_and_mul"):
         shapes = GATED_SHAPES
     elif op == "flash_attention":
         shapes = FLASH_ATTENTION_SHAPES

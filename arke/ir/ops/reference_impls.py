@@ -170,7 +170,7 @@ def ref_silu_and_mul(inputs: dict[str, torch.Tensor], attrs: dict) -> torch.Tens
     gate, up = x[..., :half], x[..., half:]
     return F.silu(gate) * up
 
-def ref_geglu(inputs: dict[str, torch.Tensor], attrs: dict) -> torch.Tensor:
+def ref_gelu_and_mul(inputs: dict[str, torch.Tensor], attrs: dict) -> torch.Tensor:
     x = inputs["X"]
     half = x.shape[-1] // 2
     gate, up = x[..., :half], x[..., half:]

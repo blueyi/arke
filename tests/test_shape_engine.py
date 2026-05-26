@@ -88,8 +88,8 @@ class TestShapeInference:
     def test_silu_and_mul_shape(self):
         assert SHAPE_ENGINE.infer("silu_and_mul", {"X": [4, 256]}) == [4, 128]
 
-    def test_geglu_shape(self):
-        assert SHAPE_ENGINE.infer("geglu", {"X": [4, 512]}) == [4, 256]
+    def test_gelu_and_mul_shape(self):
+        assert SHAPE_ENGINE.infer("gelu_and_mul", {"X": [4, 512]}) == [4, 256]
 
     # attention_rule
     def test_flash_attention_shape(self):

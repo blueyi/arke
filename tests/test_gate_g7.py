@@ -290,7 +290,7 @@ def test_check_bl5_performance_evidence_enforces_group_targets(monkeypatch):
         arke_l2("matmul_relu", "gpt2-sm", 100.0), triton_ref_l2("matmul_relu", "gpt2-sm", 110.0),
         arke_l2("matmul_gelu", "gpt2-sm", 100.0), triton_ref_l2("matmul_gelu", "gpt2-sm", 110.0),
         arke_l2("silu_and_mul", "gpt2-sm", 100.0),      triton_ref_l2("silu_and_mul", "gpt2-sm", 110.0),
-        arke_l2("geglu", "gpt2-sm", 100.0),       triton_ref_l2("geglu", "gpt2-sm", 110.0),
+        arke_l2("gelu_and_mul", "gpt2-sm", 100.0),       triton_ref_l2("gelu_and_mul", "gpt2-sm", 110.0),
         arke_l2("linear_ce", "gpt2-sm", 100.0),   triton_ref_l2("linear_ce", "gpt2-sm", 110.0),
         arke_l2("qkv_fa", "gpt2-sm", 100.0),      triton_ref_l2("qkv_fa", "gpt2-sm", 110.0, "flash-attn-triton"),
     ]
@@ -781,7 +781,7 @@ def test_correctness_evidence_treats_empty_baseline_as_arke(tmp_path: Path):
     _write_perf_all(
         root / "l2" / "PERF_ALL.csv",
         [
-            {"operator": "geglu", "shape_tag": "non-align-1", "baseline": "",
+            {"operator": "gelu_and_mul", "shape_tag": "non-align-1", "baseline": "",
              "status": "error", "correctness_status": "error",
              "correctness_reason": "Unbroadcastable Size([127, 3073])",
              "allclose": "", "perf_pass": ""},
@@ -857,7 +857,7 @@ def test_perf_evidence_skips_non_arke_baseline_failures(tmp_path: Path):
         root / "l2" / "PERF_ALL.csv",
         [
             # Need at least one L2 row to satisfy the "no evaluable fusion" check.
-            {"operator": "geglu_fused", "shape_tag": "s1", "baseline": "",
+            {"operator": "gelu_and_mul_fused", "shape_tag": "s1", "baseline": "",
              "status": "ok", "correctness_status": "ok",
              "allclose": "true", "perf_pass": "true"},
         ],
@@ -905,7 +905,7 @@ def test_perf_evidence_skips_perf_oracle_unavailable_arke_row(tmp_path: Path):
     _write_perf_all(
         root / "l2" / "PERF_ALL.csv",
         [
-            {"operator": "geglu_fused", "shape_tag": "s1", "baseline": "",
+            {"operator": "gelu_and_mul_fused", "shape_tag": "s1", "baseline": "",
              "status": "ok", "correctness_status": "ok",
              "allclose": "true", "perf_pass": "true"},
         ],

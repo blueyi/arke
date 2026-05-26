@@ -37,7 +37,7 @@ class ShapeRule:
     - "gather_rule": shape from index tensor
     - "embedding_rule": [vocab,dim] indexed by [seq] → [seq,dim]
     - "permute_rule": reorder dims per dims_attr
-    - "gated_halve_rule": halve last dim (silu_and_mul/geglu)
+    - "gated_halve_rule": halve last dim (silu_and_mul/gelu_and_mul)
     - "attention_rule": [B,H,S,D] from Q shape
     - "custom": delegate to fn(input_shapes, attrs) → list[int]
     """

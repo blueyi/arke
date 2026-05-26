@@ -192,7 +192,7 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
         indices = torch.randint(0, vocab_size, (seq_len,), device="cuda")
         weight = torch.randn(vocab_size, emb_dim, device="cuda", dtype=dtype)
         return (indices, weight)
-    if op in {"silu_and_mul", "geglu"}:
+    if op in {"silu_and_mul", "gelu_and_mul"}:
         return (torch.randn(M, 2 * N, device="cuda", dtype=dtype),)
     if op == "cross_entropy":
         logits = torch.randn(M, N, device="cuda", dtype=torch.float32)
@@ -341,7 +341,7 @@ def _torch_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor 
     if op == "silu_and_mul":
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.silu(x1) * x2
-    if op == "geglu":
+    if op == "gelu_and_mul":
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.gelu(x1) * x2
     if op == "cross_entropy" and len(inputs) == 2:

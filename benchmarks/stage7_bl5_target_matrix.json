@@ -1717,7 +1717,7 @@
       "performance_evidence_present": true
     },
     {
-      "op": "geglu",
+      "op": "gelu_and_mul",
       "ot_tier": 3,
       "layer": "l1",
       "shape_count_required": 12,
@@ -2387,7 +2387,7 @@
       "performance_evidence_present": false
     },
     {
-      "op": "geglu",
+      "op": "gelu_and_mul",
       "layer": "l2",
       "shape_count_required": 12,
       "shape_tags_required": [

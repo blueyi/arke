@@ -106,7 +106,7 @@ Operators are classified by **computational complexity and kernel design difficu
 | **OT0** | Elementwise | `relu`, `gelu`, `silu`, `add`, `mul` | No reduction, pure memory-bound |
 | **OT1** | Reduction | `softmax`, `layernorm`, `rmsnorm`, `rmsnorm_residual`, `reduce_sum`, `reduce_max` | Row-wise reduction, warp-level cooperation |
 | **OT2** | Compute-Dense | `matmul`, `batch_matmul`, `grouped_matmul`, `transpose` | Matrix multiply, tensor core tiling, shared memory staging |
-| **OT3** | Gated Activation | `silu_and_mul`, `geglu` | Split + nonlinear + elementwise mul; output dim = input/2 |
+| **OT3** | Gated Activation | `silu_and_mul`, `gelu_and_mul` | Split + nonlinear + elementwise mul; output dim = input/2 |
 | **OT4** | Attention | `flash_attention`, `grouped_query_attention`, `multi_latent_attention` | Multi-stage fused kernel, online softmax, causal mask, KV compression |
 
 **Design rationale:**
@@ -162,7 +162,7 @@ Compares three approaches:
 2. **torch.compile** — Inductor auto-fusion
 3. **FlagGems / Liger** — expert Triton fusion
 
-Currently supports: `matmul+relu`, `matmul+gelu`, `silu_and_mul`, `geglu`
+Currently supports: `matmul+relu`, `matmul+gelu`, `silu_and_mul`, `gelu_and_mul`
 
 ### L3: E2E Model (= BL6)
 
@@ -210,7 +210,7 @@ Each operator is benchmarked against multiple baseline tiers, ranked by expected
 | linear + cross_entropy | — | Liger `fused_linear_ce` | separate ops | ✓ |
 | QKV + attention | cuDNN SDPA | FlashAttention | `F.scaled_dot_product_attention` | ✓ |
 | silu_and_mul | — | Liger `silu_and_mul` | manual impl | ✓ |
-| geglu | — | Liger `geglu` | manual impl | ✓ |
+| gelu_and_mul | — | Liger `gelu_and_mul` | manual impl | ✓ |
 
 ---
 

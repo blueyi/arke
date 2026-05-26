@@ -74,7 +74,7 @@ For S7 planning purposes, this means the final Lang/IR design must support:
 - OT0–OT4 full operator coverage
 - ST1–ST4 full shape coverage where defined by the benchmark system
 - OT2–OT4 production-shape support strong enough to reach BL5, not merely BL4-style standard-shape support
-- the L2 fusion set required by BL5 (`matmul+relu`, `matmul+gelu`, `silu_and_mul`, `geglu`, `linear+cross_entropy`, `QKV+flash_attention`)
+- the L2 fusion set required by BL5 (`matmul+relu`, `matmul+gelu`, `silu_and_mul`, `gelu_and_mul`, `linear+cross_entropy`, `QKV+flash_attention`)
 
 > Reference: `docs/benchmark/benchmark-design.md` for BL/OT/ST/L definitions. The active Gate contract lives in `docs/roadmap/plan.md`; non-normative derivation notes are outside the active Stage 7 contract.
 
@@ -89,7 +89,7 @@ For S7 planning purposes, this means the final Lang/IR design must support:
 | **OT0** Elementwise (12 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | FlagGems Triton elem | `arke bench --bl 5 --ot 0 --layer l1` |
 | **OT1** Reduction (10 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | FlagGems Triton norm/softmax | `arke bench --bl 5 --ot 1 --layer l1` |
 | **OT2** Compute-Dense (11 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | best Triton matmul/conv in ladder (FlagGems / vLLM-Triton matmul) | `arke bench --bl 5 --ot 2 --layer l1` |
-| **OT3** Gated Activation (7 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | Liger / FlagGems Triton (silu_and_mul/geglu/rope) | `arke bench --bl 5 --ot 3 --layer l1` |
+| **OT3** Gated Activation (7 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | Liger / FlagGems Triton (silu_and_mul/gelu_and_mul/rope) | `arke bench --bl 5 --ot 3 --layer l1` |
 | **OT4** Attention (5 ops) | 100%(ST1-4, excl. OOM) | per-row `arke ≤ triton_ref × 1.03`; ≥97% pass rate | flash-attn Triton / FlashInfer Triton / vLLM-Triton attention | `arke bench --bl 5 --ot 4 --layer l1` |
 
 > **OOM note:** BL5 cannot rely on “accept incomplete coverage” logic. If a shape is inherently impossible on 6GB VRAM, the benchmark harness must record it consistently and the stage must provide a shape/memory strategy compatible with the Gate definition.
@@ -101,7 +101,7 @@ For S7 planning purposes, this means the final Lang/IR design must support:
 | Fusion Combination | Requirement (Same-Backend Triton) | Triton Reference | Measurement |
 |:-------------------|:----------------------------------|:-----------------|:------------|
 | matmul+relu, matmul+gelu | per-row `arke ≤ triton_ref × 1.03` (fusion must beat unfused Triton) | best Triton fused matmul+act in ladder; if absent → unfused Triton sequential | `arke bench --bl 5 --layer l2 --fusion matmul_relu,matmul_gelu` |
-| silu_and_mul, geglu | per-row `arke ≤ triton_ref × 1.03` | Liger Triton silu_and_mul/geglu | `arke bench --bl 5 --layer l2 --fusion silu_and_mul,geglu` |
+| silu_and_mul, gelu_and_mul | per-row `arke ≤ triton_ref × 1.03` | Liger Triton silu_and_mul/gelu_and_mul | `arke bench --bl 5 --layer l2 --fusion silu_and_mul,gelu_and_mul` |
 | linear+cross_entropy | per-row `arke ≤ triton_ref × 1.03` | Liger Triton fused_linear_cross_entropy (canonical L2 slot name: `linear_ce`) | `arke bench --bl 5 --layer l2 --fusion linear_ce` |
 | QKV+flash_attention | per-row `arke ≤ triton_ref × 1.03` | flash-attn Triton (FA-2 Triton kernel) | `arke bench --bl 5 --layer l2 --fusion qkv_fa` |
 
@@ -130,7 +130,7 @@ G7 PASS = AND ALL:
 | 5 | MLIR framework skeleton exists with BL1 matmul path verified | MLIREmitter / lowering skeleton exists; BL1 matmul verified through skeleton path |
 | 6 | All 45 BL5 ops: `.ak → SemanticIR → StrategyIR` full round-trip passes | `python -m arke.compiler.pipeline --ak examples/<op>.ak --dry-run` passes all 45 ops |
 | 7 | Lang expressiveness covers the full BL5 operator/shape surface, not just demos | parse/round-trip tests cover `where`, tuple returns, `_`, conditional strategy, multi-output, attention-family, quantization-family, and BL5 production-shape examples |
-| 8 | StrategyIR / lowering surface can represent the BL5 L2 fusion set | dry-run / lowering tests cover `matmul+relu`, `matmul+gelu`, `silu_and_mul`, `geglu`, `linear+cross_entropy`, `QKV+flash_attention` |
+| 8 | StrategyIR / lowering surface can represent the BL5 L2 fusion set | dry-run / lowering tests cover `matmul+relu`, `matmul+gelu`, `silu_and_mul`, `gelu_and_mul`, `linear+cross_entropy`, `QKV+flash_attention` |
 | 9 | Backend-agnostic StrategyIR core contains 0 Triton-specific fields | `scripts/check_backend_agnostic.py` passes against StrategyIR core |
 | 10 | Non-regression suite remains green | `pytest tests/ -q` — no new failures |
 
@@ -240,7 +240,7 @@ That means every unfinished task in S7 should be justified by one of these bench
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
 | T6.1 | Extend benchmark routing to all 45 ops and the full BL5 shape registry | P0 | 1d | ✅ — benchmark routing is wired to the full BL5 op registry and shape matrix |
-| T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | ✅ — L2 fusion runners exist for `matmul_relu`, `matmul_gelu`, `silu_and_mul`, `geglu`, `linear_ce`, and `qkv_fa` |
+| T6.2 | Implement / adapt L2 fused benchmark runners for the full required fusion set from `benchmark-design.md` | P0 | 0.5d | ✅ — L2 fusion runners exist for `matmul_relu`, `matmul_gelu`, `silu_and_mul`, `gelu_and_mul`, `linear_ce`, and `qkv_fa` |
 | T6.3 | Ensure Lang + IR + lowering can express the six BL5 L2 fusion cases end-to-end | P0 | 0.5d | ✅ — explicit `.ak` surface coverage and lowering evidence now exist for the six BL5 fusion cases |
 | T6.4 | Align baselines: cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed | P0 | 0.5d | ✅ — baselines are aligned to cuBLAS / FlashAttn-2 / Liger / FlagGems / eager fallback where needed |
 | T6.5 | Define memory-aware execution strategy for OT4 / large OT2 shapes on 6GB VRAM without reducing BL5 scope | P0 | 1d | ✅ — memory-aware preflight and artifact fields are in place for OT4 and dense/logit-pressure rows |
@@ -327,7 +327,7 @@ Rationale for this order:
 | L2 required shapes | 120 | 6 | 0.0500 |
 
 - **Performance artifacts present:** yes
-- **Correctness / accuracy artifacts present:** yes (partial; live for L2 `matmul_relu` and a growing L1 subset across dense linear algebra, elementwise, reduction, normalization, activations, gated fused activations, loss ops, batched/grouped GEMM, positional encoding, data-movement/indexing, quantization, and attention — including `matmul`, `grouped_matmul`, `gelu`, `silu`, `silu_and_mul`, `geglu`, `softmax`, `layernorm`, `cross_entropy`, `fused_linear_cross_entropy`, `rope`, `cross_attention`, `flash_attention`, `grouped_query_attention`; `Liger-Kernel` `rope` remains correctness-unsupported because it has no `run_with_inputs(...)` hook).
+- **Correctness / accuracy artifacts present:** yes (partial; live for L2 `matmul_relu` and a growing L1 subset across dense linear algebra, elementwise, reduction, normalization, activations, gated fused activations, loss ops, batched/grouped GEMM, positional encoding, data-movement/indexing, quantization, and attention — including `matmul`, `grouped_matmul`, `gelu`, `silu`, `silu_and_mul`, `gelu_and_mul`, `softmax`, `layernorm`, `cross_entropy`, `fused_linear_cross_entropy`, `rope`, `cross_attention`, `flash_attention`, `grouped_query_attention`; `Liger-Kernel` `rope` remains correctness-unsupported because it has no `run_with_inputs(...)` hook).
 
 ### Reverse decomposition into the Arke 4-piece suite
 

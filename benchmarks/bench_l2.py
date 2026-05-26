@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 ALL_FUSED_OPS = [
     "matmul_relu", "matmul_gelu",
-    "silu_and_mul", "geglu",
+    "silu_and_mul", "gelu_and_mul",
     "linear_ce",
     "qkv_fa",
 ]
@@ -274,7 +274,7 @@ def run_fused_op(
     """Benchmark one fused operator across shapes and approaches."""
     op = FUSED_OP_ALIASES.get(op, op)
 
-    if op in ("silu_and_mul", "geglu"):
+    if op in ("silu_and_mul", "gelu_and_mul"):
         if shapes is None:
             # Use canonical registry-backed shape catalog so BL5 tag coverage
             # stays aligned with stage7_bl5_target_matrix.json.
@@ -388,7 +388,7 @@ def run_fused_op(
 
 def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tuple[float, float]:
     if dtype == torch.float16:
-        if op in {"matmul_relu", "matmul_gelu", "silu_and_mul", "geglu", "linear_ce", "qkv_fa"}:
+        if op in {"matmul_relu", "matmul_gelu", "silu_and_mul", "gelu_and_mul", "linear_ce", "qkv_fa"}:
             return 1e-2, 1e-2
         return 5e-3, 5e-3
     return 1e-5, 1e-6
@@ -419,7 +419,7 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
                 raise NotImplementedError(f"Unknown fused approach: {approach}")
             return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
 
-        if op in {"silu_and_mul", "geglu"}:
+        if op in {"silu_and_mul", "gelu_and_mul"}:
             # Gated benchmark shapes are recorded as the input feature width
             # (2 * ffn). Non-aligned stress shapes intentionally exercise odd
             # widths and are part of the BL5 contract -- they MUST NOT be

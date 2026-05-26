@@ -422,13 +422,13 @@ Shape: `[M, N]` (M = batch×seq, N = feature dim)
 
 ## OT3 — Fused Compound Shapes
 
-**Operators covered (7):** `silu_and_mul`, `geglu`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel`
+**Operators covered (7):** `silu_and_mul`, `gelu_and_mul`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel`
 
-### SiLU-and-Mul / GeGLU: `[B, 2H] → [B, H]`
+### SiLU-and-Mul / GELU-and-Mul: `[B, 2H] → [B, H]`
 
 | Tag | Seq | FFN×2 | FFN | Tier | Source | Notes |
 |:----|----:|------:|----:|:----:|:-------|:------|
-| `gpt2-sm` | 128 | 6144 | 3072 | 1 | GPT-2 Small | GeGLU reference |
+| `gpt2-sm` | 128 | 6144 | 3072 | 1 | GPT-2 Small | GELU-and-Mul reference |
 | `llama-7b-512` | 512 | 22016 | 11008 | 2 | LLaMA-2 7B | SwiGLU |
 | `llama-7b-2k` | 2048 | 22016 | 11008 | 2 | LLaMA-2 7B | SwiGLU long seq |
 | `llama3-8b` | 512 | 28672 | 14336 | 2 | LLaMA-3 8B | SwiGLU |
