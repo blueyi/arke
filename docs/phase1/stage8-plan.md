@@ -55,7 +55,7 @@ G8 PASS = AND ALL Tier 1 AND ALL Tier 2:
               StrategyIR in the trajectory).
 
   [HARNESS-3] Extensibility (mid-tier, Leon-approved 2026-05-17, Q3=b):
-              (a) New operator demo:  ≤300 LOC (impl + tests) + 1 SKILL.md
+              (a) New operator demo:  ≤400 LOC (impl + tests) + 1 SKILL.md
                   + 1 audit entry + registered in benchmarks/op_registry.py,
                   runs through BL1 (correctness + perf rows in CSV).
               (b) New baseline runner demo:  ≤200 LOC + documented
@@ -168,7 +168,7 @@ Pick **one operator not currently in `op_registry.py`** (e.g. `silu_and_mul`, `l
 
 | Acceptance item | Hard limit |
 |:----------------|:-----------|
-| Total new LOC (impl + unit tests) | **≤ 300 LOC** |
+| Total new LOC (impl + unit tests) | **≤ 400 LOC** (raised from 300 on 2026-05-22, commit 955f9a7, to absorb the D8-X1 rename refactor + true-fused `swiglu_packed` in a single demo chain) |
 | SKILL.md (Arke-Agent skill for the new op) | 1 file |
 | Audit entry (PRIMARY + FALLBACK from community ladder per AGENTS.md "Arke 工作流偏好") | 1 entry under `benchmarks/audit/op_<name>.md` |
 | Registration in `benchmarks/op_registry.py` | passes `tests/test_ssot_op_registry.py` |
@@ -203,7 +203,7 @@ Pick **one baseline framework not currently wrapped** (e.g. a new vendor kernel 
 | D8-F1 | Lock 8-tool schema at `arke-harness-facade-v1.0.0` (frozen `arke/agent/facade_v1_schema.json` + `tests/test_facade_contract_v1.py` 51/51 PASS + regen script) | P0 | M | ✅ |
 | D8-F2 | Lock OptimizationEvent stream schema v1.0 (`arke-harness-events-v1.0.0`, 9 kinds: decision/compile/profile/verify/checkpoint/rollback/compact/fallback/done; frozen `arke/agent/events_v1_schema.json` + `tests/test_facade_events_contract_v1.py` 68/68 PASS + regen script + golden trajectory fixture; §4 doc-bug reconciled to include `checkpoint`) | P0 | M | ✅ |
 | D8-F3 | Lock trajectory.jsonl schema v1.0 (`arke-trajectory-v1.0.0`, strict superset of D8-F2 stream — adds `header` + `adjust` record-only kinds; legacy `schema` string pinned in header for backward compat) | P0 | S | ✅ |
-| D8-X1 | **Extensibility Demo A — new operator onboarding** (≤300 LOC, 1 SKILL, 1 audit, BL1 evidence; see "Tier 1 Extensibility Acceptance" above) | P0 | M | ⬜ |
+| D8-X1 | **Extensibility Demo A — new operator onboarding** (≤400 LOC, 1 SKILL, 1 audit, BL1 evidence; rename `swiglu`→`silu_and_mul` + `geglu`→`gelu_and_mul`, then register true-fused OT3 op `swiglu_packed`; see "Tier 1 Extensibility Acceptance" above and `docs/roadmap/plan.md` HARNESS-3) | P0 | M | ⬜ |
 | D8-X2 | **Extensibility Demo B — new baseline runner onboarding** (≤200 LOC, BaselineRunner protocol doc, BL1+BL3 evidence) | P0 | M | ⬜ |
 | D8-X3 | Document `BaselineRunner` ABC + onboarding playbook in `docs/architecture/arke-harness.md` new § | P0 | S | ⬜ |
 
