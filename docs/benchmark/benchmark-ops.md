@@ -14,7 +14,7 @@ Full operator catalog with tier classification, complexity rationale, and baseli
 | **OT0** | Elementwise           | 12    | `relu`, `gelu`, `silu`, `tanh`, `sigmoid`, `add`, `mul`, `where_`, `cast`, `neg`, `exp`, `rsqrt`                                 | Memory-bound; 1:1 element map                                 |
 | **OT1** | Reduction             | 10    | `softmax`, `layernorm`, `rmsnorm`, `rmsnorm_residual`, `reduce_sum`, `reduce_max`, `reduce_mean`, `argmax`, `topk`, `cumsum`     | Warp-level reduction; shared memory                           |
 | **OT2** | Data Movement & Dense | 11    | `matmul`, `batch_matmul`, `grouped_matmul`, `transpose`, `concat`, `split`, `gather`, `scatter`, `embedding`, `permute`, `copy_` | Tensor core tiling; memory layout transformation              |
-| **OT3** | Fused Compound        | 7     | `swiglu`, `geglu`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel`         | Split semantics; multi-op fusion; output shape ≠ input shape  |
+| **OT3** | Fused Compound        | 7     | `silu_and_mul`, `geglu`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel`         | Split semantics; multi-op fusion; output shape ≠ input shape  |
 | **OT4** | Attention             | 5     | `flash_attention`, `grouped_query_attention`, `multi_latent_attention`, `cross_attention`, `paged_attention`                     | Multi-stage fused kernel; online softmax; KV cache management |
 
 
@@ -530,15 +530,15 @@ for matmul, coalesced access patterns for data movement.
 Multi-operation fusion in a single kernel. Each involves non-trivial data flow
 (split, rotation, or chained matmul+activation). Key to training/inference efficiency.
 
-### swiglu
+### silu_and_mul
 
 
 | Field                | Value                                                   |
 | -------------------- | ------------------------------------------------------- |
 | **Category**         | gated activation                                        |
-| **Signature**        | `swiglu(X: [B, 2H]) → Y: [B, H]`                        |
+| **Signature**        | `silu_and_mul(X: [B, 2H]) → Y: [B, H]`                        |
 | **Computation**      | `gate, val = split(X, 2, dim=-1); Y = silu(gate) * val` |
-| **Primary baseline** | Liger `swiglu` (P1)                                     |
+| **Primary baseline** | Liger `silu_and_mul` (P1)                                     |
 | **Notes**            | Dominant FFN non-linearity in LLaMA/DeepSeek families   |
 
 
@@ -741,7 +741,7 @@ Most complex operator tier.
 | 2   | `embedding`                  | lookup            | 📋 new        |
 | 2   | `permute`                    | layout            | 📋 new        |
 | 2   | `copy_`                      | memory            | 📋 new        |
-| 3   | `swiglu`                     | gated activation  | ⬜ no template |
+| 3   | `silu_and_mul`                     | gated activation  | ⬜ no template |
 | 3   | `geglu`                      | gated activation  | ⬜ no template |
 | 3   | `rope`                       | position encoding | 📋 new        |
 | 3   | `fused_linear_cross_entropy` | fused loss        | 📋 new        |

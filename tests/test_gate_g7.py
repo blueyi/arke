@@ -289,7 +289,7 @@ def test_check_bl5_performance_evidence_enforces_group_targets(monkeypatch):
         # L2 fusions, all 6 with Triton ref
         arke_l2("matmul_relu", "gpt2-sm", 100.0), triton_ref_l2("matmul_relu", "gpt2-sm", 110.0),
         arke_l2("matmul_gelu", "gpt2-sm", 100.0), triton_ref_l2("matmul_gelu", "gpt2-sm", 110.0),
-        arke_l2("swiglu", "gpt2-sm", 100.0),      triton_ref_l2("swiglu", "gpt2-sm", 110.0),
+        arke_l2("silu_and_mul", "gpt2-sm", 100.0),      triton_ref_l2("silu_and_mul", "gpt2-sm", 110.0),
         arke_l2("geglu", "gpt2-sm", 100.0),       triton_ref_l2("geglu", "gpt2-sm", 110.0),
         arke_l2("linear_ce", "gpt2-sm", 100.0),   triton_ref_l2("linear_ce", "gpt2-sm", 110.0),
         arke_l2("qkv_fa", "gpt2-sm", 100.0),      triton_ref_l2("qkv_fa", "gpt2-sm", 110.0, "flash-attn-triton"),

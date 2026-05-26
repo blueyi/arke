@@ -57,7 +57,7 @@ from arke.ir.ops.reference_impls import (
     ref_permute, ref_quantize_per_token, ref_reduce_max, ref_reduce_mean,
     ref_reduce_sum, ref_relu, ref_rmsnorm, ref_rmsnorm_residual, ref_rope,
     ref_rsqrt, ref_scatter, ref_sigmoid, ref_silu, ref_softmax, ref_split,
-    ref_swiglu, ref_tanh, ref_topk, ref_transpose, ref_where,
+    ref_silu_and_mul, ref_tanh, ref_topk, ref_transpose, ref_where,
 )
 
 OP_CATALOG: dict[str, OpSchema] = {}
@@ -380,14 +380,14 @@ COPY = _register(OpSchema(name="copy_", category="move",
 ))
 
 # OT3: Gated + Fused Norms + Rope + Quant + Loss
-SWIGLU = _register(OpSchema(name="swiglu", category="elementwise",
+SWIGLU = _register(OpSchema(name="silu_and_mul", category="elementwise",
     inputs={"X":"Tensor[...,2N]"}, output="Tensor[...,N]",
     computation="x1,x2=split(X);Y=silu(x1)*x2",
     properties=["elementwise","gated"], can_fuse_as="epilogue",
     numpy_ref="x1,x2=np.split(X,2,axis=-1);x1/(1+np.exp(-x1))*x2",
     shape_rule=ShapeRule(kind="gated_halve_rule", input_key="X"),
-    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"swiglu"}),
-    reference_impl=ReferenceImpl(fn=ref_swiglu),
+    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"silu_and_mul"}),
+    reference_impl=ReferenceImpl(fn=ref_silu_and_mul),
     input_gen=InputGen(distributions={"X":"normal"}, constraints=["X.shape[-1]%2==0"]),
 ))
 GEGLU = _register(OpSchema(name="geglu", category="elementwise",

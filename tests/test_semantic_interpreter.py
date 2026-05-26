@@ -186,9 +186,9 @@ class TestSemanticInterpreterOT2:
 class TestSemanticInterpreterOT3:
     """OT3: Gated activations + fused ops."""
 
-    def test_swiglu(self):
+    def test_silu_and_mul(self):
         x = torch.randn(4, 256)
-        result = INTERPRETER.execute("swiglu", {"X": x})
+        result = INTERPRETER.execute("silu_and_mul", {"X": x})
         assert result.shape == (4, 128)
         # Manual
         gate, up = x[..., :128], x[..., 128:]
@@ -291,7 +291,7 @@ class TestAllOpsExecute:
         "add", "mul", "softmax", "layernorm", "rmsnorm",
         "reduce_sum", "reduce_max", "reduce_mean", "cumsum",
         "matmul", "batch_matmul", "transpose", "copy_",
-        "swiglu", "geglu",
+        "silu_and_mul", "geglu",
     ])
     def test_op_executes(self, op_name):
         """Each op should execute without error on simple inputs."""

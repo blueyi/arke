@@ -101,7 +101,7 @@ def generate_inputs(op_name: str, dtype=torch.float32) -> tuple[dict, dict]:
         shapes = {"A": [M, N], "B": [M, N]}
     elif op_name == "where_":
         shapes = {"cond": [M, N], "A": [M, N], "B": [M, N]}
-    elif op_name in ("swiglu", "geglu"):
+    elif op_name in ("silu_and_mul", "geglu"):
         shapes = {"X": [M, N * 2]}
     elif op_name == "topk":
         shapes = {"X": [M, N]}
@@ -248,7 +248,7 @@ def test_shape_inference_matches_execution(op_name):
 
 # ── BL4-L1: Determinism Check ────────────────────────────────
 
-@pytest.mark.parametrize("op_name", ["matmul", "softmax", "layernorm", "flash_attention", "swiglu"])
+@pytest.mark.parametrize("op_name", ["matmul", "softmax", "layernorm", "flash_attention", "silu_and_mul"])
 def test_deterministic_execution(op_name):
     """Key ops: same seed → same output (determinism)."""
     torch.manual_seed(123)

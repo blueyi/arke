@@ -257,7 +257,7 @@ compute(warps=8, num_stages=3, shared_memory=49152)
 fuse(ops=[<op_name>, ...], fusion_type=<fusion_kind>)
 ```
 
-Specifies which operations should be fused together. `ops` may name explicit SemanticIR node ops, or a compact registered fused op's logical inner ops when the surface is represented as one canonical op (for example `swiglu` as `silu` + `mul`, or `geglu` as `gelu` + `mul`).
+Specifies which operations should be fused together. `ops` may name explicit SemanticIR node ops, or a compact registered fused op's logical inner ops when the surface is represented as one canonical op (for example `silu_and_mul` as `silu` + `mul`, or `geglu` as `gelu` + `mul`).
 
 Example:
 ```ak

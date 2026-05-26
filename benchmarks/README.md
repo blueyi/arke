@@ -68,7 +68,7 @@ arke bench --bl 6 --model gpt2
 | 0 | Elementwise | relu, gelu, silu, add, mul |
 | 1 | Reduction | softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_max |
 | 2 | Compute-Dense | matmul, batch_matmul, grouped_matmul, transpose |
-| 3 | Gated Activation | swiglu, geglu |
+| 3 | Gated Activation | silu_and_mul, geglu |
 | 4 | Attention | flash_attention, grouped_query_attention, multi_latent_attention |
 
 ### Validation Rules

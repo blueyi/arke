@@ -164,7 +164,7 @@ def ref_copy(inputs: dict[str, torch.Tensor], attrs: dict) -> torch.Tensor:
 # OT3: Gated Activations & Fused Ops
 # ============================================================
 
-def ref_swiglu(inputs: dict[str, torch.Tensor], attrs: dict) -> torch.Tensor:
+def ref_silu_and_mul(inputs: dict[str, torch.Tensor], attrs: dict) -> torch.Tensor:
     x = inputs["X"]
     half = x.shape[-1] // 2
     gate, up = x[..., :half], x[..., half:]

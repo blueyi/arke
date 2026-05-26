@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 ALL_FUSED_OPS = [
     "matmul_relu", "matmul_gelu",
-    "swiglu", "geglu",
+    "silu_and_mul", "geglu",
     "linear_ce",
     "qkv_fa",
 ]
@@ -274,11 +274,11 @@ def run_fused_op(
     """Benchmark one fused operator across shapes and approaches."""
     op = FUSED_OP_ALIASES.get(op, op)
 
-    if op in ("swiglu", "geglu"):
+    if op in ("silu_and_mul", "geglu"):
         if shapes is None:
             # Use canonical registry-backed shape catalog so BL5 tag coverage
             # stays aligned with stage7_bl5_target_matrix.json.
-            shapes = get_shapes("swiglu")
+            shapes = get_shapes("silu_and_mul")
         if shape_tags:
             allowed = set(shape_tags)
             shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
@@ -388,7 +388,7 @@ def run_fused_op(
 
 def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tuple[float, float]:
     if dtype == torch.float16:
-        if op in {"matmul_relu", "matmul_gelu", "swiglu", "geglu", "linear_ce", "qkv_fa"}:
+        if op in {"matmul_relu", "matmul_gelu", "silu_and_mul", "geglu", "linear_ce", "qkv_fa"}:
             return 1e-2, 1e-2
         return 5e-3, 5e-3
     return 1e-5, 1e-6
@@ -419,7 +419,7 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
                 raise NotImplementedError(f"Unknown fused approach: {approach}")
             return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
 
-        if op in {"swiglu", "geglu"}:
+        if op in {"silu_and_mul", "geglu"}:
             # Gated benchmark shapes are recorded as the input feature width
             # (2 * ffn). Non-aligned stress shapes intentionally exercise odd
             # widths and are part of the BL5 contract -- they MUST NOT be
@@ -430,7 +430,7 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
             # signal in the benchmark, not be hidden behind a tail drop.
             x = torch.randn(M, N, device="cuda", dtype=dtype)
             x1, x2 = x.chunk(2, dim=-1)
-            if op == "swiglu":
+            if op == "silu_and_mul":
                 ref = torch.nn.functional.silu(x1) * x2
                 cand = torch.sigmoid(x1) * x1 * x2
             else:
@@ -659,7 +659,7 @@ def _run_gated_fused_op(
     reps: int,
 ) -> list[FusedResult]:
     """Benchmark SwiGLU/GeGLU using benchmark-defined gated shapes."""
-    activation = "silu" if op == "swiglu" else "gelu"
+    activation = "silu" if op == "silu_and_mul" else "gelu"
     act_fn = _get_activation(activation)
     results: list[FusedResult] = []
 

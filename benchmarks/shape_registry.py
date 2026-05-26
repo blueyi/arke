@@ -61,7 +61,7 @@ def _normalize_table_key(heading: str) -> str:
         '### TopK: ...' → 'topk'
         '### LayerNorm / RMSNorm / RMSNorm-Residual: ...' → 'layernorm'
         '### Reduce Sum / Max / Mean: ...' → 'reduce'
-        '### SwiGLU / GeGLU: ...' → 'swiglu'
+        '### SiLU-and-Mul / GeGLU: ...' → 'silu_and_mul'
         '### Batch Matmul: ...' → 'batch_matmul'
         '### Grouped Matmul: ...' → 'grouped_matmul'
         '### Fused Linear Cross Entropy: ...' → 'fused_linear_cross_entropy'
@@ -104,7 +104,9 @@ def _normalize_table_key(heading: str) -> str:
         "scatter": "scatter",
         "embedding": "embedding",
         "permute": "permute",
-        "swiglu / geglu": "swiglu",
+        "silu-and-mul / geglu": "silu_and_mul",
+        "silu_and_mul / geglu": "silu_and_mul",
+        "swiglu / geglu": "silu_and_mul",  # legacy heading before D8-X1 C1 rename
         "rope": "rope",
         "cross entropy": "cross_entropy",
         "fused linear cross entropy": "fused_linear_cross_entropy",
@@ -409,8 +411,8 @@ _OP_TO_TABLE_KEYS: dict[str, list[str]] = {
     "permute": ["permute"],
     "copy_": ["elementwise"],  # copy_ reuses elementwise shapes
     # OT3 — Fused Compound
-    "swiglu": ["swiglu"],
-    "geglu": ["swiglu"],
+    "silu_and_mul": ["silu_and_mul"],
+    "geglu": ["silu_and_mul"],
     "rope": ["rope"],
     "cross_entropy": ["cross_entropy"],
     "fused_linear_cross_entropy": ["fused_linear_cross_entropy"],

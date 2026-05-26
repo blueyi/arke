@@ -93,9 +93,9 @@ def _ctx_data_movement(op_name: str, hint: TemplateHint, dtype: str) -> dict[str
 
 def _ctx_gated_activation(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
     # Template variable is `gate_activation` and branches on "silu"/"gelu".
-    # Catalog gives op_variant="swiglu"/"geglu" — translate the gate function.
+    # Catalog gives op_variant="silu_and_mul"/"geglu" — translate the gate function.
     variant = hint.extra_ctx.get("op_variant", op_name)
-    gate = {"swiglu": "silu", "geglu": "gelu"}.get(variant, variant)
+    gate = {"silu_and_mul": "silu", "geglu": "gelu"}.get(variant, variant)
     return {"gate_activation": gate}
 
 

@@ -5,7 +5,7 @@
 
 Covers 9 ops across 5 templates:
 - layernorm (1):                 layernorm           [layernorm template]
-- gated_activation (2):          swiglu, geglu       [gated_activation template]
+- gated_activation (2):          silu_and_mul, geglu       [gated_activation template]
 - index_ops (2):                 gather, scatter     [index_ops template]
 - quantize (2):                  quantize_per_token, dequantize_per_channel
                                                      [quantize template]
@@ -62,13 +62,13 @@ def test_layernorm():
     assert _close(y_a, y_r, rtol=5e-3, atol=5e-3)
 
 
-# ── gated_activation: swiglu / geglu ───────────────────────────────────────
+# ── gated_activation: silu_and_mul / geglu ───────────────────────────────────────
 # Input X[M, 2N]: first half is gate, second half is value.
 # Output Y[M, N] = activation(gate) * value.
 
-def test_swiglu():
+def test_silu_and_mul():
     torch.manual_seed(0)
-    k = _gen("swiglu")
+    k = _gen("silu_and_mul")
     M, N = 8, 64
     X = torch.randn(M, 2 * N, device="cuda", dtype=torch.float16)
     y_a = k(X)

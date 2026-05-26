@@ -82,7 +82,7 @@
 | **Comparison** | eq, ne, gt, ge, lt, le, isnan, isinf, isfinite, isclose, allclose, equal | 12 |
 | **Reduction** | sum, mean, max, min, amax, argmax, argmin, all, any, count_nonzero, cumsum, cummax, cummin, prod | 14 |
 | **Activation** | gelu, relu, silu, elu, celu, glu, leaky_relu, hardsigmoid, hardswish, mish, softplus, softsign, prelu, threshold | 14 |
-| **Fused Activation** | gelu_and_mul, silu_and_mul, geglu, swiglu (+ backward variants) | 8 |
+| **Fused Activation** | gelu_and_mul, silu_and_mul, geglu, silu_and_mul (+ backward variants) | 8 |
 | **Normalization** | layer_norm, group_norm, batch_norm, fused_add_rms_norm, rms_norm (+ backward) | 10 |
 | **Attention** | flash_attention_forward, flash_attn_varlen_func, flash_mla, concat_and_cache_mla | 4 |
 | **Embedding** | embedding, embedding_backward, embedding_dense_backward | 3 |
@@ -112,7 +112,7 @@
 |:---------|:----------|------:|
 | **Normalization** | rms_norm, layer_norm, group_norm | 3 |
 | **Positional** | rope | 1 |
-| **Activation** | swiglu, geglu | 2 |
+| **Activation** | silu_and_mul, geglu | 2 |
 | **Loss** | cross_entropy, fused_linear_cross_entropy | 2 |
 | **Post-Training Loss** | dpo_loss, cpo_loss, orpo_loss, simpo_loss, kto_loss, jsd_loss, fused_linear_jsd | 7 |
 | **Total** | | **15** |
@@ -164,7 +164,7 @@
 | Operator | Notes |
 |:---------|:------|
 | matmul (persistent + standard) | Production-quality |
-| swiglu | Fused activation |
+| silu_and_mul | Fused activation |
 | reduce (generic) | Configurable reduction |
 | topk | Selection |
 | compaction | Tensor compaction |
@@ -306,7 +306,7 @@ Auto-generated Triton from `torch.compile`. "What the compiler gives for free."
 
 | Operator | Notes |
 |:---------|:------|
-| cross_entropy, rope, rms_layernorm, swiglu | Tightly coupled to model code |
+| cross_entropy, rope, rms_layernorm, silu_and_mul | Tightly coupled to model code |
 
 - **Repo:** https://github.com/unslothai/unsloth
 - **License:** Apache-2.0
@@ -328,7 +328,7 @@ Standalone-benchmarkable operators by source:
 | relu | — | ✅ | — | — | — | — | — |
 | silu | — | ✅ | — | — | — | — | — |
 | silu_and_mul | — | ✅ | ✅‡ | — | ✅ | — | — |
-| swiglu | — | ✅ | ✅ | ✅ | — | — | — |
+| silu_and_mul | — | ✅ | ✅ | ✅ | — | — | — |
 | geglu | — | ✅ | ✅ | — | — | — | — |
 | rope | — | ✅ | ✅ | — | ✅ | ✅ | — |
 | cross_entropy | ✅ | ✅ | ✅ | — | — | — | ✅ |
@@ -340,7 +340,7 @@ Standalone-benchmarkable operators by source:
 | fp8_scaled_mm | — | ✅ | — | — | ✅ | ✅ | ✅ |
 | group_norm | ✅ | ✅ | ✅ | — | — | — | — |
 
-> ✅ = standalone callable  ✅† = gated layernorm variant  ✅‡ = as part of swiglu
+> ✅ = standalone callable  ✅† = gated layernorm variant  ✅‡ = as part of silu_and_mul
 
 ---
 
@@ -364,9 +364,9 @@ Run full Tier 3 for all 4 op categories.
 
 | Task | Runner | Ops Covered |
 |:-----|:-------|:------------|
-| 2.1 | `LigerRunner` | rms_norm, rope, swiglu, geglu, cross_entropy, fused_linear_ce |
+| 2.1 | `LigerRunner` | rms_norm, rope, silu_and_mul, geglu, cross_entropy, fused_linear_ce |
 | 2.2 | `TritonTutorialRunner` | matmul, softmax, layer_norm, fused_attention, dropout |
-| 2.3 | `TritonKernelsRunner` | matmul (persistent), swiglu, topk |
+| 2.3 | `TritonKernelsRunner` | matmul (persistent), silu_and_mul, topk |
 
 ### Phase 3: Extract vLLM / SGLang Standalone Ops
 

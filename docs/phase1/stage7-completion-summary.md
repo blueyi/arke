@@ -156,7 +156,7 @@ These are **not blocking** Stage 7 close, but **must** be completed before Stage
 - **Acceptance:** OT2 and OT3 pass rates climb from 30.6%/36.4% toward the 0.97 floor.
 
 ### Subtask S7.followup.2 — L2 Triton fusion baseline collection
-- **Current state:** Zero Triton-side fusion baselines exist for L2 ops (`matmul_relu`, `matmul_gelu`, `swiglu`, `geglu`, `linear_ce`, `qkv_fa`). All L2 Arke rows are audit-only under the new ruler.
+- **Current state:** Zero Triton-side fusion baselines exist for L2 ops (`matmul_relu`, `matmul_gelu`, `silu_and_mul`, `geglu`, `linear_ce`, `qkv_fa`). All L2 Arke rows are audit-only under the new ruler.
 - **Target:** Author L2 Triton fusion baseline kernels (Liger / FlagGems / hand-written) for the 6 L2 ops.
 - **Acceptance:** L2 fusions evaluable ≥ 6, all passing under ε=0.03.
 

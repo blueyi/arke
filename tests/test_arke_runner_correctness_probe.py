@@ -35,7 +35,7 @@ def test_arke_runner_reports_unavailable_when_kernel_cache_is_missing():
         ("add", (128, 128, 0)),
         ("reduce_sum", (128, 128, 0)),
         ("batch_matmul", (8, 64, 32)),
-        ("swiglu", (64, 64, 0)),
+        ("silu_and_mul", (64, 64, 0)),
         ("flash_attention", (8, 128, 64)),
         ("cross_attention", (8, 128, 64)),
         ("rope", (1, 128, 64)),

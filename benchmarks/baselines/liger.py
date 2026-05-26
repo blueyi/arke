@@ -56,7 +56,7 @@ class LigerRunner(BaselineRunner):
         return op in (
             "rmsnorm", "rmsnorm_residual",
             "gelu", "silu", "rope",
-            "swiglu", "geglu",
+            "silu_and_mul", "geglu",
             "cross_entropy", "fused_linear_cross_entropy",
         )
 
@@ -93,7 +93,7 @@ class LigerRunner(BaselineRunner):
                 return None
 
         if op == "silu" and len(inputs) == 1:
-            from liger_kernel.ops.swiglu import LigerSiLUMulFunction
+            from liger_kernel.ops.silu_and_mul import LigerSiLUMulFunction
 
             x = inputs[0]
             gate = torch.ones_like(x)

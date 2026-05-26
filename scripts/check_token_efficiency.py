@@ -78,7 +78,7 @@ TRITON_REFERENCE_LINES: dict[str, int] = {
 
     # ── OT3: Gated Activation / Specialized (7 ops) ──
     "18_rmsnorm_residual": 65,
-    "19_swiglu": 45,
+    "19_silu_and_mul": 45,
     "20_geglu": 45,
     "38_copy_": 35,
     "39_rope": 60,

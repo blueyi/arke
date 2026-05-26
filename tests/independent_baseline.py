@@ -183,7 +183,7 @@ def baseline_copy_(inputs, attrs):
 # OT3: Fused Compound
 # ============================================================
 
-def baseline_swiglu(inputs, attrs):
+def baseline_silu_and_mul(inputs, attrs):
     X = inputs["X"]
     x1, x2 = X.chunk(2, dim=-1)
     return F.silu(x1) * x2
@@ -324,7 +324,7 @@ BASELINE_REGISTRY = {
     "embedding": baseline_embedding,
     "permute": baseline_permute,
     "copy_": baseline_copy_,
-    "swiglu": baseline_swiglu,
+    "silu_and_mul": baseline_silu_and_mul,
     "geglu": baseline_geglu,
     "rope": baseline_rope,
     "cross_entropy": baseline_cross_entropy,

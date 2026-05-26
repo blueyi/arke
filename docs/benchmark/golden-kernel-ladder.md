@@ -82,7 +82,7 @@ where `runner.supports(op) and runner.available`.
 
 | Op                          | Golden                    | Fallback           |
 |:----------------------------|:--------------------------|:-------------------|
-| swiglu                      | Liger (P1)                | PyTorch-eager      |
+| silu_and_mul                      | Liger (P1)                | PyTorch-eager      |
 | geglu                       | Liger (P1)                | PyTorch-eager      |
 | rope                        | **PyTorch-eager (P3)** †  | Liger (P1, candidate) |
 | fused_linear_cross_entropy  | Liger (P1)                | PyTorch-eager      |

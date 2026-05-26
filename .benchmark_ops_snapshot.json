@@ -39,7 +39,7 @@
     "copy_"
   ],
   "3": [
-    "swiglu",
+    "silu_and_mul",
     "geglu",
     "rope",
     "fused_linear_cross_entropy",
