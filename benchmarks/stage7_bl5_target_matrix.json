@@ -2510,7 +2510,6 @@
     }
   ],
   "summary": {
-    "l1_total_ops_required": 45,
     "l1_ops_with_track6_results": 1,
     "l1_op_coverage_ratio": 0.0222,
     "l1_required_shapes_total": 685,
