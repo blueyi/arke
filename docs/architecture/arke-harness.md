@@ -503,6 +503,17 @@ references:
 | `tier-promotion` | Kernel passing at ST1, want ST2/3 | Re-run with promoted shape tier, compare regressions |
 | `flash-attn` | OT4 op (`flash_attention`, `paged_attention`) | Inject FA-specific decision priors (block size, KV layout) |
 
+### 11.2.1 Shipped skills (in-tree under `skills/`)
+
+The repo ships two reference skills today — both Claude-Code-compatible
+and following the §11.1 schema. New user-authored skills should mirror
+their layout.
+
+| Skill | Trigger | What it does | Reference |
+|---|---|---|---|
+| `arke-test-coverage` | "run benchmarks / test coverage / tier 1\|2\|3 / Arke vs Direct" | Drive CUBE + Vector + Fusion test suites across Tier 1/2/3 (15 / 31 / 50 tasks) | `skills/arke-test-coverage/SKILL.md` (Stage 6+ legacy) |
+| `swiglu-packed-fusion` | "optimize swiglu_packed / D8-X1 demo op / OT3 swiglu / fused gated projection" | Optimize the OT3 fused operator `swiglu_packed` (split → silu×mul → matmul); 8-step procedure with `@rationale` checklist and 4 anti-patterns | `skills/swiglu-packed-fusion/SKILL.md` (D8-X1 Demo A, 2026-06-06) |
+
 ### 11.3 Discovery
 
 At session start, the harness scans `skills/*/SKILL.md`, parses frontmatter, and

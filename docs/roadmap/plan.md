@@ -268,7 +268,8 @@ Tier 1 — Harness system (Stage 8 primary deliverable):
                 BaselineRunner subclass protocol + plugged into benchmarks/baselines/.
               - Both demos shipped under benchmarks/results/phase1/stage8/extensibility/.
 
-              D8-X1 (Demo A, 2026-05-22 Leon-approved Aa1/Bb1/Cc2):
+              D8-X1 (Demo A, 2026-05-22 Leon-approved Aa1/Bb1/Cc2;
+                     ✅ completed 2026-06-06):
                 Discovered legacy "swiglu" / "geglu" benchmark impls were
                 misnomers — they actually compute silu(x)*y and gelu(x)*y
                 (no input split, no down_proj). Demo A path:
@@ -279,6 +280,18 @@ Tier 1 — Harness system (Stage 8 primary deliverable):
                      split → silu*mul → matmul(down_proj).
                   3. Single-commit-chain demo; total LOC budget 400 (above
                      original 300 — justified by rename-refactor surface).
+
+                Outcome:
+                  - Commit chain on `feat/op-count-ssot`:
+                      3917493 C1 rename swiglu → silu_and_mul
+                      911bd9d C2 rename geglu  → gelu_and_mul
+                      4c4b118 C3 onboard swiglu_packed (46th catalog op)
+                      8cea142 C4 SKILL.md (skills/swiglu-packed-fusion/)
+                      b2e8bd1 C5 BL1 evidence (correctness + perf rows)
+                  - Catalog: 45 → 46 ops, OT3: 7 → 8 ops, audit-degraded
+                    rows: 1 → 2 (joined dequantize_per_channel).
+                  - 5/5 acceptance items pass (stage8-plan.md §"Tier 1
+                    Extensibility Acceptance" Demo A).
 
 Tier 2 — Thesis L1 endpoint validation (Harness produces real wins):
   [1] Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥0.95× P0 (cuBLAS)
