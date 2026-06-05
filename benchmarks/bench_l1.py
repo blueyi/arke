@@ -128,7 +128,7 @@ def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tupl
     if dtype == torch.float16:
         if op in {"softmax", "layernorm", "rmsnorm", "rmsnorm_residual"}:
             return 5e-3, 5e-3
-        if op in {"matmul", "batch_matmul", "grouped_matmul", "cross_entropy", "fused_linear_cross_entropy"}:
+        if op in {"matmul", "batch_matmul", "grouped_matmul", "cross_entropy", "fused_linear_cross_entropy", "swiglu_packed"}:
             return 1e-2, 1e-2
         return 1e-3, 1e-3
     return 1e-5, 1e-6
@@ -194,6 +194,12 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
         return (indices, weight)
     if op in {"silu_and_mul", "gelu_and_mul"}:
         return (torch.randn(M, 2 * N, device="cuda", dtype=dtype),)
+    if op == "swiglu_packed":
+        K_eff = _positive_dim(K)
+        return (
+            torch.randn(M, 2 * K_eff, device="cuda", dtype=dtype),
+            torch.randn(K_eff, N, device="cuda", dtype=dtype),
+        )
     if op == "cross_entropy":
         logits = torch.randn(M, N, device="cuda", dtype=torch.float32)
         labels = torch.randint(0, N, (M,), device="cuda")
@@ -341,6 +347,9 @@ def _torch_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor 
     if op == "silu_and_mul":
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.silu(x1) * x2
+    if op == "swiglu_packed" and len(inputs) == 2:
+        x1, x2 = inputs[0].chunk(2, dim=-1)
+        return (torch.nn.functional.silu(x1) * x2) @ inputs[1]
     if op == "gelu_and_mul":
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.gelu(x1) * x2

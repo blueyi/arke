@@ -89,6 +89,7 @@ where `runner.supports(op) and runner.available`.
 | cross_entropy               | Liger (P1)                | FlagGems / PyTorch |
 | quantize_per_token          | FlagGems (P1)             | PyTorch-eager      |
 | dequantize_per_channel      | PyTorch-eager (P3)        | —                  | no production kernel; audit-degraded |
+| swiglu_packed               | PyTorch-eager (P3)        | —                  | D8-X1 demo op; no production single-kernel baseline in 9 audited community libraries (FlagGems · Liger · vLLM · flash-attn · FlashMLA · xformers · TransformerEngine · Megatron-LM · FlashInfer · NVIDIA Apex · DeepSpeed); audit-degraded |
 
 > † **G7.8c locked preference (2026-05-12).** rope is the one OT3 op whose
 > Golden is *not* the strict P-winner. Liger-Kernel rope is the fastest

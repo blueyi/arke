@@ -14,11 +14,11 @@ Full operator catalog with tier classification, complexity rationale, and baseli
 | **OT0** | Elementwise           | 12    | `relu`, `gelu`, `silu`, `tanh`, `sigmoid`, `add`, `mul`, `where_`, `cast`, `neg`, `exp`, `rsqrt`                                 | Memory-bound; 1:1 element map                                 |
 | **OT1** | Reduction             | 10    | `softmax`, `layernorm`, `rmsnorm`, `rmsnorm_residual`, `reduce_sum`, `reduce_max`, `reduce_mean`, `argmax`, `topk`, `cumsum`     | Warp-level reduction; shared memory                           |
 | **OT2** | Data Movement & Dense | 11    | `matmul`, `batch_matmul`, `grouped_matmul`, `transpose`, `concat`, `split`, `gather`, `scatter`, `embedding`, `permute`, `copy_` | Tensor core tiling; memory layout transformation              |
-| **OT3** | Fused Compound        | 7     | `silu_and_mul`, `gelu_and_mul`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel`         | Split semantics; multi-op fusion; output shape ≠ input shape  |
+| **OT3** | Fused Compound        | 8     | `silu_and_mul`, `gelu_and_mul`, `swiglu_packed`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel` | Split semantics; multi-op fusion; output shape ≠ input shape  |
 | **OT4** | Attention             | 5     | `flash_attention`, `grouped_query_attention`, `multi_latent_attention`, `cross_attention`, `paged_attention`                     | Multi-stage fused kernel; online softmax; KV cache management |
 
 
-**Total: 45 operators** 
+**Total: 46 operators** 
 
 ---
 
@@ -548,10 +548,21 @@ Multi-operation fusion in a single kernel. Each involves non-trivial data flow
 | Field                | Value                                                   |
 | -------------------- | ------------------------------------------------------- |
 | **Category**         | gated activation                                        |
-| **Signature**        | `gelu_and_mul(X: [B, 2H]) → Y: [B, H]`                         |
+| **Signature**        | `gelu_and_mul(X: [B, 2H]) → Y: [B, H]`                  |
 | **Computation**      | `gate, val = split(X, 2, dim=-1); Y = gelu(gate) * val` |
-| **Primary baseline** | Liger `gelu_and_mul` (P1)                                      |
+| **Primary baseline** | Liger `gelu_and_mul` (P1)                               |
 | **Notes**            | Used in PaLM, some BERT variants                        |
+
+
+### swiglu_packed *(D8-X1)*
+
+| Field                | Value                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| **Category**         | fused gated projection                                                                  |
+| **Signature**        | `swiglu_packed(X: [B, 2H], W: [H, O]) → Y: [B, O]`                                     |
+| **Computation**      | `gate, val = split(X, 2, dim=-1); H = silu(gate) * val; Y = H @ W`                     |
+| **Primary baseline** | PyTorch eager decomposition (P3); no audited P0/P1/P2 single-kernel baseline yet       |
+| **Notes**            | True fused SwiGLU FFN down-projection demo op; distinct from payload-only `silu_and_mul` |
 
 
 ### rope *(new)*
@@ -743,6 +754,7 @@ Most complex operator tier.
 | 2   | `copy_`                      | memory            | 📋 new        |
 | 3   | `silu_and_mul`                     | gated activation  | ⬜ no template |
 | 3   | `gelu_and_mul`                      | gated activation  | ⬜ no template |
+| 3   | `swiglu_packed`              | fused gated projection | 📋 new        |
 | 3   | `rope`                       | position encoding | 📋 new        |
 | 3   | `fused_linear_cross_entropy` | fused loss        | 📋 new        |
 | 3   | `cross_entropy`              | loss              | 📋 new        |

@@ -41,6 +41,7 @@
   "3": [
     "silu_and_mul",
     "gelu_and_mul",
+    "swiglu_packed",
     "rope",
     "fused_linear_cross_entropy",
     "cross_entropy",

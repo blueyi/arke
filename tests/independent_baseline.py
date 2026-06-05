@@ -188,6 +188,12 @@ def baseline_silu_and_mul(inputs, attrs):
     x1, x2 = X.chunk(2, dim=-1)
     return F.silu(x1) * x2
 
+def baseline_swiglu_packed(inputs, attrs):
+    X = inputs["X"]
+    W = inputs["W"]
+    x1, x2 = X.chunk(2, dim=-1)
+    return (F.silu(x1) * x2) @ W
+
 def baseline_gelu_and_mul(inputs, attrs):
     X = inputs["X"]
     x1, x2 = X.chunk(2, dim=-1)

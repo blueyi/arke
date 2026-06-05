@@ -414,6 +414,7 @@ _OP_TO_TABLE_KEYS: dict[str, list[str]] = {
     # OT3 — Fused Compound
     "silu_and_mul": ["silu_and_mul"],
     "gelu_and_mul": ["silu_and_mul"],
+    "swiglu_packed": ["matmul", "matmul_st4"],
     "rope": ["rope"],
     "cross_entropy": ["cross_entropy"],
     "fused_linear_cross_entropy": ["fused_linear_cross_entropy"],

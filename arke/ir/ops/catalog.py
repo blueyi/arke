@@ -57,7 +57,7 @@ from arke.ir.ops.reference_impls import (
     ref_permute, ref_quantize_per_token, ref_reduce_max, ref_reduce_mean,
     ref_reduce_sum, ref_relu, ref_rmsnorm, ref_rmsnorm_residual, ref_rope,
     ref_rsqrt, ref_scatter, ref_sigmoid, ref_silu, ref_softmax, ref_split,
-    ref_silu_and_mul, ref_tanh, ref_topk, ref_transpose, ref_where,
+    ref_silu_and_mul, ref_swiglu_packed, ref_tanh, ref_topk, ref_transpose, ref_where,
 )
 
 OP_CATALOG: dict[str, OpSchema] = {}
@@ -389,6 +389,17 @@ SWIGLU = _register(OpSchema(name="silu_and_mul", category="elementwise",
     template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"silu_and_mul"}),
     reference_impl=ReferenceImpl(fn=ref_silu_and_mul),
     input_gen=InputGen(distributions={"X":"normal"}, constraints=["X.shape[-1]%2==0"]),
+))
+SWIGLU_PACKED = _register(OpSchema(name="swiglu_packed", category="gated",
+    inputs={"X":"Tensor[M,2K]", "W":"Tensor[K,N]"}, output="Tensor[M,N]",
+    computation="gate,up=split(X);H=silu(gate)*up;Y=H@W",
+    index_vars=["i", "j"], reduction_axes=["k"],
+    properties=["gated", "matmul", "fused_projection"], can_fuse_as="compound",
+    numpy_ref="gate,up=np.split(X,2,axis=-1);(gate/(1+np.exp(-gate))*up)@W",
+    shape_rule=ShapeRule(kind="matmul_rule", input_key="X"),
+    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"swiglu_packed"}),
+    reference_impl=ReferenceImpl(fn=ref_swiglu_packed),
+    input_gen=InputGen(distributions={"X":"normal", "W":"normal"}, constraints=["X.shape[-1]%2==0", "W.shape[0]==X.shape[-1]/2"]),
 ))
 GEGLU = _register(OpSchema(name="gelu_and_mul", category="elementwise",
     inputs={"X":"Tensor[...,2N]"}, output="Tensor[...,N]",

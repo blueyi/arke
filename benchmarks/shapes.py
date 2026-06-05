@@ -317,7 +317,7 @@ OP_TIER: dict[str, int] = {
     "concat": 2, "split": 2, "gather": 2, "scatter": 2,
     "embedding": 2, "permute": 2, "copy_": 2,
     # OT3 — Fused Compound (7)
-    "silu_and_mul": 3, "gelu_and_mul": 3, "rope": 3,
+    "silu_and_mul": 3, "gelu_and_mul": 3, "swiglu_packed": 3, "rope": 3,
     "fused_linear_cross_entropy": 3, "cross_entropy": 3,
     "quantize_per_token": 3, "dequantize_per_channel": 3,
     # OT4 — Attention (5)
@@ -393,6 +393,8 @@ def get_shapes(  # noqa: F811 — intentional override of the original above
         shapes = TRANSPOSE_SHAPES
     elif op in ("silu_and_mul", "gelu_and_mul"):
         shapes = GATED_SHAPES
+    elif op == "swiglu_packed":
+        shapes = MATMUL_SHAPES
     elif op == "flash_attention":
         shapes = FLASH_ATTENTION_SHAPES
     elif op == "grouped_query_attention":
@@ -472,7 +474,7 @@ def _dict_to_shape(op: str, row: dict):
     # Resolve canonical op name
     canon = _SHAPE_MAP.get(op.lower(), op.lower())
 
-    if canon == "matmul":
+    if canon in ("matmul", "swiglu_packed"):
         return MatmulShape(tag=tag, M=_i("m"), N=_i("n"), K=_i("k"), notes=notes, tier=t)
     elif canon == "batch_matmul":
         return BatchMatmulShape(tag=tag, B=_i("b"), M=_i("m"), K=_i("k"), N=_i("n"), notes=notes, tier=t)
@@ -588,6 +590,8 @@ def _hardcoded_get_shapes(op: str, *, tier: int | None = None) -> list:
         shapes = TRANSPOSE_SHAPES
     elif op in ("silu_and_mul", "gelu_and_mul"):
         shapes = GATED_SHAPES
+    elif op == "swiglu_packed":
+        shapes = MATMUL_SHAPES
     elif op == "flash_attention":
         shapes = FLASH_ATTENTION_SHAPES
     elif op == "grouped_query_attention":
