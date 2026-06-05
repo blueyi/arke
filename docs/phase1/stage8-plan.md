@@ -172,7 +172,7 @@ Pick **one operator not currently in `op_registry.py`** (e.g. `silu_and_mul`, `l
 | SKILL.md (Arke-Agent skill for the new op) | 1 file |
 | Audit entry (PRIMARY + FALLBACK from community ladder per AGENTS.md "Arke 工作流偏好") | 1 entry under `benchmarks/audit/op_<name>.md` |
 | Registration in `benchmarks/op_registry.py` | passes `tests/test_ssot_op_registry.py` |
-| BL1 measurement | new op appears in `benchmarks/results/phase1/stage8/extensibility/bl1_new_op.csv` with correctness + perf rows |
+| BL1 measurement | new op appears in `benchmarks/results/phase1/stage8/extensibility/bl1_new_op.csv` (frozen snapshot, kept in-tree for acceptance) with correctness + perf rows. Generated from native bench_l1 output at `benchmarks/results/phase1/stage8/trackextensibility/l1/swiglu_packed_results.csv` via `python -m benchmarks.bench_l1 --op swiglu_packed --tier 1 --phase 1 --stage 8 --track extensibility`; see `benchmarks/results/phase1/stage8/extensibility/README.md` for the regen recipe. |
 
 ### Demo B — New baseline runner onboarding
 
