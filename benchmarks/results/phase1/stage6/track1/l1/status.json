@@ -1,0 +1,43 @@
+{
+  "ts": 1780710512.3445852,
+  "layer": "l1",
+  "fingerprint": "c5ee2fbce46f9c07",
+  "elapsed_s": 866.6947724819183,
+  "per_op": {
+    "flash_attention": {
+      "rows": 48,
+      "ok": 39,
+      "permanent_failure": 9,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "cross_attention": {
+      "rows": 24,
+      "ok": 23,
+      "permanent_failure": 1,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "grouped_query_attention": {
+      "rows": 20,
+      "ok": 17,
+      "permanent_failure": 3,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "multi_latent_attention": {
+      "rows": 16,
+      "ok": 4,
+      "permanent_failure": 12,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "paged_attention": {
+      "rows": 24,
+      "ok": 8,
+      "permanent_failure": 16,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

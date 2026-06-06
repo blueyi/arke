@@ -1,12 +1,18 @@
 {
-  "timestamp": "2026-04-09_151750",
+  "timestamp": "2026-06-06_093405",
   "ops": [
-    "relu"
+    "flash_attention",
+    "cross_attention",
+    "grouped_query_attention",
+    "multi_latent_attention",
+    "paged_attention"
   ],
-  "warmup": 1,
-  "reps": 1,
-  "tier": 4,
-  "shape_tags": [
-    "square-1k"
-  ]
+  "warmup": 3,
+  "reps": 5,
+  "tier": 3,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 6,
+  "track": "1",
+  "layer": "L1"
 }

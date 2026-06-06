@@ -1,0 +1,13 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+swiglu_packed,tiny,PyTorch-eager,50.3,63.5,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu_packed,tiny,Arke,inf,inf,,,unsupported,Arke.get_fn declined swiglu_packed@tiny,false,true,0,0,0.01,0.01,ok,Arke.get_fn declined swiglu_packed@tiny,,,,,1.0,,,
+swiglu_packed,gpt2-c_proj,PyTorch-eager,51.3,59.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu_packed,gpt2-c_proj,Arke,inf,inf,,,unsupported,Arke.get_fn declined swiglu_packed@gpt2-c_proj,false,true,0,0,0.01,0.01,ok,Arke.get_fn declined swiglu_packed@gpt2-c_proj,,,,,1.0,,,
+swiglu_packed,gpt2-c_attn,PyTorch-eager,58.4,84.0,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu_packed,gpt2-c_attn,Arke,inf,inf,,,unsupported,Arke.get_fn declined swiglu_packed@gpt2-c_attn,false,true,0,0,0.01,0.01,ok,Arke.get_fn declined swiglu_packed@gpt2-c_attn,,,,,1.0,,,
+swiglu_packed,square-1k,PyTorch-eager,247.2,249.8,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu_packed,square-1k,Arke,inf,inf,,,unsupported,Arke.get_fn declined swiglu_packed@square-1k,false,true,0,0,0.01,0.01,ok,Arke.get_fn declined swiglu_packed@square-1k,,,,,1.0,,,
+swiglu_packed,square-2k,PyTorch-eager,1003.8,1000.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu_packed,square-2k,Arke,inf,inf,,,unsupported,Arke.get_fn declined swiglu_packed@square-2k,false,true,0,0,0.01,0.01,ok,Arke.get_fn declined swiglu_packed@square-2k,,,,,1.0,,,
+swiglu_packed,square-4k,PyTorch-eager,6757.4,6640.6,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,,,,,1.0,1.0000,true,0.0000
+swiglu_packed,square-4k,Arke,inf,inf,,,unsupported,Arke.get_fn declined swiglu_packed@square-4k,false,true,0,0,0.01,0.01,ok,Arke.get_fn declined swiglu_packed@square-4k,,,,,1.0,,,

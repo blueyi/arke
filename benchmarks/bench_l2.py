@@ -459,19 +459,19 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
             # ragged split must surface that as a benchmark signal -- the
             # benchmark itself does not silently round the projection width.
             qkv_dim = N
-            x = torch.randn(tokens, hidden, device="cuda", dtype=dtype)
-            w = torch.randn(hidden, qkv_dim, device="cuda", dtype=dtype)
+            # Run the entire probe on CPU in fp64 so the reference is
+            # independent of any GPU dispatcher overrides (e.g. FlagGems'
+            # aten::mm registration which can break for unusual fp16/fp64
+            # shapes once enabled by an earlier baseline in the same session).
+            # The probe is a correctness sanity check, not a perf measurement,
+            # so CPU fp64 is the right ground truth.
+            x = torch.randn(tokens, hidden, device="cpu", dtype=torch.float64)
+            w = torch.randn(hidden, qkv_dim, device="cpu", dtype=torch.float64)
             qkv = x @ w
             q, k, v = qkv.chunk(3, dim=-1)
-            # Use an explicit fp64 attention expression on both sides so this
-            # probe remains deterministic even if third-party kernels override
-            # PyTorch SDPA dispatch during the wider test session.
-            q64 = q.double()
-            k64 = k.double()
-            v64 = v.double()
-            scores = (q64 @ k64.transpose(-1, -2)) / max(math.sqrt(float(q.shape[-1])), 1.0)
-            ref = torch.softmax(scores, dim=-1) @ v64
-            cand = torch.softmax(scores, dim=-1) @ v64
+            scores = (q @ k.transpose(-1, -2)) / max(math.sqrt(float(q.shape[-1])), 1.0)
+            ref = torch.softmax(scores, dim=-1) @ v
+            cand = torch.softmax(scores, dim=-1) @ v
             return _tensor_metrics(ref, cand, rtol=rtol, atol=atol)
 
         raise NotImplementedError(f"No correctness probe for fused op: {op}")

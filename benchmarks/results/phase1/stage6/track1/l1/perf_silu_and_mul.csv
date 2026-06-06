@@ -1,0 +1,4 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+silu_and_mul,gpt2-sm,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu_and_mul@gpt2-sm,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for silu_and_mul,,,,,1.0,,,
+silu_and_mul,gpt2-sm,PyTorch-eager,4.1,1.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+silu_and_mul,gpt2-sm,Arke,8.3,15.0,,0.4940,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.4940,false,-0.5060

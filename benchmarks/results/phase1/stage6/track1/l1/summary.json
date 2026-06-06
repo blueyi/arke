@@ -1,0 +1,81 @@
+{
+  "overall_geomean": 2.0746,
+  "op_scores": {
+    "cross_attention": 1.6092,
+    "flash_attention": 4.9713,
+    "gelu_and_mul": 0.6626,
+    "grouped_query_attention": 1.384,
+    "multi_latent_attention": 1.0,
+    "paged_attention": 1.0,
+    "silu_and_mul": 0.7029,
+    "swiglu_packed": 1.0
+  },
+  "total_shapes": 91,
+  "operators": [
+    "cross_attention",
+    "flash_attention",
+    "gelu_and_mul",
+    "grouped_query_attention",
+    "multi_latent_attention",
+    "paged_attention",
+    "silu_and_mul",
+    "swiglu_packed"
+  ],
+  "status_counts": {
+    "ok": 101,
+    "skipped": 22,
+    "unsupported": 27
+  },
+  "correctness_counts": {
+    "ok": 87,
+    "skipped": 22,
+    "golden_unavailable_pending_baseline": 34,
+    "error": 5,
+    "unsupported": 2
+  },
+  "memory_policy_counts": {
+    "attention": 58,
+    "attention_fused": 74,
+    "none": 18
+  },
+  "memory_pressure_rows": 22,
+  "perf_target_counts": {
+    "with_target": 150,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 85,
+    "false": 28,
+    "unknown": 37
+  },
+  "perf_targets": {
+    "cross_attention": 1.0,
+    "flash_attention": 1.0,
+    "gelu_and_mul": 1.0,
+    "grouped_query_attention": 1.0,
+    "multi_latent_attention": 1.0,
+    "paged_attention": 1.0,
+    "silu_and_mul": 1.0,
+    "swiglu_packed": 1.0
+  },
+  "perf_actuals": {
+    "cross_attention": 1.6092,
+    "flash_attention": 4.9713,
+    "gelu_and_mul": 0.6626,
+    "grouped_query_attention": 1.384,
+    "multi_latent_attention": 1.0,
+    "paged_attention": 1.0,
+    "silu_and_mul": 0.7029,
+    "swiglu_packed": 1.0
+  },
+  "perf_gaps": {
+    "cross_attention": 1.5809,
+    "flash_attention": 15.1841,
+    "gelu_and_mul": -0.2805,
+    "grouped_query_attention": 0.6613,
+    "multi_latent_attention": 0.0,
+    "paged_attention": 0.0,
+    "silu_and_mul": -0.253,
+    "swiglu_packed": 0.0
+  }
+}
