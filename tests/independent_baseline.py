@@ -332,6 +332,7 @@ BASELINE_REGISTRY = {
     "copy_": baseline_copy_,
     "silu_and_mul": baseline_silu_and_mul,
     "gelu_and_mul": baseline_gelu_and_mul,
+    "swiglu_packed": baseline_swiglu_packed,
     "rope": baseline_rope,
     "cross_entropy": baseline_cross_entropy,
     "fused_linear_cross_entropy": baseline_fused_linear_cross_entropy,

@@ -103,6 +103,10 @@ def generate_inputs(op_name: str, dtype=torch.float32) -> tuple[dict, dict]:
         shapes = {"cond": [M, N], "A": [M, N], "B": [M, N]}
     elif op_name in ("silu_and_mul", "gelu_and_mul"):
         shapes = {"X": [M, N * 2]}
+    elif op_name == "swiglu_packed":
+        # True fused gated projection: split(X, 2, dim=-1) → silu(x1)*x2 → @ W
+        # X: [M, K*2] (packed gate||up), W: [K, N] (down projection)
+        shapes = {"X": [M, K * 2], "W": [K, N]}
     elif op_name == "topk":
         shapes = {"X": [M, N]}
     else:
