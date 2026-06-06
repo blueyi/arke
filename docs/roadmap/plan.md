@@ -105,7 +105,7 @@ Each Stage Gate cites which Thesis level it advances. See per-Stage docs for the
 | S3 | G3 | BL1×L1 (matmul+softmax) | L1 | LLM Agent Closed Loop | ✅ |
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
-| S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
+| S6 | G6 | BL4×L1 (46 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
 | S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 (high-level IR ready for Phase-3 MLIR consumption) | ✅ 13/14 closed (G7.8d honest-gap accepted per Gate Governance v2; S7.followup.1–3 open) |
 | S8 | G8 | **Harness system (Tier 1)** + BL5 inherit + BL6×L3 endpoint validation (Tier 2) | L1+L2+L3 | **Build extensible Arke Harness** for LLM-driven op auto-gen/tune (Stage 8 primary deliverable); BL6×L3 = Thesis L1 endpoint validation | 🚧 **Tier 1 in progress** (Harness Façade/Substrate); Tier 2: G8[4a] vanilla `torch.compile` GPT-2 ✅ PASS (2026-05-17, D7-E1.6); G8[4b] Arke bridge ⬜ (scope-guarded transient artifact); G8[1]/[2]/[3]/[5]/[6]/[7] open. **G8 PASS split into Tier 1 (Harness) + Tier 2 (L1 endpoints), Leon-approved 2026-05-17.**
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
@@ -122,7 +122,7 @@ Each Stage Gate cites which Thesis level it advances. See per-Stage docs for the
 | G3 | BL1×L1 | L1 | LLM-driven matmul ≥100% P0 | P0 |
 | G4 | BL2×L1 | L1 | 6 tasks: Arke correctness ≥ LLM-direct, geomean ~P1 | P0, P1, P5 |
 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | OT0-2×ST1-3 correctness 100%; GPT-2 top-1 correct | P0, P3 |
-| **G6** | **BL4×L1** | **L1** | 45 ops correctness 100% via SemanticInterpreter; perf ≥1.00× P3 | P3 |
+| **G6** | **BL4×L1** | **L1** | 46 ops correctness 100% via SemanticInterpreter; perf ≥1.00× P3 | P3 |
 | **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness 100%; **same-backend Triton fairness**: Arke-Triton ≥ (1−ε)·Triton-ref with ε=0.03; 4/4 fusions; per-op denominator = best Triton-only implementation in ladder | Triton-only ladder (FlagGems / Liger / Unsloth / vLLM-Triton / flash-attn) |
 | **G8** | **Harness system (Tier 1) + BL5 inherit + BL6×L3 endpoint (Tier 2)** | **L1+L2+L3** | **Tier 1**: Façade v1.0 + LLM autonomy + extensibility (1 new op ≤300 LOC + 1 new baseline ≤200 LOC). **Tier 2**: GPT-2 ≥0.95× eager; LLaMA-2 ≥0.90×; DS-V2 ≥0.85×; auto-strategy ≥0.95× P0 | P0, P1, P3 |
 | **G9** | **BL6×L3 (4 models) + BL5 regression** | **L1+L2+L3** | GPT-2 ≥1.00× eager; LLaMA-2/3 ≥0.95×; Qwen2.5 ≥0.90×; Arke ≥1.05× P5 | P0, P1, P5 |
@@ -164,20 +164,22 @@ GPT-2 Small E2E inference: top-1 token correctness 100%, 49/48 Conv1D replacemen
 
 **Why this comes first:** All subsequent stages (IR/Lang, Agent autonomy, multi-model E2E) depend on a solid compiler foundation. Without OpRegistry, adding ops requires touching 6 files. Without Pass infrastructure, IR transformations are ad-hoc. Without Backend abstraction, Triton is hardcoded everywhere.
 
-**BL Exit:** BL4×L1 — Full 45 ops correctness 100% via SemanticInterpreter + performance ≥1.00× P3 (eager).
+**BL Exit:** BL4×L1 — Full 46 ops correctness 100% via SemanticInterpreter + performance ≥1.00× P3 (eager).
 
 **Gate G6 PASS Criteria:**
 
 ```
 AND ALL:
-  [1] OpRegistry: single source of truth for all 45 ops (adding op ≤ 2 files)
-  [2] SemanticInterpreter: PyTorch eager executor, 45 ops correctness 100%
+  [1] OpRegistry: single source of truth for all 46 ops (adding op ≤ 2 files)
+  [2] SemanticInterpreter: PyTorch eager executor, 46 ops correctness 100%
   [3] Pass Infrastructure: ArkePass protocol + PassPipeline with ≥2 passes
-  [4] SSA Validator: validates all 45 ops; rejects ≥5 invalid IR examples
+  [4] SSA Validator: validates all 46 ops; rejects ≥5 invalid IR examples
   [5] Backend Abstraction: ArkeBackend protocol + TritonBackend implements it
-  [6] Codegen + GPU execution: 45 ops via TritonBackend, correctness 100%, perf ≥1.00× P3
+  [6] Codegen + GPU execution: 46 ops via TritonBackend, correctness 100%, perf ≥1.00× P3
   [7] Non-regression: ≥422 tests passed, ≤6 skipped, 0 new failures
 ```
+
+**Closed:** 2026-06-06 on `feat/g6-closure` — 7/7 PASS at 46/46 ops after D8-X1 catalog growth (silu_and_mul / gelu_and_mul / swiglu_packed) + OT4 attention tier-3 re-run + qkv_fa-shape3 probe fix (CPU fp64 escape from FlagGems aten::mm hijack).
 
 → Detailed plan: [docs/phase1/stage6-plan.md](../phase1/stage6-plan.md)
 
