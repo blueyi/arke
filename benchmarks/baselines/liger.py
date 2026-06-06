@@ -74,7 +74,7 @@ class LigerRunner(BaselineRunner):
             return LigerRMSNormFunction.apply(x, weight, 1e-6)
 
         if op == "gelu" and len(inputs) == 1:
-            from liger_kernel.ops.gelu_and_mul import LigerGELUMulFunction
+            from liger_kernel.ops.geglu import LigerGELUMulFunction
 
             x = inputs[0]
             # Liger's GELU/SiLU Triton kernels block-tile the last
@@ -93,7 +93,7 @@ class LigerRunner(BaselineRunner):
                 return None
 
         if op == "silu" and len(inputs) == 1:
-            from liger_kernel.ops.silu_and_mul import LigerSiLUMulFunction
+            from liger_kernel.ops.swiglu import LigerSiLUMulFunction
 
             x = inputs[0]
             gate = torch.ones_like(x)
@@ -129,7 +129,7 @@ class LigerRunner(BaselineRunner):
             return lambda: LigerRMSNormFunction.apply(X, weight, eps)
 
         elif op == "gelu":
-            from liger_kernel.ops.gelu_and_mul import LigerGELUMulFunction
+            from liger_kernel.ops.geglu import LigerGELUMulFunction
 
             # Liger's GELU is a fused GELU*gate, so we use a simple wrapper.
             # Mirror the run_with_inputs guard: Liger's Triton kernel caps
