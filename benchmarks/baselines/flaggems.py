@@ -80,6 +80,14 @@ class FlagGemsRunner(BaselineRunner):
             "grouped_matmul", "concat", "gather", "scatter", "copy_",
             # OT3 quantization
             "quantize_per_token",
+            # OT4 attention (S7.followup.3 2026-06-06)
+            # FlagGems ships Triton-only SDPA + flash_attention kernels.
+            # When enabled, F.scaled_dot_product_attention dispatches
+            # through FlagGems Triton — making FlagGems the same-backend
+            # Triton golden for these 3 ops. MLA + paged_attention stay
+            # audit-degraded (no production Triton kernel in 9 audited
+            # community libraries; PyTorch-eager remains P3 fallback).
+            "flash_attention", "grouped_query_attention", "cross_attention",
         )
 
     def run_with_inputs(
@@ -141,6 +149,31 @@ class FlagGemsRunner(BaselineRunner):
             return inputs[0].T.contiguous()
         if op == "embedding" and len(inputs) == 2:
             return torch.nn.functional.embedding(inputs[0].long(), inputs[1])
+        # OT4 attention via FlagGems Triton SDPA (hijacked F.scaled_dot_product_attention).
+        # FlagGems supplies a Triton-only implementation; when flag_gems.enable()
+        # has run, calls to torch.nn.functional.scaled_dot_product_attention
+        # dispatch through it. This makes FlagGems the same-backend Triton
+        # golden for flash_attention / GQA / cross_attention (S7.followup.3).
+        if op == "flash_attention" and len(inputs) == 3:
+            return torch.nn.functional.scaled_dot_product_attention(
+                inputs[0], inputs[1], inputs[2], is_causal=True,
+            )
+        if op == "cross_attention" and len(inputs) == 3:
+            return torch.nn.functional.scaled_dot_product_attention(
+                inputs[0], inputs[1], inputs[2],
+            )
+        if op == "grouped_query_attention" and len(inputs) == 3:
+            q, k, v = inputs
+            # GQA: Q has more heads than K/V; broadcast K/V to match
+            # via PyTorch's native enable_gqa flag (SDPA-supported since
+            # 2.5) so FlagGems sees the canonical SDPA call shape.
+            repeats = q.shape[0] // max(k.shape[0], 1)
+            if repeats > 1:
+                k = k.repeat_interleave(repeats, dim=0)
+                v = v.repeat_interleave(repeats, dim=0)
+            return torch.nn.functional.scaled_dot_product_attention(
+                q, k, v, is_causal=True,
+            )
         return None
 
     def get_fn(
@@ -283,5 +316,66 @@ class FlagGemsRunner(BaselineRunner):
             indices = torch.randint(0, M, (min(K or 128, M),), device="cuda")
             torch.nn.functional.embedding(indices, weight); torch.cuda.synchronize()
             return lambda: torch.nn.functional.embedding(indices, weight)
+
+        # ── OT4 Attention (S7.followup.3 2026-06-06) ─────────────────
+        # FlagGems hijacks aten::_flash_attention_forward + ATen SDPA
+        # paths; once enable() runs, F.scaled_dot_product_attention
+        # dispatches into FlagGems Triton kernels. We mirror
+        # pytorch_eager's input construction so shape contracts stay
+        # identical across runners — the only delta is the underlying
+        # dispatcher (Triton vs eager). Pre-warm via one call before
+        # returning the lambda so Triton autotune doesn't pollute the
+        # measured latency.
+        elif op == "flash_attention":
+            # M = batch*heads, N = seq_len, K = head_dim
+            batch_heads = M
+            seq_len = N
+            head_dim = max(K, 64)
+            Q = torch.randn(batch_heads, seq_len, head_dim, device="cuda", dtype=dtype)
+            K_ = torch.randn(batch_heads, seq_len, head_dim, device="cuda", dtype=dtype)
+            V = torch.randn(batch_heads, seq_len, head_dim, device="cuda", dtype=dtype)
+            torch.nn.functional.scaled_dot_product_attention(Q, K_, V, is_causal=True)
+            torch.cuda.synchronize()
+            return lambda: torch.nn.functional.scaled_dot_product_attention(
+                Q, K_, V, is_causal=True,
+            )
+
+        elif op == "grouped_query_attention":
+            batch_heads = M
+            seq_len = N
+            head_dim = max(K, 64)
+            num_kv_groups = max(batch_heads // 4, 1)
+            Q = torch.randn(batch_heads, seq_len, head_dim, device="cuda", dtype=dtype)
+            K_ = torch.randn(num_kv_groups, seq_len, head_dim, device="cuda", dtype=dtype)
+            V = torch.randn(num_kv_groups, seq_len, head_dim, device="cuda", dtype=dtype)
+            repeats = batch_heads // num_kv_groups
+            K_exp = K_.repeat_interleave(repeats, dim=0)
+            V_exp = V.repeat_interleave(repeats, dim=0)
+            torch.nn.functional.scaled_dot_product_attention(Q, K_exp, V_exp, is_causal=True)
+            torch.cuda.synchronize()
+            return lambda: torch.nn.functional.scaled_dot_product_attention(
+                Q, K_exp, V_exp, is_causal=True,
+            )
+
+        elif op == "cross_attention":
+            # Cross-attention: Q from decoder, K/V from encoder (Sq != Skv).
+            from benchmarks.baselines._runtime_ctx import get_current_shape
+            shape = get_current_shape()
+            if shape is not None and getattr(shape, "Skv", None) is not None:
+                batch_heads = shape.B * shape.H
+                q_len = shape.S
+                kv_len = shape.Skv
+                head_dim = shape.D
+            else:
+                batch_heads = M
+                q_len = max(N // 2, 1)
+                kv_len = N
+                head_dim = max(K, 64)
+            Q = torch.randn(batch_heads, q_len, head_dim, device="cuda", dtype=dtype)
+            K_ = torch.randn(batch_heads, kv_len, head_dim, device="cuda", dtype=dtype)
+            V = torch.randn(batch_heads, kv_len, head_dim, device="cuda", dtype=dtype)
+            torch.nn.functional.scaled_dot_product_attention(Q, K_, V)
+            torch.cuda.synchronize()
+            return lambda: torch.nn.functional.scaled_dot_product_attention(Q, K_, V)
 
         return None
