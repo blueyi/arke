@@ -1674,7 +1674,7 @@
       "performance_evidence_present": true
     },
     {
-      "op": "swiglu",
+      "op": "silu_and_mul",
       "ot_tier": 3,
       "layer": "l1",
       "shape_count_required": 12,
@@ -1717,7 +1717,7 @@
       "performance_evidence_present": true
     },
     {
-      "op": "geglu",
+      "op": "gelu_and_mul",
       "ot_tier": 3,
       "layer": "l1",
       "shape_count_required": 12,
@@ -2349,7 +2349,7 @@
       "performance_evidence_present": false
     },
     {
-      "op": "swiglu",
+      "op": "silu_and_mul",
       "layer": "l2",
       "shape_count_required": 12,
       "shape_tags_required": [
@@ -2387,7 +2387,7 @@
       "performance_evidence_present": false
     },
     {
-      "op": "geglu",
+      "op": "gelu_and_mul",
       "layer": "l2",
       "shape_count_required": 12,
       "shape_tags_required": [
@@ -2510,7 +2510,6 @@
     }
   ],
   "summary": {
-    "l1_total_ops_required": 45,
     "l1_ops_with_track6_results": 1,
     "l1_op_coverage_ratio": 0.0222,
     "l1_required_shapes_total": 685,

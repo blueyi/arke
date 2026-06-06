@@ -1,26 +1,64 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — Operator Registry (S6 Compiler Infrastructure).
+"""Arke IR — Kernel Schema Registry (S6 Compiler Infrastructure).
 
-OpRegistry provides typed access to the operator catalog with derived views
-and validation utilities. It serves as the Single Source of Truth for all
-operator metadata, replacing scattered if/elif dispatch tables.
+``OpRegistry`` provides typed access to the **kernel schema view** built
+in ``arke.ir.ops.catalog`` (``OP_CATALOG``). It replaces scattered
+if/elif dispatch tables across the compiler, interpreter and codegen,
+giving every consumer one place to ask "what metadata does kernel X
+have?".
+
+╔══════════════════════════════════════════════════════════════════════╗
+║  Layer boundary — please read                                        ║
+║                                                                      ║
+║  This file is a **view over the kernel SSOT**, not the SSOT itself,  ║
+║  and *not* the IR dialect primitive registry.                        ║
+║                                                                      ║
+║    • Kernel SSOT          : ``benchmarks/op_registry.py`` →          ║
+║                             ``docs/benchmark/benchmark-ops.md``      ║
+║      Question it answers  : *how many / which* high-level kernels    ║
+║                             does Arke benchmark?  (e.g. matmul,      ║
+║                             flash_attention, rmsnorm, …)             ║
+║                                                                      ║
+║    • Kernel schema view   : THIS FILE + ``arke/ir/ops/catalog.py``   ║
+║      Question it answers  : for kernel X, what is its shape rule /   ║
+║                             template hint / reference impl /         ║
+║                             input generator?                         ║
+║      Coverage invariant   : enforced by                              ║
+║                             ``tests/test_ssot_op_registry.py``       ║
+║                             — every SSOT kernel has a schema here,   ║
+║                             and no schema here is unknown to SSOT.   ║
+║                                                                      ║
+║    • IR dialect primitives: *future* (Stage 8 / 9 + MLIR work).      ║
+║                             Will live under a separate registry      ║
+║                             (e.g. ``arke/ir/dialects/...``) and      ║
+║                             register low-level ops (load, store,     ║
+║                             arith.*, scf.*, …) that *lower to* the   ║
+║                             kernel schemas in this file. The two    ║
+║                             registries are intentionally decoupled.  ║
+║                                                                      ║
+║  Do NOT add a ``total_ops()`` or ``__len__ == N`` style invariant to ║
+║  this file — that question belongs to the SSOT. Callers should       ║
+║  iterate ``benchmarks.op_registry.ALL_OPS`` and ``REGISTRY.get(name)`` ║
+║  / ``name in REGISTRY``, expressing a coverage relationship rather   ║
+║  than a numeric equality.                                            ║
+╚══════════════════════════════════════════════════════════════════════╝
 
 Usage:
     from arke.ir.ops.registry import REGISTRY
 
-    # Get operator definition
+    # Get a kernel's schema
     op = REGISTRY.get("matmul")
     print(op.shape_rule.kind)  # "matmul_rule"
 
     # Query by category
     compute_ops = REGISTRY.ops_by_category("compute")
 
-    # Validate coverage
+    # Validate metadata completeness
     missing = REGISTRY.validate_coverage()
     if missing["shape_rule"]:
-        print(f"Ops missing shape_rule: {missing['shape_rule']}")
+        print(f"Kernels missing shape_rule: {missing['shape_rule']}")
 """
 
 from __future__ import annotations

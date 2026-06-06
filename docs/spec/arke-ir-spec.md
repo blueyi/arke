@@ -397,8 +397,8 @@ class StrategyIR:
 A Stage 7 L2 surface may be represented as either an explicit multi-node graph or as a compact registered fused op. In both cases, StrategyIR keeps the fusion intent explicit through `fuse` decisions:
 
 - Explicit graph: `matmul -> relu` uses `fuse(ops=["matmul", "relu"], type="epilogue")`.
-- Compact gated op: `swiglu` carries `fuse(ops=["silu", "mul"], type="epilogue")` to expose the logical inner activation/multiply fusion even when SemanticIR has one canonical `swiglu` node.
-- Compact gated op: `geglu` carries `fuse(ops=["gelu", "mul"], type="epilogue")`.
+- Compact gated op: `silu_and_mul` carries `fuse(ops=["silu", "mul"], type="epilogue")` to expose the logical inner activation/multiply fusion even when SemanticIR has one canonical `silu_and_mul` node.
+- Compact gated op: `gelu_and_mul` carries `fuse(ops=["gelu", "mul"], type="epilogue")`.
 
 This keeps audit/coverage checks tied to real strategy evidence without forcing every registered fused operator to expand into multiple SemanticIR nodes.
 

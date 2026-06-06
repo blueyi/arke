@@ -1,0 +1,32 @@
+{
+  "128": {
+    "eager_mean_ms": 8.119646011618897,
+    "eager_median_ms": 7.846723514376208,
+    "compile_mean_ms": 8.074715151451528,
+    "compile_median_ms": 8.038084488362074,
+    "ratio_vs_eager": 1.0055643894954354,
+    "eager_stdev_ms": 0.602333962547262,
+    "compile_stdev_ms": 0.38208273736088205,
+    "g8_pass": true
+  },
+  "256": {
+    "eager_mean_ms": 8.414984942646697,
+    "eager_median_ms": 8.283983013825491,
+    "compile_mean_ms": 9.728097391780466,
+    "compile_median_ms": 9.411544975591823,
+    "ratio_vs_eager": 0.8650185749329306,
+    "eager_stdev_ms": 0.5665657219093451,
+    "compile_stdev_ms": 0.9298145467013631,
+    "g8_pass": false
+  },
+  "512": {
+    "eager_mean_ms": 11.690959404222667,
+    "eager_median_ms": 11.678581999149173,
+    "compile_mean_ms": 11.416571243898943,
+    "compile_median_ms": 11.801782005932182,
+    "ratio_vs_eager": 1.0240342003270342,
+    "eager_stdev_ms": 0.13146109610380152,
+    "compile_stdev_ms": 0.7952763598807604,
+    "g8_pass": true
+  }
+}

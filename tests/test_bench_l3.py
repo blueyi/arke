@@ -80,3 +80,90 @@ def test_run_l3_writes_structured_artifacts(tmp_path):
     summary = json.loads((run_dir / "summary.json").read_text())
     assert summary["rows"] == 2
     assert summary["compile_rows"] == 1
+
+
+# --- Regression tests for the --modes alias normalization fix (2026-05-17) ---
+
+
+def test_normalize_mode_accepts_canonical_names():
+    """Canonical names round-trip unchanged."""
+    from benchmarks.bench_l3 import _normalize_mode, MODE_EAGER, MODE_TORCH_COMPILE
+
+    assert _normalize_mode("eager") == MODE_EAGER
+    assert _normalize_mode("torch.compile") == MODE_TORCH_COMPILE
+
+
+def test_normalize_mode_accepts_underscore_alias():
+    """`torch_compile` (shell-friendly spelling) maps to canonical `torch.compile`.
+
+    This is the exact alias that caused the 2026-05-17 bug: a CLI user passed
+    `--modes eager,torch_compile`, the CSV row was written with
+    `mode='torch_compile'`, but `build_summary` filtered on `'torch.compile'`,
+    so `compile_rows=0` in summary.json despite a successful compile run.
+    """
+    from benchmarks.bench_l3 import _normalize_mode, MODE_TORCH_COMPILE
+
+    assert _normalize_mode("torch_compile") == MODE_TORCH_COMPILE
+    assert _normalize_mode("torch-compile") == MODE_TORCH_COMPILE
+    assert _normalize_mode("torchcompile") == MODE_TORCH_COMPILE
+    # Case-insensitive
+    assert _normalize_mode("Torch_Compile") == MODE_TORCH_COMPILE
+    # Whitespace tolerated
+    assert _normalize_mode("  torch_compile  ") == MODE_TORCH_COMPILE
+
+
+def test_normalize_mode_rejects_unknown():
+    """Unknown modes fail loud — better than silently empty filter results."""
+    import pytest
+    from benchmarks.bench_l3 import _normalize_mode
+
+    with pytest.raises(ValueError, match="Unknown bench_l3 mode"):
+        _normalize_mode("eager-mode")  # not a registered alias
+    with pytest.raises(ValueError, match="Unknown bench_l3 mode"):
+        _normalize_mode("inductor")
+
+
+def test_normalize_modes_handles_list():
+    from benchmarks.bench_l3 import _normalize_modes, MODE_EAGER, MODE_TORCH_COMPILE
+
+    assert _normalize_modes(["eager", "torch_compile"]) == [
+        MODE_EAGER,
+        MODE_TORCH_COMPILE,
+    ]
+
+
+def test_build_summary_uses_canonical_mode_constants():
+    """End-to-end: ensure compile_rows is populated regardless of which alias
+    the user originally passed to the CLI.
+
+    Constructs E2EResult rows directly with the canonical mode names (matching
+    what _normalize_modes produces after CLI parsing) and verifies the summary
+    filter catches them.
+    """
+    from benchmarks.bench_l3 import (
+        E2EResult,
+        MODE_EAGER,
+        MODE_TORCH_COMPILE,
+        build_summary,
+    )
+
+    results = [
+        E2EResult(
+            model="gpt2", seq_len=128, mode=MODE_EAGER, source="eager-src",
+            status="ok", mean_ms=10.0, correct=True, top1_match=True,
+            ratio_vs_eager=1.0,
+        ),
+        E2EResult(
+            model="gpt2", seq_len=128, mode=MODE_TORCH_COMPILE, source="tc-src",
+            status="ok", mean_ms=9.0, correct=True, top1_match=True,
+            ratio_vs_eager=10.0 / 9.0,
+        ),
+    ]
+    summary = build_summary(results, target_ratio=0.95)
+    assert summary["eager_rows"] == 1
+    assert summary["compile_rows"] == 1, (
+        "compile_rows must equal the number of MODE_TORCH_COMPILE rows; "
+        f"got {summary['compile_rows']}"
+    )
+    assert summary["compile_success_rows"] == 1
+    assert summary["g8_gpt2_pass"] is True

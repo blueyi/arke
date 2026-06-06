@@ -1,0 +1,38 @@
+[
+  {
+    "model": "gpt2",
+    "seq_len": 128,
+    "mode": "eager",
+    "source": "PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause",
+    "status": "ok",
+    "reason": "",
+    "mean_ms": 7.258521556854248,
+    "min_ms": 6.82700777053833,
+    "max_ms": 7.716864109039307,
+    "median_ms": 7.374847888946533,
+    "peak_memory_mb": 525.19140625,
+    "correct": true,
+    "max_logit_diff": 0.0,
+    "mean_logit_diff": 0.0,
+    "top1_match": true,
+    "ratio_vs_eager": 1.0
+  },
+  {
+    "model": "gpt2",
+    "seq_len": 128,
+    "mode": "torch_compile",
+    "source": "torch_compile",
+    "status": "ok",
+    "reason": "",
+    "mean_ms": 8.951398372650146,
+    "min_ms": 6.899712085723877,
+    "max_ms": 14.419967651367188,
+    "median_ms": 7.458816051483154,
+    "peak_memory_mb": 538.69140625,
+    "correct": true,
+    "max_logit_diff": 0.0,
+    "mean_logit_diff": 0.0,
+    "top1_match": true,
+    "ratio_vs_eager": 0.8108813008514661
+  }
+]

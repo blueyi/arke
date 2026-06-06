@@ -531,7 +531,7 @@ class ArkeRunner(BaselineRunner):
             return (idx, weight)
 
         # ── gated activations (OT3) ───────────────────────────────
-        if op in ("swiglu", "geglu"):
+        if op in ("silu_and_mul", "gelu_and_mul"):
             return (torch.randn(M, N * 2, device=device, dtype=dtype),)
 
         # ── attention (OT4) ────────────────────────────────────────

@@ -76,21 +76,98 @@ documented in `AGENTS.md`.
 
 ---
 
-## 3. Architecture Overview
+## 3. Architecture Overview — Two-Layer Design
 
-The harness has three integration **modes** that share one underlying substrate.
+> **Locked principle (2026-05-17, Leon-approved):** Arke Harness is a **two-layer system**, not a monolith. The split between *Public Façade* (vendor-agnostic public contract) and *Arke Substrate* (Arke-internal compiler/IR coupling) is the **defining architectural commitment** that lets Arke simultaneously:
+>
+> 1. Plug into any MCP-compatible agent runtime (Claude Code, OpenClaw, Hermes, Cline, Continue, future Anthropic agents, custom in-house agents) — via the Public Façade.
+> 2. Retain deep IR/Compiler/V0-V1-V2 coupling for decision quality and cross-architecture portability — via the Arke Substrate.
+>
+> Without this split, Arke either (a) becomes "yet another vendor-locked optimizer" with no ecosystem reach, or (b) gets dragged into the lowest common denominator of public agent API contracts and loses the IR-coupling advantage. The two-layer design preserves both.
 
-### 3.1 The three modes
+### 3.0 The two layers
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Layer 1: Public Harness Façade                                      │
+│  ─────────────────────────────                                       │
+│  Vendor-agnostic, stable contract. Any MCP-compatible agent          │
+│  (Claude Code, OpenClaw, Hermes, Cline, Continue, …) talks to this   │
+│  surface. Version-locked. Backward-compatible across Arke releases   │
+│  within the same Façade major version.                               │
+│                                                                      │
+│  • 8 tools (§6) — `ToolMeta`-described, JSON-schema discoverable     │
+│  • OptimizationEvent stream (§4) — AsyncGenerator                    │
+│  • Trajectory JSONL (§15) — schema `arke-trajectory-v1.0.0` (D8-F3)  │
+│  • SKILL.md (§11) — Claude-Code-compatible recipe format             │
+│  • Hook spec (§12) — 8 lifecycle points, MAY register externally     │
+│  • MCP transport (§14) — stdio / sse, surfaces Tools/Resources/Prompts│
+│  • CLI verbs (`arke optimize`, `arke bench`, `arke mcp serve`)        │
+│  • Python API (`arke.optimize(...)`)                                  │
+│                                                                      │
+│  ↑ LLM provider is REPLACEABLE: Anthropic / OpenAI / OSS / in-house  │
+│  ↑ Agent runtime is REPLACEABLE: any MCP-speaking client             │
+└──────────────────────────────────────────────────────────────────────┘
+                          ↓  (internal ABI — may evolve per Stage)
+┌──────────────────────────────────────────────────────────────────────┐
+│  Layer 2: Arke Substrate                                             │
+│  ───────────────────────                                             │
+│  Arke-internal. Not exposed as a stable public API. Free to evolve   │
+│  across Phases (Triton → MLIR → vendor-DSL → LLVM-IR).                │
+│                                                                      │
+│  • SemanticIR / StrategyIR (docs/spec/arke-ir-spec-design.md)        │
+│  • Op registry + 45-op OT catalog (benchmarks/op_registry.py)        │
+│  • V0 (static) / V1 (numeric) / V2 (profile) validators              │
+│  • HeuristicStrategyGenerator — the always-on floor                  │
+│  • Backend codegen: Triton (Phase 1) → Ascend → MLIR → DSL → LLVM-IR │
+│  • Per-target hardware envelopes + legality computation              │
+│  • OptimizationState (ground truth outside the message log)          │
+└──────────────────────────────────────────────────────────────────────┘
+                          ↓
+                  GPU / NPU / CPU hardware
+```
+
+### 3.0.1 What may cross the layer boundary
+
+The Façade-to-Substrate boundary is enforced by **`arke/agent/tools.py` (ABC) + JSON-schema tool descriptors**. Crossing rules:
+
+| Direction | Allowed | Forbidden |
+|:---|:---|:---|
+| Façade → Substrate | Tool calls (8 tools), config (§17), hooks | Direct `StrategyIR` mutation, direct op-registry inspection, raw codegen invocation |
+| Substrate → Façade | Tool results (typed), `OptimizationEvent`s, structured errors with legal alternatives | Substrate-internal types (`Decision`, `StrategyIR`, op-registry handles) as opaque blobs in tool results |
+
+**Rule of thumb:** if a third-party agent (Claude Code, OpenClaw) needs it, it crosses the boundary as a typed Façade artifact. If only Arke's own compiler/codegen consumes it, it stays in the Substrate.
+
+### 3.0.2 Versioning policy
+
+- **Façade contract** is versioned `arke-harness-facade-vX.Y.Z`. Within `X`, all changes are backward-compatible (add tools, add event kinds, add hook points — never remove or break-signature). Breaking changes bump `X`.
+- **Substrate ABI** has no public contract. It evolves at Stage cadence. Each Phase may rewrite it entirely (e.g. Phase 3 introduces MLIR dialect; Substrate ABI re-shaped accordingly). The Façade absorbs the change.
+- **Compatibility test suite** verifies that every Façade version supports the locked 8-tool semantics, event stream, and trajectory schema. Lives in `tests/test_facade_contract_v*.py` (added Stage 9).
+
+### 3.0.3 Transient artifacts (Phase-1-only Substrate workstreams)
+
+Some Substrate workstreams exist **for the duration of a single Phase** to provide endpoint-validation evidence, and are explicitly **not** intended to grow into permanent Arke capabilities. These artifacts are governed by Phase-specific scope guardrails (documented in the Stage plan that introduces them) and are frozen or replaced at Phase boundaries.
+
+| Artifact | Phase | Purpose | Scope guardrails |
+|:---------|:------|:--------|:-----------------|
+| `arke/integration/torch_bridge.py` | Phase 1 only | BL6 G8[4b] endpoint validation — show Arke kernels can be embedded in `torch.compile`'d HF transformers forward graphs via `torch.library.custom_op` | Single file; ≤ 3 ops (rmsnorm + matmul + 1 optional fused); inference-only (no autograd backward); **not** exported from `arke.__init__`; **not** part of the Façade contract. Full guardrails: `docs/phase1/stage8-plan.md` "D7-E1.4 Scope Guardrails". |
+| (future) `arke/integration/ascend_bridge.py` | Phase 2 only | Equivalent endpoint validation for Ascend / Triton-Ascend pipeline | TBD at Phase 2 entry |
+
+**Why this category exists:** the Arke core thesis is *architecture-agnostic* LLM-driven optimization. Letting integration shims (PyTorch dispatcher, Ascend ACL, future MLIR runtime hooks) grow into the core would couple Arke to per-Phase host frameworks. By isolating them as **transient Substrate artifacts** with explicit scope guardrails and lifecycle bounds, Arke retains a clean architecture-agnostic core, while still being able to produce real end-to-end evidence on each Phase's native host framework.
+
+**Lifecycle rule:** After the gate that consumes the transient artifact PASSes, the artifact is **frozen** — no new feature additions until either (a) the introducing Stage plan explicitly re-opens it, or (b) Phase boundary review. At Phase boundary, the artifact is either deleted (replaced by the next Phase's bridge) or kept as a legacy reference.
+
+### 3.1 The three integration modes (all on the same Façade)
 
 | Mode | Owns the loop | Entry point | Use case |
 |---|---|---|---|
 | **A. Built-in** | Arke | `arke optimize ...` (CLI) / `arke.optimize(...)` (Python) | Automated CI, batch optimization, scheduled benchmark runs |
 | **B. External agent** | The agent (Claude Code, Cursor, etc.) | Agent shells out to `arke <verb>` and reads JSON | AI dev assistants that already own LLM access and project context |
-| **C. MCP server** *(new)* | The MCP client (Claude Desktop, Cline, Continue, …) | `arke mcp serve --target ampere` | Any MCP-compatible client drives the 8-tool surface directly — no shell intermediation |
+| **C. MCP server** | The MCP client (Claude Desktop, Cline, Continue, OpenClaw, Hermes, …) | `arke mcp serve --target ampere` | Any MCP-compatible client drives the 8-tool surface directly — no shell intermediation |
 
-Modes A and B exist today (B at MVP fidelity via the heuristic generator). Mode C
-is a planned addition that closes the gap between Arke and the broader
-MCP-tooling ecosystem.
+Modes A and B exist today (B at MVP fidelity via the heuristic generator). Mode C is a planned addition that closes the gap between Arke and the broader MCP-tooling ecosystem.
+
+All three modes consume the **same Façade** — same 8 tools, same events, same trajectory schema. The Substrate sees no mode distinction.
 
 ### 3.2 Shared substrate
 
@@ -153,15 +230,18 @@ and the MCP server all consume.
 ```python
 async for event in harness.run(env, llm, config):
     match event.kind:
-        case "decision":  ...
-        case "compile":   ...
-        case "profile":   ...
-        case "verify":    ...
-        case "rollback":  ...
-        case "compact":   ...
-        case "fallback":  ...   # provider switched
-        case "done":      ...
+        case "decision":   ...
+        case "compile":    ...
+        case "profile":    ...
+        case "verify":     ...
+        case "checkpoint": ...
+        case "rollback":   ...
+        case "compact":    ...
+        case "fallback":   ...   # provider switched
+        case "done":       ...
 ```
+
+**Frozen contract (D8-F2, locked 2026-05-18):** The 9 event kinds above (`decision / compile / profile / verify / checkpoint / rollback / compact / fallback / done`) plus their payload field schemas are pinned in `arke/agent/events_v1_schema.json` (regenerated deterministically by `scripts/regen_events_v1_schema.py`) and enforced by `tests/test_facade_events_contract_v1.py` (68 tests). Version constants (`EVENTS_VERSION="1.0.0"` / `EVENTS_CONTRACT_ID="arke-harness-events-v1.0.0"`) live in `arke.agent.events`. Any change to a kind name / required payload field is a Façade-level event subject to the §3.0.2 versioning policy. Pre-D8-F2 the §4 table omitted `checkpoint` while §15's JSONL example used it — D8-F2 reconciled the two views to the 9-kind union (the `checkpoint` event was always emitted by tool 7 on `OptimizationState`; only §4's table was incomplete). New optional payload fields and new kinds MAY be added on MINOR bumps within `1.y.z`.
 
 Termination conditions, in priority order:
 
@@ -240,6 +320,8 @@ contract that file implements. *This section subsumes the former `agent-design.m
 | 6 | `compile_and_profile` | V2 GPU compile + microbench vs. baseline | no | compile |
 | 7 | `checkpoint` | Snapshot current StrategyIR + best metrics under a label | no | free |
 | 8 | `rollback` | Restore a previous checkpoint | **yes** | free |
+
+**Frozen contract (D8-F1, locked 2026-05-18):** The exact descriptions, `ToolMeta` flags, and `parameters_schema` for these 8 tools are pinned in `arke/agent/facade_v1_schema.json` (regenerated deterministically by `scripts/regen_facade_v1_schema.py`) and enforced by `tests/test_facade_contract_v1.py` (51 tests). Version constants live in `arke.agent.facade`. Any change to a tool's name/description/meta/schema is a Façade-level event subject to the §3.0.2 versioning policy. `benchmark_advice_summary` is *not* a Façade tool — it is a Phase-1 internal helper used by `benchmarks/` CLI flows only.
 
 ### 6.2 `ToolMeta` schema
 
@@ -421,6 +503,17 @@ references:
 | `tier-promotion` | Kernel passing at ST1, want ST2/3 | Re-run with promoted shape tier, compare regressions |
 | `flash-attn` | OT4 op (`flash_attention`, `paged_attention`) | Inject FA-specific decision priors (block size, KV layout) |
 
+### 11.2.1 Shipped skills (in-tree under `skills/`)
+
+The repo ships two reference skills today — both Claude-Code-compatible
+and following the §11.1 schema. New user-authored skills should mirror
+their layout.
+
+| Skill | Trigger | What it does | Reference |
+|---|---|---|---|
+| `arke-test-coverage` | "run benchmarks / test coverage / tier 1\|2\|3 / Arke vs Direct" | Drive CUBE + Vector + Fusion test suites across Tier 1/2/3 (15 / 31 / 50 tasks) | `skills/arke-test-coverage/SKILL.md` (Stage 6+ legacy) |
+| `swiglu-packed-fusion` | "optimize swiglu_packed / D8-X1 demo op / OT3 swiglu / fused gated projection" | Optimize the OT3 fused operator `swiglu_packed` (split → silu×mul → matmul); 8-step procedure with `@rationale` checklist and 4 anti-patterns | `skills/swiglu-packed-fusion/SKILL.md` (D8-X1 Demo A, 2026-06-06) |
+
 ### 11.3 Discovery
 
 At session start, the harness scans `skills/*/SKILL.md`, parses frontmatter, and
@@ -567,18 +660,49 @@ Mode C is symmetric to how Claude Code consumes MCP servers from its side.
 
 ## 15. Trajectory & Learning
 
-Every run produces `trajectory.jsonl` (schema `s8-compile-profile-adjust-v1`).
+Every run produces `trajectory.jsonl` — the **record-level** sibling of the §4
+stream contract. The two share a single envelope by design::
+
+    {"t": <float>, "kind": <string>, "data": <object>}
+
+The record format is a **strict superset** of the §4 stream: every stream event
+kind is also a valid trajectory record, plus two record-only kinds:
+
+* `header` — exactly one line, always the first line; carries session metadata
+  (`kernel_id`, `target_hw`, `mode`, optional `semantic_ir` snapshot) plus the
+  three frozen version pins (`schema`, `trajectory_version`, `contract_id`).
+* `adjust` — emitted once per `compile → profile → adjust` cycle to mark the
+  StrategyIR refinement boundary. Stream consumers fold this into the next
+  `decision` burst; the record persists it explicitly so post-hoc cycle
+  attribution stays unambiguous.
+
 Records are emitted by the default hook bundle (§12) — never by special-case code.
 
 ```jsonl
+{"t": 0.001, "kind": "header",    "data": {"schema": "s8-compile-profile-adjust-v1", "trajectory_version": "1.0.0", "contract_id": "arke-trajectory-v1.0.0", "kernel_id": "matmul", "target_hw": "nvidia-sm86", "mode": "compile", "semantic_ir": {"kernel_id": "matmul", "node_count": 7}}}
 {"t": 0.012, "kind": "decision",  "data": {"decision": {...}, "rationale": "..."}}
-{"t": 0.014, "kind": "verify",    "data": {"v0": "pass"}}
-{"t": 0.241, "kind": "compile",   "data": {"backend": "triton", "build_ms": 227}}
+{"t": 0.014, "kind": "verify",    "data": {"tier": "v0", "pass": true}}
+{"t": 0.241, "kind": "compile",   "data": {"backend": "triton", "success": true, "build_ms": 227}}
 {"t": 1.840, "kind": "profile",   "data": {"latency_ms": 0.41, "vs_baseline": 1.18}}
 {"t": 1.841, "kind": "checkpoint","data": {"label": "best", "score": 1.18}}
+{"t": 1.902, "kind": "adjust",    "data": {"cycle": 1, "decisions_before": 1, "decisions_after": 2, "changed": true}}
 {"t": 2.001, "kind": "compact",   "data": {"removed": 12, "kept": 5}}
-{"t": 2.512, "kind": "done",      "data": {"final_score": 1.18, "decisions": 17, "compiles": 4}}
+{"t": 2.512, "kind": "done",      "data": {"final_score": 1.18, "decisions": 17, "compiles": 4, "termination": "llm_no_more_tool_use"}}
 ```
+
+**Frozen contract (D8-F3, locked 2026-05-19):** The 11 record kinds (the 9
+stream kinds from §4 plus `header` and `adjust`) and their payload field
+schemas are pinned in `arke/learn/trajectory_v1_schema.json` (regenerated
+deterministically by `scripts/regen_trajectory_v1_schema.py`) and enforced by
+`tests/test_facade_trajectory_contract_v1.py` (39 tests, including a golden
+fixture round-trip). Version constants
+(`TRAJECTORY_VERSION="1.0.0"` / `TRAJECTORY_CONTRACT_ID="arke-trajectory-v1.0.0"`)
+live in `arke.learn.trajectory_schema`. Within MAJOR `1.y.z`, new record kinds
+and new optional payload fields MAY be added; existing kind names and required
+payload fields MUST NOT change. Breaking changes bump MAJOR. The legacy
+`schema = "s8-compile-profile-adjust-v1"` string is pinned in the header for
+backward-compat parsers but is no longer the authoritative identifier — newer
+consumers should key off `contract_id`.
 
 Downstream consumers:
 
@@ -704,7 +828,7 @@ Honest assessment as of 2026-05-10. Contract is **frozen** for §1–§10, §15,
 | Bounded action space | ✅ implemented | `arke/agent/tools.py`, `list_legal_actions` impls |
 | ToolMeta declarative interface | ✅ implemented | `arke/agent/tools.py` |
 | Heuristic strategy floor | ✅ implemented | `arke/agent/optimize.py::HeuristicStrategyGenerator` |
-| Trajectory (`s8-compile-profile-adjust-v1`) | ✅ implemented | `arke/learn/trajectory.py` |
+| Trajectory (`arke-trajectory-v1.0.0`, D8-F3) | ✅ implemented | `arke/learn/trajectory.py` + `arke/learn/trajectory_schema.py` |
 | `arke optimize` CLI MVP | ✅ implemented | `arke/agent/optimize.py` (deterministic path) |
 | Sync turn loop with LLM | 🚧 partial | aspirational `LLMRunner` |
 | AsyncGenerator loop | ⬜ planned | Migration M1 |

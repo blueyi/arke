@@ -36,8 +36,8 @@ strategy matmul_gelu_kernel for target("nvidia_ampere") {
 
     def test_gated_activation_l2_fusion_surfaces_are_representable(self):
         for path, expected_ops in (
-            ("examples/operators/19_swiglu.ak", ["silu", "mul"]),
-            ("examples/operators/20_geglu.ak", ["gelu", "mul"]),
+            ("examples/operators/19_silu_and_mul.ak", ["silu", "mul"]),
+            ("examples/operators/20_gelu_and_mul.ak", ["gelu", "mul"]),
         ):
             result = ArkePipeline().compile_file(path)
             assert result.success, result.errors

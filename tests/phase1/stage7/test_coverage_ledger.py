@@ -89,16 +89,16 @@ def test_stage7_gated_activation_examples_expose_l2_fusion_surface():
     report = build_stage7_coverage_ledger()
     l2_by_op = {entry["op"]: entry for entry in report["l2"]}
 
-    swiglu = l2_by_op["swiglu"]
-    geglu = l2_by_op["geglu"]
+    silu_and_mul = l2_by_op["silu_and_mul"]
+    gelu_and_mul = l2_by_op["gelu_and_mul"]
 
-    assert swiglu["pipeline"]["strategy_ok"] is True
-    assert swiglu["pipeline"]["has_fusion_decision"] is True
-    assert swiglu["pipeline"]["fusion_groups"] == [
+    assert silu_and_mul["pipeline"]["strategy_ok"] is True
+    assert silu_and_mul["pipeline"]["has_fusion_decision"] is True
+    assert silu_and_mul["pipeline"]["fusion_groups"] == [
         {"ops": ["silu", "mul"], "type": "epilogue"}
     ]
-    assert geglu["pipeline"]["strategy_ok"] is True
-    assert geglu["pipeline"]["has_fusion_decision"] is True
-    assert geglu["pipeline"]["fusion_groups"] == [
+    assert gelu_and_mul["pipeline"]["strategy_ok"] is True
+    assert gelu_and_mul["pipeline"]["has_fusion_decision"] is True
+    assert gelu_and_mul["pipeline"]["fusion_groups"] == [
         {"ops": ["gelu", "mul"], "type": "epilogue"}
     ]

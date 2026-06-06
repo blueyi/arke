@@ -1,0 +1,312 @@
+{
+  "events_version": "1.0.0",
+  "contract_id": "arke-harness-events-v1.0.0",
+  "design_ref": "docs/architecture/arke-harness.md §4 + §15",
+  "locked_on": "2026-05-18",
+  "kind_count": 9,
+  "wire_format": {
+    "envelope": "{\"t\": <float>, \"kind\": <string>, \"data\": <object>}",
+    "t_unit": "seconds since session start (monotonic)",
+    "kind_enum": [
+      "decision",
+      "compile",
+      "profile",
+      "verify",
+      "checkpoint",
+      "rollback",
+      "compact",
+      "fallback",
+      "done"
+    ]
+  },
+  "events": [
+    {
+      "kind": "decision",
+      "description": "apply_decision applied a legal mutation to StrategyIR",
+      "payload_fields": [
+        {
+          "name": "decision",
+          "type": "object",
+          "required": true,
+          "description": "Serialized Decision (kind + params + rationale)"
+        },
+        {
+          "name": "rationale",
+          "type": "string",
+          "required": true,
+          "description": "Human-readable WHY for the decision"
+        },
+        {
+          "name": "step",
+          "type": "int",
+          "required": false,
+          "description": "1-indexed decision step within the session"
+        },
+        {
+          "name": "decisions_used",
+          "type": "int",
+          "required": false,
+          "description": "Budget counter snapshot after this decision"
+        }
+      ]
+    },
+    {
+      "kind": "compile",
+      "description": "compile_and_profile produced (or failed to produce) a build artifact",
+      "payload_fields": [
+        {
+          "name": "backend",
+          "type": "string",
+          "required": true,
+          "description": "Compile backend: 'triton' | 'cuda' | 'mock'"
+        },
+        {
+          "name": "success",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the compile step produced a runnable artifact"
+        },
+        {
+          "name": "build_ms",
+          "type": "number",
+          "required": false,
+          "description": "Wall-clock build time in milliseconds"
+        },
+        {
+          "name": "error",
+          "type": "string",
+          "required": false,
+          "description": "Compiler error string when success=false"
+        },
+        {
+          "name": "artifact_path",
+          "type": "string",
+          "required": false,
+          "description": "Absolute path to the produced binary/PTX when applicable"
+        }
+      ]
+    },
+    {
+      "kind": "profile",
+      "description": "V2 GPU microbench measurement vs baseline",
+      "payload_fields": [
+        {
+          "name": "latency_ms",
+          "type": "number",
+          "required": true,
+          "description": "Median wall-clock latency from microbench"
+        },
+        {
+          "name": "vs_baseline",
+          "type": "number",
+          "required": true,
+          "description": "latency_baseline / latency_arke (>1 = Arke faster)"
+        },
+        {
+          "name": "baseline_name",
+          "type": "string",
+          "required": false,
+          "description": "Baseline runner identifier (e.g. 'pytorch', 'flagems')"
+        },
+        {
+          "name": "samples",
+          "type": "int",
+          "required": false,
+          "description": "Number of microbench iterations sampled"
+        },
+        {
+          "name": "bottleneck",
+          "type": "string",
+          "required": false,
+          "description": "Heuristic bottleneck label (e.g. 'memory_bandwidth')"
+        }
+      ]
+    },
+    {
+      "kind": "verify",
+      "description": "V0 static or V1 numeric correctness check against reference",
+      "payload_fields": [
+        {
+          "name": "tier",
+          "type": "string",
+          "required": true,
+          "description": "Verification tier: 'v0' (static) | 'v1' (numeric)"
+        },
+        {
+          "name": "pass",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the check passed"
+        },
+        {
+          "name": "max_diff",
+          "type": "number",
+          "required": false,
+          "description": "V1: max abs delta vs NumPy reference"
+        },
+        {
+          "name": "tolerance",
+          "type": "number",
+          "required": false,
+          "description": "V1: tolerance threshold used for pass/fail"
+        },
+        {
+          "name": "error",
+          "type": "string",
+          "required": false,
+          "description": "Error string when pass=false"
+        }
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "description": "Labelled snapshot of OptimizationState taken (recoverable via rollback)",
+      "payload_fields": [
+        {
+          "name": "label",
+          "type": "string",
+          "required": true,
+          "description": "Checkpoint label (used for rollback target)"
+        },
+        {
+          "name": "score",
+          "type": "number",
+          "required": false,
+          "description": "Best-known vs_baseline at checkpoint time"
+        },
+        {
+          "name": "decision_count_at",
+          "type": "int",
+          "required": false,
+          "description": "Budget snapshot — decisions_used at checkpoint"
+        },
+        {
+          "name": "compile_count_at",
+          "type": "int",
+          "required": false,
+          "description": "Budget snapshot — compiles_used at checkpoint"
+        }
+      ]
+    },
+    {
+      "kind": "rollback",
+      "description": "Restored a previous checkpoint; state/budget rewound, audit trail preserved",
+      "payload_fields": [
+        {
+          "name": "label",
+          "type": "string",
+          "required": true,
+          "description": "Checkpoint label that was restored"
+        },
+        {
+          "name": "discarded_decisions",
+          "type": "int",
+          "required": false,
+          "description": "Count of decisions popped from log on restore"
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "description": "Why rollback was triggered (e.g. 'regression detected')"
+        }
+      ]
+    },
+    {
+      "kind": "compact",
+      "description": "Message log compacted; OptimizationState (ground truth) untouched",
+      "payload_fields": [
+        {
+          "name": "removed",
+          "type": "int",
+          "required": true,
+          "description": "Number of messages removed by compaction"
+        },
+        {
+          "name": "kept",
+          "type": "int",
+          "required": true,
+          "description": "Number of messages retained after compaction"
+        },
+        {
+          "name": "tokens_before",
+          "type": "int",
+          "required": false,
+          "description": "Estimated token count before compact"
+        },
+        {
+          "name": "tokens_after",
+          "type": "int",
+          "required": false,
+          "description": "Estimated token count after compact"
+        }
+      ]
+    },
+    {
+      "kind": "fallback",
+      "description": "Strategy / provider / tier fallback engaged (see §16)",
+      "payload_fields": [
+        {
+          "name": "layer",
+          "type": "string",
+          "required": true,
+          "description": "Fallback layer: 'strategy' | 'provider' | 'tier'"
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "required": true,
+          "description": "Source provider/strategy/tier identifier"
+        },
+        {
+          "name": "to",
+          "type": "string",
+          "required": true,
+          "description": "Destination provider/strategy/tier identifier"
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "description": "Why fallback engaged (e.g. 'provider_unreachable')"
+        }
+      ]
+    },
+    {
+      "kind": "done",
+      "description": "Loop terminated; final result, totals, and termination reason attached",
+      "payload_fields": [
+        {
+          "name": "final_score",
+          "type": "number",
+          "required": true,
+          "description": "Final vs_baseline of the chosen strategy"
+        },
+        {
+          "name": "decisions",
+          "type": "int",
+          "required": true,
+          "description": "Total decisions applied in the session"
+        },
+        {
+          "name": "compiles",
+          "type": "int",
+          "required": true,
+          "description": "Total compile_and_profile calls in the session"
+        },
+        {
+          "name": "termination",
+          "type": "string",
+          "required": true,
+          "description": "Why loop ended: 'llm_no_more_tool_use' | 'budget_exhausted' | 'caller_aclose' | 'hard_error'"
+        },
+        {
+          "name": "chosen",
+          "type": "string",
+          "required": false,
+          "description": "Which strategy won: 'llm' | 'heuristic_floor'"
+        }
+      ]
+    }
+  ]
+}

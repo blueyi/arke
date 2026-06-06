@@ -101,42 +101,6 @@ argmax,extreme-tall,PyTorch-eager,249.2,251.9,,1.0000,ok,,false,true,0,0,0.001,0
 argmax,extreme-tall,Arke,250.0,250.9,,0.9968,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.9968,false,-0.0032
 argmax,extreme-flat,PyTorch-eager,210.8,212.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
 argmax,extreme-flat,Arke,210.6,210.9,,1.0009,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0009,true,0.0009
-batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,61.3,44.3,0.002,1.3246,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.3246,true,0.3246
-batch_matmul,gpt2-attn-128,PyTorch-eager,81.2,68.9,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,gpt2-attn-128,Arke,102.4,101.4,0.001,0.7930,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,0.7930,false,-0.2070
-batch_matmul,gpt2-attn-128,FlagGems,60.2,52.2,0.002,1.3488,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.3488,true,0.3488
-batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,93.4,70.7,0.008,0.8458,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.8458,false,-0.1542
-batch_matmul,gpt2-attn-512,PyTorch-eager,79.0,30.7,0.010,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,gpt2-attn-512,Arke,133.7,138.2,0.006,0.5909,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.5909,false,-0.4091
-batch_matmul,gpt2-attn-512,FlagGems,59.5,82.9,0.013,1.3277,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.3277,true,0.3277
-batch_matmul,llama-attn-512,cuBLAS/cuDNN,153.1,154.6,0.027,0.4690,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.4690,false,-0.5310
-batch_matmul,llama-attn-512,PyTorch-eager,71.8,80.9,0.058,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,llama-attn-512,Arke,337.1,344.1,0.012,0.2130,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.2130,false,-0.7870
-batch_matmul,llama-attn-512,FlagGems,146.9,148.5,0.029,0.4888,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.4888,false,-0.5112
-batch_matmul,llama-attn-2k,cuBLAS/cuDNN,1954.7,1811.5,0.009,0.0570,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0570,false,-0.9430
-batch_matmul,llama-attn-2k,PyTorch-eager,111.5,119.8,0.151,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,llama-attn-2k,Arke,4680.3,4103.2,0.004,0.0238,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0238,false,-0.9762
-batch_matmul,llama-attn-2k,FlagGems,1942.9,1828.9,0.009,0.0574,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0574,false,-0.9426
-batch_matmul,batched-8,cuBLAS/cuDNN,55.8,65.3,0.001,1.1434,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.1434,true,0.1434
-batch_matmul,batched-8,PyTorch-eager,63.8,64.5,0.001,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,batched-8,Arke,80.8,5.1,0.001,0.7896,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.7896,false,-0.2104
-batch_matmul,batched-8,FlagGems,62.1,69.9,0.001,1.0274,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.0274,true,0.0274
-batch_matmul,batched-32,cuBLAS/cuDNN,57.3,79.1,0.018,1.0349,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,1.0349,true,0.0349
-batch_matmul,batched-32,PyTorch-eager,59.3,73.7,0.018,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,batched-32,Arke,80.9,91.5,0.013,0.7330,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.7330,false,-0.2670
-batch_matmul,batched-32,FlagGems,64.9,73.7,0.016,0.9137,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.9137,false,-0.0863
-batch_matmul,non-align-1,cuBLAS/cuDNN,75.7,73.8,0.002,0.9379,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,0.9379,false,-0.0621
-batch_matmul,non-align-1,PyTorch-eager,71.0,36.0,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,non-align-1,Arke,72.7,95.2,0.002,0.9766,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,0.9766,false,-0.0234
-batch_matmul,non-align-1,FlagGems,62.8,9.2,0.002,1.1306,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,1.1306,true,0.1306
-batch_matmul,non-align-2,cuBLAS/cuDNN,192.9,173.1,0.010,0.3261,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.3261,false,-0.6739
-batch_matmul,non-align-2,PyTorch-eager,62.9,79.9,0.032,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,non-align-2,Arke,487.2,411.6,0.004,0.1291,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.1291,false,-0.8709
-batch_matmul,non-align-2,FlagGems,175.9,198.7,0.011,0.3576,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.3576,false,-0.6424
-batch_matmul,extreme-bsz,cuBLAS/cuDNN,78.2,76.8,0.003,0.9706,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,0.9706,false,-0.0294
-batch_matmul,extreme-bsz,PyTorch-eager,75.9,48.0,0.003,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
-batch_matmul,extreme-bsz,Arke,77.6,94.4,0.003,0.9781,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,0.9781,false,-0.0219
-batch_matmul,extreme-bsz,FlagGems,71.0,63.5,0.004,1.0690,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,1.0690,true,0.0690
 cast,micro-tiny,PyTorch-eager,87.5,46.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 cast,micro-tiny,Arke,1.5,4.4,,58.3333,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,58.3333,true,57.3333
 cast,micro-tiny,FlagGems,72.1,72.9,,1.2136,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.2136,true,0.2136
@@ -770,309 +734,6 @@ grouped_query_attention,ds-v2-mha-512,PyTorch-eager,7149.7,7149.6,,1.0000,ok,,fa
 grouped_query_attention,ds-v2-mha-512,Arke,1204.5,1189.9,,5.9358,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,5.9358,true,4.9358
 grouped_query_attention,llama3-batch4,PyTorch-eager,7145.8,7186.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
 grouped_query_attention,llama3-batch4,Arke,1201.0,1151.0,,5.9499,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,5.9499,true,4.9499
-layernorm,gpt2-small,cuBLAS/cuDNN,57.4,43.9,,1.0383,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0383,true,0.0383
-layernorm,gpt2-small,PyTorch-eager,59.6,73.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,gpt2-small,torch.compile,267.4,186.1,,0.2229,ok,,false,true,0.000488281,9.39084e-09,0.005,0.005,ok,,,,,,1.0,0.2229,false,-0.7771
-layernorm,gpt2-small,Arke,324.0,327.5,,0.1840,ok,,false,true,0.00188446,0.000140649,0.005,0.005,ok,,,,,,1.0,0.1840,false,-0.8160
-layernorm,gpt2-small,FlagGems,70.0,76.8,,0.8514,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8514,false,-0.1486
-layernorm,gpt2-ffn,cuBLAS/cuDNN,56.9,78.7,,0.9789,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9789,false,-0.0211
-layernorm,gpt2-ffn,PyTorch-eager,55.7,76.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,gpt2-ffn,torch.compile,302.2,302.1,,0.1843,ok,,false,true,0.000976562,2.28174e-08,0.005,0.005,ok,,,,,,1.0,0.1843,false,-0.8157
-layernorm,gpt2-ffn,Arke,326.2,298.2,,0.1708,ok,,false,true,0.00192595,0.000140674,0.005,0.005,ok,,,,,,1.0,0.1708,false,-0.8292
-layernorm,gpt2-ffn,FlagGems,66.2,69.6,,0.8414,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8414,false,-0.1586
-layernorm,gpt2-medium,cuBLAS/cuDNN,57.7,26.8,,1.0295,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0295,true,0.0295
-layernorm,gpt2-medium,PyTorch-eager,59.4,66.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,gpt2-medium,torch.compile,315.9,313.3,,0.1880,ok,,false,true,0.00195312,2.58447e-08,0.005,0.005,ok,,,,,,1.0,0.1880,false,-0.8120
-layernorm,gpt2-medium,Arke,325.6,326.6,,0.1824,ok,,false,true,0.00181723,0.000140151,0.005,0.005,ok,,,,,,1.0,0.1824,false,-0.8176
-layernorm,gpt2-medium,FlagGems,68.3,78.8,,0.8697,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8697,false,-0.1303
-layernorm,llama-7b,cuBLAS/cuDNN,56.1,36.9,,1.0588,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0588,true,0.0588
-layernorm,llama-7b,PyTorch-eager,59.4,44.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,llama-7b,torch.compile,295.6,267.3,,0.2009,ok,,false,true,0.000976562,7.45433e-09,0.005,0.005,ok,,,,,,1.0,0.2009,false,-0.7991
-layernorm,llama-7b,Arke,328.3,322.3,,0.1809,ok,,false,true,0.00189924,0.000141179,0.005,0.005,ok,,,,,,1.0,0.1809,false,-0.8191
-layernorm,llama-7b,FlagGems,65.6,87.0,,0.9055,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9055,false,-0.0945
-layernorm,llama-13b,cuBLAS/cuDNN,56.6,74.6,,1.0795,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0795,true,0.0795
-layernorm,llama-13b,PyTorch-eager,61.1,65.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,llama-13b,torch.compile,302.1,309.4,,0.2023,ok,,false,true,0.000976562,2.30012e-08,0.005,0.005,ok,,,,,,1.0,0.2023,false,-0.7977
-layernorm,llama-13b,Arke,332.2,324.4,,0.1839,ok,,false,true,0.00190639,0.00014085,0.005,0.005,ok,,,,,,1.0,0.1839,false,-0.8161
-layernorm,llama-13b,FlagGems,63.5,68.4,,0.9622,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9622,false,-0.0378
-layernorm,llama-long,cuBLAS/cuDNN,113.5,136.2,,0.9753,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9753,false,-0.0247
-layernorm,llama-long,PyTorch-eager,110.7,113.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,llama-long,torch.compile,373.5,431.1,,0.2964,ok,,false,true,0.00195312,2.12217e-08,0.005,0.005,ok,,,,,,1.0,0.2964,false,-0.7036
-layernorm,llama-long,Arke,420.3,503.7,,0.2634,ok,,false,true,0.0019412,0.000140415,0.005,0.005,ok,,,,,,1.0,0.2634,false,-0.7366
-layernorm,llama-long,FlagGems,110.1,112.6,,1.0054,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0054,true,0.0054
-layernorm,ds-v2,cuBLAS/cuDNN,59.8,82.8,,1.1020,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1020,true,0.1020
-layernorm,ds-v2,PyTorch-eager,65.9,18.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,ds-v2,torch.compile,387.7,310.1,,0.1700,ok,,false,true,0.00195312,2.02946e-08,0.005,0.005,ok,,,,,,1.0,0.1700,false,-0.8300
-layernorm,ds-v2,Arke,438.7,298.0,,0.1502,ok,,false,true,0.00193739,0.000141191,0.005,0.005,ok,,,,,,1.0,0.1502,false,-0.8498
-layernorm,ds-v2,FlagGems,69.6,82.1,,0.9468,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9468,false,-0.0532
-layernorm,ds-v3,cuBLAS/cuDNN,69.1,71.7,,0.8090,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8090,false,-0.1910
-layernorm,ds-v3,PyTorch-eager,55.9,13.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,ds-v3,torch.compile,388.3,311.0,,0.1440,ok,,false,true,0.00195312,4.03758e-08,0.005,0.005,ok,,,,,,1.0,0.1440,false,-0.8560
-layernorm,ds-v3,Arke,417.7,320.6,,0.1338,ok,,false,true,0.00193453,0.000140243,0.005,0.005,ok,,,,,,1.0,0.1338,false,-0.8662
-layernorm,ds-v3,FlagGems,91.5,90.1,,0.6109,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6109,false,-0.3891
-layernorm,mixtral-ffn,cuBLAS/cuDNN,78.9,73.7,,1.2345,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.2345,true,0.2345
-layernorm,mixtral-ffn,PyTorch-eager,97.4,88.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,mixtral-ffn,torch.compile,371.4,300.0,,0.2623,ok,,false,true,0.00195312,2.36061e-08,0.005,0.005,ok,,,,,,1.0,0.2623,false,-0.7377
-layernorm,mixtral-ffn,Arke,416.2,349.1,,0.2340,ok,,false,true,0.00191593,0.000139864,0.005,0.005,ok,,,,,,1.0,0.2340,false,-0.7660
-layernorm,mixtral-ffn,FlagGems,84.5,51.2,,1.1527,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1527,true,0.1527
-layernorm,non-align-1,cuBLAS/cuDNN,70.3,59.7,,1.1266,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1266,true,0.1266
-layernorm,non-align-1,PyTorch-eager,79.2,78.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,non-align-1,torch.compile,411.2,314.4,,0.1926,ok,,false,true,0.000488281,1.50002e-08,0.005,0.005,ok,,,,,,1.0,0.1926,false,-0.8074
-layernorm,non-align-1,Arke,439.3,304.1,,0.1803,ok,,false,true,0.00182295,0.000141059,0.005,0.005,ok,,,,,,1.0,0.1803,false,-0.8197
-layernorm,non-align-1,FlagGems,93.5,86.3,,0.8471,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8471,false,-0.1529
-layernorm,non-align-2,cuBLAS/cuDNN,89.9,110.6,,0.9099,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9099,false,-0.0901
-layernorm,non-align-2,PyTorch-eager,81.8,97.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,non-align-2,torch.compile,416.7,312.3,,0.1963,ok,,false,true,0.00195312,1.65803e-08,0.005,0.005,ok,,,,,,1.0,0.1963,false,-0.8037
-layernorm,non-align-2,Arke,372.4,377.9,,0.2197,ok,,false,true,0.00195265,0.000140508,0.005,0.005,ok,,,,,,1.0,0.2197,false,-0.7803
-layernorm,non-align-2,FlagGems,61.7,70.7,,1.3258,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.3258,true,0.3258
-layernorm,non-align-3,cuBLAS/cuDNN,62.9,31.7,,1.2941,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.2941,true,0.2941
-layernorm,non-align-3,PyTorch-eager,81.4,79.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,non-align-3,torch.compile,429.7,300.0,,0.1894,ok,,false,true,0.00195312,1.52155e-08,0.005,0.005,ok,,,,,,1.0,0.1894,false,-0.8106
-layernorm,non-align-3,Arke,373.0,327.7,,0.2182,ok,,false,true,0.00190735,0.000140166,0.005,0.005,ok,,,,,,1.0,0.2182,false,-0.7818
-layernorm,non-align-3,FlagGems,88.3,82.9,,0.9219,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9219,false,-0.0781
-layernorm,non-align-4,cuBLAS/cuDNN,155.4,161.7,,0.9768,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9768,false,-0.0232
-layernorm,non-align-4,PyTorch-eager,151.8,174.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,non-align-4,torch.compile,358.7,368.6,,0.4232,ok,,false,true,0.00195312,1.9984e-08,0.005,0.005,ok,,,,,,1.0,0.4232,false,-0.5768
-layernorm,non-align-4,Arke,396.7,540.6,,0.3827,ok,,false,true,0.00194883,0.000140523,0.005,0.005,ok,,,,,,1.0,0.3827,false,-0.6173
-layernorm,non-align-4,FlagGems,156.2,180.2,,0.9718,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9718,false,-0.0282
-layernorm,extreme-small,cuBLAS/cuDNN,98.7,64.3,,0.5927,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.5927,false,-0.4073
-layernorm,extreme-small,PyTorch-eager,58.5,76.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,extreme-small,torch.compile,407.5,313.2,,0.1436,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1436,false,-0.8564
-layernorm,extreme-small,Arke,398.9,314.4,,0.1467,ok,,false,true,0.00097084,0.000134923,0.005,0.005,ok,,,,,,1.0,0.1467,false,-0.8533
-layernorm,extreme-small,FlagGems,85.5,81.9,,0.6842,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6842,false,-0.3158
-layernorm,extreme-large,cuBLAS/cuDNN,433.4,433.2,,0.9903,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9903,false,-0.0097
-layernorm,extreme-large,PyTorch-eager,429.2,429.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,extreme-large,torch.compile,1337.8,1330.2,,0.3208,ok,,false,true,0.00195312,2.09387e-08,0.005,0.005,ok,,,,,,1.0,0.3208,false,-0.6792
-layernorm,extreme-large,Arke,1497.5,1496.1,,0.2866,ok,,false,true,0.00195312,0.000140549,0.005,0.005,ok,,,,,,1.0,0.2866,false,-0.7134
-layernorm,extreme-large,FlagGems,430.6,430.0,,0.9967,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9967,false,-0.0033
-layernorm,llama3-8b-norm,cuBLAS/cuDNN,41.3,44.0,,0.9903,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9903,false,-0.0097
-layernorm,llama3-8b-norm,PyTorch-eager,40.9,42.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,llama3-8b-norm,torch.compile,103.6,92.2,,0.3948,ok,,false,true,0.00195312,1.5022e-08,0.005,0.005,ok,,,,,,1.0,0.3948,false,-0.6052
-layernorm,llama3-8b-norm,Arke,143.8,149.5,,0.2844,ok,,false,true,0.0019393,0.000140325,0.005,0.005,ok,,,,,,1.0,0.2844,false,-0.7156
-layernorm,llama3-8b-norm,FlagGems,56.4,54.3,,0.7252,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7252,false,-0.2748
-layernorm,llama3-8b-long,cuBLAS/cuDNN,772.8,674.8,,0.8810,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8810,false,-0.1190
-layernorm,llama3-8b-long,PyTorch-eager,680.8,654.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,llama3-8b-long,torch.compile,1005.2,909.3,,0.6773,ok,,false,true,0.00195312,1.583e-08,0.005,0.005,ok,,,,,,1.0,0.6773,false,-0.3227
-layernorm,llama3-8b-long,Arke,2076.3,1993.7,,0.3279,ok,,false,true,0.00195169,0.000140529,0.005,0.005,ok,,,,,,1.0,0.3279,false,-0.6721
-layernorm,llama3-8b-long,FlagGems,551.3,527.4,,1.2349,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.2349,true,0.2349
-layernorm,qwen25-7b-norm,cuBLAS/cuDNN,34.5,36.9,,1.0058,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0058,true,0.0058
-layernorm,qwen25-7b-norm,PyTorch-eager,34.7,37.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,qwen25-7b-norm,torch.compile,140.8,165.9,,0.2464,ok,,false,true,0.00195312,2.14159e-08,0.005,0.005,ok,,,,,,1.0,0.2464,false,-0.7536
-layernorm,qwen25-7b-norm,Arke,124.4,128.0,,0.2789,ok,,false,true,0.00194883,0.000140342,0.005,0.005,ok,,,,,,1.0,0.2789,false,-0.7211
-layernorm,qwen25-7b-norm,FlagGems,57.8,43.0,,0.6003,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6003,false,-0.3997
-layernorm,qwen25-7b-long,cuBLAS/cuDNN,687.8,581.6,,0.8949,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8949,false,-0.1051
-layernorm,qwen25-7b-long,PyTorch-eager,615.5,616.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,qwen25-7b-long,torch.compile,1294.7,1273.9,,0.4754,ok,,false,true,0.00195312,2.45998e-08,0.005,0.005,ok,,,,,,1.0,0.4754,false,-0.5246
-layernorm,qwen25-7b-long,Arke,1759.1,1734.7,,0.3499,ok,,false,true,0.00195265,0.000140495,0.005,0.005,ok,,,,,,1.0,0.3499,false,-0.6501
-layernorm,qwen25-7b-long,FlagGems,377.9,375.8,,1.6287,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.6287,true,0.6287
-layernorm,ds-v2-long,cuBLAS/cuDNN,821.9,802.8,,0.9749,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9749,false,-0.0251
-layernorm,ds-v2-long,PyTorch-eager,801.3,801.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,ds-v2-long,torch.compile,1759.3,1716.2,,0.4555,ok,,false,true,0.00195312,2.66358e-08,0.005,0.005,ok,,,,,,1.0,0.4555,false,-0.5445
-layernorm,ds-v2-long,Arke,2478.2,2467.8,,0.3233,ok,,false,true,0.00195122,0.000140645,0.005,0.005,ok,,,,,,1.0,0.3233,false,-0.6767
-layernorm,ds-v2-long,FlagGems,727.2,650.2,,1.1019,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1019,true,0.1019
-layernorm,ds-v3-long,cuBLAS/cuDNN,568.9,564.2,,0.9979,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9979,false,-0.0021
-layernorm,ds-v3-long,PyTorch-eager,567.7,565.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-layernorm,ds-v3-long,torch.compile,1131.7,1120.1,,0.5016,ok,,false,true,0.00195312,2.37409e-08,0.005,0.005,ok,,,,,,1.0,0.5016,false,-0.4984
-layernorm,ds-v3-long,Arke,1741.8,1734.7,,0.3259,ok,,false,true,0.00195074,0.000140555,0.005,0.005,ok,,,,,,1.0,0.3259,false,-0.6741
-layernorm,ds-v3-long,FlagGems,478.4,408.6,,1.1867,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1867,true,0.1867
-matmul,tiny,cuBLAS/cuDNN,62.8,69.6,0.067,0.9522,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.9522,false,-0.0478
-matmul,tiny,Triton-Tutorial,72.9,16.4,0.058,0.8203,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.8203,false,-0.1797
-matmul,tiny,PyTorch-eager,59.8,44.0,0.070,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
-matmul,tiny,torch.compile,285.8,61.4,0.015,0.2092,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.2092,false,-0.7908
-matmul,tiny,Arke,62.0,24.6,0.068,0.9645,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.9645,false,-0.0355
-matmul,tiny,FlagGems,57.7,74.0,0.073,1.0364,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,1.0364,true,0.0364
-matmul,gpt2-c_proj,cuBLAS/cuDNN,67.1,81.1,2.251,0.9136,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.9136,false,-0.0864
-matmul,gpt2-c_proj,Triton-Tutorial,66.4,77.8,2.272,0.9232,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.9232,false,-0.0768
-matmul,gpt2-c_proj,PyTorch-eager,61.3,70.8,2.464,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
-matmul,gpt2-c_proj,torch.compile,312.1,298.0,0.484,0.1964,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.1964,false,-0.8036
-matmul,gpt2-c_proj,Arke,80.4,76.0,1.878,0.7624,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.7624,false,-0.2376
-matmul,gpt2-c_proj,FlagGems,59.9,55.3,2.519,1.0234,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0234,true,0.0234
-matmul,gpt2-c_attn,cuBLAS/cuDNN,76.5,92.2,5.924,0.7974,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.7974,false,-0.2026
-matmul,gpt2-c_attn,Triton-Tutorial,75.4,94.2,6.008,0.8090,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.8090,false,-0.1910
-matmul,gpt2-c_attn,PyTorch-eager,61.0,36.8,7.420,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0000,true,0.0000
-matmul,gpt2-c_attn,torch.compile,337.0,305.1,1.344,0.1810,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.1810,false,-0.8190
-matmul,gpt2-c_attn,Arke,68.7,60.4,6.593,0.8879,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.8879,false,-0.1121
-matmul,gpt2-c_attn,FlagGems,64.4,72.5,7.030,0.9472,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.9472,false,-0.0528
-matmul,square-1k,cuBLAS/cuDNN,127.7,136.1,16.811,0.9875,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9875,false,-0.0125
-matmul,square-1k,Triton-Tutorial,128.8,133.1,16.678,0.9790,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9790,false,-0.0210
-matmul,square-1k,PyTorch-eager,126.1,138.2,17.028,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
-matmul,square-1k,torch.compile,315.5,335.9,6.806,0.3997,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.3997,false,-0.6003
-matmul,square-1k,Arke,130.4,141.3,16.474,0.9670,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9670,false,-0.0330
-matmul,square-1k,FlagGems,129.7,187.2,16.556,0.9722,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9722,false,-0.0278
-matmul,square-2k,cuBLAS/cuDNN,981.2,890.9,17.509,0.9646,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9646,false,-0.0354
-matmul,square-2k,Triton-Tutorial,790.2,759.8,21.741,1.1978,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.1978,true,0.1978
-matmul,square-2k,PyTorch-eager,946.5,877.6,18.151,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
-matmul,square-2k,torch.compile,1059.2,1068.0,16.220,0.8936,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.8936,false,-0.1064
-matmul,square-2k,Arke,952.3,863.2,18.041,0.9939,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9939,false,-0.0061
-matmul,square-2k,FlagGems,984.1,855.0,17.458,0.9618,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9618,false,-0.0382
-matmul,square-4k,cuBLAS/cuDNN,6176.7,6027.3,22.251,1.0029,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0029,true,0.0029
-matmul,square-4k,Triton-Tutorial,6056.1,5902.3,22.694,1.0228,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0228,true,0.0228
-matmul,square-4k,PyTorch-eager,6194.4,6079.4,22.188,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
-matmul,square-4k,torch.compile,6688.9,6473.7,20.547,0.9261,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9261,false,-0.0739
-matmul,square-4k,Arke,6205.3,6054.9,22.148,0.9982,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9982,false,-0.0018
-matmul,square-4k,FlagGems,6218.6,6082.4,22.101,0.9961,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9961,false,-0.0039
-matmul,rect-wide,cuBLAS/cuDNN,435.8,418.7,19.712,1.0165,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0165,true,0.0165
-matmul,rect-wide,Triton-Tutorial,405.3,407.6,21.194,1.0930,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0930,true,0.0930
-matmul,rect-wide,PyTorch-eager,443.0,440.3,19.392,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
-matmul,rect-wide,torch.compile,519.8,650.2,16.524,0.8523,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8523,false,-0.1477
-matmul,rect-wide,Arke,456.0,442.4,18.839,0.9715,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9715,false,-0.0285
-matmul,rect-wide,FlagGems,443.6,430.1,19.362,0.9986,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9986,false,-0.0014
-matmul,rect-tall,cuBLAS/cuDNN,452.9,448.5,18.966,0.9982,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9982,false,-0.0018
-matmul,rect-tall,Triton-Tutorial,416.3,401.4,20.634,1.0860,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0860,true,0.0860
-matmul,rect-tall,PyTorch-eager,452.1,450.6,18.999,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
-matmul,rect-tall,torch.compile,525.8,636.9,16.337,0.8598,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8598,false,-0.1402
-matmul,rect-tall,Arke,466.9,449.5,18.399,0.9683,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9683,false,-0.0317
-matmul,rect-tall,FlagGems,450.3,444.4,19.076,1.0040,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0040,true,0.0040
-matmul,lm-head-gpt2,cuBLAS/cuDNN,905.1,854.0,10.917,1.0138,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0138,true,0.0138
-matmul,lm-head-gpt2,Triton-Tutorial,884.0,793.6,11.177,1.0380,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0380,true,0.0380
-matmul,lm-head-gpt2,PyTorch-eager,917.6,847.9,10.769,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0000,true,0.0000
-matmul,lm-head-gpt2,torch.compile,1454.7,1354.8,6.793,0.6308,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,0.6308,false,-0.3692
-matmul,lm-head-gpt2,Arke,899.3,823.3,10.988,1.0203,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0203,true,0.0203
-matmul,lm-head-gpt2,FlagGems,900.2,810.0,10.976,1.0193,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0193,true,0.0193
-matmul,llama-q,cuBLAS/cuDNN,6189.0,6002.7,22.207,1.0033,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0033,true,0.0033
-matmul,llama-q,Triton-Tutorial,6080.5,5904.4,22.603,1.0212,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0212,true,0.0212
-matmul,llama-q,PyTorch-eager,6209.7,6055.9,22.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
-matmul,llama-q,torch.compile,6687.6,6451.2,20.551,0.9285,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9285,false,-0.0715
-matmul,llama-q,Arke,6213.7,6051.8,22.119,0.9994,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9994,false,-0.0006
-matmul,llama-q,FlagGems,6226.8,6066.0,22.072,0.9973,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9973,false,-0.0027
-matmul,llama-ffn,cuBLAS/cuDNN,16104.6,15857.7,22.936,1.0009,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0009,true,0.0009
-matmul,llama-ffn,Triton-Tutorial,15864.0,15618.0,23.283,1.0160,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0160,true,0.0160
-matmul,llama-ffn,PyTorch-eager,16118.4,15833.0,22.916,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0000,true,0.0000
-matmul,llama-ffn,torch.compile,16987.9,16733.2,21.743,0.9488,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9488,false,-0.0512
-matmul,llama-ffn,Arke,16127.8,15831.0,22.902,0.9994,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9994,false,-0.0006
-matmul,llama-ffn,FlagGems,16128.1,15932.4,22.902,0.9994,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9994,false,-0.0006
-matmul,seq512,cuBLAS/cuDNN,99.0,111.6,18.300,0.9828,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.9828,false,-0.0172
-matmul,seq512,Triton-Tutorial,95.6,114.7,18.952,1.0178,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,1.0178,true,0.0178
-matmul,seq512,PyTorch-eager,97.3,129.9,18.629,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,1.0000,true,0.0000
-matmul,seq512,torch.compile,320.8,319.5,5.648,0.3033,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.3033,false,-0.6967
-matmul,seq512,Arke,103.6,146.4,17.487,0.9392,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.9392,false,-0.0608
-matmul,seq512,FlagGems,97.9,104.4,18.503,0.9939,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.9939,false,-0.0061
-matmul,non-align-1,cuBLAS/cuDNN,60.9,36.9,2.141,0.9901,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.9901,false,-0.0099
-matmul,non-align-1,Triton-Tutorial,65.5,94.0,1.990,0.9206,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.9206,false,-0.0794
-matmul,non-align-1,PyTorch-eager,60.3,84.0,2.161,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
-matmul,non-align-1,torch.compile,319.3,299.0,0.408,0.1889,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.1889,false,-0.8111
-matmul,non-align-1,Arke,63.4,82.8,2.056,0.9511,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.9511,false,-0.0489
-matmul,non-align-1,FlagGems,85.1,35.8,1.531,0.7086,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.7086,false,-0.2914
-matmul,non-align-2,cuBLAS/cuDNN,57.7,45.8,4.975,0.9965,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.9965,false,-0.0035
-matmul,non-align-2,Triton-Tutorial,75.7,44.0,3.792,0.7596,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.7596,false,-0.2404
-matmul,non-align-2,PyTorch-eager,57.5,93.2,4.996,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,1.0000,true,0.0000
-matmul,non-align-2,torch.compile,327.8,295.9,0.876,0.1754,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.1754,false,-0.8246
-matmul,non-align-2,Arke,64.2,95.2,4.474,0.8956,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.8956,false,-0.1044
-matmul,non-align-2,FlagGems,76.6,92.2,3.749,0.7507,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.7507,false,-0.2493
-matmul,non-align-3,cuBLAS/cuDNN,191.9,193.5,11.189,1.0021,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.0021,true,0.0021
-matmul,non-align-3,Triton-Tutorial,173.8,231.4,12.358,1.1064,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.1064,true,0.1064
-matmul,non-align-3,PyTorch-eager,192.3,192.5,11.168,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
-matmul,non-align-3,torch.compile,356.0,391.2,6.032,0.5402,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,0.5402,false,-0.4598
-matmul,non-align-3,Arke,205.7,215.0,10.438,0.9349,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,0.9349,false,-0.0651
-matmul,non-align-3,FlagGems,192.0,196.6,11.182,1.0016,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.0016,true,0.0016
-matmul,non-align-4,cuBLAS/cuDNN,315.1,304.1,6.347,0.9708,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.9708,false,-0.0292
-matmul,non-align-4,Triton-Tutorial,228.6,231.4,8.750,1.3381,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,1.3381,true,0.3381
-matmul,non-align-4,PyTorch-eager,305.9,308.2,6.537,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,1.0000,true,0.0000
-matmul,non-align-4,torch.compile,356.3,520.1,5.613,0.8585,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.8585,false,-0.1415
-matmul,non-align-4,Arke,321.8,318.5,6.216,0.9506,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.9506,false,-0.0494
-matmul,non-align-4,FlagGems,318.2,312.3,6.285,0.9613,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.9613,false,-0.0387
-matmul,non-align-5,cuBLAS/cuDNN,59.3,62.5,12.733,0.9831,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.9831,false,-0.0169
-matmul,non-align-5,Triton-Tutorial,85.9,61.2,8.791,0.6787,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.6787,false,-0.3213
-matmul,non-align-5,PyTorch-eager,58.3,87.0,12.951,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,1.0000,true,0.0000
-matmul,non-align-5,torch.compile,339.0,327.7,2.227,0.1720,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.1720,false,-0.8280
-matmul,non-align-5,Arke,63.6,77.8,11.869,0.9167,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.9167,false,-0.0833
-matmul,non-align-5,FlagGems,91.0,47.1,8.301,0.6407,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.6407,false,-0.3593
-matmul,non-align-6,cuBLAS/cuDNN,1352.5,1315.8,12.715,1.0007,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,1.0007,true,0.0007
-matmul,non-align-6,Triton-Tutorial,1451.4,1377.3,11.848,0.9325,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.9325,false,-0.0675
-matmul,non-align-6,PyTorch-eager,1353.5,1282.0,12.705,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
-matmul,non-align-6,torch.compile,1504.7,1492.8,11.429,0.8995,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.8995,false,-0.1005
-matmul,non-align-6,Arke,1357.4,1316.8,12.668,0.9971,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.9971,false,-0.0029
-matmul,non-align-6,FlagGems,1364.2,1312.6,12.606,0.9922,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.9922,false,-0.0078
-matmul,non-align-7,cuBLAS/cuDNN,230.6,233.5,7.887,0.9939,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.9939,false,-0.0061
-matmul,non-align-7,Triton-Tutorial,228.7,240.6,7.953,1.0022,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,1.0022,true,0.0022
-matmul,non-align-7,PyTorch-eager,229.2,232.4,7.935,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,1.0000,true,0.0000
-matmul,non-align-7,torch.compile,326.9,482.0,5.563,0.7011,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.7011,false,-0.2989
-matmul,non-align-7,Arke,241.6,252.9,7.528,0.9487,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.9487,false,-0.0513
-matmul,non-align-7,FlagGems,229.5,229.4,7.925,0.9987,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.9987,false,-0.0013
-matmul,extreme-1row,cuBLAS/cuDNN,58.5,75.8,0.036,1.0615,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,1.0615,true,0.0615
-matmul,extreme-1row,Triton-Tutorial,69.6,79.9,0.030,0.8922,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.8922,false,-0.1078
-matmul,extreme-1row,PyTorch-eager,62.1,40.8,0.034,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,1.0000,true,0.0000
-matmul,extreme-1row,torch.compile,323.1,300.2,0.006,0.1922,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.1922,false,-0.8078
-matmul,extreme-1row,Arke,87.0,80.6,0.024,0.7138,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.7138,false,-0.2862
-matmul,extreme-1row,FlagGems,90.1,54.3,0.023,0.6892,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.6892,false,-0.3108
-matmul,extreme-16,cuBLAS/cuDNN,139.0,196.4,3.861,0.9935,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,0.9935,false,-0.0065
-matmul,extreme-16,Triton-Tutorial,132.1,130.0,4.065,1.0454,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0454,true,0.0454
-matmul,extreme-16,PyTorch-eager,138.1,142.3,3.889,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0000,true,0.0000
-matmul,extreme-16,torch.compile,369.8,440.3,1.452,0.3734,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,0.3734,false,-0.6266
-matmul,extreme-16,Arke,145.4,148.5,3.692,0.9498,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,0.9498,false,-0.0502
-matmul,extreme-16,FlagGems,134.7,164.7,3.987,1.0252,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0252,true,0.0252
-matmul,extreme-long,cuBLAS/cuDNN,353.4,316.4,12.154,0.8820,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.8820,false,-0.1180
-matmul,extreme-long,Triton-Tutorial,351.2,351.2,12.229,0.8875,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.8875,false,-0.1125
-matmul,extreme-long,PyTorch-eager,311.7,314.3,13.777,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,1.0000,true,0.0000
-matmul,extreme-long,torch.compile,751.3,750.6,5.716,0.4149,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.4149,false,-0.5851
-matmul,extreme-long,Arke,366.2,340.0,11.729,0.8512,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.8512,false,-0.1488
-matmul,extreme-long,FlagGems,320.4,321.5,13.404,0.9728,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.9728,false,-0.0272
-matmul,ds-v2-attn,cuBLAS/cuDNN,1503.6,1462.3,17.853,1.0042,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.0042,true,0.0042
-matmul,ds-v2-attn,Triton-Tutorial,1216.7,1204.2,22.063,1.2410,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.2410,true,0.2410
-matmul,ds-v2-attn,PyTorch-eager,1509.9,1483.8,17.778,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v2-attn,torch.compile,1945.2,1891.3,13.800,0.7762,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.7762,false,-0.2238
-matmul,ds-v2-attn,Arke,1515.8,1472.4,17.710,0.9961,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.9961,false,-0.0039
-matmul,ds-v2-attn,FlagGems,1539.9,1434.6,17.432,0.9805,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.9805,false,-0.0195
-matmul,ds-v2-ffn-up,cuBLAS/cuDNN,3385.8,3319.8,19.028,1.0012,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0012,true,0.0012
-matmul,ds-v2-ffn-up,Triton-Tutorial,2910.7,2797.6,22.134,1.1646,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.1646,true,0.1646
-matmul,ds-v2-ffn-up,PyTorch-eager,3389.7,3310.6,19.006,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v2-ffn-up,torch.compile,4327.7,4164.6,14.886,0.7833,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.7833,false,-0.2167
-matmul,ds-v2-ffn-up,Arke,3398.8,3294.1,18.955,0.9973,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.9973,false,-0.0027
-matmul,ds-v2-ffn-up,FlagGems,2989.0,2887.7,21.554,1.1341,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.1341,true,0.1341
-matmul,ds-v2-ffn-down,cuBLAS/cuDNN,3613.6,3518.4,17.828,1.0016,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0016,true,0.0016
-matmul,ds-v2-ffn-down,Triton-Tutorial,2949.4,2860.0,21.843,1.2271,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.2271,true,0.2271
-matmul,ds-v2-ffn-down,PyTorch-eager,3619.3,3553.3,17.800,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v2-ffn-down,torch.compile,4584.6,4506.5,14.052,0.7894,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.7894,false,-0.2106
-matmul,ds-v2-ffn-down,Arke,3637.8,3556.4,17.710,0.9949,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.9949,false,-0.0051
-matmul,ds-v2-ffn-down,FlagGems,3051.5,2897.9,21.112,1.1861,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.1861,true,0.1861
-matmul,ds-v2-lmhead,cuBLAS/cuDNN,28664.3,28166.1,18.730,1.0005,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0005,true,0.0005
-matmul,ds-v2-lmhead,Triton-Tutorial,23383.2,23163.8,22.960,1.2264,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.2264,true,0.2264
-matmul,ds-v2-lmhead,PyTorch-eager,28678.1,27922.4,18.721,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v2-lmhead,torch.compile,35714.2,35402.8,15.032,0.8030,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.8030,false,-0.1970
-matmul,ds-v2-lmhead,Arke,28674.2,28133.3,18.723,1.0001,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0001,true,0.0001
-matmul,ds-v2-lmhead,FlagGems,294890.1,288335.6,1.821,0.0973,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.0973,false,-0.9027
-matmul,ds-v3-attn,cuBLAS/cuDNN,5237.5,5061.6,20.091,0.9981,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.9981,false,-0.0019
-matmul,ds-v3-attn,Triton-Tutorial,4723.8,4565.8,22.276,1.1067,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.1067,true,0.1067
-matmul,ds-v3-attn,PyTorch-eager,5227.6,5083.1,20.129,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v3-attn,torch.compile,6038.4,5937.2,17.426,0.8657,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.8657,false,-0.1343
-matmul,ds-v3-attn,Arke,5229.8,5106.7,20.121,0.9996,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.9996,false,-0.0004
-matmul,ds-v3-attn,FlagGems,4705.2,4633.6,22.364,1.1110,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.1110,true,0.1110
-matmul,ds-v3-ffn-up,cuBLAS/cuDNN,12897.4,12708.9,20.980,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v3-ffn-up,Triton-Tutorial,11994.2,11690.0,22.559,1.0753,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0753,true,0.0753
-matmul,ds-v3-ffn-up,PyTorch-eager,12897.6,12648.4,20.979,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v3-ffn-up,torch.compile,14724.0,14572.5,18.377,0.8760,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,0.8760,false,-0.1240
-matmul,ds-v3-ffn-up,Arke,12898.0,12651.5,20.979,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,false,-0.0000
-matmul,ds-v3-ffn-up,FlagGems,12170.6,11685.9,22.233,1.0597,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0597,true,0.0597
-matmul,ds-v3-lmhead,cuBLAS/cuDNN,50545.3,50007.0,18.774,0.9977,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.9977,false,-0.0023
-matmul,ds-v3-lmhead,Triton-Tutorial,162420.3,158746.6,5.842,0.3105,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.3105,false,-0.6895
-matmul,ds-v3-lmhead,PyTorch-eager,50430.4,49965.1,18.816,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v3-lmhead,torch.compile,63078.0,62637.1,15.044,0.7995,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.7995,false,-0.2005
-matmul,ds-v3-lmhead,Arke,50558.6,50282.5,18.769,0.9975,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.9975,false,-0.0025
-matmul,qwen25-attn,cuBLAS/cuDNN,646.2,626.5,20.354,1.0099,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0099,true,0.0099
-matmul,qwen25-attn,Triton-Tutorial,618.8,601.1,21.255,1.0546,ok,,false,false,0.25,0.00882455,0.01,0.01,mismatch,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0546,true,0.0546
-matmul,qwen25-attn,PyTorch-eager,652.6,631.8,20.154,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0000,true,0.0000
-matmul,qwen25-attn,torch.compile,868.2,834.6,15.150,0.7517,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,0.7517,false,-0.2483
-matmul,qwen25-attn,Arke,657.7,641.0,19.998,0.9922,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,0.9922,false,-0.0078
-matmul,qwen25-ffn-up,cuBLAS/cuDNN,3746.4,3608.6,18.558,0.9983,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.9983,false,-0.0017
-matmul,qwen25-ffn-up,Triton-Tutorial,3054.2,2940.7,22.763,1.2245,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,1.2245,true,0.2245
-matmul,qwen25-ffn-up,PyTorch-eager,3739.9,3602.4,18.590,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,1.0000,true,0.0000
-matmul,qwen25-ffn-up,torch.compile,4722.6,4482.0,14.722,0.7919,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.7919,false,-0.2081
-matmul,qwen25-ffn-up,Arke,3753.4,3590.0,18.523,0.9964,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.9964,false,-0.0036
-matmul,qwen25-lmhead,cuBLAS/cuDNN,29965.5,29563.9,18.608,0.9995,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.9995,false,-0.0005
-matmul,qwen25-lmhead,Triton-Tutorial,24417.3,24175.6,22.837,1.2267,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.2267,true,0.2267
-matmul,qwen25-lmhead,PyTorch-eager,29951.5,29549.6,18.617,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.0000,true,0.0000
-matmul,qwen25-lmhead,torch.compile,37155.2,36642.8,15.008,0.8061,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.8061,false,-0.1939
-matmul,qwen25-lmhead,Arke,29907.6,29363.2,18.644,1.0015,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.0015,true,0.0015
-matmul,ds-v2-long-8k,cuBLAS/cuDNN,18750.4,18319.1,22.906,1.0004,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0004,true,0.0004
-matmul,ds-v2-long-8k,Triton-Tutorial,18633.5,18383.9,23.050,1.0067,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0067,true,0.0067
-matmul,ds-v2-long-8k,PyTorch-eager,18757.9,18334.6,22.897,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v2-long-8k,torch.compile,19588.8,19242.9,21.926,0.9576,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,0.9576,false,-0.0424
-matmul,ds-v2-long-8k,Arke,18705.8,18335.7,22.961,1.0028,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0028,true,0.0028
-matmul,ds-v3-long-32k,cuBLAS/cuDNN,147424.4,144495.6,22.841,1.0001,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0001,true,0.0001
-matmul,ds-v3-long-32k,Triton-Tutorial,149688.1,146086.9,22.495,0.9850,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.9850,false,-0.0150
-matmul,ds-v3-long-32k,PyTorch-eager,147435.4,144473.1,22.839,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0000,true,0.0000
-matmul,ds-v3-long-32k,torch.compile,151844.6,149686.3,22.176,0.9710,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.9710,false,-0.0290
-matmul,ds-v3-long-32k,Arke,146896.3,144741.4,22.923,1.0037,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0037,true,0.0037
 mul,micro-tiny,cuBLAS/cuDNN,74.5,97.5,,1.0376,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0376,true,0.0376
 mul,micro-tiny,PyTorch-eager,77.3,8.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 mul,micro-tiny,Arke,87.0,88.1,,0.8885,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8885,false,-0.1115
@@ -1529,102 +1190,6 @@ relu,extreme-wide,PyTorch-eager,57.4,59.4,,1.0000,ok,,false,true,0,0,0.001,0.001
 relu,extreme-wide,torch.compile,144.4,201.7,,0.3975,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3975,false,-0.6025
 relu,extreme-wide,Arke,57.0,58.4,,1.0070,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0070,true,0.0070
 relu,extreme-wide,FlagGems,70.0,124.9,,0.8200,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8200,false,-0.1800
-rmsnorm,gpt2-small,Liger-Kernel,119.9,6.1,,5.1751,ok,,false,true,0.00195312,0.000149293,0.005,0.005,ok,,,,,,1.0,5.1751,true,4.1751
-rmsnorm,gpt2-small,PyTorch-eager,620.5,540.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-small,Arke,912.6,640.0,,0.6799,ok,,false,true,0.00319386,0.000206679,0.005,0.005,ok,,,,,,1.0,0.6799,false,-0.3201
-rmsnorm,gpt2-small,FlagGems,612.2,496.5,,1.0136,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0136,true,0.0136
-rmsnorm,gpt2-ffn,Liger-Kernel,107.5,17.4,,5.7898,ok,,false,true,0.00390625,0.000152642,0.005,0.005,ok,,,,,,1.0,5.7898,true,4.7898
-rmsnorm,gpt2-ffn,PyTorch-eager,622.4,416.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-ffn,Arke,853.6,711.7,,0.7291,ok,,false,true,0.00284719,0.000207449,0.005,0.005,ok,,,,,,1.0,0.7291,false,-0.2709
-rmsnorm,gpt2-ffn,FlagGems,558.0,434.2,,1.1154,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1154,true,0.1154
-rmsnorm,gpt2-medium,Liger-Kernel,85.8,8.2,,7.0408,ok,,false,true,0.00390625,0.000158555,0.005,0.005,ok,,,,,,1.0,7.0408,true,6.0408
-rmsnorm,gpt2-medium,PyTorch-eager,604.1,412.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,gpt2-medium,Arke,816.0,609.3,,0.7403,ok,,false,true,0.00337267,0.000204237,0.005,0.005,ok,,,,,,1.0,0.7403,false,-0.2597
-rmsnorm,gpt2-medium,FlagGems,567.1,117.8,,1.0652,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0652,true,0.0652
-rmsnorm,llama-7b,Liger-Kernel,88.3,17.4,,6.5277,ok,,false,true,0.00390625,0.000164071,0.005,0.005,ok,,,,,,1.0,6.5277,true,5.5277
-rmsnorm,llama-7b,PyTorch-eager,576.4,522.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama-7b,Arke,838.2,667.7,,0.6877,ok,,false,true,0.00280476,0.000204432,0.005,0.005,ok,,,,,,1.0,0.6877,false,-0.3123
-rmsnorm,llama-7b,FlagGems,578.5,433.2,,0.9964,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9964,false,-0.0036
-rmsnorm,llama-13b,Liger-Kernel,121.5,82.9,,4.9613,ok,,false,true,0.00390625,0.000141835,0.005,0.005,ok,,,,,,1.0,4.9613,true,3.9613
-rmsnorm,llama-13b,PyTorch-eager,602.8,454.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama-13b,Arke,813.2,687.1,,0.7413,ok,,false,true,0.00335789,0.000199436,0.005,0.005,ok,,,,,,1.0,0.7413,false,-0.2587
-rmsnorm,llama-13b,FlagGems,608.2,512.0,,0.9911,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9911,false,-0.0089
-rmsnorm,llama-long,Liger-Kernel,113.5,153.6,,5.9604,ok,,false,true,0.00390625,0.000157026,0.005,0.005,ok,,,,,,1.0,5.9604,true,4.9604
-rmsnorm,llama-long,PyTorch-eager,676.5,598.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama-long,Arke,1104.0,1036.3,,0.6128,ok,,false,true,0.00390053,0.000204383,0.005,0.005,ok,,,,,,1.0,0.6128,false,-0.3872
-rmsnorm,llama-long,FlagGems,633.7,602.1,,1.0675,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0675,true,0.0675
-rmsnorm,ds-v2,Liger-Kernel,83.5,100.2,,6.9784,ok,,false,true,0.00390625,0.000157844,0.005,0.005,ok,,,,,,1.0,6.9784,true,5.9784
-rmsnorm,ds-v2,PyTorch-eager,582.7,510.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,ds-v2,Arke,828.7,678.9,,0.7031,ok,,false,true,0.00349283,0.000209622,0.005,0.005,ok,,,,,,1.0,0.7031,false,-0.2969
-rmsnorm,ds-v2,FlagGems,581.5,507.7,,1.0021,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0021,true,0.0021
-rmsnorm,ds-v3,Liger-Kernel,124.2,102.4,,5.1216,ok,,false,true,0.00390625,0.000158799,0.005,0.005,ok,,,,,,1.0,5.1216,true,4.1216
-rmsnorm,ds-v3,PyTorch-eager,636.1,505.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,ds-v3,Arke,824.7,668.7,,0.7713,ok,,false,true,0.00353146,0.000203643,0.005,0.005,ok,,,,,,1.0,0.7713,false,-0.2287
-rmsnorm,ds-v3,FlagGems,578.1,507.9,,1.1003,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1003,true,0.1003
-rmsnorm,mixtral-ffn,Liger-Kernel,99.6,95.2,,6.2098,ok,,false,true,0.00390625,0.000150143,0.005,0.005,ok,,,,,,1.0,6.2098,true,5.2098
-rmsnorm,mixtral-ffn,PyTorch-eager,618.5,234.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,mixtral-ffn,Arke,901.6,692.2,,0.6860,ok,,false,true,0.00332594,0.0001992,0.005,0.005,ok,,,,,,1.0,0.6860,false,-0.3140
-rmsnorm,mixtral-ffn,FlagGems,588.6,498.7,,1.0508,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0508,true,0.0508
-rmsnorm,non-align-1,Liger-Kernel,84.8,103.4,,6.3667,ok,,false,true,0.00390625,0.000174257,0.005,0.005,ok,,,,,,1.0,6.3667,true,5.3667
-rmsnorm,non-align-1,PyTorch-eager,539.9,503.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,non-align-1,Arke,766.2,676.9,,0.7046,ok,,false,true,0.00307798,0.000208372,0.005,0.005,ok,,,,,,1.0,0.7046,false,-0.2954
-rmsnorm,non-align-1,FlagGems,646.0,510.0,,0.8358,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8358,false,-0.1642
-rmsnorm,non-align-2,Liger-Kernel,91.3,92.2,,6.0832,ok,,false,true,0.00390625,0.000147183,0.005,0.005,ok,,,,,,1.0,6.0832,true,5.0832
-rmsnorm,non-align-2,PyTorch-eager,555.4,431.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,non-align-2,Arke,758.4,733.2,,0.7323,ok,,false,true,0.00387239,0.00020307,0.005,0.005,ok,,,,,,1.0,0.7323,false,-0.2677
-rmsnorm,non-align-2,FlagGems,598.0,513.0,,0.9288,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9288,false,-0.0712
-rmsnorm,non-align-3,Liger-Kernel,87.5,98.3,,6.2720,ok,,false,true,0.00390625,0.000163093,0.005,0.005,ok,,,,,,1.0,6.2720,true,5.2720
-rmsnorm,non-align-3,PyTorch-eager,548.8,509.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,non-align-3,Arke,741.4,660.5,,0.7402,ok,,false,true,0.00290394,0.00020231,0.005,0.005,ok,,,,,,1.0,0.7402,false,-0.2598
-rmsnorm,non-align-3,FlagGems,560.3,508.0,,0.9795,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9795,false,-0.0205
-rmsnorm,non-align-4,Liger-Kernel,143.7,141.3,,4.9645,ok,,false,true,0.00390625,0.000154459,0.005,0.005,ok,,,,,,1.0,4.9645,true,3.9645
-rmsnorm,non-align-4,PyTorch-eager,713.4,686.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,non-align-4,Arke,1149.6,1040.4,,0.6206,ok,,false,true,0.00427055,0.000203,0.005,0.005,ok,,,,,,1.0,0.6206,false,-0.3794
-rmsnorm,non-align-4,FlagGems,756.1,741.4,,0.9435,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9435,false,-0.0565
-rmsnorm,extreme-small,Liger-Kernel,87.6,5.0,,6.0799,ok,,false,true,0.00195312,9.52681e-05,0.005,0.005,ok,,,,,,1.0,6.0799,true,5.0799
-rmsnorm,extreme-small,PyTorch-eager,532.6,518.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,extreme-small,Arke,741.7,601.1,,0.7181,ok,,false,true,0.00152922,0.000242241,0.005,0.005,ok,,,,,,1.0,0.7181,false,-0.2819
-rmsnorm,extreme-small,FlagGems,569.9,506.7,,0.9345,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9345,false,-0.0655
-rmsnorm,extreme-large,Liger-Kernel,427.7,431.0,,5.1845,ok,,false,true,0.00390625,0.000155189,0.005,0.005,ok,,,,,,1.0,5.1845,true,4.1845
-rmsnorm,extreme-large,PyTorch-eager,2217.4,1882.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,extreme-large,Arke,3615.9,3618.8,,0.6132,ok,,false,true,0.00407124,0.000205747,0.005,0.005,ok,,,,,,1.0,0.6132,false,-0.3868
-rmsnorm,extreme-large,FlagGems,2244.8,1956.8,,0.9878,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9878,false,-0.0122
-rmsnorm,llama3-8b-norm,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-norm,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-norm,,,,,1.0,,,
-rmsnorm,llama3-8b-norm,Liger-Kernel,82.6,99.3,,1.5993,ok,,false,true,0.00390625,0.000163187,0.005,0.005,ok,,,,,,1.0,1.5993,true,0.5993
-rmsnorm,llama3-8b-norm,PyTorch-eager,132.1,122.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama3-8b-norm,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama3-8b-norm,false,true,0.00390625,0.000156413,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama3-8b-norm,,,,,1.0,,,
-rmsnorm,llama3-8b-norm,Arke,266.2,268.3,,0.4962,ok,,false,true,0.00348139,0.000205213,0.005,0.005,ok,,,,,,1.0,0.4962,false,-0.5038
-rmsnorm,llama3-8b-norm,FlagGems,634.7,528.4,,0.2081,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2081,false,-0.7919
-rmsnorm,llama3-8b-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-long,,,,,1.0,,,
-rmsnorm,llama3-8b-long,Liger-Kernel,466.1,435.2,,3.6089,ok,,false,true,0.00390625,0.000156847,0.005,0.005,ok,,,,,,1.0,3.6089,true,2.6089
-rmsnorm,llama3-8b-long,PyTorch-eager,1682.1,1640.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,llama3-8b-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama3-8b-long,false,true,0.00390625,0.000154878,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama3-8b-long,,,,,1.0,,,
-rmsnorm,llama3-8b-long,Arke,3675.9,3668.0,,0.4576,ok,,false,true,0.00416422,0.000203552,0.005,0.005,ok,,,,,,1.0,0.4576,false,-0.5424
-rmsnorm,llama3-8b-long,FlagGems,2029.8,1852.4,,0.8287,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8287,false,-0.1713
-rmsnorm,qwen25-7b-norm,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-norm,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-norm,,,,,1.0,,,
-rmsnorm,qwen25-7b-norm,Liger-Kernel,91.4,105.5,,1.3348,ok,,false,true,0.00390625,0.000162144,0.005,0.005,ok,,,,,,1.0,1.3348,true,0.3348
-rmsnorm,qwen25-7b-norm,PyTorch-eager,122.0,106.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,qwen25-7b-norm,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@qwen25-7b-norm,false,true,0.00390625,0.00014996,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@qwen25-7b-norm,,,,,1.0,,,
-rmsnorm,qwen25-7b-norm,Arke,224.4,228.4,,0.5437,ok,,false,true,0.00325966,0.00020813,0.005,0.005,ok,,,,,,1.0,0.5437,false,-0.4563
-rmsnorm,qwen25-7b-norm,FlagGems,635.5,552.8,,0.1920,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1920,false,-0.8080
-rmsnorm,qwen25-7b-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-long,,,,,1.0,,,
-rmsnorm,qwen25-7b-long,Liger-Kernel,375.1,375.8,,4.0882,ok,,false,true,0.00390625,0.000154158,0.005,0.005,ok,,,,,,1.0,4.0882,true,3.0882
-rmsnorm,qwen25-7b-long,PyTorch-eager,1533.5,1443.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,qwen25-7b-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@qwen25-7b-long,false,true,0.00390625,0.00015324,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@qwen25-7b-long,,,,,1.0,,,
-rmsnorm,qwen25-7b-long,Arke,3222.6,3212.3,,0.4759,ok,,false,true,0.00419426,0.000204674,0.005,0.005,ok,,,,,,1.0,0.4759,false,-0.5241
-rmsnorm,qwen25-7b-long,FlagGems,1889.1,1650.7,,0.8118,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8118,false,-0.1882
-rmsnorm,ds-v2-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2-long,,,,,1.0,,,
-rmsnorm,ds-v2-long,Liger-Kernel,534.6,537.6,,3.9291,ok,,false,true,0.00390625,0.000151877,0.005,0.005,ok,,,,,,1.0,3.9291,true,2.9291
-rmsnorm,ds-v2-long,PyTorch-eager,2100.5,2064.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,ds-v2-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v2-long,false,true,0.00390625,0.000154728,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v2-long,,,,,1.0,,,
-rmsnorm,ds-v2-long,Arke,4590.7,4575.2,,0.4576,ok,,false,true,0.00442219,0.000203747,0.005,0.005,ok,,,,,,1.0,0.4576,false,-0.5424
-rmsnorm,ds-v2-long,FlagGems,3181.5,3054.6,,0.6602,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6602,false,-0.3398
-rmsnorm,ds-v3-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3-long,,,,,1.0,,,
-rmsnorm,ds-v3-long,Liger-Kernel,374.5,379.9,,3.9525,ok,,false,true,0.00390625,0.000150922,0.005,0.005,ok,,,,,,1.0,3.9525,true,2.9525
-rmsnorm,ds-v3-long,PyTorch-eager,1480.2,1453.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
-rmsnorm,ds-v3-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v3-long,false,true,0.00390625,0.000152963,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v3-long,,,,,1.0,,,
-rmsnorm,ds-v3-long,Arke,3224.0,3209.2,,0.4591,ok,,false,true,0.00482082,0.000204111,0.005,0.005,ok,,,,,,1.0,0.4591,false,-0.5409
-rmsnorm,ds-v3-long,FlagGems,1730.9,1674.2,,0.8552,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8552,false,-0.1448
 rmsnorm_residual,gpt2-small,PyTorch-eager,807.4,655.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
 rmsnorm_residual,gpt2-small,Arke,894.8,836.6,,0.9023,ok,,false,true,0.0033617,0.000238066,0.005,0.005,ok,,,,,,1.0,0.9023,false,-0.0977
 rmsnorm_residual,gpt2-ffn,PyTorch-eager,742.2,697.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
@@ -1685,54 +1250,6 @@ rmsnorm_residual,ds-v3-long,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_
 rmsnorm_residual,ds-v3-long,PyTorch-eager,2569.5,2547.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
 rmsnorm_residual,ds-v3-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@ds-v3-long,false,true,0.00390625,0.000204897,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@ds-v3-long,,,,,1.0,,,
 rmsnorm_residual,ds-v3-long,Arke,4941.6,4921.3,,0.5200,ok,,false,true,0.00530386,0.000244558,0.005,0.005,ok,,,,,,1.0,0.5200,false,-0.4800
-rope,gpt2-sm-128,Liger-Kernel,113.7,125.8,,2.3659,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,2.3659,true,1.3659
-rope,gpt2-sm-128,PyTorch-eager,269.0,274.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
-rope,gpt2-sm-128,Arke,89.8,99.3,,2.9955,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.9955,true,1.9955
-rope,gpt2-sm-512,Liger-Kernel,129.7,124.9,,2.3971,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,2.3971,true,1.3971
-rope,gpt2-sm-512,PyTorch-eager,310.9,291.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
-rope,gpt2-sm-512,Arke,93.8,102.4,,3.3145,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,3.3145,true,2.3145
-rope,llama2-512,Liger-Kernel,233.1,256.0,,1.3840,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,1.3840,true,0.3840
-rope,llama2-512,PyTorch-eager,322.6,390.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
-rope,llama2-512,Arke,172.0,164.9,,1.8756,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.8756,true,0.8756
-rope,llama2-2k,Liger-Kernel,474.1,474.1,,1.6157,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.6157,true,0.6157
-rope,llama2-2k,PyTorch-eager,766.0,815.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
-rope,llama2-2k,Arke,594.3,594.9,,1.2889,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.2889,true,0.2889
-rope,llama3-q-512,Liger-Kernel,147.8,159.7,,4.5609,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,4.5609,true,3.5609
-rope,llama3-q-512,PyTorch-eager,674.1,398.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
-rope,llama3-q-512,Arke,280.2,315.3,,2.4058,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.4058,true,1.4058
-rope,llama3-kv-512,Liger-Kernel,120.1,128.0,,2.4696,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,2.4696,true,1.4696
-rope,llama3-kv-512,PyTorch-eager,296.6,285.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.0000,true,0.0000
-rope,llama3-kv-512,Arke,264.1,106.6,,1.1231,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,1.1231,true,0.1231
-rope,qwen25-q-512,Liger-Kernel,125.3,144.4,,2.4214,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,2.4214,true,1.4214
-rope,qwen25-q-512,PyTorch-eager,303.4,368.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
-rope,qwen25-q-512,Arke,138.2,149.5,,2.1954,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,2.1954,true,1.1954
-rope,qwen25-kv-512,Liger-Kernel,135.6,133.1,,2.1018,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,2.1018,true,1.1018
-rope,qwen25-kv-512,PyTorch-eager,285.0,297.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,1.0000,true,0.0000
-rope,qwen25-kv-512,Arke,97.2,122.1,,2.9321,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,2.9321,true,1.9321
-rope,ds-v2-512,Liger-Kernel,452.9,453.6,,1.7598,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.7598,true,0.7598
-rope,ds-v2-512,PyTorch-eager,797.0,783.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
-rope,ds-v2-512,Arke,551.9,551.6,,1.4441,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.4441,true,0.4441
-rope,ds-v3-2k,Liger-Kernel,1830.6,1800.2,,1.5055,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,1.5055,true,0.5055
-rope,ds-v3-2k,PyTorch-eager,2755.9,2647.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0000,true,0.0000
-rope,ds-v3-2k,Arke,2239.1,2174.0,,1.2308,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention_fused,1.0,1.2308,true,0.2308
-rope,llama3-8k,Liger-Kernel,1859.2,1828.9,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,,,
-rope,llama3-8k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,4563402752,3542771302,1.2881,attention,1.0,N/A,false,N/A
-rope,llama3-8k,Arke,2428.9,2420.7,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,268435456,3542771302,0.0758,attention_fused,1.0,,,
-rope,qwen25-32k,Liger-Kernel,6530.4,6300.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,939524096,3542771302,0.2652,attention_fused,1.0,,,
-rope,qwen25-32k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,61069066240,3542771302,17.2377,attention,1.0,N/A,false,N/A
-rope,qwen25-32k,Arke,9132.4,9036.8,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,939524096,3542771302,0.2652,attention_fused,1.0,,,
-rope,non-align-1,Liger-Kernel,215.7,255.1,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
-rope,non-align-1,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",1277874,3542771302,0.0004,attention,1.0,,,
-rope,non-align-1,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
-rope,non-align-2,Liger-Kernel,122.1,138.2,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
-rope,non-align-2,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",16803180,3542771302,0.0047,attention,1.0,,,
-rope,non-align-2,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
-rope,extreme-long,Liger-Kernel,567308.3,564467.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2147483648,3542771302,0.6062,attention_fused,1.0,,,
-rope,extreme-long,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,277025390592,3542771302,78.1945,attention,1.0,N/A,false,N/A
-rope,extreme-long,Arke,201090.0,201132.0,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,2147483648,3542771302,0.6062,attention_fused,1.0,,,
-rope,extreme-batch,Liger-Kernel,897.0,898.0,,1.5099,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,134217728,3542771302,0.0379,attention_fused,1.0,1.5099,true,0.5099
-rope,extreme-batch,PyTorch-eager,1354.4,1380.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention,1.0,1.0000,true,0.0000
-rope,extreme-batch,Arke,1116.2,1105.9,,1.2134,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention_fused,1.0,1.2134,true,0.2134
 rsqrt,micro-tiny,cuBLAS/cuDNN,72.3,77.0,,1.0733,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0733,true,0.0733
 rsqrt,micro-tiny,PyTorch-eager,77.6,69.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 rsqrt,micro-tiny,Arke,76.1,91.1,,1.0197,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0197,true,0.0197
@@ -2395,3 +1912,600 @@ where_,extreme-tall,FlagGems,102.0,79.8,,0.9912,ok,,false,true,0,0,0.001,0.001,o
 where_,extreme-wide,PyTorch-eager,102.5,150.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
 where_,extreme-wide,Arke,101.1,146.3,,1.0138,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0138,true,0.0138
 where_,extreme-wide,FlagGems,97.1,174.1,,1.0556,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0556,true,0.0556
+rmsnorm,gpt2-small,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-small,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-small,,,,,1.0,,,
+rmsnorm,gpt2-small,Liger-Kernel,98.6,96.3,,0.7262,ok,,false,true,0.00390625,0.000174871,0.005,0.005,ok,,,,,,1.0,0.7262,false,-0.2738
+rmsnorm,gpt2-small,PyTorch-eager,71.6,79.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-small,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-small,false,true,0.00390625,0.00014433,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-small,,,,,1.0,,,
+rmsnorm,gpt2-small,Arke,100.9,8.2,,0.7096,ok,,false,true,0.00226474,0.000197062,0.005,0.005,ok,,,,,,1.0,0.7096,false,-0.2904
+rmsnorm,gpt2-small,FlagGems,617.0,535.5,,0.1160,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1160,false,-0.8840
+rmsnorm,gpt2-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-ffn,,,,,1.0,,,
+rmsnorm,gpt2-ffn,Liger-Kernel,81.9,97.3,,0.8742,ok,,false,true,0.00390625,0.000162987,0.005,0.005,ok,,,,,,1.0,0.8742,false,-0.1258
+rmsnorm,gpt2-ffn,PyTorch-eager,71.6,58.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-ffn,false,true,0.00390625,0.000137462,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-ffn,,,,,1.0,,,
+rmsnorm,gpt2-ffn,Arke,60.3,11.3,,1.1874,ok,,false,true,0.00364494,0.00020832,0.005,0.005,ok,,,,,,1.0,1.1874,true,0.1874
+rmsnorm,gpt2-ffn,FlagGems,581.0,29.7,,0.1232,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1232,false,-0.8768
+rmsnorm,gpt2-medium,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-medium,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-medium,,,,,1.0,,,
+rmsnorm,gpt2-medium,Liger-Kernel,85.3,9.2,,0.9766,ok,,false,true,0.00390625,0.000167319,0.005,0.005,ok,,,,,,1.0,0.9766,false,-0.0234
+rmsnorm,gpt2-medium,PyTorch-eager,83.3,45.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-medium,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-medium,false,true,0.00390625,0.000163165,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-medium,,,,,1.0,,,
+rmsnorm,gpt2-medium,Arke,57.7,9.2,,1.4437,ok,,false,true,0.00344944,0.000210375,0.005,0.005,ok,,,,,,1.0,1.4437,true,0.4437
+rmsnorm,gpt2-medium,FlagGems,648.9,519.1,,0.1284,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1284,false,-0.8716
+rmsnorm,llama-7b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-7b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-7b,,,,,1.0,,,
+rmsnorm,llama-7b,Liger-Kernel,88.7,13.3,,1.6945,ok,,false,true,0.00390625,0.00014452,0.005,0.005,ok,,,,,,1.0,1.6945,true,0.6945
+rmsnorm,llama-7b,PyTorch-eager,150.3,71.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-7b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-7b,false,true,0.00390625,0.000157744,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-7b,,,,,1.0,,,
+rmsnorm,llama-7b,Arke,60.5,52.0,,2.4843,ok,,false,true,0.0041666,0.000209868,0.005,0.005,ok,,,,,,1.0,2.4843,true,1.4843
+rmsnorm,llama-7b,FlagGems,631.4,504.7,,0.2380,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2380,false,-0.7620
+rmsnorm,llama-13b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-13b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-13b,,,,,1.0,,,
+rmsnorm,llama-13b,Liger-Kernel,90.8,98.3,,1.0022,ok,,false,true,0.00390625,0.000173469,0.005,0.005,ok,,,,,,1.0,1.0022,true,0.0022
+rmsnorm,llama-13b,PyTorch-eager,91.0,72.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-13b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-13b,false,true,0.00390625,0.000161826,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-13b,,,,,1.0,,,
+rmsnorm,llama-13b,Arke,57.6,52.2,,1.5799,ok,,false,true,0.00321913,0.000210163,0.005,0.005,ok,,,,,,1.0,1.5799,true,0.5799
+rmsnorm,llama-13b,FlagGems,596.5,518.1,,0.1526,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1526,false,-0.8474
+rmsnorm,llama-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-long,,,,,1.0,,,
+rmsnorm,llama-long,Liger-Kernel,120.1,162.8,,5.0033,ok,,false,true,0.00390625,0.000155156,0.005,0.005,ok,,,,,,1.0,5.0033,true,4.0033
+rmsnorm,llama-long,PyTorch-eager,600.9,563.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-long,false,true,0.00390625,0.000152544,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-long,,,,,1.0,,,
+rmsnorm,llama-long,Arke,115.1,121.9,,5.2207,ok,,false,true,0.00349379,0.000203635,0.005,0.005,ok,,,,,,1.0,5.2207,true,4.2207
+rmsnorm,llama-long,FlagGems,691.0,660.5,,0.8696,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8696,false,-0.1304
+rmsnorm,ds-v2,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2,,,,,1.0,,,
+rmsnorm,ds-v2,Liger-Kernel,89.8,97.4,,1.0323,ok,,false,true,0.00390625,0.000136216,0.005,0.005,ok,,,,,,1.0,1.0323,true,0.0323
+rmsnorm,ds-v2,PyTorch-eager,92.7,66.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v2,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v2,false,true,0.00390625,0.00013669,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v2,,,,,1.0,,,
+rmsnorm,ds-v2,Arke,59.0,54.3,,1.5712,ok,,false,true,0.00387907,0.000201597,0.005,0.005,ok,,,,,,1.0,1.5712,true,0.5712
+rmsnorm,ds-v2,FlagGems,616.8,517.0,,0.1503,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1503,false,-0.8497
+rmsnorm,ds-v3,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3,,,,,1.0,,,
+rmsnorm,ds-v3,Liger-Kernel,91.1,95.0,,1.0044,ok,,false,true,0.00390625,0.000147987,0.005,0.005,ok,,,,,,1.0,1.0044,true,0.0044
+rmsnorm,ds-v3,PyTorch-eager,91.5,72.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v3,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v3,false,true,0.00390625,0.000167104,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v3,,,,,1.0,,,
+rmsnorm,ds-v3,Arke,56.5,70.7,,1.6195,ok,,false,true,0.0034399,0.000188453,0.005,0.005,ok,,,,,,1.0,1.6195,true,0.6195
+rmsnorm,ds-v3,FlagGems,690.5,547.0,,0.1325,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1325,false,-0.8675
+rmsnorm,mixtral-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@mixtral-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@mixtral-ffn,,,,,1.0,,,
+rmsnorm,mixtral-ffn,Liger-Kernel,84.6,106.5,,1.5508,ok,,false,true,0.00390625,0.000134189,0.005,0.005,ok,,,,,,1.0,1.5508,true,0.5508
+rmsnorm,mixtral-ffn,PyTorch-eager,131.2,117.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,mixtral-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@mixtral-ffn,false,true,0.00390625,0.000154184,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@mixtral-ffn,,,,,1.0,,,
+rmsnorm,mixtral-ffn,Arke,60.2,44.8,,2.1794,ok,,false,true,0.00377035,0.000202847,0.005,0.005,ok,,,,,,1.0,2.1794,true,1.1794
+rmsnorm,mixtral-ffn,FlagGems,607.3,537.6,,0.2160,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2160,false,-0.7840
+rmsnorm,non-align-1,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-1,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-1,,,,,1.0,,,
+rmsnorm,non-align-1,Liger-Kernel,83.9,46.1,,0.7688,ok,,false,true,0.00390625,0.000156316,0.005,0.005,ok,,,,,,1.0,0.7688,false,-0.2312
+rmsnorm,non-align-1,PyTorch-eager,64.5,59.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,non-align-1,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@non-align-1,false,true,0.00390625,0.000157451,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@non-align-1,,,,,1.0,,,
+rmsnorm,non-align-1,Arke,59.0,53.2,,1.0932,ok,,false,true,0.00298166,0.000199667,0.005,0.005,ok,,,,,,1.0,1.0932,true,0.0932
+rmsnorm,non-align-1,FlagGems,585.9,522.4,,0.1101,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1101,false,-0.8899
+rmsnorm,non-align-2,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-2,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-2,,,,,1.0,,,
+rmsnorm,non-align-2,Liger-Kernel,86.8,101.3,,2.2465,ok,,false,true,0.00390625,0.000158523,0.005,0.005,ok,,,,,,1.0,2.2465,true,1.2465
+rmsnorm,non-align-2,PyTorch-eager,195.0,198.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,non-align-2,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@non-align-2,false,true,0.00390625,0.000156278,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@non-align-2,,,,,1.0,,,
+rmsnorm,non-align-2,Arke,59.0,99.2,,3.3051,ok,,false,true,0.0038538,0.000207978,0.005,0.005,ok,,,,,,1.0,3.3051,true,2.3051
+rmsnorm,non-align-2,FlagGems,600.5,556.0,,0.3247,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3247,false,-0.6753
+rmsnorm,non-align-3,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-3,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-3,,,,,1.0,,,
+rmsnorm,non-align-3,Liger-Kernel,85.8,89.1,,1.2587,ok,,false,true,0.00390625,0.000145457,0.005,0.005,ok,,,,,,1.0,1.2587,true,0.2587
+rmsnorm,non-align-3,PyTorch-eager,108.0,94.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,non-align-3,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@non-align-3,false,true,0.00390625,0.000152931,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@non-align-3,,,,,1.0,,,
+rmsnorm,non-align-3,Arke,72.0,39.9,,1.5000,ok,,false,true,0.00360775,0.000208796,0.005,0.005,ok,,,,,,1.0,1.5000,true,0.5000
+rmsnorm,non-align-3,FlagGems,554.1,483.3,,0.1949,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1949,false,-0.8051
+rmsnorm,non-align-4,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-4,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@non-align-4,,,,,1.0,,,
+rmsnorm,non-align-4,Liger-Kernel,189.9,196.6,,3.1401,ok,,false,true,0.00390625,0.000149671,0.005,0.005,ok,,,,,,1.0,3.1401,true,2.1401
+rmsnorm,non-align-4,PyTorch-eager,596.3,547.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,non-align-4,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@non-align-4,false,true,0.00390625,0.000156732,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@non-align-4,,,,,1.0,,,
+rmsnorm,non-align-4,Arke,175.5,212.0,,3.3977,ok,,false,true,0.0037632,0.000201774,0.005,0.005,ok,,,,,,1.0,3.3977,true,2.3977
+rmsnorm,non-align-4,FlagGems,732.9,655.4,,0.8136,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8136,false,-0.1864
+rmsnorm,extreme-small,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@extreme-small,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@extreme-small,,,,,1.0,,,
+rmsnorm,extreme-small,Liger-Kernel,93.3,103.4,,0.6699,ok,,false,true,0.00195312,0.000304002,0.005,0.005,ok,,,,,,1.0,0.6699,false,-0.3301
+rmsnorm,extreme-small,PyTorch-eager,62.5,63.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,extreme-small,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@extreme-small,false,true,0.00195312,0.000202633,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@extreme-small,,,,,1.0,,,
+rmsnorm,extreme-small,Arke,62.6,72.7,,0.9984,ok,,false,true,0.00248146,0.000377266,0.005,0.005,ok,,,,,,1.0,0.9984,false,-0.0016
+rmsnorm,extreme-small,FlagGems,562.8,416.8,,0.1111,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1111,false,-0.8889
+rmsnorm,extreme-large,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@extreme-large,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@extreme-large,,,,,1.0,,,
+rmsnorm,extreme-large,Liger-Kernel,426.6,428.0,,3.9768,ok,,false,true,0.00390625,0.000153627,0.005,0.005,ok,,,,,,1.0,3.9768,true,2.9768
+rmsnorm,extreme-large,PyTorch-eager,1696.5,1639.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,extreme-large,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@extreme-large,false,true,0.00390625,0.000151839,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@extreme-large,,,,,1.0,,,
+rmsnorm,extreme-large,Arke,426.4,427.8,,3.9787,ok,,false,true,0.00399113,0.000202713,0.005,0.005,ok,,,,,,1.0,3.9787,true,2.9787
+rmsnorm,extreme-large,FlagGems,2246.3,1943.4,,0.7552,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7552,false,-0.2448
+rmsnorm,llama3-8b-norm,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-norm,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-norm,,,,,1.0,,,
+rmsnorm,llama3-8b-norm,Liger-Kernel,100.5,120.0,,1.2896,ok,,false,true,0.00390625,0.000154979,0.005,0.005,ok,,,,,,1.0,1.2896,true,0.2896
+rmsnorm,llama3-8b-norm,PyTorch-eager,129.6,119.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama3-8b-norm,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama3-8b-norm,false,true,0.00390625,0.000156516,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama3-8b-norm,,,,,1.0,,,
+rmsnorm,llama3-8b-norm,Arke,55.7,63.6,,2.3268,ok,,false,true,0.00363922,0.000204699,0.005,0.005,ok,,,,,,1.0,2.3268,true,1.3268
+rmsnorm,llama3-8b-norm,FlagGems,629.0,509.0,,0.2060,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2060,false,-0.7940
+rmsnorm,llama3-8b-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama3-8b-long,,,,,1.0,,,
+rmsnorm,llama3-8b-long,Liger-Kernel,427.9,428.0,,4.2239,ok,,false,true,0.00390625,0.000155348,0.005,0.005,ok,,,,,,1.0,4.2239,true,3.2239
+rmsnorm,llama3-8b-long,PyTorch-eager,1807.4,1668.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama3-8b-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama3-8b-long,false,true,0.00390625,0.000155446,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama3-8b-long,,,,,1.0,,,
+rmsnorm,llama3-8b-long,Arke,426.4,426.9,,4.2387,ok,,false,true,0.00423431,0.000205718,0.005,0.005,ok,,,,,,1.0,4.2387,true,3.2387
+rmsnorm,llama3-8b-long,FlagGems,2402.2,2007.0,,0.7524,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7524,false,-0.2476
+rmsnorm,qwen25-7b-norm,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-norm,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-norm,,,,,1.0,,,
+rmsnorm,qwen25-7b-norm,Liger-Kernel,88.6,98.4,,1.2720,ok,,false,true,0.00390625,0.000163544,0.005,0.005,ok,,,,,,1.0,1.2720,true,0.2720
+rmsnorm,qwen25-7b-norm,PyTorch-eager,112.7,112.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,qwen25-7b-norm,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@qwen25-7b-norm,false,true,0.00390625,0.00014988,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@qwen25-7b-norm,,,,,1.0,,,
+rmsnorm,qwen25-7b-norm,Arke,65.7,68.6,,1.7154,ok,,false,true,0.0035696,0.000205878,0.005,0.005,ok,,,,,,1.0,1.7154,true,0.7154
+rmsnorm,qwen25-7b-norm,FlagGems,559.8,463.9,,0.2013,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2013,false,-0.7987
+rmsnorm,qwen25-7b-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@qwen25-7b-long,,,,,1.0,,,
+rmsnorm,qwen25-7b-long,Liger-Kernel,494.0,454.7,,3.3482,ok,,false,true,0.00390625,0.00015677,0.005,0.005,ok,,,,,,1.0,3.3482,true,2.3482
+rmsnorm,qwen25-7b-long,PyTorch-eager,1654.0,1464.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,qwen25-7b-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@qwen25-7b-long,false,true,0.00390625,0.000153562,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@qwen25-7b-long,,,,,1.0,,,
+rmsnorm,qwen25-7b-long,Arke,374.5,375.8,,4.4166,ok,,false,true,0.00395584,0.000204845,0.005,0.005,ok,,,,,,1.0,4.4166,true,3.4166
+rmsnorm,qwen25-7b-long,FlagGems,2027.7,1824.8,,0.8157,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8157,false,-0.1843
+rmsnorm,ds-v2-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2-long,,,,,1.0,,,
+rmsnorm,ds-v2-long,Liger-Kernel,536.5,545.8,,3.9445,ok,,false,true,0.00390625,0.000154794,0.005,0.005,ok,,,,,,1.0,3.9445,true,2.9445
+rmsnorm,ds-v2-long,PyTorch-eager,2116.2,2040.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v2-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v2-long,false,true,0.00390625,0.000152985,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v2-long,,,,,1.0,,,
+rmsnorm,ds-v2-long,Arke,534.2,536.6,,3.9614,ok,,false,true,0.00438547,0.000203538,0.005,0.005,ok,,,,,,1.0,3.9614,true,2.9614
+rmsnorm,ds-v2-long,FlagGems,3154.2,3065.9,,0.6709,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6709,false,-0.3291
+rmsnorm,ds-v3-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3-long,,,,,1.0,,,
+rmsnorm,ds-v3-long,Liger-Kernel,375.6,427.0,,3.9201,ok,,false,true,0.00390625,0.000152347,0.005,0.005,ok,,,,,,1.0,3.9201,true,2.9201
+rmsnorm,ds-v3-long,PyTorch-eager,1472.4,1427.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v3-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v3-long,false,true,0.00390625,0.000150013,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v3-long,,,,,1.0,,,
+rmsnorm,ds-v3-long,Arke,375.2,400.4,,3.9243,ok,,false,true,0.00404358,0.000203714,0.005,0.005,ok,,,,,,1.0,3.9243,true,2.9243
+rmsnorm,ds-v3-long,FlagGems,1814.6,1719.3,,0.8114,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8114,false,-0.1886
+layernorm,gpt2-small,cuBLAS/cuDNN,13.9,8.2,,1.0288,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0288,true,0.0288
+layernorm,gpt2-small,PyTorch-eager,14.3,9.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,gpt2-small,torch.compile,118.9,45.1,,0.1203,ok,,false,true,0.000976562,1.73847e-08,0.005,0.005,ok,,,,,,1.0,0.1203,false,-0.8797
+layernorm,gpt2-small,Arke,63.6,69.6,,0.2248,ok,,false,true,0.00132036,0.000139871,0.005,0.005,ok,,,,,,1.0,0.2248,false,-0.7752
+layernorm,gpt2-small,FlagGems,58.8,49.4,,0.2432,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2432,false,-0.7568
+layernorm,gpt2-ffn,cuBLAS/cuDNN,15.2,20.5,,1.0987,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0987,true,0.0987
+layernorm,gpt2-ffn,PyTorch-eager,16.7,30.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,gpt2-ffn,torch.compile,137.4,136.2,,0.1215,ok,,false,true,0.00195312,2.71707e-08,0.005,0.005,ok,,,,,,1.0,0.1215,false,-0.8785
+layernorm,gpt2-ffn,Arke,62.5,57.3,,0.2672,ok,,false,true,0.00189352,0.000140159,0.005,0.005,ok,,,,,,1.0,0.2672,false,-0.7328
+layernorm,gpt2-ffn,FlagGems,60.0,67.6,,0.2783,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2783,false,-0.7217
+layernorm,gpt2-medium,cuBLAS/cuDNN,17.3,17.4,,0.8613,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8613,false,-0.1387
+layernorm,gpt2-medium,PyTorch-eager,14.9,11.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,gpt2-medium,torch.compile,149.9,124.9,,0.0994,ok,,false,true,0.000976562,2.7504e-08,0.005,0.005,ok,,,,,,1.0,0.0994,false,-0.9006
+layernorm,gpt2-medium,Arke,67.4,17.4,,0.2211,ok,,false,true,0.00179482,0.000140889,0.005,0.005,ok,,,,,,1.0,0.2211,false,-0.7789
+layernorm,gpt2-medium,FlagGems,61.5,47.1,,0.2423,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2423,false,-0.7577
+layernorm,llama-7b,cuBLAS/cuDNN,17.6,14.3,,1.1080,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1080,true,0.1080
+layernorm,llama-7b,PyTorch-eager,19.5,13.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama-7b,torch.compile,157.2,128.0,,0.1240,ok,,false,true,0.00195312,1.71932e-08,0.005,0.005,ok,,,,,,1.0,0.1240,false,-0.8760
+layernorm,llama-7b,Arke,64.8,53.2,,0.3009,ok,,false,true,0.00195026,0.000139511,0.005,0.005,ok,,,,,,1.0,0.3009,false,-0.6991
+layernorm,llama-7b,FlagGems,58.4,47.0,,0.3339,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3339,false,-0.6661
+layernorm,llama-13b,cuBLAS/cuDNN,21.9,15.4,,0.7717,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7717,false,-0.2283
+layernorm,llama-13b,PyTorch-eager,16.9,21.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama-13b,torch.compile,149.3,139.2,,0.1132,ok,,false,true,0.00195312,2.62651e-08,0.005,0.005,ok,,,,,,1.0,0.1132,false,-0.8868
+layernorm,llama-13b,Arke,60.7,64.4,,0.2784,ok,,false,true,0.00193453,0.000140379,0.005,0.005,ok,,,,,,1.0,0.2784,false,-0.7216
+layernorm,llama-13b,FlagGems,58.0,74.7,,0.2914,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2914,false,-0.7086
+layernorm,llama-long,cuBLAS/cuDNN,233.5,236.5,,0.9867,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9867,false,-0.0133
+layernorm,llama-long,PyTorch-eager,230.4,223.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama-long,torch.compile,349.5,353.2,,0.6592,ok,,false,true,0.00195312,2.61233e-08,0.005,0.005,ok,,,,,,1.0,0.6592,false,-0.3408
+layernorm,llama-long,Arke,111.4,116.7,,2.0682,ok,,false,true,0.00194168,0.000140668,0.005,0.005,ok,,,,,,1.0,2.0682,true,1.0682
+layernorm,llama-long,FlagGems,114.6,122.9,,2.0105,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,2.0105,true,1.0105
+layernorm,ds-v2,cuBLAS/cuDNN,18.2,13.3,,0.9231,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9231,false,-0.0769
+layernorm,ds-v2,PyTorch-eager,16.8,12.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,ds-v2,torch.compile,146.3,154.5,,0.1148,ok,,false,true,0.000976562,2.05947e-08,0.005,0.005,ok,,,,,,1.0,0.1148,false,-0.8852
+layernorm,ds-v2,Arke,61.5,60.4,,0.2732,ok,,false,true,0.00193071,0.000141345,0.005,0.005,ok,,,,,,1.0,0.2732,false,-0.7268
+layernorm,ds-v2,FlagGems,56.8,77.8,,0.2958,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2958,false,-0.7042
+layernorm,ds-v3,cuBLAS/cuDNN,18.1,18.4,,1.0552,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0552,true,0.0552
+layernorm,ds-v3,PyTorch-eager,19.1,20.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,ds-v3,torch.compile,142.9,157.6,,0.1337,ok,,false,true,0.00195312,1.82369e-08,0.005,0.005,ok,,,,,,1.0,0.1337,false,-0.8663
+layernorm,ds-v3,Arke,61.4,51.1,,0.3111,ok,,false,true,0.00193882,0.000139659,0.005,0.005,ok,,,,,,1.0,0.3111,false,-0.6889
+layernorm,ds-v3,FlagGems,57.4,74.8,,0.3328,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3328,false,-0.6672
+layernorm,mixtral-ffn,cuBLAS/cuDNN,45.0,45.1,,1.0111,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0111,true,0.0111
+layernorm,mixtral-ffn,PyTorch-eager,45.5,48.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,mixtral-ffn,torch.compile,147.6,143.6,,0.3083,ok,,false,true,0.00195312,2.05318e-08,0.005,0.005,ok,,,,,,1.0,0.3083,false,-0.6917
+layernorm,mixtral-ffn,Arke,61.7,61.4,,0.7374,ok,,false,true,0.00195312,0.000140307,0.005,0.005,ok,,,,,,1.0,0.7374,false,-0.2626
+layernorm,mixtral-ffn,FlagGems,54.1,81.9,,0.8410,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8410,false,-0.1590
+layernorm,non-align-1,cuBLAS/cuDNN,28.6,14.1,,0.9790,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9790,false,-0.0210
+layernorm,non-align-1,PyTorch-eager,28.0,14.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,non-align-1,torch.compile,147.3,115.7,,0.1901,ok,,false,true,6.10352e-05,6.67068e-10,0.005,0.005,ok,,,,,,1.0,0.1901,false,-0.8099
+layernorm,non-align-1,Arke,61.8,28.7,,0.4531,ok,,false,true,0.00183964,0.00014093,0.005,0.005,ok,,,,,,1.0,0.4531,false,-0.5469
+layernorm,non-align-1,FlagGems,59.7,61.4,,0.4690,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.4690,false,-0.5310
+layernorm,non-align-2,cuBLAS/cuDNN,59.6,57.3,,1.0570,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0570,true,0.0570
+layernorm,non-align-2,PyTorch-eager,63.0,65.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,non-align-2,torch.compile,158.5,219.0,,0.3975,ok,,false,true,0.00195312,2.54444e-08,0.005,0.005,ok,,,,,,1.0,0.3975,false,-0.6025
+layernorm,non-align-2,Arke,69.0,102.2,,0.9130,ok,,false,true,0.00194597,0.000140571,0.005,0.005,ok,,,,,,1.0,0.9130,false,-0.0870
+layernorm,non-align-2,FlagGems,64.9,67.6,,0.9707,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9707,false,-0.0293
+layernorm,non-align-3,cuBLAS/cuDNN,64.2,67.6,,1.0062,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0062,true,0.0062
+layernorm,non-align-3,PyTorch-eager,64.6,67.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,non-align-3,torch.compile,150.9,115.7,,0.4281,ok,,false,true,0.00195312,1.67762e-08,0.005,0.005,ok,,,,,,1.0,0.4281,false,-0.5719
+layernorm,non-align-3,Arke,62.0,66.6,,1.0419,ok,,false,true,0.00193501,0.000140096,0.005,0.005,ok,,,,,,1.0,1.0419,true,0.0419
+layernorm,non-align-3,FlagGems,60.3,64.5,,1.0713,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0713,true,0.0713
+layernorm,non-align-4,cuBLAS/cuDNN,417.1,385.0,,0.8732,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8732,false,-0.1268
+layernorm,non-align-4,PyTorch-eager,364.2,354.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,non-align-4,torch.compile,369.2,369.7,,0.9865,ok,,false,true,0.00195312,2.29814e-08,0.005,0.005,ok,,,,,,1.0,0.9865,false,-0.0135
+layernorm,non-align-4,Arke,165.6,201.7,,2.1993,ok,,false,true,0.00194979,0.000140268,0.005,0.005,ok,,,,,,1.0,2.1993,true,1.1993
+layernorm,non-align-4,FlagGems,161.5,165.9,,2.2551,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,2.2551,true,1.2551
+layernorm,extreme-small,cuBLAS/cuDNN,14.9,7.2,,1.0134,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0134,true,0.0134
+layernorm,extreme-small,PyTorch-eager,15.1,22.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,extreme-small,torch.compile,135.0,83.3,,0.1119,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1119,false,-0.8881
+layernorm,extreme-small,Arke,60.9,57.3,,0.2479,ok,,false,true,0.000961304,0.000135815,0.005,0.005,ok,,,,,,1.0,0.2479,false,-0.7521
+layernorm,extreme-small,FlagGems,60.4,74.8,,0.2500,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2500,false,-0.7500
+layernorm,extreme-large,cuBLAS/cuDNN,678.1,630.8,,0.9376,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9376,false,-0.0624
+layernorm,extreme-large,PyTorch-eager,635.8,633.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,extreme-large,torch.compile,1276.5,1344.5,,0.4981,ok,,false,true,0.00195312,2.51234e-08,0.005,0.005,ok,,,,,,1.0,0.4981,false,-0.5019
+layernorm,extreme-large,Arke,427.7,430.1,,1.4866,ok,,false,true,0.00195122,0.00014043,0.005,0.005,ok,,,,,,1.0,1.4866,true,0.4866
+layernorm,extreme-large,FlagGems,478.2,438.3,,1.3296,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.3296,true,0.3296
+layernorm,llama3-8b-norm,cuBLAS/cuDNN,40.6,42.0,,0.9951,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9951,false,-0.0049
+layernorm,llama3-8b-norm,PyTorch-eager,40.4,42.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama3-8b-norm,torch.compile,145.4,97.3,,0.2779,ok,,false,true,0.00195312,2.67504e-08,0.005,0.005,ok,,,,,,1.0,0.2779,false,-0.7221
+layernorm,llama3-8b-norm,Arke,66.7,52.2,,0.6057,ok,,false,true,0.00191402,0.000140545,0.005,0.005,ok,,,,,,1.0,0.6057,false,-0.3943
+layernorm,llama3-8b-norm,FlagGems,59.1,30.7,,0.6836,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6836,false,-0.3164
+layernorm,llama3-8b-long,cuBLAS/cuDNN,830.3,736.1,,0.8927,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8927,false,-0.1073
+layernorm,llama3-8b-long,PyTorch-eager,741.2,636.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama3-8b-long,torch.compile,1274.3,1247.2,,0.5817,ok,,false,true,0.00195312,2.46278e-08,0.005,0.005,ok,,,,,,1.0,0.5817,false,-0.4183
+layernorm,llama3-8b-long,Arke,427.3,428.0,,1.7346,ok,,false,true,0.00195169,0.000140575,0.005,0.005,ok,,,,,,1.0,1.7346,true,0.7346
+layernorm,llama3-8b-long,FlagGems,481.3,434.2,,1.5400,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.5400,true,0.5400
+layernorm,qwen25-7b-norm,cuBLAS/cuDNN,35.5,37.8,,0.9803,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9803,false,-0.0197
+layernorm,qwen25-7b-norm,PyTorch-eager,34.8,36.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,qwen25-7b-norm,torch.compile,146.3,165.8,,0.2379,ok,,false,true,0.00195312,2.36723e-08,0.005,0.005,ok,,,,,,1.0,0.2379,false,-0.7621
+layernorm,qwen25-7b-norm,Arke,64.1,78.8,,0.5429,ok,,false,true,0.00195265,0.000140512,0.005,0.005,ok,,,,,,1.0,0.5429,false,-0.4571
+layernorm,qwen25-7b-norm,FlagGems,59.3,42.0,,0.5868,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.5868,false,-0.4132
+layernorm,qwen25-7b-long,cuBLAS/cuDNN,699.2,603.0,,0.8600,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8600,false,-0.1400
+layernorm,qwen25-7b-long,PyTorch-eager,601.3,587.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,qwen25-7b-long,torch.compile,1245.5,1200.1,,0.4828,ok,,false,true,0.00195312,2.47414e-08,0.005,0.005,ok,,,,,,1.0,0.4828,false,-0.5172
+layernorm,qwen25-7b-long,Arke,376.6,376.8,,1.5967,ok,,false,true,0.00195312,0.000140408,0.005,0.005,ok,,,,,,1.0,1.5967,true,0.5967
+layernorm,qwen25-7b-long,FlagGems,399.5,383.0,,1.5051,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.5051,true,0.5051
+layernorm,ds-v2-long,cuBLAS/cuDNN,802.1,795.6,,1.0005,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0005,true,0.0005
+layernorm,ds-v2-long,PyTorch-eager,802.5,800.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,ds-v2-long,torch.compile,1736.0,1683.2,,0.4623,ok,,false,true,0.00195312,2.69087e-08,0.005,0.005,ok,,,,,,1.0,0.4623,false,-0.5377
+layernorm,ds-v2-long,Arke,536.7,537.4,,1.4952,ok,,false,true,0.00195217,0.000140485,0.005,0.005,ok,,,,,,1.0,1.4952,true,0.4952
+layernorm,ds-v2-long,FlagGems,670.8,597.0,,1.1963,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1963,true,0.1963
+layernorm,ds-v3-long,cuBLAS/cuDNN,565.5,565.2,,0.9989,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9989,false,-0.0011
+layernorm,ds-v3-long,PyTorch-eager,564.9,566.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,ds-v3-long,torch.compile,1141.2,1091.6,,0.4950,ok,,false,true,0.00195312,2.54811e-08,0.005,0.005,ok,,,,,,1.0,0.4950,false,-0.5050
+layernorm,ds-v3-long,Arke,380.4,386.0,,1.4850,ok,,false,true,0.00195074,0.000140416,0.005,0.005,ok,,,,,,1.0,1.4850,true,0.4850
+layernorm,ds-v3-long,FlagGems,457.2,437.2,,1.2356,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.2356,true,0.2356
+rope,gpt2-sm-128,Liger-Kernel,113.7,125.8,,2.3659,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,2.3659,true,1.3659
+rope,gpt2-sm-128,PyTorch-eager,269.0,274.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-128,Arke,89.8,99.3,,2.9955,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.9955,true,1.9955
+rope,gpt2-sm-128,Liger-Kernel,109.2,14.3,,2.4634,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,2.4634,true,1.4634
+rope,gpt2-sm-128,PyTorch-eager,287.3,274.4,,0.9363,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,0.9363,false,-0.0637
+rope,gpt2-sm-128,Arke,90.1,33.8,,2.9856,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.9856,true,1.9856
+rope,gpt2-sm-512,Liger-Kernel,129.7,124.9,,2.3971,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,2.3971,true,1.3971
+rope,gpt2-sm-512,PyTorch-eager,310.9,291.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-512,Arke,93.8,102.4,,3.3145,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,3.3145,true,2.3145
+rope,gpt2-sm-512,Liger-Kernel,104.1,64.5,,2.9866,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,2.9866,true,1.9866
+rope,gpt2-sm-512,PyTorch-eager,285.8,260.0,,1.0878,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0878,true,0.0878
+rope,gpt2-sm-512,Arke,96.4,66.6,,3.2251,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,3.2251,true,2.2251
+rope,llama2-512,Liger-Kernel,233.1,256.0,,1.3840,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,1.3840,true,0.3840
+rope,llama2-512,PyTorch-eager,322.6,390.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama2-512,Arke,172.0,164.9,,1.8756,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.8756,true,0.8756
+rope,llama2-512,Liger-Kernel,140.4,139.3,,2.2977,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,2.2977,true,1.2977
+rope,llama2-512,PyTorch-eager,288.8,267.3,,1.1170,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.1170,true,0.1170
+rope,llama2-512,Arke,203.4,179.1,,1.5860,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.5860,true,0.5860
+rope,llama2-2k,Liger-Kernel,474.1,474.1,,1.6157,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.6157,true,0.6157
+rope,llama2-2k,PyTorch-eager,766.0,815.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
+rope,llama2-2k,Arke,594.3,594.9,,1.2889,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.2889,true,0.2889
+rope,llama2-2k,Liger-Kernel,547.8,548.9,,1.3983,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.3983,true,0.3983
+rope,llama2-2k,PyTorch-eager,806.0,796.7,,0.9504,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,0.9504,false,-0.0496
+rope,llama2-2k,Arke,752.3,650.2,,1.0182,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.0182,true,0.0182
+rope,llama3-q-512,Liger-Kernel,147.8,159.7,,4.5609,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,4.5609,true,3.5609
+rope,llama3-q-512,PyTorch-eager,674.1,398.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama3-q-512,Arke,280.2,315.3,,2.4058,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.4058,true,1.4058
+rope,llama3-q-512,Liger-Kernel,132.1,158.7,,5.1030,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,5.1030,true,4.1030
+rope,llama3-q-512,PyTorch-eager,272.7,360.4,,2.4719,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,2.4719,true,1.4719
+rope,llama3-q-512,Arke,176.2,178.2,,3.8258,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,3.8258,true,2.8258
+rope,llama3-kv-512,Liger-Kernel,120.1,128.0,,2.4696,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,2.4696,true,1.4696
+rope,llama3-kv-512,PyTorch-eager,296.6,285.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.0000,true,0.0000
+rope,llama3-kv-512,Arke,264.1,106.6,,1.1231,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,1.1231,true,0.1231
+rope,llama3-kv-512,Liger-Kernel,115.0,68.6,,2.5791,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,2.5791,true,1.5791
+rope,llama3-kv-512,PyTorch-eager,302.6,270.3,,0.9802,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,0.9802,false,-0.0198
+rope,llama3-kv-512,Arke,93.9,55.3,,3.1587,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,3.1587,true,2.1587
+rope,qwen25-q-512,Liger-Kernel,125.3,144.4,,2.4214,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,2.4214,true,1.4214
+rope,qwen25-q-512,PyTorch-eager,303.4,368.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
+rope,qwen25-q-512,Arke,138.2,149.5,,2.1954,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,2.1954,true,1.1954
+rope,qwen25-q-512,Liger-Kernel,126.7,141.3,,2.3946,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,2.3946,true,1.3946
+rope,qwen25-q-512,PyTorch-eager,299.8,233.5,,1.0120,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0120,true,0.0120
+rope,qwen25-q-512,Arke,172.9,159.7,,1.7548,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,1.7548,true,0.7548
+rope,qwen25-kv-512,Liger-Kernel,135.6,133.1,,2.1018,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,2.1018,true,1.1018
+rope,qwen25-kv-512,PyTorch-eager,285.0,297.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,1.0000,true,0.0000
+rope,qwen25-kv-512,Arke,97.2,122.1,,2.9321,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,2.9321,true,1.9321
+rope,qwen25-kv-512,Liger-Kernel,110.5,15.4,,2.5792,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,2.5792,true,1.5792
+rope,qwen25-kv-512,PyTorch-eager,296.5,187.3,,0.9612,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,0.9612,false,-0.0388
+rope,qwen25-kv-512,Arke,90.7,44.9,,3.1422,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,3.1422,true,2.1422
+rope,ds-v2-512,Liger-Kernel,452.9,453.6,,1.7598,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.7598,true,0.7598
+rope,ds-v2-512,PyTorch-eager,797.0,783.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,1.0000,true,0.0000
+rope,ds-v2-512,Arke,551.9,551.6,,1.4441,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,1.4441,true,0.4441
+rope,ds-v2-512,Liger-Kernel,594.2,531.5,,1.3413,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,1.3413,true,0.3413
+rope,ds-v2-512,PyTorch-eager,799.7,848.9,,0.9966,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention,1.0,0.9966,false,-0.0034
+rope,ds-v2-512,Arke,881.2,696.3,,0.9044,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,0.9044,false,-0.0956
+rope,ds-v3-2k,Liger-Kernel,1830.6,1800.2,,1.5055,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,1.5055,true,0.5055
+rope,ds-v3-2k,PyTorch-eager,2755.9,2647.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0000,true,0.0000
+rope,ds-v3-2k,Arke,2239.1,2174.0,,1.2308,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention_fused,1.0,1.2308,true,0.2308
+rope,ds-v3-2k,Liger-Kernel,1880.7,1846.0,,1.4654,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,1.4654,true,0.4654
+rope,ds-v3-2k,PyTorch-eager,2693.0,2632.6,,1.0234,ok,,false,true,0,0,0.001,0.001,ok,,1342177280,3542771302,0.3788,attention,1.0,1.0234,true,0.0234
+rope,ds-v3-2k,Arke,2419.6,2345.0,,1.1390,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention_fused,1.0,1.1390,true,0.1390
+rope,llama3-8k,Liger-Kernel,1859.2,1828.9,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,llama3-8k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,4563402752,3542771302,1.2881,attention,1.0,N/A,false,N/A
+rope,llama3-8k,Arke,2428.9,2420.7,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,llama3-8k,Liger-Kernel,1895.6,1860.6,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,llama3-8k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,4563402752,3542771302,1.2881,attention,1.0,N/A,false,N/A
+rope,llama3-8k,Arke,2529.6,2468.9,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 4563402752 bytes > budget 3542771302 bytes,268435456,3542771302,0.0758,attention_fused,1.0,,,
+rope,qwen25-32k,Liger-Kernel,6530.4,6300.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,qwen25-32k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,61069066240,3542771302,17.2377,attention,1.0,N/A,false,N/A
+rope,qwen25-32k,Arke,9132.4,9036.8,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,qwen25-32k,Liger-Kernel,6602.2,6501.4,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,qwen25-32k,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,61069066240,3542771302,17.2377,attention,1.0,N/A,false,N/A
+rope,qwen25-32k,Arke,9206.2,9051.1,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 61069066240 bytes > budget 3542771302 bytes,939524096,3542771302,0.2652,attention_fused,1.0,,,
+rope,non-align-1,Liger-Kernel,215.7,255.1,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
+rope,non-align-1,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",1277874,3542771302,0.0004,attention,1.0,,,
+rope,non-align-1,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
+rope,non-align-1,Liger-Kernel,107.9,119.6,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
+rope,non-align-1,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",1277874,3542771302,0.0004,attention,1.0,,,
+rope,non-align-1,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-1,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 65 (odd) for shape (13, 127, 65) — mathematically ill-defined",858520,3542771302,0.0002,attention_fused,1.0,,,
+rope,non-align-2,Liger-Kernel,122.1,138.2,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
+rope,non-align-2,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",16803180,3542771302,0.0047,attention,1.0,,,
+rope,non-align-2,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
+rope,non-align-2,Liger-Kernel,107.2,104.4,,,ok,,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
+rope,non-align-2,PyTorch-eager,inf,inf,,,unsupported,PyTorch-eager.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",16803180,3542771302,0.0047,attention,1.0,,,
+rope,non-align-2,Arke,inf,inf,,,unsupported,Arke.get_fn declined rope@non-align-2,false,,,,0.001,0.001,unsupported,"RoPE requires even head_dim; got 127 (odd) for shape (30, 333, 127) — mathematically ill-defined",10149840,3542771302,0.0029,attention_fused,1.0,,,
+rope,extreme-long,Liger-Kernel,567308.3,564467.7,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-long,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,277025390592,3542771302,78.1945,attention,1.0,N/A,false,N/A
+rope,extreme-long,Arke,201090.0,201132.0,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-long,Liger-Kernel,549728.1,541190.1,,,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-long,PyTorch-eager,inf,inf,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,true,,,,,,skipped,memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,277025390592,3542771302,78.1945,attention,1.0,N/A,false,N/A
+rope,extreme-long,Arke,213395.0,201728.0,,,ok,,false,true,0,0,0.001,0.001,golden_unavailable_pending_baseline,golden runner 'PyTorch-eager' skipped by memory preflight: memory preflight: estimated attention footprint 277025390592 bytes > budget 3542771302 bytes,2147483648,3542771302,0.6062,attention_fused,1.0,,,
+rope,extreme-batch,Liger-Kernel,897.0,898.0,,1.5099,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,134217728,3542771302,0.0379,attention_fused,1.0,1.5099,true,0.5099
+rope,extreme-batch,PyTorch-eager,1354.4,1380.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention,1.0,1.0000,true,0.0000
+rope,extreme-batch,Arke,1116.2,1105.9,,1.2134,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention_fused,1.0,1.2134,true,0.2134
+rope,extreme-batch,Liger-Kernel,1006.5,969.7,,1.3457,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,134217728,3542771302,0.0379,attention_fused,1.0,1.3457,true,0.3457
+rope,extreme-batch,PyTorch-eager,1387.5,1422.3,,0.9761,ok,,false,true,0,0,0.001,0.001,ok,,268435456,3542771302,0.0758,attention,1.0,0.9761,false,-0.0239
+rope,extreme-batch,Arke,1214.4,1198.1,,1.1153,ok,,false,true,0,0,0.001,0.001,ok,,134217728,3542771302,0.0379,attention_fused,1.0,1.1153,true,0.1153
+batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,61.3,44.3,0.002,1.3246,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.3246,true,0.3246
+batch_matmul,gpt2-attn-128,PyTorch-eager,81.2,68.9,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-128,Arke,102.4,101.4,0.001,0.7930,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,0.7930,false,-0.2070
+batch_matmul,gpt2-attn-128,FlagGems,60.2,52.2,0.002,1.3488,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.3488,true,0.3488
+batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,15.1,8.2,0.009,5.3775,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,5.3775,true,4.3775
+batch_matmul,gpt2-attn-128,PyTorch-eager,14.3,25.6,0.009,5.6783,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,5.6783,true,4.6783
+batch_matmul,gpt2-attn-128,Arke,129.5,155.6,0.001,0.6270,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,0.6270,false,-0.3730
+batch_matmul,gpt2-attn-128,FlagGems,55.9,36.9,0.002,1.4526,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.4526,true,0.4526
+batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,93.4,70.7,0.008,0.8458,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.8458,false,-0.1542
+batch_matmul,gpt2-attn-512,PyTorch-eager,79.0,30.7,0.010,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-512,Arke,133.7,138.2,0.006,0.5909,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.5909,false,-0.4091
+batch_matmul,gpt2-attn-512,FlagGems,59.5,82.9,0.013,1.3277,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.3277,true,0.3277
+batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,60.4,61.4,0.013,1.3079,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.3079,true,0.3079
+batch_matmul,gpt2-attn-512,PyTorch-eager,17.3,13.3,0.045,4.5665,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,4.5665,true,3.5665
+batch_matmul,gpt2-attn-512,Arke,134.8,165.9,0.006,0.5861,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.5861,false,-0.4139
+batch_matmul,gpt2-attn-512,FlagGems,60.4,69.4,0.013,1.3079,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.3079,true,0.3079
+batch_matmul,llama-attn-512,cuBLAS/cuDNN,153.1,154.6,0.027,0.4690,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.4690,false,-0.5310
+batch_matmul,llama-attn-512,PyTorch-eager,71.8,80.9,0.058,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,llama-attn-512,Arke,337.1,344.1,0.012,0.2130,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.2130,false,-0.7870
+batch_matmul,llama-attn-512,FlagGems,146.9,148.5,0.029,0.4888,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.4888,false,-0.5112
+batch_matmul,llama-attn-512,cuBLAS/cuDNN,146.2,148.5,0.029,0.4911,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.4911,false,-0.5089
+batch_matmul,llama-attn-512,PyTorch-eager,33.0,35.8,0.127,2.1758,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,2.1758,true,1.1758
+batch_matmul,llama-attn-512,Arke,325.4,334.8,0.013,0.2207,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.2207,false,-0.7793
+batch_matmul,llama-attn-512,FlagGems,156.0,164.9,0.027,0.4603,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.4603,false,-0.5397
+batch_matmul,llama-attn-2k,cuBLAS/cuDNN,1954.7,1811.5,0.009,0.0570,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0570,false,-0.9430
+batch_matmul,llama-attn-2k,PyTorch-eager,111.5,119.8,0.151,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,llama-attn-2k,Arke,4680.3,4103.2,0.004,0.0238,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0238,false,-0.9762
+batch_matmul,llama-attn-2k,FlagGems,1942.9,1828.9,0.009,0.0574,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0574,false,-0.9426
+batch_matmul,llama-attn-2k,cuBLAS/cuDNN,2059.9,1939.5,0.008,0.0541,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0541,false,-0.9459
+batch_matmul,llama-attn-2k,PyTorch-eager,116.7,116.7,0.144,0.9554,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.9554,false,-0.0446
+batch_matmul,llama-attn-2k,Arke,155216.9,150980.4,0.000,0.0007,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0007,false,-0.9993
+batch_matmul,llama-attn-2k,FlagGems,1959.5,1843.2,0.009,0.0569,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0569,false,-0.9431
+batch_matmul,batched-8,cuBLAS/cuDNN,55.8,65.3,0.001,1.1434,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.1434,true,0.1434
+batch_matmul,batched-8,PyTorch-eager,63.8,64.5,0.001,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,batched-8,Arke,80.8,5.1,0.001,0.7896,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.7896,false,-0.2104
+batch_matmul,batched-8,FlagGems,62.1,69.9,0.001,1.0274,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.0274,true,0.0274
+batch_matmul,batched-8,cuBLAS/cuDNN,13.3,5.1,0.005,4.7970,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,4.7970,true,3.7970
+batch_matmul,batched-8,PyTorch-eager,14.0,6.1,0.005,4.5571,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,4.5571,true,3.5571
+batch_matmul,batched-8,Arke,78.0,89.3,0.001,0.8179,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.8179,false,-0.1821
+batch_matmul,batched-8,FlagGems,69.2,80.9,0.001,0.9220,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.9220,false,-0.0780
+batch_matmul,batched-32,cuBLAS/cuDNN,57.3,79.1,0.018,1.0349,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,1.0349,true,0.0349
+batch_matmul,batched-32,PyTorch-eager,59.3,73.7,0.018,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,batched-32,Arke,80.9,91.5,0.013,0.7330,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.7330,false,-0.2670
+batch_matmul,batched-32,FlagGems,64.9,73.7,0.016,0.9137,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.9137,false,-0.0863
+batch_matmul,batched-32,cuBLAS/cuDNN,20.9,21.5,0.050,2.8373,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,2.8373,true,1.8373
+batch_matmul,batched-32,PyTorch-eager,14.4,7.2,0.073,4.1181,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,4.1181,true,3.1181
+batch_matmul,batched-32,Arke,81.2,30.7,0.013,0.7303,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.7303,false,-0.2697
+batch_matmul,batched-32,FlagGems,56.5,12.3,0.019,1.0496,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,1.0496,true,0.0496
+batch_matmul,non-align-1,cuBLAS/cuDNN,75.7,73.8,0.002,0.9379,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,0.9379,false,-0.0621
+batch_matmul,non-align-1,PyTorch-eager,71.0,36.0,0.002,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,non-align-1,Arke,72.7,95.2,0.002,0.9766,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,0.9766,false,-0.0234
+batch_matmul,non-align-1,FlagGems,62.8,9.2,0.002,1.1306,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,1.1306,true,0.1306
+batch_matmul,non-align-1,cuBLAS/cuDNN,13.4,26.8,0.009,5.2985,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,5.2985,true,4.2985
+batch_matmul,non-align-1,PyTorch-eager,14.0,19.3,0.008,5.0714,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,5.0714,true,4.0714
+batch_matmul,non-align-1,Arke,82.8,19.5,0.001,0.8575,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,0.8575,false,-0.1425
+batch_matmul,non-align-1,FlagGems,53.9,74.8,0.002,1.3173,ok,,false,true,0,0,0.01,0.01,ok,,361702,3542771302,0.0001,dense_matmul,1.0,1.3173,true,0.3173
+batch_matmul,non-align-2,cuBLAS/cuDNN,192.9,173.1,0.010,0.3261,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.3261,false,-0.6739
+batch_matmul,non-align-2,PyTorch-eager,62.9,79.9,0.032,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,non-align-2,Arke,487.2,411.6,0.004,0.1291,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.1291,false,-0.8709
+batch_matmul,non-align-2,FlagGems,175.9,198.7,0.011,0.3576,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.3576,false,-0.6424
+batch_matmul,non-align-2,cuBLAS/cuDNN,157.7,160.7,0.013,0.3989,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.3989,false,-0.6011
+batch_matmul,non-align-2,PyTorch-eager,46.2,51.0,0.043,1.3615,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,1.3615,true,0.3615
+batch_matmul,non-align-2,Arke,602.7,507.9,0.003,0.1044,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.1044,false,-0.8956
+batch_matmul,non-align-2,FlagGems,191.7,183.3,0.010,0.3281,ok,,false,true,0,0,0.01,0.01,ok,,10012734,3542771302,0.0028,dense_matmul,1.0,0.3281,false,-0.6719
+batch_matmul,extreme-bsz,cuBLAS/cuDNN,78.2,76.8,0.003,0.9706,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,0.9706,false,-0.0294
+batch_matmul,extreme-bsz,PyTorch-eager,75.9,48.0,0.003,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,extreme-bsz,Arke,77.6,94.4,0.003,0.9781,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,0.9781,false,-0.0219
+batch_matmul,extreme-bsz,FlagGems,71.0,63.5,0.004,1.0690,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,1.0690,true,0.0690
+batch_matmul,extreme-bsz,cuBLAS/cuDNN,13.9,9.2,0.019,5.4604,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,5.4604,true,4.4604
+batch_matmul,extreme-bsz,PyTorch-eager,13.1,8.1,0.020,5.7939,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,5.7939,true,4.7939
+batch_matmul,extreme-bsz,Arke,83.1,63.5,0.003,0.9134,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,0.9134,false,-0.0866
+batch_matmul,extreme-bsz,FlagGems,58.7,6.1,0.004,1.2930,ok,,false,true,0,0,0.01,0.01,ok,,397312,3542771302,0.0001,dense_matmul,1.0,1.2930,true,0.2930
+matmul,tiny,cuBLAS/cuDNN,62.8,69.6,0.067,0.9522,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.9522,false,-0.0478
+matmul,tiny,Triton-Tutorial,72.9,16.4,0.058,0.8203,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.8203,false,-0.1797
+matmul,tiny,PyTorch-eager,59.8,44.0,0.070,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
+matmul,tiny,torch.compile,285.8,61.4,0.015,0.2092,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.2092,false,-0.7908
+matmul,tiny,Arke,62.0,24.6,0.068,0.9645,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.9645,false,-0.0355
+matmul,tiny,FlagGems,57.7,74.0,0.073,1.0364,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,1.0364,true,0.0364
+matmul,gpt2-c_proj,cuBLAS/cuDNN,67.1,81.1,2.251,0.9136,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.9136,false,-0.0864
+matmul,gpt2-c_proj,Triton-Tutorial,66.4,77.8,2.272,0.9232,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.9232,false,-0.0768
+matmul,gpt2-c_proj,PyTorch-eager,61.3,70.8,2.464,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+matmul,gpt2-c_proj,torch.compile,312.1,298.0,0.484,0.1964,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.1964,false,-0.8036
+matmul,gpt2-c_proj,Arke,80.4,76.0,1.878,0.7624,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.7624,false,-0.2376
+matmul,gpt2-c_proj,FlagGems,59.9,55.3,2.519,1.0234,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0234,true,0.0234
+matmul,gpt2-c_attn,cuBLAS/cuDNN,76.5,92.2,5.924,0.7974,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.7974,false,-0.2026
+matmul,gpt2-c_attn,Triton-Tutorial,75.4,94.2,6.008,0.8090,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.8090,false,-0.1910
+matmul,gpt2-c_attn,PyTorch-eager,61.0,36.8,7.420,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0000,true,0.0000
+matmul,gpt2-c_attn,torch.compile,337.0,305.1,1.344,0.1810,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.1810,false,-0.8190
+matmul,gpt2-c_attn,Arke,68.7,60.4,6.593,0.8879,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.8879,false,-0.1121
+matmul,gpt2-c_attn,FlagGems,64.4,72.5,7.030,0.9472,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.9472,false,-0.0528
+matmul,square-1k,cuBLAS/cuDNN,127.7,136.1,16.811,0.9875,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9875,false,-0.0125
+matmul,square-1k,Triton-Tutorial,128.8,133.1,16.678,0.9790,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9790,false,-0.0210
+matmul,square-1k,PyTorch-eager,126.1,138.2,17.028,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-1k,torch.compile,315.5,335.9,6.806,0.3997,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.3997,false,-0.6003
+matmul,square-1k,Arke,130.4,141.3,16.474,0.9670,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9670,false,-0.0330
+matmul,square-1k,FlagGems,129.7,187.2,16.556,0.9722,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.9722,false,-0.0278
+matmul,square-2k,cuBLAS/cuDNN,981.2,890.9,17.509,0.9646,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9646,false,-0.0354
+matmul,square-2k,Triton-Tutorial,790.2,759.8,21.741,1.1978,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.1978,true,0.1978
+matmul,square-2k,PyTorch-eager,946.5,877.6,18.151,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-2k,torch.compile,1059.2,1068.0,16.220,0.8936,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.8936,false,-0.1064
+matmul,square-2k,Arke,952.3,863.2,18.041,0.9939,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9939,false,-0.0061
+matmul,square-2k,FlagGems,984.1,855.0,17.458,0.9618,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9618,false,-0.0382
+matmul,square-4k,cuBLAS/cuDNN,6176.7,6027.3,22.251,1.0029,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0029,true,0.0029
+matmul,square-4k,Triton-Tutorial,6056.1,5902.3,22.694,1.0228,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0228,true,0.0228
+matmul,square-4k,PyTorch-eager,6194.4,6079.4,22.188,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-4k,torch.compile,6688.9,6473.7,20.547,0.9261,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9261,false,-0.0739
+matmul,square-4k,Arke,6205.3,6054.9,22.148,0.9982,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9982,false,-0.0018
+matmul,square-4k,FlagGems,6218.6,6082.4,22.101,0.9961,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9961,false,-0.0039
+matmul,rect-wide,cuBLAS/cuDNN,435.8,418.7,19.712,1.0165,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0165,true,0.0165
+matmul,rect-wide,Triton-Tutorial,405.3,407.6,21.194,1.0930,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0930,true,0.0930
+matmul,rect-wide,PyTorch-eager,443.0,440.3,19.392,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
+matmul,rect-wide,torch.compile,519.8,650.2,16.524,0.8523,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8523,false,-0.1477
+matmul,rect-wide,Arke,456.0,442.4,18.839,0.9715,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9715,false,-0.0285
+matmul,rect-wide,FlagGems,443.6,430.1,19.362,0.9986,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9986,false,-0.0014
+matmul,rect-tall,cuBLAS/cuDNN,452.9,448.5,18.966,0.9982,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9982,false,-0.0018
+matmul,rect-tall,Triton-Tutorial,416.3,401.4,20.634,1.0860,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0860,true,0.0860
+matmul,rect-tall,PyTorch-eager,452.1,450.6,18.999,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0000,true,0.0000
+matmul,rect-tall,torch.compile,525.8,636.9,16.337,0.8598,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.8598,false,-0.1402
+matmul,rect-tall,Arke,466.9,449.5,18.399,0.9683,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,0.9683,false,-0.0317
+matmul,rect-tall,FlagGems,450.3,444.4,19.076,1.0040,ok,,false,true,0,0,0.01,0.01,ok,,18874368,3542771302,0.0053,dense_matmul,1.0,1.0040,true,0.0040
+matmul,lm-head-gpt2,cuBLAS/cuDNN,905.1,854.0,10.917,1.0138,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0138,true,0.0138
+matmul,lm-head-gpt2,Triton-Tutorial,884.0,793.6,11.177,1.0380,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0380,true,0.0380
+matmul,lm-head-gpt2,PyTorch-eager,917.6,847.9,10.769,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0000,true,0.0000
+matmul,lm-head-gpt2,torch.compile,1454.7,1354.8,6.793,0.6308,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,0.6308,false,-0.3692
+matmul,lm-head-gpt2,Arke,899.3,823.3,10.988,1.0203,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0203,true,0.0203
+matmul,lm-head-gpt2,FlagGems,900.2,810.0,10.976,1.0193,ok,,false,true,0,0,0.01,0.01,ok,,90257152,3542771302,0.0255,dense_matmul,1.0,1.0193,true,0.0193
+matmul,llama-q,cuBLAS/cuDNN,6189.0,6002.7,22.207,1.0033,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0033,true,0.0033
+matmul,llama-q,Triton-Tutorial,6080.5,5904.4,22.603,1.0212,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0212,true,0.0212
+matmul,llama-q,PyTorch-eager,6209.7,6055.9,22.133,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
+matmul,llama-q,torch.compile,6687.6,6451.2,20.551,0.9285,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9285,false,-0.0715
+matmul,llama-q,Arke,6213.7,6051.8,22.119,0.9994,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9994,false,-0.0006
+matmul,llama-q,FlagGems,6226.8,6066.0,22.072,0.9973,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9973,false,-0.0027
+matmul,llama-ffn,cuBLAS/cuDNN,16104.6,15857.7,22.936,1.0009,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0009,true,0.0009
+matmul,llama-ffn,Triton-Tutorial,15864.0,15618.0,23.283,1.0160,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0160,true,0.0160
+matmul,llama-ffn,PyTorch-eager,16118.4,15833.0,22.916,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,1.0000,true,0.0000
+matmul,llama-ffn,torch.compile,16987.9,16733.2,21.743,0.9488,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9488,false,-0.0512
+matmul,llama-ffn,Arke,16127.8,15831.0,22.902,0.9994,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9994,false,-0.0006
+matmul,llama-ffn,FlagGems,16128.1,15932.4,22.902,0.9994,ok,,false,true,0,0,0.01,0.01,ok,,213909504,3542771302,0.0604,dense_matmul,1.0,0.9994,false,-0.0006
+matmul,seq512,cuBLAS/cuDNN,99.0,111.6,18.300,0.9828,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.9828,false,-0.0172
+matmul,seq512,Triton-Tutorial,95.6,114.7,18.952,1.0178,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,1.0178,true,0.0178
+matmul,seq512,PyTorch-eager,97.3,129.9,18.629,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,1.0000,true,0.0000
+matmul,seq512,torch.compile,320.8,319.5,5.648,0.3033,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.3033,false,-0.6967
+matmul,seq512,Arke,103.6,146.4,17.487,0.9392,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.9392,false,-0.0608
+matmul,seq512,FlagGems,97.9,104.4,18.503,0.9939,ok,,false,true,0,0,0.01,0.01,ok,,6684672,3542771302,0.0019,dense_matmul,1.0,0.9939,false,-0.0061
+matmul,non-align-1,cuBLAS/cuDNN,60.9,36.9,2.141,0.9901,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.9901,false,-0.0099
+matmul,non-align-1,Triton-Tutorial,65.5,94.0,1.990,0.9206,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.9206,false,-0.0794
+matmul,non-align-1,PyTorch-eager,60.3,84.0,2.161,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+matmul,non-align-1,torch.compile,319.3,299.0,0.408,0.1889,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.1889,false,-0.8111
+matmul,non-align-1,Arke,63.4,82.8,2.056,0.9511,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.9511,false,-0.0489
+matmul,non-align-1,FlagGems,85.1,35.8,1.531,0.7086,ok,,false,true,0,0,0.01,0.01,ok,,1410302,3542771302,0.0004,dense_matmul,1.0,0.7086,false,-0.2914
+matmul,non-align-2,cuBLAS/cuDNN,57.7,45.8,4.975,0.9965,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.9965,false,-0.0035
+matmul,non-align-2,Triton-Tutorial,75.7,44.0,3.792,0.7596,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.7596,false,-0.2404
+matmul,non-align-2,PyTorch-eager,57.5,93.2,4.996,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,1.0000,true,0.0000
+matmul,non-align-2,torch.compile,327.8,295.9,0.876,0.1754,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.1754,false,-0.8246
+matmul,non-align-2,Arke,64.2,95.2,4.474,0.8956,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.8956,false,-0.1044
+matmul,non-align-2,FlagGems,76.6,92.2,3.749,0.7507,ok,,false,true,0,0,0.01,0.01,ok,,1749582,3542771302,0.0005,dense_matmul,1.0,0.7507,false,-0.2493
+matmul,non-align-3,cuBLAS/cuDNN,191.9,193.5,11.189,1.0021,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.0021,true,0.0021
+matmul,non-align-3,Triton-Tutorial,173.8,231.4,12.358,1.1064,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.1064,true,0.1064
+matmul,non-align-3,PyTorch-eager,192.3,192.5,11.168,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
+matmul,non-align-3,torch.compile,356.0,391.2,6.032,0.5402,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,0.5402,false,-0.4598
+matmul,non-align-3,Arke,205.7,215.0,10.438,0.9349,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,0.9349,false,-0.0651
+matmul,non-align-3,FlagGems,192.0,196.6,11.182,1.0016,ok,,false,true,0,0,0.01,0.01,ok,,6291454,3542771302,0.0018,dense_matmul,1.0,1.0016,true,0.0016
+matmul,non-align-4,cuBLAS/cuDNN,315.1,304.1,6.347,0.9708,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.9708,false,-0.0292
+matmul,non-align-4,Triton-Tutorial,228.6,231.4,8.750,1.3381,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,1.3381,true,0.3381
+matmul,non-align-4,PyTorch-eager,305.9,308.2,6.537,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,1.0000,true,0.0000
+matmul,non-align-4,torch.compile,356.3,520.1,5.613,0.8585,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.8585,false,-0.1415
+matmul,non-align-4,Arke,321.8,318.5,6.216,0.9506,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.9506,false,-0.0494
+matmul,non-align-4,FlagGems,318.2,312.3,6.285,0.9613,ok,,false,true,0,0,0.01,0.01,ok,,6000000,3542771302,0.0017,dense_matmul,1.0,0.9613,false,-0.0387
+matmul,non-align-5,cuBLAS/cuDNN,59.3,62.5,12.733,0.9831,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.9831,false,-0.0169
+matmul,non-align-5,Triton-Tutorial,85.9,61.2,8.791,0.6787,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.6787,false,-0.3213
+matmul,non-align-5,PyTorch-eager,58.3,87.0,12.951,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,1.0000,true,0.0000
+matmul,non-align-5,torch.compile,339.0,327.7,2.227,0.1720,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.1720,false,-0.8280
+matmul,non-align-5,Arke,63.6,77.8,11.869,0.9167,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.9167,false,-0.0833
+matmul,non-align-5,FlagGems,91.0,47.1,8.301,0.6407,ok,,false,true,0,0,0.01,0.01,ok,,3637248,3542771302,0.0010,dense_matmul,1.0,0.6407,false,-0.3593
+matmul,non-align-6,cuBLAS/cuDNN,1352.5,1315.8,12.715,1.0007,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,1.0007,true,0.0007
+matmul,non-align-6,Triton-Tutorial,1451.4,1377.3,11.848,0.9325,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.9325,false,-0.0675
+matmul,non-align-6,PyTorch-eager,1353.5,1282.0,12.705,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
+matmul,non-align-6,torch.compile,1504.7,1492.8,11.429,0.8995,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.8995,false,-0.1005
+matmul,non-align-6,Arke,1357.4,1316.8,12.668,0.9971,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.9971,false,-0.0029
+matmul,non-align-6,FlagGems,1364.2,1312.6,12.606,0.9922,ok,,false,true,0,0,0.01,0.01,ok,,25182206,3542771302,0.0071,dense_matmul,1.0,0.9922,false,-0.0078
+matmul,non-align-7,cuBLAS/cuDNN,230.6,233.5,7.887,0.9939,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.9939,false,-0.0061
+matmul,non-align-7,Triton-Tutorial,228.7,240.6,7.953,1.0022,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,1.0022,true,0.0022
+matmul,non-align-7,PyTorch-eager,229.2,232.4,7.935,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,1.0000,true,0.0000
+matmul,non-align-7,torch.compile,326.9,482.0,5.563,0.7011,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.7011,false,-0.2989
+matmul,non-align-7,Arke,241.6,252.9,7.528,0.9487,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.9487,false,-0.0513
+matmul,non-align-7,FlagGems,229.5,229.4,7.925,0.9987,ok,,false,true,0,0,0.01,0.01,ok,,6699014,3542771302,0.0019,dense_matmul,1.0,0.9987,false,-0.0013
+matmul,extreme-1row,cuBLAS/cuDNN,58.5,75.8,0.036,1.0615,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,1.0615,true,0.0615
+matmul,extreme-1row,Triton-Tutorial,69.6,79.9,0.030,0.8922,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.8922,false,-0.1078
+matmul,extreme-1row,PyTorch-eager,62.1,40.8,0.034,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,1.0000,true,0.0000
+matmul,extreme-1row,torch.compile,323.1,300.2,0.006,0.1922,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.1922,false,-0.8078
+matmul,extreme-1row,Arke,87.0,80.6,0.024,0.7138,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.7138,false,-0.2862
+matmul,extreme-1row,FlagGems,90.1,54.3,0.023,0.6892,ok,,false,true,0,0,0.01,0.01,ok,,2101248,3542771302,0.0006,dense_matmul,1.0,0.6892,false,-0.3108
+matmul,extreme-16,cuBLAS/cuDNN,139.0,196.4,3.861,0.9935,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,0.9935,false,-0.0065
+matmul,extreme-16,Triton-Tutorial,132.1,130.0,4.065,1.0454,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0454,true,0.0454
+matmul,extreme-16,PyTorch-eager,138.1,142.3,3.889,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0000,true,0.0000
+matmul,extreme-16,torch.compile,369.8,440.3,1.452,0.3734,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,0.3734,false,-0.6266
+matmul,extreme-16,Arke,145.4,148.5,3.692,0.9498,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,0.9498,false,-0.0502
+matmul,extreme-16,FlagGems,134.7,164.7,3.987,1.0252,ok,,false,true,0,0,0.01,0.01,ok,,33816576,3542771302,0.0095,dense_matmul,1.0,1.0252,true,0.0252
+matmul,extreme-long,cuBLAS/cuDNN,353.4,316.4,12.154,0.8820,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.8820,false,-0.1180
+matmul,extreme-long,Triton-Tutorial,351.2,351.2,12.229,0.8875,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.8875,false,-0.1125
+matmul,extreme-long,PyTorch-eager,311.7,314.3,13.777,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,1.0000,true,0.0000
+matmul,extreme-long,torch.compile,751.3,750.6,5.716,0.4149,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.4149,false,-0.5851
+matmul,extreme-long,Arke,366.2,340.0,11.729,0.8512,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.8512,false,-0.1488
+matmul,extreme-long,FlagGems,320.4,321.5,13.404,0.9728,ok,,false,true,0,0,0.01,0.01,ok,,68681728,3542771302,0.0194,dense_matmul,1.0,0.9728,false,-0.0272
+matmul,ds-v2-attn,cuBLAS/cuDNN,1503.6,1462.3,17.853,1.0042,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.0042,true,0.0042
+matmul,ds-v2-attn,Triton-Tutorial,1216.7,1204.2,22.063,1.2410,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.2410,true,0.2410
+matmul,ds-v2-attn,PyTorch-eager,1509.9,1483.8,17.778,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v2-attn,torch.compile,1945.2,1891.3,13.800,0.7762,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.7762,false,-0.2238
+matmul,ds-v2-attn,Arke,1515.8,1472.4,17.710,0.9961,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.9961,false,-0.0039
+matmul,ds-v2-attn,FlagGems,1539.9,1434.6,17.432,0.9805,ok,,false,true,0,0,0.01,0.01,ok,,62914560,3542771302,0.0178,dense_matmul,1.0,0.9805,false,-0.0195
+matmul,ds-v2-ffn-up,cuBLAS/cuDNN,3385.8,3319.8,19.028,1.0012,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0012,true,0.0012
+matmul,ds-v2-ffn-up,Triton-Tutorial,2910.7,2797.6,22.134,1.1646,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.1646,true,0.1646
+matmul,ds-v2-ffn-up,PyTorch-eager,3389.7,3310.6,19.006,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v2-ffn-up,torch.compile,4327.7,4164.6,14.886,0.7833,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.7833,false,-0.2167
+matmul,ds-v2-ffn-up,Arke,3398.8,3294.1,18.955,0.9973,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.9973,false,-0.0027
+matmul,ds-v2-ffn-up,FlagGems,2989.0,2887.7,21.554,1.1341,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.1341,true,0.1341
+matmul,ds-v2-ffn-down,cuBLAS/cuDNN,3613.6,3518.4,17.828,1.0016,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0016,true,0.0016
+matmul,ds-v2-ffn-down,Triton-Tutorial,2949.4,2860.0,21.843,1.2271,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.2271,true,0.2271
+matmul,ds-v2-ffn-down,PyTorch-eager,3619.3,3553.3,17.800,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v2-ffn-down,torch.compile,4584.6,4506.5,14.052,0.7894,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.7894,false,-0.2106
+matmul,ds-v2-ffn-down,Arke,3637.8,3556.4,17.710,0.9949,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,0.9949,false,-0.0051
+matmul,ds-v2-ffn-down,FlagGems,3051.5,2897.9,21.112,1.1861,ok,,false,true,0,0,0.01,0.01,ok,,143654912,3542771302,0.0405,dense_matmul,1.0,1.1861,true,0.1861
+matmul,ds-v2-lmhead,cuBLAS/cuDNN,28664.3,28166.1,18.730,1.0005,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0005,true,0.0005
+matmul,ds-v2-lmhead,Triton-Tutorial,23383.2,23163.8,22.960,1.2264,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.2264,true,0.2264
+matmul,ds-v2-lmhead,PyTorch-eager,28678.1,27922.4,18.721,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v2-lmhead,torch.compile,35714.2,35402.8,15.032,0.8030,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.8030,false,-0.1970
+matmul,ds-v2-lmhead,Arke,28674.2,28133.3,18.723,1.0001,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,1.0001,true,0.0001
+matmul,ds-v2-lmhead,FlagGems,294890.1,288335.6,1.821,0.0973,ok,,false,true,0,0,0.01,0.01,ok,,1158676480,3542771302,0.3271,dense_matmul,1.0,0.0973,false,-0.9027
+matmul,ds-v3-attn,cuBLAS/cuDNN,5237.5,5061.6,20.091,0.9981,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.9981,false,-0.0019
+matmul,ds-v3-attn,Triton-Tutorial,4723.8,4565.8,22.276,1.1067,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.1067,true,0.1067
+matmul,ds-v3-attn,PyTorch-eager,5227.6,5083.1,20.129,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v3-attn,torch.compile,6038.4,5937.2,17.426,0.8657,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.8657,false,-0.1343
+matmul,ds-v3-attn,Arke,5229.8,5106.7,20.121,0.9996,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,0.9996,false,-0.0004
+matmul,ds-v3-attn,FlagGems,4705.2,4633.6,22.364,1.1110,ok,,false,true,0,0,0.01,0.01,ok,,132120576,3542771302,0.0373,dense_matmul,1.0,1.1110,true,0.1110
+matmul,ds-v3-ffn-up,cuBLAS/cuDNN,12897.4,12708.9,20.980,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v3-ffn-up,Triton-Tutorial,11994.2,11690.0,22.559,1.0753,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0753,true,0.0753
+matmul,ds-v3-ffn-up,PyTorch-eager,12897.6,12648.4,20.979,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v3-ffn-up,torch.compile,14724.0,14572.5,18.377,0.8760,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,0.8760,false,-0.1240
+matmul,ds-v3-ffn-up,Arke,12898.0,12651.5,20.979,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0000,false,-0.0000
+matmul,ds-v3-ffn-up,FlagGems,12170.6,11685.9,22.233,1.0597,ok,,false,true,0,0,0.01,0.01,ok,,316669952,3542771302,0.0894,dense_matmul,1.0,1.0597,true,0.0597
+matmul,ds-v3-lmhead,cuBLAS/cuDNN,50545.3,50007.0,18.774,0.9977,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.9977,false,-0.0023
+matmul,ds-v3-lmhead,Triton-Tutorial,162420.3,158746.6,5.842,0.3105,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.3105,false,-0.6895
+matmul,ds-v3-lmhead,PyTorch-eager,50430.4,49965.1,18.816,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v3-lmhead,torch.compile,63078.0,62637.1,15.044,0.7995,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.7995,false,-0.2005
+matmul,ds-v3-lmhead,Arke,50558.6,50282.5,18.769,0.9975,ok,,false,true,0,0,0.01,0.01,ok,,1993080832,3542771302,0.5626,dense_matmul,1.0,0.9975,false,-0.0025
+matmul,qwen25-attn,cuBLAS/cuDNN,646.2,626.5,20.354,1.0099,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0099,true,0.0099
+matmul,qwen25-attn,Triton-Tutorial,618.8,601.1,21.255,1.0546,ok,,false,false,0.25,0.00882455,0.01,0.01,mismatch,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0546,true,0.0546
+matmul,qwen25-attn,PyTorch-eager,652.6,631.8,20.154,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,1.0000,true,0.0000
+matmul,qwen25-attn,torch.compile,868.2,834.6,15.150,0.7517,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,0.7517,false,-0.2483
+matmul,qwen25-attn,Arke,657.7,641.0,19.998,0.9922,ok,,false,true,0,0,0.01,0.01,ok,,33030144,3542771302,0.0093,dense_matmul,1.0,0.9922,false,-0.0078
+matmul,qwen25-ffn-up,cuBLAS/cuDNN,3746.4,3608.6,18.558,0.9983,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.9983,false,-0.0017
+matmul,qwen25-ffn-up,Triton-Tutorial,3054.2,2940.7,22.763,1.2245,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,1.2245,true,0.2245
+matmul,qwen25-ffn-up,PyTorch-eager,3739.9,3602.4,18.590,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,1.0000,true,0.0000
+matmul,qwen25-ffn-up,torch.compile,4722.6,4482.0,14.722,0.7919,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.7919,false,-0.2081
+matmul,qwen25-ffn-up,Arke,3753.4,3590.0,18.523,0.9964,ok,,false,true,0,0,0.01,0.01,ok,,158859264,3542771302,0.0448,dense_matmul,1.0,0.9964,false,-0.0036
+matmul,qwen25-lmhead,cuBLAS/cuDNN,29965.5,29563.9,18.608,0.9995,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.9995,false,-0.0005
+matmul,qwen25-lmhead,Triton-Tutorial,24417.3,24175.6,22.837,1.2267,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.2267,true,0.2267
+matmul,qwen25-lmhead,PyTorch-eager,29951.5,29549.6,18.617,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.0000,true,0.0000
+matmul,qwen25-lmhead,torch.compile,37155.2,36642.8,15.008,0.8061,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,0.8061,false,-0.1939
+matmul,qwen25-lmhead,Arke,29907.6,29363.2,18.644,1.0015,ok,,false,true,0,0,0.01,0.01,ok,,1248329728,3542771302,0.3524,dense_matmul,1.0,1.0015,true,0.0015
+matmul,ds-v2-long-8k,cuBLAS/cuDNN,18750.4,18319.1,22.906,1.0004,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0004,true,0.0004
+matmul,ds-v2-long-8k,Triton-Tutorial,18633.5,18383.9,23.050,1.0067,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0067,true,0.0067
+matmul,ds-v2-long-8k,PyTorch-eager,18757.9,18334.6,22.897,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v2-long-8k,torch.compile,19588.8,19242.9,21.926,0.9576,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,0.9576,false,-0.0424
+matmul,ds-v2-long-8k,Arke,18705.8,18335.7,22.961,1.0028,ok,,false,true,0,0,0.01,0.01,ok,,220200960,3542771302,0.0622,dense_matmul,1.0,1.0028,true,0.0028
+matmul,ds-v3-long-32k,cuBLAS/cuDNN,147424.4,144495.6,22.841,1.0001,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0001,true,0.0001
+matmul,ds-v3-long-32k,Triton-Tutorial,149688.1,146086.9,22.495,0.9850,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.9850,false,-0.0150
+matmul,ds-v3-long-32k,PyTorch-eager,147435.4,144473.1,22.839,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0000,true,0.0000
+matmul,ds-v3-long-32k,torch.compile,151844.6,149686.3,22.176,0.9710,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,0.9710,false,-0.0290
+matmul,ds-v3-long-32k,Arke,146896.3,144741.4,22.923,1.0037,ok,,false,true,0,0,0.01,0.01,ok,,1042284544,3542771302,0.2942,dense_matmul,1.0,1.0037,true,0.0037

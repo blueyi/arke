@@ -66,11 +66,26 @@ def _check_optimize_cli_contract() -> tuple[bool, str]:
             return False, f"cycles_completed={summary.get('cycles_completed')}"
         if len(strategy.get("decisions", [])) < 3:
             return False, "generated strategy has fewer than 3 decisions"
-        actions = [json.loads(line) for line in trajectory if '"event_type": "action"' in line]
-        tools = [entry.get("tool") for entry in actions]
+        actions = [json.loads(line) for line in trajectory if '"kind":' in line]
+        # Cycle order is now expressed via D8-F3 trajectory v1.0 record
+        # kinds: each compile→profile→adjust cycle emits one
+        # `compile`, one `profile`, and one `adjust` record in order.
+        cycle_kinds = [
+            entry.get("kind") for entry in actions
+            if entry.get("kind") in {"compile", "profile", "adjust"}
+        ]
         required = ["compile", "profile", "adjust"] * 3
-        if tools != required:
-            return False, f"unexpected trajectory tool order: {tools}"
+        if cycle_kinds != required:
+            return False, f"unexpected trajectory cycle order: {cycle_kinds}"
+        # Validate header pins the v1.0 contract id (drift sentinel).
+        header_lines = [json.loads(line) for line in trajectory[:1]]
+        if not header_lines or header_lines[0].get("kind") != "header":
+            return False, "first trajectory line is not a v1.0 header record"
+        if header_lines[0]["data"].get("contract_id") != "arke-trajectory-v1.0.0":
+            return False, (
+                f"header contract_id={header_lines[0]['data'].get('contract_id')!r} "
+                f"expected 'arke-trajectory-v1.0.0'"
+            )
         return True, (
             f"cycles=3 decisions={summary['decision_count']} "
             f"trajectory_events={len(trajectory)}"

@@ -1,0 +1,10 @@
+{
+  "first_call_s": 3.165424045990221,
+  "second_call_s": 5.203127446002327,
+  "compile_overhead_s_estimate": 0.0,
+  "captured_calls": 352,
+  "recompile_counters": {
+    "total": 96,
+    "ok": 86
+  }
+}

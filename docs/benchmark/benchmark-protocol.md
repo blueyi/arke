@@ -8,16 +8,69 @@ Measurement protocol, scoring system, CLI interface, output structure, and imple
 
 ## Design Goal
 
-**Default target: all operators correct on all shapes, performance ≥ P0 (vendor-optimized).**
+**Default target: all operators correct on all shapes, performance ≥ same-backend reference (within ε tolerance).**
 
 ```
 Correctness: 100% pass rate across all OT × ST combinations
-Performance: Arke latency ≤ P0 vendor baseline (ratio ≥ 1.0)
+Performance: Arke latency ≤ same-backend reference latency × (1 + ε)   with ε = 0.03
 ```
 
-When P0 is unavailable for an operator (e.g. rmsnorm, swiglu), the primary
-baseline falls back to P1 (expert Triton). See
-[`benchmark-ops.md`](./benchmark-ops.md) for per-op primary baseline.
+The reference baseline is chosen to be **architecturally fair to the
+backend Arke currently targets** (see *Same-Backend Fairness* below).
+For Phase 1 (Triton path), the reference is the **best Triton-only
+implementation per op** in the ladder (FlagGems / Liger / Unsloth /
+vLLM-Triton / flash-attn). For later phases the reference shifts in
+lock-step with the backend (Triton-Ascend, MLIR, C-like vendor DSL,
+LLVM IR).
+
+When no same-backend reference exists for a given op-shape, the row is
+recorded with `perf_oracle_unavailable_<backend>=true` and treated as
+**audit-only** (excluded from Gate scoring; still present in PERF_ALL).
+
+> **Benchmark vs Gate separation:** the BL/OT/ST/L benchmark **measurement**
+> layer is frozen — shape sets, op coverage, latency capture method, and
+> PERF_ALL schema do not change. What may change per Gate is the
+> **acceptance** layer (which baseline is the denominator; what ε
+> tolerance applies; which rows are audit-only). See
+> `docs/roadmap/plan.md` § Gate Governance for the locked rules.
+
+---
+
+## Same-Backend Fairness
+
+> **Locked principle (2026-05-16, Leon-approved).** The Gate performance
+> comparison denominator must use the **same compiler backend** as the
+> Arke kernel under test. This isolates Arke's compilation quality from
+> cross-backend architectural advantages.
+
+| Arke Backend | Reference Baseline (denominator) | Audit-only when missing |
+|:---|:---|:---|
+| Phase 1 — Triton (NVIDIA) | best Triton-only kernel in ladder | no Triton reference exists for op-shape |
+| Phase 2 — Triton-Ascend | best Triton-Ascend kernel | no Ascend Triton reference |
+| Phase 3 — MLIR | MLIR-native reference (linalg/transform) | no MLIR reference |
+| Phase 4 — C-like vendor DSL (CUDA-C / CCE-C / Bang-C) | hand-tuned vendor C-like reference (e.g. CUTLASS for CUDA-C) | no vendor reference for op-shape |
+| Phase 5 — LLVM IR | LLVM-IR-direct hand-written reference | no LLVM reference |
+
+**ε tolerance:** universally `ε = 0.03` (3% measurement-noise band).
+**Pass criterion:** `arke_latency ≤ reference_latency × (1 + ε)`,
+equivalently `ratio = reference / arke ≥ 1 / (1 + ε) ≈ 0.971`.
+
+**Per-op reference selection.** Within a backend, pick the
+**ladder-fastest** implementation for the (op, dtype, shape) combination,
+following the PRIMARY+FALLBACK ordering documented in
+[`golden-kernel-ladder.md`](./golden-kernel-ladder.md). Filter the ladder
+to entries marked `backend = <current-phase-backend>`; cross-backend
+entries are skipped for Gate scoring (they may still be recorded for
+audit and reporting).
+
+**Why same-backend.** Cross-backend comparisons conflate compiler
+quality with backend-architectural advantages — e.g. comparing
+Arke-Triton against PyTorch eager-fused-dispatch measures Triton's
+kernel-launch overhead vs PyTorch's C-level dispatch path, *not* whether
+Arke's Triton codegen is competitive with peer Triton kernels. The
+same-backend rule answers a sharper question: *given this backend, how
+close is Arke's compiled output to the best hand-tuned kernel humans
+have produced on the same backend?*
 
 ---
 
@@ -482,8 +535,8 @@ The benchmark is the **target state definition** for Arke development.
 | L1 grouped_matmul | CUTLASS (P0) | ✅ | 🔶 | ❌ | ⬜ |
 | L1 transpose | PyTorch (P3) | ✅ | 🔶 | ❌ | ⬜ |
 | **OT3 Gated Activation** | | | | | |
-| L1 swiglu ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
-| L1 geglu ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 silu_and_mul ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L1 gelu_and_mul ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
 | **OT4 Attention** | | | | | |
 | L1 flash_attention ≥ P1 | FlashAttention (P1) | ✅ | 🔶 | ❌ | ⬜ |
 | L1 grouped_query_attention | FlashAttention (P1) | ✅ | 🔶 | ❌ | ⬜ |
@@ -491,14 +544,14 @@ The benchmark is the **target state definition** for Arke development.
 | **L2 Fused** | | | | | |
 | L2 matmul+gelu ≥ P1 | FlagGems fusion (P1) | ✅ | ✅ epilogue | ✅ | fusion decision ✅ |
 | L2 matmul+relu ≥ P1 | FlagGems fusion (P1) | ✅ | ✅ epilogue | ✅ | fusion decision ✅ |
-| L2 swiglu ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
+| L2 silu_and_mul ≥ P1 | Liger (P1) | ✅ | 🔶 | ❌ | ⬜ |
 | **L3/BL6 E2E** | | | | | |
 | GPT-2 ≤ eager | E2E eager | ✅ | ✅ | ✅ | KernelCache ✅ |
 | LLaMA-2 7B ≤ eager | E2E eager | partial | 🔶 | ❌ | ⬜ |
 | DeepSeek-V2 ≤ eager | E2E eager | partial | 🔶 | ❌ | ⬜ |
 
 **Summary:** 11/20 operators have working codegen (Triton template). 9 operators
-(reduce_sum/max, transpose, rmsnorm_residual, grouped_matmul, swiglu, geglu,
+(reduce_sum/max, transpose, rmsnorm_residual, grouped_matmul, silu_and_mul, gelu_and_mul,
 flash_attention, GQA, MLA) have IR + numerical validation but no Triton
 template yet — this is the primary Phase 2 codegen gap.
 

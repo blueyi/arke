@@ -3,65 +3,62 @@
 
 """Arke Learn — Trajectory recording and export.
 
-Records optimization trajectories as JSONL for analysis and learning.
-Each line is a JSON object with state/action/result triplets.
+Persists optimization trajectories to ``trajectory.jsonl`` for post-hoc
+analysis, SFT/RL extraction, and ``@rationale`` knowledge mining.
+
+Contract: D8-F3 trajectory v1.0 — see :mod:`arke.agent.trajectory` for
+the locked record schema. Wire format is the same envelope as the
+D8-F2 stream contract::
+
+    {"t": <float>, "kind": <string>, "data": <object>}
+
+This module is the **record-level writer** — the persistence sink. The
+stream-level wire format lives in :mod:`arke.agent.events`. Both layers
+share the same envelope by design; the trajectory format is a strict
+superset (adds ``header`` and ``adjust`` record-only kinds).
 """
 
 from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
-@dataclass
-class TrajectoryRecord:
-    """A single record in an optimization trajectory."""
-    step: int
-    timestamp: float
-    event_type: str  # "action" | "result" | "observation" | "decision"
-
-    # Action fields
-    tool: str = ""
-    params: dict[str, Any] = field(default_factory=dict)
-
-    # Result fields
-    success: bool | None = None
-    result: dict[str, Any] = field(default_factory=dict)
-
-    # State snapshot (optional, for key transitions)
-    state: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize this trajectory record to a dict."""
-        d = {
-            "step": self.step,
-            "timestamp": self.timestamp,
-            "event_type": self.event_type,
-        }
-        if self.tool:
-            d["tool"] = self.tool
-        if self.params:
-            d["params"] = self.params
-        if self.success is not None:
-            d["success"] = self.success
-        if self.result:
-            d["result"] = self.result
-        if self.state:
-            d["state"] = self.state
-        return d
+from arke.learn.trajectory_schema import (
+    RECORD_KINDS_V1,
+    TrajectoryRecord,
+    build_header_data,
+)
 
 
 class TrajectoryWriter:
-    """Writes optimization trajectory to JSONL file.
+    """Writes optimization trajectory to JSONL file (v1.0 record contract).
 
-    Usage:
-        writer = TrajectoryWriter("trajectory.jsonl")
-        writer.write_action(1, "apply_decision", {"kind": "tile", ...})
-        writer.write_result(1, True, {"validation": {"pass": True}})
-        writer.close()
+    Every emitted line is a :class:`arke.agent.trajectory.TrajectoryRecord`
+    serialized as a single JSONL row with the canonical envelope
+    ``{"t": <float>, "kind": <string>, "data": <object>}``.
+
+    The first line MUST be a ``header`` record; subsequent lines are
+    stream-level events (``decision``, ``compile``, ``profile``,
+    ``verify``, ``checkpoint``, ``rollback``, ``compact``, ``fallback``,
+    ``done``) and the record-only ``adjust`` cycle marker.
+
+    Typical usage::
+
+        with TrajectoryWriter(path) as writer:
+            writer.write_header({
+                "kernel_id": ..., "target_hw": ..., "mode": "compile",
+                "semantic_ir": {...},
+            })
+            writer.write_record("compile", {"backend": "triton", "success": True, ...})
+            writer.write_record("profile", {"latency_ms": 0.4, "vs_baseline": 1.2})
+            writer.write_record("adjust", {"cycle": 1, ...})
+            writer.write_record("done", {"final_score": 1.2, ...})
+
+    Convenience helpers (``write_compile``, ``write_profile``, etc.)
+    wrap ``write_record`` with the corresponding kind hard-coded so
+    call sites stay self-documenting.
     """
 
     def __init__(self, path: str | Path):
@@ -69,57 +66,100 @@ class TrajectoryWriter:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._file = open(self.path, "w")
-        self._step = 0
+        self._t0 = time.monotonic()
+        self._header_written = False
 
+    # ── low-level write ───────────────────────────────────────────
+    def _elapsed(self) -> float:
+        """Monotonic seconds since the writer was opened."""
+        return time.monotonic() - self._t0
+
+    def write_record(self, kind: str, data: dict[str, Any]) -> None:
+        """Emit a single trajectory record.
+
+        Stamps ``t`` with monotonic seconds since session start.
+        Validates ``kind`` against the v1.0 record contract.
+        """
+        if kind not in RECORD_KINDS_V1:
+            raise ValueError(
+                f"Unknown trajectory record kind {kind!r}; "
+                f"must be one of {RECORD_KINDS_V1}"
+            )
+        rec = TrajectoryRecord(t=self._elapsed(), kind=kind, data=dict(data))
+        self._file.write(json.dumps(rec.to_dict(), ensure_ascii=False, default=str) + "\n")
+
+    # ── header (record-only) ──────────────────────────────────────
     def write_header(self, metadata: dict[str, Any]) -> None:
-        """Write a metadata header line."""
-        record = {
-            "event_type": "header",
-            "timestamp": time.time(),
-            **metadata,
-        }
-        self._file.write(json.dumps(record, default=str) + "\n")
+        """Write the session header line. Must be the first line in the file.
 
-    def write_action(
-        self, step: int, tool: str, params: dict[str, Any]
-    ) -> None:
-        """Record a tool call action."""
-        record = TrajectoryRecord(
-            step=step,
-            timestamp=time.time(),
-            event_type="action",
-            tool=tool,
-            params=params,
+        ``metadata`` should carry the caller-supplied session fields
+        (``kernel_id``, ``target_hw``, ``mode``, ``semantic_ir``, etc.).
+        The writer auto-injects the three required version pins
+        (``schema``, ``trajectory_version``, ``contract_id``) via
+        :func:`arke.agent.trajectory.build_header_data`.
+        """
+        if self._header_written:
+            raise RuntimeError(
+                "trajectory.jsonl header already written; v1.0 contract "
+                "requires exactly one header record at file start"
+            )
+        data = build_header_data(
+            kernel_id=metadata.get("kernel_id", ""),
+            target_hw=metadata.get("target_hw", ""),
+            mode=metadata.get("mode", "compile"),
+            input_kind=metadata.get("input_kind"),
+            input_path=metadata.get("input_path"),
+            normalized_source_path=metadata.get("normalized_source_path"),
+            source_text_path=metadata.get("source_text_path"),
+            required_cycle_order=metadata.get("required_cycle_order"),
+            semantic_ir=metadata.get("semantic_ir"),
         )
-        self._file.write(json.dumps(record.to_dict(), default=str) + "\n")
+        self.write_record("header", data)
+        self._header_written = True
 
-    def write_result(
-        self, step: int, success: bool, result: dict[str, Any],
-        state: dict[str, Any] | None = None,
-    ) -> None:
-        """Record a tool call result."""
-        record = TrajectoryRecord(
-            step=step,
-            timestamp=time.time(),
-            event_type="result",
-            success=success,
-            result=result,
-            state=state or {},
-        )
-        self._file.write(json.dumps(record.to_dict(), default=str) + "\n")
+    # ── stream-kind convenience wrappers ──────────────────────────
+    def write_decision(self, payload: dict[str, Any]) -> None:
+        """Emit a ``decision`` event (D8-F2 stream kind)."""
+        self.write_record("decision", payload)
 
-    def write_observation(
-        self, step: int, observation: dict[str, Any]
-    ) -> None:
-        """Record an observation/state snapshot."""
-        record = TrajectoryRecord(
-            step=step,
-            timestamp=time.time(),
-            event_type="observation",
-            result=observation,
-        )
-        self._file.write(json.dumps(record.to_dict(), default=str) + "\n")
+    def write_compile(self, payload: dict[str, Any]) -> None:
+        """Emit a ``compile`` event (D8-F2 stream kind)."""
+        self.write_record("compile", payload)
 
+    def write_profile(self, payload: dict[str, Any]) -> None:
+        """Emit a ``profile`` event (D8-F2 stream kind)."""
+        self.write_record("profile", payload)
+
+    def write_verify(self, payload: dict[str, Any]) -> None:
+        """Emit a ``verify`` event (D8-F2 stream kind)."""
+        self.write_record("verify", payload)
+
+    def write_checkpoint(self, payload: dict[str, Any]) -> None:
+        """Emit a ``checkpoint`` event (D8-F2 stream kind)."""
+        self.write_record("checkpoint", payload)
+
+    def write_rollback(self, payload: dict[str, Any]) -> None:
+        """Emit a ``rollback`` event (D8-F2 stream kind)."""
+        self.write_record("rollback", payload)
+
+    def write_compact(self, payload: dict[str, Any]) -> None:
+        """Emit a ``compact`` event (D8-F2 stream kind)."""
+        self.write_record("compact", payload)
+
+    def write_fallback(self, payload: dict[str, Any]) -> None:
+        """Emit a ``fallback`` event (D8-F2 stream kind)."""
+        self.write_record("fallback", payload)
+
+    def write_done(self, payload: dict[str, Any]) -> None:
+        """Emit a ``done`` event (D8-F2 stream kind, terminal)."""
+        self.write_record("done", payload)
+
+    # ── record-only kind ──────────────────────────────────────────
+    def write_adjust(self, payload: dict[str, Any]) -> None:
+        """Emit an ``adjust`` cycle-boundary record (record-only)."""
+        self.write_record("adjust", payload)
+
+    # ── lifecycle ─────────────────────────────────────────────────
     def flush(self) -> None:
         """Flush buffered trajectory data to disk."""
         self._file.flush()
@@ -140,33 +180,83 @@ def export_session_trajectory(
     session_summary: dict[str, Any],
     output_path: str | Path,
 ) -> None:
-    """Export a completed session's trajectory to JSONL.
+    """Export a completed session's trajectory to JSONL (v1.0 contract).
 
     Args:
-        trajectory: List of trajectory entries from OptimizationSession.export_trajectory()
-        session_summary: Session summary dict
-        output_path: Path to write JSONL file
+        trajectory: List of trajectory entries from
+            ``OptimizationSession.export_trajectory()``.
+        session_summary: Session summary dict (carries ``kernel_id``,
+            ``target_hw``, ``decisions``, ``best_performance``, etc.).
+        output_path: Path to write JSONL file.
+
+    Translates the v0 ``{type, step, tool, params, result}`` entries
+    used by :mod:`arke.agent.session` into v1.0 stream events. Each
+    ``action`` entry maps to the matching stream kind (e.g. tool
+    ``compile_and_profile`` → ``compile``) and is paired with the next
+    ``result`` entry's success flag + metrics. Entries that don't map
+    cleanly fall through as ``decision`` events carrying the raw tool
+    call payload so no signal is lost.
     """
     with TrajectoryWriter(output_path) as writer:
         # Header
         writer.write_header({
             "kernel_id": session_summary.get("kernel_id", ""),
             "target_hw": session_summary.get("target_hw", ""),
-            "total_decisions": session_summary.get("decisions", 0),
-            "budget": session_summary.get("budget", {}),
-            "best_performance": session_summary.get("best_performance"),
-            "duration_seconds": session_summary.get("duration_seconds", 0),
+            "mode": "compile",
         })
 
-        # Trajectory entries
+        # Pair up (action, result) tuples and emit as stream events
+        pending_action: dict[str, Any] | None = None
         for entry in trajectory:
-            if entry["type"] == "action":
-                writer.write_action(
-                    entry["step"], entry["tool"], entry["params"]
-                )
-            elif entry["type"] == "result":
-                writer.write_result(
-                    entry["step"],
-                    entry.get("result", {}).get("success", True),
-                    entry.get("result", {}),
-                )
+            etype = entry.get("type")
+            if etype == "action":
+                pending_action = entry
+                continue
+            if etype == "result" and pending_action is not None:
+                kind = _action_tool_to_kind(pending_action.get("tool", ""))
+                payload = _build_paired_payload(pending_action, entry, kind)
+                writer.write_record(kind, payload)
+                pending_action = None
+
+        # Final done event
+        writer.write_done({
+            "final_score": float(session_summary.get("best_performance") or 0.0),
+            "decisions": int(session_summary.get("decisions", 0) or 0),
+            "compiles": int(session_summary.get("compiles", 0) or 0),
+            "termination": str(session_summary.get("termination", "llm_no_more_tool_use")),
+        })
+
+
+_TOOL_TO_KIND: dict[str, str] = {
+    "apply_decision": "decision",
+    "compile_and_profile": "compile",
+    "verify_correctness": "verify",
+    "checkpoint": "checkpoint",
+    "rollback": "rollback",
+}
+
+
+def _action_tool_to_kind(tool: str) -> str:
+    """Map a session tool name to a v1.0 record kind. Falls back to ``decision``."""
+    return _TOOL_TO_KIND.get(tool, "decision")
+
+
+def _build_paired_payload(
+    action: dict[str, Any],
+    result: dict[str, Any],
+    kind: str,
+) -> dict[str, Any]:
+    """Merge an (action, result) pair into a single payload for ``kind``.
+
+    Best-effort: copies action params into the payload, then overlays
+    any matching result fields. The contract permits extra keys, so we
+    keep raw data accessible for downstream tooling.
+    """
+    payload: dict[str, Any] = dict(action.get("params", {}))
+    res = result.get("result", {}) or {}
+    if isinstance(res, dict):
+        payload.update(res)
+    success = res.get("success") if isinstance(res, dict) else None
+    if success is not None and kind == "compile" and "success" not in payload:
+        payload["success"] = bool(success)
+    return payload

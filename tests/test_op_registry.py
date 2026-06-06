@@ -41,8 +41,10 @@ def test_registry_membership():
 
 def test_registry_iteration():
     """Test iteration over all ops."""
+    from benchmarks.op_registry import total_ops
+    expected = total_ops()
     ops = list(REGISTRY)
-    assert len(ops) == 45  # All 45 ops from catalog.py
+    assert len(ops) == expected  # full SSOT catalog (benchmark-ops.md)
 
     names = [op.name for op in ops]
     assert "relu" in names
@@ -52,8 +54,9 @@ def test_registry_iteration():
 
 def test_registry_names():
     """Test names() returns sorted list."""
+    from benchmarks.op_registry import total_ops
     names = REGISTRY.names()
-    assert len(names) == 45
+    assert len(names) == total_ops()
     assert names == sorted(names)  # Must be sorted
     assert "relu" in names
     assert "matmul" in names
@@ -61,7 +64,8 @@ def test_registry_names():
 
 def test_registry_len():
     """Test __len__ returns correct count."""
-    assert len(REGISTRY) == 45
+    from benchmarks.op_registry import total_ops
+    assert len(REGISTRY) == total_ops()
 
 
 def test_registry_categories():
@@ -87,7 +91,7 @@ def test_registry_categories():
 
 
 def test_registry_validate_coverage():
-    """Test coverage validation — all 45 ops fully annotated after C1.2."""
+    """Test coverage validation — full SSOT catalog fully annotated after C1.2."""
     missing = REGISTRY.validate_coverage()
 
     # All fields should be fully covered after C1.2
@@ -99,12 +103,14 @@ def test_registry_validate_coverage():
 
 def test_registry_stats():
     """Test stats() returns correct counts."""
+    from benchmarks.op_registry import total_ops
+    expected = total_ops()
     stats = REGISTRY.stats()
 
-    assert stats["total"] == 45
-    assert stats["with_template"] == 45   # All covered after C1.2
-    assert stats["with_reference"] == 45  # All covered after C1.2
-    assert stats["with_shape_rule"] == 45  # All covered after C1.2
+    assert stats["total"] == expected
+    assert stats["with_template"] == expected   # All covered after C1.2
+    assert stats["with_reference"] == expected  # All covered after C1.2
+    assert stats["with_shape_rule"] == expected  # All covered after C1.2
 
     # Category counts
     assert stats["category_compute"] >= 3
@@ -113,10 +119,12 @@ def test_registry_stats():
 
 
 def test_registry_ops_with_filters():
-    """Test filtered queries — all 45 ops covered after C1.2."""
-    assert len(REGISTRY.ops_with_template()) == 45
-    assert len(REGISTRY.ops_with_reference()) == 45
-    assert len(REGISTRY.ops_with_shape_rule()) == 45
+    """Test filtered queries — full SSOT catalog covered after C1.2."""
+    from benchmarks.op_registry import total_ops
+    expected = total_ops()
+    assert len(REGISTRY.ops_with_template()) == expected
+    assert len(REGISTRY.ops_with_reference()) == expected
+    assert len(REGISTRY.ops_with_shape_rule()) == expected
 
 
 def test_relu_op_definition():

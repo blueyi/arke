@@ -57,8 +57,19 @@ def test_optimize_file_records_three_compile_profile_adjust_cycles(tmp_path):
     assert Path(result.summary_path).exists()
 
     events = [json.loads(line) for line in Path(result.trajectory_path).read_text().splitlines()]
-    actions = [event for event in events if event.get("event_type") == "action"]
-    assert [event["tool"] for event in actions] == ["compile", "profile", "adjust"] * 3
+    # D8-F3 trajectory v1.0: first line MUST be a `header` record pinning
+    # the contract id; subsequent cycle order is expressed via the
+    # `compile` / `profile` / `adjust` record kinds in stream order.
+    assert events[0]["kind"] == "header"
+    assert events[0]["data"]["contract_id"] == "arke-trajectory-v1.0.0"
+    assert events[0]["data"]["trajectory_version"] == "1.0.0"
+    cycle_kinds = [
+        event["kind"] for event in events
+        if event.get("kind") in {"compile", "profile", "adjust"}
+    ]
+    assert cycle_kinds == ["compile", "profile", "adjust"] * 3
+    # Trajectory must end with the terminal `done` record.
+    assert events[-1]["kind"] == "done"
 
     summary = json.loads(Path(result.summary_path).read_text())
     assert summary["success"] is True

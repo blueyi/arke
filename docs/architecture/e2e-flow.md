@@ -211,7 +211,7 @@ Semantic IR 构建完成后，系统自动计算特征，作为 LLM 做决策的
 | **OT0** | 元素级 | 12 | `relu`, `gelu`, `silu`, `add`, `mul`, `exp`, `sigmoid`, `tanh`... |
 | **OT1** | 规约 | 10 | `softmax`, `layernorm`, `rmsnorm`, `reduce_sum`, `reduce_max`... |
 | **OT2** | 数据移动与计算密集 | 11 | `matmul`, `batch_matmul`, `grouped_matmul`, `transpose`, `conv2d`... |
-| **OT3** | 融合复合 | 7 | `swiglu`, `geglu`, `rmsnorm_residual`, `fused_matmul_gelu`... |
+| **OT3** | 融合复合 | 7 | `silu_and_mul`, `gelu_and_mul`, `rmsnorm_residual`, `fused_matmul_gelu`... |
 | **OT4** | 注意力 | 5 | `flash_attention`, `grouped_query_attention`, `multi_latent_attention`, `paged_attention`... |
 
 **Shape Tier (ST)**：每个算子在 4 个 shape 层级验证：

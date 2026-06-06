@@ -441,6 +441,395 @@ class CompileAndProfileTool(ArkeTool):
         }
 
 
+# ── Stateful Façade tools (D8-F1.2) ───────────────────────────
+#
+# Tools 3/4/5/7/8 from arke-harness.md §6. Unlike the four S6 tools
+# above, these read/write OptimizationState — they require a bound
+# ArkeEnv at construction. ToolRegistry.with_env(env) wires them up.
+#
+# Design ref: docs/architecture/arke-harness.md §6
+# Stage tracker: docs/phase1/stage8-plan.md D8-F1.2
+
+
+class _EnvBoundTool(ArkeTool):
+    """Base helper for tools that read/write a bound ArkeEnv."""
+
+    def __init__(self, env: Any) -> None:
+        # `env` typed loosely to avoid circular import (env.py imports tools? no — but keep loose)
+        from arke.agent.env import ArkeEnv  # local import
+        if not isinstance(env, ArkeEnv):
+            raise TypeError(f"_EnvBoundTool requires ArkeEnv, got {type(env).__name__}")
+        self._env = env
+
+    @property
+    def env(self) -> Any:
+        return self._env
+
+
+class ListLegalActionsTool(_EnvBoundTool):
+    """Enumerate top-N legal next-decisions for the current state."""
+
+    @property
+    def name(self) -> str:
+        return "list_legal_actions"
+
+    @property
+    def description(self) -> str:
+        return (
+            "List legal next-decisions for the current optimization state. "
+            "Returns candidates of kind tile/unroll/vectorize/parallel/place "
+            "(filterable via filter_kind). Redundant candidates already in "
+            "decision_log are filtered out."
+        )
+
+    @property
+    def meta(self) -> ToolMeta:
+        return ToolMeta(
+            concurrent_safe=True, idempotent=True,
+            budget_type=BudgetType.FREE, cost=CostLevel.CHEAP,
+        )
+
+    def execute(self, params: dict[str, Any]) -> ToolResult:
+        top_n = int(params.get("top_n", 10))
+        filter_kind = params.get("filter_kind")
+        try:
+            candidates = self._env.list_legal_actions(top_n=top_n, filter_kind=filter_kind)
+        except Exception as e:
+            return ToolResult(success=False, error=f"list_legal_actions failed: {e}")
+        return ToolResult(success=True, data={
+            "count": len(candidates),
+            "candidates": [
+                {"kind": d.kind, "params": d.params, "level": d.level}
+                for d in candidates
+            ],
+        })
+
+    def parameters_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "top_n": {"type": "integer", "description": "Max candidates to return", "default": 10},
+                "filter_kind": {
+                    "type": "string",
+                    "description": "Restrict to one decision kind (tile/unroll/vectorize/parallel/place)",
+                },
+            },
+            "required": [],
+        }
+
+
+class ApplyDecisionTool(_EnvBoundTool):
+    """Apply a decision: mutates strategy, advances decision budget."""
+
+    @property
+    def name(self) -> str:
+        return "apply_decision"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Apply an optimization decision to the current strategy. Mutates "
+            "OptimizationState (strategy + decision_log) and consumes 1 decision budget unit."
+        )
+
+    @property
+    def meta(self) -> ToolMeta:
+        return ToolMeta(
+            concurrent_safe=False, idempotent=False,
+            requires_compile=False, mutates_strategy=True,
+            budget_type=BudgetType.DECISION, cost=CostLevel.CHEAP,
+        )
+
+    def execute(self, params: dict[str, Any]) -> ToolResult:
+        from arke.ir.strategy import Decision, Rationale
+        kind = params.get("kind")
+        d_params = params.get("params", {})
+        if not isinstance(kind, str) or not kind:
+            return ToolResult(success=False, error="missing required field: kind")
+        if not isinstance(d_params, dict):
+            return ToolResult(success=False, error="params must be an object")
+
+        rationale = None
+        rat_input = params.get("rationale")
+        if isinstance(rat_input, str) and rat_input:
+            rationale = Rationale(text=rat_input)
+        elif isinstance(rat_input, dict) and rat_input.get("text"):
+            rationale = Rationale(text=rat_input["text"], lang=rat_input.get("lang", "en"))
+
+        decision = Decision(kind=kind, params=dict(d_params), rationale=rationale, level=int(params.get("level", 1)))
+        try:
+            self._env.state.apply_decision(decision)
+        except Exception as e:
+            return ToolResult(success=False, error=f"apply_decision failed: {e}")
+
+        budget = self._env.state.budget
+        return ToolResult(success=True, data={
+            "applied": {"kind": decision.kind, "params": decision.params, "step": decision.step, "level": decision.level},
+            "decisions_used": budget.decisions_used,
+            "decisions_remaining": budget.decisions_remaining,
+        })
+
+    def parameters_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string", "description": "Decision kind (tile/unroll/vectorize/parallel/place/fuse/reorder/compute/algorithm)"},
+                "params": {"type": "object", "description": "Kind-specific parameters (e.g. {loop, factors} for tile)"},
+                "rationale": {
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "object", "properties": {"text": {"type": "string"}, "lang": {"type": "string"}}},
+                    ],
+                    "description": "Optional natural-language justification (required by @rationale convention for non-trivial decisions)",
+                },
+                "level": {"type": "integer", "description": "1 = L1 backend-agnostic, 2 = L2 backend-specific", "default": 1},
+            },
+            "required": ["kind", "params"],
+        }
+
+
+class VerifyCorrectnessTool(_EnvBoundTool):
+    """V0/V1 numeric correctness check via SemanticInterpreter reference.
+
+    Trial-balloon semantics: if `decision` is provided, applies it on a
+    temporary checkpoint, validates, then rolls back. The probe does NOT
+    consume decision budget but consumes 1 compile budget unit.
+
+    With no `decision`, validates the *current* strategy state.
+
+    D8-F1.2 phase: candidate backend is not yet wired through this tool
+    (that arrives in D8-F1.3 with real Triton compile). For now the
+    candidate equals the reference (V0_mock tier), which always returns
+    correct=True with max_diff=0. This keeps the pipeline plumbed end to
+    end and lets agent code rely on the tool contract today.
+    """
+
+    _VERIFY_CHECKPOINT_LABEL = "__verify_tmp__"
+
+    @property
+    def name(self) -> str:
+        return "verify_correctness"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Numerically verify that the current strategy (optionally after applying "
+            "a trial decision) produces outputs matching the operator's reference "
+            "implementation. Trial decisions are rolled back automatically."
+        )
+
+    @property
+    def meta(self) -> ToolMeta:
+        return ToolMeta(
+            concurrent_safe=False, idempotent=True,
+            requires_compile=True, mutates_strategy=False,
+            budget_type=BudgetType.COMPILE, cost=CostLevel.MEDIUM,
+        )
+
+    def _default_tolerance(self, dtype: Any) -> tuple[float, float]:
+        import torch
+        if dtype in (torch.float16, torch.bfloat16):
+            return 1e-2, 1e-3
+        return 1e-3, 1e-5
+
+    def execute(self, params: dict[str, Any]) -> ToolResult:
+        from arke.agent.inputs import generate_inputs
+        from arke.agent.state import CompileResult
+        from arke.ir.ops.interpreter import INTERPRETER
+        from arke.ir.strategy import Decision, Rationale
+
+        rtol_override = params.get("rtol")
+        atol_override = params.get("atol")
+        seed = int(params.get("seed", self._env.seed))
+
+        # Validate trial payload up front (before any side-effect)
+        trial = params.get("decision")
+        if trial is not None and (not isinstance(trial, dict) or "kind" not in trial):
+            return ToolResult(success=False, error="decision must be an object with at least 'kind'")
+
+        # Generate reproducible inputs FIRST (cheapest validation)
+        try:
+            inputs = generate_inputs(self._env.op_name, self._env.op_inputs, seed=seed)
+        except Exception as e:
+            return ToolResult(success=False, error=f"input generation failed: {e}")
+
+        # Reference execution
+        try:
+            ref_output = INTERPRETER.execute(self._env.op_name, inputs)
+        except Exception as e:
+            return ToolResult(success=False, error=f"reference execution failed: {e}")
+
+        # Tolerance defaults per dtype
+        rtol_def, atol_def = self._default_tolerance(ref_output.dtype)
+        rtol = float(rtol_override) if rtol_override is not None else rtol_def
+        atol = float(atol_override) if atol_override is not None else atol_def
+
+        # ── Ordering rationale (D8-F1.2) ─────────────────────────────────
+        # We must run record_compile BEFORE the trial-balloon checkpoint,
+        # so that subsequent rollback() restores us back to the
+        # post-compile state (compiles_used preserved, decisions reverted).
+        # Reversing this order would erase the compile we just recorded.
+        # ────────────────────────────────────────────────────────────────
+
+        # D8-F1.2: candidate backend not wired yet → V0_mock tier.
+        # D8-F1.3 will plug in real Triton compile + execute here.
+        result = CompileResult(
+            success=True, backend="mock",
+            correct=True, max_diff=0.0,
+            metadata={"validation_tier": "V0_mock", "rtol": rtol, "atol": atol},
+        )
+        try:
+            self._env.state.record_compile(result)
+        except Exception as e:
+            return ToolResult(success=False, error=f"verify_correctness failed: {e}")
+
+        # Optional trial-balloon: snapshot post-compile state, apply, then rollback.
+        if trial is not None:
+            try:
+                self._env.state.checkpoint(self._VERIFY_CHECKPOINT_LABEL)
+                rat = trial.get("rationale")
+                rationale = None
+                if isinstance(rat, str) and rat:
+                    rationale = Rationale(text=rat)
+                elif isinstance(rat, dict) and rat.get("text"):
+                    rationale = Rationale(text=rat["text"], lang=rat.get("lang", "en"))
+                d = Decision(
+                    kind=trial["kind"],
+                    params=dict(trial.get("params", {})),
+                    rationale=rationale,
+                    level=int(trial.get("level", 1)),
+                )
+                self._env.state.apply_decision(d)
+            except Exception as e:
+                # Clean up temp checkpoint if it exists
+                self._env.state.rollback(self._VERIFY_CHECKPOINT_LABEL)
+                self._env.state.checkpoints.pop(self._VERIFY_CHECKPOINT_LABEL, None)
+                return ToolResult(success=False, error=f"trial apply failed: {e}")
+            # Roll back: restores decisions + compiles_used (which were already
+            # bumped before the checkpoint, so they survive).
+            self._env.state.rollback(self._VERIFY_CHECKPOINT_LABEL)
+            self._env.state.checkpoints.pop(self._VERIFY_CHECKPOINT_LABEL, None)
+
+        budget = self._env.state.budget
+        return ToolResult(success=True, data={
+            "correct": True,
+            "max_diff": 0.0,
+            "validation_tier": "V0_mock",
+            "rtol": rtol, "atol": atol,
+            "compiles_used": budget.compiles_used,
+            "compiles_remaining": budget.compiles_remaining,
+        })
+
+    def parameters_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "decision": {
+                    "type": "object",
+                    "description": "Optional trial decision (applied + rolled back automatically). Same shape as apply_decision params.",
+                    "properties": {
+                        "kind": {"type": "string"},
+                        "params": {"type": "object"},
+                        "rationale": {"oneOf": [{"type": "string"}, {"type": "object"}]},
+                        "level": {"type": "integer"},
+                    },
+                    "required": ["kind"],
+                },
+                "rtol": {"type": "number", "description": "Relative tolerance (default per-dtype)"},
+                "atol": {"type": "number", "description": "Absolute tolerance (default per-dtype)"},
+                "seed": {"type": "integer", "description": "Input generation seed (default: env.seed)"},
+            },
+            "required": [],
+        }
+
+
+class CheckpointTool(_EnvBoundTool):
+    """Snapshot current state under a label."""
+
+    @property
+    def name(self) -> str:
+        return "checkpoint"
+
+    @property
+    def description(self) -> str:
+        return "Snapshot the current optimization state under a label. Free operation."
+
+    @property
+    def meta(self) -> ToolMeta:
+        return ToolMeta(
+            concurrent_safe=False, idempotent=False,
+            budget_type=BudgetType.FREE, cost=CostLevel.CHEAP,
+        )
+
+    def execute(self, params: dict[str, Any]) -> ToolResult:
+        label = params.get("label")
+        if not isinstance(label, str) or not label:
+            return ToolResult(success=False, error="label must be a non-empty string")
+        try:
+            cp = self._env.state.checkpoint(label)
+        except Exception as e:
+            return ToolResult(success=False, error=f"checkpoint failed: {e}")
+        return ToolResult(success=True, data={
+            "label": cp.label,
+            "decision_count_at": cp.decision_count_at,
+            "compile_count_at": cp.compile_count_at,
+            "total_checkpoints": len(self._env.state.checkpoints),
+        })
+
+    def parameters_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {"label": {"type": "string", "description": "Checkpoint label (overwrites if exists)"}},
+            "required": ["label"],
+        }
+
+
+class RollbackTool(_EnvBoundTool):
+    """Restore state from a previous checkpoint."""
+
+    @property
+    def name(self) -> str:
+        return "rollback"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Restore optimization state from a labelled checkpoint. Mutates "
+            "strategy, decision_log, best_result, and budget counters back to "
+            "the snapshot. Compile history is preserved (audit trail)."
+        )
+
+    @property
+    def meta(self) -> ToolMeta:
+        return ToolMeta(
+            concurrent_safe=False, idempotent=True,
+            requires_compile=False, mutates_strategy=True,
+            budget_type=BudgetType.FREE, cost=CostLevel.CHEAP,
+        )
+
+    def execute(self, params: dict[str, Any]) -> ToolResult:
+        label = params.get("label")
+        if not isinstance(label, str) or not label:
+            return ToolResult(success=False, error="label must be a non-empty string")
+        try:
+            self._env.state.rollback(label)
+        except Exception as e:
+            return ToolResult(success=False, error=f"rollback failed: {e}")
+        budget = self._env.state.budget
+        return ToolResult(success=True, data={
+            "restored_to": label,
+            "decisions_used": budget.decisions_used,
+            "compiles_used": budget.compiles_used,
+        })
+
+    def parameters_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {"label": {"type": "string", "description": "Checkpoint label to restore"}},
+            "required": ["label"],
+        }
+
+
 # ── Tool Registry ─────────────────────────────────────────────
 
 class ToolRegistry:
@@ -513,14 +902,48 @@ class ToolRegistry:
 
     @classmethod
     def default(cls) -> ToolRegistry:
-        """Create registry with all built-in tools."""
+        """Create registry with the 3 stateless Façade v1.0 tools.
+
+        For the full Façade v1.0 contract (stateless + env-bound 8 tools),
+        use `ToolRegistry.with_env(env)`.
+
+        Note: `BenchmarkAdviceSummaryTool` is intentionally NOT registered here.
+        It is a Phase-1 internal helper used by `benchmarks/` CLI flows, not part
+        of the locked Façade v1.0 contract (arke-harness.md §6.1). The class
+        remains importable for those internal call sites.
+        """
         reg = cls()
         reg.register(GetHWProfileTool())
         reg.register(AnalyzeComputeTool())
-        reg.register(BenchmarkAdviceSummaryTool())
         reg.register(CompileAndProfileTool())
         return reg
 
+    @classmethod
+    def with_env(cls, env: Any) -> ToolRegistry:
+        """Create the full Façade v1.0 registry bound to an ArkeEnv.
 
-# Module-level default registry
+        Wires up the 8 locked tools from arke-harness.md §6.1
+        (Façade contract version: `arke-harness-facade-v1.0.0`):
+
+          1. get_hw_profile           (stateless)
+          2. analyze_compute          (stateless)
+          3. list_legal_actions       (env-bound)
+          4. apply_decision           (env-bound, mutates)
+          5. verify_correctness       (env-bound)
+          6. compile_and_profile      (stateless; D8-F1.3 will upgrade backend)
+          7. checkpoint               (env-bound)
+          8. rollback                 (env-bound, mutates)
+
+        No additional tools are registered — the Façade is exactly 8.
+        """
+        reg = cls.default()
+        reg.register(ListLegalActionsTool(env))
+        reg.register(ApplyDecisionTool(env))
+        reg.register(VerifyCorrectnessTool(env))
+        reg.register(CheckpointTool(env))
+        reg.register(RollbackTool(env))
+        return reg
+
+
+# Module-level default registry (stateless tools only)
 TOOL_REGISTRY = ToolRegistry.default()

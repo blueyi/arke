@@ -85,11 +85,11 @@ class TestShapeInference:
         assert SHAPE_ENGINE.infer("permute", {"X": [2, 4, 8, 16]}, {"dims": [0, 2, 1, 3]}) == [2, 8, 4, 16]
 
     # gated_halve_rule
-    def test_swiglu_shape(self):
-        assert SHAPE_ENGINE.infer("swiglu", {"X": [4, 256]}) == [4, 128]
+    def test_silu_and_mul_shape(self):
+        assert SHAPE_ENGINE.infer("silu_and_mul", {"X": [4, 256]}) == [4, 128]
 
-    def test_geglu_shape(self):
-        assert SHAPE_ENGINE.infer("geglu", {"X": [4, 512]}) == [4, 256]
+    def test_gelu_and_mul_shape(self):
+        assert SHAPE_ENGINE.infer("gelu_and_mul", {"X": [4, 512]}) == [4, 256]
 
     # attention_rule
     def test_flash_attention_shape(self):

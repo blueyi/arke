@@ -38,3 +38,6 @@ Thumbs.db
 # Generated
 *.ak.json
 *.scheduled.json
+
+# Chinese doc mirror (generated from docs/)
+docs_zh/

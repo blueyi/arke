@@ -123,8 +123,9 @@ strategy s for target("nvidia_ampere") {
 
 class TestParseAllExamples:
     def test_all_ak_files_to_semantic(self):
+        from benchmarks.op_registry import total_ops
         files = sorted(glob.glob("examples/operators/*.ak"))
-        assert len(files) >= 45
+        assert len(files) >= total_ops()  # ≥ SSOT catalog total
         for f in files:
             prog = parse_file(f)
             for k in prog.kernels:

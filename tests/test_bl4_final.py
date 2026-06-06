@@ -101,8 +101,12 @@ def generate_inputs(op_name: str, dtype=torch.float32) -> tuple[dict, dict]:
         shapes = {"A": [M, N], "B": [M, N]}
     elif op_name == "where_":
         shapes = {"cond": [M, N], "A": [M, N], "B": [M, N]}
-    elif op_name in ("swiglu", "geglu"):
+    elif op_name in ("silu_and_mul", "gelu_and_mul"):
         shapes = {"X": [M, N * 2]}
+    elif op_name == "swiglu_packed":
+        # True fused gated projection: split(X, 2, dim=-1) → silu(x1)*x2 → @ W
+        # X: [M, K*2] (packed gate||up), W: [K, N] (down projection)
+        shapes = {"X": [M, K * 2], "W": [K, N]}
     elif op_name == "topk":
         shapes = {"X": [M, N]}
     else:
@@ -171,14 +175,23 @@ def run_arke_pipeline(op_name: str, inputs: dict, attrs: dict, shapes: dict) -> 
 # ── Coverage Check ────────────────────────────────────────────
 
 def test_coverage_all_45_ops():
-    """Verify we have exactly 45 ops in registry."""
-    assert len(ALL_OP_NAMES) == 45, f"Expected 45 ops, got {len(ALL_OP_NAMES)}"
+    """Verify registry size matches the SSOT kernel catalog total."""
+    from benchmarks.op_registry import total_ops
+    expected = total_ops()
+    assert len(ALL_OP_NAMES) == expected, (
+        f"Expected {expected} ops (per SSOT benchmark-ops.md), "
+        f"got {len(ALL_OP_NAMES)}"
+    )
 
 
 def test_baseline_coverage():
     """Check how many ops have independent baseline."""
+    from benchmarks.op_registry import total_ops
+    expected = total_ops()
     covered = [op for op in ALL_OP_NAMES if op in BASELINE_REGISTRY]
-    assert len(covered) == 45, f"Expected 45 baselines, got {len(covered)}"
+    assert len(covered) == expected, (
+        f"Expected {expected} baselines (per SSOT), got {len(covered)}"
+    )
 
 
 # ── BL4-L1: Correctness vs Independent Baseline ──────────────
@@ -239,7 +252,7 @@ def test_shape_inference_matches_execution(op_name):
 
 # ── BL4-L1: Determinism Check ────────────────────────────────
 
-@pytest.mark.parametrize("op_name", ["matmul", "softmax", "layernorm", "flash_attention", "swiglu"])
+@pytest.mark.parametrize("op_name", ["matmul", "softmax", "layernorm", "flash_attention", "silu_and_mul"])
 def test_deterministic_execution(op_name):
     """Key ops: same seed → same output (determinism)."""
     torch.manual_seed(123)

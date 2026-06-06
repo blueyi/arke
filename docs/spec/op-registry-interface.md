@@ -621,7 +621,7 @@ arke/ops/
 │   ├── elementwise.py       # element-wise ops
 │   └── reduction.py         # reduction ops
 ├── nn/                      # neural network ops
-│   ├── activation.py        # relu, gelu, swiglu, etc.
+│   ├── activation.py        # relu, gelu, silu_and_mul, etc.
 │   ├── normalization.py     # layernorm, batchnorm, etc.
 │   └── attention.py         # attention variants
 ├── fusion/                  # fused operators

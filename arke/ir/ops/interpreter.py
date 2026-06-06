@@ -3,8 +3,18 @@
 
 """Arke IR — Semantic Interpreter (S6 Track 1, Task C1.4).
 
-Executes operator semantics via PyTorch eager, driven by OpSchema.reference_impl.
-Replaces the old 667-line numerical_check.py with 45 hand-written NumPy functions.
+Executes the semantics of a kernel via PyTorch eager, driven by
+``OpSchema.reference_impl``. Replaces the legacy 667-line
+``numerical_check.py`` (which carried one hand-written NumPy function
+per kernel) with a single generic dispatcher that looks each kernel's
+reference implementation up in the kernel-schema view
+(``arke/ir/ops/registry.py``).
+
+Layer boundary: this interpreter executes **kernel-level** semantics
+(matmul, flash_attention, rmsnorm, …). It is not a dialect interpreter
+for low-level IR primitives (load/store/arith.*); when those land in a
+later stage they will have their own executor and lower to the kernels
+exposed here.
 
 Usage:
     from arke.ir.ops.interpreter import SemanticInterpreter
@@ -24,7 +34,7 @@ from arke.ir.ops.shape_engine import SHAPE_ENGINE
 
 
 class SemanticInterpreter:
-    """PyTorch eager executor for all 45 operators.
+    """PyTorch eager executor for every kernel in the catalog.
 
     Driven entirely by OpSchema.reference_impl — no per-op dispatch.
     """

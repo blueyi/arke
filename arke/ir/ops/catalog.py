@@ -1,10 +1,46 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Arke IR — Operator Catalog (45 operators, S6 OpSchema).
+"""Arke IR — Kernel Schema View (S6 OpSchema).
 
-Single Source of Truth for all operator metadata.
-Adding a new op requires only this file + one Jinja2 template.
+This file enriches each *kernel name* from the benchmark SSOT
+(``docs/benchmark/benchmark-ops.md``, parsed by
+``benchmarks.op_registry``) with the metadata that the compiler /
+interpreter / codegen need: ``shape_rule``, ``template_hint``,
+``reference_impl``, ``input_gen``.
+
+╔══════════════════════════════════════════════════════════════════════╗
+║  Layer boundary — read before extending this file                    ║
+║                                                                      ║
+║  This catalog is a **kernel-schema view**, not the kernel SSOT, and  ║
+║  not the future IR-dialect primitive registry.                       ║
+║                                                                      ║
+║    • Kernel SSOT          : ``docs/benchmark/benchmark-ops.md``      ║
+║      Authoritative parser : ``benchmarks/op_registry.py``            ║
+║      Layer                : *high-level kernels* (matmul,            ║
+║                             flash_attention, rmsnorm, rope, …)       ║
+║      Use ``total_ops() / ALL_OPS / OT_OPS`` to enumerate.            ║
+║                                                                      ║
+║    • Kernel schema view   : THIS FILE + ``arke/ir/ops/registry.py``  ║
+║      Purpose              : attach compiler/runtime metadata to each ║
+║                             SSOT kernel name. Derives from SSOT,     ║
+║                             must not invent new kernel names. Tests  ║
+║                             ``test_ir_ops_schema_covers_kernel_catalog`` ║
+║                             and ``test_ir_ops_schema_no_shadow_kernels`` ║
+║                             enforce this in both directions.         ║
+║                                                                      ║
+║    • IR dialect primitives: *not built yet* (Stage 8 / 9 + later     ║
+║      MLIR dialect). Will live under a separate registry — e.g.       ║
+║      ``arke/ir/dialects/...`` — and enumerate *low-level* ops        ║
+║      (load, store, arith.*, scf.*, …). IR primitives will *lower    ║
+║      to* the kernel schemas in this file; the two layers stay        ║
+║      decoupled by design.                                            ║
+║                                                                      ║
+║  Adding a new kernel: (1) edit the SSOT markdown, (2) register an    ║
+║  OpSchema here, (3) add a ``ref_*`` function in reference_impls.py.  ║
+║  Never hardcode the catalog size in this file or its consumers —    ║
+║  call ``benchmarks.op_registry.total_ops()`` instead.                ║
+╚══════════════════════════════════════════════════════════════════════╝
 """
 
 from __future__ import annotations
@@ -15,13 +51,13 @@ from arke.ir.ops.reference_impls import (
     ref_cross_attention, ref_cross_entropy, ref_cumsum,
     ref_dequantize_per_channel, ref_embedding, ref_exp,
     ref_flash_attention, ref_fused_linear_cross_entropy,
-    ref_gather, ref_geglu, ref_gelu, ref_grouped_matmul,
+    ref_gather, ref_gelu_and_mul, ref_gelu, ref_grouped_matmul,
     ref_grouped_query_attention, ref_layernorm, ref_matmul,
     ref_multi_latent_attention, ref_mul, ref_neg, ref_paged_attention,
     ref_permute, ref_quantize_per_token, ref_reduce_max, ref_reduce_mean,
     ref_reduce_sum, ref_relu, ref_rmsnorm, ref_rmsnorm_residual, ref_rope,
     ref_rsqrt, ref_scatter, ref_sigmoid, ref_silu, ref_softmax, ref_split,
-    ref_swiglu, ref_tanh, ref_topk, ref_transpose, ref_where,
+    ref_silu_and_mul, ref_swiglu_packed, ref_tanh, ref_topk, ref_transpose, ref_where,
 )
 
 OP_CATALOG: dict[str, OpSchema] = {}
@@ -196,7 +232,7 @@ RMSNORM = _register(OpSchema(name="rmsnorm", category="reduce",
     index_vars=["i","j"], reduction_axes=["j"], properties=["row-wise"],
     numpy_ref="X/np.sqrt(np.mean(X**2,axis=-1,keepdims=True)+eps)*W",
     shape_rule=ShapeRule(kind="same_as_input", input_key="X"),
-    template_hint=TemplateHint(template_name="rmsnorm_residual"),
+    template_hint=TemplateHint(template_name="rmsnorm"),
     reference_impl=ReferenceImpl(fn=ref_rmsnorm, dtype_map={"bf16":"f32","f16":"f32"}),
     input_gen=InputGen(distributions={"X":"normal","W":"ones"}),
     attrs={"eps":1e-6},
@@ -344,24 +380,35 @@ COPY = _register(OpSchema(name="copy_", category="move",
 ))
 
 # OT3: Gated + Fused Norms + Rope + Quant + Loss
-SWIGLU = _register(OpSchema(name="swiglu", category="elementwise",
+SWIGLU = _register(OpSchema(name="silu_and_mul", category="elementwise",
     inputs={"X":"Tensor[...,2N]"}, output="Tensor[...,N]",
     computation="x1,x2=split(X);Y=silu(x1)*x2",
     properties=["elementwise","gated"], can_fuse_as="epilogue",
     numpy_ref="x1,x2=np.split(X,2,axis=-1);x1/(1+np.exp(-x1))*x2",
     shape_rule=ShapeRule(kind="gated_halve_rule", input_key="X"),
-    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"swiglu"}),
-    reference_impl=ReferenceImpl(fn=ref_swiglu),
+    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"silu_and_mul"}),
+    reference_impl=ReferenceImpl(fn=ref_silu_and_mul),
     input_gen=InputGen(distributions={"X":"normal"}, constraints=["X.shape[-1]%2==0"]),
 ))
-GEGLU = _register(OpSchema(name="geglu", category="elementwise",
+SWIGLU_PACKED = _register(OpSchema(name="swiglu_packed", category="gated",
+    inputs={"X":"Tensor[M,2K]", "W":"Tensor[K,N]"}, output="Tensor[M,N]",
+    computation="gate,up=split(X);H=silu(gate)*up;Y=H@W",
+    index_vars=["i", "j"], reduction_axes=["k"],
+    properties=["gated", "matmul", "fused_projection"], can_fuse_as="compound",
+    numpy_ref="gate,up=np.split(X,2,axis=-1);(gate/(1+np.exp(-gate))*up)@W",
+    shape_rule=ShapeRule(kind="matmul_rule", input_key="X"),
+    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"swiglu_packed"}),
+    reference_impl=ReferenceImpl(fn=ref_swiglu_packed),
+    input_gen=InputGen(distributions={"X":"normal", "W":"normal"}, constraints=["X.shape[-1]%2==0", "W.shape[0]==X.shape[-1]/2"]),
+))
+GEGLU = _register(OpSchema(name="gelu_and_mul", category="elementwise",
     inputs={"X":"Tensor[...,2N]"}, output="Tensor[...,N]",
     computation="x1,x2=split(X);Y=gelu(x1)*x2",
     properties=["elementwise","gated"], can_fuse_as="epilogue",
     numpy_ref="x1,x2=np.split(X,2,axis=-1);0.5*x1*(1+erf(x1/sqrt(2)))*x2",
     shape_rule=ShapeRule(kind="gated_halve_rule", input_key="X"),
-    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"geglu"}),
-    reference_impl=ReferenceImpl(fn=ref_geglu),
+    template_hint=TemplateHint(template_name="gated_activation", extra_ctx={"op_variant":"gelu_and_mul"}),
+    reference_impl=ReferenceImpl(fn=ref_gelu_and_mul),
     input_gen=InputGen(distributions={"X":"normal"}, constraints=["X.shape[-1]%2==0"]),
 ))
 RMSNORM_RESIDUAL = _register(OpSchema(name="rmsnorm_residual", category="reduce",

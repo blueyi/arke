@@ -1,0 +1,72 @@
+{
+  "captured_at": "2026-05-16T19:01:21Z",
+  "graph_count": 13,
+  "graph_break_count": 12,
+  "op_count": 93,
+  "break_reasons": [
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 274 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    },
+    {
+      "reason": "'inline in skipfiles: Mapping.__contains__ | __contains__ /home/blueyi/.pyenv/versions/3.10.5/lib/python3.10/_collections_abc.py, skipped according trace_rules.lookup SKIP_DIRS'",
+      "user_stack": [
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/models/gpt2/modeling_gpt2.py, line 202 in forward>",
+        "<FrameSummary file /home/blueyi/.venvs/arke/lib/python3.10/site-packages/transformers/modeling_utils.py, line 4860 in get_interface>"
+      ]
+    }
+  ]
+}

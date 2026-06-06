@@ -128,7 +128,7 @@ def _correctness_tolerances(op: str, dtype: torch.dtype = torch.float16) -> tupl
     if dtype == torch.float16:
         if op in {"softmax", "layernorm", "rmsnorm", "rmsnorm_residual"}:
             return 5e-3, 5e-3
-        if op in {"matmul", "batch_matmul", "grouped_matmul", "cross_entropy", "fused_linear_cross_entropy"}:
+        if op in {"matmul", "batch_matmul", "grouped_matmul", "cross_entropy", "fused_linear_cross_entropy", "swiglu_packed"}:
             return 1e-2, 1e-2
         return 1e-3, 1e-3
     return 1e-5, 1e-6
@@ -192,8 +192,14 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
         indices = torch.randint(0, vocab_size, (seq_len,), device="cuda")
         weight = torch.randn(vocab_size, emb_dim, device="cuda", dtype=dtype)
         return (indices, weight)
-    if op in {"swiglu", "geglu"}:
+    if op in {"silu_and_mul", "gelu_and_mul"}:
         return (torch.randn(M, 2 * N, device="cuda", dtype=dtype),)
+    if op == "swiglu_packed":
+        K_eff = _positive_dim(K)
+        return (
+            torch.randn(M, 2 * K_eff, device="cuda", dtype=dtype),
+            torch.randn(K_eff, N, device="cuda", dtype=dtype),
+        )
     if op == "cross_entropy":
         logits = torch.randn(M, N, device="cuda", dtype=torch.float32)
         labels = torch.randint(0, N, (M,), device="cuda")
@@ -338,10 +344,13 @@ def _torch_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor 
         return inputs[0].permute(0, 2, 1)
     if op == "copy_":
         return inputs[0].clone()
-    if op == "swiglu":
+    if op == "silu_and_mul":
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.silu(x1) * x2
-    if op == "geglu":
+    if op == "swiglu_packed" and len(inputs) == 2:
+        x1, x2 = inputs[0].chunk(2, dim=-1)
+        return (torch.nn.functional.silu(x1) * x2) @ inputs[1]
+    if op == "gelu_and_mul":
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.gelu(x1) * x2
     if op == "cross_entropy" and len(inputs) == 2:
@@ -1265,7 +1274,17 @@ def run_l1(
             kept_rows = [
                 row for key, row in existing_index.items() if key in skip_keys
             ]
-            if kept_rows or not csv_path.exists():
+            # Bug fix (2026-05-16): when resume=False, we must TRUNCATE the
+            # op-specific CSV to its header only — otherwise the prior run's
+            # rows survive and the next run appends fresh rows on top, silently
+            # double-counting (or worse, mixing stale + fresh measurements for
+            # the same key when the new run's row count differs).
+            #
+            # Note: PERF_ALL.csv is intentionally NOT truncated here. PERF_ALL
+            # is built by aggregating perf_<op>.csv across all ops (see
+            # bench_l1.py:write_perf_all near end of run); per-op CSV truncation
+            # propagates correctly through that pipeline.
+            if kept_rows or not csv_path.exists() or not resume:
                 tmp = csv_path.with_suffix(".csv.tmp")
                 with tmp.open("w", newline="") as f:
                     writer = csv.DictWriter(
@@ -1400,7 +1419,12 @@ def main() -> None:
     parser.add_argument(
         "--no-resume",
         action="store_true",
-        help="Disable resume; ignore prior CSV rows (still preserves them).",
+        help=(
+            "Disable resume. Truncates the per-op CSV "
+            "(<op>_results.csv) to header before measuring so the new run's "
+            "rows do not stack on top of stale ones. PERF_ALL.csv is rebuilt "
+            "from per-op CSVs at end of run and is unaffected by this flag."
+        ),
     )
     parser.add_argument(
         "--retry-policy",

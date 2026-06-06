@@ -422,13 +422,13 @@ Shape: `[M, N]` (M = batch×seq, N = feature dim)
 
 ## OT3 — Fused Compound Shapes
 
-**Operators covered (7):** `swiglu`, `geglu`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel`
+**Operators covered (7):** `silu_and_mul`, `gelu_and_mul`, `rope`, `fused_linear_cross_entropy`, `cross_entropy`, `quantize_per_token`, `dequantize_per_channel`
 
-### SwiGLU / GeGLU: `[B, 2H] → [B, H]`
+### SiLU-and-Mul / GELU-and-Mul: `[B, 2H] → [B, H]`
 
 | Tag | Seq | FFN×2 | FFN | Tier | Source | Notes |
 |:----|----:|------:|----:|:----:|:-------|:------|
-| `gpt2-sm` | 128 | 6144 | 3072 | 1 | GPT-2 Small | GeGLU reference |
+| `gpt2-sm` | 128 | 6144 | 3072 | 1 | GPT-2 Small | GELU-and-Mul reference |
 | `llama-7b-512` | 512 | 22016 | 11008 | 2 | LLaMA-2 7B | SwiGLU |
 | `llama-7b-2k` | 2048 | 22016 | 11008 | 2 | LLaMA-2 7B | SwiGLU long seq |
 | `llama3-8b` | 512 | 28672 | 14336 | 2 | LLaMA-3 8B | SwiGLU |
@@ -693,7 +693,7 @@ Sequence lengths: 512, 2048, 4096
 | Residual add | add | [512,4096] |
 | RMSNorm | rmsnorm | [512,4096] |
 | FFN gate/up proj | matmul | [512,4096] × [4096,11008] (×2) |
-| FFN swiglu | swiglu | [512,22016] |
+| FFN silu_and_mul | silu_and_mul | [512,22016] |
 | FFN down proj | matmul | [512,11008] × [11008,4096] |
 | LM head | matmul | [512,4096] × [4096,32000] |
 | CE loss | cross_entropy | [512,32000] |
@@ -714,7 +714,7 @@ Sequence lengths: 512, 2048, 8192. **GQA: Hq=32, Hkv=8.**
 | Residual add | add | [512,4096] |
 | RMSNorm | rmsnorm | [512,4096] |
 | FFN gate/up proj | matmul | [512,4096] × [4096,14336] (×2) |
-| FFN swiglu | swiglu | [512,28672] |
+| FFN silu_and_mul | silu_and_mul | [512,28672] |
 | FFN down proj | matmul | [512,14336] × [14336,4096] |
 | LM head | matmul | [512,4096] × [4096,128256] |
 | CE loss (fused) | fused_linear_cross_entropy | X:[512,4096], W:[128256,4096] |
@@ -735,7 +735,7 @@ Sequence lengths: 512, 2048, 8192, 32768. **GQA: Hq=28, Hkv=4 (7:1 ratio). FFN=1
 | Residual add | add | [512,3584] |
 | RMSNorm | rmsnorm | [512,3584] |
 | FFN gate/up proj | matmul | [512,3584] × [3584,18944] (×2) |
-| FFN swiglu | swiglu | [512,37888] |
+| FFN silu_and_mul | silu_and_mul | [512,37888] |
 | FFN down proj | matmul | [512,18944] × [18944,3584] |
 | LM head | matmul | [512,3584] × [3584,151936] |
 | CE loss (fused) | fused_linear_cross_entropy | X:[512,3584], W:[151936,3584] |
@@ -757,7 +757,7 @@ Sequence lengths: 512, 2048, 8192
 | Gate topk | topk | [512,64], k=2 |
 | Expert dispatch | gather | X:[512,5120], idx:[512,2] |
 | Expert compute | grouped_matmul | [4,512,5120] × [64,5120,12288], idx:[4] |
-| FFN swiglu | swiglu | [512,24576] |
+| FFN silu_and_mul | silu_and_mul | [512,24576] |
 | Expert combine | scatter | X:[512,5120], idx:[512,2], src:[512,5120] |
 | LM head | matmul | [512,5120] × [5120,102400] |
 | CE loss (fused) | fused_linear_cross_entropy | X:[512,5120], W:[102400,5120] |

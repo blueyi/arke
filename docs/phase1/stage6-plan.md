@@ -47,7 +47,7 @@
 
 **OT3 (Reduce, 9 ops):** softmax, layernorm, rmsnorm, rmsnorm_residual, reduce_sum, reduce_mean, reduce_max, argmax, topk ✅
 
-**OT4 (Attention/Special, 8 ops):** rope, embedding, geglu, swiglu, cross_entropy, fused_linear_cross_entropy, cumsum, where_ ✅
+**OT4 (Attention/Special, 8 ops):** rope, embedding, gelu_and_mul, silu_and_mul, cross_entropy, fused_linear_cross_entropy, cumsum, where_ ✅
 
 **Quantization (2 ops):** quantize_per_token, dequantize_per_channel ✅
 

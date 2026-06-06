@@ -14,8 +14,8 @@ from benchmarks.bench_l1 import _measure_l1_correctness
 @pytest.mark.parametrize(
     ("op", "shape"),
     [
-        ("swiglu", (128, 3072, 0)),
-        ("geglu", (128, 3072, 0)),
+        ("silu_and_mul", (128, 3072, 0)),
+        ("gelu_and_mul", (128, 3072, 0)),
     ],
 )
 def test_l1_correctness_probe_linea9_fused_gated_ops(op, shape):

@@ -152,7 +152,7 @@ class ShapeRule:
       "gather_rule"       shape from index tensor
       "embedding_rule"    [vocab,dim] indexed by [seq] -> [seq,dim]
       "permute_rule"      reorder dims per dims_attr
-      "gated_halve_rule"  halve last dim (swiglu/geglu)
+      "gated_halve_rule"  halve last dim (silu_and_mul/gelu_and_mul)
       "attention_rule"    [B,H,S,D] from Q shape
       "custom"            delegate to fn(input_shapes, attrs) -> list[int]
     """
@@ -257,7 +257,7 @@ def _ref_reduce_sum(inputs: dict, attrs: dict) -> torch.Tensor:
 def _ref_topk(inputs: dict, attrs: dict) -> torch.Tensor:
     return torch.topk(inputs["X"], attrs.get("k", 1), dim=-1).values
 
-def _ref_swiglu(inputs: dict, attrs: dict) -> torch.Tensor:
+def _ref_silu_and_mul(inputs: dict, attrs: dict) -> torch.Tensor:
     x = inputs["X"]
     half = x.shape[-1] // 2
     gate, up = x[..., :half], x[..., half:]
@@ -310,14 +310,14 @@ LAYERNORM = _register(OpDefinition(
 ))
 
 SWIGLU = _register(OpDefinition(
-    name="swiglu", category="elementwise",
+    name="silu_and_mul", category="elementwise",
     inputs={"X": "Tensor[...,2H]"}, output="Tensor[...,H]",
     computation="Y = silu(X[:H]) * X[H:]",
     properties=["gated"], can_fuse_as="epilogue", numpy_ref="",
     shape_rule=ShapeRule(kind="gated_halve_rule", input_key="X"),
     template_hint=TemplateHint(template_name="elementwise",
-                                extra_ctx={"op_variant": "swiglu"}),
-    reference_impl=ReferenceImpl(fn=_ref_swiglu),
+                                extra_ctx={"op_variant": "silu_and_mul"}),
+    reference_impl=ReferenceImpl(fn=_ref_silu_and_mul),
     input_gen=InputGen(distributions={"X": "normal"}),
 ))
 ```
@@ -978,7 +978,7 @@ Replaces the 401-line `shape_inference.py` if/elif chain with a declarative rule
 | `gather_rule` | shape from index tensor | gather, scatter |
 | `embedding_rule` | `[*index_shape, embed_dim]` | embedding |
 | `permute_rule` | reorder dims per `attrs[dims_attr]` | permute, transpose |
-| `gated_halve_rule` | halve last dim | swiglu, geglu |
+| `gated_halve_rule` | halve last dim | silu_and_mul, gelu_and_mul |
 | `attention_rule` | `[B, H, S, S]` from Q shape | flash_attention, etc. |
 | `custom` | delegate to `shape_rule.fn` | special cases |
 

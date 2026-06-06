@@ -34,7 +34,7 @@ MIN_TRITON_LINES_BY_CATEGORY = {
     "elementwise": 30,    # OT0: relu, gelu, sigmoid, etc.
     "reduction": 45,      # OT1: softmax, layernorm, reduce_*
     "compute_dense": 70,  # OT2: matmul, batch_matmul
-    "gated": 40,          # OT3: swiglu, geglu, rope
+    "gated": 40,          # OT3: silu_and_mul, gelu_and_mul, rope
     "attention": 100,     # OT4: flash_attention, GQA, MLA
     "data_movement": 35,  # transpose, gather, scatter, etc.
 }
@@ -60,8 +60,8 @@ OP_CATEGORY: dict[str, str] = {
     "16_grouped_query_attention": "attention",
     "17_multi_latent_attention": "attention",
     "18_rmsnorm_residual": "reduction",
-    "19_swiglu": "gated",
-    "20_geglu": "gated",
+    "19_silu_and_mul": "gated",
+    "20_gelu_and_mul": "gated",
     "21_tanh": "elementwise",
     "22_sigmoid": "elementwise",
     "23_where_": "elementwise",

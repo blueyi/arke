@@ -93,9 +93,9 @@ def _ctx_data_movement(op_name: str, hint: TemplateHint, dtype: str) -> dict[str
 
 def _ctx_gated_activation(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
     # Template variable is `gate_activation` and branches on "silu"/"gelu".
-    # Catalog gives op_variant="swiglu"/"geglu" — translate the gate function.
+    # Catalog gives op_variant="silu_and_mul"/"gelu_and_mul" — translate the gate function.
     variant = hint.extra_ctx.get("op_variant", op_name)
-    gate = {"swiglu": "silu", "geglu": "gelu"}.get(variant, variant)
+    gate = {"silu_and_mul": "silu", "gelu_and_mul": "gelu"}.get(variant, variant)
     return {"gate_activation": gate}
 
 
@@ -282,17 +282,6 @@ def generate_kernel(
 
     # Adapter shims for op→template signature mismatches.
     #
-    # `rmsnorm` shares the `rmsnorm_residual` template (which requires a
-    # residual tensor argument). Inject a zero residual so plain rmsnorm
-    # calls match the template signature. TODO(C3): split into a dedicated
-    # rmsnorm.py.j2 template to avoid this runtime branch.
-    if op_name == "rmsnorm" and template_hint.template_name == "rmsnorm_residual":
-        import torch as _torch
-
-        def _rmsnorm_shim(x: _torch.Tensor, weight: _torch.Tensor, eps: float = 1e-5):
-            zero_res = _torch.zeros_like(x)
-            return raw_callable(x, zero_res, weight, eps=eps)
-        _rmsnorm_shim.__name__ = kernel_name
-        return _rmsnorm_shim
+    # (None currently needed — `rmsnorm` now has its own dedicated template.)
 
     return raw_callable

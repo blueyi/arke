@@ -345,7 +345,7 @@ Arke can attach symbolic dimension metadata to MLIR operations:
 | OT0: Elementwise | 12 | ✅ Full | All support arbitrary symbolic shapes |
 | OT1: Reduction | 10 | ✅ Full | Axis parameter is static; dims are dynamic |
 | OT2: Compute-Dense | 11 | ✅ Full | matmul, batch_matmul, grouped_matmul all support |
-| OT3: Gated Activation | 7 | ✅ Full | swiglu, geglu, attention fusions all support |
+| OT3: Gated Activation | 7 | ✅ Full | silu_and_mul, gelu_and_mul, attention fusions all support |
 | OT4: Attention | 5 | ✅ Full | flash_attention, GQA, MLA all support |
 
 ### 7.2 Operator-Specific Notes

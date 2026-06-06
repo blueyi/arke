@@ -21,7 +21,7 @@ Arke Language (`.ak`) source files for all 46 operators across 5 categories:
 | **OT0** Elementwise | relu, gelu, silu, tanh, sigmoid, add, mul, neg, exp, rsqrt, cast, where | `00_relu.ak`, `03_gelu.ak`, ... |
 | **OT1** Reduction | softmax, layernorm, rmsnorm, reduce_sum/max/mean, argmax, topk, cumsum | `02_softmax.ak`, `04_layernorm.ak`, ... |
 | **OT2** Compute-Dense | matmul, batch_matmul, grouped_matmul, transpose, concat, split, gather, scatter, embedding, permute, copy | `01_matmul.ak`, `08_batch_matmul.ak`, ... |
-| **OT3** Gated/Fused | matmul_gelu, rmsnorm_residual, swiglu, geglu, rope, cross_entropy, fused_linear_cross_entropy, quantize/dequantize | `05_matmul_gelu.ak`, `19_swiglu.ak`, ... |
+| **OT3** Gated/Fused | matmul_gelu, rmsnorm_residual, silu_and_mul, gelu_and_mul, rope, cross_entropy, fused_linear_cross_entropy, quantize/dequantize | `05_matmul_gelu.ak`, `19_silu_and_mul.ak`, ... |
 | **OT4** Attention | flash_attention, grouped_query_attention, multi_latent_attention, cross_attention, paged_attention | `15_flash_attention.ak`, `16_grouped_query_attention.ak`, ... |
 
 ### Stage 7 L2 surface examples
@@ -34,8 +34,8 @@ Arke Language (`.ak`) source files for all 46 operators across 5 categories:
 
 The gated activation examples are also Stage 7 L2 fusion surfaces while staying in the canonical OT3 example set:
 
-- `19_swiglu.ak` — compact SwiGLU op with explicit `fuse(ops=["silu", "mul"], fusion_type="epilogue")`
-- `20_geglu.ak` — compact GeGLU op with explicit `fuse(ops=["gelu", "mul"], fusion_type="epilogue")`
+- `19_silu_and_mul.ak` — compact SwiGLU op with explicit `fuse(ops=["silu", "mul"], fusion_type="epilogue")`
+- `20_gelu_and_mul.ak` — compact GeGLU op with explicit `fuse(ops=["gelu", "mul"], fusion_type="epilogue")`
 
 ## ir/
 

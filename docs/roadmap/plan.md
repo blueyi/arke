@@ -8,6 +8,47 @@
 
 Roadmap > Phase > Stage > Feature > Task
 
+## Core Thesis — Three-Level Decomposition
+
+> **Locked principle (2026-05-17, Leon-approved):** the Arke project's claim — *"LLM-as-decision-maker + structured IR + compiler verification produces correct, high-performance AI operators across architectures and abstraction layers"* — is split into three falsifiable sub-theses. Each level has an independent **kill criterion**. This prevents the global thesis from being indefinitely deferred to "the next Phase".
+
+### Thesis L1 — Single-Architecture, Single-Backend (Phase 1)
+
+**Claim:** The paradigm produces correct + high-performance AI operators on **SIMT** architecture via the **Triton** backend (one abstraction layer).
+
+- **Validation window:** Phase 1 (S0–S9)
+- **Pass evidence:** G8 + G9 — GPT-2 / LLaMA-2 / DS-V2 all meet correctness=100% + perf thresholds; BL5 inheritance holds; autonomous engineering (G7-AE) reproducible end-to-end.
+- **Kill criterion:** If G8[4]/[5]/[6] cannot pass *with reasonable engineering* (≤ 2 Stage 8 extensions), or LLM-best ≤ heuristic-floor in ≥ 50% of trajectories, the LLM-decision pillar is falsified for SIMT/Triton.
+- **Current status (2026-05-17):** L1 partially validated — G7 ✅, G8[4] GPT-2 ✅ (vanilla `torch.compile` path); G8[1]/[2]/[3]/[5]/[6]/[7] still open.
+
+### Thesis L2 — Cross-Architecture, Same Abstraction Layer (Phase 2)
+
+**Claim:** The same `SemanticIR + StrategyIR` schema, the same harness, and the same trajectory corpus can be **re-used** to drive a **SIMD/heterogeneous-pipeline** backend (Ascend 910B Cube/Vector via Triton-Ascend) without rewriting the IR.
+
+- **Validation window:** Phase 2 (Stage 10–11+, TBD)
+- **Pass evidence:** ≥80% of Phase 1 ops port to Ascend with **no new `Decision` kinds**, and ≥1 LLM-decided strategy on Ascend outperforms the Ascend heuristic floor.
+- **Kill criterion:** If StrategyIR must add ≥3 architecture-specific decision kinds (e.g. `cube_pipeline_stage`, `vector_buffer_double_buffer`) just to express Ascend strategy, or if SIMT trajectories provide **zero** transfer learning to SIMD decisions, L2 is falsified — IR is not architecture-agnostic, must redesign.
+- **Status:** ⬜ unstarted.
+
+### Thesis L3 — Cross-Abstraction-Layer (Phase 3-5)
+
+**Claim:** As Arke lowers further down the stack (MLIR → vendor-DSL → LLVM-IR), **performance improves monotonically** while correctness and LLM-decision quality hold.
+
+- **Validation window:** Phase 3 / Phase 4 / Phase 5
+- **Pass evidence:** Per Phase, geomean perf on the BL6 model set strictly improves vs the previous Phase's same-backend baseline (e.g. Phase 3 MLIR-direct geomean ≥ 1.05× Phase 1 Triton geomean on identical hardware).
+- **Kill criterion:** If **lowering loss** (information lost across each compiler stage) exceeds **LLM-decision gain** at any Phase — i.e. deeper stack yields worse performance — the "cross-abstraction-layer" claim collapses; the project halts or backtracks to the last winning Phase.
+- **Status:** ⬜ unstarted.
+
+### Why three levels matter
+
+- **L1 is the floor.** If L1 fails, the entire thesis fails — no need to start Phase 2.
+- **L2 tests IR generality.** This is where the bet "structured IR can abstract over architectures" gets tested with hard data, not aspirational wording.
+- **L3 tests compiler-stack value.** Without L3, Arke could collapse into "yet another Triton frontend"; L3 forces the value-add of going deeper to be measured.
+
+Each Stage Gate cites which Thesis level it advances. See per-Stage docs for the explicit mapping.
+
+---
+
 ## Gate Governance
 
 > **Gates are the contract between design and development.**
@@ -17,6 +58,25 @@ Roadmap > Phase > Stage > Feature > Task
 > Development should be **Gate-driven**: work backward from Gate exit criteria to determine what Arke Lang, IR, Compiler, and Agent need to deliver. Gates drive design and implementation, not the other way around.
 >
 > All Gate criteria that involve operator-level performance or correctness **must** align to the BL/OT/ST/L benchmark system defined in `docs/benchmark/benchmark-design.md`. The Gate-Purpose Mapping below specifies which benchmark levels each Stage's Gate must satisfy.
+
+### Benchmark vs Gate Thresholds — Separation of Concerns
+
+> **Locked principle (2026-05-16, Leon-approved):** the Benchmark **measurement** layer and the Gate **acceptance** layer are decoupled.
+>
+> - **Benchmark design is frozen** — BL/OT/ST/L framework, measurement protocol, shape sets, baseline-ladder collection, and PERF_ALL schema do **not** change to accommodate Gate pass/fail outcomes.
+> - **Gate thresholds may be re-calibrated against theoretical performance** — when a Phase/Stage/Track's compiler-backend ceiling is bounded by the chosen backend's physical capability (e.g. Triton kernel-launch overhead vs PyTorch fused CUDA dispatch on tiny elementwise), the **Gate exit criteria** may be adjusted to reflect what is *physically achievable on that backend*, without weakening the benchmark itself.
+> - Every Gate threshold adjustment must (a) cite the physical/theoretical reason, (b) preserve the benchmark measurement faithfully (no shape removal, no op exclusion from PERF_ALL), and (c) carry the project lead's explicit approval before merging.
+
+### Same-Backend Fairness — Triton Path
+
+> **Locked principle (2026-05-16, Leon-approved):** when the compiler backend under test is **Triton**, the Gate performance comparison **denominator is the corresponding operator's Triton implementation**, not a cross-backend reference.
+>
+> - **Numerator:** Arke-generated Triton kernel latency
+> - **Denominator:** the **fastest Triton-only implementation** of the same operator available in the ladder for this op (e.g. FlagGems Triton kernel, Liger Triton kernel, Unsloth Triton kernel, vLLM Triton kernel, flash-attn Triton kernel — picked per-op by the ladder's PRIMARY+FALLBACK ordering in `docs/benchmark/golden-kernel-ladder.md`)
+> - **Pass criterion:** `arke_latency ≤ triton_reference_latency × (1 + ε)` with `ε = 0.03` (3% measurement-noise tolerance)
+> - **Audit-only:** when no Triton-only implementation exists for the op-shape, the row is **audit-only** (excluded from Gate scoring) and recorded with `perf_oracle_unavailable_triton=true` for future review.
+> - **Why same-backend:** cross-backend comparisons (Arke-Triton vs cuBLAS / FlagGems-CUDA / torch.compile-Inductor / PyTorch-eager-fused-dispatch) conflate compiler-quality with backend-architectural advantages. Same-backend fairness isolates Arke's compilation quality.
+> - **When the backend changes:** Phase 2 (Triton-Ascend) compares against Ascend-Triton baselines; Phase 3 (MLIR) compares against MLIR-native baselines; Phase 4 (C-like kernel DSL) compares against hand-tuned CUDA-C / CCE-C / Bang-C references; Phase 5 (LLVM IR) compares against LLVM-IR-direct references. The same-backend principle applies uniformly.
 
 ---
 
@@ -46,8 +106,8 @@ Roadmap > Phase > Stage > Feature > Task
 | S4 | G4 | BL2×L1 (6 tasks) | L1 | Arke vs LLM-direct | ✅ |
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (45 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
-| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 | 🚧 12/14 (G7.8b + G7.8d open) |
-| S8 | G8 | BL5 inherit + BL6×L3 (GPT-2+LLaMA-2+DS-V2) | L1+L2+L3 | Agent Autonomy | ⬜ |
+| S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 (high-level IR ready for Phase-3 MLIR consumption) | ✅ 13/14 closed (G7.8d honest-gap accepted per Gate Governance v2; S7.followup.1–3 open) |
+| S8 | G8 | **Harness system (Tier 1)** + BL5 inherit + BL6×L3 endpoint validation (Tier 2) | L1+L2+L3 | **Build extensible Arke Harness** for LLM-driven op auto-gen/tune (Stage 8 primary deliverable); BL6×L3 = Thesis L1 endpoint validation | 🚧 **Tier 1 in progress** (Harness Façade/Substrate); Tier 2: G8[4a] vanilla `torch.compile` GPT-2 ✅ PASS (2026-05-17, D7-E1.6); G8[4b] Arke bridge ⬜ (scope-guarded transient artifact); G8[1]/[2]/[3]/[5]/[6]/[7] open. **G8 PASS split into Tier 1 (Harness) + Tier 2 (L1 endpoints), Leon-approved 2026-05-17.**
 | S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
 
 ### Gate-Purpose Mapping
@@ -63,8 +123,8 @@ Roadmap > Phase > Stage > Feature > Task
 | G4 | BL2×L1 | L1 | 6 tasks: Arke correctness ≥ LLM-direct, geomean ~P1 | P0, P1, P5 |
 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | OT0-2×ST1-3 correctness 100%; GPT-2 top-1 correct | P0, P3 |
 | **G6** | **BL4×L1** | **L1** | 45 ops correctness 100% via SemanticInterpreter; perf ≥1.00× P3 | P3 |
-| **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness 100%; OT0 ≥1.05 P1, matmul ≥1.00 P0; 4/4 fusions | P0, P1 |
-| **G8** | **BL5 inherit + BL6×L3** | **L1+L2+L3** | GPT-2 ≥0.95× eager; LLaMA-2 ≥0.90×; DS-V2 ≥0.85×; auto-strategy ≥0.95× P0 | P0, P1, P3 |
+| **G7** | **BL5×L1+L2** | **L1+L2** | OT0-4×ST1-4 correctness 100%; **same-backend Triton fairness**: Arke-Triton ≥ (1−ε)·Triton-ref with ε=0.03; 4/4 fusions; per-op denominator = best Triton-only implementation in ladder | Triton-only ladder (FlagGems / Liger / Unsloth / vLLM-Triton / flash-attn) |
+| **G8** | **Harness system (Tier 1) + BL5 inherit + BL6×L3 endpoint (Tier 2)** | **L1+L2+L3** | **Tier 1**: Façade v1.0 + LLM autonomy + extensibility (1 new op ≤300 LOC + 1 new baseline ≤200 LOC). **Tier 2**: GPT-2 ≥0.95× eager; LLaMA-2 ≥0.90×; DS-V2 ≥0.85×; auto-strategy ≥0.95× P0 | P0, P1, P3 |
 | **G9** | **BL6×L3 (4 models) + BL5 regression** | **L1+L2+L3** | GPT-2 ≥1.00× eager; LLaMA-2/3 ≥0.95×; Qwen2.5 ≥0.90×; Arke ≥1.05× P5 | P0, P1, P5 |
 
 
@@ -125,27 +185,29 @@ AND ALL:
 
 ### Stage 7 (G7): Lang & IR v0.1.0 🚧
 
-**Objective:** Implement the multi-layer IR architecture (Layer 4/3/2/1), upgrade Arke Lang with where clause and backend-agnostic strategy, complete spec documents, assess dynamic shape feasibility, establish MLIR framework skeleton.
+**Objective:** Land the finalized Arke Lang v0.1.0 and the **high-level Arke IR v0.1.0** (Layer 4 SemanticIR + Layer 3 StrategyIR) as the implementation contract for Phase 1's Triton path **and** as the IR surface that Phase 3 will lower through MLIR. Implement the `where` clause + symbolic shape system end-to-end. Upgrade StrategyIR to be backend-agnostic in its core. Complete spec documents. Assess dynamic shape feasibility. Establish the MLIR framework skeleton as a forward-compatibility checkpoint (concrete MLIR lowering work belongs to Phase 3).
 
 **Why this follows S6:** Pass pipeline (from S6) is needed for IR layer transformations. Backend abstraction (from S6) is needed for backend-agnostic strategy validation. OpRegistry (from S6) is needed for spec completeness verification.
 
-**BL Exit:** BL5×L1+L2 — All 45 ops (OT0-4) × all shapes (ST1-4) correctness + performance at L1 single-op and L2 fused-op levels.
+**Scope clarification (locked 2026-05-16):** Stage 7 owns the **high-level IR spec + its in-tree implementation**. Stage 7 does **not** own concrete MLIR lowering — that is Phase 3's contract. G7.5 (MLIR framework skeleton) remains in scope as a forward-compatibility artifact: it proves the high-level IR can be lowered to MLIR-shaped surface, but full MLIR-dialect engineering is deferred.
+
+**BL Exit:** BL5×L1+L2 — All 45 ops (OT0-4) × all shapes (ST1-4) correctness + performance at L1 single-op and L2 fused-op levels, evaluated under the **Same-Backend Fairness (Triton)** rule (see Gate Governance).
 
 **Gate G7 PASS Criteria:**
 
 ```
 AND ALL:
   [1] Arke Lang Spec v0.1.0 document finalized
-  [2] Arke IR Spec v0.1.0 document finalized (Layer 4/3/2/1 defined)
+  [2] Arke IR Spec v0.1.0 document finalized (Layer 4/3/2/1 defined; Layer 4+3 implemented)
   [3] where clause MVP: parses + SemanticIR symbolic_dims populated
   [4] Dynamic Shape feasibility assessment document complete
-  [5] MLIR framework skeleton: MLIREmitter exists, BL1 matmul verified
+  [5] MLIR framework skeleton: MLIREmitter exists, BL1 matmul verified (forward-compatibility checkpoint; full MLIR lowering deferred to Phase 3)
   [6] All 45 ops: .ak → SemanticIR → StrategyIR full round-trip
   [7] Token efficiency: .ak lines < Triton lines for all OT0-OT4
   [8] Backend-agnostic strategy: 0 Triton-specific fields in StrategyIR core
   [9] L1 BL5 correctness: 100%(ST1-4, excl. OOM) for all OT0-OT4
-  [10] L1 BL5 performance: OT0 ≥1.05 P1, OT1 ≥0.95 P1, OT2 matmul ≥1.00 P0, OT3 ≥0.95 P1, OT4 ≥0.90 P1
-  [11] L2 BL5: 4/4 fusion combinations pass
+  [10] L1 BL5 performance (Same-Backend Triton Fairness): for each OT group, ≥97% of evaluable rows pass `arke_latency ≤ triton_ref_latency × 1.03`; weighted_score ≥ 0.95 with the same OT0_1/OT2/OT3/OT4 = 0.25/0.30/0.20/0.25 weights. Rows with no Triton-only reference in the ladder are audit-only.
+  [11] L2 BL5: 4/4 fusion combinations pass under Same-Backend Triton Fairness
   [12] Non-regression: ≥422 tests, 0 new failures
 ```
 
@@ -153,7 +215,15 @@ AND ALL:
 
 **Track 6 artifact status (current):** Stage 7 benchmark automation emits a consolidated root-level dashboard artifact set under `benchmarks/results/phase1/stage7/track6/` — `coverage_gap.json`, `audit_report.json`, `stage7_operator_shape_stats.json`, and `dashboard.json` — plus per-layer `l1/` and `l2/` benchmark manifests. `benchmarks.gate_g7` now validates both the result-tree contract and the substantive BL5 evidence contract: coverage completeness, correctness rows, memory-policy exclusions, L1 weighted performance, and L2 fusion performance.
 
-**Current G7 evidence status:** The implementation/test slices for Lang, IR, MLIR skeleton, examples, backend-agnostic StrategyIR, and non-regression are green. After the 2026-05-14 Q5a (rope fp32, commit `82b635b`) + Q6a (gated odd-N typed-unsupported, commit `160ebf4`) fixes, canonical Track 6 evidence now passes G7.8c (correctness 827/827 ok). Current `python -m benchmarks.gate G7 --tier 2` result is `12/14` criteria passed, with `G7.8b` coverage and `G7.8d` performance still failing. This keeps Stage 7 open until BL5 coverage closes (P1) and L1 weighted perf reaches ≥0.95 with L2 fusion completeness (P3).
+**Current G7 evidence status (2026-05-16, final):** Implementation/test slices for Lang, IR, MLIR skeleton, examples, backend-agnostic StrategyIR, and non-regression are green (13/14 sub-gates PASS). After the 2026-05-14 rope-fp32 (commit `82b635b`) + gated odd-N typed-unsupported (commit `160ebf4`) + 2026-05-15 G7.8b coverage closure (commit `13d42e6`) fixes, canonical Track 6 evidence passes G7.8c (correctness 863/863 ok across all baselines) and G7.8b (BL5 L1 coverage 45/45 ops, 685/685 shapes). G7.8d has been re-calibrated under the **Same-Backend Triton Fairness** rule locked on 2026-05-16 (commits `c366116` docs + `3c89a23` scoring): the perf denominator is now `min(latency_us)` over Triton-only baselines per `(layer, op, shape_tag)`, with ε=0.03 tolerance and audit-only handling when no Triton reference is available. The 2026-05-16 evening honest-gap closure round (commits `a5431c5` rmsnorm dedicated template + `25b279c` layernorm refresh + `ee48c35` rope/batch_matmul/matmul refresh + `a2c659b` summary docs) refreshed five ops' PERF_ALL rows against the live Triton ladder. Under this honest ruler with fresh data, current Track 6 PERF_ALL (2502 rows) yields **L1 weighted_score=0.3006** (per-OT pass rates: ot0_1=62.7% [220/351], ot2=26.8% [19/71], ot3=31.8% [7/22], ot4=0/0 due to missing Triton attention ref data) and L2 fusions=0 evaluable. Audit-only rows: `perf_oracle_unavailable_triton=438`, `non_arke_baseline_skipped=1826`.
+
+The G7.8d weighted-score threshold (≥0.95) is **mathematically unreachable** under the current weights (`{ot0_1: 0.25, ot2: 0.30, ot3: 0.20, ot4: 0.25}` in `benchmarks/gate_g7.py:673`): with ot4=0 by construction (no Triton attention baseline exists in our ladder), the maximum achievable weighted score is 0.75 < 0.95. **Project lead decision (2026-05-16):** Per Gate Governance v2, accept G7=13/14 closed as honest Stage 7 completion; G7.8d gap is real distance vs ladder-fastest Triton kernels and is tracked as Stage 7 follow-up rather than blocking. Three follow-up streams remain open (will land in S8 or as S7.followup):
+
+- **S7.followup.1** — L1 Triton-template autotune rollout to remaining 20 templates (current pass rates: rope 35.7%, batch_matmul 0%, matmul 35.3% indicate room).
+- **S7.followup.2** — L2 Triton fusion baseline collection (currently 0 evaluable).
+- **S7.followup.3** — OT4 attention Triton baseline integration (hard prerequisite to unlock the BL5-inherit gate at G8; the 0/0 ot4 group is the single largest contributor to the math-impossible 0.75 ceiling).
+
+See [docs/phase1/stage7-completion-summary.md](../phase1/stage7-completion-summary.md) §9 for the evening honest-gap closure trajectory (weighted_score 0.3000 → 0.3214 mid-pass → 0.3006 final after fresh data exposed previously-stale failures).
 
 **Memory evidence note (current):** skipped benchmark rows now carry memory preflight metadata in artifact CSVs, including `memory_bytes_required`, `memory_bytes_budget`, `memory_ratio`, and `memory_policy`. The evidence path is no longer attention-only; OT2 / OT3 pressure is represented the same way as OT4 attention pressure, which keeps BL5 coverage accounting honest under 6GB VRAM constraints.
 
@@ -168,30 +238,89 @@ thresholds. Specification: [`docs/benchmark/benchmark-protocol.md`](../benchmark
 
 ---
 
-### Stage 8 (G8): Agent Autonomy ⬜
+### Stage 8 (G8): Agent Autonomy 🚧
 
-**Objective:** Validate that the Arke Agent can autonomously generate strategies, iterate optimization, and produce correct kernels for real LLMs. Integrate torch.compile backend to eliminate dispatch overhead. Validate on LLaMA-2 7B and DeepSeek-V2 16B.
+**Objective:** Build a **highly extensible Arke Harness system** for LLM-driven auto-generation and auto-tuning of AI operators. The Harness (Façade + Substrate) is the **primary Stage 8 deliverable**. Multi-model BL6 end-to-end results (GPT-2 / LLaMA-2 / DS-V2) serve as **Thesis L1 endpoint validation**, demonstrating that the Harness produces real wins on real LLMs.
 
 **Why this follows S7:** Agent needs the v0.1.0 IR/Lang (from S7) to generate backend-agnostic strategies. torch.compile integration needs Backend abstraction (from S6) and Pass pipeline (from S6). Multi-model E2E needs full operator coverage and MLIR skeleton (from S7).
 
 **BL Exit:** BL5 inherited (no regression) + BL6×L3 (GPT-2 + LLaMA-2 + DeepSeek-V2).
 
-**Gate G8 PASS Criteria:**
+**Stage 8 Core Mission (locked 2026-05-17, Leon-approved):**
+Stage 8 builds a **highly extensible Arke Harness system** capable of LLM-driven auto-generation and auto-tuning of AI operators. The Harness itself (Façade + Substrate) is the **primary deliverable**; multi-model BL6 end-to-end results are **Thesis L1 endpoint validation**, not the Stage 8 product. G8 PASS therefore splits into two tiers:
+
+**Gate G8 PASS Criteria (Tier 1 + Tier 2, both must hold):**
 
 ```
-AND ALL:
+Tier 1 — Harness system (Stage 8 primary deliverable):
+  [HARNESS-1] Façade interfaces locked: 8 tools schema + OptimizationEvent stream
+              + trajectory schema v1.0 frozen (≤1 breaking change budget for the tier).
+  [HARNESS-2] LLM autonomy:  G7-AE.1~AE.5 reproducibly pass — Agent independently
+              completes op-generation + autotune trajectory end-to-end.
+  [HARNESS-3] Extensibility (mid-tier, Leon-approved 2026-05-17, Q3=b;
+              LOC cap raised 300→400 on 2026-05-22 to absorb D8-X1 rename
+              refactor + true-fused swiglu_packed in a single demo — see
+              D8-X1 entry below):
+              - Onboard 1 *new* operator end-to-end: ≤400 LOC (incl. tests)
+                + 1 SKILL.md + 1 audit entry + registered in op_registry.py,
+                runs through BL1.
+              - Onboard 1 *new* baseline runner: ≤200 LOC + documented
+                BaselineRunner subclass protocol + plugged into benchmarks/baselines/.
+              - Both demos shipped under benchmarks/results/phase1/stage8/extensibility/.
+
+              D8-X1 (Demo A, 2026-05-22 Leon-approved Aa1/Bb1/Cc2;
+                     ✅ completed 2026-06-06):
+                Discovered legacy "swiglu" / "geglu" benchmark impls were
+                misnomers — they actually compute silu(x)*y and gelu(x)*y
+                (no input split, no down_proj). Demo A path:
+                  1. Hard-rename legacy `swiglu` benchmark op → `silu_and_mul`,
+                     and legacy `geglu` benchmark op → `gelu_and_mul` across
+                     op_registry + downstream (no aliases kept).
+                  2. Register new OT3 op `swiglu_packed`: true fused
+                     split → silu*mul → matmul(down_proj).
+                  3. Single-commit-chain demo; total LOC budget 400 (above
+                     original 300 — justified by rename-refactor surface).
+
+                Outcome:
+                  - Commit chain on `feat/op-count-ssot`:
+                      3917493 C1 rename swiglu → silu_and_mul
+                      911bd9d C2 rename geglu  → gelu_and_mul
+                      4c4b118 C3 onboard swiglu_packed (46th catalog op)
+                      8cea142 C4 SKILL.md (skills/swiglu-packed-fusion/)
+                      b2e8bd1 C5 BL1 evidence (correctness + perf rows)
+                  - Catalog: 45 → 46 ops, OT3: 7 → 8 ops, audit-degraded
+                    rows: 1 → 2 (joined dequantize_per_channel).
+                  - 5/5 acceptance items pass (stage8-plan.md §"Tier 1
+                    Extensibility Acceptance" Demo A).
+
+Tier 2 — Thesis L1 endpoint validation (Harness produces real wins):
   [1] Auto strategy: kernel-only .ak → LLM generates strategy → codegen → ≥0.95× P0 (cuBLAS)
   [2] Iterative optimization: ≥3 compile→profile→adjust cycles in trajectory
   [3] Multi-input: .ak file + natural language + code snippet → all work E2E
-  [4] torch.compile backend: GPT-2 correctness 100% + perf ≥0.95× eager (fixes S5 known-fail)
+  [4a] Vanilla torch.compile baseline: GPT-2 correctness 100% + perf ≥0.95× eager
+  [4b] Arke→torch.compile bridge active: ≥1 Arke kernel on GPT-2's critical path,
+        correctness 100% + perf ≥0.95× eager + bridge-invocation-evidence.
+        ⚠ Bridge is a *transient Substrate artifact* scoped to ≤3 ops, inference-only,
+        single-file under arke/integration/torch_bridge.py. It is NOT part of the
+        Façade and is not a permanent product capability — see stage8-plan.md
+        "D7-E1.4 scope guardrails".
   [5] LLaMA-2 7B: correctness 100% + perf ≥0.90× eager
-  [6] DeepSeek-V2 16B: correctness 100% + perf ≥0.85× eager (seq≤512, quantized)
+  [6] DeepSeek-V2 16B: correctness 100% + perf ≥0.85× eager (seq≤512, quantized;
+       gated on D7-E3.0 reachability probe)
   [7] BL5 no regression: L1+L2 correctness and performance ≥ G7 results
 ```
+
+> **Tiering rationale:** Tier 1 measures whether Stage 8 *built the right thing*
+> (a usable, extensible LLM-driven optimization Harness). Tier 2 measures whether
+> what was built *actually delivers* on the L1 thesis (end-to-end perf wins on
+> real LLMs). Tier 1 cannot be degraded; Tier 2 model selection (e.g. DS-V2)
+> may be relaxed per D7-E3.0 outcome with Leon approval.
 
 → Detailed plan: [docs/phase1/stage8-plan.md](../phase1/stage8-plan.md)
 
 **Stage 8 MVP status (current):** the initial G8 bootstrap path is implemented and validated by `python -m benchmarks.gate G8`. It is intentionally an MVP subset of the locked full G8 criteria: `arke optimize <file.ak>` now generates bounded backend-agnostic StrategyIR with a deterministic heuristic, records three compile→profile→adjust cycles in `trajectory.jsonl`, writes `strategy.json` / `result.akir` / `summary.json`, and `benchmarks.bench_l3` now emits the GPT-2 eager vs `torch.compile` artifact contract with a CPU-safe `--mock` path. Full G8 remains open until the live LLM strategy path, multi-input routing, BL5 performance inheritance, LLaMA-2, and DeepSeek-V2 criteria above are satisfied.
+
+**Stage 8 entry-scout findings (2026-05-17):** Gate G8 contract validation tier 1/2 → 4/4 PASS (MVP.1 trajectory contract, MVP.2 multi-input cases, MVP.3 L3 artifact contract, MVP.4 pytest gate). First real GPT-2 measurement on the laptop RTX 3060 (seq=128, runs=5, warmup=3) showed **eager 7.26 ms / torch.compile 8.95 ms = ratio 0.811× ❌** against the locked G8[4] target ≥0.95×. **D7-E1.1 diagnostic (2026-05-17, runs=20, warmup=10) overturned this reading**: seq=128 ratio 1.006 ✅, seq=512 ratio 1.024 ✅, seq=256 ratio 0.865 ❌. The original 0.811× was a measurement artifact (warmup=3 below compile-overhead noise floor), not a real regression. The single remaining gap (seq=256) is **dynamic-shape recompile thrash** hitting `torch._dynamo.config.cache_size_limit=8` when multiple seq_lens are exercised in the same process, evicting GPT-2 layer-0..11 cache entries. The 12 reported `torch._dynamo.explain()` graph breaks are all intra-layer `_collections_abc.Mapping.__contains__` skipfile breaks and are NOT the dominant cost. Stage-8 M1 critical path re-routed to **D7-E1.6** (bump `cache_size_limit`, compile with `dynamic=True`) instead of the originally planned graph-break elim + CUDA Graph chain. Two cheap-fix bugs also closed in the same commit pack: (a) `bench_l1 --no-resume` was silently appending to per-op CSVs instead of truncating (commit `7b74abc`); (b) `bench_l3 build_summary` filtered on `r.mode == "torch.compile"` while CLI `--modes eager,torch_compile` wrote rows with `mode="torch_compile"`, producing `compile_rows=0` in summary.json despite a successful compile run (commit `b33d9ce`). Full diagnosis artifacts under `benchmarks/results/phase1/stage8/track4/diagnose_2026-05-16/`. **D7-E1.6 closure (same day):** patched `bench_l3.py` to set `torch._dynamo.config.cache_size_limit=64` at module load + bump `DEFAULT_WARMUP_RUNS=10` + compile with `dynamic=True`, then reran `python -m benchmarks.bench_l3 --seq-len 128,256,512 --model gpt2 --modes eager,torch.compile --warmup 10 --runs 20`. All three seq_lens passed: **seq=128 → 1.024, seq=256 → 1.070** (from 0.865, **+23.7%**), **seq=512 → 1.072**, `summary.json: g8_gpt2_pass=true, min_compile_ratio=1.024, geomean=1.055`. Artifact at `benchmarks/results/phase1/stage8/track4/l3/2026-05-17_112120/`. G8[4] gate criterion **met**; M1/M4 milestones closed.
 
 ---
 
@@ -298,32 +427,62 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ---
 
-## Phase 4: Arke → LLVM IR (100% Hardware Completeness)
+## Phase 4: Arke → C-like Kernel Language (CUDA C / CCE-C / Bang-C / etc.)
 
-**Goal:** Achieve maximum hardware expression completeness and performance headroom. Arke IR lowers directly to LLVM IR, bypassing all high-level abstractions. Support 100% of hardware ISA features.
+**Goal:** Generate vendor-supplied C-like kernel languages directly from Arke IR. This phase fills the gap between the MLIR abstraction layer (Phase 3) and the bare LLVM IR layer (Phase 5): vendor C-like DSLs (CUDA C for NVIDIA, CCE-C for Ascend, Bang-C for Cambricon, etc.) are the productionized, vendor-stable kernel surface, with the largest body of hand-tuned reference kernels and the most direct access to vendor toolchains, intrinsics, and tuning practices.
 
-**Backend:** LLVM IR → PTX/AMDGPU/CANN/ROCm
-**Benchmark baseline:** Phase 3 MLIR performance
+**Backend:** Arke IR → C-like kernel source (vendor DSL) → vendor compiler (nvcc / ccec / cncc) → executable
+**Benchmark baseline:** vendor hand-tuned C-like kernels for each operator (e.g. CUTLASS CUDA C kernels, vendor sample CCE-C / Bang-C kernels) — denominator under the Same-Backend Fairness rule
+
+### Why a separate Phase between MLIR and LLVM IR
+
+- **MLIR (Phase 3)** gives compiler-level control but the dialect ecosystem and lowering paths are still maturing; vendor kernel ecosystems live primarily in C-like DSLs, not in MLIR yet
+- **LLVM IR (Phase 5)** is the lowest level, but writing LLVM IR directly bypasses vendor-optimization expertise encoded in their C-like SDKs
+- **C-like vendor DSLs** are where the vast majority of production kernel engineering happens (CUTLASS, Cutlass3, vendor samples, FlagAttention, FlashInfer source), and where Arke can leverage the most existing tuned reference material
 
 ### Stage Structure
 
-
-| Stage          | Milestone               | Exit Criteria                                                     |
-| -------------- | ----------------------- | ----------------------------------------------------------------- |
-| **P4-S1**      | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct                              |
-| **P4-S2**      | Cat A-F via LLVM        | All 60+ ops correct + geomean ≥ Phase 3 MLIR                      |
-| **P4-S3**      | LLVM performance ≥ MLIR | LLVM geomean ≥ MLIR + 5% (Cat A+C+D)                              |
-| **P4-S4**      | Multi-hardware LLVM     | ≥3 backends ≥90% respective vendor libs                           |
-| **P4-S5**      | LLM Level 3 decisions   | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
-| **P4-S_FINAL** | v1.0.0 release          | @rationale KB ≥200 entries, cross-hardware coverage               |
-
+| Stage | Milestone | Exit Criteria |
+| --- | --- | --- |
+| **P4-S1** | CUDA-C lowering framework | SemanticIR + StrategyIR → CUDA C source for matmul; correctness verified |
+| **P4-S2** | Cat A+B+C via CUDA-C | 30 ops correct + geomean ≥ Phase 3 MLIR (Same-Backend CUDA-C fairness) |
+| **P4-S3** | CCE-C / Bang-C cross-vendor | matmul + rmsnorm + flash_attention correct on ≥1 non-NVIDIA vendor C-like DSL |
+| **P4-S4** | Performance ≥ MLIR | C-like geomean ≥ MLIR geomean across Cat A+B+C (per-vendor) |
+| **P4-S_FINAL** | Phase 4 acceptance | Multi-vendor C-like DSL coverage validated; H5 (vendor-DSL portability via Arke IR) demonstrated |
 
 ### Key Design Points
 
-- **StrategyIR L3 → LLVM IR**: Instruction-level decisions (e.g., warp shuffle, tensor core intrinsics) map directly to LLVM intrinsics
-- **100% ISA coverage**: No abstraction ceiling — full access to PTX/AMDGPU/CANN instruction sets
-- **LLM Level 1-3 full stack**: LLM makes decisions at all three StrategyIR layers
-- **@rationale knowledge base**: ≥200 cross-hardware optimization patterns
+- **Backend abstraction extension:** add `CLikeBackend` siblings to `TritonBackend` / `MLIRBackend`; pluggable per-vendor codegen
+- **Same-Backend Fairness:** Arke-CUDA-C vs hand-tuned CUDA-C reference; Arke-CCE-C vs CCE-C reference; etc. — cross-vendor comparisons audit-only
+- **@rationale grounding:** vendor-DSL optimization patterns (CUTLASS-style tiling, vendor-specific memory hints) feed back into @rationale KB
+- **Phase ordering rationale:** the high-level Arke IR (Layer 4 + Layer 3) from Phase 1 → Phase 2 stays unchanged; Phase 3 (MLIR) consumes it; Phase 4 (C-like) consumes the same IR through a parallel codegen path; Phase 5 (LLVM IR) provides the lowest-level escape hatch
+
+---
+
+## Phase 5: Arke → LLVM IR (100% Hardware Completeness)
+
+**Goal:** Achieve maximum hardware expression completeness and performance headroom. Arke IR lowers directly to LLVM IR, bypassing all high-level abstractions. Support 100% of hardware ISA features. This is the final phase of the multi-backend roadmap.
+
+**Backend:** LLVM IR → PTX/AMDGPU/CANN/ROCm
+**Benchmark baseline:** Phase 4 C-like kernel performance (per-vendor) under Same-Backend Fairness for the LLVM-IR target.
+
+### Stage Structure
+
+| Stage | Milestone | Exit Criteria |
+| --- | --- | --- |
+| **P5-S1** | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct |
+| **P5-S2** | Cat A-F via LLVM | All 60+ ops correct + geomean ≥ Phase 4 C-like (per-vendor) |
+| **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) |
+| **P5-S4** | Multi-hardware LLVM | ≥3 backends ≥90% respective vendor libs |
+| **P5-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
+| **P5-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage |
+
+### Key Design Points
+
+- **StrategyIR L3 → LLVM IR:** Instruction-level decisions (e.g., warp shuffle, tensor core intrinsics) map directly to LLVM intrinsics
+- **100% ISA coverage:** No abstraction ceiling — full access to PTX/AMDGPU/CANN instruction sets
+- **LLM Level 1-3 full stack:** LLM makes decisions at all three StrategyIR layers
+- **@rationale knowledge base:** ≥200 cross-hardware optimization patterns
 
 ---
 
@@ -355,7 +514,8 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | API timeout / rate limit                    | Phase 1 S7-S9 | Retry + fallback + prefer Sonnet over Opus                        |
 | Ascend Triton backend unavailable           | Phase 2       | Fallback: validate H4 on AMD via ROCm Triton                      |
 | MLIR learning curve too steep               | Phase 3       | Hire MLIR expert consultant; allocate 2× time buffer              |
-| LLVM IR complexity explosion                | Phase 4       | Incremental: start with matmul only, expand gradually             |
+| C-like vendor SDK lock-in / availability    | Phase 4       | Start with CUDA C (most stable SDK); add CCE-C / Bang-C incrementally |
+| LLVM IR complexity explosion                | Phase 5       | Incremental: start with matmul only, expand gradually             |
 | torch.compile integration breaks            | Phase 1 S8    | Maintain standalone CLI as fallback; Inductor backend is optional |
 
 

@@ -56,7 +56,7 @@ class LigerRunner(BaselineRunner):
         return op in (
             "rmsnorm", "rmsnorm_residual",
             "gelu", "silu", "rope",
-            "swiglu", "geglu",
+            "silu_and_mul", "gelu_and_mul",
             "cross_entropy", "fused_linear_cross_entropy",
         )
 
