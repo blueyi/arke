@@ -181,7 +181,7 @@ These are **not blocking** Stage 7 close, but **must** be completed before Stage
 - **Doc updates:** `docs/benchmark/golden-kernel-ladder.md` OT4 table updated (FlagGems Triton x3, PyTorch-eager audit-degraded x2 with ‡ NOTE); `docs/roadmap/plan.md` S7.followup.3 row updated.
 - **Branch:** `feat/s7-followups` (C1 `3016ffa` + C2 this commit).
 - **Acceptance:** ✅ OT4 group fully evaluable; rate = 1.000 (above 0.97 floor). G7.8d still FAILs overall due to ot0_1/ot2/ot3 gaps (independent followups S7.followup.1 / .2).
-- **Known follow-up `s7f3-hang-fix` (pending):** bench_l1 post-measurement phase (gate aggregate / PERF_ALL recompute) lacks phase markers + watchdog; flash_attention rerun consumed 11h before manual kill. Design `phase markers + watchdog timeout` (plan A+D) before next mass rerun.
+- **Resolved follow-up `s7f3-hang-fix`:** bench_l1 now emits `phase_start` / `phase_end` events for the post-measurement phases (`merge_perf_all`, `write_summary`, `per_op_summary`) plus per-(op, shape, baseline) `measurement_start` / `measurement_done` heartbeats. A POSIX `SIGALRM` watchdog bounds every `bench_fn` call AND the post-measurement stretch (defaults: 900s / 300s; tunable via `--per-measurement-timeout` / `--post-measurement-timeout` or env vars). Timeout rows record `status='timeout'` (retryable) so the bench loop continues and `--resume` re-attempts the failed cell. The flash_attention `7/16 FG shape` rerun is now safe — a runaway shape is bounded at 900s instead of stalling 11h. See `benchmarks/watchdog.py` + `benchmarks/progress.py:ProgressTracker.phase`.
 
 ---
 

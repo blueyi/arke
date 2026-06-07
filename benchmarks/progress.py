@@ -28,9 +28,10 @@ import json
 import logging
 import os
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
 
 logger = logging.getLogger(__name__)
 
@@ -383,6 +384,37 @@ class ProgressTracker:
             path.write_text(json.dumps(payload, indent=2, default=str))
         except OSError as exc:
             logger.debug("failed to write status snapshot: %s", exc)
+
+    @contextmanager
+    def phase(self, phase: str, **payload: Any) -> Iterator[None]:
+        """Context manager that brackets a coarse-grained phase with
+        ``phase_start`` / ``phase_end`` events.
+
+        The end event always fires, even if the body raises — so a hang or
+        crash is at least observable in ``progress.jsonl``. Elapsed time is
+        recorded in seconds with two-decimal precision.
+
+        Used by ``bench_l1.run_l1`` / ``bench_l2`` to make post-measurement
+        phases (write_perf_csv, merge_perf_all, write_summary,
+        per_op_summary) externally visible. Before phase markers, the 11h
+        flash_attention hang on 2026-06-06 was invisible from outside the
+        process — no progress event fired between "Saved: …" and the SIGKILL.
+        """
+        t0 = time.monotonic()
+        self.emit("phase_start", phase=phase, **payload)
+        try:
+            yield
+        finally:
+            elapsed = time.monotonic() - t0
+            self.emit(
+                "phase_end", phase=phase, elapsed_s=round(elapsed, 2), **payload
+            )
+
+    def heartbeat(self, **payload: Any) -> None:
+        """Emit a generic ``heartbeat`` event. Use sparingly inside long
+        loops where the watchdog grain is coarser than the loop grain
+        (e.g. per-shape inside an op)."""
+        self.emit("heartbeat", **payload)
 
 
 # --------------------------------------------------------------------------- #
