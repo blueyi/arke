@@ -105,13 +105,27 @@ where `runner.supports(op) and runner.available`.
 
 ### OT4 — Attention (5)
 
-| Op                       | Golden                    | Fallback           |
-|:-------------------------|:--------------------------|:-------------------|
-| flash_attention          | flash-attn (P2)           | cuDNN SDPA (P0)    |
-| grouped_query_attention  | flash-attn (P2)           | cuDNN SDPA (P0)    |
-| multi_latent_attention   | FlashMLA (P2)             | PyTorch-eager (`mla_golden_degraded=true` on sm<9.0) |
-| cross_attention          | cuDNN SDPA (P0)           | flash-attn         |
-| paged_attention          | vLLM (P2)                 | PyTorch-eager      |
+| Op                       | Golden                    | Fallback                | NOTE |
+|:-------------------------|:--------------------------|:------------------------|:-----|
+| flash_attention          | **FlagGems (P1)** ‡       | PyTorch-eager (hijacked)| same-backend Triton SDPA (S7.followup.3) |
+| grouped_query_attention  | **FlagGems (P1)** ‡       | PyTorch-eager (hijacked)| same-backend Triton SDPA (S7.followup.3) |
+| cross_attention          | **FlagGems (P1)** ‡       | PyTorch-eager (hijacked)| same-backend Triton SDPA (S7.followup.3) |
+| multi_latent_attention   | PyTorch-eager (P3)        | —                       | no production kernel; audit-degraded (FlashMLA Hopper-only, 9 audited libs lack sm 8.6 Triton MLA) |
+| paged_attention          | PyTorch-eager (P3)        | —                       | no production kernel; audit-degraded (vLLM triton_attn is prefill-only; KV-cache layout mismatch) |
+
+> ‡ **S7.followup.3 locked preference (2026-06-06).** FlagGems is the
+> only audited library that ships a Triton-only `scaled_dot_product_attention`
+> implementation on sm 8.6 (RTX 3060). Prior ladder named flash-attn /
+> FlashMLA / vLLM / cuDNN-SDPA as P2/P0 goldens, but those packages are
+> unavailable in the 6 GB 3060 venv (build failures), and the cuDNN P0
+> entry was a same-backend-fairness lie — its `get_fn` called
+> `F.scaled_dot_product_attention`, which dispatches via ATen and gets
+> globally hijacked into FlagGems Triton the moment `flag_gems.enable()`
+> runs. Promoting FlagGems to the OT4 Triton golden makes the runner
+> name match the actual backend. MLA + paged_attention stay
+> `audit-degraded` because no production Triton kernel exists for them
+> in the 9 audited community libraries; PyTorch-eager P3 catches them
+> via the audit-degraded path (same precedent as `swiglu_packed`).
 
 ## Locking & change control
 
