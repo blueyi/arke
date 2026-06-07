@@ -54,6 +54,12 @@ from benchmarks.shapes import (
     get_shapes,
 )
 from benchmarks import progress as _progress
+from benchmarks.watchdog import (
+    DEFAULT_PER_MEASUREMENT_TIMEOUT_S,
+    DEFAULT_POST_MEASUREMENT_TIMEOUT_S,
+    WatchdogTimeout,
+    watchdog,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -153,12 +159,40 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
             torch.randn(K, N, device="cuda", dtype=dtype),
         )
     if op == "batch_matmul":
-        batch = max(K, 4)
+        # Prefer canonical (B, M, K, N) from runtime context — the generic
+        # M/N/K squash in run_l1 line 781-782 overwrites real M with B,
+        # producing the wrong workload entirely. cross_attention uses the
+        # same pattern. See feat(bench): s7f1-shape-encoding for context.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and all(hasattr(shape, a) for a in ("B", "M", "K", "N")):
+            B_, M_, K_, N_ = shape.B, shape.M, shape.K, shape.N
+            return (
+                torch.randn(B_, M_, K_, device="cuda", dtype=dtype),   # A=(B,M,K)
+                torch.randn(B_, K_, N_, device="cuda", dtype=dtype),   # B=(B,K,N)
+            )
+        # Fallback (tests with raw M/N/K): keep prior behaviour but with
+        # K-as-inner-dim so output makes sense. batch is fabricated.
+        K = _positive_dim(K)
+        batch = max(M // 4, 1) if M >= 4 else 4
         return (
-            torch.randn(batch, M, N, device="cuda", dtype=dtype),
-            torch.randn(batch, N, M, device="cuda", dtype=dtype),
+            torch.randn(batch, M, K, device="cuda", dtype=dtype),
+            torch.randn(batch, K, N, device="cuda", dtype=dtype),
         )
     if op == "grouped_matmul":
+        # Prefer canonical (B, E, M, K, N) from runtime context. The generic
+        # squash drops E and overwrites M with B. See s7f1-shape-encoding.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and all(hasattr(shape, a) for a in ("B", "E", "M", "K", "N")):
+            B_, E_, M_, K_, N_ = shape.B, shape.E, shape.M, shape.K, shape.N
+            # Spec: A=[B, M, K] × B=[E, K, N] × indices[B] → [B, M, N]
+            # We benchmark the dense gemm part; indices are encoded by
+            # uniformly distributing B rows across E experts.
+            a_groups = torch.randn(B_, M_, K_, device="cuda", dtype=dtype)
+            b_groups = torch.randn(E_, K_, N_, device="cuda", dtype=dtype)
+            return (a_groups, b_groups)
+        # Fallback (no runtime ctx): legacy behaviour preserved for tests.
         num_groups = max(M // 4, 1)
         group_size = max(M // num_groups, 1)
         a_groups = torch.randn(num_groups, group_size, N, device="cuda", dtype=dtype)
@@ -193,6 +227,14 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
         weight = torch.randn(vocab_size, emb_dim, device="cuda", dtype=dtype)
         return (indices, weight)
     if op in {"silu_and_mul", "gelu_and_mul"}:
+        # Prefer canonical (seq, ffn_x2) from runtime context. The generic
+        # squash leaves M=N=K=0 for GatedShape (no M/N/K attrs), so the
+        # legacy path measures `randn(1, 2)` — a microscopic workload that
+        # has no relationship to gpt2-sm / llama-7b. See s7f1-shape-encoding.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and hasattr(shape, "seq") and hasattr(shape, "ffn_x2"):
+            return (torch.randn(shape.seq, shape.ffn_x2, device="cuda", dtype=dtype),)
         return (torch.randn(M, 2 * N, device="cuda", dtype=dtype),)
     if op == "swiglu_packed":
         K_eff = _positive_dim(K)
@@ -220,6 +262,20 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
             torch.randn(M, N, max(K, 64), device="cuda", dtype=dtype),
         )
     if op == "grouped_query_attention":
+        # Prefer canonical (B, H, S, D, Hkv) from runtime context. The
+        # generic squash hides Hkv (uses M//4 = (B*H)//4 which only
+        # accidentally matches for H=4*Hkv shapes). See s7f1-shape-encoding.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and all(hasattr(shape, a) for a in ("B", "H", "S", "D", "Hkv")) \
+                and shape.Hkv is not None:
+            B_, H_, S_, D_, Hkv_ = shape.B, shape.H, shape.S, shape.D, shape.Hkv
+            return (
+                torch.randn(B_ * H_, S_, D_, device="cuda", dtype=dtype),    # Q (B*H heads)
+                torch.randn(B_ * Hkv_, S_, D_, device="cuda", dtype=dtype),  # K (B*Hkv heads)
+                torch.randn(B_ * Hkv_, S_, D_, device="cuda", dtype=dtype),  # V (B*Hkv heads)
+            )
+        # Fallback (no runtime ctx): legacy behaviour.
         head_dim = max(K, 64)
         num_kv_groups = max(M // 4, 1)
         return (
@@ -890,7 +946,35 @@ def run_op(
                     continue
 
                 try:
-                    bench_result: BenchResult = bench_fn(fn, warmup=warmup, reps=reps)
+                    # Emit a heartbeat before the heavy work so external
+                    # observers (status.json, gate aggregators) can see
+                    # which (op, shape, baseline) is in flight — and for
+                    # how long. Before this, a hang inside bench_fn or
+                    # _measure_l1_correctness was invisible from outside
+                    # the process (11h flash_attention hang on 2026-06-06).
+                    if _BENCH_TRACKER is not None:
+                        _BENCH_TRACKER.heartbeat(
+                            event_kind="measurement_start",
+                            op=op,
+                            shape_tag=tag,
+                            baseline=runner.name,
+                        )
+                    _meas_t0 = time.monotonic()
+
+                    # bench_fn (warmup + reps measurement) is the dominant
+                    # cost. Wrap it under the per-measurement watchdog so a
+                    # pathological op/shape (e.g. GQA llama3-8b-8k @ 859s,
+                    # or a FlagGems global-dispatch deadlock) cannot stall
+                    # the whole run. WatchdogTimeout falls through to the
+                    # outer ``except`` block below where we record a typed
+                    # ``status='timeout'`` row.
+                    with watchdog(
+                        _PER_MEASUREMENT_TIMEOUT_S,
+                        label=f"bench_fn({op}@{tag}, {runner.name})",
+                    ):
+                        bench_result: BenchResult = bench_fn(
+                            fn, warmup=warmup, reps=reps
+                        )
 
                     tflops = None
                     if op in ("matmul", "batch_matmul") and K > 0:
@@ -898,11 +982,18 @@ def run_op(
                             M, N, K, bench_result.latency_us
                         )
 
-                    correctness = _measure_l1_correctness(
-                        runner, op, M, N, K,
-                        golden_preflight_failed=golden_preflight_failed,
-                        golden_preflight_reason=golden_preflight_reason,
-                    )
+                    # Correctness probe — also guarded by the watchdog
+                    # because golden allclose checks can themselves hang
+                    # on adversarial shapes / unfortunate runner combos.
+                    with watchdog(
+                        _PER_MEASUREMENT_TIMEOUT_S,
+                        label=f"correctness({op}@{tag}, {runner.name})",
+                    ):
+                        correctness = _measure_l1_correctness(
+                            runner, op, M, N, K,
+                            golden_preflight_failed=golden_preflight_failed,
+                            golden_preflight_reason=golden_preflight_reason,
+                        )
                     result = OpResult(
                         op=op,
                         shape_tag=tag,
@@ -935,6 +1026,63 @@ def run_op(
                         f"  {tag:15s} {runner.name:15s} "
                         f"{bench_result.latency_us:8.1f} μs{tflops_str}"
                     )
+                    if _BENCH_TRACKER is not None:
+                        _BENCH_TRACKER.heartbeat(
+                            event_kind="measurement_done",
+                            op=op,
+                            shape_tag=tag,
+                            baseline=runner.name,
+                            elapsed_s=round(time.monotonic() - _meas_t0, 2),
+                            outcome="ok",
+                        )
+                except WatchdogTimeout as wto:
+                    # Hard timeout — record a typed row so resume can decide
+                    # whether to retry (status='timeout' is in
+                    # RETRYABLE_FAILURE_STATUSES). We do NOT re-raise: the
+                    # whole point of the watchdog is to keep the bench loop
+                    # alive so the remaining (op, shape, baseline) cells
+                    # still get measured.
+                    logger.error(
+                        f"  {tag} {runner.name}: TIMEOUT after "
+                        f"{wto.elapsed_s:.1f}s (budget={wto.timeout_s:.1f}s, "
+                        f"label={wto.label})"
+                    )
+                    _record(OpResult(
+                        op=op,
+                        shape_tag=tag,
+                        M=M, N=N, K=K,
+                        baseline=runner.name,
+                        priority=runner.priority,
+                        source=runner.source,
+                        latency_us=float("inf"),
+                        latency_min_us=float("inf"),
+                        tflops=None,
+                        status="timeout",
+                        reason=(
+                            f"watchdog timeout after {wto.elapsed_s:.1f}s "
+                            f"(budget={wto.timeout_s:.1f}s, label={wto.label})"
+                        ),
+                        retryable=True,
+                        correctness_status="timeout",
+                        correctness_reason=(
+                            f"measurement aborted at {wto.elapsed_s:.1f}s"
+                        ),
+                        memory_bytes_required=(preflight.estimate.bytes_required if preflight else None),
+                        memory_bytes_budget=(preflight.estimate.bytes_budget if preflight else None),
+                        memory_ratio=(preflight.estimate.ratio if preflight else None),
+                        memory_policy=(preflight.estimate.category if preflight else ""),
+                    ))
+                    if _BENCH_TRACKER is not None:
+                        _BENCH_TRACKER.heartbeat(
+                            event_kind="measurement_done",
+                            op=op,
+                            shape_tag=tag,
+                            baseline=runner.name,
+                            elapsed_s=round(wto.elapsed_s, 2),
+                            outcome="timeout",
+                            timeout_budget_s=wto.timeout_s,
+                            watchdog_label=wto.label,
+                        )
                 except Exception as e:
                     status = classify_exception(e)
                     logger.warning(f"  {tag} {runner.name}: FAILED ({e})")
@@ -964,6 +1112,15 @@ def run_op(
                         memory_ratio=(preflight.estimate.ratio if preflight else None),
                         memory_policy=(preflight.estimate.category if preflight else ""),
                     ))
+                    if _BENCH_TRACKER is not None:
+                        _BENCH_TRACKER.heartbeat(
+                            event_kind="measurement_done",
+                            op=op,
+                            shape_tag=tag,
+                            baseline=runner.name,
+                            elapsed_s=round(time.monotonic() - _meas_t0, 2),
+                            outcome=status.status,
+                        )
 
     return results
 
@@ -982,6 +1139,16 @@ L1_KEY_FIELDS = ("op", "shape_tag", "baseline")
 _SKIP_KEYS: set[tuple[str, str, str]] = set()
 _SKIPPED_ROWS: dict[tuple[str, str, str], dict[str, str]] = {}
 _RESULT_EMITTER = None  # type: ignore[assignment]
+
+# Phase-marker / watchdog hooks (installed by run_l1).
+#
+# ``_BENCH_TRACKER`` lets ``run_op`` emit ``measurement_start`` heartbeats so
+# external observers (status.json, gate aggregators, the operator) can see
+# which (op, shape, baseline) is in flight. ``_PER_MEASUREMENT_TIMEOUT_S``
+# bounds each ``bench_fn`` call — 0 disables the watchdog (equivalent to the
+# old behaviour, kept as a kill-switch).
+_BENCH_TRACKER: _progress.ProgressTracker | None = None
+_PER_MEASUREMENT_TIMEOUT_S: float = 0.0
 
 
 def _l1_row_from_result(r: OpResult) -> dict[str, str]:
@@ -1168,9 +1335,12 @@ def run_l1(
     resume: bool = True,
     retry_policy: str = _progress.RETRY_POLICY_AUTO,
     force_restart: bool = False,
+    per_measurement_timeout_s: float = DEFAULT_PER_MEASUREMENT_TIMEOUT_S,
+    post_measurement_timeout_s: float = DEFAULT_POST_MEASUREMENT_TIMEOUT_S,
 ) -> dict[str, list[OpResult]]:
     """Run L1 benchmark suite with incremental persistence + resume."""
     global _SKIP_KEYS, _SKIPPED_ROWS, _RESULT_EMITTER
+    global _BENCH_TRACKER, _PER_MEASUREMENT_TIMEOUT_S
 
     # Strip duplicate phase/stage/track tail from output_dir.
     canonical_root = _progress.normalize_output_root(
@@ -1206,6 +1376,17 @@ def run_l1(
         base_dir=base_dir,
         layer="l1",
         config_fingerprint=config_check.current_fingerprint,
+    )
+
+    # Install global hooks so run_op (no tracker arg) can emit heartbeats
+    # and respect the per-measurement watchdog. Always reset in ``finally``
+    # to avoid leaking state across calls in long-lived test sessions.
+    _BENCH_TRACKER = tracker
+    _PER_MEASUREMENT_TIMEOUT_S = float(per_measurement_timeout_s)
+    logger.info(
+        "Watchdog config: per_measurement_timeout=%.1fs, post_measurement_timeout=%.1fs",
+        per_measurement_timeout_s,
+        post_measurement_timeout_s,
     )
 
     try:
@@ -1321,9 +1502,10 @@ def run_l1(
 
             _RESULT_EMITTER = _emit
             try:
-                results = run_op(
-                    op, warmup=warmup, reps=reps, tier=tier, shape_tags=shape_tags
-                )
+                with tracker.phase("per_op_measurement", op=op):
+                    results = run_op(
+                        op, warmup=warmup, reps=reps, tier=tier, shape_tags=shape_tags
+                    )
             finally:
                 _RESULT_EMITTER = None
                 _SKIP_KEYS = set()
@@ -1331,17 +1513,18 @@ def run_l1(
 
             all_results[op] = results
 
-            perf_path = write_perf_csv_from_l1(
-                csv_path, base_dir / f"perf_{op}.csv"
-            )
-            logger.info(f"  Saved: {csv_path}")
-            logger.info(f"  Perf : {perf_path}")
-            logger.info(
-                f"  resume summary: {len(skip_keys)} skipped, "
-                f"{new_count['value']} newly written, {len(results)} total in memory"
-            )
+            with tracker.phase("per_op_postprocess", op=op):
+                perf_path = write_perf_csv_from_l1(
+                    csv_path, base_dir / f"perf_{op}.csv"
+                )
+                logger.info(f"  Saved: {csv_path}")
+                logger.info(f"  Perf : {perf_path}")
+                logger.info(
+                    f"  resume summary: {len(skip_keys)} skipped, "
+                    f"{new_count['value']} newly written, {len(results)} total in memory"
+                )
 
-            print_comparison_table(results, op)
+                print_comparison_table(results, op)
 
             tracker.emit(
                 "op_done",
@@ -1351,21 +1534,51 @@ def run_l1(
                 total=len(results),
             )
 
-        merge_perf_all(base_dir)
-        write_summary(base_dir)
-
-        per_op_summary = {
-            op: _progress.summarize_csv(
-                base_dir / f"{op}_results.csv", L1_KEY_FIELDS
+        # ----- Post-measurement phase -----
+        # Pre-2026-06-07 this stretch had no progress events: write_summary
+        # + merge_perf_all + per_op_summary could (and did) hang silently
+        # for 11h on flash_attention. Wrap them all under a single
+        # ``post_measurement`` phase + watchdog so a hang is bounded and
+        # observable in ``progress.jsonl``.
+        try:
+            with watchdog(
+                post_measurement_timeout_s, label="post_measurement"
+            ), tracker.phase("post_measurement"):
+                with tracker.phase("merge_perf_all"):
+                    merge_perf_all(base_dir)
+                with tracker.phase("write_summary"):
+                    write_summary(base_dir)
+                with tracker.phase("per_op_summary"):
+                    per_op_summary = {
+                        op: _progress.summarize_csv(
+                            base_dir / f"{op}_results.csv", L1_KEY_FIELDS
+                        )
+                        for op in ops
+                    }
+                tracker.snapshot({"per_op": per_op_summary})
+                tracker.emit("run_done", per_op=per_op_summary)
+        except WatchdogTimeout as wto:
+            # Post-measurement should be O(seconds). If it times out, we
+            # surface a non-zero exit so cron / CI / the operator notices,
+            # but we DO NOT lose the per-op CSVs — they were written
+            # incrementally inside per_op_postprocess.
+            logger.error(
+                "post-measurement TIMEOUT after %.1fs (budget=%.1fs); per-op "
+                "CSVs are intact, but PERF_ALL.csv may be stale. label=%s",
+                wto.elapsed_s, wto.timeout_s, wto.label,
             )
-            for op in ops
-        }
-        tracker.snapshot({"per_op": per_op_summary})
-        tracker.emit("run_done", per_op=per_op_summary)
+            tracker.emit(
+                "post_measurement_timeout",
+                elapsed_s=round(wto.elapsed_s, 2),
+                budget_s=wto.timeout_s,
+            )
+            raise
 
         print(f"\nResults saved to: {base_dir}")
         return all_results
     finally:
+        _BENCH_TRACKER = None
+        _PER_MEASUREMENT_TIMEOUT_S = 0.0
         _progress.release_lock(base_dir)
 
 
@@ -1453,6 +1666,33 @@ def main() -> None:
         default=None,
         help="YAML file mapping op→runner_name for Golden Kernel overrides.",
     )
+    parser.add_argument(
+        "--per-measurement-timeout",
+        type=float,
+        default=DEFAULT_PER_MEASUREMENT_TIMEOUT_S,
+        metavar="SECONDS",
+        help=(
+            "Per-(op, shape, baseline) watchdog timeout. Each bench_fn call "
+            "(warmup+reps) AND its correctness probe are individually "
+            "bounded. On timeout the row is recorded as status='timeout' "
+            "(retryable) and the bench loop continues. Set to 0 to disable. "
+            f"Default: {DEFAULT_PER_MEASUREMENT_TIMEOUT_S}s "
+            "(env: ARKE_BENCH_PER_MEASUREMENT_TIMEOUT)."
+        ),
+    )
+    parser.add_argument(
+        "--post-measurement-timeout",
+        type=float,
+        default=DEFAULT_POST_MEASUREMENT_TIMEOUT_S,
+        metavar="SECONDS",
+        help=(
+            "Watchdog timeout for the merge_perf_all + write_summary + "
+            "per_op_summary stretch. Pre-2026-06-07 this could hang silently "
+            "for 11h with no progress event. Set to 0 to disable. Default: "
+            f"{DEFAULT_POST_MEASUREMENT_TIMEOUT_S}s (env: "
+            "ARKE_BENCH_POST_MEASUREMENT_TIMEOUT)."
+        ),
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -1487,6 +1727,8 @@ def main() -> None:
         resume=not args.no_resume,
         retry_policy=args.retry_policy,
         force_restart=args.force_restart,
+        per_measurement_timeout_s=args.per_measurement_timeout,
+        post_measurement_timeout_s=args.post_measurement_timeout,
     )
 
 

@@ -41,11 +41,20 @@ class CuBLASRunner(BaselineRunner):
         return op in (
             "matmul", "batch_matmul", "softmax", "layernorm",
             "rmsnorm", "rmsnorm_residual",
+            # OT0 elementwise (CUDA built-in, true cublas/cudnn lineage)
             "relu", "gelu", "silu", "dropout",
             "tanh", "sigmoid", "add", "mul", "neg", "exp", "rsqrt",
             "reduce_sum", "reduce_max", "reduce_mean",
             "transpose",
-            "flash_attention",
+            # NOTE (S7.followup.3 2026-06-06): `flash_attention` REMOVED.
+            # PyTorch F.scaled_dot_product_attention dispatches via aten:: —
+            # once any Triton vendor (FlagGems) calls flag_gems.enable(),
+            # the SDPA path is globally hijacked. Claiming `cuBLAS/cuDNN`
+            # serves the OT4 attention golden while the dispatcher is
+            # actually Triton creates a same-backend-fairness lie. The
+            # honest Triton golden is now FlagGems (P1); cuBLAS/cuDNN
+            # stays out of OT4 to keep the runner name semantically
+            # truthful about its backend.
         )
 
     def get_fn(
