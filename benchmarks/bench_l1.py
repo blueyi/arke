@@ -159,12 +159,40 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
             torch.randn(K, N, device="cuda", dtype=dtype),
         )
     if op == "batch_matmul":
-        batch = max(K, 4)
+        # Prefer canonical (B, M, K, N) from runtime context — the generic
+        # M/N/K squash in run_l1 line 781-782 overwrites real M with B,
+        # producing the wrong workload entirely. cross_attention uses the
+        # same pattern. See feat(bench): s7f1-shape-encoding for context.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and all(hasattr(shape, a) for a in ("B", "M", "K", "N")):
+            B_, M_, K_, N_ = shape.B, shape.M, shape.K, shape.N
+            return (
+                torch.randn(B_, M_, K_, device="cuda", dtype=dtype),   # A=(B,M,K)
+                torch.randn(B_, K_, N_, device="cuda", dtype=dtype),   # B=(B,K,N)
+            )
+        # Fallback (tests with raw M/N/K): keep prior behaviour but with
+        # K-as-inner-dim so output makes sense. batch is fabricated.
+        K = _positive_dim(K)
+        batch = max(M // 4, 1) if M >= 4 else 4
         return (
-            torch.randn(batch, M, N, device="cuda", dtype=dtype),
-            torch.randn(batch, N, M, device="cuda", dtype=dtype),
+            torch.randn(batch, M, K, device="cuda", dtype=dtype),
+            torch.randn(batch, K, N, device="cuda", dtype=dtype),
         )
     if op == "grouped_matmul":
+        # Prefer canonical (B, E, M, K, N) from runtime context. The generic
+        # squash drops E and overwrites M with B. See s7f1-shape-encoding.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and all(hasattr(shape, a) for a in ("B", "E", "M", "K", "N")):
+            B_, E_, M_, K_, N_ = shape.B, shape.E, shape.M, shape.K, shape.N
+            # Spec: A=[B, M, K] × B=[E, K, N] × indices[B] → [B, M, N]
+            # We benchmark the dense gemm part; indices are encoded by
+            # uniformly distributing B rows across E experts.
+            a_groups = torch.randn(B_, M_, K_, device="cuda", dtype=dtype)
+            b_groups = torch.randn(E_, K_, N_, device="cuda", dtype=dtype)
+            return (a_groups, b_groups)
+        # Fallback (no runtime ctx): legacy behaviour preserved for tests.
         num_groups = max(M // 4, 1)
         group_size = max(M // num_groups, 1)
         a_groups = torch.randn(num_groups, group_size, N, device="cuda", dtype=dtype)
@@ -199,6 +227,14 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
         weight = torch.randn(vocab_size, emb_dim, device="cuda", dtype=dtype)
         return (indices, weight)
     if op in {"silu_and_mul", "gelu_and_mul"}:
+        # Prefer canonical (seq, ffn_x2) from runtime context. The generic
+        # squash leaves M=N=K=0 for GatedShape (no M/N/K attrs), so the
+        # legacy path measures `randn(1, 2)` — a microscopic workload that
+        # has no relationship to gpt2-sm / llama-7b. See s7f1-shape-encoding.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and hasattr(shape, "seq") and hasattr(shape, "ffn_x2"):
+            return (torch.randn(shape.seq, shape.ffn_x2, device="cuda", dtype=dtype),)
         return (torch.randn(M, 2 * N, device="cuda", dtype=dtype),)
     if op == "swiglu_packed":
         K_eff = _positive_dim(K)
@@ -226,6 +262,20 @@ def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dt
             torch.randn(M, N, max(K, 64), device="cuda", dtype=dtype),
         )
     if op == "grouped_query_attention":
+        # Prefer canonical (B, H, S, D, Hkv) from runtime context. The
+        # generic squash hides Hkv (uses M//4 = (B*H)//4 which only
+        # accidentally matches for H=4*Hkv shapes). See s7f1-shape-encoding.
+        from benchmarks.baselines._runtime_ctx import get_current_shape
+        shape = get_current_shape()
+        if shape is not None and all(hasattr(shape, a) for a in ("B", "H", "S", "D", "Hkv")) \
+                and shape.Hkv is not None:
+            B_, H_, S_, D_, Hkv_ = shape.B, shape.H, shape.S, shape.D, shape.Hkv
+            return (
+                torch.randn(B_ * H_, S_, D_, device="cuda", dtype=dtype),    # Q (B*H heads)
+                torch.randn(B_ * Hkv_, S_, D_, device="cuda", dtype=dtype),  # K (B*Hkv heads)
+                torch.randn(B_ * Hkv_, S_, D_, device="cuda", dtype=dtype),  # V (B*Hkv heads)
+            )
+        # Fallback (no runtime ctx): legacy behaviour.
         head_dim = max(K, 64)
         num_kv_groups = max(M // 4, 1)
         return (
