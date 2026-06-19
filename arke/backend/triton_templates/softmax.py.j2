@@ -1,57 +1,180 @@
-"""Auto-generated Triton softmax kernel by Arke."""
+"""Auto-generated Triton softmax kernel by Arke.
+
+S7.followup.4 — softmax L1 perf upgrade.
+
+Design (informed by FlagGems master 2b04dbd3 and Liger 7dc5417b):
+  • dtype-aware: fp16/bf16 input → fp32 accumulate → cast back to input dtype
+  • Two kernels split by N threshold (matches FlagGems softmax inner/non-inner split):
+      N ≤ 4096  → single-pass online softmax (one row per program)
+      N >  4096 → 3-pass online softmax with reversed pass-3 store +
+                  eviction_policy="evict_first" for L2 cache reuse
+  • num_warps ladder: 2 / 4 / 8 / 16 / 32 by BLOCK_N
+  • int64 row index for large-M guard
+  • Subtract-max trick (numerical stability) preserved in both paths
+
+Refs:
+  • FlagGems src/flag_gems/ops/softmax.py @ 2b04dbd3 (2026-06-18)
+"""
 import torch
 import triton
 import triton.language as tl
 
 
+# ── single-pass kernel: N <= 4096, one row per program ──────────────────────
 @triton.jit
-def {{ kernel_name }}_kernel(
+def {{ kernel_name }}_simple_kernel(
     X_ptr, Y_ptr,
     M, N,
     stride_xm, stride_xn,
     stride_ym, stride_yn,
     BLOCK_N: tl.constexpr,
 ):
-    row = tl.program_id(0)
-    if row >= M:
-        return
+    if tl.constexpr(X_ptr.dtype.element_ty == tl.float16) or tl.constexpr(
+        X_ptr.dtype.element_ty == tl.bfloat16
+    ):
+        cdtype = tl.float32
+    else:
+        cdtype = X_ptr.dtype.element_ty
+    out_dtype = X_ptr.dtype.element_ty
+
+    row = tl.program_id(0).to(tl.int64)
     offs_n = tl.arange(0, BLOCK_N)
-    n_mask = offs_n < N
+    mask = offs_n < N
 
     x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
-    x = tl.load(x_ptrs, mask=n_mask, other=-float('inf'))
+    x = tl.load(x_ptrs, mask=mask, other=-float('inf')).to(cdtype)
 
     x_max = tl.max(x, axis=0)
     x_shifted = x - x_max
     exp_x = tl.exp(x_shifted)
     sum_exp = tl.sum(exp_x, axis=0)
-    y = exp_x / sum_exp
+    y = (exp_x / sum_exp).to(out_dtype)
 
     y_ptrs = Y_ptr + row * stride_ym + offs_n * stride_yn
-    tl.store(y_ptrs, y, mask=n_mask)
+    tl.store(y_ptrs, y, mask=mask)
+
+
+# ── loop kernel: N > 4096, 3-pass online softmax ────────────────────────────
+@triton.jit
+def {{ kernel_name }}_loop_kernel(
+    X_ptr, Y_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    stride_ym, stride_yn,
+    TILE_N: tl.constexpr,
+):
+    if tl.constexpr(X_ptr.dtype.element_ty == tl.float16) or tl.constexpr(
+        X_ptr.dtype.element_ty == tl.bfloat16
+    ):
+        cdtype = tl.float32
+    else:
+        cdtype = X_ptr.dtype.element_ty
+    out_dtype = X_ptr.dtype.element_ty
+
+    pid = tl.program_id(0).to(tl.int64)
+    x_row_base = X_ptr + pid * stride_xm
+    y_row_base = Y_ptr + pid * stride_ym
+
+    # Pass 1: row max via tiled scan
+    m_i = tl.full((TILE_N,), -float('inf'), dtype=tl.float32)
+    num_steps = tl.cdiv(N, TILE_N)
+    for step in range(0, num_steps - 1):
+        start_n = step * TILE_N
+        n_offsets = start_n + tl.arange(0, TILE_N)
+        x = tl.load(x_row_base + n_offsets * stride_xn).to(tl.float32)
+        m_i = tl.maximum(m_i, x)
+    start_n = (num_steps - 1) * TILE_N
+    n_offsets = start_n + tl.arange(0, TILE_N)
+    mask = n_offsets < N
+    x = tl.load(
+        x_row_base + n_offsets * stride_xn, mask=mask, other=-float('inf')
+    ).to(tl.float32)
+    m_i = tl.maximum(m_i, x)
+    row_max = tl.max(m_i, axis=0)
+
+    # Pass 2: sum of exp(x - row_max)
+    s_i = tl.zeros((TILE_N,), dtype=tl.float32)
+    for step in range(0, num_steps - 1):
+        start_n = step * TILE_N
+        n_offsets = start_n + tl.arange(0, TILE_N)
+        x = tl.load(x_row_base + n_offsets * stride_xn).to(tl.float32)
+        s_i += tl.exp(x - row_max)
+    start_n = (num_steps - 1) * TILE_N
+    n_offsets = start_n + tl.arange(0, TILE_N)
+    mask = n_offsets < N
+    x = tl.load(
+        x_row_base + n_offsets * stride_xn, mask=mask, other=-float('inf')
+    ).to(tl.float32)
+    s_i += tl.where(mask, tl.exp(x - row_max), 0.0)
+    row_sum = tl.sum(s_i, axis=0)
+    inv_sum = 1.0 / row_sum
+
+    # Pass 3: write normalized exp, REVERSED order for L2 cache reuse
+    # (last tile loaded in pass 2 is still hot)
+    prev_multiple = tl.cdiv(N, TILE_N) * TILE_N - TILE_N
+
+    # First reverse step: masked tail
+    n_offsets = prev_multiple + tl.arange(0, TILE_N)
+    mask = n_offsets < N
+    x = tl.load(
+        x_row_base + n_offsets * stride_xn,
+        mask=mask,
+        other=-float('inf'),
+        eviction_policy="evict_first",
+    ).to(cdtype)
+    y = (tl.exp(x - row_max) * inv_sum).to(out_dtype)
+    tl.store(y_row_base + n_offsets * stride_yn, y, mask=mask)
+
+    # Remaining reverse steps (no mask)
+    for start_n in range(TILE_N, N, TILE_N):
+        n_offsets = (prev_multiple - start_n) + tl.arange(0, TILE_N)
+        x = tl.load(
+            x_row_base + n_offsets * stride_xn,
+            eviction_policy="evict_first",
+        ).to(cdtype)
+        y = (tl.exp(x - row_max) * inv_sum).to(out_dtype)
+        tl.store(y_row_base + n_offsets * stride_yn, y)
 
 
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     assert X.ndim == 2, "softmax expects 2D input"
     M, N = X.shape
     Y = torch.empty_like(X)
-    BLOCK_N = triton.next_power_of_2(N)
-    # Heuristic num_warps selection based on row width
-    if BLOCK_N <= 256:
-        num_warps = 2
-    elif BLOCK_N <= 2048:
-        num_warps = 4
-    elif BLOCK_N <= 8192:
-        num_warps = 8
+
+    if N <= 4096:
+        BLOCK_N = triton.next_power_of_2(N)
+        if BLOCK_N <= 256:
+            num_warps = 2
+        elif BLOCK_N <= 2048:
+            num_warps = 4
+        elif BLOCK_N <= 4096:
+            num_warps = 8
+        else:
+            num_warps = 16
+        {{ kernel_name }}_simple_kernel[(M,)](
+            X, Y,
+            M, N,
+            X.stride(0), X.stride(1),
+            Y.stride(0), Y.stride(1),
+            BLOCK_N=BLOCK_N,
+            num_warps=num_warps,
+            num_stages=1,
+        )
     else:
-        num_warps = 16
-    grid = (M,)
-    {{ kernel_name }}_kernel[grid](
-        X, Y,
-        M, N,
-        X.stride(0), X.stride(1),
-        Y.stride(0), Y.stride(1),
-        BLOCK_N=BLOCK_N,
-        num_warps=num_warps,
-    )
+        TILE_N = 4096
+        if N >= 32768:
+            num_warps = 32
+        elif N >= 16384:
+            num_warps = 16
+        else:
+            num_warps = 8
+        {{ kernel_name }}_loop_kernel[(M,)](
+            X, Y,
+            M, N,
+            X.stride(0), X.stride(1),
+            Y.stride(0), Y.stride(1),
+            TILE_N=TILE_N,
+            num_warps=num_warps,
+            num_stages=2,
+        )
     return Y
