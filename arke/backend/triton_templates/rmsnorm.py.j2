@@ -1,34 +1,140 @@
-"""Auto-generated Triton RMSNorm kernel by Arke."""
+"""Auto-generated Triton RMSNorm kernel by Arke.
+
+S7.followup.4 — rmsnorm L1 perf upgrade (target: close 5x gap vs FlagGems).
+
+Design (informed by FlagGems master 2b04dbd3 and Liger 7dc5417b):
+  • dtype-aware: fp16/bf16 input → fp32 accumulate → cast back to input dtype
+    (fixes S7-era hardcoded `.to(tl.float16)` correctness bug for non-fp16 inputs)
+  • rsqrt instead of 1/sqrt (single SFU instruction vs sqrt+div)
+  • Two kernels split by N threshold:
+      N <= 4096  → single-pass `_simple` kernel (one row per program)
+      N >  4096  → `_loop` kernel with 2-pass + reversed pass-2 store +
+                   eviction_policy="evict_first" (FlagGems L2 cache trick)
+  • num_warps ladder: 4 / 8 / 16 / 32 (Liger calculate_settings ladder;
+    previous Arke topped at 16 — adding 32 for hidden ≥ 32K)
+  • MAX_FUSED_SIZE = 65536 (matches Liger; large enough for Llama-65B class)
+
+Refs:
+  • FlagGems src/flag_gems/ops/rms_norm.py @ 2b04dbd3 (2026-06-18)
+  • Liger src/liger_kernel/ops/rms_norm.py @ 7dc5417b (2026-06-17)
+"""
 import torch
 import triton
 import triton.language as tl
 
 
+# ── single-pass kernel: N <= 4096, one row per program ──────────────────────
 @triton.jit
-def {{ kernel_name }}_kernel(
+def {{ kernel_name }}_simple_kernel(
     X_ptr, Weight_ptr, Y_ptr,
     M, N,
     stride_xm, stride_xn,
     stride_ym, stride_yn,
-    eps: tl.constexpr,
+    eps,
     BLOCK_N: tl.constexpr,
 ):
-    row = tl.program_id(0)
+    # Output dtype = input dtype (fix S7 hardcoded fp16 bug)
+    if tl.constexpr(X_ptr.dtype.element_ty == tl.float16) or tl.constexpr(
+        X_ptr.dtype.element_ty == tl.bfloat16
+    ):
+        cdtype = tl.float32
+    else:
+        cdtype = X_ptr.dtype.element_ty
+    out_dtype = X_ptr.dtype.element_ty
+
+    row = tl.program_id(0).to(tl.int64)  # int64 guard for large M (Liger PR #804)
     offs_n = tl.arange(0, BLOCK_N)
     mask = offs_n < N
 
     x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
+    x = tl.load(x_ptrs, mask=mask, other=0.0).to(cdtype)
+    w = tl.load(Weight_ptr + offs_n, mask=mask, other=1.0).to(cdtype)
 
-    x = tl.load(x_ptrs, mask=mask, other=0.0).to(tl.float32)
-    w = tl.load(Weight_ptr + offs_n, mask=mask, other=1.0).to(tl.float32)
+    # rsqrt is a single SFU op; 1/sqrt is two
+    mean_sq = tl.sum(x * x, axis=0) / N
+    rrms = tl.rsqrt(mean_sq + eps)
 
-    # RMSNorm(X) * Weight
-    rms = tl.sum(x * x, axis=0) / N
-    x_norm = x / tl.sqrt(rms + eps)
-    y = x_norm * w
-
+    y = (x * rrms * w).to(out_dtype)
     y_ptrs = Y_ptr + row * stride_ym + offs_n * stride_yn
-    tl.store(y_ptrs, y.to(tl.float16), mask=mask)
+    tl.store(y_ptrs, y, mask=mask)
+
+
+# ── loop kernel: N > 4096, 2-pass with reversed pass-2 store ─────────────────
+@triton.jit
+def _prev_multiple_of(a, b):
+    # Largest x < a such that x % b == 0
+    return tl.cdiv(a, b) * b - b
+
+
+@triton.jit
+def {{ kernel_name }}_loop_kernel(
+    X_ptr, Weight_ptr, Y_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    stride_ym, stride_yn,
+    eps,
+    TILE_N: tl.constexpr,
+):
+    if tl.constexpr(X_ptr.dtype.element_ty == tl.float16) or tl.constexpr(
+        X_ptr.dtype.element_ty == tl.bfloat16
+    ):
+        cdtype = tl.float32
+    else:
+        cdtype = X_ptr.dtype.element_ty
+    out_dtype = X_ptr.dtype.element_ty
+
+    pid = tl.program_id(0).to(tl.int64)
+    x_row_base = X_ptr + pid * stride_xm
+    y_row_base = Y_ptr + pid * stride_ym
+
+    # Pass 1: sum(x^2)
+    acc = tl.zeros((TILE_N,), dtype=tl.float32)
+    num_steps = tl.cdiv(N, TILE_N)
+
+    for step in range(0, num_steps - 1):
+        start_n = step * TILE_N
+        n_offsets = start_n + tl.arange(0, TILE_N)
+        x = tl.load(x_row_base + n_offsets * stride_xn).to(tl.float32)
+        acc += x * x
+
+    # Last (masked) step
+    start_n = (num_steps - 1) * TILE_N
+    n_offsets = start_n + tl.arange(0, TILE_N)
+    mask = n_offsets < N
+    x = tl.load(x_row_base + n_offsets * stride_xn, mask=mask, other=0.0).to(tl.float32)
+    acc += x * x
+
+    mean_sq = tl.sum(acc) / N
+    rrms = tl.rsqrt(mean_sq + eps)
+
+    # Pass 2: normalize in REVERSE order — exploits L2 cache hot from pass 1
+    # (last tile loaded in pass 1 is still hot, so write it first in pass 2)
+    prev_multiple = _prev_multiple_of(N, TILE_N)
+
+    # First reverse step (masked, covers the last tail of the row)
+    for start_n in range(0, TILE_N, TILE_N):
+        n_offsets = (prev_multiple - start_n) + tl.arange(0, TILE_N)
+        mask = n_offsets < N
+        x = tl.load(
+            x_row_base + n_offsets * stride_xn,
+            mask=mask,
+            other=0.0,
+            eviction_policy="evict_first",
+        ).to(cdtype)
+        w = tl.load(Weight_ptr + n_offsets, mask=mask, other=0.0).to(cdtype)
+        y = (x * rrms * w).to(out_dtype)
+        tl.store(y_row_base + n_offsets * stride_yn, y, mask=mask)
+
+    # Remaining reverse steps (no mask needed — full tiles)
+    for start_n in range(TILE_N, N, TILE_N):
+        n_offsets = (prev_multiple - start_n) + tl.arange(0, TILE_N)
+        x = tl.load(
+            x_row_base + n_offsets * stride_xn,
+            eviction_policy="evict_first",
+        ).to(cdtype)
+        w = tl.load(Weight_ptr + n_offsets).to(cdtype)
+        y = (x * rrms * w).to(out_dtype)
+        tl.store(y_row_base + n_offsets * stride_yn, y)
 
 
 def {{ kernel_name }}(
@@ -38,17 +144,49 @@ def {{ kernel_name }}(
 ) -> torch.Tensor:
     M, N = X.shape
     Y = torch.empty_like(X)
-    BLOCK_N = triton.next_power_of_2(N)
-    if BLOCK_N > 65536:
-        BLOCK_N = 65536
-    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
-    {{ kernel_name }}_kernel[(M,)](
-        X, weight, Y,
-        M, N,
-        X.stride(0), X.stride(1),
-        Y.stride(0), Y.stride(1),
-        eps=eps,
-        BLOCK_N=BLOCK_N,
-        num_warps=num_warps,
-    )
+
+    if N <= 4096:
+        BLOCK_N = triton.next_power_of_2(N)
+        # Liger-style num_warps ladder (matches calculate_settings)
+        if BLOCK_N >= 32768:
+            num_warps = 32
+        elif BLOCK_N >= 8192:
+            num_warps = 16
+        elif BLOCK_N >= 2048:
+            num_warps = 8
+        else:
+            num_warps = 4
+        {{ kernel_name }}_simple_kernel[(M,)](
+            X, weight, Y,
+            M, N,
+            X.stride(0), X.stride(1),
+            Y.stride(0), Y.stride(1),
+            eps,
+            BLOCK_N=BLOCK_N,
+            num_warps=num_warps,
+            num_stages=1,
+        )
+    else:
+        # Loop kernel: TILE_N chosen as 4096 (covers up to 65536 with 16 iters);
+        # num_warps=16 fits the wider per-tile work on Ampere (SM 8.6).
+        TILE_N = 4096
+        if N >= 32768:
+            num_warps = 32
+            num_stages = 2
+        elif N >= 8192:
+            num_warps = 16
+            num_stages = 2
+        else:
+            num_warps = 8
+            num_stages = 2
+        {{ kernel_name }}_loop_kernel[(M,)](
+            X, weight, Y,
+            M, N,
+            X.stride(0), X.stride(1),
+            Y.stride(0), Y.stride(1),
+            eps,
+            TILE_N=TILE_N,
+            num_warps=num_warps,
+            num_stages=num_stages,
+        )
     return Y
