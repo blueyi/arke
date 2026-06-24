@@ -473,10 +473,19 @@ def parse_string(source: str) -> Program:
         Program AST node
 
     Raises:
-        lark.exceptions.LarkError: on parse errors
+        ArkeSyntaxError: on parse errors — an agent-friendly error carrying
+            line/column, a source caret, the legal next tokens (as source
+            literals), and a fix suggestion when the error shape is known.
     """
+    from lark.exceptions import UnexpectedInput
+
+    from arke.lang.errors import wrap_lark_error
+
     parser = _get_parser()
-    tree = parser.parse(source)
+    try:
+        tree = parser.parse(source)
+    except UnexpectedInput as e:
+        raise wrap_lark_error(e, source) from e
     return _transformer.transform(tree)
 
 
