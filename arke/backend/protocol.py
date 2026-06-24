@@ -4,10 +4,21 @@
 """Arke Backend — Protocol + Artifact types (S6 Track 3, Task C3.1).
 
 Defines the ArkeBackend protocol that all backends must implement.
-Phase 1: TritonBackend (NVIDIA GPU via Triton)
-Phase 2: TritonBackend (Ascend) + MLIR skeleton
-Phase 3: MLIRBackend (full compiler control)
-Phase 4: LLVMBackend (direct LLVM IR)
+
+Backend roadmap (extensibility seam — keep this clean):
+  Phase 1: TritonBackend (NVIDIA GPU via Triton)        ← ACTIVE
+  Phase 2: TritonBackend (Ascend) + MLIR skeleton       ⏸️ PAUSED (2026-06-24)
+  Phase 3: MLIRBackend (full compiler control)          (future)
+  Phase 4: LLVMBackend (direct LLVM IR)                 (future)
+
+⏸️ Ascend / Phase-2 development is PAUSED (Leon, 2026-06-24): all current
+effort is on the NVIDIA/Triton path to validate the LLM-Native thesis at
+L1 (SIMT). This protocol + ``BackendRegistry`` below ARE the preserved
+extension seam — a future Ascend / AMD / MLIR / LLVM backend plugs in by
+(1) implementing this 4-method Protocol and (2) registering target strings
+via ``BackendRegistry.register``. No core refactor should ever be needed to
+add a backend; if one is, that is an architecture smell to fix here, not in
+the consumers. Do NOT delete the paused Phase-2 surface — keep it dormant.
 
 Design ref: docs/architecture/arke-compiler-infrastructure.md §7
 """

@@ -360,6 +360,21 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ## Phase 2: Arke → Triton-Ascend/MLIR → Ascend NPU (SIMD Validation)
 
+> ## ⏸️ PAUSED (2026-06-24, Leon-approved)
+>
+> **Ascend / Phase-2 development is paused.** All current effort goes to the
+> NVIDIA/Triton path (Phase 1) to validate the LLM-Native thesis at L1 (SIMT).
+> This entire Phase-2 section is kept **dormant, not deleted** — it remains the
+> design-of-record for when cross-architecture validation (Thesis L2) resumes.
+>
+> **Backend extensibility is preserved**, not dropped: the extension seam lives
+> in `arke/backend/protocol.py` (`ArkeBackend` Protocol + `BackendRegistry`).
+> A future Ascend backend plugs in by implementing the 4-method Protocol and
+> registering target strings — no core refactor required. See that module's
+> docstring and `docs/architecture/arke-compiler-infrastructure.md` §7.
+>
+> **Do not invest implementation effort here until Leon un-pauses Phase 2.**
+
 **Goal:** Verify Arke Lang/IR works on SIMD architecture (Ascend NPU) via Ascend Triton backend. Arke-generated Ascend Triton kernels must outperform FlagGems on Ascend. Simultaneously complete Arke Lang/IR to cover Category B-E operators.
 
 **Hardware target:** Huawei Ascend 910B (SIMD, CANN)
@@ -523,4 +538,4 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ---
 
-*Last updated: 2026-04-06 (Gate criteria finalized with high performance targets; S6 Compiler Infrastructure in progress)*
+*Last updated: 2026-06-24 (Phase 2/Ascend marked PAUSED — all effort on NVIDIA/Triton L1 validation; backend extensibility preserved via `arke/backend/protocol.py`. Footer status corrected: S0–S6 ✅ closed, S7 13/14 closed + followups, S8 in progress.)*
