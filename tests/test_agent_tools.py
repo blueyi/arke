@@ -145,7 +145,8 @@ class TestCompileAndProfile:
         assert j["data"]["op_name"] == "matmul"
         assert j["data"]["correct"] is True
         assert isinstance(j["data"]["output_shape"], list)
-        assert j["data"]["backend"] == "mock"
+        # P0-B: real TritonBackend on CUDA, MockBackend on CPU/CI.
+        assert j["data"]["backend"] in ("triton", "mock")
         assert "SSAValidation" in j["data"]["pipeline_passes"]
         assert "ShapeInference" in j["data"]["pipeline_passes"]
 

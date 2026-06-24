@@ -301,7 +301,6 @@ class CompileAndProfileTool(ArkeTool):
 
     def execute(self, params: dict[str, Any]) -> ToolResult:
         import torch
-        from arke.backend.mock_backend import MockBackend
         from arke.compiler.passes import (
             PassPipeline, SSAValidationPass, ShapeInferencePass,
         )
@@ -314,6 +313,21 @@ class CompileAndProfileTool(ArkeTool):
             return ToolResult(success=False, error=f"Unknown op: {op_name!r}")
 
         op = REGISTRY.get(op_name)
+
+        # Backend selection (D8-F1.3 / P0-B): use the real TritonBackend on
+        # CUDA so the agent measures real kernels; fall back to MockBackend
+        # only when CUDA is unavailable (CPU CI). The chosen backend is
+        # reported in the result so the trajectory records measurement
+        # provenance honestly.
+        use_cuda = torch.cuda.is_available() and params.get("force_mock") is not True
+        if use_cuda:
+            from arke.backend.triton_backend import TritonBackend
+            backend = TritonBackend(device="cuda")
+            backend_label = "triton"
+        else:
+            from arke.backend.mock_backend import MockBackend
+            backend = MockBackend()
+            backend_label = "mock"
 
         # Build a single-node graph
         graph = IRGraph(name=f"profile_{op_name}")
@@ -364,8 +378,14 @@ class CompileAndProfileTool(ArkeTool):
         if not result.success:
             return ToolResult(success=False, error=f"Pipeline failed: {result.error}")
 
-        # Generate inputs for execution
+        # Generate inputs for execution. On CUDA we place tensors on the
+        # device with the op's natural dtype (f16 for matmul/attention) so
+        # the real Triton kernel runs; on CPU/mock we keep f32 on host.
         torch.manual_seed(42)
+        dev = "cuda" if use_cuda else "cpu"
+        # f16 is the Phase-1 perf dtype for dense/attention ops; norms etc.
+        # tolerate f16 too. Reductions over indices stay integer.
+        compute_dtype = torch.float16 if use_cuda else torch.float32
         inputs = {}
         for inp_name in op.inputs:
             shape = merged_shapes.get(inp_name, [4, 8])
@@ -373,55 +393,97 @@ class CompileAndProfileTool(ArkeTool):
                 dist = op.input_gen.distributions[inp_name]
                 if dist == "randint":
                     rng = op.input_gen.ranges.get(inp_name, (0, 10))
-                    inputs[inp_name] = torch.randint(int(rng[0]), int(rng[1]) + 1, shape)
+                    inputs[inp_name] = torch.randint(int(rng[0]), int(rng[1]) + 1, shape, device=dev)
                 elif dist == "uniform":
                     rng = op.input_gen.ranges.get(inp_name, (0, 1))
-                    inputs[inp_name] = torch.empty(shape).uniform_(rng[0], rng[1])
+                    inputs[inp_name] = torch.empty(shape, device=dev, dtype=compute_dtype).uniform_(rng[0], rng[1])
                 elif dist == "ones":
-                    inputs[inp_name] = torch.ones(shape)
+                    inputs[inp_name] = torch.ones(shape, device=dev, dtype=compute_dtype)
                 elif dist == "bool_mask":
-                    inputs[inp_name] = torch.randint(0, 2, shape, dtype=torch.bool)
+                    inputs[inp_name] = torch.randint(0, 2, shape, dtype=torch.bool, device=dev)
                 else:
-                    inputs[inp_name] = torch.randn(shape)
+                    inputs[inp_name] = torch.randn(shape, device=dev, dtype=compute_dtype)
             else:
-                inputs[inp_name] = torch.randn(shape)
+                inputs[inp_name] = torch.randn(shape, device=dev, dtype=compute_dtype)
 
-        # Execute via MockBackend
-        mb = MockBackend()
+        # Lower → compile → run through the selected backend.
         try:
-            outputs = mb.run_graph(result.graph, inputs)
+            artifact = backend.lower(result.graph)
+            compiled = backend.compile(artifact)
+            if not getattr(compiled, "success", True):
+                return ToolResult(success=False, error=f"Compile failed: {getattr(compiled, 'error', '?')}")
+            outputs = backend.run(compiled, inputs)
         except Exception as e:
-            return ToolResult(success=False, error=f"Execution failed: {e}")
+            return ToolResult(success=False, error=f"Backend {backend_label} execution failed: {e}")
 
-        # Validate via reference impl
-        try:
-            ref_result = INTERPRETER.execute(op_name, inputs)
+        # Normalize output handle (graph output name may vary).
+        output_tensor = None
+        if isinstance(outputs, dict):
             output_tensor = outputs.get("output")
+            if output_tensor is None and outputs:
+                output_tensor = next(iter(outputs.values()))
+
+        # V1: validate against the reference interpreter (fp64 CPU escape to
+        # avoid the FlagGems aten::mm hijack when comparing on GPU).
+        try:
+            ref_result = INTERPRETER.execute(op_name, {k: v.float().cpu() if v.is_floating_point() else v.cpu()
+                                                       for k, v in inputs.items()})
             if output_tensor is not None and ref_result is not None:
-                if ref_result.is_floating_point():
-                    correct = torch.allclose(output_tensor, ref_result, rtol=1e-3, atol=1e-5)
-                    max_diff = (output_tensor - ref_result).abs().max().item()
+                cand = output_tensor.float().cpu()
+                ref = ref_result.float().cpu() if ref_result.is_floating_point() else ref_result.cpu()
+                if ref.is_floating_point():
+                    # f16 compute → looser tolerance
+                    rtol, atol = (1e-2, 1e-2) if use_cuda else (1e-3, 1e-5)
+                    correct = bool(torch.allclose(cand, ref, rtol=rtol, atol=atol))
+                    max_diff = (cand - ref).abs().max().item()
                 else:
-                    correct = torch.equal(output_tensor, ref_result)
+                    correct = bool(torch.equal(cand.long(), ref.long()))
                     max_diff = 0.0
             else:
                 correct = True
                 max_diff = 0.0
         except Exception as e:
-            return ToolResult(
-                success=True,
-                data={"pipeline": "passed", "execution": "passed", "validation": f"skipped: {e}"},
-                warnings=[f"Reference validation failed: {e}"],
-            )
+            correct = None
+            max_diff = None
+            validation_note = f"reference validation skipped: {e}"
+        else:
+            validation_note = None
 
-        return ToolResult(success=True, data={
+        # V2: real GPU profiling (only meaningful on CUDA with a real kernel).
+        latency_ms = None
+        baseline_ratio = None
+        if use_cuda and output_tensor is not None:
+            try:
+                from benchmarks.measure import bench_fn
+                arke_fn = lambda: backend.run(compiled, inputs)  # noqa: E731
+                arke_bench = bench_fn(arke_fn, warmup=25, reps=100, trials=3)
+                latency_ms = round(arke_bench.latency_us / 1000.0, 6)
+                # PyTorch-eager baseline via the interpreter on-device.
+                try:
+                    base_fn = lambda: INTERPRETER.execute(op_name, inputs)  # noqa: E731
+                    base_bench = bench_fn(base_fn, warmup=25, reps=100, trials=3)
+                    base_ms = base_bench.latency_us / 1000.0
+                    if latency_ms and latency_ms > 0:
+                        baseline_ratio = round(base_ms / latency_ms, 4)
+                except Exception:
+                    baseline_ratio = None
+            except Exception as e:
+                validation_note = (validation_note or "") + f" | profiling skipped: {e}"
+
+        data = {
             "op_name": op_name,
             "pipeline_passes": result.passes_run,
-            "output_shape": result.artifacts.get("shape_map", {}).get("output", []),
+            "output_shape": list(output_tensor.shape) if output_tensor is not None else [],
             "correct": correct,
             "max_diff": max_diff,
-            "backend": "mock",
-        })
+            "latency_ms": latency_ms,
+            "baseline_ratio": baseline_ratio,
+            "backend": backend_label,
+            "num_real_kernels": artifact.metadata.get("num_real_kernels"),
+            "num_fallback": artifact.metadata.get("num_fallback"),
+        }
+        warnings = [validation_note] if validation_note else []
+        return ToolResult(success=True, data=data, warnings=warnings)
 
     def parameters_schema(self) -> dict[str, Any]:
         return {
@@ -632,6 +694,84 @@ class VerifyCorrectnessTool(_EnvBoundTool):
             return 1e-2, 1e-3
         return 1e-3, 1e-5
 
+    def _validate_real(self, seed: int, rtol: float, atol: float) -> tuple[bool, float]:
+        """Compile + run the current op on the real TritonBackend (CUDA) and
+        compare against the reference interpreter. Returns (correct, max_diff).
+
+        Builds a single-node IRGraph for the env's op, lowers through
+        TritonBackend, executes on f16 CUDA tensors, and compares against the
+        interpreter run on an fp64 CPU copy of the same inputs (the fp64 CPU
+        escape sidesteps the global FlagGems aten::mm hijack). Raises on any
+        backend/codegen failure so the caller can record an honest failure.
+        """
+        import torch
+        from arke.backend.triton_backend import TritonBackend
+        from arke.compiler.passes import (
+            PassPipeline, SSAValidationPass, ShapeInferencePass,
+        )
+        from arke.ir.graph import IRGraph, IRNode
+        from arke.ir.ops.interpreter import INTERPRETER
+        from arke.ir.ops.registry import REGISTRY
+
+        op_name = self._env.op_name
+        op = REGISTRY.get(op_name)
+        shapes = self._env.op_inputs
+
+        graph = IRGraph(name=f"verify_{op_name}")
+        for inp_name in op.inputs:
+            graph.add_input(inp_name, shape=shapes.get(inp_name, [4, 8]))
+        graph.add_node(IRNode(id="n0", op=op_name,
+                              inputs={k: k for k in op.inputs}, outputs=["output"]))
+        graph.set_outputs(["output"])
+
+        pipeline = PassPipeline("verify_real")
+        pipeline.add_pass(SSAValidationPass())
+        pipeline.add_pass(ShapeInferencePass())
+        pres = pipeline.run(graph)
+        if not pres.success:
+            raise RuntimeError(f"pipeline failed: {pres.error}")
+
+        torch.manual_seed(seed)
+        inputs = {}
+        for inp_name in op.inputs:
+            shape = shapes.get(inp_name, [4, 8])
+            if op.input_gen and inp_name in op.input_gen.distributions:
+                dist = op.input_gen.distributions[inp_name]
+                if dist == "randint":
+                    rng = op.input_gen.ranges.get(inp_name, (0, 10))
+                    inputs[inp_name] = torch.randint(int(rng[0]), int(rng[1]) + 1, shape, device="cuda")
+                elif dist == "bool_mask":
+                    inputs[inp_name] = torch.randint(0, 2, shape, dtype=torch.bool, device="cuda")
+                else:
+                    inputs[inp_name] = torch.randn(shape, device="cuda", dtype=torch.float16)
+            else:
+                inputs[inp_name] = torch.randn(shape, device="cuda", dtype=torch.float16)
+
+        backend = TritonBackend(device="cuda")
+        artifact = backend.lower(pres.graph)
+        compiled = backend.compile(artifact)
+        if not getattr(compiled, "success", True):
+            raise RuntimeError(f"compile failed: {getattr(compiled, 'error', '?')}")
+        outputs = backend.run(compiled, inputs)
+        out = outputs.get("output") if isinstance(outputs, dict) else None
+        if out is None and isinstance(outputs, dict) and outputs:
+            out = next(iter(outputs.values()))
+        if out is None:
+            raise RuntimeError("backend produced no output")
+
+        ref_inputs = {k: (v.float().cpu() if v.is_floating_point() else v.cpu())
+                      for k, v in inputs.items()}
+        ref = INTERPRETER.execute(op_name, ref_inputs)
+        cand = out.float().cpu()
+        ref_c = ref.float().cpu() if ref.is_floating_point() else ref.cpu()
+        if ref_c.is_floating_point():
+            correct = bool(torch.allclose(cand, ref_c, rtol=max(rtol, 1e-2), atol=max(atol, 1e-2)))
+            max_diff = float((cand - ref_c).abs().max().item())
+        else:
+            correct = bool(torch.equal(cand.long(), ref_c.long()))
+            max_diff = 0.0
+        return correct, max_diff
+
     def execute(self, params: dict[str, Any]) -> ToolResult:
         from arke.agent.inputs import generate_inputs
         from arke.agent.state import CompileResult
@@ -671,12 +811,41 @@ class VerifyCorrectnessTool(_EnvBoundTool):
         # Reversing this order would erase the compile we just recorded.
         # ────────────────────────────────────────────────────────────────
 
-        # D8-F1.2: candidate backend not wired yet → V0_mock tier.
-        # D8-F1.3 will plug in real Triton compile + execute here.
+        # ── V1 numeric validation (P0-B / D8-F1.3) ───────────────────────
+        # On CUDA: compile + run the op through the real TritonBackend and
+        # compare against the reference interpreter (fp64 CPU escape avoids
+        # the FlagGems aten::mm hijack). On CPU/no-GPU: fall back to the
+        # V0_mock tier (candidate == reference) so CI stays green.
+        import torch as _torch
+        use_cuda = _torch.cuda.is_available() and params.get("force_mock") is not True
+
+        if use_cuda:
+            tier = "V1_triton"
+            try:
+                correct, max_diff = self._validate_real(seed, rtol, atol)
+                backend_label = "triton"
+            except Exception as e:
+                # Real path failed → record an honest failed compile, not a
+                # silent success. The agent sees correct=False and can adapt.
+                result = CompileResult(
+                    success=False, backend="triton", correct=None,
+                    error=f"real-verify failed: {e}",
+                    metadata={"validation_tier": tier, "rtol": rtol, "atol": atol},
+                )
+                try:
+                    self._env.state.record_compile(result)
+                except Exception:
+                    pass
+                return ToolResult(success=False, error=f"verify_correctness (real) failed: {e}")
+        else:
+            tier = "V0_mock"
+            backend_label = "mock"
+            correct, max_diff = True, 0.0
+
         result = CompileResult(
-            success=True, backend="mock",
-            correct=True, max_diff=0.0,
-            metadata={"validation_tier": "V0_mock", "rtol": rtol, "atol": atol},
+            success=True, backend=backend_label,
+            correct=correct, max_diff=max_diff,
+            metadata={"validation_tier": tier, "rtol": rtol, "atol": atol},
         )
         try:
             self._env.state.record_compile(result)
@@ -712,9 +881,10 @@ class VerifyCorrectnessTool(_EnvBoundTool):
 
         budget = self._env.state.budget
         return ToolResult(success=True, data={
-            "correct": True,
-            "max_diff": 0.0,
-            "validation_tier": "V0_mock",
+            "correct": correct,
+            "max_diff": max_diff,
+            "validation_tier": tier,
+            "backend": backend_label,
             "rtol": rtol, "atol": atol,
             "compiles_used": budget.compiles_used,
             "compiles_remaining": budget.compiles_remaining,

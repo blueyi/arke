@@ -39,6 +39,13 @@ gpu = [
     "torch>=2.0",
     "triton>=2.0",
 ]
+agent = [
+    # Live-LLM optimization driver (arke.agent.runner.LLMRunner). Both SDKs
+    # are supported transports; the OpenAI-protocol client also drives the
+    # yunwu.ai /v1 relay (the clean endpoint — see llm_config.py).
+    "anthropic>=0.40",
+    "openai>=1.40",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",

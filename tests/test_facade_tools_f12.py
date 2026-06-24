@@ -182,8 +182,14 @@ def test_verify_correctness_no_trial(env: ArkeEnv, reg: ToolRegistry):
     r = reg.get("verify_correctness").execute({})
     assert r.success
     assert r.data["correct"] is True
-    assert r.data["max_diff"] == 0.0
-    assert r.data["validation_tier"] == "V0_mock"
+    # P0-B: on CUDA the tool runs a real Triton compile + numeric compare
+    # (V1_triton tier, small f16 max_diff); on CPU/no-GPU it stays the
+    # V0_mock tier (candidate == reference → max_diff exactly 0.0).
+    if r.data["validation_tier"] == "V0_mock":
+        assert r.data["max_diff"] == 0.0
+    else:
+        assert r.data["validation_tier"] == "V1_triton"
+        assert r.data["max_diff"] is not None and r.data["max_diff"] < 0.1
     assert env.state.budget.compiles_used == 1
 
 
