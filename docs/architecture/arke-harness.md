@@ -253,9 +253,10 @@ Termination conditions, in priority order:
 4. Hard error (provider unreachable after fallback chain exhausted, V2 baseline
    measurement fails) — finalize with the best result so far.
 
-Today: a synchronous turn loop drives the heuristic path in
-`arke/agent/optimize.py`. The AsyncGenerator form is the migration target — see
-§18.
+Today: a synchronous turn loop drives **both** the deterministic heuristic
+path (`arke/agent/optimize.py`) **and the live-LLM tool-use path**
+(`arke/agent/runner.py::LLMRunner`, landed P0-A 2026-06-24). The
+AsyncGenerator form is the migration target — see §18.
 
 ---
 
@@ -830,7 +831,10 @@ Honest assessment as of 2026-05-10. Contract is **frozen** for §1–§10, §15,
 | Heuristic strategy floor | ✅ implemented | `arke/agent/optimize.py::HeuristicStrategyGenerator` |
 | Trajectory (`arke-trajectory-v1.0.0`, D8-F3) | ✅ implemented | `arke/learn/trajectory.py` + `arke/learn/trajectory_schema.py` |
 | `arke optimize` CLI MVP | ✅ implemented | `arke/agent/optimize.py` (deterministic path) |
-| Sync turn loop with LLM | 🚧 partial | aspirational `LLMRunner` |
+| **Live LLM tool-use loop (P0-A, 2026-06-24)** | ✅ **implemented** | `arke/agent/runner.py::LLMRunner` + `arke/agent/llm_config.py` (anthropic + openai protocols; yunwu.ai routed via clean `/v1`) |
+| **Real V1 numeric validation (P0-B)** | ✅ **implemented** | `verify_correctness` → real TritonBackend compile+compare on CUDA (`V1_triton` tier; `V0_mock` only on CPU) |
+| **Real V2 GPU profiling (P0-B)** | ✅ **implemented** | `compile_and_profile` → real Triton latency + `baseline_ratio` via `benchmarks.measure.bench_fn` |
+| Sync turn loop with LLM | ✅ implemented | `arke/agent/runner.py::LLMRunner` (was aspirational; landed P0-A) |
 | AsyncGenerator loop | ⬜ planned | Migration M1 |
 | Tool orchestrator (concurrent partition) | ⬜ planned | Migration M2 |
 | Segmented prompt cache | ⬜ planned | Migration M3 |
