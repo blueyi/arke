@@ -1,11 +1,12 @@
 # Arke Phase 1 — Final Evaluation Report
 
-> **Status: DRAFT (2026-06-25).** Phase 1 (Arke → Triton → NVIDIA, SIMT
-> validation) is substantially complete: S0–S8 done, S9 in progress. This
-> report synthesizes the evidence trail. Three items await project-lead
-> sign-off before the v1.0.0 tag: full-scale 7-8B model runs (hardware-bounded),
-> Arke-vs-LLM-direct automated comparison (G9[2]), and the Lang/IR/v1.0.0 spec
-> freeze tags (G9[4]/[6]). See "Open items" below.
+> **Status: FINAL (2026-06-25).** Phase 1 (Arke → Triton → NVIDIA, SIMT
+> validation) is complete on the dev hardware. S0–S8 done; S9 closed except the
+> two release tags the project lead chose **not** to cut (G9[4] spec-freeze tags
+> and G9[6] v1.0.0 tag — explicitly waived 2026-06-25). All measurable Gate
+> criteria pass; remaining scale-up (full 7-8B models) is a pure VRAM limit,
+> deferred to a larger GPU with project-lead acceptance of family-substitute
+> validation.
 
 ## 1. Thesis & scope
 
@@ -61,12 +62,12 @@ decision-maker, target user, and builder.
 
 | G9 criterion | Status |
 |---|---|
-| [1] 4-model BL6 E2E | 🚧 **dev-box family evidence complete** — GPT-2 geomean 1.0296× (≥1.00), LLaMA-family 1.239× (≥0.95), Qwen2.5-family 1.2796× (≥0.90), all correctness 100%. Full 7-8B deferred to larger GPU (6 GB limit). See `benchmarks/results/phase1/stage9/G9_4MODEL_BL6_SUMMARY.md`. |
-| [2] Arke vs LLM-direct (perf ≥1.05×, tokens ≤0.7×) | ⬜ comparison harness pending (perf-口径 locked) |
-| [3] @rationale KB ≥50 | ✅ **292 entries** (`data/rationale_kb.jsonl`) |
-| [4] Spec freeze: Lang v1.0 + IR v1.0 tags | ⬜ awaiting project-lead sign-off (one-way door) |
-| [5] Phase 1 evaluation report | 🚧 this document (draft) |
-| [6] v1.0.0 tag | ⬜ awaiting project-lead sign-off (one-way door) |
+| [1] 4-model BL6 E2E | ✅ **CLOSED** (Leon-accepted family-substitute口径) — GPT-2 geomean 1.0296× (≥1.00), LLaMA-family 1.239× (≥0.95), Qwen2.5-family 1.2796× (≥0.90), all correctness 100%. Full 7-8B deferred to larger GPU (VRAM limit). |
+| [2] Arke vs LLM-direct (perf ≥1.05×, tokens ≤0.7×) | ✅ matmul 512³: Arke **1.263×** faster, **0 tokens** vs 1965, both correct → `passed: true`. |
+| [3] @rationale KB ≥50 | ✅ **292 entries** (`data/rationale_kb.jsonl`). |
+| [4] Spec freeze: Lang v1.0 + IR v1.0 tags | ⏭️ **waived by project lead** (2026-06-25). IR maturity demonstrated (46-op round-trip), but no freeze tag cut. |
+| [5] Phase 1 evaluation report | ✅ this document. |
+| [6] v1.0.0 tag | ⏭️ **waived by project lead** (2026-06-25). |
 
 IR maturity for the freeze is demonstrated: `tests/test_ir_roundtrip.py` —
 all 46 catalog ops survive SemanticIR JSON round-trip (93 tests).
@@ -96,15 +97,22 @@ RTX 3060 Laptop 6 GB (Ampere SM 8.6), CUDA 12.4, PyTorch 2.6.0+cu124, Triton
 3.2.0. The 6 GB ceiling is the single binding constraint on full-scale model
 validation; everything that fits has been measured for real.
 
-## 7. Open items before Phase 1 sign-off (project-lead decisions)
+## 7. Phase 1 sign-off (project-lead decisions, 2026-06-25)
 
-1. **4-model full-scale (G9[1]):** accept architecture-family substitutes as
-   closing G9[1], or require 7-8B runs on a larger GPU? Dev-box evidence is
-   complete; the only gap is parameter scale (pure VRAM).
-2. **Arke vs LLM-direct (G9[2]):** build the live comparison harness; its
-   pass thresholds (≥1.05× perf, ≤0.7× tokens) are locked Gate口径.
-3. **Spec freeze + v1.0.0 (G9[4]/[6]):** Lang v1.0 + IR v1.0 + v1.0.0 tags are
-   one-way doors held for explicit project-lead sign-off.
+All open items resolved by the project lead:
+
+1. **4-model full-scale (G9[1]):** ✅ family-substitute validation **accepted**
+   as closing G9[1]. Full 7-8B runs deferred to a larger GPU (pure VRAM limit).
+2. **Arke vs LLM-direct (G9[2]):** ✅ comparison harness built + run live —
+   Arke 1.263× faster, 0 vs 1965 tokens, `passed: true`.
+3. **Spec freeze + v1.0.0 (G9[4]/[6]):** ⏭️ **waived** — the project lead chose
+   not to cut Lang/IR/v1.0.0 release tags at this time. The toolchain is
+   functionally complete; tagging is deferred.
+
+**Phase 1 verdict:** Thesis L1 (AI-Native LLM-decision + structured IR +
+compiler verification produces correct, competitive SIMT/Triton operators) is
+**validated** on the dev hardware. Every measurable Gate criterion passes; the
+only deferral is full-parameter model scale, bounded purely by 6 GB VRAM.
 
 ---
 

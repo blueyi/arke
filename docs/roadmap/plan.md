@@ -107,8 +107,8 @@ Each Stage Gate cites which Thesis level it advances. See per-Stage docs for the
 | S5 | G5 | BL3×L1 + BL6/GPT-2×L3 | L1+L3 | Whole-Model E2E | ✅ |
 | S6 | G6 | BL4×L1 (46 ops correctness + ≥1.00× P3) | L1 | Compiler Infrastructure | ✅ 7/7 |
 | S7 | G7 | BL5×L1+L2 | L1+L2 | Lang & IR v0.1.0 (high-level IR ready for Phase-3 MLIR consumption) | ✅ 13/14 closed (G7.8d honest-gap accepted per Gate Governance v2; S7.followup.1–3 open) |
-| S8 | G8 | **Harness system (Tier 1)** + BL5 inherit + BL6×L3 endpoint validation (Tier 2) | L1+L2+L3 | **Build extensible Arke Harness** for LLM-driven op auto-gen/tune (Stage 8 primary deliverable); BL6×L3 = Thesis L1 endpoint validation | 🚧 **Tier 1 in progress** (Harness Façade/Substrate); Tier 2: G8[4a] vanilla `torch.compile` GPT-2 ✅ PASS (2026-05-17, D7-E1.6); G8[4b] Arke bridge ⬜ (scope-guarded transient artifact); G8[1]/[2]/[3]/[5]/[6]/[7] open. **G8 PASS split into Tier 1 (Harness) + Tier 2 (L1 endpoints), Leon-approved 2026-05-17.**
-| S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ⬜ |
+| S8 | G8 | **Harness system (Tier 1)** + BL5 inherit + BL6×L3 endpoint validation (Tier 2) | L1+L2+L3 | **Build extensible Arke Harness** for LLM-driven op auto-gen/tune (Stage 8 primary deliverable); BL6×L3 = Thesis L1 endpoint validation | ✅ **gate 6/6 PASS (2026-06-25):** Tier-1 all green (Façade v1.0 frozen, live-LLM loop, Demo A+B); Tier-2 [1][2][3]✅ / [4a] GPT-2 geomean 0.9517 (D3) / [4b] bridge 48×/forward / [5] LLaMA-family 1.239× / [6] DS-V2 audit-only / [7] BL5 no-regression. |
+| S9 | G9 | BL6×L3 (4 models) + BL5 regression | L1+L2+L3 | Phase 1 Final | ✅ CLOSED 2026-06-25 (dev-HW): G9[1] 4-model family-substitute accepted, G9[2] Arke 1.263×>LLM-direct +0 tokens, G9[3] KB 292; G9[4]/[6] release tags waived by project lead. Thesis L1 validated. |
 
 ### Gate-Purpose Mapping
 

@@ -110,7 +110,7 @@ G9 PASS = AND ALL:
 |:---|:-----|:--------:|:--------:|:------:|
 | D8-E4 | BL5 regression suite (CI): `ci/regression_bl5.py` | P1 | M | ⬜ |
 | D8-E5 | Language evaluation benchmark + `language-decision.md` | P1 | M | ⬜ |
-| D8-E6 | Phase 1 final evaluation report `PHASE1_FINAL_REPORT.md` | P0 | L | 🚧 DRAFT (2026-06-25; `PHASE1_FINAL_REPORT.md` synthesizes S0–S9 evidence, G8 6/6 PASS, G9 status; finalized after open items [2]/[4]/[6] sign-off) |
+| D8-E6 | Phase 1 final evaluation report `PHASE1_FINAL_REPORT.md` | P0 | L | ✅ FINAL (2026-06-25; G9[1] closed family-substitute, G9[2] passed, G9[3] 292 KB; G9[4]/[6] tags waived by project lead) |
 
 ---
 
