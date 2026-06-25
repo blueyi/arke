@@ -1,0 +1,9 @@
+{
+  "arke_matmul_invocations_per_forward": 48,
+  "eager_top1": 329,
+  "arke_bridged_top1": 329,
+  "top1_match": true,
+  "logits_max_abs_diff": 0.125,
+  "correctness_ok": true,
+  "evidence": "arke::matmul fired on every GPT-2 Conv1D projection (critical path)"
+}
