@@ -1,0 +1,4 @@
+{
+  "eager": "PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause",
+  "torch.compile": "torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause"
+}
