@@ -1,0 +1,3 @@
+model,seq_len,mode,source,status,reason,mean_ms,min_ms,max_ms,median_ms,peak_memory_mb,correct,max_logit_diff,mean_logit_diff,top1_match,ratio_vs_eager
+gpt2,256,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,6.808269,6.515712,9.452544,6.556672,554.418945,True,0.000000,0.000000,True,1.000000
+gpt2,256,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,8.498019,7.444480,10.954688,8.497152,580.294922,True,2.750000,0.089881,True,0.801159

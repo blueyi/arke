@@ -1,0 +1,7 @@
+model,seq_len,mode,source,status,reason,mean_ms,min_ms,max_ms,median_ms,peak_memory_mb,correct,max_logit_diff,mean_logit_diff,top1_match,ratio_vs_eager
+gpt2,128,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,8.115762,7.260160,8.897536,8.159232,525.191406,True,0.000000,0.000000,True,1.000000
+gpt2,128,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,8.364698,7.303168,11.471872,8.467456,930.611328,True,4.625000,0.162523,True,0.970240
+gpt2,256,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,7.204147,6.270976,11.296768,6.838272,555.419922,True,0.000000,0.000000,True,1.000000
+gpt2,256,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,8.185856,7.741440,10.434560,8.037376,796.362793,True,2.750000,0.089881,True,0.880073
+gpt2,512,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,11.981210,11.217920,13.435904,11.413504,615.717773,True,0.000000,0.000000,True,1.000000
+gpt2,512,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,10.545101,9.734144,13.565952,11.002880,838.011230,True,1.500000,0.048841,True,1.136187
