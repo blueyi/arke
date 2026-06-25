@@ -1,0 +1,5 @@
+model,seq_len,mode,source,status,reason,mean_ms,min_ms,max_ms,median_ms,peak_memory_mb,correct,max_logit_diff,mean_logit_diff,top1_match,ratio_vs_eager
+Qwen/Qwen2.5-0.5B-Instruct,128,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,27.087155,24.907776,32.278526,26.507263,1986.178711,True,0.000000,0.000000,True,1.000000
+Qwen/Qwen2.5-0.5B-Instruct,128,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,19.070105,17.282047,21.933056,18.744320,2203.446289,True,0.347656,0.015800,True,1.420399
+Qwen/Qwen2.5-0.5B-Instruct,512,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,38.678989,36.702209,42.736641,38.129665,2212.088867,True,0.000000,0.000000,True,1.000000
+Qwen/Qwen2.5-0.5B-Instruct,512,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,33.552168,32.833534,35.427105,33.491966,2360.245117,True,0.342773,0.017651,True,1.152801

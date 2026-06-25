@@ -73,8 +73,8 @@ G9 PASS = AND ALL:
 
 | ID | Task | Priority | Estimate | Status |
 |:---|:-----|:--------:|:--------:|:------:|
-| D8-E1 | LLaMA-3 8B integration + bench_l3 runner | P0 | L | ⬜ |
-| D8-E2 | Qwen2.5 7B integration + bench_l3 runner | P0 | L | ⬜ |
+| D8-E1 | LLaMA-3 8B integration + bench_l3 runner | P0 | L | 🚧 LLaMA-family validated (TinyLlama-1.1B LLaMA-arch, geomean 1.239×, correctness 100%); full LLaMA-3 8B deferred to larger GPU (6GB OOM). Evidence: `benchmarks/results/phase1/stage9/G9_4MODEL_BL6_SUMMARY.md` |
+| D8-E2 | Qwen2.5 7B integration + bench_l3 runner | P0 | L | 🚧 Qwen2.5-family validated (Qwen2.5-0.5B-Instruct Qwen2 GQA arch, geomean 1.2796×, correctness 100%); full Qwen2.5 7B deferred to larger GPU (6GB). Evidence: `benchmarks/results/phase1/stage9/qwen25_family_2026-06-25/` |
 | D8-E3 | GPT-2 torch.compile backend E2E (≥1.00× eager, depends on S8 D7-E1) | P0 | M | ⬜ |
 
 ### Track 2: Lang Examples + Spec Freeze (P0)

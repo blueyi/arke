@@ -1,0 +1,16 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "seq_lens": [
+    128,
+    512
+  ],
+  "device": "cuda",
+  "dtype": "auto",
+  "modes": [
+    "eager",
+    "torch.compile"
+  ],
+  "warmup": 10,
+  "runs": 20,
+  "mock": false
+}
