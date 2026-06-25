@@ -92,7 +92,7 @@ G9 PASS = AND ALL:
 |:---|:-----|:--------:|:--------:|:------:|
 | D8-IR1 | IR Spec v1.0 freeze (document + tag) | P0 | — | ⬜ Reset |
 | D8-IR2 | `ir-mlir-mapping.md` (Phase 2 preparation) | P1 | — | ⬜ Reset |
-| D8-IR3 | `test_ir_roundtrip.py` (all 45 ops × JSON round-trip) | P0 | M | ⬜ |
+| D8-IR3 | `test_ir_roundtrip.py` (all 45 ops × JSON round-trip) | P0 | M | ✅ (2026-06-25; `tests/test_ir_roundtrip.py` — 46 catalog ops × {dict, JSON} round-trip = 93 tests pass; asserts SemanticIR from_dict/to_dict + from_json/to_json byte-stable for every `ALL_OPS` entry; sentinel verifies all catalog ops resolve in IR REGISTRY) |
 
 ### Track 4: Agent Maturity + Comparison (P0)
 
