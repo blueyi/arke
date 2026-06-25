@@ -101,7 +101,7 @@ G9 PASS = AND ALL:
 | D8-A1 | `arke optimize` unified entry with full 3-input-type support | P0 | L | ⬜ |
 | D8-A2 | LLM auto-strategy maturity validation (all 45 ops, no human strategy) | P0 | L | ⬜ |
 | D8-A3 | Iterative loop stable operation across 4 models | P0 | M | ⬜ |
-| D8-A4 | @rationale knowledge base (≥50 Phase 1 entries) | P1 | M | ⬜ |
+| D8-A4 | @rationale knowledge base (≥50 Phase 1 entries) | P1 | M | ✅ (2026-06-25; `arke/learn/rationale_kb.py` RationaleKB + miners; `benchmarks/build_rationale_kb.py` regen tool; **`data/rationale_kb.jsonl` = 292 entries** across 46 ops, each pairing decision+@rationale+measured baseline_ratio; 6 unit tests `tests/test_rationale_kb.py`) |
 | D8-A5 | Arke vs LLM-direct automated comparison (`benchmarks/compare_arke_vs_direct.py`) | P0 | L | ⬜ |
 
 ### Track 5: Evaluation + Release (P0)
