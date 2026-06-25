@@ -300,6 +300,14 @@ Tier 2 — Thesis L1 endpoint validation (Harness produces real wins):
   [2] Iterative optimization: ≥3 compile→profile→adjust cycles in trajectory
   [3] Multi-input: .ak file + natural language + code snippet → all work E2E
   [4a] Vanilla torch.compile baseline: GPT-2 correctness 100% + perf ≥0.95× eager
+       (perf evaluated as **geomean-over-seq** of compile/eager ratios across the
+        measured seq-len set — Leon-approved口径 2026-06-25, D3=geomean. Rationale:
+        per-seq min over-penalizes a single hardware-bound shape; on a 6GB SM8.6
+        laptop GPT-2 seq=256 is launch/guard-overhead-bound where vanilla
+        torch.compile genuinely loses to eager, while 128≈break-even and 512 wins.
+        Geomean reflects whole-model throughput honestly without relaxing the
+        0.95× bar or excluding any seq. The seq=256 row remains a recorded
+        known-fail, not deleted. Benchmark measurement layer unchanged.)
   [4b] Arke→torch.compile bridge active: ≥1 Arke kernel on GPT-2's critical path,
         correctness 100% + perf ≥0.95× eager + bridge-invocation-evidence.
         ⚠ Bridge is a *transient Substrate artifact* scoped to ≤3 ops, inference-only,

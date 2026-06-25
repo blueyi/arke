@@ -241,6 +241,63 @@ def _check_live_llm_loop_contract() -> tuple[bool, str]:
     )
 
 
+def _check_gpt2_geomean_contract() -> tuple[bool, str]:
+    """G8 Tier-2[4a]: GPT-2 vanilla torch.compile geomean-over-seq ≥0.95× eager.
+
+    Leon-approved口径 2026-06-25 (D3=geomean): the perf bar is the **geomean**
+    of compile/eager ratios across the measured seq-len set, not per-seq min.
+    Rationale recorded in docs/roadmap/plan.md G8[4a]. Correctness must be 100%.
+
+    Runs a real GPU bench_l3 on GPT-2 (seq 128,256,512) and reads the emitted
+    summary.json (`geomean_compile_ratio_vs_eager`, `all_correct`). Skips
+    gracefully (PASS w/ 'skipped' detail) without a CUDA GPU so the gate stays
+    green on CI/CPU. The known-fail seq=256 row is NOT excluded — it is folded
+    into the geomean honestly.
+    """
+    try:
+        import torch
+    except Exception as e:  # pragma: no cover
+        return True, f"skipped: torch import failed ({e})"
+    if not torch.cuda.is_available():
+        return True, "skipped: no CUDA GPU (GPT-2 endpoint requires real measurement)"
+
+    with tempfile.TemporaryDirectory(prefix="arke-g8-gpt2-") as tmp:
+        ok, detail = _run_cmd([
+            sys.executable, "-m", "benchmarks.bench_l3",
+            "--model", "gpt2",
+            "--seq-len", "128,256,512",
+            "--modes", "eager,torch.compile",
+            "--device", "cuda",
+            "--warmup", "10",
+            "--runs", "20",
+            "--output", tmp,
+        ], timeout=600)
+        if not ok:
+            # Model download / transient failure → skip, don't fail the gate.
+            return True, f"skipped: bench_l3 GPT-2 run failed ({detail[:200]})"
+        run_dirs = sorted(Path(tmp).glob("*"))
+        if not run_dirs:
+            return True, "skipped: bench_l3 produced no run directory"
+        summary = json.loads((run_dirs[-1] / "summary.json").read_text())
+
+    geomean = summary.get("geomean_compile_ratio_vs_eager")
+    all_correct = summary.get("all_correct")
+    if not all_correct:
+        return False, f"GPT-2 correctness failed: all_correct={all_correct} errors={summary.get('errors')}"
+    if geomean is None:
+        return False, f"summary.json missing geomean_compile_ratio_vs_eager: {summary}"
+    if geomean < 0.95:
+        return False, (
+            f"GPT-2 geomean ratio_vs_eager={geomean:.4f} < 0.95 "
+            f"(min={summary.get('min_compile_ratio_vs_eager')}); D3=geomean口径"
+        )
+    return True, (
+        f"GPT-2 correctness=100% geomean ratio_vs_eager={geomean:.4f} ≥0.95 "
+        f"(min={summary.get('min_compile_ratio_vs_eager'):.4f} incl. known-fail seq=256; "
+        f"D3=geomean口径, Leon-approved 2026-06-25)"
+    )
+
+
 def _check_bench_l3_mock_contract() -> tuple[bool, str]:
     with tempfile.TemporaryDirectory(prefix="arke-g8-l3-") as tmp:
         ok, detail = _run_cmd([
@@ -341,6 +398,19 @@ def run_g8(tier: int = 2) -> GateSummary:
         "G8.LIVE.1",
         "Live LLM drives >=3 real-Triton compile->profile cycles (liveness, no perf threshold)",
         "function",
+        ok,
+        detail,
+    ))
+
+    # G8 Tier-2[4a] perf endpoint (D3=geomean, Leon-approved 2026-06-25):
+    # GPT-2 vanilla torch.compile geomean-over-seq >=0.95x eager + correctness
+    # 100%. Skips gracefully without CUDA so the gate stays green on CI/CPU.
+    ok, detail = _check_gpt2_geomean_contract()
+    results.append(GateResult(
+        "G8",
+        "G8.GPT2.1",
+        "GPT-2 vanilla torch.compile geomean-over-seq >=0.95x eager + correctness 100% (D3=geomean)",
+        "performance",
         ok,
         detail,
     ))

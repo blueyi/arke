@@ -159,6 +159,27 @@ def _load_gpt2(
     return model, tokenizer
 
 
+def _load_causal_lm(
+    *,
+    device: str,
+    dtype: torch.dtype,
+    model_name: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+) -> tuple[torch.nn.Module, Any]:
+    """Generic HF causal-LM loader (AutoModelForCausalLM + AutoTokenizer).
+
+    Used for the LLaMA-architecture E2E endpoint (D4=L2, Leon-approved
+    2026-06-25): an ungated LLaMA-arch model (TinyLlama-1.1B) validates the
+    LLaMA-family path on the 6GB dev box; full LLaMA-2 7B is deferred to a
+    larger GPU. Works for any HF causal LM whose weights fit VRAM.
+    """
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name).to(device=device, dtype=dtype)
+    model.eval()
+    return model, tokenizer
+
+
 def _load_mock_model(
     *,
     device: str,
@@ -446,13 +467,22 @@ def run_l3(
     warmup: int = DEFAULT_WARMUP_RUNS,
     runs: int = DEFAULT_MEASURE_RUNS,
     mock: bool = False,
+    arch: str = "gpt2",
 ) -> list[E2EResult]:
     timestamp = time.strftime("%Y-%m-%d_%H%M%S")
     base_dir = Path(output_dir) / timestamp
     base_dir.mkdir(parents=True, exist_ok=True)
 
     resolved_device = _resolve_device(device)
-    model_loader = _load_mock_model if mock else _load_gpt2
+    # Loader selection: mock (CI) → mock; arch=gpt2 → GPT-2-specific loader;
+    # any other arch (e.g. 'llama' / 'causal_lm') → generic AutoModelForCausalLM
+    # (D4=L2 LLaMA-family endpoint, Leon-approved 2026-06-25).
+    if mock:
+        model_loader = _load_mock_model
+    elif arch == "gpt2":
+        model_loader = _load_gpt2
+    else:
+        model_loader = _load_causal_lm
     model_name = "mock-gpt2" if mock else model
     modes = modes or [MODE_EAGER, MODE_TORCH_COMPILE]
 
@@ -592,6 +622,12 @@ def main() -> None:
     parser.add_argument("--seq-len", type=str, default=None, help="Comma-separated seq lens")
     parser.add_argument("--all", action="store_true", help="Run default seq lens")
     parser.add_argument("--model", default="gpt2")
+    parser.add_argument(
+        "--arch",
+        default="gpt2",
+        help="Model architecture loader: 'gpt2' (GPT2LMHeadModel) or any other "
+             "value (e.g. 'llama'/'causal_lm') → generic AutoModelForCausalLM.",
+    )
     parser.add_argument("--modes", default="eager,torch.compile")
     parser.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
     parser.add_argument("--dtype", default="auto")
@@ -652,6 +688,7 @@ def main() -> None:
         warmup=args.warmup,
         runs=args.runs,
         mock=args.mock,
+        arch=args.arch,
     )
 
 

@@ -49,3 +49,22 @@ def test_live_branch_function_registered_in_gate():
     src = inspect.getsource(g8.run_g8)
     assert "G8.LIVE.1" in src
     assert "_check_live_llm_loop_contract" in src
+
+
+def test_gpt2_geomean_branch_skips_without_gpu(monkeypatch):
+    """No CUDA → GPT-2 geomean check PASSes with a 'skipped' detail."""
+    import torch
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    ok, detail = g8._check_gpt2_geomean_contract()
+    assert ok is True
+    assert "skipped" in detail.lower()
+
+
+def test_gpt2_geomean_branch_registered_in_gate():
+    """The gate's run_g8 must include the G8.GPT2.1 geomean criterion."""
+    import inspect
+
+    src = inspect.getsource(g8.run_g8)
+    assert "G8.GPT2.1" in src
+    assert "_check_gpt2_geomean_contract" in src
