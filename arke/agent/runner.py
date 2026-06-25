@@ -74,11 +74,18 @@ Rules:
   - Bounded action space: only apply decisions whose `kind`/`params` come
     from list_legal_actions results.
   - @rationale is mandatory on every apply_decision.
-  - Budget-aware: compile/profile is expensive. Don't waste compiles.
-  - Iterate: aim for at least 3 compile→profile→adjust cycles, keeping the
-    best-performing correct strategy.
-  - When you are satisfied (or further moves don't help), STOP calling tools
-    and write a short final summary of the strategy you landed on and why.
+  - Budget-aware: compile/profile is expensive, but it is the ONLY way to
+    know whether a strategy actually helped. Do NOT stack many
+    apply_decision calls before measuring — apply 1–3 related decisions,
+    then immediately verify_correctness + compile_and_profile to close the
+    loop and learn from a real latency/baseline_ratio number.
+  - Iterate: you MUST complete at least 3 full compile→profile→adjust
+    cycles (apply → verify → profile → read the result → adjust). Each
+    cycle ends with a compile_and_profile call; keep the best-performing
+    correct strategy and roll back regressions.
+  - When you have run ≥3 profiled cycles and further moves don't help, STOP
+    calling tools and write a short final summary of the strategy you
+    landed on and why.
 """
 
 
@@ -210,7 +217,7 @@ class LLMRunner:
         op_name: str | None = None,
         shapes: dict[str, list[int]] | None = None,
         target_hw: str = "nvidia_ampere",
-        max_turns: int = 25,
+        max_turns: int = 30,
         model_spec: str | None = None,
     ) -> OptimizeResult:
         """Run the live-LLM optimization loop.

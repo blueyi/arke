@@ -258,6 +258,19 @@ path (`arke/agent/optimize.py`) **and the live-LLM tool-use path**
 (`arke/agent/runner.py::LLMRunner`, landed P0-A 2026-06-24). The
 AsyncGenerator form is the migration target — see §18.
 
+**Cycle-cadence steering (2026-06-25).** The `LLMRunner` system prompt
+explicitly requires the model to apply only 1–3 related decisions before
+closing the loop with `verify_correctness` + `compile_and_profile`, and to
+complete **≥3 full compile→profile→adjust cycles** before stopping. This
+prevents the model from front-loading many `apply_decision` calls and
+exhausting its turn budget before it ever measures real latency. Default
+`max_turns=30` gives headroom for ≥3 profiled cycles. Verified end-to-end on
+matmul (256×256, f16): a live `claude-sonnet-4-6` run produced 5 profiled
+cycles with real Triton GPU measurement (`backend=triton`,
+`validation_tier=V1_triton`), adaptive `baseline_ratio` movement
+(0.17→1.14→1.16→1.02→0.86), and 2 checkpoint + 2 rollback calls — i.e. the
+model read real numbers and rolled back regressions.
+
 ---
 
 ## 5. Bounded Action Space — Arke's Permission System
