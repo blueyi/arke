@@ -1,0 +1,17 @@
+{
+  "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+  "seq_lens": [
+    128,
+    256,
+    512
+  ],
+  "device": "cuda",
+  "dtype": "auto",
+  "modes": [
+    "eager",
+    "torch.compile"
+  ],
+  "warmup": 10,
+  "runs": 20,
+  "mock": false
+}

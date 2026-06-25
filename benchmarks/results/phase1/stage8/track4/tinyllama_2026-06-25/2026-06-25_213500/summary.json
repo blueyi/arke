@@ -1,0 +1,13 @@
+{
+  "schema": "stage8-l3-gpt2-v1",
+  "target_ratio_vs_eager": 0.95,
+  "rows": 6,
+  "eager_rows": 3,
+  "compile_rows": 3,
+  "compile_success_rows": 3,
+  "g8_gpt2_pass": true,
+  "min_compile_ratio_vs_eager": 1.1235752382015207,
+  "geomean_compile_ratio_vs_eager": 1.2389571221596227,
+  "all_correct": true,
+  "errors": []
+}

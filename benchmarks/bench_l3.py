@@ -588,8 +588,9 @@ def _geomean(values: list[float]) -> float | None:
 
 
 def print_comparison_table(results: list[E2EResult]) -> None:
+    model_label = results[0].model if results else "model"
     print("\n" + "=" * 92)
-    print("L3 E2E GPT-2 — eager vs torch.compile")
+    print(f"L3 E2E {model_label} — eager vs torch.compile")
     print("=" * 92)
     print(
         f"{'SeqLen':>7s} {'Mode':>15s} {'Status':>8s} {'Mean(ms)':>10s} "

@@ -1,0 +1,7 @@
+model,seq_len,mode,source,status,reason,mean_ms,min_ms,max_ms,median_ms,peak_memory_mb,correct,max_logit_diff,mean_logit_diff,top1_match,ratio_vs_eager
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,128,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,27.268454,19.964928,35.036160,28.255232,4227.354492,True,0.000000,0.000000,True,1.000000
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,128,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,19.000064,18.481152,21.919744,18.886656,4478.090820,True,0.398438,0.014095,True,1.435177
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,256,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,37.378919,36.223999,40.052734,36.721664,4246.981445,True,0.000000,0.000000,True,1.000000
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,256,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,31.693158,31.314943,33.340416,31.653889,4492.545898,True,0.280151,0.014620,True,1.179400
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,512,eager,PyTorch 2.6.0+cu124 eager | https://pytorch.org | BSD-3-Clause,ok,,75.124118,73.369598,79.051773,74.828796,4285.483398,True,0.000000,0.000000,True,1.000000
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,512,torch.compile,torch.compile Inductor via PyTorch 2.6.0+cu124 | https://pytorch.org | BSD-3-Clause,ok,,66.861671,65.539070,69.441536,66.651138,4520.612305,True,0.347656,0.013388,True,1.123575
