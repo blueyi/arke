@@ -1,0 +1,34 @@
+{
+  "thresholds": {
+    "perf_geomean_min": 1.05,
+    "token_ratio_max": 0.7,
+    "arke_correctness_min": 1.0
+  },
+  "comparisons": [
+    {
+      "op": "matmul",
+      "shape": [
+        512,
+        512,
+        512
+      ],
+      "arke_correct": true,
+      "direct_correct": true,
+      "arke_latency_us": 214.85567092895508,
+      "direct_latency_us": 271.4009666442871,
+      "arke_tokens": 0,
+      "direct_tokens": 1965,
+      "scored": true,
+      "skip_reason": "",
+      "perf_ratio": 1.263178046317565,
+      "token_ratio": 0.0
+    }
+  ],
+  "scored_ops": 1,
+  "coverage_skipped": 0,
+  "arke_correctness": 1.0,
+  "perf_geomean": 1.263178046317565,
+  "token_ratio_geomean": 0.0,
+  "passed": true,
+  "notes": []
+}

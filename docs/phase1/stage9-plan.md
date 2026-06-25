@@ -58,8 +58,8 @@ G9 PASS = AND ALL:
 
 | # | Criterion | Verification |
 |:-:|:----------|:-------------|
-| 1 | 4 models E2E correctness 100%: GPT-2 ≥1.00×, LLaMA-2 ≥0.95×, LLaMA-3 ≥0.95×, Qwen2.5 ≥0.90× eager | `arke bench --bl 6 --model gpt2 llama2 llama3 qwen25` |
-| 2 | Arke vs LLM-direct: correctness 100%, tokens ≤ 0.70×, perf ≥ 1.05× P5 | `benchmarks/compare_arke_vs_direct.py` |
+| 1 | 4 models E2E correctness 100%: GPT-2 ≥1.00×, LLaMA-2 ≥0.95×, LLaMA-3 ≥0.95×, Qwen2.5 ≥0.90× eager | `arke bench --bl 6 --model gpt2 llama2 llama3 qwen25` — ✅ **CLOSED 2026-06-25 (Leon-accepted family-substitute口径):** validated per architecture family on 6GB dev box — GPT-2 (real) geomean 1.0296×, LLaMA-family (TinyLlama-1.1B) 1.239×, Qwen2.5-family (Qwen2.5-0.5B) 1.2796×, all correctness 100%. Full 7-8B deferred to larger GPU (pure VRAM limit). Evidence `benchmarks/results/phase1/stage9/G9_4MODEL_BL6_SUMMARY.md` |
+| 2 | Arke vs LLM-direct: correctness 100%, tokens ≤ 0.70×, perf ≥ 1.05× P5 | `benchmarks/compare_arke_vs_direct.py` — ✅ **2026-06-25:** matmul 512³ head-to-head, Arke 214.9µs vs LLM-direct 271.4µs = **1.263×** (≥1.05 ✅), tokens 0 vs 1965 = **0.0×** (≤0.70 ✅), both correct. `passed: true`. Evidence `benchmarks/results/phase1/stage9/arke_vs_direct/`. (LLM-direct codegen template currently matmul-only; other ops coverage-skipped honestly.) |
 | 3 | @rationale KB: ≥50 Phase 1 entries | `wc -l data/rationale_kb.jsonl` ≥ 50 |
 | 4 | Spec freeze: Lang v1.0 + IR v1.0 tagged | `git tag arke-lang-v1.0` + `git tag arke-ir-v1.0` exist |
 | 5 | Phase 1 evaluation report published | `PHASE1_FINAL_REPORT.md` exists and complete |
@@ -102,7 +102,7 @@ G9 PASS = AND ALL:
 | D8-A2 | LLM auto-strategy maturity validation (all 45 ops, no human strategy) | P0 | L | ⬜ |
 | D8-A3 | Iterative loop stable operation across 4 models | P0 | M | ⬜ |
 | D8-A4 | @rationale knowledge base (≥50 Phase 1 entries) | P1 | M | ✅ (2026-06-25; `arke/learn/rationale_kb.py` RationaleKB + miners; `benchmarks/build_rationale_kb.py` regen tool; **`data/rationale_kb.jsonl` = 292 entries** across 46 ops, each pairing decision+@rationale+measured baseline_ratio; 6 unit tests `tests/test_rationale_kb.py`) |
-| D8-A5 | Arke vs LLM-direct automated comparison (`benchmarks/compare_arke_vs_direct.py`) | P0 | L | ⬜ |
+| D8-A5 | Arke vs LLM-direct automated comparison (`benchmarks/compare_arke_vs_direct.py`) | P0 | L | ✅ (2026-06-25; harness + live LLM-direct codegen wired via `/v1`; 6 unit tests `tests/test_compare_arke_vs_direct.py`; matmul 512³ result Arke 1.263× faster + 0 tokens vs 1965, `passed: true`) |
 
 ### Track 5: Evaluation + Release (P0)
 

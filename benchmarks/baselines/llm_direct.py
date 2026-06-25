@@ -177,18 +177,55 @@ class LLMDirectRunner(BaselineRunner):
         K: int,
         dtype: torch.dtype = torch.float16,
     ) -> tuple[str, dict[str, int]]:
-        """Call LLM to generate Triton code.
+        """Call LLM to generate Triton code (single-shot, no Arke IR).
 
         Returns ``(code_str, {"in": prompt_tokens, "out": completion_tokens})``.
 
-        Raises ``NotImplementedError`` when no LLM backend is configured
-        (i.e. offline mode).
+        Live mode (G9[2], 2026-06-25): routes through the same clean
+        ``/v1`` OpenAI-compatible endpoint Arke's live loop uses
+        (``arke.agent.llm_config.load_from_env``). Raises
+        ``NotImplementedError`` only when no LLM provider credential is
+        configured.
         """
-        raise NotImplementedError(
-            "LLM-direct generation requires --live mode with a configured "
-            "LLM provider.  In offline mode, G4 uses optimistic assumptions "
-            "for LLM-direct results."
-        )
+        prompt = self.build_prompt(op, M, N, K)
+        try:
+            from arke.agent.llm_config import load_from_env
+        except Exception as e:  # pragma: no cover
+            raise NotImplementedError(f"LLM config unavailable: {e}")
+        try:
+            cfg = load_from_env()
+            provider, model = cfg.resolve(None)
+        except Exception as e:
+            raise NotImplementedError(
+                "LLM-direct generation requires a configured provider "
+                f"(set YUNWU/ANTHROPIC/OPENAI key): {e}"
+            )
+
+        if provider.protocol == "openai":
+            import openai
+            client = openai.OpenAI(api_key=provider.api_key, base_url=provider.base_url)
+            resp = client.chat.completions.create(
+                model=model, max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = resp.choices[0].message.content or ""
+            usage = {
+                "in": getattr(resp.usage, "prompt_tokens", 0),
+                "out": getattr(resp.usage, "completion_tokens", 0),
+            }
+        else:  # anthropic
+            import anthropic
+            client = anthropic.Anthropic(api_key=provider.api_key, base_url=provider.base_url)
+            resp = client.messages.create(
+                model=model, max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+            usage = {
+                "in": getattr(resp.usage, "input_tokens", 0),
+                "out": getattr(resp.usage, "output_tokens", 0),
+            }
+        return self.extract_code(text), usage
 
     # ── Helpers ─────────────────────────────────────────────
 
