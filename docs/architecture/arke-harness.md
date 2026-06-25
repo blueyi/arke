@@ -451,6 +451,51 @@ complete data, regardless of how chaotic the conversation was.
 compile-and-run when the strategy is potentially numerically distinct from the
 reference (e.g., reduced-precision accumulators).
 
+### 9.1 Onboarding a new `BaselineRunner` (extension seam)
+
+V2's perf denominator and V1's correctness oracle both come from the
+**baseline ladder** — a priority-ordered set of `BaselineRunner` subclasses
+under `benchmarks/baselines/`. Each runner wraps one source of GPU kernels
+(cuBLAS, FlagGems, Liger, torch.compile, …) and is the extension seam for
+adding a new reference implementation **without touching the harness core**.
+
+`BaselineRunner` (`benchmarks/baselines/base.py`) is a 6-member ABC:
+
+| Member | Kind | Contract |
+|---|---|---|
+| `name` | property | Human-readable label, unique in the ladder. |
+| `priority` | property | Tier P0=0 (vendor) .. P5=5 (LLM-direct); the ladder sorts ascending. |
+| `source` | property | Provenance string: package, version, origin URL, license. |
+| `available` | property | `True` iff this runner's deps are importable on the host. |
+| `supports(op)` | method | Whether the runner has a kernel for `op`. |
+| `get_fn(op, M, N, K, dtype)` | method | Zero-arg timing callable (pre-allocated GPU inputs), or `None`. |
+
+Two optional hooks add correctness coverage: `run_for_output(op, *inputs)`
+(the **Golden Kernel hook** — input → output, used by `bench_l1`'s
+correctness oracle and `gate_g7`'s L1 perf scorer) and `run_with_inputs`
+(its default delegate).
+
+**Onboarding playbook (≤200 LOC budget — Tier-1 [HARNESS-3] Demo B):**
+
+1. Create `benchmarks/baselines/<runner>.py`, subclass `BaselineRunner`,
+   decorate the class with `@register_baseline`.
+2. Implement the 6 abstract members. Gate `available` on a real import/feature
+   probe so the ladder skips it cleanly on hosts missing the dependency.
+3. Implement `get_fn` (timing) and `run_for_output` (correctness). Pre-allocate
+   inputs and warm any JIT/autotune path before returning the timing callable.
+4. Register it by adding `import benchmarks.baselines.<runner>  # noqa: F401`
+   to `benchmarks/bench_l1.py`'s import block — the `@register_baseline`
+   decorator only fires on import.
+5. Verify it surfaces in `get_all_runners()` / `get_runners_for_op(op)` and
+   appears in ≥1 BL1 result row + ≥1 BL3 row.
+
+**Worked example — Demo B (D8-X2):** `MaxAutotuneRunner`
+(`benchmarks/baselines/max_autotune.py`, 141 LOC) wraps
+`torch.compile(mode="max-autotune")` — a baseline source distinct from the
+existing reduce-overhead `InductorRunner`. It onboarded end-to-end inside the
+≤200 LOC budget with no harness-core change, demonstrating the ladder's
+extensibility is real at the claimed cost.
+
 ---
 
 ## 10. Budget & Compact

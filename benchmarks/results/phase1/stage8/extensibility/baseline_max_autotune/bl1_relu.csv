@@ -1,0 +1,31 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+relu,micro-tiny,cuBLAS/cuDNN,71.3,53.5,,1.1276,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1276,true,0.1276
+relu,micro-tiny,PyTorch-eager,80.4,89.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+relu,micro-tiny,torch.compile,241.6,250.9,,0.3328,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3328,false,-0.6672
+relu,micro-tiny,torch.compile-max-autotune,237.8,249.9,,0.3381,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for relu,,,,,1.0,0.3381,false,-0.6619
+relu,micro-tiny,Arke,43.1,54.2,,1.8654,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.8654,true,0.8654
+relu,micro-tiny,FlagGems,70.2,88.0,,1.1453,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1453,true,0.1453
+relu,micro-small,cuBLAS/cuDNN,72.6,90.1,,1.0124,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0124,true,0.0124
+relu,micro-small,PyTorch-eager,73.5,95.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+relu,micro-small,torch.compile,271.1,282.4,,0.2711,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2711,false,-0.7289
+relu,micro-small,torch.compile-max-autotune,272.1,180.1,,0.2701,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for relu,,,,,1.0,0.2701,false,-0.7299
+relu,micro-small,Arke,44.1,59.4,,1.6667,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6667,true,0.6667
+relu,micro-small,FlagGems,68.3,82.9,,1.0761,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0761,true,0.0761
+relu,gpt2-hidden,cuBLAS/cuDNN,69.3,89.9,,1.0231,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0231,true,0.0231
+relu,gpt2-hidden,PyTorch-eager,70.9,91.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+relu,gpt2-hidden,torch.compile,284.5,281.6,,0.2492,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2492,false,-0.7508
+relu,gpt2-hidden,torch.compile-max-autotune,283.5,155.6,,0.2501,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for relu,,,,,1.0,0.2501,false,-0.7499
+relu,gpt2-hidden,Arke,41.1,35.8,,1.7251,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.7251,true,0.7251
+relu,gpt2-hidden,FlagGems,71.3,91.1,,0.9944,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9944,false,-0.0056
+relu,gpt2-ffn,cuBLAS/cuDNN,71.1,94.2,,0.9916,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9916,false,-0.0084
+relu,gpt2-ffn,PyTorch-eager,70.5,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+relu,gpt2-ffn,torch.compile,278.0,271.4,,0.2536,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2536,false,-0.7464
+relu,gpt2-ffn,torch.compile-max-autotune,278.6,236.5,,0.2531,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for relu,,,,,1.0,0.2531,false,-0.7469
+relu,gpt2-ffn,Arke,42.7,61.3,,1.6511,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6511,true,0.6511
+relu,gpt2-ffn,FlagGems,70.6,89.1,,0.9986,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9986,false,-0.0014
+relu,square-1k,cuBLAS/cuDNN,69.4,90.3,,1.0043,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0043,true,0.0043
+relu,square-1k,PyTorch-eager,69.7,90.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+relu,square-1k,torch.compile,274.0,278.6,,0.2544,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2544,false,-0.7456
+relu,square-1k,torch.compile-max-autotune,284.8,262.1,,0.2447,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for relu,,,,,1.0,0.2447,false,-0.7553
+relu,square-1k,Arke,41.8,63.5,,1.6675,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6675,true,0.6675
+relu,square-1k,FlagGems,69.8,81.9,,0.9986,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9986,false,-0.0014

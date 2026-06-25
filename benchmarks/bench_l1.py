@@ -29,6 +29,7 @@ import benchmarks.baselines.flash_attn_runner  # noqa: F401
 import benchmarks.baselines.flash_mla_runner  # noqa: F401
 import benchmarks.baselines.inductor  # noqa: F401
 import benchmarks.baselines.liger  # noqa: F401
+import benchmarks.baselines.max_autotune  # noqa: F401  # Demo B (D8-X2)
 import benchmarks.baselines.pytorch_eager  # noqa: F401
 import benchmarks.baselines.triton_tutorial  # noqa: F401
 import benchmarks.baselines.vllm_paged_runner  # noqa: F401

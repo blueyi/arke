@@ -1,0 +1,43 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+matmul,tiny,cuBLAS/cuDNN,30.5,10.0,0.138,0.9344,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.9344,false,-0.0656
+matmul,tiny,Triton-Tutorial,96.7,78.8,0.043,0.2947,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.2947,false,-0.7053
+matmul,tiny,PyTorch-eager,28.5,6.1,0.147,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
+matmul,tiny,torch.compile,107.8,124.9,0.039,0.2644,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.2644,false,-0.7356
+matmul,tiny,torch.compile-max-autotune,134.9,113.7,0.031,0.2113,ok,,false,,,,0.01,0.01,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for matmul,98304,3542771302,0.0000,dense_matmul,1.0,0.2113,false,-0.7887
+matmul,tiny,Arke,102.2,91.1,0.041,0.2789,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.2789,false,-0.7211
+matmul,tiny,FlagGems,96.0,81.9,0.044,0.2969,ok,,false,true,0,0,0.01,0.01,ok,,98304,3542771302,0.0000,dense_matmul,1.0,0.2969,false,-0.7031
+matmul,gpt2-c_proj,cuBLAS/cuDNN,16.3,20.8,9.276,0.9632,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.9632,false,-0.0368
+matmul,gpt2-c_proj,Triton-Tutorial,87.1,67.6,1.733,0.1803,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.1803,false,-0.8197
+matmul,gpt2-c_proj,PyTorch-eager,15.7,26.9,9.643,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+matmul,gpt2-c_proj,torch.compile,173.3,143.2,0.871,0.0906,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.0906,false,-0.9094
+matmul,gpt2-c_proj,torch.compile-max-autotune,172.1,141.1,0.878,0.0912,ok,,false,,,,0.01,0.01,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for matmul,1572864,3542771302,0.0004,dense_matmul,1.0,0.0912,false,-0.9088
+matmul,gpt2-c_proj,Arke,116.3,91.1,1.298,0.1350,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.1350,false,-0.8650
+matmul,gpt2-c_proj,FlagGems,81.7,14.3,1.847,0.1922,ok,,false,true,0,0,0.01,0.01,ok,,1572864,3542771302,0.0004,dense_matmul,1.0,0.1922,false,-0.8078
+matmul,gpt2-c_attn,cuBLAS/cuDNN,37.7,44.7,12.003,1.0239,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0239,true,0.0239
+matmul,gpt2-c_attn,Triton-Tutorial,97.3,75.8,4.656,0.3967,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.3967,false,-0.6033
+matmul,gpt2-c_attn,PyTorch-eager,38.6,46.1,11.729,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,1.0000,true,0.0000
+matmul,gpt2-c_attn,torch.compile,190.0,170.7,2.384,0.2032,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.2032,false,-0.7968
+matmul,gpt2-c_attn,torch.compile-max-autotune,193.6,150.5,2.340,0.1994,ok,,false,,,,0.01,0.01,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for matmul,4325376,3542771302,0.0012,dense_matmul,1.0,0.1994,false,-0.8006
+matmul,gpt2-c_attn,Arke,87.6,29.7,5.173,0.4406,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.4406,false,-0.5594
+matmul,gpt2-c_attn,FlagGems,57.5,59.3,7.881,0.6713,ok,,false,true,0,0,0.01,0.01,ok,,4325376,3542771302,0.0012,dense_matmul,1.0,0.6713,false,-0.3287
+matmul,square-1k,cuBLAS/cuDNN,157.8,161.5,13.605,1.0558,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.0558,true,0.0558
+matmul,square-1k,Triton-Tutorial,135.5,147.5,15.848,1.2295,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.2295,true,0.2295
+matmul,square-1k,PyTorch-eager,166.6,167.9,12.891,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-1k,torch.compile,208.8,291.8,10.285,0.7979,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,0.7979,false,-0.2021
+matmul,square-1k,torch.compile-max-autotune,208.3,292.9,10.311,0.7998,ok,,false,,,,0.01,0.01,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for matmul,6291456,3542771302,0.0018,dense_matmul,1.0,0.7998,false,-0.2002
+matmul,square-1k,Arke,138.9,220.1,15.462,1.1994,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.1994,true,0.1994
+matmul,square-1k,FlagGems,126.0,136.2,17.044,1.3222,ok,,false,true,0,0,0.01,0.01,ok,,6291456,3542771302,0.0018,dense_matmul,1.0,1.3222,true,0.3222
+matmul,square-2k,cuBLAS/cuDNN,874.1,823.3,19.655,0.9960,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9960,false,-0.0040
+matmul,square-2k,Triton-Tutorial,785.7,746.5,21.866,1.1081,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.1081,true,0.1081
+matmul,square-2k,PyTorch-eager,870.6,829.4,19.732,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-2k,torch.compile,980.4,942.1,17.523,0.8880,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.8880,false,-0.1120
+matmul,square-2k,torch.compile-max-autotune,975.8,951.3,17.607,0.8922,ok,,false,,,,0.01,0.01,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for matmul,25165824,3542771302,0.0071,dense_matmul,1.0,0.8922,false,-0.1078
+matmul,square-2k,Arke,818.2,788.5,20.997,1.0640,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,1.0640,true,0.0640
+matmul,square-2k,FlagGems,954.0,903.2,18.009,0.9126,ok,,false,true,0,0,0.01,0.01,ok,,25165824,3542771302,0.0071,dense_matmul,1.0,0.9126,false,-0.0874
+matmul,square-4k,cuBLAS/cuDNN,6076.9,5950.5,22.617,1.0065,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0065,true,0.0065
+matmul,square-4k,Triton-Tutorial,6033.5,5912.6,22.779,1.0138,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0138,true,0.0138
+matmul,square-4k,PyTorch-eager,6116.6,6001.7,22.470,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,1.0000,true,0.0000
+matmul,square-4k,torch.compile,6602.2,6424.6,20.817,0.9264,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9264,false,-0.0736
+matmul,square-4k,torch.compile-max-autotune,6628.3,6484.0,20.735,0.9228,ok,,false,,,,0.01,0.01,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for matmul,100663296,3542771302,0.0284,dense_matmul,1.0,0.9228,false,-0.0772
+matmul,square-4k,Arke,6402.1,6247.4,21.468,0.9554,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9554,false,-0.0446
+matmul,square-4k,FlagGems,6214.4,6081.5,22.116,0.9843,ok,,false,true,0,0,0.01,0.01,ok,,100663296,3542771302,0.0284,dense_matmul,1.0,0.9843,false,-0.0157
