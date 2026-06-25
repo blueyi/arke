@@ -29,56 +29,137 @@ from arke.ir.strategy import Decision, Rationale
 
 
 # ─── Legal-action candidate generator ─────────────────────────────────────
+#
+# P1-b (2026-06-24): candidates are now SHAPE- and HARDWARE-aware. Tile /
+# unroll / vectorize factors are derived from the operator's real input
+# dimensions and filtered against the HardwareProfile (warp size, max
+# threads/block, shared memory), instead of a fixed module-level Cartesian
+# product. This makes `list_legal_actions` an honest *legality* surface for
+# the agent rather than a static menu. Shape-unaware fallbacks are kept for
+# robustness when a loop maps to no known dimension.
 
-# Phase-1 initial implementation: enumerate a small fixed set of legal
-# candidates per kind based on the op's index_vars + a few default factors.
-# This is the "always-on floor" — a fuller legality calc lands in D8-F1.3.
+# Fallback factors when a loop dimension is unknown (shape not resolvable).
+_FALLBACK_TILE_FACTORS: tuple[int, ...] = (16, 32, 64, 128)
+_FALLBACK_UNROLL_FACTORS: tuple[int, ...] = (2, 4, 8)
+_FALLBACK_VECTORIZE_WIDTHS: tuple[int, ...] = (2, 4, 8)
+_DEFAULT_PARALLEL_MAPPINGS: tuple[str, ...] = ("threadblock.x", "threadblock.y", "warp")
+_DEFAULT_PLACE_MEMORIES: tuple[str, ...] = ("shared", "register")
 
+# Backward-compat alias (older imports/tests referenced this name).
 _DEFAULT_TILE_FACTORS: tuple[tuple[int, ...], ...] = (
     (16,), (32,), (64,), (128,),
     (16, 16), (32, 32), (64, 64),
 )
-
-_DEFAULT_UNROLL_FACTORS: tuple[int, ...] = (2, 4, 8)
-_DEFAULT_VECTORIZE_WIDTHS: tuple[int, ...] = (2, 4, 8)
-_DEFAULT_PARALLEL_MAPPINGS: tuple[str, ...] = ("threadblock.x", "threadblock.y", "warp")
-_DEFAULT_PLACE_MEMORIES: tuple[str, ...] = ("shared", "register")
+_DEFAULT_UNROLL_FACTORS = _FALLBACK_UNROLL_FACTORS
+_DEFAULT_VECTORIZE_WIDTHS = _FALLBACK_VECTORIZE_WIDTHS
 
 
-def _enum_tile_candidates(loops: list[str]) -> list[Decision]:
-    out: list[Decision] = []
-    for loop in loops:
-        for factors in _DEFAULT_TILE_FACTORS:
-            out.append(Decision(
-                kind="tile",
-                params={"loop": loop, "factors": list(factors)},
-                level=1,
-            ))
+def _pow2_divisors_up_to(n: int, cap: int) -> list[int]:
+    """Powers of two that evenly tile a dimension of size ``n`` (≤ cap).
+
+    Tiles are the canonical GPU tiling granularity. We keep only powers of
+    two that don't exceed the dimension (a tile larger than the dim is a
+    no-op) and don't exceed ``cap`` (a hardware/threads bound).
+    """
+    out: list[int] = []
+    f = 16
+    while f <= min(n, cap):
+        out.append(f)
+        f *= 2
+    if not out:
+        # tiny dimension → at least offer the dim itself (or 16 floor)
+        out.append(min(max(n, 1), 16))
     return out
 
 
-def _enum_unroll_candidates(loops: list[str]) -> list[Decision]:
-    return [
-        Decision(kind="unroll", params={"loop": loop, "factor": f}, level=1)
-        for loop in loops for f in _DEFAULT_UNROLL_FACTORS
-    ]
+def _loop_dim_map(loops: list[str], shapes: dict[str, list[int]]) -> dict[str, int]:
+    """Best-effort map loop index var → concrete dimension size.
+
+    Heuristic: flatten all input dims and align by position to the loop
+    list (i→first reduced/output axis, j→second, k→contraction). When the
+    op exposes a clean 2-D/3-D shape (matmul A[M,K] B[K,N]) this recovers
+    M/N/K; otherwise it falls back to the largest available dim.
+    """
+    dims: list[int] = []
+    for shp in shapes.values():
+        dims.extend(int(d) for d in shp if isinstance(d, int) and d > 0)
+    dim_map: dict[str, int] = {}
+    if not dims:
+        return dim_map
+    biggest = max(dims)
+    for idx, loop in enumerate(loops):
+        dim_map[loop] = dims[idx] if idx < len(dims) else biggest
+    return dim_map
 
 
-def _enum_vectorize_candidates(loops: list[str]) -> list[Decision]:
-    return [
-        Decision(kind="vectorize", params={"loop": loop, "width": w}, level=1)
-        for loop in loops for w in _DEFAULT_VECTORIZE_WIDTHS
-    ]
+def _enum_tile_candidates(
+    loops: list[str],
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
+    cap = hw.max_threads_per_block if hw else 1024
+    dim_map = _loop_dim_map(loops, shapes or {})
+    out: list[Decision] = []
+    for loop in loops:
+        if loop in dim_map:
+            factors = _pow2_divisors_up_to(dim_map[loop], cap)
+        else:
+            factors = list(_FALLBACK_TILE_FACTORS)
+        for f in factors:
+            out.append(Decision(kind="tile", params={"loop": loop, "factors": [f]}, level=1))
+    return out
 
 
-def _enum_parallel_candidates(loops: list[str]) -> list[Decision]:
+def _enum_unroll_candidates(
+    loops: list[str],
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
+    dim_map = _loop_dim_map(loops, shapes or {})
+    out: list[Decision] = []
+    for loop in loops:
+        dim = dim_map.get(loop)
+        for f in _FALLBACK_UNROLL_FACTORS:
+            # Don't offer an unroll factor larger than the loop trip count.
+            if dim is not None and f > dim:
+                continue
+            out.append(Decision(kind="unroll", params={"loop": loop, "factor": f}, level=1))
+    return out
+
+
+def _enum_vectorize_candidates(
+    loops: list[str],
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
+    dim_map = _loop_dim_map(loops, shapes or {})
+    out: list[Decision] = []
+    for loop in loops:
+        dim = dim_map.get(loop)
+        for w in _FALLBACK_VECTORIZE_WIDTHS:
+            # Vector width must evenly divide the (innermost) dimension.
+            if dim is not None and dim % w != 0:
+                continue
+            out.append(Decision(kind="vectorize", params={"loop": loop, "width": w}, level=1))
+    return out
+
+
+def _enum_parallel_candidates(
+    loops: list[str],
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
     return [
         Decision(kind="parallel", params={"mapping": {loop: m}}, level=1)
         for loop in loops for m in _DEFAULT_PARALLEL_MAPPINGS
     ]
 
 
-def _enum_place_candidates(inputs: list[str]) -> list[Decision]:
+def _enum_place_candidates(
+    inputs: list[str],
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
     return [
         Decision(kind="place", params={"tensor": t, "memory": m}, level=1)
         for t in inputs for m in _DEFAULT_PLACE_MEMORIES
@@ -195,9 +276,11 @@ class ArkeEnv:
 
         for kind in kinds_to_gen:
             if kind == "place":
-                candidates.extend(_enum_place_candidates(inputs))
+                candidates.extend(_enum_place_candidates(inputs, self.op_inputs, self.hw_profile))
             elif kind in _LEGAL_KIND_GENERATORS:
-                candidates.extend(_LEGAL_KIND_GENERATORS[kind](loops))
+                candidates.extend(
+                    _LEGAL_KIND_GENERATORS[kind](loops, self.op_inputs, self.hw_profile)
+                )
             elif kind == "fuse":
                 candidates.extend(_enum_fuse_candidates(self.op_name))
             # else: unknown kind → skip silently (caller may pass any string)

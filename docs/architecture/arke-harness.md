@@ -283,6 +283,23 @@ A move is legal iff all of:
 - The structural invariants of the current StrategyIR are preserved (no double
   fusion, no cyclic schedule, alignment math closes).
 
+**Shape- and HW-aware candidate derivation (P1-b, 2026-06-24).** The candidate
+factors for `tile` / `unroll` / `vectorize` are no longer a fixed module-level
+Cartesian product — they are derived from the operator's concrete input
+dimensions and filtered against the `HardwareProfile`
+(`arke/agent/env.py:_enum_tile_candidates` / `_enum_unroll_candidates` /
+`_enum_vectorize_candidates`):
+
+- **tile** — powers-of-two that evenly tile the mapped loop dimension and do not
+  exceed `hw.max_threads_per_block`. A tile larger than the dimension is a no-op
+  and is dropped.
+- **unroll** — factors not exceeding the loop trip count.
+- **vectorize** — widths that evenly divide the (innermost) loop dimension.
+
+When a loop maps to no resolvable dimension, shape-unaware fallback factors keep
+the surface non-empty. This makes `list_legal_actions` an honest *legality*
+surface for the agent rather than a static menu, while preserving robustness.
+
 ### 5.3 Comparison
 
 | Aspect | Claude Code permission | Arke bounded action space |
