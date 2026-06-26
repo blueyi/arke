@@ -257,6 +257,8 @@ The roadmap, Gate definitions, and benchmark terminology are maintained in the f
 - [docs/architecture/arke-ir-spec-design.md](docs/architecture/arke-ir-spec-design.md) — IR design rationale
 - [docs/architecture/arke-compiler-infrastructure.md](docs/architecture/arke-compiler-infrastructure.md) — compiler infrastructure design
 - [docs/architecture/arke-harness.md](docs/architecture/arke-harness.md) — Arke Harness architecture and integration modes (A/B/C)
+- [docs/architecture/arke-harness-handbook.md](docs/architecture/arke-harness-handbook.md) — Arke Harness **engineering usage manual** (Façade v1.0 tools, modes, config, Triton kernel cookbook, troubleshooting — Hermes-doc-style)
+- [docs/architecture/arke-harness-v2-rfc.md](docs/architecture/arke-harness-v2-rfc.md) — proposed Harness **v2 capability set** (cross-harness benchmark vs Hermes/OpenClaw/Codex/Claude Code; governance-classified P0–P2 roadmap)
 - [docs/architecture/naming-system.md](docs/architecture/naming-system.md) — canonical terminology and naming
 - [docs/architecture/python-environment-setup.md](docs/architecture/python-environment-setup.md) — environment bootstrap details
 - [docs/architecture/token-efficiency-analysis.md](docs/architecture/token-efficiency-analysis.md) — token-cost analysis
