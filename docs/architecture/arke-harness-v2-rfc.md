@@ -154,6 +154,8 @@ Ordered by value-to-thesis and gated by governance class. **(N)** = non-breaking
 
 ### P1 — Scale & ecosystem reach
 
+> **Status (2026-06-27):** N1 (as `on_event` streaming callback), N2, S5 (compaction), N3 (MCP server) all **✅ LANDED**. See devplan Phase C.
+
 | ID | Proposal | Class | Why | Touches Façade? |
 |:--|:--|:--:|:--|:--:|
 | **N1** | **AsyncGenerator event loop** — stream `OptimizationEvent`s to the consumer as they happen (migration M1). Sync loop kept as a thin wrapper. | N | Enables live dashboards / MCP streaming; all 4 harnesses stream. New surface, old one intact. | +API |
@@ -162,6 +164,8 @@ Ordered by value-to-thesis and gated by governance class. **(N)** = non-breaking
 | **N3** | **MCP server (Mode C)** — `arke mcp serve` exposes the 8 tools / trajectory resource / prompts over stdio+sse so any MCP client (Hermes, Cline, Claude Desktop) drives Arke directly. | N | Closes Arke ↔ MCP-ecosystem gap; the Façade was *designed* for this. New transport, same 8 tools. | +transport |
 
 ### P2 — Extension runtimes (design→runtime)
+
+> **Status (2026-06-27):** N4 (Skills), N5 (Hooks), N6 (Subagent sweep) all **✅ LANDED** in `arke/agent/extensions.py`. See devplan Phase D.
 
 | ID | Proposal | Class | Why | Touches Façade? |
 |:--|:--|:--:|:--|:--:|

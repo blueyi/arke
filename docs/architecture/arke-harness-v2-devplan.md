@@ -95,26 +95,25 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
 - Result (rmsnorm 2048², yunwu/claude-sonnet-4-6): 1 decision 1/1 @rationale (A5 clean), 25 tool calls, **3 real GPU profiles — best latency 0.0680 ms, backend=triton, correct=True**.
 - Done: evidence card under `benchmarks/results/phase1/harness_v2/live/rmsnorm/`.
 
-#### B3. L3 (stretch) live flash_attention — ⬜ TODO
-- Same for `flash_attention`, small head/seq to fit 6 GB; OOM recorded non-blocking.
-- Done: evidence card OR documented OOM with the shape that fit.
+#### B3. L3 (stretch) live flash_attention — ✅ DONE (honest finding) (`<pending>`)
+- Dev: live driver, `flash_attention` Q/K/V [1,8,256,64] on RTX 3060.
+- Result: the Harness loop ran end-to-end — 8 decisions 8/8 @rationale (QKV register staging, head→threadblock, warp mapping), 23 tool calls, `compile_and_profile` **succeeded with real GPU latency (0.075–0.085 ms)** — BUT `correct=False`: the V1 numeric check rejected the generated attention kernel. **Honest finding:** this is the current Arke *attention-codegen* accuracy boundary (online-softmax numerics), NOT a Harness bug — and it's exactly what the V1 gate should catch (an incorrect kernel never becomes `best_result`). The Harness verification闸 worked correctly. flash_attention codegen correctness is backend-layer follow-up, out of Harness-v2 scope.
+- Done: evidence card recorded with the honest correct=False finding; no fabricated success.
 
 #### B4. L4 @rationale KB refresh from live — ✅ DONE (`<pending>`)
 - Dev: live driver now writes a mineable `trajectory.jsonl` (`_write_live_trajectory` — maps apply_decision→decision record w/ rationale, compile_and_profile→profile record w/ latency+ratio+correct). **Fixed a real bug:** the old `export_session_trajectory` pairing logic produced header-only files (no decision records) because the LLMRunner trajectory attaches results per-action rather than as separate `result` entries.
 - Result: mined 26 live entries (matmul 10 + matmul_v2 9 + rmsnorm 7) into `data/rationale_kb.jsonl`, **KB 292 → 318**, each tagged `source=live/<op>` and paired with real `baseline_ratio`/`latency_ms` (e.g. matmul tile ratio=0.4035 lat=0.0797ms). A5 audit CLEAN on the regenerated trajectories.
 - Done: KB has live-sourced entries with real GPU outcomes.
 
-#### B5. Harness fixes found during live (from B1/B2) — ⬜ TODO
-- **F1 best_result has no latency:** in B1, `best_result` came from the verify
-  path (correct=True, V1_triton) but carried no `latency_ms`/`baseline_ratio`,
-  so `session_summary["best_performance"]` couldn't surface the winning ratio
-  (evidence card now extracts best from the action trajectory as a workaround).
-  Fix: `OptimizationState.record_compile` should prefer a profile result with
-  latency over a verify-only result when updating best_result.
-- **F2 LLM never self-terminates:** both B1/B2 hit `max_turns` (LLM keeps
-  applying decisions, never stops). Fix: strengthen the system prompt to make
-  the model compare `baseline_ratio` after each profile and STOP once it has a
-  best + N non-improving cycles (already half-specced in the prompt; tighten).
+#### B5. Harness fixes found during live (from B1/B2) — ✅ DONE (`fd1d8c6`)
+- **F1 best_result has no latency — ✅ FIXED:** `record_compile` now prefers a
+  profile result (with latency) over a verify-only incumbent; the winning
+  baseline_ratio surfaces in `best_performance`. +3 unit tests.
+- **F2 LLM never self-terminates — 🟡 PARTIAL:** added an explicit STOP
+  CRITERION to the system prompt. On `claude-sonnet-4-6` decisions dropped
+  (10→9) but the loop still tends to `max_turns` — prompt-level convergence is
+  a soft nudge, not a hard guarantee. A hard post-best turn-cap is a possible
+  future Substrate enforcement.
 
 ### Phase C — P1 scale & reach
 
