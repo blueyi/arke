@@ -1,0 +1,423 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "matmul",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "i",
+        "tile_factors": [
+          64
+        ],
+        "mapping": "threadblock.x"
+      },
+      {
+        "loop": "j",
+        "tile_factors": [
+          64
+        ],
+        "mapping": "threadblock.y",
+        "vector_width": 4
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tiling i by 128 creates 4 output row-blocks for a 512-row matrix. A 128-row tile fits well in shared memory and gives each threadblock a large compute chunk, improving data reuse of the A-tile across the k-reduction and reducing DRAM traffic.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tiling j by 128 creates 4 output column-blocks. A 128\u00d7128 output tile matches the classic cuBLAS-style block size for square matmuls; the 128\u00d7128 C-block stays in registers while A[128\u00d7k] and B[k\u00d7128] tiles rotate through shared memory, achieving high arithmetic intensity (~10.9 FLOPs/byte at fp32).",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 3,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the tiled i-outer loop to threadblock.x so each SM receives an independent row-block of the output. With 4 i-blocks \u00d7 4 j-blocks = 16 threadblocks, all 30 SMs will be kept busy (some get 0\u20131 blocks; doubling to 128-tile gives better occupancy than larger tiles).",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 4,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the tiled j-outer loop to threadblock.y to form a 2D grid of (i_blocks \u00d7 j_blocks) = 4\u00d74 = 16 threadblocks. 2D grid layout preserves locality: adjacent blocks share rows of A (threadblock.x) or columns of B (threadblock.y), reducing L2 cache pressure.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 5,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tile i by 64 creates 8 row-blocks. Combined with 8 j-blocks (64-tile), we get 64 threadblocks \u2014 more than double the 30 SMs, giving \u22652 waves and good occupancy. A 64\u00d764 output tile also has a more favorable register pressure vs. 128\u00d7128.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 6,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tile j by 64 to match i, completing a 64\u00d764 output block. This symmetric tiling keeps A and B shared memory tiles square (64\u00d7k_tile), which balances bandwidth for both operands and is a well-known sweet spot for Ampere matmul kernels.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 7,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map i-outer (8 blocks) to threadblock.x. Combining with j-outer on threadblock.y yields an 8\u00d78 = 64 block grid, ensuring all 30 SMs are kept busy with \u22652 blocks each \u2014 maximizing SM utilization.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 8,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map j-outer (8 blocks) to threadblock.y to complete the 2D 8\u00d78 SM grid. This co-locates blocks that share the same B column tiles under threadblock.y, enhancing L2 reuse for B's columns.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 9,
+        "effect": "vectorize:j",
+        "rationale": {
+          "text": "Vectorize the j (column) inner loop with width 4 (128-bit loads for fp32). This enables LDG.128 global loads for B's row slices and STS.128 shared-memory stores, which are the widest efficient memory transactions on Ampere and hide memory latency better than scalar loads.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          128
+        ],
+        "loop": "i"
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Tiling i by 128 creates 4 output row-blocks for a 512-row matrix. A 128-row tile fits well in shared memory and gives each threadblock a large compute chunk, improving data reuse of the A-tile across the k-reduction and reducing DRAM traffic.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          128
+        ],
+        "loop": "j"
+      },
+      "step": 2,
+      "level": 1,
+      "rationale": {
+        "text": "Tiling j by 128 creates 4 output column-blocks. A 128\u00d7128 output tile matches the classic cuBLAS-style block size for square matmuls; the 128\u00d7128 C-block stays in registers while A[128\u00d7k] and B[k\u00d7128] tiles rotate through shared memory, achieving high arithmetic intensity (~10.9 FLOPs/byte at fp32).",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "i": "threadblock.x"
+        }
+      },
+      "step": 3,
+      "level": 1,
+      "rationale": {
+        "text": "Map the tiled i-outer loop to threadblock.x so each SM receives an independent row-block of the output. With 4 i-blocks \u00d7 4 j-blocks = 16 threadblocks, all 30 SMs will be kept busy (some get 0\u20131 blocks; doubling to 128-tile gives better occupancy than larger tiles).",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "j": "threadblock.y"
+        }
+      },
+      "step": 4,
+      "level": 1,
+      "rationale": {
+        "text": "Map the tiled j-outer loop to threadblock.y to form a 2D grid of (i_blocks \u00d7 j_blocks) = 4\u00d74 = 16 threadblocks. 2D grid layout preserves locality: adjacent blocks share rows of A (threadblock.x) or columns of B (threadblock.y), reducing L2 cache pressure.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "loop": "i",
+        "factors": [
+          64
+        ]
+      },
+      "step": 5,
+      "level": 1,
+      "rationale": {
+        "text": "Tile i by 64 creates 8 row-blocks. Combined with 8 j-blocks (64-tile), we get 64 threadblocks \u2014 more than double the 30 SMs, giving \u22652 waves and good occupancy. A 64\u00d764 output tile also has a more favorable register pressure vs. 128\u00d7128.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          64
+        ],
+        "loop": "j"
+      },
+      "step": 6,
+      "level": 1,
+      "rationale": {
+        "text": "Tile j by 64 to match i, completing a 64\u00d764 output block. This symmetric tiling keeps A and B shared memory tiles square (64\u00d7k_tile), which balances bandwidth for both operands and is a well-known sweet spot for Ampere matmul kernels.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "i": "threadblock.x"
+        }
+      },
+      "step": 7,
+      "level": 1,
+      "rationale": {
+        "text": "Map i-outer (8 blocks) to threadblock.x. Combining with j-outer on threadblock.y yields an 8\u00d78 = 64 block grid, ensuring all 30 SMs are kept busy with \u22652 blocks each \u2014 maximizing SM utilization.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "j": "threadblock.y"
+        }
+      },
+      "step": 8,
+      "level": 1,
+      "rationale": {
+        "text": "Map j-outer (8 blocks) to threadblock.y to complete the 2D 8\u00d78 SM grid. This co-locates blocks that share the same B column tiles under threadblock.y, enhancing L2 reuse for B's columns.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "vectorize",
+      "params": {
+        "loop": "j",
+        "width": 4
+      },
+      "step": 9,
+      "level": 1,
+      "rationale": {
+        "text": "Vectorize the j (column) inner loop with width 4 (128-bit loads for fp32). This enables LDG.128 global loads for B's row slices and STS.128 shared-memory stores, which are the widest efficient memory transactions on Ampere and hide memory latency better than scalar loads.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0311737060546875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0311737060546875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 0.0311737060546875,
+    "metadata": {
+      "validation_tier": "V1_triton",
+      "rtol": 0.001,
+      "atol": 1e-05
+    }
+  },
+  "checkpoints": {
+    "baseline_clean": {
+      "label": "baseline_clean",
+      "timestamp": 1782500514.817908,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "i",
+            "tile_factors": [
+              128
+            ],
+            "mapping": "threadblock.x"
+          },
+          {
+            "loop": "j",
+            "tile_factors": [
+              128
+            ],
+            "mapping": "threadblock.y"
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "tile",
+            "source_step": 1,
+            "effect": "tile:i",
+            "rationale": {
+              "text": "Tiling i by 128 creates 4 output row-blocks for a 512-row matrix. A 128-row tile fits well in shared memory and gives each threadblock a large compute chunk, improving data reuse of the A-tile across the k-reduction and reducing DRAM traffic.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 2,
+            "effect": "tile:j",
+            "rationale": {
+              "text": "Tiling j by 128 creates 4 output column-blocks. A 128\u00d7128 output tile matches the classic cuBLAS-style block size for square matmuls; the 128\u00d7128 C-block stays in registers while A[128\u00d7k] and B[k\u00d7128] tiles rotate through shared memory, achieving high arithmetic intensity (~10.9 FLOPs/byte at fp32).",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 3,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the tiled i-outer loop to threadblock.x so each SM receives an independent row-block of the output. With 4 i-blocks \u00d7 4 j-blocks = 16 threadblocks, all 30 SMs will be kept busy (some get 0\u20131 blocks; doubling to 128-tile gives better occupancy than larger tiles).",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 4,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the tiled j-outer loop to threadblock.y to form a 2D grid of (i_blocks \u00d7 j_blocks) = 4\u00d74 = 16 threadblocks. 2D grid layout preserves locality: adjacent blocks share rows of A (threadblock.x) or columns of B (threadblock.y), reducing L2 cache pressure.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              128
+            ],
+            "loop": "i"
+          },
+          "step": 1,
+          "level": 1,
+          "rationale": {
+            "text": "Tiling i by 128 creates 4 output row-blocks for a 512-row matrix. A 128-row tile fits well in shared memory and gives each threadblock a large compute chunk, improving data reuse of the A-tile across the k-reduction and reducing DRAM traffic.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              128
+            ],
+            "loop": "j"
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Tiling j by 128 creates 4 output column-blocks. A 128\u00d7128 output tile matches the classic cuBLAS-style block size for square matmuls; the 128\u00d7128 C-block stays in registers while A[128\u00d7k] and B[k\u00d7128] tiles rotate through shared memory, achieving high arithmetic intensity (~10.9 FLOPs/byte at fp32).",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "i": "threadblock.x"
+            }
+          },
+          "step": 3,
+          "level": 1,
+          "rationale": {
+            "text": "Map the tiled i-outer loop to threadblock.x so each SM receives an independent row-block of the output. With 4 i-blocks \u00d7 4 j-blocks = 16 threadblocks, all 30 SMs will be kept busy (some get 0\u20131 blocks; doubling to 128-tile gives better occupancy than larger tiles).",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "j": "threadblock.y"
+            }
+          },
+          "step": 4,
+          "level": 1,
+          "rationale": {
+            "text": "Map the tiled j-outer loop to threadblock.y to form a 2D grid of (i_blocks \u00d7 j_blocks) = 4\u00d74 = 16 threadblocks. 2D grid layout preserves locality: adjacent blocks share rows of A (threadblock.x) or columns of B (threadblock.y), reducing L2 cache pressure.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "triton",
+        "correct": true,
+        "max_diff": 0.0311737060546875,
+        "metadata": {
+          "validation_tier": "V1_triton",
+          "rtol": 0.001,
+          "atol": 1e-05
+        }
+      },
+      "decision_count_at": 4,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 9,
+    "compiles_used": 2
+  }
+}

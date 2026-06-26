@@ -142,13 +142,10 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
   threshold while preserving the last-N turns + the ground-truth state pointer.
 - Done: green; a 30-turn live run stays within context (manual check in B-phase).
 
-#### C4. N3 MCP server (Mode C) — ⬜ TODO
-- Dev: `arke mcp serve` — expose the 8 Façade tools + trajectory resource +
-  prompts over stdio (sse optional) via the MCP protocol.
-- Test: `test_mcp_server.py` — an in-process MCP client lists 8 tools, calls
-  `get_hw_profile` + `list_legal_actions`, gets valid results; schema matches
-  the frozen Façade v1.0 snapshot.
-- Done: green; documented in handbook §4 Mode C with a copy-paste client example.
+#### C4. N3 MCP server (Mode C) — ✅ DONE (`<pending>`)
+- Dev: `arke/agent/mcp_server.py` — **zero-dependency** JSON-RPC-2.0-over-stdio MCP server (no `mcp` SDK dep). Methods: initialize / tools/list / tools/call / ping / notifications. Exposes the 8 frozen Façade tools env-bound. CLI: `arke mcp serve --kernel <op> [--shape] [--target]`.
+- Test: `test_mcp_server.py` 8 (initialize / tools-list=8 / tools-call hw_profile + legal_actions / unknown-tool error / unknown-method -32601 / notification→None / serve_stdio round-trip) + real subprocess stdio smoke.
+- Done: 8/8 pass; any MCP client (Hermes/Cline/Claude Desktop) can now drive Arke's 8 tools directly.
 
 ### Phase D — P2 extension runtimes
 

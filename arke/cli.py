@@ -142,6 +142,20 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Print machine-readable summary JSON",
     )
 
+    # ── mcp serve (Mode C, N3) ────────────────────────────────────────
+    mcp_parser = subparsers.add_parser(
+        "mcp",
+        help="Run Arke as an MCP server (Mode C) — expose the 8 Façade tools over JSON-RPC/stdio",
+    )
+    mcp_sub = mcp_parser.add_subparsers(dest="mcp_command")
+    serve_parser = mcp_sub.add_parser("serve", help="Serve the 8-tool Façade over stdio")
+    serve_parser.add_argument("--kernel", required=True,
+                              help="Operator to expose an optimization env for (e.g. matmul)")
+    serve_parser.add_argument("--shape", default=None,
+                              help="Shape, comma-separated (op-specific, e.g. 512,512,512)")
+    serve_parser.add_argument("--target", default="nvidia_ampere",
+                              help="Target hardware label")
+
     return parser
 
 
@@ -157,9 +171,25 @@ def main() -> None:
         sys.exit(_cmd_compile(args))
     if args.command == "optimize":
         sys.exit(_cmd_optimize(args))
+    if args.command == "mcp":
+        sys.exit(_cmd_mcp(args))
 
     parser.print_help()
     sys.exit(1)
+
+
+def _cmd_mcp(args) -> int:
+    """Run the Arke MCP server (Mode C)."""
+    if getattr(args, "mcp_command", None) != "serve":
+        print("usage: arke mcp serve --kernel <op> [--shape d,d,...] [--target hw]", file=sys.stderr)
+        return 1
+    from arke.agent.mcp_server import serve
+    from benchmarks.live.run_live_optimize import _shapes_for
+
+    dims = [int(x) for x in args.shape.split(",") if x.strip()] if args.shape else []
+    shapes = _shapes_for(args.kernel, dims)
+    serve(args.kernel, shapes, args.target)
+    return 0
 
 
 if __name__ == "__main__":
