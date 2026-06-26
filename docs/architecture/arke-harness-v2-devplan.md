@@ -1,0 +1,205 @@
+# Arke Harness v2 — 最佳目标态开发计划 (Development Plan)
+
+> **Status:** 🚧 IN PROGRESS — Leon 授权 "不考虑 Token，按最佳目标态拆解开发和测试任务" (2026-06-26)
+> **Companion:** `arke-harness-v2-rfc.md` (proposal) · `arke-harness-handbook.md` (manual)
+> **Governance:** Façade v1.0 stays frozen (Locked Principle #4). Breaking
+> items (B1/B2) remain held for an explicit v2.0 decision — the target state
+> below is reached **without** breaking the frozen contract, using additive
+> 1.x surfaces and Substrate-only changes.
+
+---
+
+## 0. 目标态定义 (Definition of "best target state")
+
+A Harness where an LLM agent can **autonomously generate and tune real Triton
+GPU kernels end-to-end**, with production-grade runtime ergonomics matching
+the four mature agent harnesses (Hermes / OpenClaw / Codex / Claude Code):
+
+1. **Legal actions are compiler/HW-truth** (no illegal move ever surfaces).
+2. **Live LLM loop is robust** — fallback chain, retry, resumable, degrades to
+   heuristic floor, never produces *no* kernel.
+3. **Scales** — async streaming, concurrent read tools, context compaction.
+4. **Reaches the ecosystem** — MCP server so any MCP client drives Arke.
+5. **Extensible at runtime** — skills, hooks, subagents wired, not just specced.
+6. **Proven on real GPU** — live trajectories with real `baseline_ratio` on
+   matmul / rmsnorm / (stretch) flash_attention, recorded as evidence.
+7. **Documented** — handbook reflects every shipped capability with real numbers.
+
+---
+
+## 1. 任务依赖图 (Dependency DAG)
+
+```
+P0 (robustness)         P1 (scale/reach)        P2 (extension runtimes)
+─────────────           ────────────────        ───────────────────────
+S1 ✅ HW-legal           N1 AsyncGen loop ──┐     N4 Skills runtime
+S3 ✅ fallback           N2 concurrent tools │     N5 Hooks runtime
+S4 ✅ rationale          S5 compaction ──────┼──►  N6 Subagent sweep
+S2 ⬜ resume  ───────────┘                    │
+                         N3 MCP server ◄──────┘  (streams via N1)
+
+LIVE (evidence, cross-cutting — needs P0 done):
+  L1 live matmul     L2 live rmsnorm    L3 (stretch) live flash_attention
+  L4 @rationale KB refresh from live trajectories
+```
+
+**Ordering rule:** P0 fully closed → LIVE evidence (validates P0 on real GPU) →
+P1 (scale, informed by live-loop pain points) → P2 (extension runtimes) →
+final handbook + KB refresh.
+
+---
+
+## 2. 任务卡 (Task cards — dev + test, with acceptance gates)
+
+Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
+(acceptance gate). Status: ✅ done · 🚧 active · ⬜ todo.
+
+### Phase A — P0 closure
+
+#### A1. S1 HW-legal actions — ✅ DONE (`36bb4b2`)
+- Dev: `place(shared)` capacity legality via `_tensor_bytes` × `hw.shared_memory_bytes`.
+- Test: `test_legal_actions_shape_aware.py` +3 (oversized dropped / fits kept / unknown both).
+- Done: 8/8 pass.
+
+#### A2. S4 @rationale enforced — ✅ DONE (`36bb4b2`)
+- Dev: `ApplyDecisionTool.execute` rejects level≥1 empty-rationale.
+- Test: `test_facade_tools_f12.py` +2; 6 existing updated.
+- Done: 115/115 pass.
+
+#### A3. S3 provider fallback + retry — ✅ DONE (`6b2684a`)
+- Dev: `LLMConfig.fallback` + `provider_chain` + `_call_llm_resilient`.
+- Test: `test_runner_resilience.py` 16.
+- Done: 16/16 pass.
+
+#### A4. S2 resumable trajectory — ✅ DONE (`<pending>`)
+- Dev: `OptimizationState.from_dict` (inverse of to_dict, reuses ScheduleIR.from_dict / _parse_decision / CompileResult rebuild); `LLMRunner.optimize(resume_from=, state_out=)` — dumps `state.json`, rehydrates spent budget, records resume provenance in session_summary.
+- Test: `test_runner_resume.py` 5 (round-trip / partial-dict / state_out write / resume rehydrates budget / missing-file fresh).
+- Done: 5/5 pass.
+
+#### A5. S4b @rationale trajectory assertion — ✅ DONE (`<pending>`)
+- Dev: `trajectory.audit_decision_rationales(path)` — additive gate-style audit (every `decision` record has non-empty rationale); does NOT touch frozen events.validate_payload.
+- Test: `test_trajectory_rationale_contract.py` 5 (clean / missing / empty / non-decision-ignored / missing-file).
+- Done: 5/5 pass.
+
+### Phase B — LIVE evidence (real GPU, real LLM)
+
+> Needs P0 done. Uses yunwu `/v1` (token cost OK per Leon). 6 GB VRAM → small shapes.
+
+#### B1. L1 live matmul autotuning — ⬜ TODO
+- Dev: `LLMRunner.optimize(op_name="matmul", shapes=512³, model="yunwu/claude-sonnet-4-6", max_turns=25)`.
+  Driver script `benchmarks/live/run_live_optimize.py` (writes trajectory +
+  result + a markdown evidence card).
+- Test/verify: trajectory has ≥3 profiled cycles, ≥1 LLM-authored `decision`
+  with rationale, real `baseline_ratio` (source≠mock), `chosen` reflects winner.
+- Done: evidence card under `benchmarks/results/phase1/harness_v2/live/matmul/`.
+
+#### B2. L2 live rmsnorm autotuning — ⬜ TODO
+- Same as B1 for `rmsnorm`, shape `[4096,4096]`.
+- Done: evidence card; correctness 100% (V1), real baseline_ratio.
+
+#### B3. L3 (stretch) live flash_attention — ⬜ TODO
+- Same for `flash_attention`, small head/seq to fit 6 GB; OOM recorded non-blocking.
+- Done: evidence card OR documented OOM with the shape that fit.
+
+#### B4. L4 @rationale KB refresh from live — ⬜ TODO
+- Dev: extend `benchmarks/build_rationale_kb` to also mine live trajectories
+  (real baseline_ratio paired rationales), append to `data/rationale_kb.jsonl`.
+- Test: KB entry count grows; each live entry has source="live".
+- Done: KB has ≥1 live-sourced entry per live op.
+
+### Phase C — P1 scale & reach
+
+#### C1. N1 AsyncGenerator event loop — ⬜ TODO
+- Dev: `LLMRunner.optimize_stream(...) -> AsyncGenerator[OptimizationEvent]`;
+  sync `optimize` becomes a thin `asyncio.run` wrapper that drains the stream.
+- Test: `test_runner_async_stream.py` — collect streamed events, assert kinds
+  + ordering match the sync path's trajectory; sync wrapper still returns same
+  `OptimizeResult`.
+- Done: green; no behavior change for existing sync callers.
+
+#### C2. N2 concurrent read-tool partitioning — ⬜ TODO
+- Dev: use `ToolMeta.concurrent_safe` + `partition_for_execution` to batch
+  independent read-only tool calls (e.g. get_hw_profile + analyze_compute) in
+  one turn's execution.
+- Test: `test_tool_partition.py` — a turn requesting 2 concurrent_safe tools
+  runs them in one partition; a mutating tool forces its own partition.
+- Done: green; trajectory still records each tool action individually.
+
+#### C3. S5 context compaction + delta observe — ⬜ TODO
+- Dev: predictive (token-threshold) + reactive message-log compaction; an
+  `observe(delta=true)`-style result-shrinking for repeated state reads.
+- Test: `test_compaction.py` — a long synthetic message log compacts below
+  threshold while preserving the last-N turns + the ground-truth state pointer.
+- Done: green; a 30-turn live run stays within context (manual check in B-phase).
+
+#### C4. N3 MCP server (Mode C) — ⬜ TODO
+- Dev: `arke mcp serve` — expose the 8 Façade tools + trajectory resource +
+  prompts over stdio (sse optional) via the MCP protocol.
+- Test: `test_mcp_server.py` — an in-process MCP client lists 8 tools, calls
+  `get_hw_profile` + `list_legal_actions`, gets valid results; schema matches
+  the frozen Façade v1.0 snapshot.
+- Done: green; documented in handbook §4 Mode C with a copy-paste client example.
+
+### Phase D — P2 extension runtimes
+
+#### D1. N4 Skills runtime — ⬜ TODO
+- Dev: load `SKILL.md` autotune recipes into the system prompt / as callable
+  procedures; ship 2 recipes (`sweep-op-all-tiers`, `tile-then-fuse`).
+- Test: `test_skills_runtime.py` — a recipe loads, its steps appear in the
+  prompt context; an unknown skill is skipped gracefully.
+- Done: green; handbook §10 documents authoring a skill.
+
+#### D2. N5 Hooks runtime — ⬜ TODO
+- Dev: wire `PreDecision / PostCompile / PostProfile / OnRollback` to external
+  Python callables; ship a sample `reject_if_smem_over` PreCompile hook + a
+  `log_profile` PostProfile hook.
+- Test: `test_hooks_runtime.py` — a PreCompile hook can veto a decision; a
+  PostProfile hook observes the profile result; hook errors are isolated.
+- Done: green; handbook §10 documents hook registration.
+
+#### D3. N6 Subagent design-space sweep — ⬜ TODO
+- Dev: fork `OptimizationState` (isolated budget) to explore N tile/backend
+  variants; merge the winning correct strategy back into the parent.
+- Test: `test_subagent_sweep.py` — 3 forked variants, distinct budgets, parent
+  receives the best; a failing fork doesn't corrupt the parent state.
+- Done: green; handbook §10 documents the sweep API.
+
+### Phase E — finalization
+
+#### E1. Handbook real-number refresh — ⬜ TODO
+- Dev: fill §6/§9 with real live `baseline_ratio` from B-phase; add Mode C, skills,
+  hooks, subagents sections from C/D; refresh troubleshooting with live findings.
+- Done: handbook has zero "proposed/planned" placeholders for shipped features.
+
+#### E2. Full regression + RFC status sync — ⬜ TODO
+- Dev: run full `pytest tests/` (minus known-long); mark every landed RFC item ✅;
+  update `arke-harness.md §18` status matrix.
+- Done: full suite green; RFC + arke-harness.md + this plan all consistent.
+
+---
+
+## 3. 验收总闸 (Master acceptance)
+
+The target state is reached when **all** hold:
+- Phase A–E cards ✅.
+- Full `pytest tests/` green (0 regressions vs current 451+ agent-slice baseline).
+- ≥2 live evidence cards (matmul + rmsnorm) with real `baseline_ratio`.
+- Façade v1.0 frozen contract test still passes unchanged (no breaking change).
+- Handbook documents every shipped capability with real numbers.
+- `docs/architecture/{arke-harness.md, arke-harness-v2-rfc.md}` status synced.
+
+---
+
+## 4. 执行顺序 (Execution order — one commit per card, push each)
+
+```
+A4 → A5 → B1 → B2 → B3 → B4 → C1 → C2 → C3 → C4 → D1 → D2 → D3 → E1 → E2
+```
+
+Reversible work proceeds autonomously. The only HOLD points (need Leon) remain
+the one-way doors: a Façade major bump (B1/B2 breaking items — NOT in this
+plan) and any locked-Gate threshold change (none here).
+
+---
+
+*Dev plan v1 — 2026-06-26. Tracks the RFC's target state to closure.*

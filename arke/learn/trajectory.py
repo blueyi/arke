@@ -260,3 +260,48 @@ def _build_paired_payload(
     if success is not None and kind == "compile" and "success" not in payload:
         payload["success"] = bool(success)
     return payload
+
+
+# ── A5 (2026-06-26): @rationale trajectory contract assertion ─────────────
+
+
+def audit_decision_rationales(trajectory_path: str | Path) -> list[str]:
+    """Audit a trajectory JSONL: every `decision` record must carry a
+    non-empty rationale.
+
+    This is the gate-style enforcement complement to S4 (which enforces
+    rationale at the `apply_decision` tool boundary). It catches any
+    `decision` record — from any producer path — that reached the trajectory
+    without a WHY. Returns a list of violation strings (empty = clean).
+
+    Deliberately *not* implemented by tightening `events.validate_payload`
+    (that would touch the frozen events contract); this is an additive audit
+    over the record stream, leaving Façade/events v1.0 untouched.
+    """
+    import json
+
+    violations: list[str] = []
+    path = Path(trajectory_path)
+    if not path.is_file():
+        return [f"trajectory file not found: {path}"]
+
+    with path.open(encoding="utf-8") as fh:
+        for lineno, line in enumerate(fh, start=1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                violations.append(f"line {lineno}: invalid JSON")
+                continue
+            if rec.get("kind") != "decision":
+                continue
+            data = rec.get("data", {}) or {}
+            rationale = data.get("rationale")
+            if not isinstance(rationale, str) or not rationale.strip():
+                step = data.get("step", "?")
+                violations.append(
+                    f"line {lineno} (decision step {step}): missing/empty rationale"
+                )
+    return violations

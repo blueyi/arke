@@ -232,6 +232,25 @@ class LLMRunner:
         return op_name, shapes
 
     # ── the loop ──────────────────────────────────────────────────────
+    @staticmethod
+    def _resolve_state_path(path: str, *, must_exist: bool) -> str | None:
+        """Resolve a resume/state path to a concrete state.json file (S2).
+
+        Accepts either a direct file path or a directory (in which case
+        ``state.json`` inside it is used). When ``must_exist`` is True and the
+        resolved file is absent, returns None (caller treats as no-resume).
+        """
+        import os
+        p = path
+        # Treat as a directory if it already is one, or if it has no .json
+        # suffix (a not-yet-created output dir). Otherwise it's a file path.
+        if os.path.isdir(p) or not p.endswith(".json"):
+            p = os.path.join(p, "state.json")
+        if must_exist and not os.path.isfile(p):
+            logger.warning("resume_from path has no state.json: %s — starting fresh", path)
+            return None
+        return p
+
     def optimize(
         self,
         *,
@@ -241,11 +260,22 @@ class LLMRunner:
         target_hw: str = "nvidia_ampere",
         max_turns: int = 30,
         model_spec: str | None = None,
+        resume_from: str | None = None,
+        state_out: str | None = None,
     ) -> OptimizeResult:
         """Run the live-LLM optimization loop.
 
         Provide either ``semantic_ir`` (an IRGraph/SemanticIR) or an
         explicit ``op_name`` (+ optional ``shapes``).
+
+        S2 resume:
+          - ``resume_from``: path to a ``state.json`` (or a directory
+            containing one) written by a prior run. The OptimizationState is
+            rehydrated so already-spent decision/compile budget is NOT
+            re-spent — a crashed run continues instead of restarting.
+          - ``state_out``: path (or directory) to write the final
+            ``state.json`` so a future run can resume from it. Defaults to
+            no dump.
         """
         provider, model = self.config.resolve(model_spec)
         self._provider = provider
@@ -260,6 +290,24 @@ class LLMRunner:
             raise ValueError("Could not determine op_name to optimize.")
 
         env = ArkeEnv.from_op(op_name, shapes or {})
+
+        # S2: resume — rehydrate prior OptimizationState if a snapshot exists.
+        resumed_decisions = 0
+        resumed_compiles = 0
+        if resume_from:
+            from arke.agent.state import OptimizationState
+            sp = self._resolve_state_path(resume_from, must_exist=True)
+            if sp:
+                with open(sp, encoding="utf-8") as fh:
+                    state_dict = json.load(fh)
+                env.state = OptimizationState.from_dict(state_dict)
+                resumed_decisions = env.state.budget.decisions_used
+                resumed_compiles = env.state.budget.compiles_used
+                logger.info(
+                    "resumed from %s — %d decisions, %d compiles already spent",
+                    sp, resumed_decisions, resumed_compiles,
+                )
+
         registry = ToolRegistry.with_env(env)
         protocol = provider.protocol
 
@@ -354,6 +402,16 @@ class LLMRunner:
 
         duration = round(time.time() - t0, 2)
 
+        # S2: dump final state so a future run can resume.
+        state_path_written = None
+        if state_out:
+            state_path_written = self._resolve_state_path(state_out, must_exist=False)
+            if state_path_written:
+                import os
+                os.makedirs(os.path.dirname(state_path_written) or ".", exist_ok=True)
+                with open(state_path_written, "w", encoding="utf-8") as fh:
+                    json.dump(env.state.to_dict(), fh, default=str, indent=2)
+
         session_summary = {
             "state": env.state.summary(),
             "budget": env.state.budget.to_dict(),
@@ -366,6 +424,12 @@ class LLMRunner:
                 for d in env.state.decision_log
             ],
             "fallback_events": fallback_events,  # S3: provider failovers, if any
+            "resume": {  # S2: resume provenance
+                "resumed_from": resume_from,
+                "replayed_decisions": resumed_decisions,
+                "replayed_compiles": resumed_compiles,
+                "state_out": state_path_written,
+            },
         }
 
         return OptimizeResult(

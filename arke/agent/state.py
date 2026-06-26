@@ -254,6 +254,55 @@ class OptimizationState:
             "budget": self.budget.to_dict(),
         }
 
+    @staticmethod
+    def _compile_result_from_dict(d: dict[str, Any]) -> "CompileResult":
+        """Rebuild a CompileResult from its to_dict() form (S2)."""
+        return CompileResult(
+            success=d.get("success", False),
+            backend=d.get("backend", ""),
+            correct=d.get("correct"),
+            max_diff=d.get("max_diff"),
+            latency_ms=d.get("latency_ms"),
+            baseline_ratio=d.get("baseline_ratio"),
+            error=d.get("error"),
+            metadata=dict(d.get("metadata", {})),
+        )
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "OptimizationState":
+        """Rehydrate an OptimizationState from its `to_dict()` form (S2).
+
+        Inverse of :meth:`to_dict`. Used by `LLMRunner.optimize(resume_from=…)`
+        to resume an interrupted run without re-spending the GPU compile budget
+        already consumed. Reuses the same deserialization primitives as
+        :meth:`rollback` (ScheduleIR.from_dict / _parse_decision / CompileResult).
+
+        Robust to partial dicts: missing keys fall back to empty/defaults so a
+        truncated/crashed trajectory snapshot still yields a usable state.
+        """
+        from arke.ir.strategy import _parse_decision
+
+        budget_d = d.get("budget", {}) or {}
+        budget = OptimizationBudget(
+            decision_max=budget_d.get("decision_max", 50),
+            compile_max=budget_d.get("compile_max", 30),
+            decisions_used=budget_d.get("decisions_used", 0),
+            compiles_used=budget_d.get("compiles_used", 0),
+        )
+        strat_d = d.get("strategy")
+        strategy = ScheduleIR.from_dict(copy.deepcopy(strat_d)) if strat_d else ScheduleIR()
+
+        st = cls(strategy=strategy, budget=budget)
+        st.decision_log = [_parse_decision(x) for x in d.get("decision_log", [])]
+        st.compile_results = [
+            cls._compile_result_from_dict(x) for x in d.get("compile_results", [])
+        ]
+        best = d.get("best_result")
+        st.best_result = cls._compile_result_from_dict(best) if best else None
+        # checkpoints intentionally not restored — resume starts a fresh
+        # exploration frame; the decision_log + budget carry the spent work.
+        return st
+
     def summary(self) -> str:
         """One-line human-readable summary."""
         return (
