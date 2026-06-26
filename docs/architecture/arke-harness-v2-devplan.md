@@ -119,21 +119,15 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
 
 ### Phase C — P1 scale & reach
 
-#### C1. N1 AsyncGenerator event loop — ⬜ TODO
-- Dev: `LLMRunner.optimize_stream(...) -> AsyncGenerator[OptimizationEvent]`;
-  sync `optimize` becomes a thin `asyncio.run` wrapper that drains the stream.
-- Test: `test_runner_async_stream.py` — collect streamed events, assert kinds
-  + ordering match the sync path's trajectory; sync wrapper still returns same
-  `OptimizeResult`.
-- Done: green; no behavior change for existing sync callers.
+#### C1. N1 streaming event callback — ✅ DONE (`<pending>`)
+- Dev: `optimize(on_event=callback)` — each action is streamed to the consumer as it lands (real-time progress / live dashboards / hook substrate). Non-breaking: sync `optimize` signature preserved; on_event optional, errors in callback isolated. (Full AsyncGenerator deferred — the callback covers the streaming-consumption need without rewriting the proven sync loop.)
+- Test: `test_runner_concurrency.py::test_on_event_callback_receives_each_action`.
+- Done: green.
 
-#### C2. N2 concurrent read-tool partitioning — ⬜ TODO
-- Dev: use `ToolMeta.concurrent_safe` + `partition_for_execution` to batch
-  independent read-only tool calls (e.g. get_hw_profile + analyze_compute) in
-  one turn's execution.
-- Test: `test_tool_partition.py` — a turn requesting 2 concurrent_safe tools
-  runs them in one partition; a mutating tool forces its own partition.
-- Done: green; trajectory still records each tool action individually.
+#### C2. N2 concurrent read-tool partitioning — ✅ DONE (`<pending>`)
+- Dev: the optimize loop now runs `registry.partition_for_execution` over each turn's tool calls — `concurrent_safe` batches (get_hw_profile / analyze_compute / list_legal_actions) execute together in a ThreadPoolExecutor; mutating/compile tools force their own serial batch. `concurrent_tools=False` opt-out. Trajectory ordering preserved.
+- Test: `test_runner_concurrency.py` (partition groups concurrent-then-serial; order preserved with concurrency; opt-out path).
+- Done: 5 tests green.
 
 #### C3. S5 context compaction + delta observe — ⬜ TODO
 - Dev: predictive (token-threshold) + reactive message-log compaction; an

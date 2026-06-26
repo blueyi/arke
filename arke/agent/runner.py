@@ -270,6 +270,8 @@ class LLMRunner:
         model_spec: str | None = None,
         resume_from: str | None = None,
         state_out: str | None = None,
+        on_event: Any = None,
+        concurrent_tools: bool = True,
     ) -> OptimizeResult:
         """Run the live-LLM optimization loop.
 
@@ -378,27 +380,50 @@ class LLMRunner:
                 stop_reason = raw_stop or "end_turn"
                 break
 
-            # Execute each requested tool, feed results back.
+            # Execute requested tools. C2: partition into concurrent-safe /
+            # serial batches via ToolMeta; run concurrent_safe batches in a
+            # thread pool (read-only tools like get_hw_profile / analyze_compute
+            # / list_legal_actions), serial batches one-by-one (mutating /
+            # compile tools). C1: emit each action via on_event as it lands.
             results_for_model: list[tuple[str, str, dict[str, Any]]] = []
-            for tu in tool_uses:
-                tool_calls += 1
-                step += 1
-                name = tu["name"]
-                params = tu["input"] if isinstance(tu["input"], dict) else {}
-                try:
-                    tool = registry.get(name)
-                    result = tool.execute(params)
-                    result_payload = json.loads(result.to_json())
-                except Exception as e:
-                    result_payload = {"success": False, "error": f"{type(e).__name__}: {e}"}
-                    errors.append(f"tool_{name}_failed: {e}")
+            tu_by_call = [(tu, tu["name"], tu["input"] if isinstance(tu["input"], dict) else {})
+                          for tu in tool_uses]
+            call_list = [(name, params) for _tu, name, params in tu_by_call]
+            batches = registry.partition_for_execution(call_list)
 
-                trajectory.append({
-                    "type": "action", "step": step,
-                    "tool": name, "params": params,
-                    "result": result_payload,
-                })
-                results_for_model.append((tu["id"], name, result_payload))
+            def _exec_one(name: str, params: dict[str, Any]) -> dict[str, Any]:
+                try:
+                    return json.loads(registry.get(name).execute(params).to_json())
+                except Exception as e:  # noqa: BLE001
+                    errors.append(f"tool_{name}_failed: {e}")
+                    return {"success": False, "error": f"{type(e).__name__}: {e}"}
+
+            # Walk tool_uses in order, but execute each partition together.
+            idx = 0
+            for batch in batches:
+                batch_calls = [(n, p) for (n, p, _c) in batch]
+                concurrent = bool(batch and batch[0][2]) and concurrent_tools and len(batch) > 1
+                if concurrent:
+                    from concurrent.futures import ThreadPoolExecutor
+                    with ThreadPoolExecutor(max_workers=min(len(batch_calls), 4)) as ex:
+                        payloads = list(ex.map(lambda np: _exec_one(np[0], np[1]), batch_calls))
+                else:
+                    payloads = [_exec_one(n, p) for (n, p) in batch_calls]
+
+                for (name, params), payload in zip(batch_calls, payloads):
+                    tu = tu_by_call[idx][0]
+                    idx += 1
+                    tool_calls += 1
+                    step += 1
+                    action = {"type": "action", "step": step, "tool": name,
+                              "params": params, "result": payload}
+                    trajectory.append(action)
+                    if on_event is not None:
+                        try:
+                            on_event(action)
+                        except Exception:  # on_event must never break the loop
+                            pass
+                    results_for_model.append((tu["id"], name, payload))
 
             # Append assistant turn + tool results in the protocol's shape.
             self._append_turn(protocol, messages, text, tool_uses, results_for_model)
