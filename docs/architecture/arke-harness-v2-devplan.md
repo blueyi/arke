@@ -85,17 +85,15 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
 
 > Needs P0 done. Uses yunwu `/v1` (token cost OK per Leon). 6 GB VRAM → small shapes.
 
-#### B1. L1 live matmul autotuning — ⬜ TODO
-- Dev: `LLMRunner.optimize(op_name="matmul", shapes=512³, model="yunwu/claude-sonnet-4-6", max_turns=25)`.
-  Driver script `benchmarks/live/run_live_optimize.py` (writes trajectory +
-  result + a markdown evidence card).
-- Test/verify: trajectory has ≥3 profiled cycles, ≥1 LLM-authored `decision`
-  with rationale, real `baseline_ratio` (source≠mock), `chosen` reflects winner.
+#### B1. L1 live matmul autotuning — ✅ DONE (`019ff7f`)
+- Dev: `benchmarks/live/run_live_optimize.py` op-agnostic driver (state/result/trajectory/evidence).
+- Result (matmul 512³, yunwu/claude-sonnet-4-6): 10 decisions 10/10 @rationale (A5 clean), 25 tool calls, **2 real GPU profiles — best latency 0.0797 ms (baseline_ratio 0.4035), backend=triton, correct=True**. S2 state.json dumped + verified rehydratable (10 dec / 3 compiles).
 - Done: evidence card under `benchmarks/results/phase1/harness_v2/live/matmul/`.
 
-#### B2. L2 live rmsnorm autotuning — ⬜ TODO
-- Same as B1 for `rmsnorm`, shape `[4096,4096]`.
-- Done: evidence card; correctness 100% (V1), real baseline_ratio.
+#### B2. L2 live rmsnorm autotuning — ✅ DONE (`<pending>`)
+- Dev: same driver. **Pitfall found + fixed:** rmsnorm needs `X[M,N]` + `W[N]`; the driver's `_shapes_for` initially only passed X → ArkeEnv default-filled W=[4,8] → SemanticInterpreter ref mismatch (4096 vs 8) → verify failed, baseline_ratio=None despite a real 0.21 ms profile. Fixed `_shapes_for` to emit W=[N] (and layernorm B=[N]).
+- Result (rmsnorm 2048², yunwu/claude-sonnet-4-6): 1 decision 1/1 @rationale (A5 clean), 25 tool calls, **3 real GPU profiles — best latency 0.0680 ms, backend=triton, correct=True**.
+- Done: evidence card under `benchmarks/results/phase1/harness_v2/live/rmsnorm/`.
 
 #### B3. L3 (stretch) live flash_attention — ⬜ TODO
 - Same for `flash_attention`, small head/seq to fit 6 GB; OOM recorded non-blocking.
@@ -106,6 +104,18 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
   (real baseline_ratio paired rationales), append to `data/rationale_kb.jsonl`.
 - Test: KB entry count grows; each live entry has source="live".
 - Done: KB has ≥1 live-sourced entry per live op.
+
+#### B5. Harness fixes found during live (from B1/B2) — ⬜ TODO
+- **F1 best_result has no latency:** in B1, `best_result` came from the verify
+  path (correct=True, V1_triton) but carried no `latency_ms`/`baseline_ratio`,
+  so `session_summary["best_performance"]` couldn't surface the winning ratio
+  (evidence card now extracts best from the action trajectory as a workaround).
+  Fix: `OptimizationState.record_compile` should prefer a profile result with
+  latency over a verify-only result when updating best_result.
+- **F2 LLM never self-terminates:** both B1/B2 hit `max_turns` (LLM keeps
+  applying decisions, never stops). Fix: strengthen the system prompt to make
+  the model compare `baseline_ratio` after each profile and STOP once it has a
+  best + N non-improving cycles (already half-specced in the prompt; tighten).
 
 ### Phase C — P1 scale & reach
 

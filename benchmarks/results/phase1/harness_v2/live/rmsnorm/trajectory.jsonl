@@ -1,0 +1,2 @@
+{"t": 1.354800770059228e-05, "kind": "header", "data": {"schema": "s8-compile-profile-adjust-v1", "trajectory_version": "1.0.0", "contract_id": "arke-trajectory-v1.0.0", "kernel_id": "rmsnorm", "target_hw": "nvidia_ampere", "mode": "compile"}}
+{"t": 5.718099419027567e-05, "kind": "done", "data": {"final_score": 0.0, "decisions": 1, "compiles": 0, "termination": "max_turns"}}

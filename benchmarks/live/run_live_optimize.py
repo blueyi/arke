@@ -42,7 +42,13 @@ def _shapes_for(op: str, dims: list[int]) -> dict[str, list[int]]:
             m, k, n = dims[0], dims[1], dims[2]
             return {"A": [m, k], "B": [k, n]}
         return {"A": [512, 512], "B": [512, 512]}
-    if op in ("rmsnorm", "layernorm", "softmax", "relu", "gelu", "silu"):
+    if op == "rmsnorm":
+        m, n = (dims[0], dims[1]) if len(dims) >= 2 else (4096, 4096)
+        return {"X": [m, n], "W": [n]}
+    if op == "layernorm":
+        m, n = (dims[0], dims[1]) if len(dims) >= 2 else (4096, 4096)
+        return {"X": [m, n], "W": [n], "B": [n]}
+    if op in ("softmax", "relu", "gelu", "silu"):
         if len(dims) >= 2:
             return {"X": [dims[0], dims[1]]}
         return {"X": [4096, 4096]}

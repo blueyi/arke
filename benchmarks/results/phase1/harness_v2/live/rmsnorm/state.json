@@ -1,0 +1,444 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "rmsnorm",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "i",
+        "tile_factors": [
+          1
+        ]
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tile 'i' by 1 \u2014 one row per block. With M=2048 rows this launches 2048 blocks, saturating all 30 SMs with ~68 concurrent blocks per SM. This is the canonical RMSNorm/LayerNorm pattern: one block = one row, so all threads within the block cooperate on the single row's reduction, enabling efficient warp shuffles and maximizing parallelism.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          1
+        ],
+        "loop": "i"
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Tile 'i' by 1 \u2014 one row per block. With M=2048 rows this launches 2048 blocks, saturating all 30 SMs with ~68 concurrent blocks per SM. This is the canonical RMSNorm/LayerNorm pattern: one block = one row, so all threads within the block cooperate on the single row's reduction, enabling efficient warp shuffles and maximizing parallelism.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0039348602294921875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0039348602294921875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    }
+  ],
+  "best_result": null,
+  "checkpoints": {
+    "baseline": {
+      "label": "baseline",
+      "timestamp": 1782500063.7588549,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "cycle1_tile_i32_j128_par_vec4": {
+      "label": "cycle1_tile_i32_j128_par_vec4",
+      "timestamp": 1782500126.745065,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "i",
+            "tile_factors": [
+              32
+            ],
+            "mapping": "threadblock.x"
+          },
+          {
+            "loop": "j",
+            "tile_factors": [
+              128
+            ],
+            "mapping": "warp",
+            "vector_width": 4
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "tile",
+            "source_step": 1,
+            "effect": "tile:i",
+            "rationale": {
+              "text": "Tile the outer row dimension 'i' by 32. This maps 32 rows per block \u2014 with M=2048 rows that gives 64 blocks across 30 SMs (\u22482.1 waves), maximizing SM utilization while keeping per-block shared memory manageable for the row-wise reduction.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 2,
+            "effect": "tile:j",
+            "rationale": {
+              "text": "Tile the reduction dimension 'j' by 128. N=2048 elements split into 16 tiles of 128 \u2014 each tile fits a warp (128/4 = 32 float4 vectorized loads). This enables 128-bit memory accesses and creates the inner loop structure needed for vectorize and unroll decisions next.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 3,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the outer 'i' tile to threadblock.x \u2014 each CUDA block processes a tile of 32 rows. With 2048/32=64 blocks launched across 30 SMs, this gives full SM utilization and maps naturally to the row-independent parallelism of RMSNorm.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 4,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the inner 'j' tiles to warps within the block. Each warp handles a 128-element strip of the N=2048 reduction, enabling warp-level shuffle-based reduction (shfl.xor) rather than slower shared-memory atomics. 2048/128=16 warps per block \u00d7 32 threads = 512 threads/block \u2014 well within the 1024 limit.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "vectorize",
+            "source_step": 5,
+            "effect": "vectorize:j",
+            "rationale": {
+              "text": "Vectorize the j-loop with width=4 (float4 = 128-bit loads). This maximizes memory bandwidth utilization on Ampere (which has 128-bit wide memory buses) and reduces instruction count by 4\u00d7. With j-tile=128 and vec=4, each thread issues 128/4=32 vectorized load instructions \u2014 a good balance for the instruction cache.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "tile",
+          "params": {
+            "loop": "i",
+            "factors": [
+              32
+            ]
+          },
+          "step": 1,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the outer row dimension 'i' by 32. This maps 32 rows per block \u2014 with M=2048 rows that gives 64 blocks across 30 SMs (\u22482.1 waves), maximizing SM utilization while keeping per-block shared memory manageable for the row-wise reduction.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              128
+            ],
+            "loop": "j"
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the reduction dimension 'j' by 128. N=2048 elements split into 16 tiles of 128 \u2014 each tile fits a warp (128/4 = 32 float4 vectorized loads). This enables 128-bit memory accesses and creates the inner loop structure needed for vectorize and unroll decisions next.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "i": "threadblock.x"
+            }
+          },
+          "step": 3,
+          "level": 1,
+          "rationale": {
+            "text": "Map the outer 'i' tile to threadblock.x \u2014 each CUDA block processes a tile of 32 rows. With 2048/32=64 blocks launched across 30 SMs, this gives full SM utilization and maps naturally to the row-independent parallelism of RMSNorm.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "j": "warp"
+            }
+          },
+          "step": 4,
+          "level": 1,
+          "rationale": {
+            "text": "Map the inner 'j' tiles to warps within the block. Each warp handles a 128-element strip of the N=2048 reduction, enabling warp-level shuffle-based reduction (shfl.xor) rather than slower shared-memory atomics. 2048/128=16 warps per block \u00d7 32 threads = 512 threads/block \u2014 well within the 1024 limit.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "vectorize",
+          "params": {
+            "loop": "j",
+            "width": 4
+          },
+          "step": 5,
+          "level": 1,
+          "rationale": {
+            "text": "Vectorize the j-loop with width=4 (float4 = 128-bit loads). This maximizes memory bandwidth utilization on Ampere (which has 128-bit wide memory buses) and reduces instruction count by 4\u00d7. With j-tile=128 and vec=4, each thread issues 128/4=32 vectorized load instructions \u2014 a good balance for the instruction cache.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "triton",
+        "correct": true,
+        "max_diff": 0.0039348602294921875,
+        "metadata": {
+          "validation_tier": "V1_triton",
+          "rtol": 0.001,
+          "atol": 1e-05
+        }
+      },
+      "decision_count_at": 5,
+      "compile_count_at": 1
+    },
+    "cycle2_unroll8": {
+      "label": "cycle2_unroll8",
+      "timestamp": 1782500153.2195015,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "i",
+            "tile_factors": [
+              32
+            ],
+            "mapping": "threadblock.x"
+          },
+          {
+            "loop": "j",
+            "tile_factors": [
+              128
+            ],
+            "mapping": "warp",
+            "vector_width": 4,
+            "unroll_factor": 8
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "tile",
+            "source_step": 1,
+            "effect": "tile:i",
+            "rationale": {
+              "text": "Tile the outer row dimension 'i' by 32. This maps 32 rows per block \u2014 with M=2048 rows that gives 64 blocks across 30 SMs (\u22482.1 waves), maximizing SM utilization while keeping per-block shared memory manageable for the row-wise reduction.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 2,
+            "effect": "tile:j",
+            "rationale": {
+              "text": "Tile the reduction dimension 'j' by 128. N=2048 elements split into 16 tiles of 128 \u2014 each tile fits a warp (128/4 = 32 float4 vectorized loads). This enables 128-bit memory accesses and creates the inner loop structure needed for vectorize and unroll decisions next.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 3,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the outer 'i' tile to threadblock.x \u2014 each CUDA block processes a tile of 32 rows. With 2048/32=64 blocks launched across 30 SMs, this gives full SM utilization and maps naturally to the row-independent parallelism of RMSNorm.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 4,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the inner 'j' tiles to warps within the block. Each warp handles a 128-element strip of the N=2048 reduction, enabling warp-level shuffle-based reduction (shfl.xor) rather than slower shared-memory atomics. 2048/128=16 warps per block \u00d7 32 threads = 512 threads/block \u2014 well within the 1024 limit.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "vectorize",
+            "source_step": 5,
+            "effect": "vectorize:j",
+            "rationale": {
+              "text": "Vectorize the j-loop with width=4 (float4 = 128-bit loads). This maximizes memory bandwidth utilization on Ampere (which has 128-bit wide memory buses) and reduces instruction count by 4\u00d7. With j-tile=128 and vec=4, each thread issues 128/4=32 vectorized load instructions \u2014 a good balance for the instruction cache.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "unroll",
+            "source_step": 6,
+            "effect": "unroll:j",
+            "rationale": {
+              "text": "Unroll the j inner loop by 8. With j-tile=128 and vec=4, the innermost loop has 128/4=32 iterations; unrolling by 8 leaves 4 meta-iterations and exposes 8 independent accumulators to the compiler \u2014 critical for hiding the 4-cycle FP32 latency on Ampere and saturating the CUDA cores with independent FP ops.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "tile",
+          "params": {
+            "loop": "i",
+            "factors": [
+              32
+            ]
+          },
+          "step": 1,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the outer row dimension 'i' by 32. This maps 32 rows per block \u2014 with M=2048 rows that gives 64 blocks across 30 SMs (\u22482.1 waves), maximizing SM utilization while keeping per-block shared memory manageable for the row-wise reduction.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              128
+            ],
+            "loop": "j"
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the reduction dimension 'j' by 128. N=2048 elements split into 16 tiles of 128 \u2014 each tile fits a warp (128/4 = 32 float4 vectorized loads). This enables 128-bit memory accesses and creates the inner loop structure needed for vectorize and unroll decisions next.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "i": "threadblock.x"
+            }
+          },
+          "step": 3,
+          "level": 1,
+          "rationale": {
+            "text": "Map the outer 'i' tile to threadblock.x \u2014 each CUDA block processes a tile of 32 rows. With 2048/32=64 blocks launched across 30 SMs, this gives full SM utilization and maps naturally to the row-independent parallelism of RMSNorm.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "j": "warp"
+            }
+          },
+          "step": 4,
+          "level": 1,
+          "rationale": {
+            "text": "Map the inner 'j' tiles to warps within the block. Each warp handles a 128-element strip of the N=2048 reduction, enabling warp-level shuffle-based reduction (shfl.xor) rather than slower shared-memory atomics. 2048/128=16 warps per block \u00d7 32 threads = 512 threads/block \u2014 well within the 1024 limit.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "vectorize",
+          "params": {
+            "loop": "j",
+            "width": 4
+          },
+          "step": 5,
+          "level": 1,
+          "rationale": {
+            "text": "Vectorize the j-loop with width=4 (float4 = 128-bit loads). This maximizes memory bandwidth utilization on Ampere (which has 128-bit wide memory buses) and reduces instruction count by 4\u00d7. With j-tile=128 and vec=4, each thread issues 128/4=32 vectorized load instructions \u2014 a good balance for the instruction cache.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "unroll",
+          "params": {
+            "loop": "j",
+            "factor": 8
+          },
+          "step": 6,
+          "level": 1,
+          "rationale": {
+            "text": "Unroll the j inner loop by 8. With j-tile=128 and vec=4, the innermost loop has 128/4=32 iterations; unrolling by 8 leaves 4 meta-iterations and exposes 8 independent accumulators to the compiler \u2014 critical for hiding the 4-cycle FP32 latency on Ampere and saturating the CUDA cores with independent FP ops.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "triton",
+        "correct": true,
+        "max_diff": 0.0039348602294921875,
+        "metadata": {
+          "validation_tier": "V1_triton",
+          "rtol": 0.001,
+          "atol": 1e-05
+        }
+      },
+      "decision_count_at": 6,
+      "compile_count_at": 2
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 1,
+    "compiles_used": 0
+  }
+}
