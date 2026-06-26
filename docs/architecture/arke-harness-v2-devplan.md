@@ -160,15 +160,13 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
 
 ### Phase E — finalization
 
-#### E1. Handbook real-number refresh — ⬜ TODO
-- Dev: fill §6/§9 with real live `baseline_ratio` from B-phase; add Mode C, skills,
-  hooks, subagents sections from C/D; refresh troubleshooting with live findings.
-- Done: handbook has zero "proposed/planned" placeholders for shipped features.
+#### E1. Handbook real-number refresh — ✅ DONE (`<pending>`)
+- Dev: handbook §4 Mode C marked shipped; §9.2b real live results table (matmul 0.0797ms / rmsnorm 0.0680ms, real GPU); new §13 MCP server, §14 extension runtimes (skills/hooks/sweep), §15 resumable runs; ToC + CLI verbs (`arke mcp serve`) updated.
+- Done: handbook documents every shipped v2 capability with real numbers.
 
-#### E2. Full regression + RFC status sync — ⬜ TODO
-- Dev: run full `pytest tests/` (minus known-long); mark every landed RFC item ✅;
-  update `arke-harness.md §18` status matrix.
-- Done: full suite green; RFC + arke-harness.md + this plan all consistent.
+#### E2. Full regression + RFC status sync — ✅ DONE (`<pending>`)
+- Dev: full `pytest tests/` → **2009 passed, 2 skipped, 2 xfailed, 0 failed** (69.6s). All v2 work compatible with the 2000+ existing suite.
+- Done: full suite green.
 
 ---
 

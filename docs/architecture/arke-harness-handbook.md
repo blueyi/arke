@@ -29,7 +29,10 @@
 9. [Triton Kernel Generation & Tuning Cookbook](#9-triton-kernel-cookbook)
 10. [Extending the Harness](#10-extending-the-harness)
 11. [Troubleshooting](#11-troubleshooting)
-12. [Reference](#12-reference)
+12. [Reference](#16-reference)
+13. [MCP Server (Mode C)](#13-mcp-server-mode-c)
+14. [Extension Runtimes (Skills · Hooks · Sweep)](#14-extension-runtimes-skills--hooks--subagent-sweep)
+15. [Resumable Runs (S2)](#15-resumable-runs-s2)
 
 ---
 
@@ -181,8 +184,9 @@ All three modes consume the **same** 8-tool Façade.
 | **B. External agent** | The agent (Claude Code, Cursor, Hermes) | agent shells out to `arke <verb>`, reads JSON | AI assistants that own their own LLM access |
 | **C. MCP server** | The MCP client (Cline, Continue, Hermes, Claude Desktop) | `arke mcp serve` | Any MCP client drives the 8 tools directly |
 
-**Today:** Modes A and B ship. Mode C (MCP server) is proposed in the v2 RFC
-(`arke-harness-v2-rfc.md` §3 N3).
+**Today:** Modes A, B, and **C all ship**. Mode C (MCP server) landed in the
+v2 work (C4) — see §13. Run `arke mcp serve --kernel matmul --shape 512,512,512`
+and any MCP client (Hermes, Cline, Claude Desktop) can drive the 8 tools.
 
 ### Mode A — Python API
 
@@ -362,6 +366,23 @@ read_strategy() { python -m json.tool /tmp/mm/strategy.json; }
 Typical decisions: `tile(loop="i", factors=[64,16])`,
 `tile(loop="j", factors=[128,8])`, `vectorize`, `place(shared)`.
 
+### 9.2b Real live-LLM autotuning results (RTX 3060, yunwu/claude-sonnet-4-6)
+
+Measured end-to-end with the live `LLMRunner` driving the 8 tools (driver:
+`benchmarks/live/run_live_optimize.py`; evidence cards under
+`benchmarks/results/phase1/harness_v2/live/`):
+
+| Op | Shape | Decisions (all w/ @rationale) | Real GPU profiles | Best latency | correct |
+|:--|:--|:--:|:--:|:--:|:--:|
+| matmul | 512³ | 9–10 | 2 | **0.0797 ms** | ✅ V1 |
+| rmsnorm | 2048² | 1 | 3 | **0.0680 ms** | ✅ V1 |
+
+The model autonomously chose tiling / vectorization / warp-mapping / shared-mem
+placement, each with a written `@rationale`, and read back real Triton
+`baseline_ratio` to steer the next cycle. (Note: on `claude-sonnet-4-6` the loop
+tends to run to `max_turns` rather than self-terminating — the stop-criterion
+prompt is a soft nudge, not a hard guarantee.)
+
 ### 9.3 Reading `baseline_ratio`
 
 `baseline_ratio = arke_latency / reference_latency` is reported by V2. Per the
@@ -420,7 +441,95 @@ Subclass the documented `BaselineRunner` protocol, plug into
 
 ---
 
-## 12. Reference
+## 13. MCP Server (Mode C)
+
+Run Arke as an MCP server so any MCP-compatible client (Hermes, Cline,
+Continue, Claude Desktop) drives the 8 Façade tools directly — no shell
+intermediation, no Arke-owned LLM.
+
+```bash
+arke mcp serve --kernel matmul --shape 512,512,512 --target nvidia_ampere
+```
+
+It speaks **JSON-RPC 2.0 over stdio** (zero external deps — no `mcp` SDK
+needed). Methods: `initialize`, `tools/list`, `tools/call`, `ping`,
+`notifications/initialized`. The server is bound to one optimization context
+`(op, shapes, target)`; the client drives the compile→profile→adjust loop by
+calling the tools.
+
+Minimal client exchange:
+
+```json
+→ {"jsonrpc":"2.0","id":1,"method":"initialize"}
+← {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05",
+     "serverInfo":{"name":"arke-harness","op":"matmul",...}}}
+→ {"jsonrpc":"2.0","id":2,"method":"tools/list"}
+← {"jsonrpc":"2.0","id":2,"result":{"tools":[ ...8 tools... ]}}
+→ {"jsonrpc":"2.0","id":3,"method":"tools/call",
+     "params":{"name":"get_hw_profile","arguments":{}}}
+← {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"{...}"}],"isError":false}}
+```
+
+Source: `arke/agent/mcp_server.py` (`ArkeMCPServer`).
+
+## 14. Extension Runtimes (Skills · Hooks · Subagent Sweep)
+
+`arke/agent/extensions.py` adds three Claude-Code-style extension surfaces.
+
+### Skills — `SKILL.md` autotune recipes
+
+```python
+from arke.agent.extensions import load_skills_dir
+skills = load_skills_dir("skills/")            # parse every */SKILL.md
+runner.optimize(op_name="matmul", shapes=..., skills=list(skills.values()))
+```
+
+Each skill's body is injected into the system prompt so the LLM follows a
+proven procedure (same on-disk format as the repo's `skills/*/SKILL.md`).
+
+### Hooks — lifecycle callbacks
+
+```python
+from arke.agent.extensions import HookRegistry
+hooks = HookRegistry()
+hooks.register("PreDecision", lambda ctx: ctx["params"]["kind"] != "place")  # veto place()
+hooks.register("PostProfile", lambda ctx: log(ctx["result"]))                # observe
+runner.optimize(..., hooks=hooks)
+```
+
+Points: `PreDecision` (may veto an apply_decision by returning `False`),
+`PostCompile`, `PostProfile`, `OnRollback` (observation). Hook exceptions are
+isolated — a buggy hook never breaks the loop.
+
+### Subagent design-space sweep
+
+```python
+from arke.agent.extensions import sweep_design_space
+best, all_variants = sweep_design_space(
+    "matmul", {"A": [256, 256], "B": [256, 256]},
+    variants=[
+        ("tile64",  [{"kind": "tile", "params": {"loop": "i", "factors": [64]}}, ...]),
+        ("tile128", [{"kind": "tile", "params": {"loop": "i", "factors": [128]}}, ...]),
+    ],
+)
+# each variant runs on its OWN isolated ArkeEnv (parallel); best = lowest-latency correct.
+# real GPU example: tile128 0.147ms beats tile64 0.230ms.
+```
+
+## 15. Resumable Runs (S2)
+
+```python
+# first run dumps state.json into the output dir
+runner.optimize(op_name="matmul", shapes=..., state_out="/tmp/run1")
+# a crashed/interrupted run resumes without re-spending GPU compile budget
+runner.optimize(op_name="matmul", shapes=..., resume_from="/tmp/run1")
+```
+
+`resume_from` rehydrates the prior `OptimizationState` (decision log + spent
+decision/compile budget + best result) so the loop continues instead of
+restarting. Provenance is recorded in `result.session_summary["resume"]`.
+
+## 16. Reference
 
 ### CLI verbs
 
@@ -428,6 +537,7 @@ Subclass the documented `BaselineRunner` protocol, plug into
 arke compile <file.ak> [-o out.akir]     # compile .ak → Arke IR / .akir JSON
 arke optimize <input> [--cycles N] [--kernel OP --shape S] [--dtype D]
                       [--target T] [--output DIR] [--json] [--dry-run]
+arke mcp serve --kernel <op> [--shape d,d,...] [--target hw]   # Mode C MCP server
 ```
 
 `arke optimize` accepts: a `.ak` file path, inline `.ak` source, a
@@ -459,6 +569,8 @@ natural-language request, or a code snippet (multi-input routing).
 | Façade tool list + versioning | `arke/agent/facade.py` |
 | Live LLM orchestrator | `arke/agent/runner.py` |
 | Provider resolution | `arke/agent/llm_config.py` |
+| MCP server (Mode C) | `arke/agent/mcp_server.py` |
+| Extension runtimes (skills/hooks/sweep) | `arke/agent/extensions.py` |
 | 8 tools impl + ToolMeta | `arke/agent/tools.py` |
 | Env / legal actions | `arke/agent/env.py` |
 | OptimizationState / checkpoint | `arke/agent/state.py` |
