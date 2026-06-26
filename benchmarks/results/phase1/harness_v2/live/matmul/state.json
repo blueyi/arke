@@ -1,0 +1,659 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "matmul",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "i",
+        "tile_factors": [
+          128
+        ],
+        "mapping": "warp",
+        "unroll_factor": 4
+      },
+      {
+        "loop": "j",
+        "tile_factors": [
+          128
+        ],
+        "mapping": "threadblock.y",
+        "vector_width": 4,
+        "unroll_factor": 4
+      },
+      {
+        "loop": "k",
+        "tile_factors": [
+          32
+        ],
+        "unroll_factor": 4
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tile the M-dimension (i) with factor 128. This creates 512/128=4 outer tiles along M. Combined with J tiling this gives thread-blocks of 128\u00d7128 output elements \u2014 a standard large-GEMM tile that maximises arithmetic intensity and reuse of A rows from shared memory while fitting within the 49 KB SMEM budget on Ampere.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tile the N-dimension (j) with factor 128. Creates 4 outer tiles along N, giving a 4\u00d74=16 output-block grid across 30 SMs for good occupancy. The 128\u00d7128 output tile drives high register reuse for B columns. Together i=128, j=128 provides the canonical GEMM tile that amortises DRAM traffic.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 3,
+        "effect": "tile:k",
+        "rationale": {
+          "text": "Tile the K reduction axis with factor 32. This sets the shared-memory staging depth: each iteration loads a 128\u00d732 slice of A and a 32\u00d7128 slice of B into SMEM (128\u00d732\u00d72 bytes \u00d7 2 = 32 KB for FP32 \u2014 well within 49 KB), enabling the outer K loop to stream through the full K=512 in 16 steps while keeping data in fast SMEM.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 4,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the outer i-tile loop (4 tiles of 128) to threadblock.x. This distributes the M-dimension work across SM grid columns, enabling 4 independent thread-blocks along M to run concurrently on separate SMs.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 5,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the outer j-tile loop (4 tiles of 128) to threadblock.y. Combined with i\u2192threadblock.x, this creates a 4\u00d74=16 thread-block grid which covers all 30 SMs with two waves (first 16 blocks + 14 from a second wave), giving high SM utilization for the 512\u00d7512 problem.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 6,
+        "effect": "vectorize:j",
+        "rationale": {
+          "text": "Vectorize the inner j loop with width=4. On Ampere this emits 128-bit (float4) memory loads/stores, maximising memory-bus utilization and enabling the hardware's memory coalescing. Width 4 is the sweet-spot that fits register capacity within a 128-wide j tile.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "unroll",
+        "source_step": 7,
+        "effect": "unroll:k",
+        "rationale": {
+          "text": "Unroll the inner k loop by factor 4. With k tile=32, this unrolls 4 iterations of the inner-most accumulation loop, reducing loop-control overhead and enabling the instruction scheduler to hide latency through instruction-level parallelism (ILP) across the 4 unrolled FMAs.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 8,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the inner i-loop (128 elements) to warp-level parallelism. This subdivides the i-tile among warps within each thread-block, exposing 128/32=4 warps along M. Combined with j on threadblock.y, this enables warp-level data partitioning that keeps each warp's register file busy and allows the SM scheduler to hide memory-access latency via warp interleaving.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "unroll",
+        "source_step": 9,
+        "effect": "unroll:i",
+        "rationale": {
+          "text": "Unroll the inner i-loop by factor 4 to expose ILP along the M-dimension within each warp's register tile. Each unrolled iteration computes a separate row accumulator, and the compiler/scheduler can overlap independent FMA chains \u2014 reducing the effective critical-path latency of the reduction loop.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "unroll",
+        "source_step": 10,
+        "effect": "unroll:j",
+        "rationale": {
+          "text": "Unroll the inner j-loop by factor 4 to complement the j-vectorization (width=4 \u00d7 unroll=4 = 16 j-elements per thread iteration). This exposes 4 independent FMA chains along the N-dimension per warp, saturating the Ampere SM's dual FP32 FMA pipelines and hiding pipeline latency.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "tile",
+      "params": {
+        "loop": "i",
+        "factors": [
+          128
+        ]
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the M-dimension (i) with factor 128. This creates 512/128=4 outer tiles along M. Combined with J tiling this gives thread-blocks of 128\u00d7128 output elements \u2014 a standard large-GEMM tile that maximises arithmetic intensity and reuse of A rows from shared memory while fitting within the 49 KB SMEM budget on Ampere.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          128
+        ],
+        "loop": "j"
+      },
+      "step": 2,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the N-dimension (j) with factor 128. Creates 4 outer tiles along N, giving a 4\u00d74=16 output-block grid across 30 SMs for good occupancy. The 128\u00d7128 output tile drives high register reuse for B columns. Together i=128, j=128 provides the canonical GEMM tile that amortises DRAM traffic.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          32
+        ],
+        "loop": "k"
+      },
+      "step": 3,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the K reduction axis with factor 32. This sets the shared-memory staging depth: each iteration loads a 128\u00d732 slice of A and a 32\u00d7128 slice of B into SMEM (128\u00d732\u00d72 bytes \u00d7 2 = 32 KB for FP32 \u2014 well within 49 KB), enabling the outer K loop to stream through the full K=512 in 16 steps while keeping data in fast SMEM.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "i": "threadblock.x"
+        }
+      },
+      "step": 4,
+      "level": 1,
+      "rationale": {
+        "text": "Map the outer i-tile loop (4 tiles of 128) to threadblock.x. This distributes the M-dimension work across SM grid columns, enabling 4 independent thread-blocks along M to run concurrently on separate SMs.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "j": "threadblock.y"
+        }
+      },
+      "step": 5,
+      "level": 1,
+      "rationale": {
+        "text": "Map the outer j-tile loop (4 tiles of 128) to threadblock.y. Combined with i\u2192threadblock.x, this creates a 4\u00d74=16 thread-block grid which covers all 30 SMs with two waves (first 16 blocks + 14 from a second wave), giving high SM utilization for the 512\u00d7512 problem.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "vectorize",
+      "params": {
+        "loop": "j",
+        "width": 4
+      },
+      "step": 6,
+      "level": 1,
+      "rationale": {
+        "text": "Vectorize the inner j loop with width=4. On Ampere this emits 128-bit (float4) memory loads/stores, maximising memory-bus utilization and enabling the hardware's memory coalescing. Width 4 is the sweet-spot that fits register capacity within a 128-wide j tile.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "unroll",
+      "params": {
+        "loop": "k",
+        "factor": 4
+      },
+      "step": 7,
+      "level": 1,
+      "rationale": {
+        "text": "Unroll the inner k loop by factor 4. With k tile=32, this unrolls 4 iterations of the inner-most accumulation loop, reducing loop-control overhead and enabling the instruction scheduler to hide latency through instruction-level parallelism (ILP) across the 4 unrolled FMAs.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "i": "warp"
+        }
+      },
+      "step": 8,
+      "level": 1,
+      "rationale": {
+        "text": "Map the inner i-loop (128 elements) to warp-level parallelism. This subdivides the i-tile among warps within each thread-block, exposing 128/32=4 warps along M. Combined with j on threadblock.y, this enables warp-level data partitioning that keeps each warp's register file busy and allows the SM scheduler to hide memory-access latency via warp interleaving.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "unroll",
+      "params": {
+        "factor": 4,
+        "loop": "i"
+      },
+      "step": 9,
+      "level": 1,
+      "rationale": {
+        "text": "Unroll the inner i-loop by factor 4 to expose ILP along the M-dimension within each warp's register tile. Each unrolled iteration computes a separate row accumulator, and the compiler/scheduler can overlap independent FMA chains \u2014 reducing the effective critical-path latency of the reduction loop.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "unroll",
+      "params": {
+        "loop": "j",
+        "factor": 4
+      },
+      "step": 10,
+      "level": 1,
+      "rationale": {
+        "text": "Unroll the inner j-loop by factor 4 to complement the j-vectorization (width=4 \u00d7 unroll=4 = 16 j-elements per thread iteration). This exposes 4 independent FMA chains along the N-dimension per warp, saturating the Ampere SM's dual FP32 FMA pipelines and hiding pipeline latency.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0311737060546875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0311737060546875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0311737060546875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 0.0311737060546875,
+    "metadata": {
+      "validation_tier": "V1_triton",
+      "rtol": 0.001,
+      "atol": 1e-05
+    }
+  },
+  "checkpoints": {
+    "after_tiling_128_128_32": {
+      "label": "after_tiling_128_128_32",
+      "timestamp": 1782499609.1797462,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "i",
+            "tile_factors": [
+              128
+            ]
+          },
+          {
+            "loop": "j",
+            "tile_factors": [
+              128
+            ]
+          },
+          {
+            "loop": "k",
+            "tile_factors": [
+              32
+            ]
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "tile",
+            "source_step": 1,
+            "effect": "tile:i",
+            "rationale": {
+              "text": "Tile the M-dimension (i) with factor 128. This creates 512/128=4 outer tiles along M. Combined with J tiling this gives thread-blocks of 128\u00d7128 output elements \u2014 a standard large-GEMM tile that maximises arithmetic intensity and reuse of A rows from shared memory while fitting within the 49 KB SMEM budget on Ampere.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 2,
+            "effect": "tile:j",
+            "rationale": {
+              "text": "Tile the N-dimension (j) with factor 128. Creates 4 outer tiles along N, giving a 4\u00d74=16 output-block grid across 30 SMs for good occupancy. The 128\u00d7128 output tile drives high register reuse for B columns. Together i=128, j=128 provides the canonical GEMM tile that amortises DRAM traffic.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 3,
+            "effect": "tile:k",
+            "rationale": {
+              "text": "Tile the K reduction axis with factor 32. This sets the shared-memory staging depth: each iteration loads a 128\u00d732 slice of A and a 32\u00d7128 slice of B into SMEM (128\u00d732\u00d72 bytes \u00d7 2 = 32 KB for FP32 \u2014 well within 49 KB), enabling the outer K loop to stream through the full K=512 in 16 steps while keeping data in fast SMEM.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "tile",
+          "params": {
+            "loop": "i",
+            "factors": [
+              128
+            ]
+          },
+          "step": 1,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the M-dimension (i) with factor 128. This creates 512/128=4 outer tiles along M. Combined with J tiling this gives thread-blocks of 128\u00d7128 output elements \u2014 a standard large-GEMM tile that maximises arithmetic intensity and reuse of A rows from shared memory while fitting within the 49 KB SMEM budget on Ampere.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              128
+            ],
+            "loop": "j"
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the N-dimension (j) with factor 128. Creates 4 outer tiles along N, giving a 4\u00d74=16 output-block grid across 30 SMs for good occupancy. The 128\u00d7128 output tile drives high register reuse for B columns. Together i=128, j=128 provides the canonical GEMM tile that amortises DRAM traffic.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              32
+            ],
+            "loop": "k"
+          },
+          "step": 3,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the K reduction axis with factor 32. This sets the shared-memory staging depth: each iteration loads a 128\u00d732 slice of A and a 32\u00d7128 slice of B into SMEM (128\u00d732\u00d72 bytes \u00d7 2 = 32 KB for FP32 \u2014 well within 49 KB), enabling the outer K loop to stream through the full K=512 in 16 steps while keeping data in fast SMEM.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "triton",
+        "correct": true,
+        "max_diff": 0.0311737060546875,
+        "metadata": {
+          "validation_tier": "V1_triton",
+          "rtol": 0.001,
+          "atol": 1e-05
+        }
+      },
+      "decision_count_at": 3,
+      "compile_count_at": 1
+    },
+    "cycle2_parallel_vec4_unroll4_ratio1.63": {
+      "label": "cycle2_parallel_vec4_unroll4_ratio1.63",
+      "timestamp": 1782499651.527593,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "i",
+            "tile_factors": [
+              128
+            ],
+            "mapping": "threadblock.x"
+          },
+          {
+            "loop": "j",
+            "tile_factors": [
+              128
+            ],
+            "mapping": "threadblock.y",
+            "vector_width": 4
+          },
+          {
+            "loop": "k",
+            "tile_factors": [
+              32
+            ],
+            "unroll_factor": 4
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "tile",
+            "source_step": 1,
+            "effect": "tile:i",
+            "rationale": {
+              "text": "Tile the M-dimension (i) with factor 128. This creates 512/128=4 outer tiles along M. Combined with J tiling this gives thread-blocks of 128\u00d7128 output elements \u2014 a standard large-GEMM tile that maximises arithmetic intensity and reuse of A rows from shared memory while fitting within the 49 KB SMEM budget on Ampere.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 2,
+            "effect": "tile:j",
+            "rationale": {
+              "text": "Tile the N-dimension (j) with factor 128. Creates 4 outer tiles along N, giving a 4\u00d74=16 output-block grid across 30 SMs for good occupancy. The 128\u00d7128 output tile drives high register reuse for B columns. Together i=128, j=128 provides the canonical GEMM tile that amortises DRAM traffic.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 3,
+            "effect": "tile:k",
+            "rationale": {
+              "text": "Tile the K reduction axis with factor 32. This sets the shared-memory staging depth: each iteration loads a 128\u00d732 slice of A and a 32\u00d7128 slice of B into SMEM (128\u00d732\u00d72 bytes \u00d7 2 = 32 KB for FP32 \u2014 well within 49 KB), enabling the outer K loop to stream through the full K=512 in 16 steps while keeping data in fast SMEM.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 4,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the outer i-tile loop (4 tiles of 128) to threadblock.x. This distributes the M-dimension work across SM grid columns, enabling 4 independent thread-blocks along M to run concurrently on separate SMs.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "parallel",
+            "source_step": 5,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Map the outer j-tile loop (4 tiles of 128) to threadblock.y. Combined with i\u2192threadblock.x, this creates a 4\u00d74=16 thread-block grid which covers all 30 SMs with two waves (first 16 blocks + 14 from a second wave), giving high SM utilization for the 512\u00d7512 problem.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "vectorize",
+            "source_step": 6,
+            "effect": "vectorize:j",
+            "rationale": {
+              "text": "Vectorize the inner j loop with width=4. On Ampere this emits 128-bit (float4) memory loads/stores, maximising memory-bus utilization and enabling the hardware's memory coalescing. Width 4 is the sweet-spot that fits register capacity within a 128-wide j tile.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "unroll",
+            "source_step": 7,
+            "effect": "unroll:k",
+            "rationale": {
+              "text": "Unroll the inner k loop by factor 4. With k tile=32, this unrolls 4 iterations of the inner-most accumulation loop, reducing loop-control overhead and enabling the instruction scheduler to hide latency through instruction-level parallelism (ILP) across the 4 unrolled FMAs.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "tile",
+          "params": {
+            "loop": "i",
+            "factors": [
+              128
+            ]
+          },
+          "step": 1,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the M-dimension (i) with factor 128. This creates 512/128=4 outer tiles along M. Combined with J tiling this gives thread-blocks of 128\u00d7128 output elements \u2014 a standard large-GEMM tile that maximises arithmetic intensity and reuse of A rows from shared memory while fitting within the 49 KB SMEM budget on Ampere.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              128
+            ],
+            "loop": "j"
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the N-dimension (j) with factor 128. Creates 4 outer tiles along N, giving a 4\u00d74=16 output-block grid across 30 SMs for good occupancy. The 128\u00d7128 output tile drives high register reuse for B columns. Together i=128, j=128 provides the canonical GEMM tile that amortises DRAM traffic.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              32
+            ],
+            "loop": "k"
+          },
+          "step": 3,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the K reduction axis with factor 32. This sets the shared-memory staging depth: each iteration loads a 128\u00d732 slice of A and a 32\u00d7128 slice of B into SMEM (128\u00d732\u00d72 bytes \u00d7 2 = 32 KB for FP32 \u2014 well within 49 KB), enabling the outer K loop to stream through the full K=512 in 16 steps while keeping data in fast SMEM.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "i": "threadblock.x"
+            }
+          },
+          "step": 4,
+          "level": 1,
+          "rationale": {
+            "text": "Map the outer i-tile loop (4 tiles of 128) to threadblock.x. This distributes the M-dimension work across SM grid columns, enabling 4 independent thread-blocks along M to run concurrently on separate SMs.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "parallel",
+          "params": {
+            "mapping": {
+              "j": "threadblock.y"
+            }
+          },
+          "step": 5,
+          "level": 1,
+          "rationale": {
+            "text": "Map the outer j-tile loop (4 tiles of 128) to threadblock.y. Combined with i\u2192threadblock.x, this creates a 4\u00d74=16 thread-block grid which covers all 30 SMs with two waves (first 16 blocks + 14 from a second wave), giving high SM utilization for the 512\u00d7512 problem.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "vectorize",
+          "params": {
+            "loop": "j",
+            "width": 4
+          },
+          "step": 6,
+          "level": 1,
+          "rationale": {
+            "text": "Vectorize the inner j loop with width=4. On Ampere this emits 128-bit (float4) memory loads/stores, maximising memory-bus utilization and enabling the hardware's memory coalescing. Width 4 is the sweet-spot that fits register capacity within a 128-wide j tile.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "unroll",
+          "params": {
+            "loop": "k",
+            "factor": 4
+          },
+          "step": 7,
+          "level": 1,
+          "rationale": {
+            "text": "Unroll the inner k loop by factor 4. With k tile=32, this unrolls 4 iterations of the inner-most accumulation loop, reducing loop-control overhead and enabling the instruction scheduler to hide latency through instruction-level parallelism (ILP) across the 4 unrolled FMAs.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "triton",
+        "correct": true,
+        "max_diff": 0.0311737060546875,
+        "metadata": {
+          "validation_tier": "V1_triton",
+          "rtol": 0.001,
+          "atol": 1e-05
+        }
+      },
+      "decision_count_at": 7,
+      "compile_count_at": 2
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 10,
+    "compiles_used": 3
+  }
+}

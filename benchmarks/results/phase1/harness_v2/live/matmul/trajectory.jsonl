@@ -1,0 +1,1 @@
+{"t": 8.329021511599422e-06, "kind": "header", "data": {"schema": "s8-compile-profile-adjust-v1", "trajectory_version": "1.0.0", "contract_id": "arke-trajectory-v1.0.0", "kernel_id": "matmul", "target_hw": "nvidia_ampere", "mode": "compile"}}
