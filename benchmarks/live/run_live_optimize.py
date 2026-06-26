@@ -62,6 +62,42 @@ def _shapes_for(op: str, dims: list[int]) -> dict[str, list[int]]:
     return {"X": dims or [512, 512]}
 
 
+def _write_live_trajectory(path, op: str, result) -> None:
+    """Emit a mineable trajectory.jsonl from the LLMRunner action log.
+
+    Maps each apply_decision action → a `decision` record (with rationale,
+    kind, params) and each compile_and_profile action → a `profile` record
+    (latency_ms, baseline_ratio, correct). Header carries the op for context.
+    This is the shape arke.learn.rationale_kb.mine_trajectory consumes.
+    """
+    import json as _json
+
+    lines = [{"kind": "header", "data": {"op": op, "contract_id": "arke-live-trajectory"}}]
+    for e in result.trajectory:
+        if e.get("type") != "action":
+            continue
+        tool = e.get("tool")
+        params = e.get("params", {}) or {}
+        data = (e.get("result") or {}).get("data") or {}
+        if tool == "apply_decision":
+            lines.append({"kind": "decision", "data": {
+                "kind": params.get("kind"),
+                "params": params.get("params", {}),
+                "rationale": params.get("rationale", ""),
+                "op": op,
+            }})
+        elif tool == "compile_and_profile":
+            lines.append({"kind": "profile", "data": {
+                "latency_ms": data.get("latency_ms"),
+                "baseline_ratio": data.get("baseline_ratio"),
+                "correct": data.get("correct"),
+                "backend": data.get("backend"),
+            }})
+        elif tool == "verify_correctness":
+            lines.append({"kind": "compile", "data": {"correct": data.get("correct")}})
+    Path(path).write_text("\n".join(_json.dumps(x) for x in lines) + "\n", encoding="utf-8")
+
+
 def _write_evidence_card(out_dir: Path, op: str, shapes: dict, result) -> Path:
     from arke.learn.trajectory import audit_decision_rationales
 
@@ -157,7 +193,6 @@ def main() -> int:
 
     from arke.agent.llm_config import LLMConfigError, load_from_env
     from arke.agent.runner import LLMRunner
-    from arke.learn.trajectory import export_session_trajectory
 
     try:
         config = load_from_env()
@@ -182,15 +217,13 @@ def main() -> int:
     # Persist artifacts.
     (out_dir / "result.json").write_text(
         json.dumps(result.to_dict(), indent=2, default=str), encoding="utf-8")
-    try:
-        export_session_trajectory(
-            result.trajectory,
-            {**result.session_summary, "kernel_id": args.op, "target_hw": "nvidia_ampere",
-             "decisions": result.decisions, "termination": result.stop_reason},
-            str(out_dir / "trajectory.jsonl"),
-        )
-    except Exception as e:  # trajectory export is best-effort
-        logger.warning("trajectory export failed: %s", e)
+    # Write a trajectory.jsonl directly from the action log. The LLMRunner
+    # trajectory is [{type:action, tool, params, result}] with the result
+    # already attached per action (no separate 'result' entries), so we map
+    # each apply_decision action to a `decision` record carrying its rationale
+    # (mineable by arke.learn.rationale_kb.mine_trajectory), and other tools to
+    # their matching record kind.
+    _write_live_trajectory(out_dir / "trajectory.jsonl", args.op, result)
 
     card = _write_evidence_card(out_dir, args.op, shapes, result)
     logger.info("evidence card: %s", card)

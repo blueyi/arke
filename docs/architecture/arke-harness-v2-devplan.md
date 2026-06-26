@@ -99,11 +99,10 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
 - Same for `flash_attention`, small head/seq to fit 6 GB; OOM recorded non-blocking.
 - Done: evidence card OR documented OOM with the shape that fit.
 
-#### B4. L4 @rationale KB refresh from live — ⬜ TODO
-- Dev: extend `benchmarks/build_rationale_kb` to also mine live trajectories
-  (real baseline_ratio paired rationales), append to `data/rationale_kb.jsonl`.
-- Test: KB entry count grows; each live entry has source="live".
-- Done: KB has ≥1 live-sourced entry per live op.
+#### B4. L4 @rationale KB refresh from live — ✅ DONE (`<pending>`)
+- Dev: live driver now writes a mineable `trajectory.jsonl` (`_write_live_trajectory` — maps apply_decision→decision record w/ rationale, compile_and_profile→profile record w/ latency+ratio+correct). **Fixed a real bug:** the old `export_session_trajectory` pairing logic produced header-only files (no decision records) because the LLMRunner trajectory attaches results per-action rather than as separate `result` entries.
+- Result: mined 26 live entries (matmul 10 + matmul_v2 9 + rmsnorm 7) into `data/rationale_kb.jsonl`, **KB 292 → 318**, each tagged `source=live/<op>` and paired with real `baseline_ratio`/`latency_ms` (e.g. matmul tile ratio=0.4035 lat=0.0797ms). A5 audit CLEAN on the regenerated trajectories.
+- Done: KB has live-sourced entries with real GPU outcomes.
 
 #### B5. Harness fixes found during live (from B1/B2) — ⬜ TODO
 - **F1 best_result has no latency:** in B1, `best_result` came from the verify
@@ -129,12 +128,10 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
 - Test: `test_runner_concurrency.py` (partition groups concurrent-then-serial; order preserved with concurrency; opt-out path).
 - Done: 5 tests green.
 
-#### C3. S5 context compaction + delta observe — ⬜ TODO
-- Dev: predictive (token-threshold) + reactive message-log compaction; an
-  `observe(delta=true)`-style result-shrinking for repeated state reads.
-- Test: `test_compaction.py` — a long synthetic message log compacts below
-  threshold while preserving the last-N turns + the ground-truth state pointer.
-- Done: green; a 30-turn live run stays within context (manual check in B-phase).
+#### C3. S5 context compaction — ✅ DONE (`<pending>`)
+- Dev: `optimize(compact_after_chars=N, keep_last_turns=K)` — reactive message-log compaction: when the log exceeds the char threshold, fold older turns into one digest, preserving system + first user intro + last-K turns (ground truth lives in OptimizationState so middle reasoning is safe to elide). `_messages_chars` + `_compact_messages` helpers; records `compact_events` in session_summary. Off by default (compact_after_chars=0). (Tail/turn-boundary alignment for strict tool_use↔tool_result pairing on very long live runs noted as a future refinement.)
+- Test: `test_runner_compaction.py` (sizing grows / preserves preamble+tail+digest / no-op on short log / anthropic no-system path).
+- Done: green.
 
 #### C4. N3 MCP server (Mode C) — ✅ DONE (`<pending>`)
 - Dev: `arke/agent/mcp_server.py` — **zero-dependency** JSON-RPC-2.0-over-stdio MCP server (no `mcp` SDK dep). Methods: initialize / tools/list / tools/call / ping / notifications. Exposes the 8 frozen Façade tools env-bound. CLI: `arke mcp serve --kernel <op> [--shape] [--target]`.

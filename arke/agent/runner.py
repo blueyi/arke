@@ -70,6 +70,60 @@ def _is_transient(exc: Exception) -> bool:
     return any(s in msg for s in _RETRYABLE_SUBSTRINGS)
 
 
+# ── C3: context compaction ───────────────────────────────────────────────
+
+
+def _messages_chars(messages: list[dict[str, Any]]) -> int:
+    """Cheap proxy for message-log size (chars ≈ 4× tokens). Dependency-free."""
+    import json as _json
+    return sum(len(_json.dumps(m, default=str)) for m in messages)
+
+
+def _compact_messages(
+    messages: list[dict[str, Any]],
+    protocol: str,
+    *,
+    keep_last_turns: int = 4,
+) -> tuple[list[dict[str, Any]], bool]:
+    """Fold older turns into a single digest, preserving recent context.
+
+    Keeps: the system message (openai) + the first user message (the op intro)
+    + the last ``keep_last_turns`` messages verbatim. The middle is replaced
+    by one short digest message noting how many turns were elided. The Harness
+    keeps ground truth in OptimizationState (not the message log), so eliding
+    middle reasoning is safe — the model still has its kickoff + recent steps.
+
+    Returns ``(new_messages, did_compact)``. No-op (did_compact=False) when the
+    log is too short to benefit.
+    """
+    # Preamble = leading system msgs + first user msg.
+    preamble: list[dict[str, Any]] = []
+    i = 0
+    while i < len(messages) and messages[i].get("role") == "system":
+        preamble.append(messages[i])
+        i += 1
+    if i < len(messages):  # first user intro
+        preamble.append(messages[i])
+        i += 1
+
+    tail = messages[-keep_last_turns:] if keep_last_turns > 0 else []
+    middle = messages[i:len(messages) - len(tail)] if len(messages) - len(tail) > i else []
+    if len(middle) < 2:
+        return messages, False  # nothing meaningful to compact
+
+    digest = {
+        "role": "user",
+        "content": (
+            f"[context compacted: {len(middle)} earlier turns elided to save "
+            f"context. Authoritative optimization state (decision log, best "
+            f"latency, budget) is preserved in the Arke OptimizationState and "
+            f"is reflected in the most recent tool results below. Continue from "
+            f"the current best strategy.]"
+        ),
+    }
+    return preamble + [digest] + tail, True
+
+
 # ── System prompt: frames the LLM as Arke's optimization decision-maker ──
 
 _SYSTEM_PROMPT = """\
@@ -274,6 +328,8 @@ class LLMRunner:
         concurrent_tools: bool = True,
         skills: Any = None,
         hooks: Any = None,
+        compact_after_chars: int = 0,
+        keep_last_turns: int = 4,
     ) -> OptimizeResult:
         """Run the live-LLM optimization loop.
 
@@ -333,6 +389,7 @@ class LLMRunner:
         if not provider_chain:
             provider_chain = [provider]
         fallback_events: list[dict[str, Any]] = []
+        compact_events: list[dict[str, Any]] = []
 
         trajectory: list[dict[str, Any]] = []
         errors: list[str] = []
@@ -447,6 +504,20 @@ class LLMRunner:
             # Append assistant turn + tool results in the protocol's shape.
             self._append_turn(protocol, messages, text, tool_uses, results_for_model)
 
+            # C3: reactive context compaction — if the message log grows past
+            # the threshold, fold older turns into a summary, preserving the
+            # system framing (openai) + first user intro + the last N turns.
+            # Ground truth lives in OptimizationState, not the message log, so
+            # this is safe: the model keeps its recent context + a digest.
+            if compact_after_chars and _messages_chars(messages) > compact_after_chars:
+                messages, compacted = _compact_messages(
+                    messages, protocol, keep_last_turns=keep_last_turns)
+                if compacted:
+                    compact_events.append({
+                        "turn": _turn, "kept_last_turns": keep_last_turns,
+                        "chars_after": _messages_chars(messages),
+                    })
+
             # Stop early if budget exhausted.
             if env.state.budget.exhausted:
                 stop_reason = "budget_exhausted"
@@ -476,6 +547,7 @@ class LLMRunner:
                 for d in env.state.decision_log
             ],
             "fallback_events": fallback_events,  # S3: provider failovers, if any
+            "compact_events": compact_events,    # C3: context compactions, if any
             "resume": {  # S2: resume provenance
                 "resumed_from": resume_from,
                 "replayed_decisions": resumed_decisions,
