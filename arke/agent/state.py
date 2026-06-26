@@ -165,8 +165,16 @@ class OptimizationState:
     def record_compile(self, result: CompileResult) -> None:
         """Record a compile/profile/verify result + update best.
 
-        Advances compile budget. Updates `best_result` if this result is
-        better (lower latency_ms, ties broken by correctness then order).
+        Advances compile budget. Updates `best_result` with this preference
+        order (F1 fix, 2026-06-26):
+          1. Only correct (or unverified) successful results are eligible.
+          2. A result WITH a real ``latency_ms`` (a profile) always beats a
+             result WITHOUT one (a verify-only result). Previously a
+             verify-only result that landed first could never be displaced by
+             a faster real profile, because the comparison required the
+             incumbent's ``latency_ms`` to be non-None — so the winning
+             ``baseline_ratio`` never surfaced in ``best_performance``.
+          3. When both have latency, lower latency wins.
         """
         if self.budget.compiles_remaining <= 0:
             raise RuntimeError(
@@ -174,15 +182,19 @@ class OptimizationState:
             )
         self.compile_results.append(result)
         self.budget.compiles_used += 1
-        if result.success and result.correct is not False:
-            if self.best_result is None:
-                self.best_result = result
-            elif (
-                result.latency_ms is not None
-                and self.best_result.latency_ms is not None
-                and result.latency_ms < self.best_result.latency_ms
-            ):
-                self.best_result = result
+        if not (result.success and result.correct is not False):
+            return
+        if self.best_result is None:
+            self.best_result = result
+            return
+        new_lat = result.latency_ms
+        best_lat = self.best_result.latency_ms
+        if new_lat is not None and best_lat is None:
+            # A real profile always beats a verify-only incumbent.
+            self.best_result = result
+        elif new_lat is not None and best_lat is not None and new_lat < best_lat:
+            self.best_result = result
+        # else: incumbent (with latency, or equally latency-less) stays.
 
     def checkpoint(self, label: str) -> Checkpoint:
         """Snapshot current state under `label`. Overwrites if exists.

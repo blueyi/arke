@@ -61,6 +61,42 @@ def test_state_from_partial_dict_uses_defaults():
     assert st.best_result is None
 
 
+# ── F1 (2026-06-26): best_result prefers a real profile over verify-only ──
+
+
+def _cr(latency=None, correct=True):
+    from arke.agent.state import CompileResult
+    return CompileResult(success=True, backend="triton", correct=correct,
+                         latency_ms=latency, baseline_ratio=(1.0 if latency else None))
+
+
+def test_best_result_profile_displaces_verify_only():
+    """A real profile (has latency) must replace a verify-only incumbent."""
+    env = ArkeEnv.from_op("matmul", {"A": [64, 32], "B": [32, 64]})
+    st = env.state
+    st.record_compile(_cr(latency=None))      # verify-only lands first
+    assert st.best_result.latency_ms is None
+    st.record_compile(_cr(latency=0.08))      # real profile arrives
+    assert st.best_result.latency_ms == 0.08  # F1: profile wins
+
+
+def test_best_result_keeps_lower_latency():
+    env = ArkeEnv.from_op("matmul", {"A": [64, 32], "B": [32, 64]})
+    st = env.state
+    st.record_compile(_cr(latency=0.20))
+    st.record_compile(_cr(latency=0.08))   # faster
+    st.record_compile(_cr(latency=0.15))   # slower — must not displace
+    assert st.best_result.latency_ms == 0.08
+
+
+def test_best_result_verify_only_does_not_displace_profile():
+    env = ArkeEnv.from_op("matmul", {"A": [64, 32], "B": [32, 64]})
+    st = env.state
+    st.record_compile(_cr(latency=0.08))   # profile best
+    st.record_compile(_cr(latency=None))   # verify-only later — must NOT win
+    assert st.best_result.latency_ms == 0.08
+
+
 # ── LLMRunner resume ───────────────────────────────────────────────────────
 
 

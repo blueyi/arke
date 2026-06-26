@@ -105,6 +105,14 @@ Rules:
     cycles (apply → verify → profile → read the result → adjust). Each
     cycle ends with a compile_and_profile call; keep the best-performing
     correct strategy and roll back regressions.
+  - STOP CRITERION (important — do not burn turns): after each
+    compile_and_profile, compare the new latency_ms / baseline_ratio against
+    your best-so-far. Once you have completed ≥3 profiled cycles AND the last
+    2 cycles did NOT improve latency over your best, STOP calling tools and
+    write a 2-3 sentence final summary naming the winning strategy + its
+    measured latency_ms / baseline_ratio and why you stopped. Do not keep
+    applying decisions hoping for a marginal gain — a clean stop on the best
+    measured kernel is the goal, not exhausting the turn budget.
   - When you have run ≥3 profiled cycles and further moves don't help, STOP
     calling tools and write a short final summary of the strategy you
     landed on and why.
