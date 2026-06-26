@@ -152,6 +152,26 @@ def test_apply_decision_happy_path(env: ArkeEnv, reg: ToolRegistry):
     assert env.state.decision_log[0].rationale.text == "Pick a warp-friendly factor"
 
 
+def test_apply_decision_rejects_missing_rationale(reg: ToolRegistry):
+    """S4 (2026-06-26): a non-trivial decision (level>=1) with no rationale
+    is rejected at the tool boundary — the @rationale contract is enforced,
+    not merely documented. Façade v1.0 schema is unchanged (rationale stays
+    schema-optional); only the execute() behavior tightens.
+    """
+    r = reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "i", "factors": [32]}})
+    assert not r.success
+    assert "rationale" in r.error.lower()
+
+
+def test_apply_decision_rejects_empty_rationale(reg: ToolRegistry):
+    """An all-whitespace rationale is treated as missing."""
+    r = reg.get("apply_decision").execute({
+        "kind": "tile", "params": {"loop": "i", "factors": [32]}, "rationale": "   ",
+    })
+    assert not r.success
+    assert "rationale" in r.error.lower()
+
+
 def test_apply_decision_missing_kind(reg: ToolRegistry):
     r = reg.get("apply_decision").execute({"params": {}})
     assert not r.success
@@ -168,9 +188,9 @@ def test_apply_decision_budget_exhaustion():
     env = ArkeEnv.from_op("rmsnorm", {"X": [4, 8], "W": [8]},
                           budget=OptimizationBudget(decision_max=1))
     reg = ToolRegistry.with_env(env)
-    r1 = reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "i", "factors": [16]}})
+    r1 = reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "i", "factors": [16]}, "rationale": "test tile i"})
     assert r1.success
-    r2 = reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "j", "factors": [32]}})
+    r2 = reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "j", "factors": [32]}, "rationale": "test tile j"})
     assert not r2.success
     assert "budget exhausted" in r2.error.lower()
 
@@ -261,7 +281,7 @@ def test_verify_correctness_compile_budget_exhaustion():
 
 
 def test_checkpoint_happy_path(env: ArkeEnv, reg: ToolRegistry):
-    reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "i", "factors": [32]}})
+    reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "i", "factors": [32]}, "rationale": "test"})
     r = reg.get("checkpoint").execute({"label": "alpha"})
     assert r.success
     assert r.data["label"] == "alpha"
@@ -284,10 +304,10 @@ def test_checkpoint_rejects_missing_label(reg: ToolRegistry):
 
 
 def test_rollback_happy_path(env: ArkeEnv, reg: ToolRegistry):
-    reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "i", "factors": [32]}})
+    reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "i", "factors": [32]}, "rationale": "test"})
     reg.get("checkpoint").execute({"label": "snap"})
-    reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "j", "factors": [64]}})
-    reg.get("apply_decision").execute({"kind": "unroll", "params": {"loop": "i", "factor": 4}})
+    reg.get("apply_decision").execute({"kind": "tile", "params": {"loop": "j", "factors": [64]}, "rationale": "test"})
+    reg.get("apply_decision").execute({"kind": "unroll", "params": {"loop": "i", "factor": 4}, "rationale": "test"})
     assert len(env.state.decision_log) == 3
 
     r = reg.get("rollback").execute({"label": "snap"})
@@ -320,7 +340,7 @@ def test_facade_workflow_explore_then_rollback():
     assert r.success and r.data["count"] == 1
     chosen = r.data["candidates"][0]
 
-    r = reg.get("apply_decision").execute({"kind": chosen["kind"], "params": chosen["params"]})
+    r = reg.get("apply_decision").execute({"kind": chosen["kind"], "params": chosen["params"], "rationale": "chosen by test"})
     assert r.success
     assert env.state.budget.decisions_used == 1
 
@@ -338,7 +358,7 @@ def test_facade_workflow_explore_then_rollback():
     assert env.state.budget.decisions_used == 1  # unchanged
 
     # Then really apply it
-    r = reg.get("apply_decision").execute({"kind": "unroll", "params": {"loop": "i", "factor": 4}})
+    r = reg.get("apply_decision").execute({"kind": "unroll", "params": {"loop": "i", "factor": 4}, "rationale": "test unroll"})
     assert r.success and env.state.budget.decisions_used == 2
 
     # Roll back

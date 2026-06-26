@@ -618,7 +618,27 @@ class ApplyDecisionTool(_EnvBoundTool):
         elif isinstance(rat_input, dict) and rat_input.get("text"):
             rationale = Rationale(text=rat_input["text"], lang=rat_input.get("lang", "en"))
 
-        decision = Decision(kind=kind, params=dict(d_params), rationale=rationale, level=int(params.get("level", 1)))
+        # S4 (2026-06-26): @rationale is an execution-enforced contract.
+        # A non-trivial decision (level >= 1 — tile/unroll/vectorize/parallel/
+        # place/fuse) MUST carry a non-empty rationale. This closes the soft-
+        # contract gap: the schema keeps `rationale` optional (Façade v1.0 is
+        # frozen — we do NOT change the required-set), but the tool BEHAVIOR
+        # now rejects a non-trivial decision with no WHY. Trivial level-0
+        # decisions (if any) are exempt. The locked thesis pillar "@rationale
+        # is a contract" is now enforced at the boundary, not just documented.
+        level = int(params.get("level", 1))
+        if level >= 1 and (rationale is None or not rationale.text.strip()):
+            return ToolResult(
+                success=False,
+                error=(
+                    "missing required @rationale: a non-trivial decision "
+                    f"(kind={kind!r}, level={level}) must include a non-empty "
+                    "`rationale` explaining WHY. This is a hard Arke contract — "
+                    "re-issue apply_decision with a rationale string."
+                ),
+            )
+
+        decision = Decision(kind=kind, params=dict(d_params), rationale=rationale, level=level)
         try:
             self._env.state.apply_decision(decision)
         except Exception as e:

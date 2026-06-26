@@ -155,15 +155,57 @@ def _enum_parallel_candidates(
     ]
 
 
+# Bytes-per-element by dtype tag (conservative; defaults to fp16=2B which is
+# the Phase-1 workhorse precision). Used to estimate a tensor's shared-memory
+# footprint for the S1 capacity legality check.
+_DTYPE_BYTES: dict[str, int] = {
+    "f16": 2, "fp16": 2, "bf16": 2, "f32": 4, "fp32": 4,
+    "f64": 8, "fp64": 8, "i8": 1, "int8": 1, "i32": 4, "int32": 4,
+}
+_DEFAULT_DTYPE_BYTES = 2  # fp16
+
+
+def _tensor_bytes(shape: list[int] | None, dtype_bytes: int = _DEFAULT_DTYPE_BYTES) -> int:
+    """Estimate the byte footprint of a tensor from its shape.
+
+    Returns 0 for an unknown/empty shape (no capacity claim made → the
+    candidate is allowed, since we cannot prove it illegal).
+    """
+    if not shape:
+        return 0
+    n = 1
+    for d in shape:
+        if isinstance(d, int) and d > 0:
+            n *= d
+    return n * dtype_bytes
+
+
 def _enum_place_candidates(
     inputs: list[str],
     shapes: dict[str, list[int]] | None = None,
     hw: HardwareProfile | None = None,
 ) -> list[Decision]:
-    return [
-        Decision(kind="place", params={"tensor": t, "memory": m}, level=1)
-        for t in inputs for m in _DEFAULT_PLACE_MEMORIES
-    ]
+    """Enumerate legal `place(tensor, memory)` decisions.
+
+    S1 legality (2026-06-26): a `place(shared)` candidate is emitted only if
+    the tensor's estimated footprint fits the hardware shared-memory budget
+    (`hw.shared_memory_bytes`, e.g. 48 KiB on Ampere SM 8.6). Tensors too
+    large to live in shared memory are still offered a `register` placement.
+    When the shape is unknown we make no capacity claim and emit both (we
+    cannot prove illegality). This turns `place` from a static menu into an
+    honest compiler/HW-computed legal set — the core AI-Native differentiator.
+    """
+    shapes = shapes or {}
+    smem_cap = hw.shared_memory_bytes if hw else 49152
+    out: list[Decision] = []
+    for t in inputs:
+        nbytes = _tensor_bytes(shapes.get(t))
+        for m in _DEFAULT_PLACE_MEMORIES:
+            if m == "shared" and nbytes > 0 and nbytes > smem_cap:
+                # Provably exceeds shared-memory capacity → not a legal move.
+                continue
+            out.append(Decision(kind="place", params={"tensor": t, "memory": m}, level=1))
+    return out
 
 
 def _enum_fuse_candidates(op_name: str) -> list[Decision]:
@@ -260,8 +302,13 @@ class ArkeEnv:
             input tensors. Empty list if no legal candidates exist.
 
         This is the *generator-of-candidates* — not a ranker. Ranking
-        belongs to the agent (LLM). Future work (D7-A1+) will add
-        heuristic pre-filtering and shape-aware legality checks.
+        belongs to the agent (LLM). Candidates are **shape- and
+        hardware-aware** (S1, 2026-06-26): tile/unroll/vectorize factors are
+        derived from real input dims and filtered against the HardwareProfile
+        (threads/block, divisibility); `place(shared)` is filtered against the
+        hardware shared-memory budget. This makes the returned set an honest
+        *legality* surface, not a static menu — the core AI-Native bounded-
+        action-space guarantee.
         """
         op = REGISTRY.get(self.op_name)
         loops = list(op.index_vars) if op.index_vars else ["i", "j"]

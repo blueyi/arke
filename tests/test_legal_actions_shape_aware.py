@@ -58,3 +58,47 @@ def test_unknown_shape_falls_back():
     env = ArkeEnv.from_op("relu")  # default shapes
     cands = env.list_legal_actions(top_n=10)
     assert len(cands) > 0
+
+
+# ── S1 (2026-06-26): place() shared-memory capacity legality ──────────────
+
+
+def _place_memories_for(env, tensor):
+    return {
+        d.params["memory"]
+        for d in env.list_legal_actions(top_n=200, filter_kind="place")
+        if d.params["tensor"] == tensor
+    }
+
+
+def test_place_shared_dropped_when_tensor_exceeds_smem():
+    """A tensor larger than the HW shared-memory budget gets no place(shared).
+
+    Ampere SM 8.6 shared_memory_bytes = 49152 (48 KiB). A 2048x2048 fp16
+    tensor = 2048*2048*2 = 8 MiB ≫ 48 KiB → `place(shared)` must be absent,
+    but `place(register)` is still offered. This is the S1 compiler/HW-computed
+    legality guarantee: an illegal move never appears in the bounded set.
+    """
+    env = ArkeEnv.from_op("matmul", {"A": [2048, 2048], "B": [2048, 2048]})
+    mems = _place_memories_for(env, "A")
+    assert "shared" not in mems, "oversized tensor must not be offered shared placement"
+    assert "register" in mems, "register placement should still be available"
+
+
+def test_place_shared_allowed_when_tensor_fits_smem():
+    """A small tensor that fits shared memory keeps its place(shared) option.
+
+    A 32x32 fp16 tensor = 32*32*2 = 2048 B < 48 KiB → both placements legal.
+    """
+    env = ArkeEnv.from_op("matmul", {"A": [32, 32], "B": [32, 32]})
+    mems = _place_memories_for(env, "A")
+    assert "shared" in mems and "register" in mems
+
+
+def test_place_unknown_shape_makes_no_capacity_claim():
+    """When the shape is unknown we cannot prove illegality → emit both."""
+    from arke.agent.env import _enum_place_candidates
+
+    cands = _enum_place_candidates(["X"], shapes={}, hw=None)
+    mems = {d.params["memory"] for d in cands}
+    assert "shared" in mems and "register" in mems
