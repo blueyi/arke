@@ -141,29 +141,22 @@ Each card: **Dev** (what to build) · **Test** (how it's verified) · **Done**
 - Test: `test_mcp_server.py` 8 (initialize / tools-list=8 / tools-call hw_profile + legal_actions / unknown-tool error / unknown-method -32601 / notification→None / serve_stdio round-trip) + real subprocess stdio smoke.
 - Done: 8/8 pass; any MCP client (Hermes/Cline/Claude Desktop) can now drive Arke's 8 tools directly.
 
-### Phase D — P2 extension runtimes
+### Phase D — P2 extension runtimes (`arke/agent/extensions.py`)
 
-#### D1. N4 Skills runtime — ⬜ TODO
-- Dev: load `SKILL.md` autotune recipes into the system prompt / as callable
-  procedures; ship 2 recipes (`sweep-op-all-tiers`, `tile-then-fuse`).
-- Test: `test_skills_runtime.py` — a recipe loads, its steps appear in the
-  prompt context; an unknown skill is skipped gracefully.
-- Done: green; handbook §10 documents authoring a skill.
+#### D1. N4 Skills runtime — ✅ DONE (`<pending>`)
+- Dev: `Skill` + `load_skill` / `load_skills_dir` (dependency-free SKILL.md frontmatter+body parse) + `skills_prompt_block` (renders recipes into a system-prompt addendum, truncates long bodies). `optimize(skills=[...])` injects them.
+- Test: `test_extensions.py` (parse frontmatter+body / load dir skips bad / prompt block renders+truncates / end-to-end injected into system prompt).
+- Done: green.
 
-#### D2. N5 Hooks runtime — ⬜ TODO
-- Dev: wire `PreDecision / PostCompile / PostProfile / OnRollback` to external
-  Python callables; ship a sample `reject_if_smem_over` PreCompile hook + a
-  `log_profile` PostProfile hook.
-- Test: `test_hooks_runtime.py` — a PreCompile hook can veto a decision; a
-  PostProfile hook observes the profile result; hook errors are isolated.
-- Done: green; handbook §10 documents hook registration.
+#### D2. N5 Hooks runtime — ✅ DONE (`<pending>`)
+- Dev: `HookRegistry` with `PreDecision / PostCompile / PostProfile / OnRollback`. PreDecision MAY veto an apply_decision (return False → tool result `vetoed`); Post* are observation; hook exceptions isolated. `optimize(hooks=registry)` wires them into the tool-exec path.
+- Test: `test_extensions.py` (predecision veto / observation never vetoes / errors isolated / unknown point rejected / end-to-end veto of apply_decision via runner → decisions==0).
+- Done: green.
 
-#### D3. N6 Subagent design-space sweep — ⬜ TODO
-- Dev: fork `OptimizationState` (isolated budget) to explore N tile/backend
-  variants; merge the winning correct strategy back into the parent.
-- Test: `test_subagent_sweep.py` — 3 forked variants, distinct budgets, parent
-  receives the best; a failing fork doesn't corrupt the parent state.
-- Done: green; handbook §10 documents the sweep API.
+#### D3. N6 Subagent design-space sweep — ✅ DONE (`<pending>`)
+- Dev: `sweep_design_space(op, shapes, variants)` — each variant runs on its OWN ArkeEnv (isolated budget/state) in a ThreadPoolExecutor; a failing fork can't corrupt siblings; returns `(best, all)` = lowest-latency correct variant. Caller replays `best.decisions`.
+- Test: `test_extensions.py` (ranking picks lowest-latency correct + failed fork isolated; no-correct→None). **Real GPU verified manually:** matmul 256² tile128 0.147ms beats tile64 0.230ms, both correct.
+- Done: green + real-GPU confirmation.
 
 ### Phase E — finalization
 

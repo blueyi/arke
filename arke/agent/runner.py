@@ -272,6 +272,8 @@ class LLMRunner:
         state_out: str | None = None,
         on_event: Any = None,
         concurrent_tools: bool = True,
+        skills: Any = None,
+        hooks: Any = None,
     ) -> OptimizeResult:
         """Run the live-LLM optimization loop.
 
@@ -342,6 +344,11 @@ class LLMRunner:
         final_message = ""
 
         system_prompt = _SYSTEM_PROMPT + f"\n\nOperator under optimization: {op_name}"
+        # D1: inject loaded skill recipes into the system prompt.
+        if skills:
+            from arke.agent.extensions import skills_prompt_block
+            skill_list = list(skills.values()) if isinstance(skills, dict) else list(skills)
+            system_prompt += skills_prompt_block(skill_list)
         user_intro = (
             f"Optimize the `{op_name}` operator for target hardware "
             f"`{target_hw}`. Input shapes: {json.dumps(shapes or env.op_inputs)}. "
@@ -392,11 +399,23 @@ class LLMRunner:
             batches = registry.partition_for_execution(call_list)
 
             def _exec_one(name: str, params: dict[str, Any]) -> dict[str, Any]:
+                # D2: PreDecision hook may veto an apply_decision.
+                if hooks and name == "apply_decision":
+                    if not hooks.fire("PreDecision", {"tool": name, "params": params, "env": env}):
+                        return {"success": False, "error": "vetoed by PreDecision hook",
+                                "vetoed": True}
                 try:
-                    return json.loads(registry.get(name).execute(params).to_json())
+                    payload = json.loads(registry.get(name).execute(params).to_json())
                 except Exception as e:  # noqa: BLE001
                     errors.append(f"tool_{name}_failed: {e}")
                     return {"success": False, "error": f"{type(e).__name__}: {e}"}
+                # D2: Post* observation hooks.
+                if hooks and name == "compile_and_profile":
+                    hooks.fire("PostCompile", {"tool": name, "params": params, "result": payload, "env": env})
+                    hooks.fire("PostProfile", {"tool": name, "params": params, "result": payload, "env": env})
+                elif hooks and name == "rollback":
+                    hooks.fire("OnRollback", {"tool": name, "params": params, "result": payload, "env": env})
+                return payload
 
             # Walk tool_uses in order, but execute each partition together.
             idx = 0
