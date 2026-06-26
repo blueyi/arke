@@ -277,7 +277,15 @@ compile + fp64-CPU-escape reference compare on CUDA (`V1_triton` tier);
 `V0_mock`.
 
 **Stop reasons:** `end_turn` (model done), `max_turns`, `budget_exhausted`,
-`llm_error` (provider/network — today aborts; fallback chain proposed in v2 S3).
+`llm_error` (provider/network — all providers + retries exhausted).
+
+**Provider resilience (S3, shipped 2026-06-26):** `load_from_env` auto-builds
+a fallback chain from every resolved provider. On a *transient* error
+(timeout / 429 / 5xx / connection), `LLMRunner` retries the same provider with
+exponential backoff (1.5s, 3.0s), then fails over to the next same-protocol
+provider, recording a `fallback{layer:"provider"}` entry in
+`result.session_summary["fallback_events"]`. *Non-transient* errors (auth,
+bad request, model-not-found) abort immediately — retrying won't help.
 
 ---
 

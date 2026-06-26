@@ -77,10 +77,34 @@ class LLMConfig:
         Alias of the default provider (key into ``providers``).
     providers:
         Map of provider-alias → :class:`ProviderConfig`.
+    fallback:
+        Ordered list of provider aliases to try, in order, when the
+        active provider raises a *transient* error (timeout / 429 / 5xx /
+        connection). S3 (2026-06-26): empty by default (no behavior change);
+        when populated, :class:`LLMRunner` walks this chain before giving up
+        and degrading to the heuristic floor. The primary provider is always
+        tried first regardless of whether it appears in this list.
     """
 
     primary: str
     providers: dict[str, ProviderConfig] = field(default_factory=dict)
+    fallback: list[str] = field(default_factory=list)
+
+    def provider_chain(self, first: str | None = None) -> list[ProviderConfig]:
+        """Return the ordered provider chain to try (S3).
+
+        Starts with ``first`` (or ``primary``), then appends each alias in
+        ``fallback`` that exists and isn't already in the chain. Unknown
+        aliases are skipped silently (robust to stale config).
+        """
+        chain: list[ProviderConfig] = []
+        seen: set[str] = set()
+        head = first or self.primary
+        for alias in [head, *self.fallback]:
+            if alias in self.providers and alias not in seen:
+                chain.append(self.providers[alias])
+                seen.add(alias)
+        return chain
 
     # ── model_spec resolution ────────────────────────────────────────
     def resolve(self, model_spec: str | None = None) -> tuple[ProviderConfig, str]:
@@ -215,7 +239,14 @@ def load_from_env(
             "ensure it is sourced (BASH_ENV) before running."
         )
 
-    return LLMConfig(primary=primary, providers=providers)
+    # S3 (2026-06-26): auto-populate the fallback chain from every other
+    # resolved provider (deterministic order: anthropic-clean yunwu, raw
+    # anthropic, openai), so a transient failure of the primary degrades to a
+    # sibling provider before hitting the heuristic floor. Primary excluded
+    # (provider_chain always tries it first).
+    fallback = [a for a in providers if a != primary]
+
+    return LLMConfig(primary=primary, providers=providers, fallback=fallback)
 
 
 def load_from_openclaw(**kwargs) -> LLMConfig:

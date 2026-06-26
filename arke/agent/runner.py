@@ -48,6 +48,28 @@ from arke.agent.tools import ToolRegistry
 logger = logging.getLogger(__name__)
 
 
+# ── S3: transient-error classification + retry policy ────────────────────
+#
+# A transient error (timeout / rate-limit / 5xx / connection reset) is worth
+# retrying on the same provider with exponential backoff, and — if retries are
+# exhausted — failing over to the next provider in the chain. A non-transient
+# error (auth, bad request, model-not-found) aborts immediately: retrying or
+# failing over won't help.
+_RETRYABLE_SUBSTRINGS: tuple[str, ...] = (
+    "timeout", "timed out", "rate limit", "rate_limit", "429",
+    "overloaded", "503", "502", "500", "connection", "reset by peer",
+    "temporarily unavailable", "econnreset", "read timed out",
+)
+_MAX_RETRIES_PER_PROVIDER = 2      # → up to 3 attempts per provider
+_BACKOFF_BASE_SECONDS = 1.5        # exp backoff: 1.5, 3.0, 6.0 …
+
+
+def _is_transient(exc: Exception) -> bool:
+    """Heuristic: is this exception worth a retry / provider failover?"""
+    msg = f"{type(exc).__name__}: {exc}".lower()
+    return any(s in msg for s in _RETRYABLE_SUBSTRINGS)
+
+
 # ── System prompt: frames the LLM as Arke's optimization decision-maker ──
 
 _SYSTEM_PROMPT = """\
@@ -241,6 +263,17 @@ class LLMRunner:
         registry = ToolRegistry.with_env(env)
         protocol = provider.protocol
 
+        # S3: provider chain (primary first, then same-protocol fallbacks).
+        # Cross-protocol failover is intentionally skipped — the message log
+        # is kept in the active protocol's native shape, so switching protocol
+        # mid-run would require rebuilding messages. Same-protocol siblings
+        # (e.g. two OpenAI-compatible relays) fail over cleanly.
+        full_chain = self.config.provider_chain(first=provider.alias)
+        provider_chain = [p for p in full_chain if p.protocol == protocol]
+        if not provider_chain:
+            provider_chain = [provider]
+        fallback_events: list[dict[str, Any]] = []
+
         trajectory: list[dict[str, Any]] = []
         errors: list[str] = []
         tool_calls = 0
@@ -271,10 +304,11 @@ class LLMRunner:
         t0 = time.time()
         for _turn in range(max_turns):
             try:
-                text, tool_uses, ti, to, raw_stop = self._call_llm(
-                    protocol, model, system_prompt, messages, registry,
+                text, tool_uses, ti, to, raw_stop = self._call_llm_resilient(
+                    provider_chain, model, system_prompt, messages, registry,
+                    fallback_events,
                 )
-            except Exception as e:  # provider/network error
+            except Exception as e:  # all providers + retries exhausted
                 errors.append(f"llm_call_failed: {e}")
                 stop_reason = "llm_error"
                 break
@@ -331,6 +365,7 @@ class LLMRunner:
                  "rationale": (d.rationale.text if d.rationale else None)}
                 for d in env.state.decision_log
             ],
+            "fallback_events": fallback_events,  # S3: provider failovers, if any
         }
 
         return OptimizeResult(
@@ -346,6 +381,57 @@ class LLMRunner:
             final_message=final_message,
             stop_reason=stop_reason,
         )
+
+    # ── S3: resilient call (retry + provider failover) ───────────────
+    def _call_llm_resilient(
+        self,
+        provider_chain: list[ProviderConfig],
+        model: str,
+        system_prompt: str,
+        messages: list[dict[str, Any]],
+        registry: ToolRegistry,
+        fallback_events: list[dict[str, Any]],
+    ) -> tuple[str, list[dict[str, Any]], int, int, str]:
+        """One LLM turn with same-provider retry + provider failover.
+
+        Walks ``provider_chain`` (all same protocol). For each provider, makes
+        up to ``_MAX_RETRIES_PER_PROVIDER + 1`` attempts with exponential
+        backoff on transient errors. A non-transient error aborts immediately.
+        When a provider is abandoned for the next one, records a structured
+        ``fallback{layer:"provider"}`` entry. Raises the last exception only if
+        every provider in the chain is exhausted.
+        """
+        last_exc: Exception | None = None
+        for pi, prov in enumerate(provider_chain):
+            # (Re)build the client when switching providers.
+            if self._provider is not prov or self._client is None:
+                self._provider = prov
+                self._client = self._build_client(prov)
+            for attempt in range(_MAX_RETRIES_PER_PROVIDER + 1):
+                try:
+                    return self._call_llm(prov.protocol, model, system_prompt, messages, registry)
+                except Exception as e:  # noqa: BLE001 — classify below
+                    last_exc = e
+                    if not _is_transient(e):
+                        raise  # auth / bad-request / model-not-found → no point retrying
+                    if attempt < _MAX_RETRIES_PER_PROVIDER:
+                        delay = _BACKOFF_BASE_SECONDS * (2 ** attempt)
+                        logger.warning(
+                            "transient LLM error on %s (attempt %d/%d): %s — backing off %.1fs",
+                            prov.alias, attempt + 1, _MAX_RETRIES_PER_PROVIDER + 1, e, delay,
+                        )
+                        time.sleep(delay)
+                    # else: retries exhausted for this provider → fall through to next
+            # Provider exhausted; record failover if there's a next one.
+            if pi + 1 < len(provider_chain):
+                nxt = provider_chain[pi + 1]
+                fallback_events.append({
+                    "layer": "provider", "from": prov.alias, "to": nxt.alias,
+                    "reason": f"{type(last_exc).__name__}: {last_exc}",
+                })
+                logger.warning("failing over provider %s → %s", prov.alias, nxt.alias)
+        # Whole chain exhausted.
+        raise last_exc if last_exc else RuntimeError("all providers exhausted")
 
     # ── protocol adapters ────────────────────────────────────────────
     #
