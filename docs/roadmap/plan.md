@@ -19,7 +19,7 @@ Roadmap > Phase > Stage > Feature > Task
 - **Validation window:** Phase 1 (S0–S9)
 - **Pass evidence:** G8 + G9 — GPT-2 / LLaMA-2 / DS-V2 all meet correctness=100% + perf thresholds; BL5 inheritance holds; autonomous engineering (G7-AE) reproducible end-to-end.
 - **Kill criterion:** If G8[4]/[5]/[6] cannot pass *with reasonable engineering* (≤ 2 Stage 8 extensions), or LLM-best ≤ heuristic-floor in ≥ 50% of trajectories, the LLM-decision pillar is falsified for SIMT/Triton.
-- **Current status (2026-05-17):** L1 partially validated — G7 ✅, G8[4] GPT-2 ✅ (vanilla `torch.compile` path); G8[1]/[2]/[3]/[5]/[6]/[7] still open.
+- **Current status (2026-06-26):** L1 **validated** on dev-HW — Phase 1 CLOSED (2026-06-25). G7 ✅, G8 ✅ (gate 6/6 PASS), G9 ✅ CLOSED. GPT-2 1.0296× / LLaMA-family 1.239× / Qwen2.5-family 1.2796× eager, correctness 100%; Arke vs LLM-direct 1.263× @ 0 tokens; @rationale KB 292 entries. Only deferred: full 7-8B parameter scale (6GB VRAM limit, family-substitute口径 accepted by project lead); release tags G9[4]/[6] waived.
 
 ### Thesis L2 — Cross-Architecture, Same Abstraction Layer (Phase 2)
 
@@ -185,7 +185,7 @@ AND ALL:
 
 ---
 
-### Stage 7 (G7): Lang & IR v0.1.0 🚧
+### Stage 7 (G7): Lang & IR v0.1.0 ✅
 
 **Objective:** Land the finalized Arke Lang v0.1.0 and the **high-level Arke IR v0.1.0** (Layer 4 SemanticIR + Layer 3 StrategyIR) as the implementation contract for Phase 1's Triton path **and** as the IR surface that Phase 3 will lower through MLIR. Implement the `where` clause + symbolic shape system end-to-end. Upgrade StrategyIR to be backend-agnostic in its core. Complete spec documents. Assess dynamic shape feasibility. Establish the MLIR framework skeleton as a forward-compatibility checkpoint (concrete MLIR lowering work belongs to Phase 3).
 
@@ -240,7 +240,7 @@ thresholds. Specification: [`docs/benchmark/benchmark-protocol.md`](../benchmark
 
 ---
 
-### Stage 8 (G8): Agent Autonomy 🚧
+### Stage 8 (G8): Agent Autonomy ✅
 
 **Objective:** Build a **highly extensible Arke Harness system** for LLM-driven auto-generation and auto-tuning of AI operators. The Harness (Façade + Substrate) is the **primary Stage 8 deliverable**. Multi-model BL6 end-to-end results (GPT-2 / LLaMA-2 / DS-V2) serve as **Thesis L1 endpoint validation**, demonstrating that the Harness produces real wins on real LLMs.
 
@@ -334,7 +334,7 @@ Tier 2 — Thesis L1 endpoint validation (Harness produces real wins):
 
 ---
 
-### Stage 9 (G9): Phase 1 Final ⬜
+### Stage 9 (G9): Phase 1 Final ✅
 
 **Objective:** Final acceptance across 4 models. Automated Arke-vs-LLM-direct comparison. Spec freeze. Evaluation report. v1.0 release tag.
 
@@ -546,4 +546,4 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ---
 
-*Last updated: 2026-06-24 (Phase 2/Ascend marked PAUSED — all effort on NVIDIA/Triton L1 validation; backend extensibility preserved via `arke/backend/protocol.py`. Footer status corrected: S0–S6 ✅ closed, S7 13/14 closed + followups, S8 in progress.)*
+*Last updated: 2026-06-26 (Phase 1 CLOSED 2026-06-25 on dev-HW: S0–S6 ✅, S7 ✅ 13/14 closed + followups landed, S8 ✅ gate 6/6 PASS, S9 ✅ CLOSED — Thesis L1 SIMT validated. G9[4]/[6] release tags waived by project lead. Phase 2/Ascend remains PAUSED — backend extensibility preserved via `arke/backend/protocol.py`. Footer status synced to plan status table L100–110.)*
