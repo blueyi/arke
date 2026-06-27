@@ -433,26 +433,61 @@ def normalize_output_root(
     """Return the canonical ``<root>`` such that the layer dir is
     ``<root>/phase{phase}/stage{stage}/track{track}/{layer}``.
 
-    Strips a trailing ``phase{phase}/stage{stage}/track{track}`` (and an
-    optional ``{layer}``) from ``raw_output`` so callers that already pass the
-    full path do not produce nested duplicates such as
-    ``track6/phase1/stage7/track6/l2/``.
+    Strips any ``phase{phase}/stage{stage}/track{track}`` triple (and an
+    optional following ``{layer}``) found **anywhere** in ``raw_output`` so
+    callers that already pass a full or partial run path do not produce nested
+    duplicates such as:
+
+    * ``track6/phase1/stage7/track6/l2/``  (trailing duplicate), or
+    * ``phase1/stage7/followup3/<op>/phase1/stage6/track1/l1/``
+      (a mid-path ``phaseN/...`` segment that the old trailing-only strip
+      missed entirely — this was the real ``followup3`` nesting bug).
+
+    Detection scans for the *first* occurrence of the consecutive triple
+    ``(phase{phase}, stage{stage}, track{track})`` and truncates the path at
+    that point, dropping everything from the triple onward. When something is
+    stripped a WARNING is logged so the operator notices a re-nesting attempt
+    instead of it happening silently.
     """
-    suffix_track = f"track{track}"
-    suffix_stage = f"stage{stage}"
-    suffix_phase = f"phase{phase}"
+    seg_phase = f"phase{phase}"
+    seg_stage = f"stage{stage}"
+    seg_track = f"track{track}"
 
     parts = list(Path(raw_output).parts)
-    # Drop trailing layer segment if present.
-    if parts and parts[-1] == layer:
-        parts.pop()
-    # Drop trailing trackN/stageN/phaseN repetition.
-    if parts and parts[-1] == suffix_track:
-        parts.pop()
-        if parts and parts[-1] == suffix_stage:
+
+    # Scan for the first consecutive phase/stage/track triple ANYWHERE.
+    triple_idx = -1
+    for i in range(len(parts) - 2):
+        if (
+            parts[i] == seg_phase
+            and parts[i + 1] == seg_stage
+            and parts[i + 2] == seg_track
+        ):
+            triple_idx = i
+            break
+
+    if triple_idx >= 0:
+        stripped = Path(*parts[triple_idx:]) if parts[triple_idx:] else Path(".")
+        parts = parts[:triple_idx]
+        logger.warning(
+            "normalize_output_root: stripped pre-existing run path "
+            "'%s/%s/%s/...' from --output to avoid nested duplication "
+            "(removed tail: %s). Pass --output as the results ROOT "
+            "(e.g. 'benchmarks/results'), not a full run dir.",
+            seg_phase, seg_stage, seg_track, stripped,
+        )
+    else:
+        # No mid-path triple. Fall back to the legacy trailing-only strip so a
+        # bare trailing layer segment (e.g. '<root>/l1') is still normalised.
+        if parts and parts[-1] == layer:
             parts.pop()
-            if parts and parts[-1] == suffix_phase:
+        if parts and parts[-1] == seg_track:
+            parts.pop()
+            if parts and parts[-1] == seg_stage:
                 parts.pop()
+                if parts and parts[-1] == seg_phase:
+                    parts.pop()
+
     if not parts:
         return Path(".")
     return Path(*parts)

@@ -134,12 +134,55 @@ def test_summarize_csv(tmp_path: Path):
         ("benchmarks/results", ("benchmarks", "results")),
         ("benchmarks/results/phase1/stage7/track6", ("benchmarks", "results")),
         ("benchmarks/results/phase1/stage7/track6/l2", ("benchmarks", "results")),
-        ("results/phase1/stage7", ("results", "phase1", "stage7")),  # only suffix-track stripped
+        ("results/phase1/stage7", ("results", "phase1", "stage7")),  # no track6 triple -> unchanged
     ],
 )
 def test_normalize_output_root_strips_phase_stage_track(raw, expected_tail):
     out = p.normalize_output_root(raw, phase=1, stage=7, track=6, layer="l2")
     assert out.parts == expected_tail
+
+
+def test_normalize_output_root_strips_midpath_triple():
+    """Regression: the followup3 nesting bug.
+
+    A path like ``benchmarks/results/phase1/stage7/followup3/<op>`` was run
+    with the bench_l1 defaults (--stage 6 --track 1). The old trailing-only
+    strip didn't touch it (it ends in '<op>', not a phase/stage/track tail),
+    so run_l1 appended '/phase1/stage6/track1/l1' producing the malformed
+    '.../followup3/<op>/phase1/stage6/track1/l1'. The triple here belongs to
+    the run being appended, not the --output path, so the input below has no
+    such triple — but a *resubmitted* full path would. Verify both directions.
+    """
+    # 1. Mid-path triple matching the run's (phase1, stage6, track1) is stripped
+    #    wherever it appears, not just at the tail.
+    out = p.normalize_output_root(
+        "benchmarks/results/phase1/stage6/track1/l1/extra/nested",
+        phase=1, stage=6, track=1, layer="l1",
+    )
+    assert out.parts == ("benchmarks", "results")
+
+    # 2. A custom subdir that does NOT contain the run's triple is preserved
+    #    verbatim (this is the correct followup3 usage: --output is a ROOT).
+    out2 = p.normalize_output_root(
+        "benchmarks/results/phase1/stage7/followup3/grouped_query_attention",
+        phase=1, stage=6, track=1, layer="l1",
+    )
+    assert out2.parts == (
+        "benchmarks", "results", "phase1", "stage7",
+        "followup3", "grouped_query_attention",
+    )
+
+
+def test_normalize_output_root_warns_on_renest(caplog):
+    """A re-submitted full run path must log a WARNING, not silently re-nest."""
+    import logging
+
+    with caplog.at_level(logging.WARNING, logger="benchmarks.progress"):
+        p.normalize_output_root(
+            "benchmarks/results/phase1/stage6/track1/l1",
+            phase=1, stage=6, track=1, layer="l1",
+        )
+    assert any("nested duplication" in r.message for r in caplog.records)
 
 
 def test_progress_tracker_emits_jsonl(tmp_path: Path):
