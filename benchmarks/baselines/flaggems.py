@@ -302,9 +302,8 @@ class FlagGemsRunner(BaselineRunner):
             torch.cumsum(X, dim=-1); torch.cuda.synchronize()
             return lambda: torch.cumsum(X, dim=-1)
         elif op == "batch_matmul":
-            B_size = max(M, 1)
-            A = torch.randn(B_size, N, K, device="cuda", dtype=dtype)
-            Bm = torch.randn(B_size, K, N, device="cuda", dtype=dtype)
+            from benchmarks.baselines._shared_inputs import build_batch_matmul_inputs
+            A, Bm = build_batch_matmul_inputs(M, N, K, dtype)
             torch.bmm(A, Bm); torch.cuda.synchronize()
             return lambda: torch.bmm(A, Bm)
         elif op == "transpose":

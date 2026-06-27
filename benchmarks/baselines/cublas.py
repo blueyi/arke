@@ -71,8 +71,8 @@ class CuBLASRunner(BaselineRunner):
             return lambda: torch.matmul(A, B)
 
         elif op == "batch_matmul":
-            A = torch.randn(M, N, K, device="cuda", dtype=dtype)
-            B = torch.randn(M, K, N, device="cuda", dtype=dtype)
+            from benchmarks.baselines._shared_inputs import build_batch_matmul_inputs
+            A, B = build_batch_matmul_inputs(M, N, K, dtype)
             return lambda: torch.bmm(A, B)
 
         elif op == "softmax":

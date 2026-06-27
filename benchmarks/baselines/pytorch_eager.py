@@ -356,9 +356,8 @@ class PyTorchEagerRunner(BaselineRunner):
             return lambda: torch.matmul(A, B)
 
         elif op == "batch_matmul":
-            batch = max(K, 4)  # use K as batch dim, floor at 4
-            A = torch.randn(batch, M, N, device="cuda", dtype=dtype)
-            B = torch.randn(batch, N, M, device="cuda", dtype=dtype)
+            from benchmarks.baselines._shared_inputs import build_batch_matmul_inputs
+            A, B = build_batch_matmul_inputs(M, N, K, dtype)
             return lambda: torch.bmm(A, B)
 
         elif op == "transpose":
@@ -407,8 +406,8 @@ class PyTorchEagerRunner(BaselineRunner):
 
         # ── OT3 Fused Compound ──────────────────────────────────────
         elif op == "silu_and_mul":
-            # Input width = 2*N so chunk gives two N-wide halves
-            X = torch.randn(M, 2 * N, device="cuda", dtype=dtype)
+            from benchmarks.baselines._shared_inputs import build_gated_perf_inputs
+            X = build_gated_perf_inputs(M, N, dtype)
             x1, x2 = X.chunk(2, dim=-1)
             return lambda: F.silu(x1) * x2
 
@@ -420,7 +419,8 @@ class PyTorchEagerRunner(BaselineRunner):
             return lambda: (F.silu(X[:, :K_eff]) * X[:, K_eff:]) @ W
 
         elif op == "gelu_and_mul":
-            X = torch.randn(M, 2 * N, device="cuda", dtype=dtype)
+            from benchmarks.baselines._shared_inputs import build_gated_perf_inputs
+            X = build_gated_perf_inputs(M, N, dtype)
             x1, x2 = X.chunk(2, dim=-1)
             return lambda: F.gelu(x1) * x2
 
@@ -584,16 +584,13 @@ class PyTorchEagerRunner(BaselineRunner):
             return rope
 
         elif op == "grouped_matmul":
-            # Grouped matmul: multiple independent matmuls
-            # Simulate as: for each group, do a small matmul
-            num_groups = max(M // 4, 1)
-            group_size = M // num_groups
-            inner_dim = N
-            out_dim = K
-            As = [torch.randn(group_size, inner_dim, device="cuda", dtype=dtype) for _ in range(num_groups)]
-            Bs = [torch.randn(inner_dim, out_dim, device="cuda", dtype=dtype) for _ in range(num_groups)]
+            from benchmarks.baselines._shared_inputs import build_grouped_matmul_inputs
+            X, W, idx = build_grouped_matmul_inputs(M, N, K, dtype)
+            # Per-group reference: group b uses expert weight W[idx[b]].
+            ng = min(X.shape[0], W.shape[0])
+            idx_l = idx.tolist()
             def grouped_matmul():
-                return torch.cat([A @ B for A, B in zip(As, Bs)], dim=0)
+                return torch.stack([X[b] @ W[idx_l[b]] for b in range(ng)], dim=0)
             return grouped_matmul
 
         # ── Unsupported ─────────────────────────────────────────────
