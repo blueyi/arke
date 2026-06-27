@@ -1,78 +1,137 @@
 """Auto-generated Triton batch_matmul kernel by Arke.
 
 Handles: batch_matmul (batched GEMM).
-A[B, M, K] @ B_mat[B, K, N] → C[B, M, N]
+A[B, M, K] @ B_mat[B, K, N] -> C[B, M, N]
+
+Design ported from FlagGems bmm ladder (PRIMARY), adapted to Arke's
+standalone Jinja codegen (no flag_gems.runtime / libtuner dependency):
+  - 3D grid (cdiv(M,TILE_M), cdiv(N,TILE_N), batch); batch on program_id(2).
+  - DIVISIBLE_M/N/K constexpr specialization removes all masking on the hot
+    path when dims are tile-aligned (the dominant cost on small-batched shapes
+    like gpt2-attn B=12, M/N<=512, K=64).
+  - dtype-aware accumulate (fp32 acc for fp16/bf16, fp64 for fp64) + native
+    output dtype (no fp16 hard-cast — was a correctness bug for fp32/bf16).
+  - allow_tf32=False for fp16 numerical parity with torch.bmm.
 """
 import torch
 import triton
 import triton.language as tl
 
 
-@triton.autotune(
-    configs=[
-        triton.Config({"BLOCK_M": 32, "BLOCK_N": 32, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=4, num_warps=4),
-        triton.Config({"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
-        triton.Config({"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
-        triton.Config({"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
-        triton.Config({"BLOCK_M": 16, "BLOCK_N": 16, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=5, num_warps=2),
-    ],
-    key=["M", "N", "K"],
+@triton.heuristics(
+    {
+        "DIVISIBLE_M": lambda args: args["M"] % args["TILE_M"] == 0,
+        "DIVISIBLE_N": lambda args: args["N"] % args["TILE_N"] == 0,
+        "DIVISIBLE_K": lambda args: args["K"] % args["TILE_K"] == 0,
+    }
 )
 @triton.jit
 def {{ kernel_name }}_kernel(
     A_ptr, B_ptr, C_ptr,
-    M, N, K, batch_size,
+    M, N, K,
     stride_ab, stride_am, stride_ak,
     stride_bb, stride_bk, stride_bn,
     stride_cb, stride_cm, stride_cn,
-    BLOCK_M: tl.constexpr,
-    BLOCK_N: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-    GROUP_SIZE_M: tl.constexpr,
+    TILE_M: tl.constexpr,
+    TILE_N: tl.constexpr,
+    TILE_K: tl.constexpr,
+    GROUP_M: tl.constexpr,
+    DIVISIBLE_M: tl.constexpr,
+    DIVISIBLE_N: tl.constexpr,
+    DIVISIBLE_K: tl.constexpr,
 ):
     """Batched matmul: C[b, m, n] = sum_k A[b, m, k] * B[b, k, n]."""
-    pid = tl.program_id(0)
-    batch_id = tl.program_id(1)
+    pid_b = tl.program_id(2)
+    A_batch = A_ptr + pid_b * stride_ab
+    B_batch = B_ptr + pid_b * stride_bb
+    C_batch = C_ptr + pid_b * stride_cb
 
-    num_pid_m = tl.cdiv(M, BLOCK_M)
-    num_pid_n = tl.cdiv(N, BLOCK_N)
-    num_pid_in_group = GROUP_SIZE_M * num_pid_n
-    group_id = pid // num_pid_in_group
-    first_pid_m = group_id * GROUP_SIZE_M
-    group_size_m = min(num_pid_m - first_pid_m, GROUP_SIZE_M)
-    pid_m = first_pid_m + ((pid % num_pid_in_group) % group_size_m)
-    pid_n = (pid % num_pid_in_group) // group_size_m
+    pidx = tl.program_id(0)
+    pidy = tl.program_id(1)
 
-    offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
-    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
-    offs_k = tl.arange(0, BLOCK_K)
+    if GROUP_M == 1:
+        pid_m, pid_n = pidx, pidy
+    else:
+        # CTA reorder for L2 locality on large GEMM.
+        gridx = tl.num_programs(0)
+        gridy = tl.num_programs(1)
+        pid = pidx + pidy * gridx
+        num_cta_per_group = gridy * GROUP_M
+        group_id = pid // num_cta_per_group
+        inner = pid % num_cta_per_group
+        group_size = tl.where(
+            (group_id * GROUP_M + GROUP_M) > gridx, gridx % GROUP_M, GROUP_M
+        )
+        pid_m = group_id * GROUP_M + inner % group_size
+        pid_n = inner // group_size
 
-    A_batch = A_ptr + batch_id * stride_ab
-    B_batch = B_ptr + batch_id * stride_bb
+    offs_m = pid_m * TILE_M + tl.arange(0, TILE_M)
+    offs_n = pid_n * TILE_N + tl.arange(0, TILE_N)
+    offs_k = tl.arange(0, TILE_K)
+
+    if not DIVISIBLE_M:
+        mask_m = offs_m < M
+    if not DIVISIBLE_N:
+        mask_n = offs_n < N
 
     a_ptrs = A_batch + offs_m[:, None] * stride_am + offs_k[None, :] * stride_ak
     b_ptrs = B_batch + offs_k[:, None] * stride_bk + offs_n[None, :] * stride_bn
 
-    acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+    # dtype-aware accumulator
+    if tl.constexpr(A_ptr.dtype.element_ty == tl.float64):
+        acc = tl.zeros((TILE_M, TILE_N), dtype=tl.float64)
+    else:
+        acc = tl.zeros((TILE_M, TILE_N), dtype=tl.float32)
 
-    for k in range(0, K, BLOCK_K):
-        a = tl.load(a_ptrs, mask=(offs_m[:, None] < M) & (offs_k[None, :] < K))
-        b = tl.load(b_ptrs, mask=(offs_k[:, None] < K) & (offs_n[None, :] < N))
-        acc += tl.dot(a, b)
-        a_ptrs += BLOCK_K * stride_ak
-        b_ptrs += BLOCK_K * stride_bk
-        offs_k += BLOCK_K
+    num_iters = tl.cdiv(K, TILE_K)
+    for _ in range(num_iters):
+        if DIVISIBLE_K:
+            mask_a = None if DIVISIBLE_M else mask_m[:, None]
+            mask_b = None if DIVISIBLE_N else mask_n[None, :]
+        else:
+            mask_k = offs_k < K
+            if DIVISIBLE_M:
+                mask_a = mask_k[None, :]
+            else:
+                mask_a = mask_m[:, None] & mask_k[None, :]
+            if DIVISIBLE_N:
+                mask_b = mask_k[:, None]
+            else:
+                mask_b = mask_k[:, None] & mask_n[None, :]
 
-    c = acc.to(tl.float16)
+        a = tl.load(a_ptrs, mask_a)
+        b = tl.load(b_ptrs, mask_b)
 
-    C_batch = C_ptr + batch_id * stride_cb
+        offs_k += TILE_K
+        a_ptrs += TILE_K * stride_ak
+        b_ptrs += TILE_K * stride_bk
+
+        acc += tl.dot(a, b, allow_tf32=False)
+
+    c = acc.to(C_ptr.dtype.element_ty)
+
     c_ptrs = C_batch + offs_m[:, None] * stride_cm + offs_n[None, :] * stride_cn
-    mask = (offs_m[:, None] < M) & (offs_n[None, :] < N)
-    tl.store(c_ptrs, c, mask=mask)
+    if DIVISIBLE_M and DIVISIBLE_N:
+        mask_c = None
+    elif DIVISIBLE_M:
+        mask_c = mask_n[None, :]
+    elif DIVISIBLE_N:
+        mask_c = mask_m[:, None]
+    else:
+        mask_c = mask_m[:, None] & mask_n[None, :]
+    tl.store(c_ptrs, c, mask=mask_c)
 
 
 def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
-    """Batched matrix multiply: A[B, M, K] @ B_mat[B, K, N] → C[B, M, N]."""
+    """Batched matrix multiply: A[B, M, K] @ B_mat[B, K, N] -> C[B, M, N].
+
+    Tile selection is a launcher-side shape heuristic (FlagGems/Liger
+    `calculate_settings` style), NOT @triton.autotune. At the small-batched
+    shapes that dominate attention bmm (B large, M/N<=512, K=64) the per-config
+    timing differences are below Triton's autotune benchmark noise floor, so
+    autotune mis-selects AND adds per-call dispatch overhead. A deterministic
+    heuristic is both faster and reproducible here.
+    """
     assert A.ndim == 3 and B.ndim == 3
     batch, M, K = A.shape
     batch2, K2, N = B.shape
@@ -80,16 +139,29 @@ def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
 
     C = torch.empty((batch, M, N), device=A.device, dtype=A.dtype)
 
-    grid = lambda META: (
-        triton.cdiv(M, META["BLOCK_M"]) * triton.cdiv(N, META["BLOCK_N"]),
-        batch,
-    )
+    # Shape heuristic. Small M/N -> one large tile per batch elem (GROUP_M=1,
+    # whole M*N covered by a single CTA, single K-iter when K<=TILE_K). Large
+    # square -> medium tiles + GROUP_M reorder for L2 locality.
+    big = max(M, N)
+    if big <= 128:
+        TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 1, 4, 2
+    elif big <= 256:
+        TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 1, 8, 2
+    else:
+        TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 8, 8, 3
+    # K tile: cover K in one pass when it's small (the attention K=64 case),
+    # else step in 32-wide tiles to keep registers bounded.
+    TILE_K = 64 if K <= 64 else 32
+
+    grid = (triton.cdiv(M, TILE_M), triton.cdiv(N, TILE_N), batch)
 
     {{ kernel_name }}_kernel[grid](
         A, B, C,
-        M, N, K, batch,
+        M, N, K,
         A.stride(0), A.stride(1), A.stride(2),
         B.stride(0), B.stride(1), B.stride(2),
         C.stride(0), C.stride(1), C.stride(2),
+        TILE_M=TILE_M, TILE_N=TILE_N, TILE_K=TILE_K, GROUP_M=GROUP_M,
+        num_warps=num_warps, num_stages=num_stages,
     )
     return C
