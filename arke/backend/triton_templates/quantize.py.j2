@@ -102,58 +102,56 @@ def {{ kernel_name }}(X: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 @triton.jit
 def {{ kernel_name }}_kernel(
     X_ptr, Scales_ptr, Y_ptr,
-    M, N,
+    M, N, n_elements,
     stride_xm, stride_xn,
     stride_ym, stride_yn,
-    BLOCK_M: tl.constexpr,
-    BLOCK_N: tl.constexpr,
+    BLOCK: tl.constexpr,
 ):
-    """Dequantize per channel: Y[m,n] = X_int8[m,n] * scales[n]."""
-    pid_m = tl.program_id(0)
-    pid_n = tl.program_id(1)
+    """Dequantize per channel over flattened index space.
 
-    offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
-    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+    Y[m, n] = X_int8[m, n] * scales[n]. For flat index e in [0, M*N):
+    row = e // N, col = e % N. 1D flatten saturates SM occupancy regardless
+    of the M/N split (the old 2D grid + fixed BLOCK_M=32 under-occupied small
+    and wide-N shapes).
+    """
+    pid = tl.program_id(0)
+    offs = pid * BLOCK + tl.arange(0, BLOCK)
+    mask = offs < n_elements
 
-    mask = (offs_m[:, None] < M) & (offs_n[None, :] < N)
+    row = offs // N
+    col = offs % N
 
-    # Load int8 values
     x = tl.load(
-        X_ptr + offs_m[:, None] * stride_xm + offs_n[None, :] * stride_xn,
-        mask=mask,
-        other=0,
+        X_ptr + row * stride_xm + col * stride_xn, mask=mask, other=0
     ).to(tl.float32)
+    scales = tl.load(Scales_ptr + col, mask=mask, other=1.0)
 
-    # Load per-channel scales
-    scales = tl.load(Scales_ptr + offs_n, mask=offs_n < N, other=1.0)
+    y = (x * scales).to(Y_ptr.dtype.element_ty)
 
-    # Dequantize
-    y = x * scales[None, :]
-    y_f16 = y.to(tl.float16)
-
-    tl.store(
-        Y_ptr + offs_m[:, None] * stride_ym + offs_n[None, :] * stride_yn,
-        y_f16,
-        mask=mask,
-    )
+    tl.store(Y_ptr + row * stride_ym + col * stride_yn, y, mask=mask)
 
 
 def {{ kernel_name }}(X: torch.Tensor, scales: torch.Tensor) -> torch.Tensor:
-    """Dequantize per channel: X_int8[M,N] * scales[N] → Y_f16[M,N]."""
+    """Dequantize per channel: X_int8[M,N] * scales[N] -> Y[M,N]."""
     assert X.ndim == 2
     M, N = X.shape
+    # Output fp16 per the dequantize_per_channel schema (Tensor[M,N] f16) —
+    # halves write bandwidth vs fp32 on this memory-bound kernel. scales stay
+    # fp32 for the multiply; only the stored result is downcast.
     Y = torch.empty((M, N), device=X.device, dtype=torch.float16)
+    n_elements = M * N
 
-    BLOCK_M = 32
-    BLOCK_N = min(triton.next_power_of_2(N), 1024)
-    grid = (triton.cdiv(M, BLOCK_M), triton.cdiv(N, BLOCK_N))
+    BLOCK = 1024
+    num_warps = 4
+    grid = (triton.cdiv(n_elements, BLOCK),)
 
     {{ kernel_name }}_kernel[grid](
         X, scales, Y,
-        M, N,
+        M, N, n_elements,
         X.stride(0), X.stride(1),
         Y.stride(0), Y.stride(1),
-        BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N,
+        BLOCK=BLOCK,
+        num_warps=num_warps,
     )
     return Y
 {% endif %}
