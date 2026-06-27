@@ -1,105 +1,175 @@
 """Auto-generated Triton grouped_matmul kernel by Arke.
 
-Handles: grouped_matmul (multiple small GEMMs packed into one kernel launch).
-Each group g: A_g[M_g, K] @ B_g[K, N] → C_g[M_g, N]
-Groups are stacked along M dimension with offsets.
+Handles: grouped_matmul (MoE grouped GEMM).
+Spec (arke/ir/ops/catalog.py GROUPED_MATMUL):
+    X[B, M, K] @ W[indices[b], K, N] -> Y[B, M, N]
+Each token-group b multiplies its M*K activations by the expert weight
+W[indices[b]]. When indices is omitted (the BL5 benchmark path passes only
+X and W with B == E), the identity mapping indices[b] = b is used, i.e. group
+b uses expert weight b — matching the benchmark reference
+`cat([X[b] @ W[b] for b in range(B)])`.
+
+Design ported from FlagGems bmm / group_gemm ladder (PRIMARY), adapted to
+Arke's standalone Jinja codegen:
+  - 3D grid (cdiv(M,TILE_M), cdiv(N,TILE_N), B); group on program_id(2).
+  - Per-group expert selection via indices (or identity), indexing W's batch
+    stride — no per-CTA linear group scan (the old template's `for g in
+    range(1024): break` was both O(groups) serial AND uncompilable in
+    Triton 3.2, forcing a silent interpreter fallback).
+  - DIVISIBLE_M/N/K @triton.heuristics specialization removes hot-path masking.
+  - dtype-aware accumulate + native output dtype (no fp16 hard-cast).
+  - allow_tf32=False for fp16 parity with torch.
 """
 import torch
 import triton
 import triton.language as tl
 
 
+@triton.heuristics(
+    {
+        "DIVISIBLE_M": lambda args: args["M"] % args["TILE_M"] == 0,
+        "DIVISIBLE_N": lambda args: args["N"] % args["TILE_N"] == 0,
+        "DIVISIBLE_K": lambda args: args["K"] % args["TILE_K"] == 0,
+    }
+)
 @triton.jit
 def {{ kernel_name }}_kernel(
-    A_ptr, B_ptr, C_ptr,
-    group_offsets_ptr,
-    N, K, num_groups,
-    stride_ak, stride_bk, stride_bn,
-    stride_cn,
-    BLOCK_M: tl.constexpr,
-    BLOCK_N: tl.constexpr,
-    BLOCK_K: tl.constexpr,
+    X_ptr, W_ptr, IDX_ptr, C_ptr,
+    M, N, K,
+    stride_xb, stride_xm, stride_xk,
+    stride_we, stride_wk, stride_wn,
+    stride_cb, stride_cm, stride_cn,
+    HAS_IDX: tl.constexpr,
+    TILE_M: tl.constexpr,
+    TILE_N: tl.constexpr,
+    TILE_K: tl.constexpr,
+    DIVISIBLE_M: tl.constexpr,
+    DIVISIBLE_N: tl.constexpr,
+    DIVISIBLE_K: tl.constexpr,
 ):
-    """Grouped matmul: each group has variable M, shared K and N."""
-    pid = tl.program_id(0)
+    """Grouped matmul: C[b,m,n] = sum_k X[b,m,k] * W[expert(b),k,n]."""
+    pid_b = tl.program_id(2)
+
+    if HAS_IDX:
+        expert = tl.load(IDX_ptr + pid_b)
+    else:
+        expert = pid_b
+
+    X_grp = X_ptr + pid_b * stride_xb
+    W_grp = W_ptr + expert * stride_we
+    C_grp = C_ptr + pid_b * stride_cb
+
+    pid_m = tl.program_id(0)
     pid_n = tl.program_id(1)
 
-    # Binary search for which group this pid_m belongs to
-    # Simple linear scan (groups are typically few)
-    group_start = tl.load(group_offsets_ptr)
-    group_id = 0
-    for g in range(1, 1024):  # max groups
-        if g >= num_groups:
-            break
-        next_start = tl.load(group_offsets_ptr + g)
-        total_blocks = tl.cdiv(next_start - group_start, BLOCK_M)
-        if pid < total_blocks:
-            break
-        pid -= total_blocks
-        group_start = next_start
-        group_id = g
+    offs_m = pid_m * TILE_M + tl.arange(0, TILE_M)
+    offs_n = pid_n * TILE_N + tl.arange(0, TILE_N)
+    offs_k = tl.arange(0, TILE_K)
 
-    if group_id < num_groups - 1:
-        group_end = tl.load(group_offsets_ptr + group_id + 1)
+    if not DIVISIBLE_M:
+        mask_m = offs_m < M
+    if not DIVISIBLE_N:
+        mask_n = offs_n < N
+
+    x_ptrs = X_grp + offs_m[:, None] * stride_xm + offs_k[None, :] * stride_xk
+    w_ptrs = W_grp + offs_k[:, None] * stride_wk + offs_n[None, :] * stride_wn
+
+    if tl.constexpr(X_ptr.dtype.element_ty == tl.float64):
+        acc = tl.zeros((TILE_M, TILE_N), dtype=tl.float64)
     else:
-        group_end = tl.load(group_offsets_ptr + num_groups)
+        acc = tl.zeros((TILE_M, TILE_N), dtype=tl.float32)
 
-    M_g = group_end - group_start
+    num_iters = tl.cdiv(K, TILE_K)
+    for _ in range(num_iters):
+        if DIVISIBLE_K:
+            mask_x = None if DIVISIBLE_M else mask_m[:, None]
+            mask_w = None if DIVISIBLE_N else mask_n[None, :]
+        else:
+            mask_k = offs_k < K
+            if DIVISIBLE_M:
+                mask_x = mask_k[None, :]
+            else:
+                mask_x = mask_m[:, None] & mask_k[None, :]
+            if DIVISIBLE_N:
+                mask_w = mask_k[:, None]
+            else:
+                mask_w = mask_k[:, None] & mask_n[None, :]
 
-    offs_m = pid * BLOCK_M + tl.arange(0, BLOCK_M)
-    offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
-    offs_k = tl.arange(0, BLOCK_K)
+        x = tl.load(x_ptrs, mask_x)
+        w = tl.load(w_ptrs, mask_w)
 
-    # A is stacked: A[total_M, K], group g starts at row group_start
-    a_ptrs = A_ptr + (group_start + offs_m[:, None]) * stride_ak + offs_k[None, :]
-    # B is shared or indexed by group: B[K, N] (shared)
-    b_ptrs = B_ptr + offs_k[:, None] * stride_bk + offs_n[None, :] * stride_bn
+        offs_k += TILE_K
+        x_ptrs += TILE_K * stride_xk
+        w_ptrs += TILE_K * stride_wk
 
-    acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+        acc += tl.dot(x, w, allow_tf32=False)
 
-    for k in range(0, K, BLOCK_K):
-        a = tl.load(a_ptrs, mask=(offs_m[:, None] < M_g) & (offs_k[None, :] < K), other=0.0)
-        b = tl.load(b_ptrs, mask=(offs_k[:, None] < K) & (offs_n[None, :] < N), other=0.0)
-        acc += tl.dot(a, b)
-        a_ptrs += BLOCK_K
-        b_ptrs += BLOCK_K * stride_bk
-        offs_k += BLOCK_K
+    c = acc.to(C_ptr.dtype.element_ty)
 
-    c = acc.to(tl.float16)
-    c_ptrs = C_ptr + (group_start + offs_m[:, None]) * stride_cn + offs_n[None, :] 
-    mask = (offs_m[:, None] < M_g) & (offs_n[None, :] < N)
-    tl.store(c_ptrs, c, mask=mask)
+    c_ptrs = C_grp + offs_m[:, None] * stride_cm + offs_n[None, :] * stride_cn
+    if DIVISIBLE_M and DIVISIBLE_N:
+        mask_c = None
+    elif DIVISIBLE_M:
+        mask_c = mask_n[None, :]
+    elif DIVISIBLE_N:
+        mask_c = mask_m[:, None]
+    else:
+        mask_c = mask_m[:, None] & mask_n[None, :]
+    tl.store(c_ptrs, c, mask=mask_c)
 
 
-def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor, group_offsets: torch.Tensor) -> torch.Tensor:
-    """Grouped matmul: A[total_M, K] @ B[K, N] with groups defined by offsets.
+def {{ kernel_name }}(X: torch.Tensor, W: torch.Tensor, indices: torch.Tensor = None) -> torch.Tensor:
+    """Grouped matmul: X[B, M, K] @ W[indices[b], K, N] -> C[B, M, N].
 
     Args:
-        A: [total_M, K] — stacked input matrices
-        B: [K, N] — shared weight matrix
-        group_offsets: [num_groups + 1] — cumulative row offsets (starts with 0)
+        X: [B, M, K] — per-group activation matrices.
+        W: [E, K, N] — expert weight matrices.
+        indices: [B] int — expert id per group. If None, identity (b -> b),
+            which requires B == E and matches the BL5 benchmark reference.
 
-    Returns:
-        C: [total_M, N]
+    Tile selection is a launcher-side shape heuristic (not @triton.autotune —
+    at small grouped shapes the autotune benchmark noise exceeds config
+    differences; see batch_matmul template rationale).
     """
-    total_M, K = A.shape
-    K2, N = B.shape
-    assert K == K2
-    num_groups = group_offsets.numel() - 1
+    assert X.ndim == 3 and W.ndim == 3
+    B, M, K = X.shape
+    E, K2, N = W.shape
+    assert K == K2, f"K mismatch: X K={K} vs W K={K2}"
 
-    C = torch.empty((total_M, N), device=A.device, dtype=A.dtype)
+    has_idx = indices is not None
+    if has_idx:
+        num_groups = B
+    else:
+        # No indices: identity expert map (group i -> weight i), matching the
+        # BL5 benchmark reference `cat([X[i] @ W[i] for i in zip(X, W)])`, whose
+        # zip truncates to min(B, E) groups. Process exactly that many.
+        num_groups = min(B, E)
 
-    BLOCK_M = 64
-    BLOCK_N = 64
-    BLOCK_K = 32
-    grid = (triton.cdiv(total_M, BLOCK_M), triton.cdiv(N, BLOCK_N))
+    C = torch.empty((num_groups, M, N), device=X.device, dtype=X.dtype)
+
+    big = max(M, N)
+    if big <= 128:
+        TILE_M, TILE_N, num_warps, num_stages = 128, 128, 4, 2
+    elif big <= 256:
+        TILE_M, TILE_N, num_warps, num_stages = 128, 128, 8, 2
+    else:
+        TILE_M, TILE_N, num_warps, num_stages = 128, 128, 8, 3
+    TILE_K = 64 if K <= 64 else 32
+
+    grid = (triton.cdiv(M, TILE_M), triton.cdiv(N, TILE_N), num_groups)
+
+    # When indices is None we still pass X as a dummy ptr (HAS_IDX=False makes
+    # the kernel ignore it); Triton needs a valid pointer arg regardless.
+    idx_arg = indices if has_idx else X
 
     {{ kernel_name }}_kernel[grid](
-        A, B, C,
-        group_offsets,
-        N, K, num_groups,
-        A.stride(0), B.stride(0), B.stride(1),
-        C.stride(1),
-        BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N, BLOCK_K=BLOCK_K,
+        X, W, idx_arg, C,
+        M, N, K,
+        X.stride(0), X.stride(1), X.stride(2),
+        W.stride(0), W.stride(1), W.stride(2),
+        C.stride(0), C.stride(1), C.stride(2),
+        HAS_IDX=has_idx,
+        TILE_M=TILE_M, TILE_N=TILE_N, TILE_K=TILE_K,
+        num_warps=num_warps, num_stages=num_stages,
     )
     return C
