@@ -1,0 +1,15 @@
+{
+  "ts": 1780796780.384198,
+  "layer": "l1",
+  "fingerprint": "6175a14307d58f44",
+  "elapsed_s": 626.0563812255859,
+  "per_op": {
+    "multi_latent_attention": {
+      "rows": 16,
+      "ok": 4,
+      "permanent_failure": 12,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

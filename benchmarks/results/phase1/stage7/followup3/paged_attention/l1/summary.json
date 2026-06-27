@@ -1,0 +1,42 @@
+{
+  "overall_geomean": 1.0,
+  "op_scores": {
+    "paged_attention": 1.0
+  },
+  "total_shapes": 8,
+  "operators": [
+    "paged_attention"
+  ],
+  "status_counts": {
+    "ok": 8,
+    "unsupported": 11,
+    "skipped": 5
+  },
+  "correctness_counts": {
+    "golden_unavailable_pending_baseline": 19,
+    "skipped": 5
+  },
+  "memory_policy_counts": {
+    "attention": 12,
+    "attention_fused": 12
+  },
+  "memory_pressure_rows": 5,
+  "perf_target_counts": {
+    "with_target": 24,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 8,
+    "unknown": 11,
+    "false": 5
+  },
+  "perf_targets": {
+    "paged_attention": 1.0
+  },
+  "perf_actuals": {
+    "paged_attention": 1.0
+  },
+  "perf_gaps": {
+    "paged_attention": 0.0
+  }
+}

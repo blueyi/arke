@@ -1,0 +1,16 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+grouped_query_attention,llama3-8b-512,PyTorch-eager,2186.8,2124.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+grouped_query_attention,llama3-8b-512,Arke,752.6,745.5,,2.9057,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.9057,true,1.9057
+grouped_query_attention,llama3-8b-512,FlagGems,1872.8,2499.5,,1.1677,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,1.1677,true,0.1677
+grouped_query_attention,llama3-8b-2k,PyTorch-eager,24415.7,24240.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
+grouped_query_attention,llama3-8b-2k,Arke,10577.1,10257.4,,2.3084,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,2.3084,true,1.3084
+grouped_query_attention,llama3-8b-2k,FlagGems,24575.1,24319.0,,0.9935,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,0.9935,false,-0.0065
+grouped_query_attention,mistral-7b-512,PyTorch-eager,1908.2,2427.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+grouped_query_attention,mistral-7b-512,Arke,771.9,738.3,,2.4721,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.4721,true,1.4721
+grouped_query_attention,mistral-7b-512,FlagGems,1913.9,1820.7,,0.9970,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,0.9970,false,-0.0030
+grouped_query_attention,qwen25-7b-512,PyTorch-eager,1765.7,2250.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
+grouped_query_attention,qwen25-7b-512,Arke,689.5,658.4,,2.5608,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,2.5608,true,1.5608
+grouped_query_attention,qwen25-7b-512,FlagGems,1763.2,2335.7,,1.0014,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,1.0014,true,0.0014
+grouped_query_attention,qwen25-7b-2k,PyTorch-eager,21459.0,21396.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,293601280,3542771302,0.0829,attention,1.0,1.0000,true,0.0000
+grouped_query_attention,qwen25-7b-2k,Arke,9296.0,9139.2,,2.3084,ok,,false,true,0,0,0.001,0.001,ok,,58720256,3542771302,0.0166,attention_fused,1.0,2.3084,true,1.3084
+grouped_query_attention,qwen25-7b-2k,FlagGems,21505.6,21042.2,,0.9978,ok,,false,true,0,0,0.001,0.001,ok,,58720256,3542771302,0.0166,attention_fused,1.0,0.9978,false,-0.0022

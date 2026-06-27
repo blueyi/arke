@@ -1,0 +1,68 @@
+{
+  "overall_geomean": 0.4493,
+  "op_scores": {
+    "batch_matmul": 0.3191,
+    "gelu_and_mul": 0.6359,
+    "grouped_matmul": 0.1431,
+    "grouped_query_attention": 0.7417,
+    "silu_and_mul": 0.6453
+  },
+  "total_shapes": 114,
+  "operators": [
+    "batch_matmul",
+    "gelu_and_mul",
+    "grouped_matmul",
+    "grouped_query_attention",
+    "silu_and_mul"
+  ],
+  "status_counts": {
+    "ok": 114,
+    "unsupported": 30,
+    "skipped": 6,
+    "timeout": 6
+  },
+  "correctness_counts": {
+    "ok": 106,
+    "unsupported": 26,
+    "error": 12,
+    "skipped": 6,
+    "timeout": 6
+  },
+  "memory_policy_counts": {
+    "dense_matmul": 57,
+    "none": 72,
+    "attention": 10,
+    "attention_fused": 17
+  },
+  "memory_pressure_rows": 6,
+  "perf_target_counts": {
+    "with_target": 156,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "false": 70,
+    "true": 50,
+    "unknown": 36
+  },
+  "perf_targets": {
+    "batch_matmul": 1.0,
+    "gelu_and_mul": 1.0,
+    "grouped_matmul": 1.0,
+    "grouped_query_attention": 1.0,
+    "silu_and_mul": 1.0
+  },
+  "perf_actuals": {
+    "batch_matmul": 0.3191,
+    "gelu_and_mul": 0.6359,
+    "grouped_matmul": 0.1431,
+    "grouped_query_attention": 0.7417,
+    "silu_and_mul": 0.6453
+  },
+  "perf_gaps": {
+    "batch_matmul": -0.5227,
+    "gelu_and_mul": -0.2976,
+    "grouped_matmul": -0.4725,
+    "grouped_query_attention": -0.2059,
+    "silu_and_mul": -0.2915
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "overall_geomean": 0.9226,
+  "op_scores": {
+    "silu_and_mul": 0.7246,
+    "swiglu_packed": 1.0
+  },
+  "total_shapes": 8,
+  "operators": [
+    "silu_and_mul",
+    "swiglu_packed"
+  ],
+  "status_counts": {
+    "unsupported": 7,
+    "ok": 8
+  },
+  "correctness_counts": {
+    "unsupported": 1,
+    "ok": 14
+  },
+  "memory_policy_counts": {
+    "none": 15
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 15,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "unknown": 7,
+    "true": 7,
+    "false": 1
+  },
+  "perf_targets": {
+    "silu_and_mul": 1.0,
+    "swiglu_packed": 1.0
+  },
+  "perf_actuals": {
+    "silu_and_mul": 0.7246,
+    "swiglu_packed": 1.0
+  },
+  "perf_gaps": {
+    "silu_and_mul": -0.2375,
+    "swiglu_packed": 0.0
+  }
+}

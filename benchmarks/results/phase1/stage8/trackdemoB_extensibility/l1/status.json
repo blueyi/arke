@@ -1,0 +1,22 @@
+{
+  "ts": 1782357987.4342315,
+  "layer": "l1",
+  "fingerprint": "54240fdd94121e2c",
+  "elapsed_s": 158.3024125099182,
+  "per_op": {
+    "matmul": {
+      "rows": 42,
+      "ok": 42,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "relu": {
+      "rows": 30,
+      "ok": 30,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{"ts": 1780810931.1831667, "event": "run_start", "layer": "l1", "fingerprint": "949ec09327e6d597", "ops": ["swiglu_packed"], "tier": 1, "resume": true, "retry_policy": "auto"}
+{"ts": 1780810931.1847875, "event": "phase_start", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "per_op_measurement", "op": "swiglu_packed"}
+{"ts": 1780810931.5655928, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_start", "op": "swiglu_packed", "shape_tag": "tiny", "baseline": "PyTorch-eager"}
+{"ts": 1780810931.9695299, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "tiny", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 55.55199980735779}
+{"ts": 1780810931.9698572, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_done", "op": "swiglu_packed", "shape_tag": "tiny", "baseline": "PyTorch-eager", "elapsed_s": 0.4, "outcome": "ok"}
+{"ts": 1780810931.9756389, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "tiny", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1780810931.9760425, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_start", "op": "swiglu_packed", "shape_tag": "gpt2-c_proj", "baseline": "PyTorch-eager"}
+{"ts": 1780810931.9869895, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "gpt2-c_proj", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 42.393600940704346}
+{"ts": 1780810931.9871798, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_done", "op": "swiglu_packed", "shape_tag": "gpt2-c_proj", "baseline": "PyTorch-eager", "elapsed_s": 0.01, "outcome": "ok"}
+{"ts": 1780810931.9919577, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "gpt2-c_proj", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1780810931.9923553, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_start", "op": "swiglu_packed", "shape_tag": "gpt2-c_attn", "baseline": "PyTorch-eager"}
+{"ts": 1780810932.004364, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "gpt2-c_attn", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 70.86079716682434}
+{"ts": 1780810932.004577, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_done", "op": "swiglu_packed", "shape_tag": "gpt2-c_attn", "baseline": "PyTorch-eager", "elapsed_s": 0.01, "outcome": "ok"}
+{"ts": 1780810932.0093102, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "gpt2-c_attn", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1780810932.0097034, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_start", "op": "swiglu_packed", "shape_tag": "square-1k", "baseline": "PyTorch-eager"}
+{"ts": 1780810932.0277343, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "square-1k", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 252.8831958770752}
+{"ts": 1780810932.0279744, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_done", "op": "swiglu_packed", "shape_tag": "square-1k", "baseline": "PyTorch-eager", "elapsed_s": 0.02, "outcome": "ok"}
+{"ts": 1780810932.033756, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "square-1k", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1780810932.0341938, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_start", "op": "swiglu_packed", "shape_tag": "square-2k", "baseline": "PyTorch-eager"}
+{"ts": 1780810932.0877156, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "square-2k", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 1003.0976295471193}
+{"ts": 1780810932.0879571, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_done", "op": "swiglu_packed", "shape_tag": "square-2k", "baseline": "PyTorch-eager", "elapsed_s": 0.05, "outcome": "ok"}
+{"ts": 1780810932.0972016, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "square-2k", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1780810932.0986793, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_start", "op": "swiglu_packed", "shape_tag": "square-4k", "baseline": "PyTorch-eager"}
+{"ts": 1780810932.4355087, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "square-4k", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 7321.395111083984}
+{"ts": 1780810932.435803, "event": "heartbeat", "layer": "l1", "fingerprint": "949ec09327e6d597", "event_kind": "measurement_done", "op": "swiglu_packed", "shape_tag": "square-4k", "baseline": "PyTorch-eager", "elapsed_s": 0.34, "outcome": "ok"}
+{"ts": 1780810932.470114, "event": "measurement", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "shape_tag": "square-4k", "baseline": "Arke", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1780810932.4712186, "event": "phase_end", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "per_op_measurement", "elapsed_s": 1.29, "op": "swiglu_packed"}
+{"ts": 1780810932.4713004, "event": "phase_start", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "per_op_postprocess", "op": "swiglu_packed"}
+{"ts": 1780810932.4720533, "event": "phase_end", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "per_op_postprocess", "elapsed_s": 0.0, "op": "swiglu_packed"}
+{"ts": 1780810932.4721482, "event": "op_done", "layer": "l1", "fingerprint": "949ec09327e6d597", "op": "swiglu_packed", "skipped": 0, "new": 12, "total": 12}
+{"ts": 1780810932.472217, "event": "phase_start", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "post_measurement"}
+{"ts": 1780810932.4722528, "event": "phase_start", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "merge_perf_all"}
+{"ts": 1780810932.4728143, "event": "phase_end", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "merge_perf_all", "elapsed_s": 0.0}
+{"ts": 1780810932.4728723, "event": "phase_start", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "write_summary"}
+{"ts": 1780810932.4731748, "event": "phase_end", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "write_summary", "elapsed_s": 0.0}
+{"ts": 1780810932.4732237, "event": "phase_start", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "per_op_summary"}
+{"ts": 1780810932.4733768, "event": "phase_end", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "per_op_summary", "elapsed_s": 0.0}
+{"ts": 1780810932.4735105, "event": "run_done", "layer": "l1", "fingerprint": "949ec09327e6d597", "per_op": {"swiglu_packed": {"rows": 12, "ok": 6, "permanent_failure": 6, "retryable_failure": 0, "other": 0}}}
+{"ts": 1780810932.4735584, "event": "phase_end", "layer": "l1", "fingerprint": "949ec09327e6d597", "phase": "post_measurement", "elapsed_s": 0.0}
+{"ts": 1780810954.1107154, "event": "run_start", "layer": "l1", "fingerprint": "d35585843bc314b9", "ops": ["silu_and_mul"], "tier": 1, "resume": true, "retry_policy": "auto"}
+{"ts": 1780810954.1121686, "event": "phase_start", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "per_op_measurement", "op": "silu_and_mul"}
+{"ts": 1780810954.380425, "event": "measurement", "layer": "l1", "fingerprint": "d35585843bc314b9", "op": "silu_and_mul", "shape_tag": "gpt2-sm", "baseline": "Liger-Kernel", "status": "unsupported", "latency_us": Infinity}
+{"ts": 1780810954.381055, "event": "heartbeat", "layer": "l1", "fingerprint": "d35585843bc314b9", "event_kind": "measurement_start", "op": "silu_and_mul", "shape_tag": "gpt2-sm", "baseline": "PyTorch-eager"}
+{"ts": 1780810954.4700348, "event": "measurement", "layer": "l1", "fingerprint": "d35585843bc314b9", "op": "silu_and_mul", "shape_tag": "gpt2-sm", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 6.3231997191905975}
+{"ts": 1780810954.470324, "event": "heartbeat", "layer": "l1", "fingerprint": "d35585843bc314b9", "event_kind": "measurement_done", "op": "silu_and_mul", "shape_tag": "gpt2-sm", "baseline": "PyTorch-eager", "elapsed_s": 0.09, "outcome": "ok"}
+{"ts": 1780810954.476729, "event": "heartbeat", "layer": "l1", "fingerprint": "d35585843bc314b9", "event_kind": "measurement_start", "op": "silu_and_mul", "shape_tag": "gpt2-sm", "baseline": "Arke"}
+{"ts": 1780810954.483601, "event": "measurement", "layer": "l1", "fingerprint": "d35585843bc314b9", "op": "silu_and_mul", "shape_tag": "gpt2-sm", "baseline": "Arke", "status": "ok", "latency_us": 11.974400281906128}
+{"ts": 1780810954.4837976, "event": "heartbeat", "layer": "l1", "fingerprint": "d35585843bc314b9", "event_kind": "measurement_done", "op": "silu_and_mul", "shape_tag": "gpt2-sm", "baseline": "Arke", "elapsed_s": 0.01, "outcome": "ok"}
+{"ts": 1780810954.4840763, "event": "phase_end", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "per_op_measurement", "elapsed_s": 0.37, "op": "silu_and_mul"}
+{"ts": 1780810954.4841466, "event": "phase_start", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "per_op_postprocess", "op": "silu_and_mul"}
+{"ts": 1780810954.4846163, "event": "phase_end", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "per_op_postprocess", "elapsed_s": 0.0, "op": "silu_and_mul"}
+{"ts": 1780810954.484681, "event": "op_done", "layer": "l1", "fingerprint": "d35585843bc314b9", "op": "silu_and_mul", "skipped": 0, "new": 3, "total": 3}
+{"ts": 1780810954.484733, "event": "phase_start", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "post_measurement"}
+{"ts": 1780810954.484766, "event": "phase_start", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "merge_perf_all"}
+{"ts": 1780810954.485282, "event": "phase_end", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "merge_perf_all", "elapsed_s": 0.0}
+{"ts": 1780810954.4854608, "event": "phase_start", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "write_summary"}
+{"ts": 1780810954.4858432, "event": "phase_end", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "write_summary", "elapsed_s": 0.0}
+{"ts": 1780810954.4858997, "event": "phase_start", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "per_op_summary"}
+{"ts": 1780810954.4860013, "event": "phase_end", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "per_op_summary", "elapsed_s": 0.0}
+{"ts": 1780810954.4861007, "event": "run_done", "layer": "l1", "fingerprint": "d35585843bc314b9", "per_op": {"silu_and_mul": {"rows": 3, "ok": 2, "permanent_failure": 1, "retryable_failure": 0, "other": 0}}}
+{"ts": 1780810954.4861403, "event": "phase_end", "layer": "l1", "fingerprint": "d35585843bc314b9", "phase": "post_measurement", "elapsed_s": 0.0}

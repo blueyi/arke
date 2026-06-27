@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-07_134233",
+  "ops": [
+    "silu_and_mul"
+  ],
+  "warmup": 3,
+  "reps": 5,
+  "tier": 1,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 6,
+  "track": "g6",
+  "layer": "L1"
+}

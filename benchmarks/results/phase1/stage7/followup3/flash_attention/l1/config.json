@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-06_211836",
+  "ops": [
+    "flash_attention"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 6,
+  "track": "1",
+  "layer": "L1"
+}

@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-06-25_112349",
+  "ops": [
+    "matmul",
+    "relu"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 1,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 8,
+  "track": "demoB_extensibility",
+  "layer": "L1"
+}

@@ -1,0 +1,15 @@
+{
+  "ts": 1780796798.1894279,
+  "layer": "l1",
+  "fingerprint": "3429187ada779974",
+  "elapsed_s": 14.476679801940918,
+  "per_op": {
+    "paged_attention": {
+      "rows": 24,
+      "ok": 8,
+      "permanent_failure": 16,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

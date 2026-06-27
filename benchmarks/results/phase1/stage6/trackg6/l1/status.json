@@ -1,0 +1,15 @@
+{
+  "ts": 1780810954.4860377,
+  "layer": "l1",
+  "fingerprint": "d35585843bc314b9",
+  "elapsed_s": 0.5068974494934082,
+  "per_op": {
+    "silu_and_mul": {
+      "rows": 3,
+      "ok": 2,
+      "permanent_failure": 1,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

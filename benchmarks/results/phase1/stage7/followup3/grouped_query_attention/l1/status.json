@@ -1,0 +1,15 @@
+{
+  "ts": 1780800922.341945,
+  "layer": "l1",
+  "fingerprint": "3ab05a3f71bc053e",
+  "elapsed_s": 282.59702038764954,
+  "per_op": {
+    "grouped_query_attention": {
+      "rows": 15,
+      "ok": 15,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

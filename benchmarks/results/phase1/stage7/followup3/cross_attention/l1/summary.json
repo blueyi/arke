@@ -1,0 +1,41 @@
+{
+  "overall_geomean": 1.6966,
+  "op_scores": {
+    "cross_attention": 1.6966
+  },
+  "total_shapes": 33,
+  "operators": [
+    "cross_attention"
+  ],
+  "status_counts": {
+    "ok": 35,
+    "skipped": 1
+  },
+  "correctness_counts": {
+    "ok": 35,
+    "skipped": 1
+  },
+  "memory_policy_counts": {
+    "attention": 12,
+    "attention_fused": 24
+  },
+  "memory_pressure_rows": 1,
+  "perf_target_counts": {
+    "with_target": 36,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 28,
+    "false": 6,
+    "unknown": 2
+  },
+  "perf_targets": {
+    "cross_attention": 1.0
+  },
+  "perf_actuals": {
+    "cross_attention": 1.6966
+  },
+  "perf_gaps": {
+    "cross_attention": 1.7982
+  }
+}

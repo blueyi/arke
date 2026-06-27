@@ -1,0 +1,38 @@
+{
+  "overall_geomean": 1.3707,
+  "op_scores": {
+    "grouped_query_attention": 1.3707
+  },
+  "total_shapes": 15,
+  "operators": [
+    "grouped_query_attention"
+  ],
+  "status_counts": {
+    "ok": 15
+  },
+  "correctness_counts": {
+    "ok": 15
+  },
+  "memory_policy_counts": {
+    "attention": 5,
+    "attention_fused": 10
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 15,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 12,
+    "false": 3
+  },
+  "perf_targets": {
+    "grouped_query_attention": 1.0
+  },
+  "perf_actuals": {
+    "grouped_query_attention": 1.3707
+  },
+  "perf_gaps": {
+    "grouped_query_attention": 0.5142
+  }
+}

@@ -1,0 +1,115 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+rmsnorm,gpt2-small,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-small,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-small,,,,,1.0,,,
+rmsnorm,gpt2-small,Liger-Kernel,86.7,6.1,,0.8120,ok,,false,true,0.00390625,0.000142644,0.005,0.005,ok,,,,,,1.0,0.8120,false,-0.1880
+rmsnorm,gpt2-small,PyTorch-eager,70.4,78.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-small,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-small,false,true,0.00390625,0.000170376,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-small,,,,,1.0,,,
+rmsnorm,gpt2-small,Arke,51.9,74.9,,1.3565,ok,,false,true,0.00250459,0.000206498,0.005,0.005,ok,,,,,,1.0,1.3565,true,0.3565
+rmsnorm,gpt2-small,FlagGems,518.9,508.9,,0.1357,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1357,false,-0.8643
+rmsnorm,gpt2-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-ffn,,,,,1.0,,,
+rmsnorm,gpt2-ffn,Liger-Kernel,77.4,11.3,,0.9884,ok,,false,true,0.00390625,0.000154652,0.005,0.005,ok,,,,,,1.0,0.9884,false,-0.0116
+rmsnorm,gpt2-ffn,PyTorch-eager,76.5,61.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-ffn,false,true,0.00390625,0.000155846,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-ffn,,,,,1.0,,,
+rmsnorm,gpt2-ffn,Arke,53.5,12.3,,1.4299,ok,,false,true,0.00344324,0.000203084,0.005,0.005,ok,,,,,,1.0,1.4299,true,0.4299
+rmsnorm,gpt2-ffn,FlagGems,514.9,451.6,,0.1486,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1486,false,-0.8514
+rmsnorm,gpt2-medium,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-medium,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-medium,,,,,1.0,,,
+rmsnorm,gpt2-medium,Liger-Kernel,80.0,8.2,,0.8300,ok,,false,true,0.00195312,0.000157851,0.005,0.005,ok,,,,,,1.0,0.8300,false,-0.1700
+rmsnorm,gpt2-medium,PyTorch-eager,66.4,69.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-medium,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-medium,false,true,0.00390625,0.000168643,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-medium,,,,,1.0,,,
+rmsnorm,gpt2-medium,Arke,53.9,72.6,,1.2319,ok,,false,true,0.00253034,0.000214576,0.005,0.005,ok,,,,,,1.0,1.2319,true,0.2319
+rmsnorm,gpt2-medium,FlagGems,521.5,516.1,,0.1273,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1273,false,-0.8727
+rmsnorm,llama-7b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-7b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-7b,,,,,1.0,,,
+rmsnorm,llama-7b,Liger-Kernel,76.9,92.2,,0.9857,ok,,false,true,0.00390625,0.000140157,0.005,0.005,ok,,,,,,1.0,0.9857,false,-0.0143
+rmsnorm,llama-7b,PyTorch-eager,75.8,69.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-7b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-7b,false,true,0.00390625,0.000156287,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-7b,,,,,1.0,,,
+rmsnorm,llama-7b,Arke,49.2,67.6,,1.5407,ok,,false,true,0.00295687,0.000206337,0.005,0.005,ok,,,,,,1.0,1.5407,true,0.5407
+rmsnorm,llama-7b,FlagGems,527.1,510.1,,0.1438,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1438,false,-0.8562
+rmsnorm,llama-13b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-13b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-13b,,,,,1.0,,,
+rmsnorm,llama-13b,Liger-Kernel,80.0,101.4,,1.2637,ok,,false,true,0.00390625,0.00015091,0.005,0.005,ok,,,,,,1.0,1.2637,true,0.2637
+rmsnorm,llama-13b,PyTorch-eager,101.1,79.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-13b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-13b,false,true,0.00390625,0.000159947,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-13b,,,,,1.0,,,
+rmsnorm,llama-13b,Arke,51.4,69.6,,1.9669,ok,,false,true,0.00339031,0.000206755,0.005,0.005,ok,,,,,,1.0,1.9669,true,0.9669
+rmsnorm,llama-13b,FlagGems,528.5,504.8,,0.1913,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1913,false,-0.8087
+rmsnorm,llama-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-long,,,,,1.0,,,
+rmsnorm,llama-long,Liger-Kernel,128.7,135.2,,4.0124,ok,,false,true,0.00390625,0.00015449,0.005,0.005,ok,,,,,,1.0,4.0124,true,3.0124
+rmsnorm,llama-long,PyTorch-eager,516.4,486.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-long,false,true,0.00390625,0.000157831,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-long,,,,,1.0,,,
+rmsnorm,llama-long,Arke,111.0,115.7,,4.6523,ok,,false,true,0.00429678,0.000203531,0.005,0.005,ok,,,,,,1.0,4.6523,true,3.6523
+rmsnorm,llama-long,FlagGems,638.7,685.0,,0.8085,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8085,false,-0.1915
+rmsnorm,ds-v2,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2,,,,,1.0,,,
+rmsnorm,ds-v2,Liger-Kernel,77.3,103.4,,1.1604,ok,,false,true,0.00390625,0.000142584,0.005,0.005,ok,,,,,,1.0,1.1604,true,0.1604
+rmsnorm,ds-v2,PyTorch-eager,89.7,82.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v2,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v2,false,true,0.00390625,0.000137295,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v2,,,,,1.0,,,
+rmsnorm,ds-v2,Arke,55.7,66.6,,1.6104,ok,,false,true,0.00283718,0.000207821,0.005,0.005,ok,,,,,,1.0,1.6104,true,0.6104
+rmsnorm,ds-v2,FlagGems,517.7,504.8,,0.1733,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1733,false,-0.8267
+rmsnorm,ds-v3,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3,,,,,1.0,,,
+rmsnorm,ds-v3,Liger-Kernel,81.1,66.6,,1.2059,ok,,false,true,0.00390625,0.000148918,0.005,0.005,ok,,,,,,1.0,1.2059,true,0.2059
+rmsnorm,ds-v3,PyTorch-eager,97.8,97.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v3,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v3,false,true,0.00390625,0.000149592,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v3,,,,,1.0,,,
+rmsnorm,ds-v3,Arke,61.2,23.6,,1.5980,ok,,false,true,0.00292158,0.000207448,0.005,0.005,ok,,,,,,1.0,1.5980,true,0.5980
+rmsnorm,ds-v3,FlagGems,526.4,385.1,,0.1858,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1858,false,-0.8142
+rmsnorm,mixtral-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@mixtral-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@mixtral-ffn,,,,,1.0,,,
+rmsnorm,mixtral-ffn,Liger-Kernel,110.8,91.1,,1.3809,ok,,false,true,0.00390625,0.00014736,0.005,0.005,ok,,,,,,1.0,1.3809,true,0.3809
+rmsnorm,mixtral-ffn,PyTorch-eager,153.0,149.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,mixtral-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@mixtral-ffn,false,true,0.00390625,0.000151082,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@mixtral-ffn,,,,,1.0,,,
+rmsnorm,mixtral-ffn,Arke,50.9,90.1,,3.0059,ok,,false,true,0.00414658,0.000199122,0.005,0.005,ok,,,,,,1.0,3.0059,true,2.0059
+rmsnorm,mixtral-ffn,FlagGems,509.7,494.6,,0.3002,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3002,false,-0.6998
+softmax,attn-gpt2-128,cuBLAS/cuDNN,10.8,6.1,,0.9259,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9259,false,-0.0741
+softmax,attn-gpt2-128,Triton-Tutorial,65.3,82.9,,0.1531,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1531,false,-0.8469
+softmax,attn-gpt2-128,PyTorch-eager,10.0,7.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-128,torch.compile,117.3,15.4,,0.0853,ok,,false,true,4.76837e-07,3.10441e-10,0.005,0.005,ok,,,,,,1.0,0.0853,false,-0.9147
+softmax,attn-gpt2-128,Arke,59.9,70.7,,0.1669,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1669,false,-0.8331
+softmax,attn-gpt2-128,FlagGems,85.2,9.2,,0.1174,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1174,false,-0.8826
+softmax,attn-gpt2-256,cuBLAS/cuDNN,13.6,25.6,,1.0147,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0147,true,0.0147
+softmax,attn-gpt2-256,Triton-Tutorial,79.1,9.2,,0.1745,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1745,false,-0.8255
+softmax,attn-gpt2-256,PyTorch-eager,13.8,7.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-256,torch.compile,133.5,147.5,,0.1034,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1034,false,-0.8966
+softmax,attn-gpt2-256,Arke,66.2,63.5,,0.2085,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2085,false,-0.7915
+softmax,attn-gpt2-256,FlagGems,42.1,60.4,,0.3278,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3278,false,-0.6722
+softmax,attn-gpt2-512,cuBLAS/cuDNN,13.5,21.5,,0.8593,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8593,false,-0.1407
+softmax,attn-gpt2-512,Triton-Tutorial,83.3,5.1,,0.1393,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1393,false,-0.8607
+softmax,attn-gpt2-512,PyTorch-eager,11.6,7.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-512,torch.compile,117.0,140.2,,0.0991,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.0991,false,-0.9009
+softmax,attn-gpt2-512,Arke,48.3,12.3,,0.2402,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2402,false,-0.7598
+softmax,attn-gpt2-512,FlagGems,47.4,61.3,,0.2447,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2447,false,-0.7553
+softmax,attn-llama-512,cuBLAS/cuDNN,11.6,7.2,,0.9483,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9483,false,-0.0517
+softmax,attn-llama-512,Triton-Tutorial,60.1,79.9,,0.1830,ok,,false,true,9.53674e-07,1.74623e-10,0.005,0.005,ok,,,,,,1.0,0.1830,false,-0.8170
+softmax,attn-llama-512,PyTorch-eager,11.0,7.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-512,torch.compile,129.6,123.9,,0.0849,ok,,false,true,9.53674e-07,1.01863e-10,0.005,0.005,ok,,,,,,1.0,0.0849,false,-0.9151
+softmax,attn-llama-512,Arke,53.2,65.5,,0.2068,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2068,false,-0.7932
+softmax,attn-llama-512,FlagGems,87.1,21.5,,0.1263,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1263,false,-0.8737
+softmax,attn-llama-2k,cuBLAS/cuDNN,15.4,15.4,,1.0390,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0390,true,0.0390
+softmax,attn-llama-2k,Triton-Tutorial,61.3,57.3,,0.2610,ok,,false,true,1.90735e-06,6.18456e-11,0.005,0.005,ok,,,,,,1.0,0.2610,false,-0.7390
+softmax,attn-llama-2k,PyTorch-eager,16.0,15.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-2k,torch.compile,126.7,150.5,,0.1263,ok,,false,true,2.38419e-07,1.18234e-11,0.005,0.005,ok,,,,,,1.0,0.1263,false,-0.8737
+softmax,attn-llama-2k,Arke,46.8,61.4,,0.3419,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3419,false,-0.6581
+softmax,attn-llama-2k,FlagGems,77.8,60.4,,0.2057,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2057,false,-0.7943
+softmax,attn-llama-4k,cuBLAS/cuDNN,20.5,16.4,,0.8244,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8244,false,-0.1756
+softmax,attn-llama-4k,Triton-Tutorial,62.3,77.8,,0.2713,ok,,false,true,9.53674e-07,2.68301e-11,0.005,0.005,ok,,,,,,1.0,0.2713,false,-0.7287
+softmax,attn-llama-4k,PyTorch-eager,16.9,16.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-4k,torch.compile,127.2,151.6,,0.1329,ok,,false,true,2.38419e-07,1.54614e-11,0.005,0.005,ok,,,,,,1.0,0.1329,false,-0.8671
+softmax,attn-llama-4k,Arke,47.8,13.3,,0.3536,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3536,false,-0.6464
+softmax,attn-llama-4k,FlagGems,86.0,32.8,,0.1965,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1965,false,-0.8035
+softmax,wide-vocab-gpt2,cuBLAS/cuDNN,99.0,36.9,,1.6505,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.6505,true,0.6505
+softmax,wide-vocab-gpt2,Triton-Tutorial,inf,inf,,,unsupported,Triton-Tutorial.get_fn declined softmax@wide-vocab-gpt2,false,true,0,0,0.005,0.005,ok,Triton-Tutorial.get_fn declined softmax@wide-vocab-gpt2,,,,,1.0,,,
+softmax,wide-vocab-gpt2,PyTorch-eager,163.4,36.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,wide-vocab-gpt2,torch.compile,119.4,52.2,,1.3685,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.3685,true,0.3685
+softmax,wide-vocab-gpt2,Arke,100.1,127.0,,1.6324,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.6324,true,0.6324
+softmax,wide-vocab-gpt2,FlagGems,88.6,69.6,,1.8442,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.8442,true,0.8442
+softmax,wide-vocab-llama3,cuBLAS/cuDNN,90.0,92.2,,0.8600,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8600,false,-0.1400
+softmax,wide-vocab-llama3,Triton-Tutorial,inf,inf,,,unsupported,Triton-Tutorial.get_fn declined softmax@wide-vocab-llama3,false,,,,0.005,0.005,error,"out of resource: shared memory, Required: 262176, Hardware limit: 101376. Reducing block sizes or `num_stages` may help.",,,,,1.0,,,
+softmax,wide-vocab-llama3,PyTorch-eager,77.4,77.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,wide-vocab-llama3,torch.compile,137.3,85.0,,0.5637,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.5637,false,-0.4363
+softmax,wide-vocab-llama3,Arke,61.9,53.2,,1.2504,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.2504,true,0.2504
+softmax,wide-vocab-llama3,FlagGems,84.0,117.8,,0.9214,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9214,false,-0.0786
+softmax,batch-large,cuBLAS/cuDNN,31.4,33.8,,1.0191,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0191,true,0.0191
+softmax,batch-large,Triton-Tutorial,65.9,81.9,,0.4856,ok,,false,true,4.76837e-07,1.98952e-11,0.005,0.005,ok,,,,,,1.0,0.4856,false,-0.5144
+softmax,batch-large,PyTorch-eager,32.0,33.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,batch-large,torch.compile,130.1,101.4,,0.2460,ok,,false,true,9.53674e-07,2.16005e-11,0.005,0.005,ok,,,,,,1.0,0.2460,false,-0.7540
+softmax,batch-large,Arke,46.5,61.4,,0.6882,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6882,false,-0.3118
+softmax,batch-large,FlagGems,44.0,55.3,,0.7273,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7273,false,-0.2727
+softmax,square-4k,cuBLAS/cuDNN,651.6,605.2,,0.8396,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8396,false,-0.1604
+softmax,square-4k,Triton-Tutorial,222.8,222.2,,2.4556,ok,,false,true,3.8147e-06,1.92806e-11,0.005,0.005,ok,,,,,,1.0,2.4556,true,1.4556
+softmax,square-4k,PyTorch-eager,547.1,501.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,square-4k,torch.compile,613.0,575.4,,0.8925,ok,,false,true,3.8147e-06,2.0421e-11,0.005,0.005,ok,,,,,,1.0,0.8925,false,-0.1075
+softmax,square-4k,Arke,215.9,216.1,,2.5340,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,2.5340,true,1.5340
+softmax,square-4k,FlagGems,224.3,229.4,,2.4391,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,2.4391,true,1.4391

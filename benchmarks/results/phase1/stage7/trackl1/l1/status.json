@@ -1,0 +1,15 @@
+{
+  "ts": 1781828997.6652517,
+  "layer": "l1",
+  "fingerprint": "266e899a5d2dd95a",
+  "elapsed_s": 40.019705057144165,
+  "per_op": {
+    "softmax": {
+      "rows": 60,
+      "ok": 58,
+      "permanent_failure": 2,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

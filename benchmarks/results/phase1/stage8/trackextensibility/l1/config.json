@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-06_075121",
+  "ops": [
+    "swiglu_packed"
+  ],
+  "warmup": 5,
+  "reps": 30,
+  "tier": 1,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 8,
+  "track": "extensibility",
+  "layer": "L1"
+}

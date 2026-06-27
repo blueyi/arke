@@ -1,0 +1,15 @@
+{
+  "ts": 1780703484.5456152,
+  "layer": "l1",
+  "fingerprint": "af87cbe765900bd4",
+  "elapsed_s": 3.2457070350646973,
+  "per_op": {
+    "swiglu_packed": {
+      "rows": 12,
+      "ok": 6,
+      "permanent_failure": 6,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}
