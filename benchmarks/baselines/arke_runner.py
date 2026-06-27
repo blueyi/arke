@@ -450,11 +450,36 @@ class ArkeRunner(BaselineRunner):
             B = torch.randn(max(K, 1), N, device=device, dtype=dtype)
             return (A, B)
         if op == "batch_matmul":
+            # Prefer canonical (batch, M, K, N) from runtime context. The
+            # generic M/N/K squash overwrites the batch dim with K and
+            # mislabels M/N, producing a wrong-shaped workload (the perf path
+            # diverged from the correctness path, which already uses the
+            # runtime ctx). See s7f1-shape-encoding.
+            from benchmarks.baselines._runtime_ctx import get_current_shape
+            shape = get_current_shape()
+            if shape is not None and all(
+                hasattr(shape, a) for a in ("B", "M", "K", "N")
+            ) and not hasattr(shape, "E"):
+                A = torch.randn(shape.B, shape.M, shape.K, device=device, dtype=dtype)
+                Bt = torch.randn(shape.B, shape.K, shape.N, device=device, dtype=dtype)
+                return (A, Bt)
+            # Fallback (no ctx, e.g. unit tests): legacy squash convention.
             B_dim = max(K, 4)
             A = torch.randn(B_dim, M, N, device=device, dtype=dtype)
             Bt = torch.randn(B_dim, N, N, device=device, dtype=dtype)
             return (A, Bt)
         if op == "grouped_matmul":
+            # Prefer canonical (B, E, M, K, N) from runtime context.
+            from benchmarks.baselines._runtime_ctx import get_current_shape
+            shape = get_current_shape()
+            if shape is not None and all(
+                hasattr(shape, a) for a in ("B", "E", "M", "K", "N")
+            ):
+                A = torch.randn(shape.B, shape.M, shape.K, device=device, dtype=dtype)
+                W = torch.randn(shape.E, shape.K, shape.N, device=device, dtype=dtype)
+                idx = torch.randint(0, shape.E, (shape.B,), device=device, dtype=torch.int64)
+                return (A, W, idx)
+            # Fallback (no ctx): legacy squash convention.
             E = 4
             B_dim = max(M, 1)
             A = torch.randn(B_dim, N, max(K, 1), device=device, dtype=dtype)
@@ -532,6 +557,14 @@ class ArkeRunner(BaselineRunner):
 
         # ── gated activations (OT3) ───────────────────────────────
         if op in ("silu_and_mul", "gelu_and_mul"):
+            # Prefer canonical (seq, ffn_x2) from runtime context. GatedShape
+            # has no M/N/K, so the generic squash measures a microscopic
+            # randn(M, 2N) workload unrelated to gpt2-sm / llama-7b (perf path
+            # diverged from correctness path). See s7f1-shape-encoding.
+            from benchmarks.baselines._runtime_ctx import get_current_shape
+            shape = get_current_shape()
+            if shape is not None and hasattr(shape, "seq") and hasattr(shape, "ffn_x2"):
+                return (torch.randn(shape.seq, shape.ffn_x2, device=device, dtype=dtype),)
             return (torch.randn(M, N * 2, device=device, dtype=dtype),)
 
         # ── attention (OT4) ────────────────────────────────────────
