@@ -69,7 +69,7 @@ where `runner.supports(op) and runner.available`.
 | matmul         | cuBLAS                  | FlagGems / Triton-Tutorial |
 | batch_matmul   | cuBLAS                  | FlagGems           |
 | grouped_matmul | FlagGems (P1)           | PyTorch-eager      |
-| transpose      | cuBLAS                  | FlagGems           |
+| transpose      | cuBLAS                  | FlagGems           | audit-only for Gate (no Triton-only golden; cuBLAS≠Triton). Baselines must materialize (.contiguous()) — a lazy .T view is O(1) and yields a bogus ~0.01× ratio vs Arke's materializing kernel. Fair micro-bench: Arke 3.09× vs eager-contiguous at 4096². See harness-perf-shape-encoding-bug.md |
 | concat         | FlagGems (P1)           | PyTorch-eager      |
 | split          | PyTorch-eager (P3)      | —                  | view op; bandwidth-only |
 | gather         | FlagGems (P1)           | PyTorch-eager      |

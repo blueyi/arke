@@ -362,7 +362,14 @@ class PyTorchEagerRunner(BaselineRunner):
 
         elif op == "transpose":
             X = torch.randn(M, N, device="cuda", dtype=dtype)
-            return lambda: X.T
+            # Materialize (.contiguous()): Arke's transpose kernel writes a real
+            # transposed tensor, so the eager baseline must also materialize for
+            # an apples-to-apples ratio. A bare X.T is a lazy O(1) view (~1us, no
+            # data movement) — comparing Arke's materializing kernel against it
+            # produced the bogus ~0.01x ratio. cublas/flaggems already use
+            # .contiguous(). See docs/benchmark/harness-perf-shape-encoding-bug.md
+            # and the transpose audit-only note in benchmark-protocol.md.
+            return lambda: X.T.contiguous()
 
         elif op == "concat":
             A = torch.randn(M, N, device="cuda", dtype=dtype)
@@ -398,7 +405,9 @@ class PyTorchEagerRunner(BaselineRunner):
             # 3D tensor: (M, N, K) → (M, K, N)
             dim2 = max(K, 64)
             X = torch.randn(M, N, dim2, device="cuda", dtype=dtype)
-            return lambda: X.permute(0, 2, 1)
+            # Materialize: like transpose, a bare permute is a lazy view. Arke
+            # writes a real permuted tensor, so materialize for a fair ratio.
+            return lambda: X.permute(0, 2, 1).contiguous()
 
         elif op == "copy_":
             X = torch.randn(M, N, device="cuda", dtype=dtype)
