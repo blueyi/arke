@@ -9,6 +9,7 @@ dequantize_per_channel: X[M,N] int8 + scales[N] → Y[M,N] f16
 import torch
 import triton
 import triton.language as tl
+from triton.language.extra.cuda import libdevice
 
 
 {% if quant_op == "quantize" %}
@@ -59,10 +60,12 @@ def {{ kernel_name }}_quant_kernel(
     scale = tl.load(Scales_ptr + pid_m)
     x = tl.load(X_ptr + pid_m * stride_xm + offs_n * stride_xn, mask=mask, other=0.0)
 
-    # Quantize to int8 range [-127, 127]
+    # Quantize to int8. ref_quantize_per_token uses torch.round (round-half-
+    # to-even) then clamp(-128, 127). libdevice.rint is the round-half-to-even
+    # equivalent; tl.math.nearbyint does not exist in Triton 3.2.
     x_f32 = x.to(tl.float32)
-    q = tl.math.nearbyint(x_f32 / scale)
-    q = tl.maximum(tl.minimum(q, 127.0), -127.0)
+    q = libdevice.rint(x_f32 / scale)
+    q = tl.maximum(tl.minimum(q, 127.0), -128.0)
 
     tl.store(Y_ptr + pid_m * stride_ym + offs_n * stride_yn, q.to(tl.int8), mask=mask)
 
@@ -101,18 +104,19 @@ def {{ kernel_name }}(X: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 {% elif quant_op == "dequantize" %}
 @triton.jit
 def {{ kernel_name }}_kernel(
-    X_ptr, Scales_ptr, Y_ptr,
+    X_ptr, Scales_ptr, ZP_ptr, Y_ptr,
     M, N, n_elements,
     stride_xm, stride_xn,
     stride_ym, stride_yn,
+    HAS_ZP: tl.constexpr,
     BLOCK: tl.constexpr,
 ):
     """Dequantize per channel over flattened index space.
 
-    Y[m, n] = X_int8[m, n] * scales[n]. For flat index e in [0, M*N):
-    row = e // N, col = e % N. 1D flatten saturates SM occupancy regardless
-    of the M/N split (the old 2D grid + fixed BLOCK_M=32 under-occupied small
-    and wide-N shapes).
+    Y[m, n] = (X_int8[m, n] - zero_point[n]) * scales[n]. For flat index e in
+    [0, M*N): row = e // N, col = e % N. 1D flatten saturates SM occupancy
+    regardless of the M/N split (the old 2D grid + fixed BLOCK_M=32
+    under-occupied small and wide-N shapes). zero_point is optional (HAS_ZP).
     """
     pid = tl.program_id(0)
     offs = pid * BLOCK + tl.arange(0, BLOCK)
@@ -126,30 +130,46 @@ def {{ kernel_name }}_kernel(
     ).to(tl.float32)
     scales = tl.load(Scales_ptr + col, mask=mask, other=1.0)
 
+    if HAS_ZP:
+        zp = tl.load(ZP_ptr + col, mask=mask, other=0).to(tl.float32)
+        x = x - zp
+
     y = (x * scales).to(Y_ptr.dtype.element_ty)
 
     tl.store(Y_ptr + row * stride_ym + col * stride_yn, y, mask=mask)
 
 
-def {{ kernel_name }}(X: torch.Tensor, scales: torch.Tensor) -> torch.Tensor:
-    """Dequantize per channel: X_int8[M,N] * scales[N] -> Y[M,N]."""
+def {{ kernel_name }}(
+    X: torch.Tensor, scales: torch.Tensor, zero_point: torch.Tensor = None
+) -> torch.Tensor:
+    """Dequantize per channel: (X_int8[M,N] - zp[N]) * scales[N] -> Y[M,N].
+
+    Per the schema Y[i,j] = (X_int8[i,j] - zero_point[j]) * scale[j].
+    zero_point is optional (symmetric quant omits it; the BL5 reference also
+    omits it). Tensor-only signature so the backend can dispatch it.
+    """
     assert X.ndim == 2
     M, N = X.shape
-    # Output fp16 per the dequantize_per_channel schema (Tensor[M,N] f16) —
-    # halves write bandwidth vs fp32 on this memory-bound kernel. scales stay
-    # fp32 for the multiply; only the stored result is downcast.
+    # Output fp16 per the schema (Tensor[M,N] f16) — halves write bandwidth vs
+    # fp32 on this memory-bound kernel. scales stay fp32 for the multiply.
     Y = torch.empty((M, N), device=X.device, dtype=torch.float16)
     n_elements = M * N
+
+    has_zp = zero_point is not None
+    # Triton needs a valid pointer even when HAS_ZP is False; pass scales as a
+    # dummy (it is ignored when HAS_ZP=False).
+    zp_arg = zero_point if has_zp else scales
 
     BLOCK = 1024
     num_warps = 4
     grid = (triton.cdiv(n_elements, BLOCK),)
 
     {{ kernel_name }}_kernel[grid](
-        X, scales, Y,
+        X, scales, zp_arg, Y,
         M, N, n_elements,
         X.stride(0), X.stride(1),
         Y.stride(0), Y.stride(1),
+        HAS_ZP=has_zp,
         BLOCK=BLOCK,
         num_warps=num_warps,
     )

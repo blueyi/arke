@@ -122,10 +122,11 @@ def test_scatter():
 def test_quantize_per_token():
     """Round-trip check: dequantized(quantize(X)) ≈ X within int8 resolution.
 
-    NOTE: the rendered Triton kernel uses `tl.math.nearbyint`, which is absent
-    from the upstream `triton.language.math` module in the installed Triton
-    (3.2.0). The kernel raises AttributeError at JIT-compile time. We skip
-    rather than xfail to keep the suite green; track upstream support.
+    The kernel uses libdevice.rint (round-half-to-even) since tl.math.nearbyint
+    is absent in Triton 3.2. Per-token scale = max(|X[m,:]|)/127, so the
+    quantization step IS scale[m]; round-to-nearest bounds the round-trip error
+    at scale[m]/2 (plus fp16 store rounding). The earlier `scale/127*2` bound
+    was wrong — it divided the already-/127 scale a second time.
     """
     torch.manual_seed(0)
     try:
@@ -135,23 +136,15 @@ def test_quantize_per_token():
 
     M, N = 8, 128
     X = torch.randn(M, N, device="cuda", dtype=torch.float16)
-    try:
-        Y_q, scales = k(X)
-    except AttributeError as e:
-        if "nearbyint" in str(e):
-            pytest.skip(
-                "triton.language.math.nearbyint not available in installed "
-                f"Triton {triton.__version__}; quantize template unusable here"
-            )
-        raise
+    Y_q, scales = k(X)
 
     assert Y_q.dtype == torch.int8
     assert Y_q.shape == (M, N)
     assert scales.shape == (M,)
-    # Round-trip: scale * int8 should approximately equal X within scale/2.
+    # Round-trip: scale * int8 should equal X within half a quant step (scale/2)
+    # plus a small fp16-store slack.
     Y_recon = (Y_q.float() * scales[:, None]).to(torch.float16)
-    # int8 has resolution scale[m]/127 per row → tolerance ≈ max(scale)/127.
-    tol = (scales.max().item() / 127.0) * 2.0 + 1e-3
+    tol = scales.max().item() / 2.0 + 1e-2
     err = (X.float() - Y_recon.float()).abs().max().item()
     assert err < tol, f"round-trip err {err} exceeds tolerance {tol}"
 
