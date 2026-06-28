@@ -113,16 +113,22 @@ def test_gather():
 
 
 def test_scatter():
-    """scatter: out[indices[i]] = src[i]; wrapper takes out_rows as third arg."""
+    """scatter: out = X.clone(); out[m, idx[m,k]] = src[m,k] (torch.scatter_ dim=-1).
+
+    Schema: X[M,N], idx[M,K] in [0,N), src[M,K] -> out[M,N]. Matches
+    ref_scatter = X.clone().scatter_(-1, idx, src). (The old kernel + test
+    encoded a row scatter out[idx[i],:]=src[i,:] with a scalar out_rows arg —
+    wrong op and non-dispatchable.) Distinct per-row indices keep the result
+    deterministic vs torch.
+    """
     torch.manual_seed(0)
     k = _gen("scatter")
-    src = torch.randn(6, 32, device="cuda", dtype=torch.float16)
-    # Distinct indices so the result is deterministic vs a PyTorch reference.
-    idx = torch.tensor([0, 2, 5, 7, 1, 14], device="cuda", dtype=torch.int64)
-    out_rows = 16
-    y_a = k(src, idx, out_rows)
-    y_r = torch.zeros(out_rows, 32, device="cuda", dtype=torch.float16)
-    y_r[idx] = src
+    M, N, K = 16, 32, 6
+    X = torch.randn(M, N, device="cuda", dtype=torch.float16)
+    idx = torch.stack([torch.randperm(N, device="cuda")[:K] for _ in range(M)]).to(torch.int64)
+    src = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    y_a = k(X, idx, src)
+    y_r = X.clone().scatter_(-1, idx, src)
     assert torch.equal(y_a, y_r)
 
 

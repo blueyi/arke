@@ -76,53 +76,61 @@ def {{ kernel_name }}(src: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
 {% elif index_op == "scatter" %}
 @triton.jit
 def {{ kernel_name }}_kernel(
-    Src_ptr, Idx_ptr, Out_ptr,
-    num_indices, D,
-    stride_src_row, stride_src_d,
-    stride_out_row, stride_out_d,
-    BLOCK_D: tl.constexpr,
-    BLOCK_IDX: tl.constexpr,
+    Idx_ptr, Src_ptr, Out_ptr,
+    M, N, K,
+    stride_idx_m, stride_idx_k,
+    stride_src_m, stride_src_k,
+    stride_out_m, stride_out_n,
+    BLOCK_K: tl.constexpr,
 ):
-    """Scatter: Out[Idx[i], d] = Src[i, d]."""
-    pid_row = tl.program_id(0)
-    pid_d = tl.program_id(1)
+    """Column scatter along the last dim: out[m, idx[m, k]] = src[m, k].
 
-    offs_row = pid_row * BLOCK_IDX + tl.arange(0, BLOCK_IDX)
-    offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+    out is pre-initialized to X.clone() on the host; this kernel only applies
+    the K scatter overwrites per row. (Copying X inside the kernel and then
+    scattering in the same program produced wrong results at large N — the
+    intra-program store-store ordering between the tiled base-copy and the
+    scatter writes to the same row is not guaranteed in Triton. Doing the base
+    copy on the host with torch.clone is correct and simpler.)
 
-    mask_row = offs_row < num_indices
-    mask_d = offs_d < D
+    Determinism: torch.scatter_ keeps the LAST write among duplicate idx; a
+    parallel per-k overwrite is unordered, so duplicate intra-row indices may
+    pick a different src. The reference/bench regime uses distinct per-row idx.
+    """
+    pid_m = tl.program_id(0)
+    if pid_m >= M:
+        return
+    offs_k = tl.arange(0, BLOCK_K)
+    mask_k = offs_k < K
+    idx = tl.load(Idx_ptr + pid_m * stride_idx_m + offs_k * stride_idx_k,
+                  mask=mask_k, other=0)
+    idx = tl.maximum(tl.minimum(idx, N - 1), 0)  # OOB guard
+    src = tl.load(Src_ptr + pid_m * stride_src_m + offs_k * stride_src_k,
+                  mask=mask_k, other=0.0)
+    tl.store(Out_ptr + pid_m * stride_out_m + idx * stride_out_n,
+             src, mask=mask_k)
 
-    # Load indices
-    idx = tl.load(Idx_ptr + offs_row, mask=mask_row, other=0)
 
-    # Load source values
-    src_ptrs = Src_ptr + offs_row[:, None] * stride_src_row + offs_d[None, :] * stride_src_d
-    mask = mask_row[:, None] & mask_d[None, :]
-    vals = tl.load(src_ptrs, mask=mask, other=0.0)
+def {{ kernel_name }}(
+    X: torch.Tensor, indices: torch.Tensor, src: torch.Tensor
+) -> torch.Tensor:
+    """Column scatter: out = X.clone(); out[m, idx[m,k]] = src[m,k]."""
+    assert X.ndim == 2, "scatter expects 2D X [M, N]"
+    assert indices.ndim == 2 and src.ndim == 2, "scatter expects 2D idx/src [M, K]"
+    M, N = X.shape
+    Mi, K = indices.shape
+    assert Mi == M and src.shape == indices.shape, "scatter shape mismatch"
+    out = X.clone()  # base copy on host (correct + simple)
 
-    # Scatter to output
-    out_ptrs = Out_ptr + idx[:, None] * stride_out_row + offs_d[None, :] * stride_out_d
-    tl.store(out_ptrs, vals, mask=mask)
-
-
-def {{ kernel_name }}(src: torch.Tensor, indices: torch.Tensor, out_rows: int) -> torch.Tensor:
-    """Scatter rows from src into output: out[indices[i]] = src[i]."""
-    assert src.ndim == 2
-    num_indices = indices.numel()
-    D = src.shape[1]
-    out = torch.zeros((out_rows, D), device=src.device, dtype=src.dtype)
-
-    BLOCK_D = min(triton.next_power_of_2(D), 1024)
-    BLOCK_IDX = 32
-    grid = (triton.cdiv(num_indices, BLOCK_IDX), triton.cdiv(D, BLOCK_D))
+    BLOCK_K = triton.next_power_of_2(K)
+    grid = (M,)
 
     {{ kernel_name }}_kernel[grid](
-        src, indices, out,
-        num_indices, D,
+        indices, src, out,
+        M, N, K,
+        indices.stride(0), indices.stride(1),
         src.stride(0), src.stride(1),
         out.stride(0), out.stride(1),
-        BLOCK_D=BLOCK_D, BLOCK_IDX=BLOCK_IDX,
+        BLOCK_K=BLOCK_K,
     )
     return out
 
