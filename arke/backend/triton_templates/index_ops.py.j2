@@ -12,52 +12,63 @@ import triton.language as tl
 @triton.jit
 def {{ kernel_name }}_kernel(
     Src_ptr, Idx_ptr, Out_ptr,
-    num_indices, D,
-    stride_src_row, stride_src_d,
-    stride_out_row, stride_out_d,
-    BLOCK_D: tl.constexpr,
-    BLOCK_IDX: tl.constexpr,
+    M, N, K,
+    stride_src_m, stride_src_n,
+    stride_idx_m, stride_idx_k,
+    stride_out_m, stride_out_k,
+    BLOCK_K: tl.constexpr,
 ):
-    """Gather: Out[i, d] = Src[Idx[i], d] for i in [0, num_indices), d in [0, D)."""
-    pid_row = tl.program_id(0)
-    pid_d = tl.program_id(1)
+    """Column gather along the last dim (torch.gather(X, -1, idx)).
 
-    offs_row = pid_row * BLOCK_IDX + tl.arange(0, BLOCK_IDX)
-    offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+    Out[m, k] = Src[m, Idx[m, k]] for m in [0, M), k in [0, K).
+    X is [M, N], idx is [M, K] with values in [0, N); output is [M, K].
+    One program per row m, processing a BLOCK_K-wide tile of the K gather
+    columns. (The previous kernel implemented a *row* gather
+    Out[i,:]=Src[idx[i],:] — wrong op, and with idx values reused as row
+    indices into an M-row source it read out of bounds, crashing the CUDA
+    context at large shapes.)
+    """
+    pid_m = tl.program_id(0)
+    pid_k = tl.program_id(1)
+    if pid_m >= M:
+        return
 
-    mask_row = offs_row < num_indices
-    mask_d = offs_d < D
+    offs_k = pid_k * BLOCK_K + tl.arange(0, BLOCK_K)
+    mask_k = offs_k < K
 
-    # Load indices
-    idx = tl.load(Idx_ptr + offs_row, mask=mask_row, other=0)
+    # Load the gather column indices for this row.
+    idx = tl.load(Idx_ptr + pid_m * stride_idx_m + offs_k * stride_idx_k,
+                  mask=mask_k, other=0)
+    # Clamp into [0, N) so a stray index can never read out of bounds.
+    idx = tl.maximum(tl.minimum(idx, N - 1), 0)
 
-    # Gather from source
-    src_ptrs = Src_ptr + idx[:, None] * stride_src_row + offs_d[None, :] * stride_src_d
-    mask = mask_row[:, None] & mask_d[None, :]
-    vals = tl.load(src_ptrs, mask=mask, other=0.0)
+    # Gather Src[m, idx[k]].
+    src_ptrs = Src_ptr + pid_m * stride_src_m + idx * stride_src_n
+    vals = tl.load(src_ptrs, mask=mask_k, other=0.0)
 
-    # Store to output
-    out_ptrs = Out_ptr + offs_row[:, None] * stride_out_row + offs_d[None, :] * stride_out_d
-    tl.store(out_ptrs, vals, mask=mask)
+    tl.store(Out_ptr + pid_m * stride_out_m + offs_k * stride_out_k,
+             vals, mask=mask_k)
 
 
 def {{ kernel_name }}(src: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
-    """Gather rows from src using indices: out[i] = src[indices[i]]."""
-    assert src.ndim == 2
-    num_indices = indices.numel()
-    D = src.shape[1]
-    out = torch.empty((num_indices, D), device=src.device, dtype=src.dtype)
+    """Column gather: out[m, k] = src[m, indices[m, k]] (torch.gather dim=-1)."""
+    assert src.ndim == 2, "gather expects 2D src [M, N]"
+    assert indices.ndim == 2, "gather expects 2D idx [M, K]"
+    M, N = src.shape
+    M2, K = indices.shape
+    assert M == M2, f"gather row mismatch: src {M} vs idx {M2}"
+    out = torch.empty((M, K), device=src.device, dtype=src.dtype)
 
-    BLOCK_D = min(triton.next_power_of_2(D), 1024)
-    BLOCK_IDX = 32
-    grid = (triton.cdiv(num_indices, BLOCK_IDX), triton.cdiv(D, BLOCK_D))
+    BLOCK_K = min(triton.next_power_of_2(K), 1024)
+    grid = (M, triton.cdiv(K, BLOCK_K))
 
     {{ kernel_name }}_kernel[grid](
         src, indices, out,
-        num_indices, D,
+        M, N, K,
         src.stride(0), src.stride(1),
+        indices.stride(0), indices.stride(1),
         out.stride(0), out.stride(1),
-        BLOCK_D=BLOCK_D, BLOCK_IDX=BLOCK_IDX,
+        BLOCK_K=BLOCK_K,
     )
     return out
 

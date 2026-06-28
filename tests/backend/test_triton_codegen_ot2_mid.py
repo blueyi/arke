@@ -93,13 +93,22 @@ def test_gelu_and_mul():
 # ── index_ops: gather / scatter ────────────────────────────────────────────
 
 def test_gather():
-    """gather: out[i] = src[indices[i]] along axis 0."""
+    """gather: out[m, k] = src[m, idx[m, k]] (torch.gather along dim=-1).
+
+    Schema: X[M, N], idx[M, K] with values in [0, N) -> out[M, K]. The kernel
+    must match torch.gather(X, -1, idx) — a per-row COLUMN gather, NOT a row
+    gather. (The earlier kernel + test encoded a row gather out[i]=src[idx[i]],
+    which both mismatched the schema and read out of bounds — idx values were
+    used as row indices into an M-row source — crashing the CUDA context at
+    large shapes.)
+    """
     torch.manual_seed(0)
     k = _gen("gather")
-    src = torch.randn(16, 32, device="cuda", dtype=torch.float16)
-    idx = torch.tensor([0, 2, 5, 7, 1, 14], device="cuda", dtype=torch.int64)
+    M, N, K = 16, 32, 8
+    src = torch.randn(M, N, device="cuda", dtype=torch.float16)
+    idx = torch.randint(0, N, (M, K), device="cuda", dtype=torch.int64)
     y_a = k(src, idx)
-    y_r = src[idx]
+    y_r = torch.gather(src, -1, idx)
     assert torch.equal(y_a, y_r)
 
 
