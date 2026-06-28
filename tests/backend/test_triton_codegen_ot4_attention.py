@@ -74,31 +74,31 @@ def _free_cuda_cache():
 # ── rope ────────────────────────────────────────────────────────────────────
 
 def test_rope():
-    """Standard RoPE half-rotate. Row layout: row = b*S*H + s*H + h."""
-    torch.manual_seed(0)
-    batch, seq_len, n_heads, head_dim = 1, 8, 2, 16
-    half = head_dim // 2
-    total_rows = batch * seq_len * n_heads
+    """Standard RoPE half-rotate, spec layout X[B,H,S,D], cos/sin[S,D/2].
 
-    X = torch.randn(total_rows, head_dim, device="cuda", dtype=torch.float16)
-    cos = torch.randn(seq_len, half, device="cuda", dtype=torch.float16)
-    sin = torch.randn(seq_len, half, device="cuda", dtype=torch.float16)
+    Tensor-only signature (X, cos, sin) — the kernel infers all dims from
+    shapes and uses one program per (b,h,s) row (Liger-style). cos/sin
+    broadcast over (B, H): row (b,h,s) uses cos[s], sin[s].
+    """
+    torch.manual_seed(0)
+    B, H, S, D = 1, 2, 8, 16
+    half = D // 2
+
+    X = torch.randn(B, H, S, D, device="cuda", dtype=torch.float16)
+    cos = torch.randn(S, half, device="cuda", dtype=torch.float16)
+    sin = torch.randn(S, half, device="cuda", dtype=torch.float16)
 
     k = _gen("rope")
-    Y = k(X, cos, sin, seq_len, n_heads)
+    Y = k(X, cos, sin)
 
-    # Reference: position for row r is (r // n_heads) % seq_len
-    row_idx = torch.arange(total_rows, device="cuda")
-    pos = (row_idx // n_heads) % seq_len
-    c = cos[pos].float()         # [total_rows, half]
-    s = sin[pos].float()
-    x0 = X[:, :half].float()
-    x1 = X[:, half:].float()
-    y0 = x0 * c - x1 * s
-    y1 = x1 * c + x0 * s
-    Y_ref = torch.empty_like(X)
-    Y_ref[:, :half] = y0.to(torch.float16)
-    Y_ref[:, half:] = y1.to(torch.float16)
+    # Reference (ref_rope): x1,x2 = X[...,:D/2], X[...,D/2:]; cos/sin broadcast.
+    x1 = X[..., :half].float()
+    x2 = X[..., half:].float()
+    c = cos.float()  # [S, half] broadcasts over (B, H)
+    s = sin.float()
+    y1 = x1 * c - x2 * s
+    y2 = x2 * c + x1 * s
+    Y_ref = torch.cat([y1, y2], dim=-1).to(torch.float16)
 
     assert _close(Y, Y_ref), f"max diff = {(Y.float() - Y_ref.float()).abs().max().item():.4e}"
 
