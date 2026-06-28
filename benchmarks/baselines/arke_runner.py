@@ -70,7 +70,8 @@ class ArkeRunner(BaselineRunner):
     _EXCLUDED_OPS: frozenset[str] = frozenset({
         # Ops whose schemas need non-tensor attrs / complex setup we can't
         # reasonably synthesize from (op, M, N, K, dtype) alone.
-        "scatter",
+        # (scatter was here until its tensor-only column-scatter kernel +
+        #  3-tensor input builder landed — now synthesizable, so removed.)
     })
 
     def __init__(self) -> None:
@@ -516,6 +517,19 @@ class ArkeRunner(BaselineRunner):
             idx = torch.randint(0, N, (M, max(K, 1)), device=device,
                                 dtype=torch.int64)
             return (X, idx)
+        if op == "scatter":
+            # Schema: X[M,N], idx[M,K] in [0,N), src[M,K] -> out[M,N]
+            # (ref_scatter = X.clone().scatter_(-1, idx, src)). Use DISTINCT
+            # per-row indices: torch.scatter_ is order-dependent for duplicate
+            # indices (last write wins) while a parallel kernel is unordered,
+            # so the deterministic comparison regime requires no intra-row dups.
+            kk = min(max(K, 1), N)
+            X = torch.randn(M, N, device=device, dtype=dtype)
+            src = torch.randn(M, kk, device=device, dtype=dtype)
+            idx = torch.argsort(
+                torch.rand(M, N, device=device), dim=-1
+            )[:, :kk].contiguous().to(torch.int64)
+            return (X, idx, src)
         if op == "embedding":
             V = max(N, 16)
             D = max(K, 16)
