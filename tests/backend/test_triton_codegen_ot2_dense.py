@@ -114,11 +114,16 @@ def test_concat_axis1():
 
 
 def test_split_axis1():
-    """Template splits along axis=1 at `split_at`. Returns tuple (left, right)."""
+    """Tensor-only launcher: splits X into two halves along axis=1.
+
+    The split point is inferred from the tensor shape as ceil(N/2), matching
+    torch.chunk(X, 2, dim=-1) — the backend dispatches wrapper(*tensors) and
+    cannot supply a scalar split point.
+    """
     torch.manual_seed(0)
     k = _gen("split")
     x = torch.randn(32, 128, device="cuda", dtype=torch.float16)
-    out = k(x, 64)
+    out = k(x)
     assert isinstance(out, tuple) and len(out) == 2
     left, right = out
     assert torch.equal(left, x[:, :64])

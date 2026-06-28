@@ -1,0 +1,80 @@
+"""Auto-generated Triton permute kernel by Arke.
+
+Computes Y = X.permute(*dims).contiguous().
+
+The permutation `dims` is a CODEGEN-TIME constant baked into the template
+(via build_template_ctx -> _ctx_permute), so the host wrapper is tensor-only:
+`permute(X) -> Y`. No runtime scalar args.
+
+Strategy: one program instance per BLOCK of flattened OUTPUT elements. For each
+output linear index we decompose it into output coordinates, remap to the
+corresponding input coordinates (input axis `dims[k]` supplies output axis `k`),
+then gather from X using the input strides. Output is contiguous.
+
+dims = {{ dims }}  (ndim = {{ ndim }})
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    X_ptr, Y_ptr,
+    n_elements,
+{% for k in range(ndim) %}
+    out_shape_{{ k }},
+{% endfor %}
+{% for k in range(ndim) %}
+    in_stride_{{ k }},
+{% endfor %}
+    BLOCK: tl.constexpr,
+):
+    """Gather permute over the flattened output index space."""
+    pid = tl.program_id(0)
+    offs = pid * BLOCK + tl.arange(0, BLOCK)
+    mask = offs < n_elements
+
+    # Decompose the linear OUTPUT index into per-axis output coordinates,
+    # iterating from the last (fastest-varying) output axis to the first.
+    rem = offs
+{% for k in range(ndim - 1, -1, -1) %}
+    out_coord_{{ k }} = rem % out_shape_{{ k }}
+    rem = rem // out_shape_{{ k }}
+{% endfor %}
+
+    # Output axis k was sourced from input axis dims[k]. So the input
+    # coordinate along input-axis dims[k] equals out_coord_k. Build the input
+    # linear offset by summing out_coord_k * in_stride_{dims[k]}.
+    in_offset = tl.zeros_like(offs)
+{% for k in range(ndim) %}
+    in_offset = in_offset + out_coord_{{ k }} * in_stride_{{ dims[k] }}
+{% endfor %}
+
+    vals = tl.load(X_ptr + in_offset, mask=mask, other=0.0)
+    tl.store(Y_ptr + offs, vals, mask=mask)
+
+
+def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
+    """Permute X by the codegen-baked dims = {{ dims }} and return contiguous Y."""
+    dims = {{ dims }}
+    assert X.ndim == {{ ndim }}, (
+        f"permute template baked for ndim={{ ndim }}, got {X.ndim}D input"
+    )
+    out_shape = [X.shape[d] for d in dims]
+    Y = torch.empty(out_shape, device=X.device, dtype=X.dtype)
+    n_elements = Y.numel()
+
+    in_strides = [X.stride(i) for i in range({{ ndim }})]
+
+    BLOCK = 1024
+    grid = (triton.cdiv(n_elements, BLOCK),)
+
+    {{ kernel_name }}_kernel[grid](
+        X, Y,
+        n_elements,
+        *out_shape,
+        *in_strides,
+        BLOCK=BLOCK,
+    )
+    return Y

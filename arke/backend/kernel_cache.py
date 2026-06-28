@@ -210,7 +210,21 @@ class KernelCache:
         ``reduction_op`` / ``gate_activation`` switch the rendered
         kernel body.
         """
-        extra = tuple(sorted(template_hint.extra_ctx.items())) if template_hint.extra_ctx else ()
+        # extra_ctx values may be unhashable (e.g. permute bakes
+        # dims=[0,2,1,3] as a list). Coerce list/tuple/dict values into a
+        # canonical hashable form so the key stays usable as a dict key.
+        def _hashable(v: Any) -> Any:
+            if isinstance(v, (list, tuple)):
+                return tuple(_hashable(x) for x in v)
+            if isinstance(v, dict):
+                return tuple(sorted((k, _hashable(val)) for k, val in v.items()))
+            return v
+
+        extra = (
+            tuple(sorted((k, _hashable(val)) for k, val in template_hint.extra_ctx.items()))
+            if template_hint.extra_ctx
+            else ()
+        )
         return (
             op_name,
             template_hint.template_name,

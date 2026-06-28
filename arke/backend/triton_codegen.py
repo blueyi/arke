@@ -85,6 +85,26 @@ def _ctx_default(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]
     return dict(hint.extra_ctx)
 
 
+def _ctx_cast(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # The cast launcher must be tensor-only (the backend only supplies tensor
+    # positional args). The target dtype is therefore baked into the template
+    # at codegen time. The benchmark/runner sets target_dtype == the node's
+    # input dtype, so the rendered kernel casts X -> output_dtype where
+    # output_dtype is derived from the node dtype. Reference ref_cast mirrors
+    # this (target_dtype defaults to the input dtype in the harness).
+    return {"output_dtype": _triton_dtype(dtype)}
+
+
+def _ctx_topk(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # The topk launcher must be tensor-only. `k` is not knowable from tensor
+    # shapes, so it is baked as a constexpr at codegen time. Default k=4
+    # matches ArkeRunner._default_attrs / run_with_inputs (and is the value
+    # the harness exercises). extra_ctx may override it if a future caller
+    # threads `k` through the template_hint.
+    k = int(hint.extra_ctx.get("k", 4))
+    return {"k": k}
+
+
 def _ctx_data_movement(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
     # Template variable is `data_op`. Catalog gives op_variant.
     # copy_ op has variant="copy" (no underscore) which the template branch matches.
@@ -113,8 +133,25 @@ def _ctx_quantize(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any
 
 
 def _ctx_transpose(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
-    # Default: 2D transpose. Template branches on transpose_op ("2d" vs "permute")
+    # transpose.py.j2 branches on transpose_op == "copy_" (identity copy)
+    # vs the else branch (2D transpose). The catalog routes:
+    #   transpose -> op_variant defaults to "2d"
+    #   copy_     -> op_variant="copy_" (matches the template's literal branch)
     return {"transpose_op": hint.extra_ctx.get("op_variant", "2d")}
+
+
+def _ctx_permute(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # permute.py.j2 bakes the permutation order as a codegen-time constant.
+    # The wrapper is tensor-only (permute(X) -> Y); the dims come from the
+    # catalog's extra_ctx (mirrors OpSchema.attrs["dims"]), NOT a runtime arg.
+    dims = hint.extra_ctx.get("dims", [0, 2, 1, 3])
+    return {"dims": list(dims), "ndim": len(dims)}
+
+
+def _ctx_embedding(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
+    # embedding.py.j2 is tensor-only: embedding(indices, weight) -> Y.
+    # No codegen-time scalars needed; dims inferred from tensor shapes.
+    return {}
 
 
 def _ctx_cross_entropy(op_name: str, hint: TemplateHint, dtype: str) -> dict[str, Any]:
@@ -138,6 +175,8 @@ def _ctx_flash_attention(op_name: str, hint: TemplateHint, dtype: str) -> dict[s
 _CTX_BUILDERS: dict[str, Callable[[str, TemplateHint, str], dict[str, Any]]] = {
     "elementwise": _ctx_elementwise,
     "elementwise_binary": _ctx_elementwise_binary,
+    "cast": _ctx_cast,
+    "topk": _ctx_topk,
     "matmul": _ctx_matmul,
     "batch_matmul": _ctx_matmul,
     "grouped_matmul": _ctx_matmul,
@@ -148,6 +187,8 @@ _CTX_BUILDERS: dict[str, Callable[[str, TemplateHint, str], dict[str, Any]]] = {
     "index_ops": _ctx_index_ops,
     "quantize": _ctx_quantize,
     "transpose": _ctx_transpose,
+    "permute": _ctx_permute,
+    "embedding": _ctx_embedding,
     "cross_entropy": _ctx_cross_entropy,
     "flash_attention": _ctx_flash_attention,
 }

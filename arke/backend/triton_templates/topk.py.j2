@@ -1,4 +1,10 @@
-"""Auto-generated Triton top-K kernel by Arke."""
+"""Auto-generated Triton top-K kernel by Arke.
+
+Tensor-only launcher: the backend dispatches kernels as `wrapper(*tensors)`,
+so `k` cannot arrive as a runtime scalar argument. It is baked into the
+template at codegen time via the `k` ctx variable (default 4, matching the
+benchmark harness). Launcher: topk(X) -> (Values, Indices).
+"""
 import torch
 import triton
 import triton.language as tl
@@ -7,7 +13,7 @@ import triton.language as tl
 @triton.jit
 def {{ kernel_name }}_kernel(
     X_ptr, Values_ptr, Indices_ptr,
-    M, N, K,
+    M, N,
     stride_xm, stride_xn,
     stride_vm, stride_vk,
     stride_im, stride_ik,
@@ -21,17 +27,15 @@ def {{ kernel_name }}_kernel(
     x_ptrs = X_ptr + row * stride_xm + offs_n * stride_xn
     x = tl.load(x_ptrs, mask=mask, other=float("-inf")).to(tl.float32)
 
-    # Iterative top-K: find max K times, masking out found elements
+    # Iterative top-K: find max K times, masking out found elements.
     offs_k = tl.arange(0, BLOCK_K)
     cur_x = x
     for ki in tl.static_range(0, BLOCK_K):
-        # Find current max
         max_val = tl.max(cur_x, axis=0)
         is_max = (cur_x == max_val) & (offs_n < N)
-        # Pick smallest index among ties
+        # Pick smallest index among ties.
         candidate_idx = tl.where(is_max, offs_n, N)
         max_idx = tl.min(candidate_idx, axis=0)
-        # Store value and index for this k position
         k_mask = offs_k == ki
         tl.store(
             Values_ptr + row * stride_vm + ki * stride_vk,
@@ -41,12 +45,16 @@ def {{ kernel_name }}_kernel(
             Indices_ptr + row * stride_im + ki * stride_ik,
             max_idx,
         )
-        # Mask out the found element
+        # Mask out the found element.
         cur_x = tl.where(offs_n == max_idx, float("-inf"), cur_x)
 
 
-def {{ kernel_name }}(X: torch.Tensor, k: int) -> tuple[torch.Tensor, torch.Tensor]:
+def {{ kernel_name }}(X: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    # k is baked at codegen time (tensor-only launcher).
+    k = {{ k }}
+    assert X.ndim == 2, "topk kernel expects a 2D [M, N] tensor"
     M, N = X.shape
+    k = min(k, N)
     Values = torch.empty(M, k, device=X.device, dtype=X.dtype)
     Indices = torch.empty(M, k, device=X.device, dtype=torch.int64)
     BLOCK_N = triton.next_power_of_2(N)
@@ -56,7 +64,7 @@ def {{ kernel_name }}(X: torch.Tensor, k: int) -> tuple[torch.Tensor, torch.Tens
     num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
     {{ kernel_name }}_kernel[(M,)](
         X, Values, Indices,
-        M, N, k,
+        M, N,
         X.stride(0), X.stride(1),
         Values.stride(0), Values.stride(1),
         Indices.stride(0), Indices.stride(1),

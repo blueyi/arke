@@ -112,10 +112,17 @@ def {{ kernel_name }}_kernel(
     tl.store(b_ptrs, vals, mask=mask & ~in_a)
 
 
-def {{ kernel_name }}(X: torch.Tensor, split_at: int) -> tuple[torch.Tensor, torch.Tensor]:
-    """Split X along axis=1 at position split_at."""
+def {{ kernel_name }}(X: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Split X into two halves along axis=1 (mirrors torch.chunk(X, 2, dim=-1)).
+
+    Tensor-only launcher: the backend dispatches kernels as `wrapper(*tensors)`,
+    so the split point cannot arrive as a runtime scalar. It is inferred from
+    the tensor shape as N // 2, matching torch.chunk(X, 2, dim=-1).
+    """
     assert X.ndim == 2
     M, N = X.shape
+    # torch.chunk(X, 2, dim=-1) puts ceil(N/2) in the first chunk.
+    split_at = (N + 1) // 2
     assert 0 < split_at < N
     A = torch.empty((M, split_at), device=X.device, dtype=X.dtype)
     B = torch.empty((M, N - split_at), device=X.device, dtype=X.dtype)

@@ -1,0 +1,71 @@
+"""Auto-generated Triton embedding kernel by Arke.
+
+Computes Y[b, s, :] = weight[indices[b, s], :]  (i.e. F.embedding).
+
+Tensor-only host wrapper: `embedding(indices, weight) -> Y`. All dimensions
+are inferred from the input tensor shapes at launch time; no codegen-time
+scalars are required.
+
+Strategy: flatten indices to N = prod(indices.shape) rows. Launch a 2D grid
+(N rows) x (ceil(D / BLOCK_D) column tiles). Each program loads one gathered
+row index, then copies a BLOCK_D-wide slice of weight[idx, :] into the output.
+"""
+import torch
+import triton
+import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_kernel(
+    idx_ptr, W_ptr, Y_ptr,
+    N, D,
+    stride_wv, stride_wd,
+    stride_yn, stride_yd,
+    BLOCK_D: tl.constexpr,
+):
+    """One row gather per program-id(0); BLOCK_D-wide column tile per program-id(1)."""
+    row = tl.program_id(0)
+    pid_d = tl.program_id(1)
+
+    if row >= N:
+        return
+
+    # Gather the vocabulary index for this output row (scalar load).
+    vocab_idx = tl.load(idx_ptr + row)
+
+    offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+    mask_d = offs_d < D
+
+    w_ptrs = W_ptr + vocab_idx * stride_wv + offs_d * stride_wd
+    vals = tl.load(w_ptrs, mask=mask_d, other=0.0)
+
+    y_ptrs = Y_ptr + row * stride_yn + offs_d * stride_yd
+    tl.store(y_ptrs, vals, mask=mask_d)
+
+
+def {{ kernel_name }}(indices: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
+    """Y = weight[indices]; output shape = (*indices.shape, weight.shape[1])."""
+    assert weight.ndim == 2, "embedding template expects 2D weight [V, D]"
+    D = weight.shape[1]
+
+    idx_flat = indices.reshape(-1).contiguous()
+    # Triton pointer arithmetic on the index tensor needs an integer dtype it
+    # can index with; int32 is sufficient for vocab sizes and avoids 64-bit
+    # gather overhead. F.embedding semantics use long indices, so cast.
+    idx_i32 = idx_flat.to(torch.int32)
+    N = idx_flat.numel()
+
+    out_flat = torch.empty((N, D), device=weight.device, dtype=weight.dtype)
+
+    BLOCK_D = 128
+    grid = (N, triton.cdiv(D, BLOCK_D))
+
+    {{ kernel_name }}_kernel[grid](
+        idx_i32, weight, out_flat,
+        N, D,
+        weight.stride(0), weight.stride(1),
+        out_flat.stride(0), out_flat.stride(1),
+        BLOCK_D=BLOCK_D,
+    )
+
+    return out_flat.reshape(*indices.shape, D)
