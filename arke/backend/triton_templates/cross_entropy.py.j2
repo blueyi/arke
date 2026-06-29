@@ -76,7 +76,8 @@ def {{ kernel_name }}_kernel(
 
 
 def {{ kernel_name }}(
-    hidden: torch.Tensor, weight: torch.Tensor, labels: torch.Tensor
+    hidden: torch.Tensor, weight: torch.Tensor, labels: torch.Tensor,
+    reduction: str = "mean",
 ) -> torch.Tensor:
     """Fused linear + cross entropy.
 
@@ -84,9 +85,12 @@ def {{ kernel_name }}(
         hidden: [M, D]
         weight: [V, D]
         labels: [M] (int64)
+        reduction: "mean" (default, scalar — matches the op schema and
+            F.cross_entropy default), "sum" (scalar), or "none" (per-token
+            [M], used by the L2 fusion path that consumes per-row loss).
 
     Returns:
-        loss: [M]
+        loss: scalar () for "mean"/"sum", or [M] for "none".
     """
     M, D = hidden.shape
     V = weight.shape[0]
@@ -103,6 +107,10 @@ def {{ kernel_name }}(
         weight.stride(0), weight.stride(1),
         BLOCK_V=BLOCK_V, BLOCK_D=BLOCK_D,
     )
+    if reduction == "mean":
+        return loss.mean()
+    if reduction == "sum":
+        return loss.sum()
     return loss
 
 
@@ -152,15 +160,20 @@ def {{ kernel_name }}_kernel(
     tl.store(Loss_ptr + pid_m, loss)
 
 
-def {{ kernel_name }}(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+def {{ kernel_name }}(
+    logits: torch.Tensor, labels: torch.Tensor, reduction: str = "mean"
+) -> torch.Tensor:
     """Cross entropy loss.
 
     Args:
         logits: [M, V]
         labels: [M] (int64)
+        reduction: "mean" (default, scalar — matches the op schema and
+            F.cross_entropy default), "sum" (scalar), or "none" (per-token
+            [M], used by the L2 fusion path that consumes per-row loss).
 
     Returns:
-        loss: [M]
+        loss: scalar () for "mean"/"sum", or [M] for "none".
     """
     M, V = logits.shape
     loss = torch.empty(M, device=logits.device, dtype=torch.float32)
@@ -174,5 +187,9 @@ def {{ kernel_name }}(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tenso
         logits.stride(0), logits.stride(1),
         BLOCK_V=BLOCK_V,
     )
+    if reduction == "mean":
+        return loss.mean()
+    if reduction == "sum":
+        return loss.sum()
     return loss
 {% endif %}

@@ -179,26 +179,38 @@ def test_dequantize_per_channel():
 # ── cross_entropy / fused_linear_cross_entropy ─────────────────────────────
 
 def test_cross_entropy():
-    """Per-row CE loss: loss[m] = -log_softmax(logits[m])[label[m]]."""
+    """CE loss: default reduction='mean' returns schema-conformant scalar;
+    reduction='none' returns per-row loss[m] for the L2 fusion path."""
     torch.manual_seed(0)
     k = _gen("cross_entropy")
     M, V = 8, 256
     logits = torch.randn(M, V, device="cuda", dtype=torch.float16)
     labels = torch.randint(0, V, (M,), device="cuda", dtype=torch.int64)
-    y_a = k(logits, labels)
-    y_r = F.cross_entropy(logits.float(), labels, reduction="none")
-    assert _close(y_a, y_r, rtol=1e-2, atol=1e-2)
+    # default (mean) — matches the op schema output=Tensor[] and F.cross_entropy default
+    y_mean = k(logits, labels)
+    assert y_mean.shape == ()
+    assert _close(y_mean, F.cross_entropy(logits.float(), labels), rtol=1e-2, atol=1e-2)
+    # explicit per-token (L2 fusion path)
+    y_none = k(logits, labels, reduction="none")
+    assert y_none.shape == (M,)
+    assert _close(y_none, F.cross_entropy(logits.float(), labels, reduction="none"), rtol=1e-2, atol=1e-2)
 
 
 def test_fused_linear_cross_entropy():
-    """Fused matmul + CE: logits = hidden @ weight.T, then CE."""
+    """Fused matmul + CE: logits = hidden @ weight.T, then CE.
+    Default reduction='mean' (scalar, schema-conformant); 'none' per-row."""
     torch.manual_seed(0)
     k = _gen("fused_linear_cross_entropy")
     M, D, V = 4, 64, 128
     hidden = torch.randn(M, D, device="cuda", dtype=torch.float16)
     weight = torch.randn(V, D, device="cuda", dtype=torch.float16)
     labels = torch.randint(0, V, (M,), device="cuda", dtype=torch.int64)
-    y_a = k(hidden, weight, labels)
     logits = hidden.float() @ weight.float().T
-    y_r = F.cross_entropy(logits, labels, reduction="none")
-    assert _close(y_a, y_r, rtol=1e-2, atol=1e-2)
+    # default (mean)
+    y_mean = k(hidden, weight, labels)
+    assert y_mean.shape == ()
+    assert _close(y_mean, F.cross_entropy(logits, labels), rtol=1e-2, atol=1e-2)
+    # explicit per-token
+    y_none = k(hidden, weight, labels, reduction="none")
+    assert y_none.shape == (M,)
+    assert _close(y_none, F.cross_entropy(logits, labels, reduction="none"), rtol=1e-2, atol=1e-2)
