@@ -39,6 +39,7 @@ ALL_FUSED_OPS = [
     "matmul_relu", "matmul_gelu",
     "silu_and_mul", "gelu_and_mul",
     "linear_ce",
+    "cross_entropy",
     "qkv_fa",
 ]
 
@@ -81,6 +82,14 @@ class FusedResult:
     memory_bytes_budget: int | None = None
     memory_ratio: float | None = None
     memory_policy: str = ""
+    # ── L2 fusion measurement protocol (RFC §4) — additive provenance ──
+    # These columns are append-only; they do not alter or remove any existing
+    # PERF_ALL field. They let an L2 fusion row carry a Triton-only golden
+    # denominator (Liger fused) alongside the Arke-generated Triton kernel.
+    golden_runner: str = ""          # e.g. "liger" for the Triton-only denominator
+    golden_priority: int | None = None  # ladder priority of the golden (Liger = 1)
+    backend: str = ""                # "triton" for same-backend rows
+    perf_oracle_unavailable_triton: bool | None = None  # True for matmul_* (no Triton fused golden)
 
 
 def _tensor_metrics(
@@ -299,6 +308,18 @@ def run_fused_op(
         hw = collect_hardware_info()
         return _run_fused_linear_ce_op(op, shapes, warmup=warmup, reps=reps, hw=hw)
 
+    if op == "cross_entropy":
+        if shapes is None:
+            shapes = get_shapes("cross_entropy", tier=4)
+        if shape_tags:
+            allowed = set(shape_tags)
+            shapes = [s for s in shapes if getattr(s, "tag", None) in allowed]
+        logger.info(
+            f"Benchmarking fused op: {op} ({len(shapes)} shapes × 3 approaches)"
+        )
+        hw = collect_hardware_info()
+        return _run_cross_entropy_op(op, shapes, warmup=warmup, reps=reps, hw=hw)
+
     if op == "qkv_fa":
         if shapes is None:
             shapes = get_shapes("flash_attention", tier=4)
@@ -358,14 +379,16 @@ def run_fused_op(
         fn_sep, src_sep = _build_separate_fn(activation, M, N, K)
         results.append(
             _measure_fused(op, tag, M, N, K, "separate", src_sep, fn_sep,
-                           warmup, reps, memory_preflight=preflight)
+                           warmup, reps, memory_preflight=preflight,
+                           perf_oracle_unavailable_triton=True)
         )
 
         fn_comp, src_comp = _build_compile_fn(activation, M, N, K)
         if fn_comp is not None:
             results.append(
                 _measure_fused(op, tag, M, N, K, "torch.compile", src_comp,
-                               fn_comp, warmup, reps, memory_preflight=preflight)
+                               fn_comp, warmup, reps, memory_preflight=preflight,
+                               perf_oracle_unavailable_triton=True)
             )
 
     for shape in shapes:
@@ -378,7 +401,8 @@ def run_fused_op(
         if fn_fg is not None:
             results.append(
                 _measure_fused(op, tag, M, N, K, "FlagGems", src_fg,
-                               fn_fg, warmup, reps, memory_preflight=preflight)
+                               fn_fg, warmup, reps, memory_preflight=preflight,
+                               perf_oracle_unavailable_triton=True)
             )
 
     return results
@@ -497,6 +521,75 @@ def _measure_fused_correctness(op: str, approach: str, M: int, N: int, K: int, d
         }
 
 
+# ── RFC §4: Triton-only fused golden (Liger) + Arke Triton approaches ─────
+#
+# These helpers wire a genuine Triton-only denominator (Liger fused kernels)
+# and the Arke-generated Triton kernel into the L2 harness so a same-backend
+# (Triton vs Triton) ratio is computable. CORRECTNESS FIRST: every candidate
+# output is checked against the SemanticInterpreter reference
+# (arke.ir.ops.interpreter.INTERPRETER.execute) — the same V1 oracle — within
+# the op's (rtol, atol) before any perf number is trusted. A mismatch is
+# recorded honestly (correctness_status="mismatch") and never hidden.
+#
+# All of this is additive/reversible: it only adds rows + columns; it does not
+# touch gate_g7 scoring thresholds or the audit-only classifier.
+
+# Golden ladder: Liger is P1 for the OT3 fused family.
+_LIGER_GOLDEN_PRIORITY = 1
+_LIGER_SOURCE = None  # lazily resolved
+
+
+def _liger_fused_source() -> str:
+    global _LIGER_SOURCE
+    if _LIGER_SOURCE is None:
+        try:
+            from benchmarks.baselines.liger_fused import LigerFusedRunner
+            _LIGER_SOURCE = LigerFusedRunner().source
+        except Exception:
+            _LIGER_SOURCE = (
+                "Liger unknown Triton fused | "
+                "https://github.com/linkedin/Liger-Kernel | License: Apache-2.0"
+            )
+    return _LIGER_SOURCE
+
+
+def _interp_reference(op: str, inputs: dict[str, torch.Tensor]) -> torch.Tensor:
+    """SemanticInterpreter (V1 oracle) reference output for a fused op."""
+    from arke.ir.ops.interpreter import INTERPRETER
+
+    out = INTERPRETER.execute(op, inputs, {})
+    return out[0] if isinstance(out, tuple) else out
+
+
+def _candidate_correctness(
+    op: str,
+    ref: torch.Tensor,
+    cand: torch.Tensor | None,
+    *,
+    dtype: torch.dtype = torch.float16,
+) -> dict[str, object]:
+    """Verify a Triton candidate tensor against the interpreter reference."""
+    rtol, atol = _correctness_tolerances(op, dtype)
+    if cand is None:
+        return {
+            "allclose": None, "max_abs_diff": None, "mean_abs_diff": None,
+            "rtol": None, "atol": None,
+            "correctness_status": "unsupported",
+            "correctness_reason": "runner returned None for this op/shape",
+        }
+    try:
+        # Reconcile shapes: CE-family references are scalars; allow 0-d vs 0-d.
+        return _tensor_metrics(ref.reshape(cand.shape) if ref.numel() == cand.numel() and ref.shape != cand.shape else ref,
+                               cand, rtol=rtol, atol=atol)
+    except Exception as e:  # pragma: no cover - defensive
+        return {
+            "allclose": None, "max_abs_diff": None, "mean_abs_diff": None,
+            "rtol": None, "atol": None,
+            "correctness_status": "error",
+            "correctness_reason": f"correctness compare failed: {e}",
+        }
+
+
 # ── Resume / progress hooks (installed by run_l2) ────────────────────────
 # When set, _measure_fused will:
 #   1. consult _SKIP_KEYS to short-circuit completed (op, tag, approach) work
@@ -572,6 +665,10 @@ def _row_to_fused_result(row: dict[str, str]) -> 'FusedResult':
         memory_bytes_budget=_opt_int("memory_bytes_budget"),
         memory_ratio=_opt_f("memory_ratio"),
         memory_policy=row.get("memory_policy", ""),
+        golden_runner=row.get("golden_runner", ""),
+        golden_priority=_opt_int("golden_priority"),
+        backend=row.get("backend", ""),
+        perf_oracle_unavailable_triton=_opt_bool("perf_oracle_unavailable_triton"),
     )
 
 
@@ -587,8 +684,21 @@ def _measure_fused(
     warmup: int,
     reps: int,
     memory_preflight=None,
+    *,
+    golden_runner: str = "",
+    golden_priority: int | None = None,
+    backend: str = "",
+    perf_oracle_unavailable_triton: bool | None = None,
+    correctness_override: dict[str, object] | None = None,
 ) -> FusedResult:
-    """Run measurement for a single fused op approach."""
+    """Run measurement for a single fused op approach.
+
+    ``correctness_override`` lets the caller supply correctness metrics already
+    computed against the SemanticInterpreter reference (RFC §4 V1 oracle) — used
+    for the Liger Triton golden and the Arke Triton approaches, whose outputs are
+    verified against ``INTERPRETER.execute`` before any perf number is trusted.
+    When ``None`` the legacy eager ``_measure_fused_correctness`` probe is used.
+    """
     key = (op, tag, approach)
     if key in _SKIP_KEYS:
         cached = _SKIPPED_ROWS.get(key)
@@ -606,7 +716,11 @@ def _measure_fused(
             f"  {tag:15s} {approach:15s} "
             f"{result.latency_us:8.1f} μs{tflops_str}"
         )
-        correctness = _measure_fused_correctness(op, approach, M, N, K)
+        correctness = (
+            correctness_override
+            if correctness_override is not None
+            else _measure_fused_correctness(op, approach, M, N, K)
+        )
         out = FusedResult(
             op=op,
             shape_tag=tag,
@@ -623,6 +737,10 @@ def _measure_fused(
             atol=correctness["atol"],
             correctness_status=correctness["correctness_status"],
             correctness_reason=correctness["correctness_reason"],
+            golden_runner=golden_runner,
+            golden_priority=golden_priority,
+            backend=backend,
+            perf_oracle_unavailable_triton=perf_oracle_unavailable_triton,
             **_fused_memory_fields(memory_preflight),
         )
         if _RESULT_EMITTER is not None:
@@ -645,6 +763,10 @@ def _measure_fused(
             retryable=status.retryable,
             correctness_status="error",
             correctness_reason=status.reason,
+            golden_runner=golden_runner,
+            golden_priority=golden_priority,
+            backend=backend,
+            perf_oracle_unavailable_triton=perf_oracle_unavailable_triton,
             **_fused_memory_fields(memory_preflight),
         )
         if _RESULT_EMITTER is not None:
@@ -723,7 +845,77 @@ def _run_gated_fused_op(
             )
         )
 
+        # ── Triton-only golden (Liger) + Arke Triton approaches (RFC §4) ──
+        # Reference = SemanticInterpreter on the packed input X (V1 oracle).
+        ref = _interp_reference(op, {"X": X})
+        results.extend(
+            _measure_gated_triton_approaches(
+                op, tag, M, ffn, X, ref, warmup, reps
+            )
+        )
+
     return results
+
+
+def _measure_gated_triton_approaches(
+    op: str,
+    tag: str,
+    M: int,
+    ffn: int,
+    X: torch.Tensor,
+    ref: torch.Tensor,
+    warmup: int,
+    reps: int,
+) -> list[FusedResult]:
+    """Liger Triton golden + Arke Triton rows for a gated fusion shape."""
+    from benchmarks.baselines._runtime_ctx import clear_current_shape, set_current_shape
+    out: list[FusedResult] = []
+
+    # Liger Triton fused golden (denominator, P1).
+    try:
+        from benchmarks.baselines.liger_fused import LigerFusedRunner
+        liger = LigerFusedRunner()
+        if liger.available and liger.supports(op):
+            lig_out = liger.run_with_inputs(op, X)
+            corr = _candidate_correctness(op, ref, lig_out)
+            a, b = X.chunk(2, dim=-1)
+            if op == "silu_and_mul":
+                from liger_kernel.ops.swiglu import LigerSiLUMulFunction as _Fn
+            else:
+                from liger_kernel.ops.geglu import LigerGELUMulFunction as _Fn
+            fn = lambda: _Fn.apply(a, b)  # noqa: E731
+            out.append(_measure_fused(
+                op, tag, M, ffn, 0, "liger", _liger_fused_source(), fn,
+                warmup, reps,
+                golden_runner="liger", golden_priority=_LIGER_GOLDEN_PRIORITY,
+                backend="triton", correctness_override=corr,
+            ))
+    except Exception as e:
+        logger.warning(f"  {tag} liger({op}): unavailable ({e})")
+
+    # Arke-generated Triton kernel (system under test).
+    try:
+        from benchmarks.baselines.arke_runner import ArkeRunner
+        arke = ArkeRunner()
+        if arke.available and arke.supports(op):
+            arke_out = arke.run_with_inputs(op, X)
+            corr = _candidate_correctness(op, ref, arke_out)
+            # get_fn builds its own packed input via runtime shape context; we
+            # thread the gated shape so the perf shape matches (seq, 2*ffn).
+            set_current_shape(type("GS", (), {"seq": M, "ffn_x2": 2 * ffn})())
+            try:
+                fn = arke.get_fn(op, M, ffn, 0, dtype=torch.float16)
+            finally:
+                clear_current_shape()
+            if fn is not None:
+                out.append(_measure_fused(
+                    op, tag, M, ffn, 0, "arke", arke.source, fn,
+                    warmup, reps, backend="triton", correctness_override=corr,
+                ))
+    except Exception as e:
+        logger.warning(f"  {tag} arke({op}): unavailable ({e})")
+
+    return out
 
 
 def _run_fused_linear_ce_op(
@@ -773,6 +965,169 @@ def _run_fused_linear_ce_op(
                 memory_preflight=preflight,
             )
         )
+
+        # ── Triton-only golden (Liger) + Arke Triton approaches (RFC §4) ──
+        # `op` is the benchmark alias "linear_ce"; the SSOT op + runners use
+        # "fused_linear_cross_entropy". Reference = SemanticInterpreter (V1).
+        ref_op = "fused_linear_cross_entropy"
+        ref = _interp_reference(ref_op, {"X": X, "W": W, "labels": labels})
+        results.extend(
+            _measure_linear_ce_triton_approaches(
+                op, ref_op, tag, M, vocab, hidden, X, W, labels, ref,
+                warmup, reps, preflight,
+            )
+        )
+
+    return results
+
+
+def _measure_linear_ce_triton_approaches(
+    op: str,
+    ref_op: str,
+    tag: str,
+    M: int,
+    vocab: int,
+    hidden: int,
+    X: torch.Tensor,
+    W: torch.Tensor,
+    labels: torch.Tensor,
+    ref: torch.Tensor,
+    warmup: int,
+    reps: int,
+    preflight,
+) -> list[FusedResult]:
+    """Liger Triton golden + Arke Triton rows for a fused_linear_ce shape."""
+    out: list[FusedResult] = []
+
+    try:
+        from benchmarks.baselines.liger_fused import LigerFusedRunner
+        liger = LigerFusedRunner()
+        if liger.available and liger.supports(ref_op):
+            lig_out = liger.run_with_inputs(ref_op, X, W, labels)
+            corr = _candidate_correctness(op, ref, lig_out)
+            from liger_kernel.ops.fused_linear_cross_entropy import (
+                LigerFusedLinearCrossEntropyFunction as _Fn,
+            )
+            labels_l = labels.long()
+
+            def fn() -> torch.Tensor:
+                r = _Fn.apply(X, W, labels_l)
+                return r[0] if isinstance(r, tuple) else r
+
+            out.append(_measure_fused(
+                op, tag, M, vocab, hidden, "liger", _liger_fused_source(), fn,
+                warmup, reps, memory_preflight=preflight,
+                golden_runner="liger", golden_priority=_LIGER_GOLDEN_PRIORITY,
+                backend="triton", correctness_override=corr,
+            ))
+    except Exception as e:
+        logger.warning(f"  {tag} liger({op}): unavailable ({e})")
+
+    try:
+        from benchmarks.baselines.arke_runner import ArkeRunner
+        arke = ArkeRunner()
+        if arke.available and arke.supports(ref_op):
+            arke_out = arke.run_with_inputs(ref_op, X, W, labels)
+            corr = _candidate_correctness(op, ref, arke_out)
+            fn = arke.get_fn(ref_op, M, vocab, hidden, dtype=torch.float16)
+            if fn is not None:
+                out.append(_measure_fused(
+                    op, tag, M, vocab, hidden, "arke", arke.source, fn,
+                    warmup, reps, memory_preflight=preflight,
+                    backend="triton", correctness_override=corr,
+                ))
+    except Exception as e:
+        logger.warning(f"  {tag} arke({op}): unavailable ({e})")
+
+    return out
+
+
+def _run_cross_entropy_op(
+    op: str,
+    shapes: list[Shape2D],
+    warmup: int,
+    reps: int,
+    hw=None,
+) -> list[FusedResult]:
+    """Benchmark plain cross_entropy: separate (eager) + Liger Triton golden + Arke.
+
+    Shapes are Shape2D with M = batch (rows of logits) and N = vocab (classes).
+    Reference is the SemanticInterpreter ``cross_entropy`` impl (V1 oracle):
+    F.cross_entropy(logits.float(), labels) → scalar mean.
+    """
+    results: list[FusedResult] = []
+
+    for shape in shapes:
+        tag, M, vocab = shape.tag, shape.M, shape.N
+        source = (
+            f"PyTorch {torch.__version__} eager fused expression ({op}) | "
+            "https://pytorch.org | License: BSD-3-Clause"
+        )
+        preflight = maybe_memory_preflight(hw, op, shape) if hw is not None else None
+        if preflight is not None and preflight.status.status != "ok":
+            results.append(_memory_skipped_fused_result(
+                op=op, tag=tag, M=M, N=vocab, K=0,
+                approach="separate", source=source, preflight=preflight,
+            ))
+            continue
+
+        logits = torch.randn(M, vocab, device="cuda", dtype=torch.float16)
+        labels = torch.randint(0, vocab, (M,), device="cuda")
+
+        def fn() -> torch.Tensor:
+            return torch.nn.functional.cross_entropy(
+                logits.to(torch.float32), labels
+            )
+
+        results.append(
+            _measure_fused(
+                op, tag, M, vocab, 0, "separate", source, fn, warmup, reps,
+                memory_preflight=preflight,
+            )
+        )
+
+        # ── Triton-only golden (Liger) + Arke Triton approaches (RFC §4) ──
+        ref = _interp_reference("cross_entropy", {"logits": logits, "labels": labels})
+
+        # Liger Triton fused golden.
+        try:
+            from benchmarks.baselines.liger_fused import LigerFusedRunner
+            liger = LigerFusedRunner()
+            if liger.available and liger.supports("cross_entropy"):
+                lig_out = liger.run_with_inputs("cross_entropy", logits, labels)
+                corr = _candidate_correctness(op, ref, lig_out)
+                from liger_kernel.ops.cross_entropy import LigerCrossEntropyFunction as _Fn
+                labels_l = labels.long()
+
+                def fn_lig() -> torch.Tensor:
+                    r = _Fn.apply(logits, labels_l, None)
+                    return r[0] if isinstance(r, tuple) else r
+
+                results.append(_measure_fused(
+                    op, tag, M, vocab, 0, "liger", _liger_fused_source(), fn_lig,
+                    warmup, reps, memory_preflight=preflight,
+                    golden_runner="liger", golden_priority=_LIGER_GOLDEN_PRIORITY,
+                    backend="triton", correctness_override=corr,
+                ))
+        except Exception as e:
+            logger.warning(f"  {tag} liger({op}): unavailable ({e})")
+
+        # Arke-generated Triton kernel.
+        try:
+            from benchmarks.baselines.arke_runner import ArkeRunner
+            arke = ArkeRunner()
+            if arke.available and arke.supports("cross_entropy"):
+                arke_out = arke.run_with_inputs("cross_entropy", logits, labels)
+                corr = _candidate_correctness(op, ref, arke_out)
+                fn_arke = arke.get_fn("cross_entropy", M, vocab, 0, dtype=torch.float16)
+                if fn_arke is not None:
+                    results.append(_measure_fused(
+                        op, tag, M, vocab, 0, "arke", arke.source, fn_arke,
+                        warmup, reps, memory_preflight=preflight,
+                        backend="triton", correctness_override=corr,
+                    ))
+        except Exception as e:
+            logger.warning(f"  {tag} arke({op}): unavailable ({e})")
 
     return results
 
@@ -844,6 +1199,8 @@ L2_FIELDNAMES = [
     "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
     "correctness_status", "correctness_reason",
     "memory_bytes_required", "memory_bytes_budget", "memory_ratio", "memory_policy",
+    # ── L2 fusion measurement protocol (RFC §4) — additive provenance ──
+    "golden_runner", "golden_priority", "backend", "perf_oracle_unavailable_triton",
 ]
 L2_KEY_FIELDS = ("op", "shape_tag", "approach")
 
@@ -874,6 +1231,13 @@ def _l2_row_from_result(r: 'FusedResult') -> dict[str, str]:
         "memory_bytes_budget": "" if r.memory_bytes_budget is None else str(r.memory_bytes_budget),
         "memory_ratio": "" if r.memory_ratio is None else f"{r.memory_ratio:.4f}",
         "memory_policy": r.memory_policy,
+        "golden_runner": r.golden_runner,
+        "golden_priority": "" if r.golden_priority is None else str(r.golden_priority),
+        "backend": r.backend,
+        "perf_oracle_unavailable_triton": (
+            "" if r.perf_oracle_unavailable_triton is None
+            else ("true" if r.perf_oracle_unavailable_triton else "false")
+        ),
     }
 
 

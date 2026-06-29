@@ -271,6 +271,8 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
         "correctness_status", "correctness_reason",
         *MEMORY_FIELDS,
         "perf_target", "perf_actual", "perf_pass", "perf_gap",
+        # ── L2 fusion measurement protocol (RFC §4) — additive provenance ──
+        "golden_runner", "golden_priority", "backend", "perf_oracle_unavailable_triton",
     ]
     with out_csv.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -311,6 +313,10 @@ def write_perf_csv_from_l2(raw_csv: Path, out_csv: Path) -> Path:
                     "correctness_reason": row.get("correctness_reason", ""),
                     **_copy_memory_fields(row),
                     **perf_fields,
+                    "golden_runner": row.get("golden_runner", ""),
+                    "golden_priority": row.get("golden_priority", ""),
+                    "backend": row.get("backend", ""),
+                    "perf_oracle_unavailable_triton": row.get("perf_oracle_unavailable_triton", ""),
                 })
     return out_csv
 
