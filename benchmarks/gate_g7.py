@@ -311,7 +311,17 @@ def _is_non_arke_baseline(row: dict[str, str]) -> bool:
     Empty baseline strings (some L2 fusion rows) are treated as Arke-side rows
     because they originate from the harness's L2 fusion path which produces
     only the system-under-test row (no per-baseline replication).
+
+    L2 fusion measurement protocol (RFC §4, D-L2-a Leon-approved 2026-06-29):
+    the L2 fusion path emits three rows per (op, shape_tag) distinguished by an
+    ``approach`` column — ``separate`` (eager reference), ``liger`` (the
+    Triton-only golden denominator), and ``arke`` (the system-under-test).
+    Only the ``arke`` row is the SUT; ``separate`` and ``liger`` are oracles /
+    denominators and must be skipped here exactly like named baselines.
     """
+    approach = (row.get("approach") or "").strip().lower()
+    if approach in {"separate", "liger", "torch.compile", "torch_compile"}:
+        return True
     baseline = (row.get("baseline") or "").strip()
     if not baseline:
         return False
@@ -379,6 +389,26 @@ def _baseline_is_triton_only(row: dict[str, str]) -> bool:
     return baseline in _TRITON_ONLY_BASELINES
 
 
+def _row_is_triton_denominator(row: dict[str, str]) -> bool:
+    """Return True iff this row may serve as the Triton-only perf denominator.
+
+    Two shapes qualify:
+      * L1 path: a named Triton-only baseline (``baseline`` ∈ FlagGems /
+        Liger-Kernel / Triton-Tutorial) — the existing per-baseline-replicated
+        contract.
+      * L2 fusion path (RFC §4, D-L2-a): the ``liger`` approach row, tagged
+        ``golden_runner == "liger"`` and ``backend == "triton"``. The L2 path
+        does not populate the ``baseline`` column, so it is recognized by its
+        golden_runner/backend provenance instead.
+    """
+    if _baseline_is_triton_only(row):
+        return True
+    approach = (row.get("approach") or "").strip().lower()
+    golden = (row.get("golden_runner") or "").strip().lower()
+    backend = (row.get("backend") or "").strip().lower()
+    return approach == "liger" and golden == "liger" and backend == "triton"
+
+
 def _build_triton_ref_index(
     rows: list[tuple[str, dict[str, str]]],
 ) -> dict[tuple[str, str, str], float]:
@@ -393,10 +423,13 @@ def _build_triton_ref_index(
     Only rows with ``status == "ok"`` and a parseable ``latency_us`` are
     considered. Returns an empty dict when no Triton-only references are
     available (callers must then route every Arke row to audit-only).
+
+    Recognizes both the L1 named-baseline contract and the L2 fusion ``liger``
+    golden row (RFC §4, D-L2-a) via ``_row_is_triton_denominator``.
     """
     index: dict[tuple[str, str, str], float] = {}
     for layer, row in rows:
-        if not _baseline_is_triton_only(row):
+        if not _row_is_triton_denominator(row):
             continue
         status = (row.get("status") or "").strip().lower()
         if status != "ok":
