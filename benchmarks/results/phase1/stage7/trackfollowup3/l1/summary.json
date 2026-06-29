@@ -1,0 +1,38 @@
+{
+  "overall_geomean": 2.063,
+  "op_scores": {
+    "rope": 2.063
+  },
+  "total_shapes": 24,
+  "operators": [
+    "rope"
+  ],
+  "status_counts": {
+    "ok": 24
+  },
+  "correctness_counts": {
+    "unsupported": 8,
+    "ok": 16
+  },
+  "memory_policy_counts": {
+    "attention_fused": 16,
+    "attention": 8
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 24,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 24
+  },
+  "perf_targets": {
+    "rope": 1.0
+  },
+  "perf_actuals": {
+    "rope": 2.063
+  },
+  "perf_gaps": {
+    "rope": 1.4215
+  }
+}

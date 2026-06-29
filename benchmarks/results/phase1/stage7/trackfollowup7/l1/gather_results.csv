@@ -1,0 +1,54 @@
+op,shape_tag,M,N,K,baseline,priority,source,latency_us,latency_min_us,tflops,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,golden_runner,golden_priority,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy
+gather,tiny,64,256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,13.8,7.2,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,tiny,64,256,0,Arke,5,Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,72.3,5.1,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,moe-dispatch-top2,512,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,100.8,113.7,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,moe-dispatch-top2,512,4096,0,Arke,5,Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,72.4,29.7,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,moe-dispatch-top4,512,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,101.9,124.9,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,moe-dispatch-top4,512,4096,0,Arke,5,Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,88.4,31.7,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,kvcache-read-256,256,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,74.6,73.7,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,kvcache-read-256,256,4096,0,Arke,5,Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,66.0,78.8,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,kvcache-read-2k,2048,4096,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,537.0,442.4,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,kvcache-read-2k,2048,4096,0,Arke,5,Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,109.5,118.8,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,ds-moe-top2,512,5120,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,187.4,178.2,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,ds-moe-top2,512,5120,0,Arke,5,Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,65.8,34.8,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,embed-lookup-512,512,128256,0,PyTorch-eager,3,PyTorch 2.6.0+cu124 eager mode (default dispatch) | https://pytorch.org | License: BSD-3-Clause,4174.1,3376.1,,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,FlagGems,1,,,,
+gather,embed-lookup-512,512,128256,0,Arke,5,Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0,inf,inf,,unsupported,Arke.get_fn declined gather@embed-lookup-512,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,
+gather,tiny,64,256,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,inf,inf,,unsupported,FlagGems.get_fn declined gather@tiny,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,
+gather,moe-dispatch-top2,512,4096,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,inf,inf,,unsupported,FlagGems.get_fn declined gather@moe-dispatch-top2,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,
+gather,moe-dispatch-top4,512,4096,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,inf,inf,,unsupported,FlagGems.get_fn declined gather@moe-dispatch-top4,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,
+gather,kvcache-read-256,256,4096,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,inf,inf,,unsupported,FlagGems.get_fn declined gather@kvcache-read-256,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,
+gather,kvcache-read-2k,2048,4096,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,inf,inf,,unsupported,FlagGems.get_fn declined gather@kvcache-read-2k,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,
+gather,ds-moe-top2,512,5120,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,inf,inf,,unsupported,FlagGems.get_fn declined gather@ds-moe-top2,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,
+gather,embed-lookup-512,512,128256,0,FlagGems,1,FlagGems 5.0.0 (BAAI/FlagOS) | https://github.com/flagos-ai/FlagGems | License: Apache-2.0,inf,inf,,unsupported,FlagGems.get_fn declined gather@embed-lookup-512,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,,

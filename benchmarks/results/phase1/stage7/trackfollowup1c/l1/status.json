@@ -1,0 +1,36 @@
+{
+  "ts": 1782563726.593756,
+  "layer": "l1",
+  "fingerprint": "4e916d61aaff0dc9",
+  "elapsed_s": 54.83250331878662,
+  "per_op": {
+    "batch_matmul": {
+      "rows": 24,
+      "ok": 24,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "grouped_matmul": {
+      "rows": 9,
+      "ok": 6,
+      "permanent_failure": 3,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "silu_and_mul": {
+      "rows": 12,
+      "ok": 8,
+      "permanent_failure": 4,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "gelu_and_mul": {
+      "rows": 12,
+      "ok": 8,
+      "permanent_failure": 4,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

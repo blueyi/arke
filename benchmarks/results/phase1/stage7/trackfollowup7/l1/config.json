@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-06-28_221644",
+  "ops": [
+    "gather",
+    "permute",
+    "quantize_per_token",
+    "silu_and_mul",
+    "gelu_and_mul",
+    "swiglu_packed"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followup7",
+  "layer": "L1"
+}

@@ -1,0 +1,64 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+rmsnorm,gpt2-small,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-small,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-small,,,,,1.0,,,
+rmsnorm,gpt2-small,Liger-Kernel,85.1,107.5,,6.4924,ok,,false,true,0.00390625,0.000153957,0.005,0.005,ok,,,,,,1.0,6.4924,true,5.4924
+rmsnorm,gpt2-small,PyTorch-eager,552.5,554.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-small,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-small,false,true,0.00195312,0.000157557,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-small,,,,,1.0,,,
+rmsnorm,gpt2-small,torch.compile-max-autotune,266.3,271.4,,2.0747,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,2.0747,true,1.0747
+rmsnorm,gpt2-small,Arke,58.9,61.4,,9.3803,ok,,false,true,0.0025053,0.000202903,0.005,0.005,ok,,,,,,1.0,9.3803,true,8.3803
+rmsnorm,gpt2-small,FlagGems,575.7,451.6,,0.9597,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9597,false,-0.0403
+rmsnorm,gpt2-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-ffn,,,,,1.0,,,
+rmsnorm,gpt2-ffn,Liger-Kernel,85.5,107.5,,6.4316,ok,,false,true,0.00390625,0.00016025,0.005,0.005,ok,,,,,,1.0,6.4316,true,5.4316
+rmsnorm,gpt2-ffn,PyTorch-eager,549.9,513.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-ffn,false,true,0.00390625,0.000167147,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-ffn,,,,,1.0,,,
+rmsnorm,gpt2-ffn,torch.compile-max-autotune,283.9,215.0,,1.9369,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,1.9369,true,0.9369
+rmsnorm,gpt2-ffn,Arke,58.1,60.4,,9.4647,ok,,false,true,0.00279379,0.000211317,0.005,0.005,ok,,,,,,1.0,9.4647,true,8.4647
+rmsnorm,gpt2-ffn,FlagGems,564.9,532.5,,0.9734,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9734,false,-0.0266
+rmsnorm,gpt2-medium,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-medium,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@gpt2-medium,,,,,1.0,,,
+rmsnorm,gpt2-medium,Liger-Kernel,87.9,116.7,,6.4835,ok,,false,true,0.00390625,0.000171155,0.005,0.005,ok,,,,,,1.0,6.4835,true,5.4835
+rmsnorm,gpt2-medium,PyTorch-eager,569.9,550.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,gpt2-medium,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@gpt2-medium,false,true,0.00390625,0.000161364,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@gpt2-medium,,,,,1.0,,,
+rmsnorm,gpt2-medium,torch.compile-max-autotune,297.3,292.9,,1.9169,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,1.9169,true,0.9169
+rmsnorm,gpt2-medium,Arke,58.0,78.8,,9.8259,ok,,false,true,0.0027256,0.000202098,0.005,0.005,ok,,,,,,1.0,9.8259,true,8.8259
+rmsnorm,gpt2-medium,FlagGems,550.1,453.6,,1.0360,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0360,true,0.0360
+rmsnorm,llama-7b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-7b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-7b,,,,,1.0,,,
+rmsnorm,llama-7b,Liger-Kernel,91.0,118.8,,6.1330,ok,,false,true,0.00390625,0.000138644,0.005,0.005,ok,,,,,,1.0,6.1330,true,5.1330
+rmsnorm,llama-7b,PyTorch-eager,558.1,552.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-7b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-7b,false,true,0.00390625,0.000150003,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-7b,,,,,1.0,,,
+rmsnorm,llama-7b,torch.compile-max-autotune,289.0,194.6,,1.9311,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,1.9311,true,0.9311
+rmsnorm,llama-7b,Arke,55.9,70.7,,9.9839,ok,,false,true,0.00353146,0.000201823,0.005,0.005,ok,,,,,,1.0,9.9839,true,8.9839
+rmsnorm,llama-7b,FlagGems,602.1,480.3,,0.9269,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9269,false,-0.0731
+rmsnorm,llama-13b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-13b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-13b,,,,,1.0,,,
+rmsnorm,llama-13b,Liger-Kernel,89.8,29.7,,6.2884,ok,,false,true,0.00390625,0.000144401,0.005,0.005,ok,,,,,,1.0,6.2884,true,5.2884
+rmsnorm,llama-13b,PyTorch-eager,564.7,484.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-13b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-13b,false,true,0.00390625,0.000148691,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-13b,,,,,1.0,,,
+rmsnorm,llama-13b,torch.compile-max-autotune,288.1,144.4,,1.9601,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,1.9601,true,0.9601
+rmsnorm,llama-13b,Arke,54.0,62.6,,10.4574,ok,,false,true,0.00369644,0.000206472,0.005,0.005,ok,,,,,,1.0,10.4574,true,9.4574
+rmsnorm,llama-13b,FlagGems,698.3,456.7,,0.8087,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8087,false,-0.1913
+rmsnorm,llama-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@llama-long,,,,,1.0,,,
+rmsnorm,llama-long,Liger-Kernel,115.2,163.8,,5.5642,ok,,false,true,0.00390625,0.000153012,0.005,0.005,ok,,,,,,1.0,5.5642,true,4.5642
+rmsnorm,llama-long,PyTorch-eager,641.0,655.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,llama-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@llama-long,false,true,0.00390625,0.000148984,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@llama-long,,,,,1.0,,,
+rmsnorm,llama-long,torch.compile-max-autotune,302.2,314.4,,2.1211,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,2.1211,true,1.1211
+rmsnorm,llama-long,Arke,109.4,134.1,,5.8592,ok,,false,true,0.00382757,0.000204755,0.005,0.005,ok,,,,,,1.0,5.8592,true,4.8592
+rmsnorm,llama-long,FlagGems,658.2,589.8,,0.9739,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9739,false,-0.0261
+rmsnorm,ds-v2,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v2,,,,,1.0,,,
+rmsnorm,ds-v2,Liger-Kernel,85.2,106.5,,6.7277,ok,,false,true,0.00390625,0.000168428,0.005,0.005,ok,,,,,,1.0,6.7277,true,5.7277
+rmsnorm,ds-v2,PyTorch-eager,573.2,502.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v2,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v2,false,true,0.00390625,0.000144103,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v2,,,,,1.0,,,
+rmsnorm,ds-v2,torch.compile-max-autotune,300.6,307.2,,1.9069,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,1.9069,true,0.9069
+rmsnorm,ds-v2,Arke,55.8,20.5,,10.2724,ok,,false,true,0.00283813,0.000196126,0.005,0.005,ok,,,,,,1.0,10.2724,true,9.2724
+rmsnorm,ds-v2,FlagGems,662.0,366.6,,0.8659,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8659,false,-0.1341
+rmsnorm,ds-v3,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@ds-v3,,,,,1.0,,,
+rmsnorm,ds-v3,Liger-Kernel,88.3,102.2,,6.3352,ok,,false,true,0.00390625,0.000147323,0.005,0.005,ok,,,,,,1.0,6.3352,true,5.3352
+rmsnorm,ds-v3,PyTorch-eager,559.4,550.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,ds-v3,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@ds-v3,false,true,0.00390625,0.000154992,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@ds-v3,,,,,1.0,,,
+rmsnorm,ds-v3,torch.compile-max-autotune,307.2,271.4,,1.8210,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,1.8210,true,0.8210
+rmsnorm,ds-v3,Arke,55.3,41.0,,10.1157,ok,,false,true,0.00330877,0.000205869,0.005,0.005,ok,,,,,,1.0,10.1157,true,9.1157
+rmsnorm,ds-v3,FlagGems,677.0,348.2,,0.8263,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8263,false,-0.1737
+rmsnorm,mixtral-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm@mixtral-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm@mixtral-ffn,,,,,1.0,,,
+rmsnorm,mixtral-ffn,Liger-Kernel,89.7,79.9,,6.2386,ok,,false,true,0.00390625,0.000142246,0.005,0.005,ok,,,,,,1.0,6.2386,true,5.2386
+rmsnorm,mixtral-ffn,PyTorch-eager,559.6,521.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm,mixtral-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm@mixtral-ffn,false,true,0.00390625,0.000136449,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm@mixtral-ffn,,,,,1.0,,,
+rmsnorm,mixtral-ffn,torch.compile-max-autotune,309.5,313.3,,1.8081,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for rmsnorm,,,,,1.0,1.8081,true,0.8081
+rmsnorm,mixtral-ffn,Arke,57.8,87.0,,9.6817,ok,,false,true,0.00388956,0.000214129,0.005,0.005,ok,,,,,,1.0,9.6817,true,8.6817
+rmsnorm,mixtral-ffn,FlagGems,673.7,517.1,,0.8306,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8306,false,-0.1694

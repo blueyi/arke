@@ -1,0 +1,15 @@
+{
+  "ts": 1782544475.3963184,
+  "layer": "l1",
+  "fingerprint": "26b9f3ebce30b340",
+  "elapsed_s": 49.908339500427246,
+  "per_op": {
+    "grouped_matmul": {
+      "rows": 9,
+      "ok": 6,
+      "permanent_failure": 3,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

@@ -1,0 +1,25 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+rope,gpt2-sm-128,Liger-Kernel,306.7,287.7,,6.6655,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,786432,3542771302,0.0002,attention_fused,1.0,6.6655,true,5.6655
+rope,gpt2-sm-128,PyTorch-eager,2044.3,829.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,1179648,3542771302,0.0003,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-128,Arke,822.1,736.4,,2.4867,ok,,false,true,0,0,0.001,0.001,ok,,786432,3542771302,0.0002,attention_fused,1.0,2.4867,true,1.4867
+rope,gpt2-sm-512,Liger-Kernel,267.5,266.0,,6.9477,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,3145728,3542771302,0.0009,attention_fused,1.0,6.9477,true,5.9477
+rope,gpt2-sm-512,PyTorch-eager,1858.5,1586.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,9437184,3542771302,0.0027,attention,1.0,1.0000,true,0.0000
+rope,gpt2-sm-512,Arke,884.6,635.9,,2.1009,ok,,false,true,0,0,0.001,0.001,ok,,3145728,3542771302,0.0009,attention_fused,1.0,2.1009,true,1.1009
+rope,llama2-512,Liger-Kernel,348.1,307.9,,7.1528,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,7.1528,true,6.1528
+rope,llama2-512,PyTorch-eager,2489.9,1694.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama2-512,Arke,1014.3,770.0,,2.4548,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.4548,true,1.4548
+rope,llama2-2k,Liger-Kernel,671.3,630.8,,3.4782,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,67108864,3542771302,0.0189,attention_fused,1.0,3.4782,true,2.4782
+rope,llama2-2k,PyTorch-eager,2334.9,1955.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,335544320,3542771302,0.0947,attention,1.0,1.0000,true,0.0000
+rope,llama2-2k,Arke,944.0,797.7,,2.4734,ok,,false,true,0,0,0.001,0.001,ok,,67108864,3542771302,0.0189,attention_fused,1.0,2.4734,true,1.4734
+rope,llama3-q-512,Liger-Kernel,296.9,313.3,,8.4948,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,16777216,3542771302,0.0047,attention_fused,1.0,8.4948,true,7.4948
+rope,llama3-q-512,PyTorch-eager,2522.1,1660.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,33554432,3542771302,0.0095,attention,1.0,1.0000,true,0.0000
+rope,llama3-q-512,Arke,875.8,739.3,,2.8798,ok,,false,true,0,0,0.001,0.001,ok,,16777216,3542771302,0.0047,attention_fused,1.0,2.8798,true,1.8798
+rope,llama3-kv-512,Liger-Kernel,308.3,291.0,,6.2738,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,4194304,3542771302,0.0012,attention_fused,1.0,6.2738,true,5.2738
+rope,llama3-kv-512,PyTorch-eager,1934.2,1686.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,8388608,3542771302,0.0024,attention,1.0,1.0000,true,0.0000
+rope,llama3-kv-512,Arke,903.3,698.4,,2.1413,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention_fused,1.0,2.1413,true,1.1413
+rope,qwen25-q-512,Liger-Kernel,278.9,295.7,,8.0993,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,14680064,3542771302,0.0041,attention_fused,1.0,8.0993,true,7.0993
+rope,qwen25-q-512,PyTorch-eager,2258.9,1745.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,29360128,3542771302,0.0083,attention,1.0,1.0000,true,0.0000
+rope,qwen25-q-512,Arke,887.1,790.5,,2.5464,ok,,false,true,0,0,0.001,0.001,ok,,14680064,3542771302,0.0041,attention_fused,1.0,2.5464,true,1.5464
+rope,qwen25-kv-512,Liger-Kernel,296.3,274.4,,7.4887,ok,,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for rope,2097152,3542771302,0.0006,attention_fused,1.0,7.4887,true,6.4887
+rope,qwen25-kv-512,PyTorch-eager,2218.9,1743.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,4194304,3542771302,0.0012,attention,1.0,1.0000,true,0.0000
+rope,qwen25-kv-512,Arke,852.0,476.2,,2.6043,ok,,false,true,0,0,0.001,0.001,ok,,2097152,3542771302,0.0006,attention_fused,1.0,2.6043,true,1.6043

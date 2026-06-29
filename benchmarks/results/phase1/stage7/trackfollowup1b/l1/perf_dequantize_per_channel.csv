@@ -1,0 +1,17 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+dequantize_per_channel,tiny-int8,PyTorch-eager,220.3,113.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,tiny-int8,Arke,410.7,386.0,,0.5364,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5364,false,-0.4636
+dequantize_per_channel,gpt2-int8,PyTorch-eager,210.1,222.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,gpt2-int8,Arke,400.2,357.4,,0.5250,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5250,false,-0.4750
+dequantize_per_channel,llama2-int4-ffn,PyTorch-eager,205.6,225.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,llama2-int4-ffn,Arke,403.8,457.7,,0.5092,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5092,false,-0.4908
+dequantize_per_channel,llama2-int8-hidden,PyTorch-eager,213.5,145.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,llama2-int8-hidden,Arke,413.6,364.5,,0.5162,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5162,false,-0.4838
+dequantize_per_channel,llama3-int4-ffn,PyTorch-eager,216.6,249.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,llama3-int4-ffn,Arke,506.3,550.8,,0.4278,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4278,false,-0.5722
+dequantize_per_channel,ds-v2-int4,PyTorch-eager,206.3,193.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,ds-v2-int4,Arke,437.1,459.8,,0.4720,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4720,false,-0.5280
+dequantize_per_channel,ds-v3-int4,PyTorch-eager,219.0,239.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,ds-v3-int4,Arke,642.9,699.4,,0.3406,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3406,false,-0.6594
+dequantize_per_channel,qwen25-int4-ffn,PyTorch-eager,223.4,229.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+dequantize_per_channel,qwen25-int4-ffn,Arke,660.9,663.6,,0.3380,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3380,false,-0.6620

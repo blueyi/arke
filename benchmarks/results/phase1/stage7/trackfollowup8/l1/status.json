@@ -1,0 +1,43 @@
+{
+  "ts": 1782656665.709916,
+  "layer": "l1",
+  "fingerprint": "98001641be5e7a24",
+  "elapsed_s": 50.07248067855835,
+  "per_op": {
+    "gather": {
+      "rows": 21,
+      "ok": 14,
+      "permanent_failure": 7,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "permute": {
+      "rows": 18,
+      "ok": 9,
+      "permanent_failure": 9,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "quantize_per_token": {
+      "rows": 24,
+      "ok": 16,
+      "permanent_failure": 8,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "silu_and_mul": {
+      "rows": 12,
+      "ok": 8,
+      "permanent_failure": 4,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "gelu_and_mul": {
+      "rows": 12,
+      "ok": 8,
+      "permanent_failure": 4,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

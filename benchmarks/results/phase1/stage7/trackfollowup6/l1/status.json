@@ -1,0 +1,15 @@
+{
+  "ts": 1782656151.2054968,
+  "layer": "l1",
+  "fingerprint": "5fa2afe73c9ad649",
+  "elapsed_s": 18.14537787437439,
+  "per_op": {
+    "embedding": {
+      "rows": 27,
+      "ok": 27,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

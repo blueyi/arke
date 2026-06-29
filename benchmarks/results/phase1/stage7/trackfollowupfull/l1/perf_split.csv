@@ -1,0 +1,13 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+split,tiny-2,PyTorch-eager,4.1,5.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,tiny-2,Arke,100.9,74.8,,0.0406,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0406,false,-0.9594
+split,gpt2-qkv-split,PyTorch-eager,4.3,3.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,gpt2-qkv-split,Arke,69.2,63.5,,0.0621,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0621,false,-0.9379
+split,llama-qkv-split,PyTorch-eager,4.2,1.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,llama-qkv-split,Arke,116.1,108.5,,0.0362,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0362,false,-0.9638
+split,llama3-qkv-gqa,PyTorch-eager,4.0,2.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,llama3-qkv-gqa,Arke,75.3,75.8,,0.0531,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0531,false,-0.9469
+split,qwen25-qkv-gqa,PyTorch-eager,4.3,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,qwen25-qkv-gqa,Arke,69.6,64.5,,0.0618,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0618,false,-0.9382
+split,ffn-gate-up,PyTorch-eager,4.1,2.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+split,ffn-gate-up,Arke,362.8,307.2,,0.0113,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.0113,false,-0.9887

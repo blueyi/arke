@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-28_040317",
+  "ops": [
+    "transpose"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followup2",
+  "layer": "L1"
+}

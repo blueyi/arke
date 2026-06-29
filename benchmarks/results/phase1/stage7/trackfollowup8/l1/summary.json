@@ -1,0 +1,60 @@
+{
+  "overall_geomean": 1.5865,
+  "op_scores": {
+    "gather": 1.4233,
+    "gelu_and_mul": 1.4435,
+    "permute": 1.0,
+    "quantize_per_token": 2.4372,
+    "silu_and_mul": 1.5014
+  },
+  "total_shapes": 55,
+  "operators": [
+    "gather",
+    "gelu_and_mul",
+    "permute",
+    "quantize_per_token",
+    "silu_and_mul"
+  ],
+  "status_counts": {
+    "ok": 55,
+    "unsupported": 32
+  },
+  "correctness_counts": {
+    "ok": 55,
+    "unsupported": 32
+  },
+  "memory_policy_counts": {
+    "none": 87
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 87,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 53,
+    "false": 2,
+    "unknown": 32
+  },
+  "perf_targets": {
+    "gather": 1.0,
+    "gelu_and_mul": 1.0,
+    "permute": 1.0,
+    "quantize_per_token": 1.0,
+    "silu_and_mul": 1.0
+  },
+  "perf_actuals": {
+    "gather": 1.4233,
+    "gelu_and_mul": 1.4435,
+    "permute": 1.0,
+    "quantize_per_token": 2.4372,
+    "silu_and_mul": 1.5014
+  },
+  "perf_gaps": {
+    "gather": 3.4758,
+    "gelu_and_mul": 0.6053,
+    "permute": 0.0,
+    "quantize_per_token": 2.4874,
+    "silu_and_mul": 0.6749
+  }
+}

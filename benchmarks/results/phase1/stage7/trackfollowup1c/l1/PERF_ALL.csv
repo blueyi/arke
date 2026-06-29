@@ -1,0 +1,58 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+batch_matmul,gpt2-attn-128,cuBLAS/cuDNN,13.8,9.2,0.009,1.0072,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.0072,true,0.0072
+batch_matmul,gpt2-attn-128,PyTorch-eager,13.9,17.4,0.009,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-128,Arke,74.7,83.8,0.002,0.1861,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,0.1861,false,-0.8139
+batch_matmul,gpt2-attn-128,FlagGems,100.3,77.7,0.001,0.1386,ok,,false,true,0,0,0.01,0.01,ok,,409600,3542771302,0.0001,dense_matmul,1.0,0.1386,false,-0.8614
+batch_matmul,gpt2-attn-512,cuBLAS/cuDNN,59.7,66.5,0.013,0.2546,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.2546,false,-0.7454
+batch_matmul,gpt2-attn-512,PyTorch-eager,15.2,20.3,0.052,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,gpt2-attn-512,Arke,72.8,106.5,0.011,0.2088,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.2088,false,-0.7912
+batch_matmul,gpt2-attn-512,FlagGems,96.1,33.8,0.008,0.1582,ok,,false,true,0,0,0.01,0.01,ok,,7143424,3542771302,0.0020,dense_matmul,1.0,0.1582,false,-0.8418
+batch_matmul,llama-attn-512,cuBLAS/cuDNN,147.5,151.6,0.028,0.2278,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.2278,false,-0.7722
+batch_matmul,llama-attn-512,PyTorch-eager,33.6,35.8,0.125,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,llama-attn-512,Arke,168.1,172.8,0.025,0.1999,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.1999,false,-0.8001
+batch_matmul,llama-attn-512,FlagGems,375.1,123.9,0.011,0.0896,ok,,false,true,0,0,0.01,0.01,ok,,21102592,3542771302,0.0060,dense_matmul,1.0,0.0896,false,-0.9104
+batch_matmul,llama-attn-2k,cuBLAS/cuDNN,2077.8,1938.4,0.008,0.0563,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0563,false,-0.9437
+batch_matmul,llama-attn-2k,PyTorch-eager,116.9,117.8,0.144,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,llama-attn-2k,Arke,2402.8,2293.8,0.007,0.0487,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0487,false,-0.9513
+batch_matmul,llama-attn-2k,FlagGems,4573.0,3086.3,0.004,0.0256,ok,,false,true,0,0,0.01,0.01,ok,,285736960,3542771302,0.0807,dense_matmul,1.0,0.0256,false,-0.9744
+batch_matmul,batched-8,cuBLAS/cuDNN,25.7,29.7,0.003,0.9416,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.9416,false,-0.0584
+batch_matmul,batched-8,PyTorch-eager,24.2,43.0,0.003,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,batched-8,Arke,82.8,75.8,0.001,0.2923,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.2923,false,-0.7077
+batch_matmul,batched-8,FlagGems,95.8,6.1,0.001,0.2526,ok,,false,true,0,0,0.01,0.01,ok,,139264,3542771302,0.0000,dense_matmul,1.0,0.2526,false,-0.7474
+batch_matmul,batched-32,cuBLAS/cuDNN,46.1,57.3,0.023,0.3579,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.3579,false,-0.6421
+batch_matmul,batched-32,PyTorch-eager,16.5,15.3,0.063,1.0000,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,1.0000,true,0.0000
+batch_matmul,batched-32,Arke,78.4,58.4,0.013,0.2105,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.2105,false,-0.7895
+batch_matmul,batched-32,FlagGems,120.2,15.4,0.009,0.1373,ok,,false,true,0,0,0.01,0.01,ok,,2129920,3542771302,0.0006,dense_matmul,1.0,0.1373,false,-0.8627
+gelu_and_mul,gpt2-sm,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined gelu_and_mul@gpt2-sm,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu_and_mul,,,,,1.0,,,
+gelu_and_mul,gpt2-sm,PyTorch-eager,37.1,65.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gelu_and_mul,gpt2-sm,Arke,54.1,58.5,,0.6858,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.6858,false,-0.3142
+gelu_and_mul,llama-7b-512,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined gelu_and_mul@llama-7b-512,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu_and_mul,,,,,1.0,,,
+gelu_and_mul,llama-7b-512,PyTorch-eager,37.9,9.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gelu_and_mul,llama-7b-512,Arke,155.9,162.8,,0.2431,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.2431,false,-0.7569
+gelu_and_mul,llama-7b-2k,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined gelu_and_mul@llama-7b-2k,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu_and_mul,,,,,1.0,,,
+gelu_and_mul,llama-7b-2k,PyTorch-eager,38.2,9.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gelu_and_mul,llama-7b-2k,Arke,590.6,524.3,,0.0647,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.0647,false,-0.9353
+gelu_and_mul,llama3-8b,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined gelu_and_mul@llama3-8b,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for gelu_and_mul,,,,,1.0,,,
+gelu_and_mul,llama3-8b,PyTorch-eager,42.3,5.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gelu_and_mul,llama3-8b,Arke,169.9,217.1,,0.2490,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.2490,false,-0.7510
+grouped_matmul,moe-tiny,PyTorch-eager,126.6,9.2,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,180224,3542771302,0.0001,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-tiny,Arke,118.9,9.2,,1.0648,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,180224,3542771302,0.0001,dense_matmul,1.0,1.0648,true,0.0648
+grouped_matmul,moe-tiny,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined grouped_matmul@moe-tiny,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for grouped_matmul,180224,3542771302,0.0001,dense_matmul,1.0,,,
+grouped_matmul,moe-small,PyTorch-eager,419.3,17.4,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,1572864,3542771302,0.0004,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-small,Arke,82.3,37.7,,5.0948,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,1572864,3542771302,0.0004,dense_matmul,1.0,5.0948,true,4.0948
+grouped_matmul,moe-small,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined grouped_matmul@moe-small,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for grouped_matmul,1572864,3542771302,0.0004,dense_matmul,1.0,,,
+grouped_matmul,moe-medium,PyTorch-eager,661.5,242.7,,1.0000,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,53477376,3542771302,0.0151,dense_matmul,1.0,1.0000,true,0.0000
+grouped_matmul,moe-medium,Arke,1068.4,586.8,,0.6192,ok,,false,true,0,0,0.01,0.01,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,53477376,3542771302,0.0151,dense_matmul,1.0,0.6192,false,-0.3808
+grouped_matmul,moe-medium,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined grouped_matmul@moe-medium,false,,,,0.01,0.01,unsupported,runner FlagGems does not implement run_with_inputs for grouped_matmul,53477376,3542771302,0.0151,dense_matmul,1.0,,,
+silu_and_mul,gpt2-sm,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu_and_mul@gpt2-sm,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for silu_and_mul,,,,,1.0,,,
+silu_and_mul,gpt2-sm,PyTorch-eager,46.9,2.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+silu_and_mul,gpt2-sm,Arke,72.7,13.3,,0.6451,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.6451,false,-0.3549
+silu_and_mul,llama-7b-512,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu_and_mul@llama-7b-512,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for silu_and_mul,,,,,1.0,,,
+silu_and_mul,llama-7b-512,PyTorch-eager,45.0,2.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+silu_and_mul,llama-7b-512,Arke,332.4,111.6,,0.1354,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.1354,false,-0.8646
+silu_and_mul,llama-7b-2k,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu_and_mul@llama-7b-2k,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for silu_and_mul,,,,,1.0,,,
+silu_and_mul,llama-7b-2k,PyTorch-eager,44.4,56.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+silu_and_mul,llama-7b-2k,Arke,605.1,527.4,,0.0734,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.0734,false,-0.9266
+silu_and_mul,llama3-8b,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu_and_mul@llama3-8b,false,,,,0.001,0.001,unsupported,runner Liger-Kernel does not implement run_with_inputs for silu_and_mul,,,,,1.0,,,
+silu_and_mul,llama3-8b,PyTorch-eager,37.7,65.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+silu_and_mul,llama3-8b,Arke,180.8,188.4,,0.2085,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='Liger-Kernel' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.2085,false,-0.7915

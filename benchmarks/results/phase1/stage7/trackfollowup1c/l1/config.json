@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-06-27_203431",
+  "ops": [
+    "batch_matmul",
+    "grouped_matmul",
+    "silu_and_mul",
+    "gelu_and_mul"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followup1c",
+  "layer": "L1"
+}

@@ -1,0 +1,9 @@
+{"ts": 1782670217.2411985, "event": "run_start", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "ops": ["scatter"], "tier": 2, "resume": false, "retry_policy": "auto"}
+{"ts": 1782670217.2426999, "event": "phase_start", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "phase": "per_op_measurement", "op": "scatter"}
+{"ts": 1782670217.3864026, "event": "heartbeat", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "event_kind": "measurement_start", "op": "scatter", "shape_tag": "tiny", "baseline": "PyTorch-eager"}
+{"ts": 1782670218.2182574, "event": "measurement", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "op": "scatter", "shape_tag": "tiny", "baseline": "PyTorch-eager", "status": "ok", "latency_us": 24.379392623901367}
+{"ts": 1782670218.2185886, "event": "heartbeat", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "event_kind": "measurement_done", "op": "scatter", "shape_tag": "tiny", "baseline": "PyTorch-eager", "elapsed_s": 0.83, "outcome": "ok"}
+{"ts": 1782670223.4617991, "event": "heartbeat", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "event_kind": "measurement_start", "op": "scatter", "shape_tag": "tiny", "baseline": "Arke"}
+{"ts": 1782670225.0852606, "event": "measurement", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "op": "scatter", "shape_tag": "tiny", "baseline": "Arke", "status": "ok", "latency_us": 156.5061798095703}
+{"ts": 1782670225.085529, "event": "heartbeat", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "event_kind": "measurement_done", "op": "scatter", "shape_tag": "tiny", "baseline": "Arke", "elapsed_s": 1.62, "outcome": "ok"}
+{"ts": 1782670225.7084506, "event": "heartbeat", "layer": "l1", "fingerprint": "9d6e686089e15ea1", "event_kind": "measurement_start", "op": "scatter", "shape_tag": "moe-combine-top2", "baseline": "PyTorch-eager"}

@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-06-28_193306",
+  "ops": [
+    "matmul",
+    "rope",
+    "cross_entropy"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followup3probe",
+  "layer": "L1"
+}

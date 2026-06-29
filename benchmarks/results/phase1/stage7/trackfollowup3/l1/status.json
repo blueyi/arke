@@ -1,0 +1,15 @@
+{
+  "ts": 1782647600.6584706,
+  "layer": "l1",
+  "fingerprint": "9b71f39219707ecb",
+  "elapsed_s": 13.691263914108276,
+  "per_op": {
+    "rope": {
+      "rows": 24,
+      "ok": 24,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

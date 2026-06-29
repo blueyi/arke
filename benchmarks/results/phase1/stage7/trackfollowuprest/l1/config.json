@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-06-28_210440",
+  "ops": [
+    "copy_",
+    "cross_attention",
+    "cross_entropy",
+    "dequantize_per_channel",
+    "embedding",
+    "flash_attention",
+    "fused_linear_cross_entropy",
+    "gather",
+    "gelu_and_mul",
+    "grouped_query_attention",
+    "permute",
+    "quantize_per_token",
+    "rope",
+    "silu_and_mul",
+    "swiglu_packed"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followuprest",
+  "layer": "L1"
+}

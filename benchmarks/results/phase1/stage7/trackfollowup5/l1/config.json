@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-28_210248",
+  "ops": [
+    "softmax"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followup5",
+  "layer": "L1"
+}

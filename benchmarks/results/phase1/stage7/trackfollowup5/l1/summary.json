@@ -1,0 +1,41 @@
+{
+  "overall_geomean": 0.3433,
+  "op_scores": {
+    "softmax": 0.3433
+  },
+  "total_shapes": 68,
+  "operators": [
+    "softmax"
+  ],
+  "status_counts": {
+    "ok": 68,
+    "unsupported": 2
+  },
+  "correctness_counts": {
+    "ok": 59,
+    "unsupported": 10,
+    "error": 1
+  },
+  "memory_policy_counts": {
+    "none": 70
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 70,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "false": 52,
+    "true": 16,
+    "unknown": 2
+  },
+  "perf_targets": {
+    "softmax": 1.0
+  },
+  "perf_actuals": {
+    "softmax": 0.3433
+  },
+  "perf_gaps": {
+    "softmax": -0.475
+  }
+}

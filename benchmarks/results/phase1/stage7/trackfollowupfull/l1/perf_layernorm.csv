@@ -1,0 +1,55 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+layernorm,gpt2-small,cuBLAS/cuDNN,53.2,62.5,,1.0282,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0282,true,0.0282
+layernorm,gpt2-small,PyTorch-eager,54.7,8.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,gpt2-small,torch.compile,284.6,254.8,,0.1922,ok,,false,true,0.000976562,1.12195e-08,0.005,0.005,ok,,,,,,1.0,0.1922,false,-0.8078
+layernorm,gpt2-small,torch.compile-max-autotune,273.2,124.9,,0.2002,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.2002,false,-0.7998
+layernorm,gpt2-small,Arke,81.4,9.0,,0.6720,ok,,false,true,0.00176191,0.000140779,0.005,0.005,ok,,,,,,1.0,0.6720,false,-0.3280
+layernorm,gpt2-small,FlagGems,56.2,80.6,,0.9733,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9733,false,-0.0267
+layernorm,gpt2-ffn,cuBLAS/cuDNN,58.9,7.2,,0.9372,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9372,false,-0.0628
+layernorm,gpt2-ffn,PyTorch-eager,55.2,7.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,gpt2-ffn,torch.compile,320.8,186.1,,0.1721,ok,,false,true,0.000976562,1.57041e-08,0.005,0.005,ok,,,,,,1.0,0.1721,false,-0.8279
+layernorm,gpt2-ffn,torch.compile-max-autotune,285.3,107.5,,0.1935,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.1935,false,-0.8065
+layernorm,gpt2-ffn,Arke,58.1,12.3,,0.9501,ok,,false,true,0.00187683,0.000139075,0.005,0.005,ok,,,,,,1.0,0.9501,false,-0.0499
+layernorm,gpt2-ffn,FlagGems,59.2,65.8,,0.9324,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9324,false,-0.0676
+layernorm,gpt2-medium,cuBLAS/cuDNN,60.7,8.2,,0.9621,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9621,false,-0.0379
+layernorm,gpt2-medium,PyTorch-eager,58.4,7.0,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,gpt2-medium,torch.compile,318.0,104.3,,0.1836,ok,,false,true,0.000488281,9.31504e-09,0.005,0.005,ok,,,,,,1.0,0.1836,false,-0.8164
+layernorm,gpt2-medium,torch.compile-max-autotune,293.4,206.8,,0.1990,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.1990,false,-0.8010
+layernorm,gpt2-medium,Arke,59.3,9.2,,0.9848,ok,,false,true,0.00170851,0.000140763,0.005,0.005,ok,,,,,,1.0,0.9848,false,-0.0152
+layernorm,gpt2-medium,FlagGems,59.5,64.7,,0.9815,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9815,false,-0.0185
+layernorm,llama-7b,cuBLAS/cuDNN,59.3,86.0,,1.1298,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1298,true,0.1298
+layernorm,llama-7b,PyTorch-eager,67.0,8.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama-7b,torch.compile,302.0,76.8,,0.2219,ok,,false,true,0.000976562,1.35625e-08,0.005,0.005,ok,,,,,,1.0,0.2219,false,-0.7781
+layernorm,llama-7b,torch.compile-max-autotune,301.4,140.3,,0.2223,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.2223,false,-0.7777
+layernorm,llama-7b,Arke,56.5,13.3,,1.1858,ok,,false,true,0.00189257,0.000141078,0.005,0.005,ok,,,,,,1.0,1.1858,true,0.1858
+layernorm,llama-7b,FlagGems,59.3,7.2,,1.1298,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1298,true,0.1298
+layernorm,llama-13b,cuBLAS/cuDNN,71.7,52.1,,0.8201,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8201,false,-0.1799
+layernorm,llama-13b,PyTorch-eager,58.8,81.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama-13b,torch.compile,310.4,295.1,,0.1894,ok,,false,true,0.000976562,1.61845e-08,0.005,0.005,ok,,,,,,1.0,0.1894,false,-0.8106
+layernorm,llama-13b,torch.compile-max-autotune,299.2,193.5,,0.1965,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.1965,false,-0.8035
+layernorm,llama-13b,Arke,64.0,26.6,,0.9187,ok,,false,true,0.00193644,0.000140578,0.005,0.005,ok,,,,,,1.0,0.9187,false,-0.0813
+layernorm,llama-13b,FlagGems,57.5,72.7,,1.0226,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0226,true,0.0226
+layernorm,llama-long,cuBLAS/cuDNN,162.2,167.9,,0.7589,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7589,false,-0.2411
+layernorm,llama-long,PyTorch-eager,123.1,131.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,llama-long,torch.compile,367.7,390.1,,0.3348,ok,,false,true,0.00195312,2.1351e-08,0.005,0.005,ok,,,,,,1.0,0.3348,false,-0.6652
+layernorm,llama-long,torch.compile-max-autotune,301.0,322.6,,0.4090,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.4090,false,-0.5910
+layernorm,llama-long,Arke,111.6,116.7,,1.1030,ok,,false,true,0.00194788,0.000140312,0.005,0.005,ok,,,,,,1.0,1.1030,true,0.1030
+layernorm,llama-long,FlagGems,141.4,144.4,,0.8706,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8706,false,-0.1294
+layernorm,ds-v2,cuBLAS/cuDNN,58.0,78.8,,1.0034,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0034,true,0.0034
+layernorm,ds-v2,PyTorch-eager,58.2,78.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,ds-v2,torch.compile,316.8,273.4,,0.1837,ok,,false,true,0.00195312,2.66157e-08,0.005,0.005,ok,,,,,,1.0,0.1837,false,-0.8163
+layernorm,ds-v2,torch.compile-max-autotune,313.7,290.0,,0.1855,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.1855,false,-0.8145
+layernorm,ds-v2,Arke,59.5,71.7,,0.9782,ok,,false,true,0.00188828,0.000141491,0.005,0.005,ok,,,,,,1.0,0.9782,false,-0.0218
+layernorm,ds-v2,FlagGems,58.5,39.9,,0.9949,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9949,false,-0.0051
+layernorm,ds-v3,cuBLAS/cuDNN,76.9,53.5,,0.7542,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7542,false,-0.2458
+layernorm,ds-v3,PyTorch-eager,58.0,68.5,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,ds-v3,torch.compile,305.7,188.4,,0.1897,ok,,false,true,0.000976562,1.46846e-08,0.005,0.005,ok,,,,,,1.0,0.1897,false,-0.8103
+layernorm,ds-v3,torch.compile-max-autotune,291.8,293.7,,0.1988,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.1988,false,-0.8012
+layernorm,ds-v3,Arke,64.7,57.3,,0.8964,ok,,false,true,0.00191593,0.000140899,0.005,0.005,ok,,,,,,1.0,0.8964,false,-0.1036
+layernorm,ds-v3,FlagGems,57.9,86.0,,1.0017,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0017,true,0.0017
+layernorm,mixtral-ffn,cuBLAS/cuDNN,62.7,33.8,,0.9107,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9107,false,-0.0893
+layernorm,mixtral-ffn,PyTorch-eager,57.1,75.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+layernorm,mixtral-ffn,torch.compile,318.1,302.0,,0.1795,ok,,false,true,0.000976562,1.15289e-08,0.005,0.005,ok,,,,,,1.0,0.1795,false,-0.8205
+layernorm,mixtral-ffn,torch.compile-max-autotune,306.1,298.9,,0.1865,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for layernorm,,,,,1.0,0.1865,false,-0.8135
+layernorm,mixtral-ffn,Arke,57.8,92.0,,0.9879,ok,,false,true,0.00192213,0.000140425,0.005,0.005,ok,,,,,,1.0,0.9879,false,-0.0121
+layernorm,mixtral-ffn,FlagGems,59.6,47.0,,0.9581,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9581,false,-0.0419

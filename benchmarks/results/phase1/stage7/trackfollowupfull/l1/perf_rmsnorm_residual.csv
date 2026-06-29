@@ -1,0 +1,46 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+rmsnorm_residual,gpt2-small,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@gpt2-small,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@gpt2-small,,,,,1.0,,,
+rmsnorm_residual,gpt2-small,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@gpt2-small,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,gpt2-small,PyTorch-eager,896.4,716.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,gpt2-small,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@gpt2-small,false,true,0.00390625,0.000206924,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@gpt2-small,,,,,1.0,,,
+rmsnorm_residual,gpt2-small,Arke,78.2,17.4,,11.4629,ok,,false,true,0.00425768,0.00023504,0.005,0.005,ok,,,,,,1.0,11.4629,true,10.4629
+rmsnorm_residual,gpt2-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@gpt2-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@gpt2-ffn,,,,,1.0,,,
+rmsnorm_residual,gpt2-ffn,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@gpt2-ffn,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,gpt2-ffn,PyTorch-eager,826.8,539.6,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,gpt2-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@gpt2-ffn,false,true,0.00390625,0.000205473,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@gpt2-ffn,,,,,1.0,,,
+rmsnorm_residual,gpt2-ffn,Arke,205.5,23.6,,4.0234,ok,,false,true,0.00471783,0.000246165,0.005,0.005,ok,,,,,,1.0,4.0234,true,3.0234
+rmsnorm_residual,gpt2-medium,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@gpt2-medium,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@gpt2-medium,,,,,1.0,,,
+rmsnorm_residual,gpt2-medium,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@gpt2-medium,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,gpt2-medium,PyTorch-eager,811.1,633.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,gpt2-medium,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@gpt2-medium,false,true,0.00390625,0.000197839,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@gpt2-medium,,,,,1.0,,,
+rmsnorm_residual,gpt2-medium,Arke,139.7,16.4,,5.8060,ok,,false,true,0.00396442,0.000249004,0.005,0.005,ok,,,,,,1.0,5.8060,true,4.8060
+rmsnorm_residual,llama-7b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@llama-7b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@llama-7b,,,,,1.0,,,
+rmsnorm_residual,llama-7b,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@llama-7b,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,llama-7b,PyTorch-eager,825.4,706.7,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,llama-7b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@llama-7b,false,true,0.00390625,0.000205712,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@llama-7b,,,,,1.0,,,
+rmsnorm_residual,llama-7b,Arke,68.5,66.6,,12.0496,ok,,false,true,0.00367379,0.000237955,0.005,0.005,ok,,,,,,1.0,12.0496,true,11.0496
+rmsnorm_residual,llama-13b,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@llama-13b,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@llama-13b,,,,,1.0,,,
+rmsnorm_residual,llama-13b,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@llama-13b,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,llama-13b,PyTorch-eager,912.8,721.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,llama-13b,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@llama-13b,false,true,0.00390625,0.000208056,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@llama-13b,,,,,1.0,,,
+rmsnorm_residual,llama-13b,Arke,103.9,36.9,,8.7854,ok,,false,true,0.00417542,0.000239995,0.005,0.005,ok,,,,,,1.0,8.7854,true,7.7854
+rmsnorm_residual,llama-long,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@llama-long,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@llama-long,,,,,1.0,,,
+rmsnorm_residual,llama-long,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@llama-long,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,llama-long,PyTorch-eager,889.0,901.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,llama-long,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@llama-long,false,true,0.00390625,0.00020558,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@llama-long,,,,,1.0,,,
+rmsnorm_residual,llama-long,Arke,161.7,163.8,,5.4978,ok,,false,true,0.00502157,0.000244358,0.005,0.005,ok,,,,,,1.0,5.4978,true,4.4978
+rmsnorm_residual,ds-v2,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@ds-v2,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@ds-v2,,,,,1.0,,,
+rmsnorm_residual,ds-v2,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@ds-v2,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,ds-v2,PyTorch-eager,801.4,701.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,ds-v2,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@ds-v2,false,true,0.00390625,0.000206523,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@ds-v2,,,,,1.0,,,
+rmsnorm_residual,ds-v2,Arke,74.5,86.0,,10.7570,ok,,false,true,0.0040617,0.000237203,0.005,0.005,ok,,,,,,1.0,10.7570,true,9.7570
+rmsnorm_residual,ds-v3,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@ds-v3,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@ds-v3,,,,,1.0,,,
+rmsnorm_residual,ds-v3,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@ds-v3,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,ds-v3,PyTorch-eager,848.3,714.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,ds-v3,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@ds-v3,false,true,0.00390625,0.000207321,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@ds-v3,,,,,1.0,,,
+rmsnorm_residual,ds-v3,Arke,58.8,97.3,,14.4269,ok,,false,true,0.00451899,0.000246897,0.005,0.005,ok,,,,,,1.0,14.4269,true,13.4269
+rmsnorm_residual,mixtral-ffn,cuBLAS/cuDNN,inf,inf,,,unsupported,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@mixtral-ffn,false,true,0,0,0.005,0.005,ok,cuBLAS/cuDNN.get_fn declined rmsnorm_residual@mixtral-ffn,,,,,1.0,,,
+rmsnorm_residual,mixtral-ffn,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined rmsnorm_residual@mixtral-ffn,false,,,,0.005,0.005,unsupported,runner Liger-Kernel does not implement run_with_inputs for rmsnorm_residual,,,,,1.0,,,
+rmsnorm_residual,mixtral-ffn,PyTorch-eager,817.6,689.2,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+rmsnorm_residual,mixtral-ffn,torch.compile,inf,inf,,,unsupported,torch.compile.get_fn declined rmsnorm_residual@mixtral-ffn,false,true,0.00390625,0.000205706,0.005,0.005,ok,torch.compile.get_fn declined rmsnorm_residual@mixtral-ffn,,,,,1.0,,,
+rmsnorm_residual,mixtral-ffn,Arke,59.6,111.6,,13.7181,ok,,false,true,0.00516987,0.000244082,0.005,0.005,ok,,,,,,1.0,13.7181,true,12.7181

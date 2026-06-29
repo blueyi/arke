@@ -1,0 +1,22 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+concat,tiny-2,PyTorch-eager,57.6,87.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,tiny-2,Arke,37.0,57.2,,1.5568,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.5568,true,0.5568
+concat,tiny-2,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined concat@tiny-2,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for concat,,,,,1.0,,,
+concat,gpt2-qkv-merge,PyTorch-eager,53.9,1.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,gpt2-qkv-merge,Arke,37.4,67.9,,1.4412,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.4412,true,0.4412
+concat,gpt2-qkv-merge,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined concat@gpt2-qkv-merge,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for concat,,,,,1.0,,,
+concat,llama-qkv-merge,PyTorch-eager,55.6,83.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,llama-qkv-merge,Arke,42.4,1.6,,1.3113,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3113,true,0.3113
+concat,llama-qkv-merge,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined concat@llama-qkv-merge,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for concat,,,,,1.0,,,
+concat,llama3-qkv-gqa,PyTorch-eager,50.7,1.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,llama3-qkv-gqa,Arke,45.0,58.5,,1.1267,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.1267,true,0.1267
+concat,llama3-qkv-gqa,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined concat@llama3-qkv-gqa,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for concat,,,,,1.0,,,
+concat,kvcache-append-512,PyTorch-eager,56.4,1.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,kvcache-append-512,Arke,39.2,1.8,,1.4388,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.4388,true,0.4388
+concat,kvcache-append-512,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined concat@kvcache-append-512,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for concat,,,,,1.0,,,
+concat,kvcache-append-2k,PyTorch-eager,49.8,1.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,kvcache-append-2k,Arke,38.1,49.2,,1.3071,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3071,true,0.3071
+concat,kvcache-append-2k,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined concat@kvcache-append-2k,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for concat,,,,,1.0,,,
+concat,batch-concat-4,PyTorch-eager,55.1,81.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+concat,batch-concat-4,Arke,40.9,1.7,,1.3472,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3472,true,0.3472
+concat,batch-concat-4,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined concat@batch-concat-4,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for concat,,,,,1.0,,,

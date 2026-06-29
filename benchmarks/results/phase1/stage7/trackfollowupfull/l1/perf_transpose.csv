@@ -1,0 +1,17 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+transpose,small,cuBLAS/cuDNN,94.3,6.1,,0.9024,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9024,false,-0.0976
+transpose,small,PyTorch-eager,85.1,50.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,small,Arke,53.8,6.1,,1.5818,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.5818,true,0.5818
+transpose,small,FlagGems,82.9,30.7,,1.0265,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0265,true,0.0265
+transpose,square-1k,cuBLAS/cuDNN,91.9,101.4,,0.8553,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8553,false,-0.1447
+transpose,square-1k,PyTorch-eager,78.6,124.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,square-1k,Arke,53.0,24.4,,1.4830,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.4830,true,0.4830
+transpose,square-1k,FlagGems,86.8,88.1,,0.9055,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9055,false,-0.0945
+transpose,llama-kv,cuBLAS/cuDNN,130.2,137.2,,1.0138,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0138,true,0.0138
+transpose,llama-kv,PyTorch-eager,132.0,132.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,llama-kv,Arke,58.7,52.2,,2.2487,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.2487,true,1.2487
+transpose,llama-kv,FlagGems,132.3,167.9,,0.9977,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9977,false,-0.0023
+transpose,wide,cuBLAS/cuDNN,95.1,74.6,,1.0641,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0641,true,0.0641
+transpose,wide,PyTorch-eager,101.2,93.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,wide,Arke,64.7,69.6,,1.5641,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.5641,true,0.5641
+transpose,wide,FlagGems,93.8,9.2,,1.0789,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0789,true,0.0789

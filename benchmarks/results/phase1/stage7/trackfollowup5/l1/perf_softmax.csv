@@ -1,0 +1,71 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+softmax,attn-gpt2-128,cuBLAS/cuDNN,11.2,6.1,,0.9911,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9911,false,-0.0089
+softmax,attn-gpt2-128,Triton-Tutorial,74.3,35.6,,0.1494,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1494,false,-0.8506
+softmax,attn-gpt2-128,PyTorch-eager,11.1,15.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-128,torch.compile,127.1,126.0,,0.0873,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.0873,false,-0.9127
+softmax,attn-gpt2-128,torch.compile-max-autotune,110.8,122.9,,0.1002,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.1002,false,-0.8998
+softmax,attn-gpt2-128,Arke,55.7,52.4,,0.1993,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1993,false,-0.8007
+softmax,attn-gpt2-128,FlagGems,50.8,59.4,,0.2185,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2185,false,-0.7815
+softmax,attn-gpt2-256,cuBLAS/cuDNN,11.1,7.0,,0.9369,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.9369,false,-0.0631
+softmax,attn-gpt2-256,Triton-Tutorial,70.8,9.2,,0.1469,ok,,false,true,9.53674e-07,3.10441e-10,0.005,0.005,ok,,,,,,1.0,0.1469,false,-0.8531
+softmax,attn-gpt2-256,PyTorch-eager,10.4,6.1,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-256,torch.compile,130.4,135.2,,0.0798,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.0798,false,-0.9202
+softmax,attn-gpt2-256,torch.compile-max-autotune,131.5,20.5,,0.0791,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.0791,false,-0.9209
+softmax,attn-gpt2-256,Arke,55.1,59.4,,0.1887,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1887,false,-0.8113
+softmax,attn-gpt2-256,FlagGems,60.0,57.3,,0.1733,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1733,false,-0.8267
+softmax,attn-gpt2-512,cuBLAS/cuDNN,12.4,8.1,,1.0403,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0403,true,0.0403
+softmax,attn-gpt2-512,Triton-Tutorial,73.8,9.2,,0.1748,ok,,false,true,3.8147e-06,6.20882e-10,0.005,0.005,ok,,,,,,1.0,0.1748,false,-0.8252
+softmax,attn-gpt2-512,PyTorch-eager,12.9,13.3,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-gpt2-512,torch.compile,133.1,31.7,,0.0969,ok,,false,true,9.53674e-07,2.32831e-10,0.005,0.005,ok,,,,,,1.0,0.0969,false,-0.9031
+softmax,attn-gpt2-512,torch.compile-max-autotune,128.8,31.7,,0.1002,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.1002,false,-0.8998
+softmax,attn-gpt2-512,Arke,53.6,10.2,,0.2407,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2407,false,-0.7593
+softmax,attn-gpt2-512,FlagGems,49.2,29.9,,0.2622,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2622,false,-0.7378
+softmax,attn-llama-512,cuBLAS/cuDNN,23.6,14.3,,0.6907,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6907,false,-0.3093
+softmax,attn-llama-512,Triton-Tutorial,71.4,11.3,,0.2283,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2283,false,-0.7717
+softmax,attn-llama-512,PyTorch-eager,16.3,15.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-512,torch.compile,157.3,38.9,,0.1036,ok,,false,true,1.90735e-06,1.23691e-10,0.005,0.005,ok,,,,,,1.0,0.1036,false,-0.8964
+softmax,attn-llama-512,torch.compile-max-autotune,209.6,31.7,,0.0778,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.0778,false,-0.9222
+softmax,attn-llama-512,Arke,94.4,9.2,,0.1727,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1727,false,-0.8273
+softmax,attn-llama-512,FlagGems,68.0,36.9,,0.2397,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2397,false,-0.7603
+softmax,attn-llama-2k,cuBLAS/cuDNN,20.5,17.4,,0.8732,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8732,false,-0.1268
+softmax,attn-llama-2k,Triton-Tutorial,132.8,11.3,,0.1348,ok,,false,true,2.38419e-07,4.54747e-12,0.005,0.005,ok,,,,,,1.0,0.1348,false,-0.8652
+softmax,attn-llama-2k,PyTorch-eager,17.9,17.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-2k,torch.compile,154.6,47.1,,0.1158,ok,,false,true,2.38419e-07,9.09495e-12,0.005,0.005,ok,,,,,,1.0,0.1158,false,-0.8842
+softmax,attn-llama-2k,torch.compile-max-autotune,137.8,133.1,,0.1299,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.1299,false,-0.8701
+softmax,attn-llama-2k,Arke,61.8,15.4,,0.2896,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2896,false,-0.7104
+softmax,attn-llama-2k,FlagGems,55.9,9.0,,0.3202,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3202,false,-0.6798
+softmax,attn-llama-4k,cuBLAS/cuDNN,18.1,14.3,,0.7956,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.7956,false,-0.2044
+softmax,attn-llama-4k,Triton-Tutorial,71.6,67.6,,0.2011,ok,,false,true,2.38419e-07,1.40972e-11,0.005,0.005,ok,,,,,,1.0,0.2011,false,-0.7989
+softmax,attn-llama-4k,PyTorch-eager,14.4,15.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,attn-llama-4k,torch.compile,145.8,150.5,,0.0988,ok,,false,true,2.38419e-07,1.72804e-11,0.005,0.005,ok,,,,,,1.0,0.0988,false,-0.9012
+softmax,attn-llama-4k,torch.compile-max-autotune,150.4,60.4,,0.0957,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.0957,false,-0.9043
+softmax,attn-llama-4k,Arke,74.4,10.2,,0.1935,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.1935,false,-0.8065
+softmax,attn-llama-4k,FlagGems,63.1,53.0,,0.2282,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2282,false,-0.7718
+softmax,wide-vocab-gpt2,cuBLAS/cuDNN,38.0,32.8,,0.8053,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.8053,false,-0.1947
+softmax,wide-vocab-gpt2,Triton-Tutorial,inf,inf,,,unsupported,Triton-Tutorial.get_fn declined softmax@wide-vocab-gpt2,false,true,5.96046e-08,4.74399e-12,0.005,0.005,ok,Triton-Tutorial.get_fn declined softmax@wide-vocab-gpt2,,,,,1.0,,,
+softmax,wide-vocab-gpt2,PyTorch-eager,30.6,33.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,wide-vocab-gpt2,torch.compile,145.7,104.6,,0.2100,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2100,false,-0.7900
+softmax,wide-vocab-gpt2,torch.compile-max-autotune,154.6,112.6,,0.1979,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.1979,false,-0.8021
+softmax,wide-vocab-gpt2,Arke,54.6,64.5,,0.5604,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.5604,false,-0.4396
+softmax,wide-vocab-gpt2,FlagGems,70.4,62.5,,0.4347,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.4347,false,-0.5653
+softmax,wide-vocab-llama3,cuBLAS/cuDNN,55.9,33.8,,0.5671,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.5671,false,-0.4329
+softmax,wide-vocab-llama3,Triton-Tutorial,inf,inf,,,unsupported,Triton-Tutorial.get_fn declined softmax@wide-vocab-llama3,false,,,,0.005,0.005,error,"out of resource: shared memory, Required: 262176, Hardware limit: 101376. Reducing block sizes or `num_stages` may help.",,,,,1.0,,,
+softmax,wide-vocab-llama3,PyTorch-eager,31.7,33.8,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,wide-vocab-llama3,torch.compile,137.5,39.9,,0.2305,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.2305,false,-0.7695
+softmax,wide-vocab-llama3,torch.compile-max-autotune,125.8,147.5,,0.2520,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.2520,false,-0.7480
+softmax,wide-vocab-llama3,Arke,51.8,56.3,,0.6120,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6120,false,-0.3880
+softmax,wide-vocab-llama3,FlagGems,45.4,64.3,,0.6982,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.6982,false,-0.3018
+softmax,batch-large,cuBLAS/cuDNN,15.9,16.4,,1.1132,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.1132,true,0.1132
+softmax,batch-large,Triton-Tutorial,70.1,60.4,,0.2525,ok,,false,true,9.53674e-07,2.05773e-11,0.005,0.005,ok,,,,,,1.0,0.2525,false,-0.7475
+softmax,batch-large,PyTorch-eager,17.7,15.4,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,batch-large,torch.compile,150.7,152.6,,0.1175,ok,,false,true,4.76837e-07,1.15961e-11,0.005,0.005,ok,,,,,,1.0,0.1175,false,-0.8825
+softmax,batch-large,torch.compile-max-autotune,133.0,137.2,,0.1331,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.1331,false,-0.8669
+softmax,batch-large,Arke,54.0,71.7,,0.3278,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.3278,false,-0.6722
+softmax,batch-large,FlagGems,43.6,28.9,,0.4060,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,0.4060,false,-0.5940
+softmax,square-4k,cuBLAS/cuDNN,484.4,473.1,,1.0043,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0043,true,0.0043
+softmax,square-4k,Triton-Tutorial,267.5,259.1,,1.8187,ok,,false,true,1.90735e-06,1.88578e-11,0.005,0.005,ok,,,,,,1.0,1.8187,true,0.8187
+softmax,square-4k,PyTorch-eager,486.5,466.9,,1.0000,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,1.0000,true,0.0000
+softmax,square-4k,torch.compile,686.9,576.4,,0.7083,ok,,false,true,1.90735e-06,2.01688e-11,0.005,0.005,ok,,,,,,1.0,0.7083,false,-0.2917
+softmax,square-4k,torch.compile-max-autotune,787.9,743.4,,0.6175,ok,,false,,,,0.005,0.005,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for softmax,,,,,1.0,0.6175,false,-0.3825
+softmax,square-4k,Arke,221.1,221.1,,2.2004,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,2.2004,true,1.2004
+softmax,square-4k,FlagGems,223.5,218.1,,2.1767,ok,,false,true,0,0,0.005,0.005,ok,,,,,,1.0,2.1767,true,1.1767

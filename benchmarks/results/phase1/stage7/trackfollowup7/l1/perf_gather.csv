@@ -1,0 +1,54 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+gather,tiny,PyTorch-eager,13.8,7.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,tiny,Arke,72.3,5.1,,0.1909,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.1909,false,-0.8091
+gather,tiny,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@tiny,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,
+gather,moe-dispatch-top2,PyTorch-eager,100.8,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,moe-dispatch-top2,Arke,72.4,29.7,,1.3923,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3923,true,0.3923
+gather,moe-dispatch-top2,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@moe-dispatch-top2,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,
+gather,moe-dispatch-top4,PyTorch-eager,101.9,124.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,moe-dispatch-top4,Arke,88.4,31.7,,1.1527,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.1527,true,0.1527
+gather,moe-dispatch-top4,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@moe-dispatch-top4,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,
+gather,kvcache-read-256,PyTorch-eager,74.6,73.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,kvcache-read-256,Arke,66.0,78.8,,1.1303,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.1303,true,0.1303
+gather,kvcache-read-256,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@kvcache-read-256,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,
+gather,kvcache-read-2k,PyTorch-eager,537.0,442.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,kvcache-read-2k,Arke,109.5,118.8,,4.9041,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,4.9041,true,3.9041
+gather,kvcache-read-2k,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@kvcache-read-2k,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,
+gather,ds-moe-top2,PyTorch-eager,187.4,178.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,ds-moe-top2,Arke,65.8,34.8,,2.8480,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,2.8480,true,1.8480
+gather,ds-moe-top2,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@ds-moe-top2,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,
+gather,embed-lookup-512,PyTorch-eager,4174.1,3376.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,embed-lookup-512,Arke,inf,inf,,,unsupported,Arke.get_fn declined gather@embed-lookup-512,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,
+gather,embed-lookup-512,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@embed-lookup-512,false,,,,0.001,0.001,error,"CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+",,,,,1.0,,,

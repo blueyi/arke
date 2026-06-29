@@ -1,0 +1,61 @@
+{
+  "overall_geomean": 0.5631,
+  "op_scores": {
+    "batch_matmul": 0.3022,
+    "dequantize_per_channel": 0.6718,
+    "gelu_and_mul": 1.1468,
+    "grouped_matmul": 0.6461,
+    "silu_and_mul": 1.133
+  },
+  "total_shapes": 62,
+  "operators": [
+    "batch_matmul",
+    "dequantize_per_channel",
+    "gelu_and_mul",
+    "grouped_matmul",
+    "silu_and_mul"
+  ],
+  "status_counts": {
+    "ok": 62,
+    "unsupported": 11
+  },
+  "correctness_counts": {
+    "ok": 62,
+    "unsupported": 11
+  },
+  "memory_policy_counts": {
+    "dense_matmul": 33,
+    "none": 40
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 73,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "false": 27,
+    "true": 35,
+    "unknown": 11
+  },
+  "perf_targets": {
+    "batch_matmul": 1.0,
+    "dequantize_per_channel": 1.0,
+    "gelu_and_mul": 1.0,
+    "grouped_matmul": 1.0,
+    "silu_and_mul": 1.0
+  },
+  "perf_actuals": {
+    "batch_matmul": 0.3022,
+    "dequantize_per_channel": 0.6718,
+    "gelu_and_mul": 1.1468,
+    "grouped_matmul": 0.6461,
+    "silu_and_mul": 1.133
+  },
+  "perf_gaps": {
+    "batch_matmul": -0.4386,
+    "dequantize_per_channel": -0.2709,
+    "gelu_and_mul": 0.1579,
+    "grouped_matmul": 0.1509,
+    "silu_and_mul": 0.1426
+  }
+}

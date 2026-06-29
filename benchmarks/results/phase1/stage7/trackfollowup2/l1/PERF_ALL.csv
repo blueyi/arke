@@ -1,0 +1,17 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+transpose,small,cuBLAS/cuDNN,13.9,8.1,,0.9856,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9856,false,-0.0144
+transpose,small,PyTorch-eager,13.7,23.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,small,Arke,52.5,72.7,,0.2610,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2610,false,-0.7390
+transpose,small,FlagGems,73.9,42.0,,0.1854,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.1854,false,-0.8146
+transpose,square-1k,cuBLAS/cuDNN,38.5,42.0,,1.0130,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0130,true,0.0130
+transpose,square-1k,PyTorch-eager,39.0,42.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,square-1k,Arke,50.6,15.4,,0.7708,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7708,false,-0.2292
+transpose,square-1k,FlagGems,105.0,96.3,,0.3714,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3714,false,-0.6286
+transpose,llama-kv,cuBLAS/cuDNN,93.0,96.3,,1.0011,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0011,true,0.0011
+transpose,llama-kv,PyTorch-eager,93.1,96.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,llama-kv,Arke,51.6,68.6,,1.8043,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.8043,true,0.8043
+transpose,llama-kv,FlagGems,102.3,144.4,,0.9101,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9101,false,-0.0899
+transpose,wide,cuBLAS/cuDNN,34.4,16.4,,0.5116,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.5116,false,-0.4884
+transpose,wide,PyTorch-eager,17.6,14.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+transpose,wide,Arke,54.7,55.3,,0.3218,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3218,false,-0.6782
+transpose,wide,FlagGems,90.2,36.9,,0.1951,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.1951,false,-0.8049

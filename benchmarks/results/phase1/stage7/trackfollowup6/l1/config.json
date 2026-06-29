@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-28_221533",
+  "ops": [
+    "embedding"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followup6",
+  "layer": "L1"
+}

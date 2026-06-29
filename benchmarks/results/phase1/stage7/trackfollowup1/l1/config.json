@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-27_151345",
+  "ops": [
+    "grouped_matmul"
+  ],
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
+  "shape_tags": null,
+  "phase": 1,
+  "stage": 7,
+  "track": "followup1",
+  "layer": "L1"
+}

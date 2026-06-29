@@ -1,0 +1,85 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+gelu,micro-tiny,cuBLAS/cuDNN,75.3,82.9,,1.1673,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.1673,true,0.1673
+gelu,micro-tiny,Liger-Kernel,86.3,91.1,,1.0185,ok,,false,true,0.00195312,8.3087e-05,0.001,0.001,ok,,,,,,1.0,1.0185,true,0.0185
+gelu,micro-tiny,PyTorch-eager,87.9,66.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,micro-tiny,torch.compile,270.9,241.7,,0.3245,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3245,false,-0.6755
+gelu,micro-tiny,torch.compile-max-autotune,277.1,99.3,,0.3172,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.3172,false,-0.6828
+gelu,micro-tiny,Arke,48.8,27.6,,1.8012,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.8012,true,0.8012
+gelu,micro-tiny,FlagGems,96.8,6.1,,0.9081,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9081,false,-0.0919
+gelu,micro-small,cuBLAS/cuDNN,77.7,98.2,,1.0618,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0618,true,0.0618
+gelu,micro-small,Liger-Kernel,71.1,8.2,,1.1603,ok,,false,true,0.00195312,8.454e-05,0.001,0.001,ok,,,,,,1.0,1.1603,true,0.1603
+gelu,micro-small,PyTorch-eager,82.5,9.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,micro-small,torch.compile,316.4,265.2,,0.2607,ok,,false,true,5.96046e-08,5.45697e-12,0.001,0.001,ok,,,,,,1.0,0.2607,false,-0.7393
+gelu,micro-small,torch.compile-max-autotune,356.5,316.4,,0.2314,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.2314,false,-0.7686
+gelu,micro-small,Arke,53.7,10.2,,1.5363,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.5363,true,0.5363
+gelu,micro-small,FlagGems,81.1,6.1,,1.0173,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0173,true,0.0173
+gelu,gpt2-hidden,cuBLAS/cuDNN,86.2,100.4,,0.8852,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8852,false,-0.1148
+gelu,gpt2-hidden,Liger-Kernel,70.0,12.3,,1.0900,ok,,false,true,0.00195312,8.48394e-05,0.001,0.001,ok,,,,,,1.0,1.0900,true,0.0900
+gelu,gpt2-hidden,PyTorch-eager,76.3,16.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,gpt2-hidden,torch.compile,307.3,72.7,,0.2483,ok,,false,true,5.96046e-08,1.81899e-12,0.001,0.001,ok,,,,,,1.0,0.2483,false,-0.7517
+gelu,gpt2-hidden,torch.compile-max-autotune,311.5,309.2,,0.2449,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.2449,false,-0.7551
+gelu,gpt2-hidden,Arke,49.7,60.4,,1.5352,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.5352,true,0.5352
+gelu,gpt2-hidden,FlagGems,81.3,93.4,,0.9385,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9385,false,-0.0615
+gelu,gpt2-ffn,cuBLAS/cuDNN,78.2,35.8,,1.0294,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0294,true,0.0294
+gelu,gpt2-ffn,Liger-Kernel,67.9,37.9,,1.1856,ok,,false,true,0.00195312,8.49637e-05,0.001,0.001,ok,,,,,,1.0,1.1856,true,0.1856
+gelu,gpt2-ffn,PyTorch-eager,80.5,55.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,gpt2-ffn,torch.compile,311.0,112.6,,0.2588,ok,,false,true,5.96046e-08,2.27374e-12,0.001,0.001,ok,,,,,,1.0,0.2588,false,-0.7412
+gelu,gpt2-ffn,torch.compile-max-autotune,310.0,205.8,,0.2597,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.2597,false,-0.7403
+gelu,gpt2-ffn,Arke,44.9,13.3,,1.7929,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.7929,true,0.7929
+gelu,gpt2-ffn,FlagGems,82.1,8.2,,0.9805,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9805,false,-0.0195
+gelu,square-1k,cuBLAS/cuDNN,77.7,24.6,,1.0399,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0399,true,0.0399
+gelu,square-1k,Liger-Kernel,66.8,27.6,,1.2096,ok,,false,true,0.00195312,8.40909e-05,0.001,0.001,ok,,,,,,1.0,1.2096,true,0.2096
+gelu,square-1k,PyTorch-eager,80.8,27.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,square-1k,torch.compile,311.9,65.5,,0.2591,ok,,false,true,5.96046e-08,1.13687e-12,0.001,0.001,ok,,,,,,1.0,0.2591,false,-0.7409
+gelu,square-1k,torch.compile-max-autotune,312.2,73.7,,0.2588,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.2588,false,-0.7412
+gelu,square-1k,Arke,48.6,30.7,,1.6626,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6626,true,0.6626
+gelu,square-1k,FlagGems,83.6,21.5,,0.9665,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9665,false,-0.0335
+gelu,llama-ffn,cuBLAS/cuDNN,116.7,96.3,,0.9195,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9195,false,-0.0805
+gelu,llama-ffn,Liger-Kernel,149.7,148.5,,0.7168,ok,,false,true,0.00195312,8.45021e-05,0.001,0.001,ok,,,,,,1.0,0.7168,false,-0.2832
+gelu,llama-ffn,PyTorch-eager,107.3,113.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,llama-ffn,torch.compile,320.2,259.0,,0.3351,ok,,false,true,5.96046e-08,1.87187e-12,0.001,0.001,ok,,,,,,1.0,0.3351,false,-0.6649
+gelu,llama-ffn,torch.compile-max-autotune,312.3,248.8,,0.3436,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.3436,false,-0.6564
+gelu,llama-ffn,Arke,115.3,115.7,,0.9306,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9306,false,-0.0694
+gelu,llama-ffn,FlagGems,116.1,119.8,,0.9242,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9242,false,-0.0758
+gelu,llama-hidden,cuBLAS/cuDNN,82.7,35.8,,0.9831,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9831,false,-0.0169
+gelu,llama-hidden,Liger-Kernel,73.8,97.3,,1.1016,ok,,false,true,0.00195312,8.46165e-05,0.001,0.001,ok,,,,,,1.0,1.1016,true,0.1016
+gelu,llama-hidden,PyTorch-eager,81.3,67.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,llama-hidden,torch.compile,313.4,295.9,,0.2594,ok,,false,true,5.96046e-08,1.56319e-12,0.001,0.001,ok,,,,,,1.0,0.2594,false,-0.7406
+gelu,llama-hidden,torch.compile-max-autotune,323.5,177.2,,0.2513,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.2513,false,-0.7487
+gelu,llama-hidden,Arke,48.8,39.9,,1.6660,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6660,true,0.6660
+gelu,llama-hidden,FlagGems,82.7,29.7,,0.9831,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9831,false,-0.0169
+gelu,llama-long,cuBLAS/cuDNN,361.1,336.9,,0.9773,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9773,false,-0.0227
+gelu,llama-long,Liger-Kernel,479.3,409.6,,0.7363,ok,,false,true,0.00195312,8.43694e-05,0.001,0.001,ok,,,,,,1.0,0.7363,false,-0.2637
+gelu,llama-long,PyTorch-eager,352.9,338.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,llama-long,torch.compile,631.4,532.4,,0.5589,ok,,false,true,5.96046e-08,1.80833e-12,0.001,0.001,ok,,,,,,1.0,0.5589,false,-0.4411
+gelu,llama-long,torch.compile-max-autotune,632.7,617.5,,0.5578,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.5578,false,-0.4422
+gelu,llama-long,Arke,359.2,294.9,,0.9825,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9825,false,-0.0175
+gelu,llama-long,FlagGems,376.6,353.3,,0.9371,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9371,false,-0.0629
+gelu,ds-ffn,cuBLAS/cuDNN,128.3,134.1,,0.9891,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9891,false,-0.0109
+gelu,ds-ffn,Liger-Kernel,168.2,166.9,,0.7545,ok,,false,true,0.00195312,8.45077e-05,0.001,0.001,ok,,,,,,1.0,0.7545,false,-0.2455
+gelu,ds-ffn,PyTorch-eager,126.9,135.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,ds-ffn,torch.compile,381.9,339.7,,0.3323,ok,,false,true,5.96046e-08,1.88531e-12,0.001,0.001,ok,,,,,,1.0,0.3323,false,-0.6677
+gelu,ds-ffn,torch.compile-max-autotune,379.8,186.4,,0.3341,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.3341,false,-0.6659
+gelu,ds-ffn,Arke,139.8,142.3,,0.9077,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9077,false,-0.0923
+gelu,ds-ffn,FlagGems,135.0,180.2,,0.9400,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9400,false,-0.0600
+gelu,ds-ffn-large,cuBLAS/cuDNN,209.9,222.2,,0.9886,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9886,false,-0.0114
+gelu,ds-ffn-large,Liger-Kernel,292.4,290.8,,0.7096,ok,,false,true,0.00195312,8.44658e-05,0.001,0.001,ok,,,,,,1.0,0.7096,false,-0.2904
+gelu,ds-ffn-large,PyTorch-eager,207.5,199.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,ds-ffn-large,torch.compile,370.1,395.3,,0.5607,ok,,false,true,5.96046e-08,1.78109e-12,0.001,0.001,ok,,,,,,1.0,0.5607,false,-0.4393
+gelu,ds-ffn-large,torch.compile-max-autotune,375.2,426.0,,0.5530,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.5530,false,-0.4470
+gelu,ds-ffn-large,Arke,192.9,191.5,,1.0757,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0757,true,0.0757
+gelu,ds-ffn-large,FlagGems,203.8,199.7,,1.0182,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0182,true,0.0182
+gelu,qwen-ffn,cuBLAS/cuDNN,206.6,207.9,,1.0416,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0416,true,0.0416
+gelu,qwen-ffn,Liger-Kernel,301.5,303.1,,0.7138,ok,,false,true,0.00195312,8.45416e-05,0.001,0.001,ok,,,,,,1.0,0.7138,false,-0.2862
+gelu,qwen-ffn,PyTorch-eager,215.2,210.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,qwen-ffn,torch.compile,388.5,466.9,,0.5539,ok,,false,true,5.96046e-08,1.78212e-12,0.001,0.001,ok,,,,,,1.0,0.5539,false,-0.4461
+gelu,qwen-ffn,torch.compile-max-autotune,389.3,391.2,,0.5528,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.5528,false,-0.4472
+gelu,qwen-ffn,Arke,203.2,195.6,,1.0591,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0591,true,0.0591
+gelu,qwen-ffn,FlagGems,228.1,229.4,,0.9434,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9434,false,-0.0566
+gelu,xlarge,cuBLAS/cuDNN,772.1,611.3,,0.7542,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7542,false,-0.2458
+gelu,xlarge,Liger-Kernel,897.3,641.0,,0.6489,ok,,false,true,0.00195312,8.44549e-05,0.001,0.001,ok,,,,,,1.0,0.6489,false,-0.3511
+gelu,xlarge,PyTorch-eager,582.3,521.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+gelu,xlarge,torch.compile,1191.0,1123.2,,0.4889,ok,,false,true,5.96046e-08,1.82965e-12,0.001,0.001,ok,,,,,,1.0,0.4889,false,-0.5111
+gelu,xlarge,torch.compile-max-autotune,1308.9,1179.6,,0.4449,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for gelu,,,,,1.0,0.4449,false,-0.5551
+gelu,xlarge,Arke,619.4,496.6,,0.9401,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9401,false,-0.0599
+gelu,xlarge,FlagGems,745.6,639.0,,0.7810,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7810,false,-0.2190

@@ -1,0 +1,85 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+silu,micro-tiny,cuBLAS/cuDNN,79.9,101.4,,0.9424,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9424,false,-0.0576
+silu,micro-tiny,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@micro-tiny,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@micro-tiny,,,,,1.0,,,
+silu,micro-tiny,PyTorch-eager,75.3,90.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,micro-tiny,torch.compile,278.8,260.0,,0.2701,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2701,false,-0.7299
+silu,micro-tiny,torch.compile-max-autotune,294.3,73.7,,0.2559,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.2559,false,-0.7441
+silu,micro-tiny,Arke,53.0,7.2,,1.4208,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.4208,true,0.4208
+silu,micro-tiny,FlagGems,87.0,110.6,,0.8655,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8655,false,-0.1345
+silu,micro-small,cuBLAS/cuDNN,81.7,19.5,,1.0392,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0392,true,0.0392
+silu,micro-small,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@micro-small,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@micro-small,,,,,1.0,,,
+silu,micro-small,PyTorch-eager,84.9,10.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,micro-small,torch.compile,336.7,58.4,,0.2522,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2522,false,-0.7478
+silu,micro-small,torch.compile-max-autotune,370.5,188.4,,0.2291,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.2291,false,-0.7709
+silu,micro-small,Arke,59.0,9.2,,1.4390,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.4390,true,0.4390
+silu,micro-small,FlagGems,86.6,6.1,,0.9804,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9804,false,-0.0196
+silu,gpt2-hidden,cuBLAS/cuDNN,82.8,87.2,,1.3406,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.3406,true,0.3406
+silu,gpt2-hidden,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@gpt2-hidden,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@gpt2-hidden,,,,,1.0,,,
+silu,gpt2-hidden,PyTorch-eager,111.0,8.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,gpt2-hidden,torch.compile,312.0,276.5,,0.3558,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.3558,false,-0.6442
+silu,gpt2-hidden,torch.compile-max-autotune,297.4,283.6,,0.3732,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.3732,false,-0.6268
+silu,gpt2-hidden,Arke,48.4,13.3,,2.2934,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,2.2934,true,1.2934
+silu,gpt2-hidden,FlagGems,76.5,89.2,,1.4510,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.4510,true,0.4510
+silu,gpt2-ffn,cuBLAS/cuDNN,75.8,35.8,,1.0264,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0264,true,0.0264
+silu,gpt2-ffn,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@gpt2-ffn,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@gpt2-ffn,,,,,1.0,,,
+silu,gpt2-ffn,PyTorch-eager,77.8,54.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,gpt2-ffn,torch.compile,292.1,220.2,,0.2663,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2663,false,-0.7337
+silu,gpt2-ffn,torch.compile-max-autotune,309.1,128.0,,0.2517,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.2517,false,-0.7483
+silu,gpt2-ffn,Arke,46.9,12.3,,1.6588,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6588,true,0.6588
+silu,gpt2-ffn,FlagGems,75.3,8.2,,1.0332,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0332,true,0.0332
+silu,square-1k,cuBLAS/cuDNN,86.0,100.4,,0.9209,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9209,false,-0.0791
+silu,square-1k,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@square-1k,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@square-1k,,,,,1.0,,,
+silu,square-1k,PyTorch-eager,79.2,17.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,square-1k,torch.compile,321.4,277.3,,0.2464,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2464,false,-0.7536
+silu,square-1k,torch.compile-max-autotune,342.2,96.3,,0.2314,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.2314,false,-0.7686
+silu,square-1k,Arke,46.7,64.5,,1.6959,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.6959,true,0.6959
+silu,square-1k,FlagGems,77.2,58.4,,1.0259,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0259,true,0.0259
+silu,llama-ffn,cuBLAS/cuDNN,92.0,89.1,,0.8674,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8674,false,-0.1326
+silu,llama-ffn,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@llama-ffn,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@llama-ffn,,,,,1.0,,,
+silu,llama-ffn,PyTorch-eager,79.8,111.6,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,llama-ffn,torch.compile,313.6,327.7,,0.2545,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2545,false,-0.7455
+silu,llama-ffn,torch.compile-max-autotune,328.1,251.9,,0.2432,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.2432,false,-0.7568
+silu,llama-ffn,Arke,116.0,84.0,,0.6879,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6879,false,-0.3121
+silu,llama-ffn,FlagGems,82.6,117.8,,0.9661,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9661,false,-0.0339
+silu,llama-hidden,cuBLAS/cuDNN,78.0,41.0,,1.0333,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0333,true,0.0333
+silu,llama-hidden,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@llama-hidden,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@llama-hidden,,,,,1.0,,,
+silu,llama-hidden,PyTorch-eager,80.6,94.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,llama-hidden,torch.compile,309.0,289.8,,0.2608,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2608,false,-0.7392
+silu,llama-hidden,torch.compile-max-autotune,295.0,260.1,,0.2732,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.2732,false,-0.7268
+silu,llama-hidden,Arke,44.9,39.9,,1.7951,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.7951,true,0.7951
+silu,llama-hidden,FlagGems,73.9,28.7,,1.0907,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0907,true,0.0907
+silu,llama-long,cuBLAS/cuDNN,261.3,275.5,,0.9545,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9545,false,-0.0455
+silu,llama-long,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@llama-long,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@llama-long,,,,,1.0,,,
+silu,llama-long,PyTorch-eager,249.4,247.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,llama-long,torch.compile,514.2,507.9,,0.4850,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4850,false,-0.5150
+silu,llama-long,torch.compile-max-autotune,592.6,547.8,,0.4209,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.4209,false,-0.5791
+silu,llama-long,Arke,252.8,238.6,,0.9866,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9866,false,-0.0134
+silu,llama-long,FlagGems,299.7,265.2,,0.8322,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8322,false,-0.1678
+silu,ds-ffn,cuBLAS/cuDNN,87.1,120.8,,0.9839,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9839,false,-0.0161
+silu,ds-ffn,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@ds-ffn,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@ds-ffn,,,,,1.0,,,
+silu,ds-ffn,PyTorch-eager,85.7,119.8,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,ds-ffn,torch.compile,350.6,297.0,,0.2444,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.2444,false,-0.7556
+silu,ds-ffn,torch.compile-max-autotune,326.6,203.8,,0.2624,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.2624,false,-0.7376
+silu,ds-ffn,Arke,107.8,114.7,,0.7950,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7950,false,-0.2050
+silu,ds-ffn,FlagGems,130.9,122.9,,0.6547,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.6547,false,-0.3453
+silu,ds-ffn-large,cuBLAS/cuDNN,161.5,176.1,,0.9728,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9728,false,-0.0272
+silu,ds-ffn-large,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@ds-ffn-large,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@ds-ffn-large,,,,,1.0,,,
+silu,ds-ffn-large,PyTorch-eager,157.1,156.7,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,ds-ffn-large,torch.compile,318.2,367.6,,0.4937,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4937,false,-0.5063
+silu,ds-ffn-large,torch.compile-max-autotune,333.0,327.7,,0.4718,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.4718,false,-0.5282
+silu,ds-ffn-large,Arke,166.2,159.7,,0.9452,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9452,false,-0.0548
+silu,ds-ffn-large,FlagGems,158.1,196.6,,0.9937,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9937,false,-0.0063
+silu,qwen-ffn,cuBLAS/cuDNN,152.3,158.7,,0.9659,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9659,false,-0.0341
+silu,qwen-ffn,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@qwen-ffn,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@qwen-ffn,,,,,1.0,,,
+silu,qwen-ffn,PyTorch-eager,147.1,130.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,qwen-ffn,torch.compile,320.3,281.6,,0.4593,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4593,false,-0.5407
+silu,qwen-ffn,torch.compile-max-autotune,356.7,436.2,,0.4124,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.4124,false,-0.5876
+silu,qwen-ffn,Arke,166.7,180.2,,0.8824,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8824,false,-0.1176
+silu,qwen-ffn,FlagGems,163.8,167.9,,0.8980,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8980,false,-0.1020
+silu,xlarge,cuBLAS/cuDNN,514.5,441.3,,0.8700,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.8700,false,-0.1300
+silu,xlarge,Liger-Kernel,inf,inf,,,unsupported,Liger-Kernel.get_fn declined silu@xlarge,false,true,0,0,0.001,0.001,ok,Liger-Kernel.get_fn declined silu@xlarge,,,,,1.0,,,
+silu,xlarge,PyTorch-eager,447.6,433.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,1.0000,true,0.0000
+silu,xlarge,torch.compile,1100.5,969.7,,0.4067,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.4067,false,-0.5933
+silu,xlarge,torch.compile-max-autotune,1228.2,1103.9,,0.3644,ok,,false,,,,0.001,0.001,unsupported,runner torch.compile-max-autotune does not implement run_with_inputs for silu,,,,,1.0,0.3644,false,-0.6356
+silu,xlarge,Arke,460.0,434.2,,0.9730,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.9730,false,-0.0270
+silu,xlarge,FlagGems,606.2,486.4,,0.7384,ok,,false,true,0,0,0.001,0.001,ok,,,,,,1.0,0.7384,false,-0.2616

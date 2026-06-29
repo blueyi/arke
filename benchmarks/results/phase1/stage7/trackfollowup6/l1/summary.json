@@ -1,0 +1,37 @@
+{
+  "overall_geomean": 1.3104,
+  "op_scores": {
+    "embedding": 1.3104
+  },
+  "total_shapes": 27,
+  "operators": [
+    "embedding"
+  ],
+  "status_counts": {
+    "ok": 27
+  },
+  "correctness_counts": {
+    "ok": 27
+  },
+  "memory_policy_counts": {
+    "none": 27
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 27,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "true": 22,
+    "false": 5
+  },
+  "perf_targets": {
+    "embedding": 1.0
+  },
+  "perf_actuals": {
+    "embedding": 1.3104
+  },
+  "perf_gaps": {
+    "embedding": 0.7032
+  }
+}

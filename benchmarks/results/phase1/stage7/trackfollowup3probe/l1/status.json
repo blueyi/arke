@@ -1,0 +1,29 @@
+{
+  "ts": 1782647090.3882427,
+  "layer": "l1",
+  "fingerprint": "b7f0ccf1fc2cf39e",
+  "elapsed_s": 703.5648169517517,
+  "per_op": {
+    "matmul": {
+      "rows": 84,
+      "ok": 84,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "rope": {
+      "rows": 24,
+      "ok": 24,
+      "permanent_failure": 0,
+      "retryable_failure": 0,
+      "other": 0
+    },
+    "cross_entropy": {
+      "rows": 27,
+      "ok": 18,
+      "permanent_failure": 9,
+      "retryable_failure": 0,
+      "other": 0
+    }
+  }
+}

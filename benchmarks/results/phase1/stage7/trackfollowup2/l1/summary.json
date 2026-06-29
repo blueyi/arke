@@ -1,0 +1,37 @@
+{
+  "overall_geomean": 0.6367,
+  "op_scores": {
+    "transpose": 0.6367
+  },
+  "total_shapes": 16,
+  "operators": [
+    "transpose"
+  ],
+  "status_counts": {
+    "ok": 16
+  },
+  "correctness_counts": {
+    "ok": 16
+  },
+  "memory_policy_counts": {
+    "none": 16
+  },
+  "memory_pressure_rows": 0,
+  "perf_target_counts": {
+    "with_target": 16,
+    "without_target": 0
+  },
+  "perf_pass_counts": {
+    "false": 9,
+    "true": 7
+  },
+  "perf_targets": {
+    "transpose": 1.0
+  },
+  "perf_actuals": {
+    "transpose": 0.6367
+  },
+  "perf_gaps": {
+    "transpose": -0.2293
+  }
+}

@@ -1,0 +1,22 @@
+operator,shape_tag,baseline,latency_us,latency_min_us,tflops,ratio_vs_baseline,status,reason,retryable,allclose,max_abs_diff,mean_abs_diff,rtol,atol,correctness_status,correctness_reason,memory_bytes_required,memory_bytes_budget,memory_ratio,memory_policy,perf_target,perf_actual,perf_pass,perf_gap
+gather,tiny,PyTorch-eager,11.9,20.5,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,tiny,Arke,60.1,7.1,,0.1980,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.1980,false,-0.8020
+gather,tiny,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@tiny,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gather,,,,,1.0,,,
+gather,moe-dispatch-top2,PyTorch-eager,83.6,88.1,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,moe-dispatch-top2,Arke,62.0,41.9,,1.3484,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3484,true,0.3484
+gather,moe-dispatch-top2,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@moe-dispatch-top2,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gather,,,,,1.0,,,
+gather,moe-dispatch-top4,PyTorch-eager,83.7,86.0,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,moe-dispatch-top4,Arke,61.5,36.8,,1.3610,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.3610,true,0.3610
+gather,moe-dispatch-top4,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@moe-dispatch-top4,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gather,,,,,1.0,,,
+gather,kvcache-read-256,PyTorch-eager,52.7,79.9,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,kvcache-read-256,Arke,66.7,10.2,,0.7901,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,0.7901,false,-0.2099
+gather,kvcache-read-256,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@kvcache-read-256,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gather,,,,,1.0,,,
+gather,kvcache-read-2k,PyTorch-eager,388.1,358.4,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,kvcache-read-2k,Arke,59.3,13.3,,6.5447,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,6.5447,true,5.5447
+gather,kvcache-read-2k,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@kvcache-read-2k,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gather,,,,,1.0,,,
+gather,ds-moe-top2,PyTorch-eager,104.7,135.2,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,ds-moe-top2,Arke,61.4,19.4,,1.7052,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.7052,true,0.7052
+gather,ds-moe-top2,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@ds-moe-top2,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gather,,,,,1.0,,,
+gather,embed-lookup-512,PyTorch-eager,3658.8,3339.3,,1.0000,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,1.0000,true,0.0000
+gather,embed-lookup-512,Arke,83.7,59.3,,43.7133,ok,,false,true,0,0,0.001,0.001,ok,golden_runner='FlagGems' returned None; used PyTorch-eager reference fallback,,,,,1.0,43.7133,true,42.7133
+gather,embed-lookup-512,FlagGems,inf,inf,,,unsupported,FlagGems.get_fn declined gather@embed-lookup-512,false,,,,0.001,0.001,unsupported,runner FlagGems does not implement run_with_inputs for gather,,,,,1.0,,,
