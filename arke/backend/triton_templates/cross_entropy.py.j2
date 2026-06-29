@@ -15,25 +15,25 @@ import triton.language as tl
 
 {% if fused_linear %}
 @triton.jit
-def {{ kernel_name }}_kernel(
-    Hidden_ptr, Weight_ptr, Labels_ptr, Loss_ptr,
-    M, D, V,
-    stride_hm, stride_hd,
-    stride_wv, stride_wd,
+def {{ kernel_name }}_ce_kernel(
+    Logits_ptr, Labels_ptr, Loss_ptr,
+    n_rows, V,
+    stride_lm, stride_lv,
     BLOCK_V: tl.constexpr,
-    BLOCK_D: tl.constexpr,
 ):
-    """Fused linear + cross entropy: compute logits on-the-fly, then CE loss."""
+    """Per-row CE over a materialized logits chunk: loss[m] = -log_softmax(logits[m])[label[m]].
+
+    1D online-softmax over the vocabulary dimension. The chunk's logits are
+    produced by a real GEMM (torch.matmul) in the launcher, so this kernel only
+    does the cheap row-wise reduction — no hand-rolled matmul, no 2D weight tile,
+    no Triton numel-limit hazard.
+    """
     pid_m = tl.program_id(0)
-    if pid_m >= M:
+    if pid_m >= n_rows:
         return
 
     label = tl.load(Labels_ptr + pid_m)
 
-    # Load hidden state for this row
-    offs_d = tl.arange(0, BLOCK_D)
-
-    # Compute logits in chunks of BLOCK_V, track running max and sum
     max_logit = float("-inf")
     sum_exp = 0.0
     target_logit = 0.0
@@ -41,36 +41,22 @@ def {{ kernel_name }}_kernel(
     for v_start in range(0, V, BLOCK_V):
         offs_v = v_start + tl.arange(0, BLOCK_V)
         mask_v = offs_v < V
+        logits = tl.load(
+            Logits_ptr + pid_m * stride_lm + offs_v * stride_lv,
+            mask=mask_v,
+            other=float("-inf"),
+        ).to(tl.float32)
 
-        # Compute logits[v] = sum_d hidden[m, d] * weight[v, d]
-        acc = tl.zeros((BLOCK_V,), dtype=tl.float32)
-        for d_start in range(0, D, BLOCK_D):
-            d_offs = d_start + tl.arange(0, BLOCK_D)
-            d_mask = d_offs < D
-
-            h = tl.load(Hidden_ptr + pid_m * stride_hm + d_offs * stride_hd, mask=d_mask, other=0.0).to(tl.float32)
-            w = tl.load(
-                Weight_ptr + offs_v[:, None] * stride_wv + d_offs[None, :] * stride_wd,
-                mask=mask_v[:, None] & d_mask[None, :],
-                other=0.0,
-            ).to(tl.float32)
-            acc += tl.sum(w * h[None, :], axis=1)
-
-        logits = acc  # [BLOCK_V]
-
-        # Track target logit
         is_target = offs_v == label
         target_logit += tl.sum(tl.where(is_target, logits, 0.0))
 
-        # Online softmax: update max and sum_exp
-        chunk_max = tl.max(tl.where(mask_v, logits, float("-inf")))
+        chunk_max = tl.max(logits)
         new_max = tl.maximum(max_logit, chunk_max)
         sum_exp = sum_exp * tl.exp(max_logit - new_max) + tl.sum(
             tl.where(mask_v, tl.exp(logits - new_max), 0.0)
         )
         max_logit = new_max
 
-    # loss = -target_logit + max + log(sum_exp)
     loss = -target_logit + max_logit + tl.log(sum_exp)
     tl.store(Loss_ptr + pid_m, loss)
 
@@ -91,34 +77,47 @@ def {{ kernel_name }}(
 
     Returns:
         loss: scalar () for "mean"/"sum", or [M] for "none".
+
+    Design (Liger chunked FLCE): the logits = hidden @ weight.T are produced by
+    a REAL GEMM (torch.matmul → cuBLAS, or the FlagGems-hijacked Triton GEMM
+    when flag_gems.enable() is active) instead of a hand-rolled row-parallel
+    matmul. A 1D per-row CE Triton kernel then reduces each materialized row.
+    To bound the materialized BT x V activation memory, M is processed in
+    chunks sized so each chunk's logits matrix stays within budget — exactly
+    the Liger inc_factor / chunk_size recipe. This replaces the previous
+    grid=(M,) kernel that serially recomputed the full GEMM per row (correct
+    but ~250x slower than eager on large vocab).
     """
     M, D = hidden.shape
     V = weight.shape[0]
     loss = torch.empty(M, device=hidden.device, dtype=torch.float32)
 
-    # The kernel materializes a 2D weight tile of BLOCK_V x BLOCK_D per step.
-    # Triton caps a single tensor at 2**20 = 1,048,576 elements, so the tile
-    # MUST satisfy BLOCK_V * BLOCK_D <= 1,048,576 or codegen raises
-    # "numel ... exceeds triton maximum tensor numel" and the op silently
-    # falls back to the interpreter. Both V and D are looped over in chunks,
-    # so shrinking the blocks only costs more iterations — correctness is
-    # unchanged. Pick BLOCK_D first (bounded for register/cache pressure),
-    # then size BLOCK_V to fill the remaining numel budget.
-    _TRITON_MAX_NUMEL = 1 << 20  # 1,048,576
-    BLOCK_D = min(triton.next_power_of_2(D), 512)
-    BLOCK_D = max(BLOCK_D, 1)
-    _v_budget = max(_TRITON_MAX_NUMEL // BLOCK_D, 1)
-    BLOCK_V = min(triton.next_power_of_2(V), 4096, triton.next_power_of_2(_v_budget))
+    # 1D CE block over V — pure load, no 2D tile, so no numel hazard.
+    BLOCK_V = min(triton.next_power_of_2(V), 16384)
     BLOCK_V = max(BLOCK_V, 1)
-    grid = (M,)
 
-    {{ kernel_name }}_kernel[grid](
-        hidden, weight, labels, loss,
-        M, D, V,
-        hidden.stride(0), hidden.stride(1),
-        weight.stride(0), weight.stride(1),
-        BLOCK_V=BLOCK_V, BLOCK_D=BLOCK_D,
-    )
+    # Chunk over M so the materialized chunk logits (chunk_size x V) stay near
+    # the size of the input chunk (chunk_size x D). inc_factor ~ V/D; chunk_size
+    # ~ M / inc_factor (Liger recipe). Bound chunk_size to [1, M].
+    inc_factor = max((V + D - 1) // D, 1)
+    chunk_size = max((M + inc_factor - 1) // inc_factor, 1)
+    chunk_size = min(chunk_size, M)
+
+    for start in range(0, M, chunk_size):
+        end = min(start + chunk_size, M)
+        hidden_chunk = hidden[start:end]                 # [c, D]
+        labels_chunk = labels[start:end].contiguous()    # [c]
+        # Real GEMM in the tensors' native precision (matches F.cross_entropy
+        # which upcasts internally; we accumulate CE in fp32 in the kernel).
+        logits_chunk = (hidden_chunk @ weight.t()).contiguous()  # [c, V]
+        n_rows = logits_chunk.shape[0]
+        {{ kernel_name }}_ce_kernel[(n_rows,)](
+            logits_chunk, labels_chunk, loss[start:end],
+            n_rows, V,
+            logits_chunk.stride(0), logits_chunk.stride(1),
+            BLOCK_V=BLOCK_V,
+        )
+
     if reduction == "mean":
         return loss.mean()
     if reduction == "sum":
