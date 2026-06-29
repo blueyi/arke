@@ -48,12 +48,12 @@ def {{ kernel_name }}_kernel(
             d_offs = d_start + tl.arange(0, BLOCK_D)
             d_mask = d_offs < D
 
-            h = tl.load(Hidden_ptr + pid_m * stride_hm + d_offs * stride_hd, mask=d_mask, other=0.0)
+            h = tl.load(Hidden_ptr + pid_m * stride_hm + d_offs * stride_hd, mask=d_mask, other=0.0).to(tl.float32)
             w = tl.load(
                 Weight_ptr + offs_v[:, None] * stride_wv + d_offs[None, :] * stride_wd,
                 mask=mask_v[:, None] & d_mask[None, :],
                 other=0.0,
-            )
+            ).to(tl.float32)
             acc += tl.sum(w * h[None, :], axis=1)
 
         logits = acc  # [BLOCK_V]
@@ -96,8 +96,20 @@ def {{ kernel_name }}(
     V = weight.shape[0]
     loss = torch.empty(M, device=hidden.device, dtype=torch.float32)
 
-    BLOCK_V = min(triton.next_power_of_2(V), 4096)
-    BLOCK_D = min(triton.next_power_of_2(D), 1024)
+    # The kernel materializes a 2D weight tile of BLOCK_V x BLOCK_D per step.
+    # Triton caps a single tensor at 2**20 = 1,048,576 elements, so the tile
+    # MUST satisfy BLOCK_V * BLOCK_D <= 1,048,576 or codegen raises
+    # "numel ... exceeds triton maximum tensor numel" and the op silently
+    # falls back to the interpreter. Both V and D are looped over in chunks,
+    # so shrinking the blocks only costs more iterations — correctness is
+    # unchanged. Pick BLOCK_D first (bounded for register/cache pressure),
+    # then size BLOCK_V to fill the remaining numel budget.
+    _TRITON_MAX_NUMEL = 1 << 20  # 1,048,576
+    BLOCK_D = min(triton.next_power_of_2(D), 512)
+    BLOCK_D = max(BLOCK_D, 1)
+    _v_budget = max(_TRITON_MAX_NUMEL // BLOCK_D, 1)
+    BLOCK_V = min(triton.next_power_of_2(V), 4096, triton.next_power_of_2(_v_budget))
+    BLOCK_V = max(BLOCK_V, 1)
     grid = (M,)
 
     {{ kernel_name }}_kernel[grid](
