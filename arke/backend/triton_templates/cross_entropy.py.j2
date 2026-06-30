@@ -96,12 +96,18 @@ def {{ kernel_name }}(
     BLOCK_V = min(triton.next_power_of_2(V), 16384)
     BLOCK_V = max(BLOCK_V, 1)
 
-    # Chunk over M so the materialized chunk logits (chunk_size x V) stay near
-    # the size of the input chunk (chunk_size x D). inc_factor ~ V/D; chunk_size
-    # ~ M / inc_factor (Liger recipe). Bound chunk_size to [1, M].
+    # Chunk over M so the materialized chunk logits (chunk_size x V) stay
+    # within a memory budget. inc_factor ~ V/D gives Liger's activation-parity
+    # chunk; we then GROW chunk_size up to a budget cap so small-V shapes don't
+    # pay per-chunk launch overhead across many tiny chunks (e.g. gpt2 V=50257
+    # would otherwise be chunk_size=2 x 64 chunks = 64 matmul+CE launches).
+    # next_power_of_2 keeps GEMM dims clean. Bound to [1, M].
+    _CHUNK_LOGITS_BUDGET = 128 * 1024 * 1024  # 128 MiB of fp16 logits per chunk
     inc_factor = max((V + D - 1) // D, 1)
-    chunk_size = max((M + inc_factor - 1) // inc_factor, 1)
-    chunk_size = min(chunk_size, M)
+    chunk_parity = max((M + inc_factor - 1) // inc_factor, 1)
+    chunk_budget = max(_CHUNK_LOGITS_BUDGET // (V * 2), 1)  # rows that fit in budget
+    chunk_size = triton.next_power_of_2(max(chunk_parity, chunk_budget))
+    chunk_size = max(min(chunk_size, M), 1)
 
     for start in range(0, M, chunk_size):
         end = min(start + chunk_size, M)
