@@ -195,6 +195,11 @@ def {{ kernel_name }}(
     M, V = logits.shape
     loss = torch.empty(M, device=logits.device, dtype=torch.float32)
 
+    # BLOCK_V=4096 is the stable sweet spot for the per-row online-softmax on
+    # Ampere: larger blocks (16384/32768) spill registers for big V (e.g.
+    # V=50257) and regress, while smaller blocks add loop overhead. Picking a
+    # single static larger block traded batch512 for extreme-bs and back
+    # (measurement-noise dominated) — left at 4096; true gains need autotune.
     BLOCK_V = min(triton.next_power_of_2(V), 4096)
     grid = (M,)
 
