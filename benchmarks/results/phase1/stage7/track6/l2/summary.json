@@ -1,70 +1,85 @@
 {
-  "overall_geomean": 0.6821,
+  "overall_geomean": 1.0153,
   "op_scores": {
+    "cross_entropy": 2.5622,
     "geglu": 1.0,
-    "linear_ce": 1.0,
+    "gelu_and_mul": 1.2982,
+    "linear_ce": 2.0939,
     "matmul_gelu": 0.5993,
     "matmul_relu": 0.6606,
     "qkv_fa": 1.0,
+    "silu_and_mul": 1.1832,
     "swiglu": 1.0
   },
-  "total_shapes": 247,
+  "total_shapes": 490,
   "operators": [
+    "cross_entropy",
     "geglu",
+    "gelu_and_mul",
     "linear_ce",
     "matmul_gelu",
     "matmul_relu",
     "qkv_fa",
+    "silu_and_mul",
     "swiglu"
   ],
   "status_counts": {
-    "ok": 247,
-    "unsupported": 4,
-    "skipped": 5
-  },
-  "correctness_counts": {
-    "ok": 235,
+    "ok": 490,
     "unsupported": 16,
     "skipped": 5
   },
+  "correctness_counts": {
+    "unsupported": 29,
+    "ok": 477,
+    "skipped": 5
+  },
   "memory_policy_counts": {
-    "none": 81,
-    "linear_ce": 12,
+    "none": 312,
+    "linear_ce": 36,
     "dense_matmul": 147,
     "attention": 16
   },
   "memory_pressure_rows": 5,
   "perf_target_counts": {
-    "with_target": 256,
+    "with_target": 511,
     "without_target": 0
   },
   "perf_pass_counts": {
-    "true": 130,
-    "unknown": 4,
-    "false": 122
+    "true": 308,
+    "false": 187,
+    "unknown": 16
   },
   "perf_targets": {
+    "cross_entropy": 1.0,
     "geglu": 1.0,
+    "gelu_and_mul": 1.0,
     "linear_ce": 1.0,
     "matmul_gelu": 1.0,
     "matmul_relu": 1.0,
     "qkv_fa": 1.0,
+    "silu_and_mul": 1.0,
     "swiglu": 1.0
   },
   "perf_actuals": {
+    "cross_entropy": 2.5622,
     "geglu": 1.0,
-    "linear_ce": 1.0,
+    "gelu_and_mul": 1.2982,
+    "linear_ce": 2.0939,
     "matmul_gelu": 0.5993,
     "matmul_relu": 0.6606,
     "qkv_fa": 1.0,
+    "silu_and_mul": 1.1832,
     "swiglu": 1.0
   },
   "perf_gaps": {
+    "cross_entropy": 3.1484,
     "geglu": 0.0,
-    "linear_ce": 0.0,
+    "gelu_and_mul": 0.4722,
+    "linear_ce": 5.9704,
     "matmul_gelu": -0.1955,
     "matmul_relu": -0.0809,
     "qkv_fa": 0.0,
+    "silu_and_mul": 0.3698,
     "swiglu": 0.0
   }
 }

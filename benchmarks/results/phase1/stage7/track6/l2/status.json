@@ -1,20 +1,13 @@
 {
-  "ts": 1778739754.377874,
+  "ts": 1782836431.254921,
   "layer": "l2",
-  "fingerprint": "119020d1a2312165",
-  "elapsed_s": 3.6147401332855225,
+  "fingerprint": "85975449faf33474",
+  "elapsed_s": 941.0096437931061,
   "per_op": {
-    "geglu": {
-      "rows": 12,
-      "ok": 10,
-      "permanent_failure": 2,
-      "retryable_failure": 0,
-      "other": 0
-    },
-    "swiglu": {
-      "rows": 12,
-      "ok": 10,
-      "permanent_failure": 2,
+    "linear_ce": {
+      "rows": 36,
+      "ok": 36,
+      "permanent_failure": 0,
       "retryable_failure": 0,
       "other": 0
     }

@@ -1,11 +1,10 @@
 {
-  "timestamp": "2026-05-14_142230",
+  "timestamp": "2026-07-01_000450",
   "ops": [
-    "geglu",
-    "swiglu"
+    "linear_ce"
   ],
-  "warmup": 2,
-  "reps": 3,
+  "warmup": 5,
+  "reps": 10,
   "layer": "L2",
   "shape_tags": null,
   "phase": 1,
