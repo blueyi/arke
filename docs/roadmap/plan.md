@@ -374,7 +374,28 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ## Phase 2: Arke → Triton-Ascend/MLIR → Ascend NPU (SIMD Validation)
 
-> ## ⏸️ PAUSED (2026-06-24, Leon-approved)
+> ## ⏭️ SKIPPED (2026-07-02, Leon-approved)
+>
+> **Phase 2 (Ascend / SIMD validation) is SKIPPED in the active roadmap.**
+> Decision (Leon, 2026-07-02): jump directly from Phase 1 (CLOSED) into
+> **Phase 3 (Arke → MLIR Dialect)** and drive full development + test
+> validation there. The entire Phase-2 section below is kept **dormant, not
+> deleted** — it remains the design-of-record for if/when cross-architecture
+> (Thesis L2) validation on Ascend is resumed. Gate numbering is **unchanged**
+> (no renumber) per Leon decision 1a.
+>
+> **Consequence for Thesis L2:** cross-architecture IR-generality is now tested
+> *inside Phase 3* via MLIR multi-target lowering (NVIDIA PTX first), not via
+> the Ascend-Triton path. The Ascend-specific stage **P3-S4 (Ascend via MLIR)
+> is likewise SKIPPED** — see the ⏭️ marker on P3-S4 in the Phase 3 table below.
+>
+> **Backend extensibility is still preserved** — `arke/backend/protocol.py`
+> (`ArkeBackend` Protocol + `BackendRegistry`) remains the clean extension seam;
+> a future Ascend backend plugs in without a core refactor.
+>
+> ---
+>
+> _Prior status (superseded):_ ⏸️ PAUSED (2026-06-24, Leon-approved)
 >
 > **Ascend / Phase-2 development is paused.** All current effort goes to the
 > NVIDIA/Triton path (Phase 1) to validate the LLM-Native thesis at L1 (SIMT).
@@ -431,6 +452,24 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ## Phase 3: Arke → MLIR Dialect (Full Compiler Control)
 
+> ## 🚧 ACTIVE (2026-07-02, Leon-approved) — Phase 1 → Phase 3 direct jump
+>
+> Phase 2 (Ascend) is SKIPPED (see marker above). Phase 3 is now the **active
+> development phase**. Cross-architecture IR-generality (Thesis L2) is validated
+> here through MLIR multi-target lowering on the NVIDIA path first.
+>
+> **Toolchain (locked 2026-07-02, Leon decision 2+3):** MLIR 18.1.3 installed
+> user-local (no-root, `dpkg-deb -x` of Ubuntu `mlir-18-tools` + `libmlir-18`
+> into `~/opt/mlir18`; source `~/opt/mlir18/env.sh`). Path C (CLI:
+> `mlir-opt` / `mlir-translate` / `mlir-cpu-runner`) is the primary lowering +
+> JIT-execution driver; a future in-process bindings path (A) requires a
+> from-source LLVM build and is deferred. Correctness is validated **CPU first**
+> (mlir-cpu-runner JIT, bit-correct vs torch) **then GPU** (`gpu` dialect → PTX).
+> Verified 2026-07-02: `linalg.matmul` lowers end-to-end and JIT-executes
+> correct numerics on CPU (2×3 @ 3×2 = [[6,6],[6,6]]).
+>
+> **P3-S4 (Ascend via MLIR) is ⏭️ SKIPPED** — consistent with the Phase-2 skip.
+
 **Goal:** Remove Triton's abstraction ceiling. Arke IR lowers to standard MLIR dialects (linalg, transform, scf, gpu), enabling deeper hardware control and more complete operator support. Performance must match or exceed Phase 2 Triton path.
 
 **Backend:** MLIR standard dialects → LLVM IR → PTX/AMDGPU/CANN
@@ -444,7 +483,7 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | **P3-S1**      | MLIR lowering framework   | SemanticIR → linalg + transform dialect, matmul correct                 |
 | **P3-S2**      | Cat A+B+C via MLIR        | 35 ops correct + geomean ≥ Phase 2 Triton                               |
 | **P3-S3**      | MLIR performance ≥ Triton | All Cat A+B+C+D MLIR geomean ≥ Phase 2 Triton                           |
-| **P3-S4**      | Ascend via MLIR           | matmul+rmsnorm correct on Ascend via MLIR; perf ≥ Phase 2               |
+| **P3-S4**      | ~~Ascend via MLIR~~ ⏭️ SKIPPED | ~~matmul+rmsnorm correct on Ascend via MLIR~~ — skipped (Phase-2 Ascend skip, 2026-07-02) |
 | **P3-S5**      | LLM Level 2 decisions     | StrategyIR L2 (loop nests) → MLIR transform dialect, verified on ≥3 ops |
 | **P3-S_FINAL** | Phase 3 acceptance        | MLIR path performance ≥ Triton + multi-hardware via MLIR                |
 
