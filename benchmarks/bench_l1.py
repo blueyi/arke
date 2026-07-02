@@ -149,6 +149,27 @@ def _topk_k(inputs: tuple[torch.Tensor, ...]) -> int:
     return min(4, inputs[0].shape[-1])
 
 
+def _require_even_gated_width(op: str, x: torch.Tensor) -> None:
+    """Guard gated activations against odd concatenated feature width.
+
+    silu_and_mul / gelu_and_mul / swiglu_packed split their input via
+    ``chunk(2, dim=-1)`` into a (gate, up) pair, so the last dim must be
+    even. Catalog off-by-one shapes (e.g. GatedShape non-align-1 ffn_x2=6145,
+    non-align-2 ffn_x2=22017) are odd on purpose to stress alignment for other
+    ops; for gated activations themselves an odd width is mathematically
+    ill-defined. Raise a canonical message so the caller marks the row
+    'unsupported' and the Gate treats it as ill-defined-excluded (mirrors the
+    RoPE odd-head_dim guard). Matches gate_g7 'requires even feature width'.
+    """
+    width = int(x.shape[-1])
+    if width % 2 != 0:
+        raise NotImplementedError(
+            f"Gated op {op} requires even feature width N; got N={width} (odd) "
+            f"for shape {tuple(x.shape)} — mathematically ill-defined "
+            f"(cannot split into equal gate/up halves)"
+        )
+
+
 def _make_l1_correctness_inputs(op: str, M: int, N: int, K: int, dtype: torch.dtype = torch.float16) -> tuple[torch.Tensor, ...]:
     M = _positive_dim(M)
     N = _positive_dim(N)
@@ -402,12 +423,15 @@ def _torch_reference(op: str, inputs: tuple[torch.Tensor, ...]) -> torch.Tensor 
     if op == "copy_":
         return inputs[0].clone()
     if op == "silu_and_mul":
+        _require_even_gated_width(op, inputs[0])
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.silu(x1) * x2
     if op == "swiglu_packed" and len(inputs) == 2:
+        _require_even_gated_width(op, inputs[0])
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return (torch.nn.functional.silu(x1) * x2) @ inputs[1]
     if op == "gelu_and_mul":
+        _require_even_gated_width(op, inputs[0])
         x1, x2 = inputs[0].chunk(2, dim=-1)
         return torch.nn.functional.gelu(x1) * x2
     if op == "cross_entropy" and len(inputs) == 2:

@@ -149,12 +149,24 @@ class PyTorchEagerRunner(BaselineRunner):
         if op == "copy_" and len(inputs) == 1:
             return inputs[0].clone()
         if op == "silu_and_mul" and len(inputs) == 1:
+            if inputs[0].shape[-1] % 2 != 0:
+                # Gated split via chunk(2) requires even feature width; odd
+                # catalog shapes (non-align ffn_x2=6145/22017) are
+                # mathematically ill-defined for gated activations. Return
+                # None → harness records 'unsupported' with a typed reason
+                # rather than crashing in the (gate, up) shape mismatch.
+                # Mirror of the RoPE odd-head_dim guard above.
+                return None
             x1, x2 = inputs[0].chunk(2, dim=-1)
             return F.silu(x1) * x2
         if op == "swiglu_packed" and len(inputs) == 2:
+            if inputs[0].shape[-1] % 2 != 0:
+                return None
             x1, x2 = inputs[0].chunk(2, dim=-1)
             return (F.silu(x1) * x2) @ inputs[1]
         if op == "gelu_and_mul" and len(inputs) == 1:
+            if inputs[0].shape[-1] % 2 != 0:
+                return None
             x1, x2 = inputs[0].chunk(2, dim=-1)
             return F.gelu(x1) * x2
         if op == "cross_entropy" and len(inputs) == 2:
