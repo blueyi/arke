@@ -129,3 +129,348 @@ def _elementwise_specs() -> dict[str, OpSpec]:
 
 
 ELEMENTWISE_SPECS = _elementwise_specs()
+
+
+# ── composite / structured op emitters (OT1 reductions + OT2 movement) ──
+# Each emitter is `fn(ctx) -> list[str]` producing the MLIR body lines that
+# compute the op's output buffer `ctx.out_buf` from `ctx.in_bufs`. Emitters may
+# allocate local temp buffers via `ctx.tmp()` (returns a fresh %-name and its
+# alloc line is appended automatically). Shapes are known statically.
+
+@dataclass
+class OpContext:
+    op: str
+    out_buf: str
+    out_shape: list[int]
+    in_bufs: list[str]
+    in_shapes: list[list[int]]
+    elem: str
+    _counter: list[int] = field(default_factory=lambda: [0])
+    _preamble: list[str] = field(default_factory=list)
+
+    def tmp(self, shape: list[int]) -> str:
+        i = self._counter[0]
+        self._counter[0] += 1
+        name = f"%t{i}_{self.out_buf[1:]}"
+        ty = _memref_ty(shape, self.elem)
+        self._preamble.append(f"    {name} = memref.alloc() : {ty}")
+        return name
+
+    def const(self, value: str) -> str:
+        """Materialize an arith.constant with a unique SSA name; return the name."""
+        i = self._counter[0]
+        self._counter[0] += 1
+        name = f"%c{i}_{self.out_buf[1:]}"
+        self._preamble.append(
+            f"    {name} = arith.constant {value} : {self.elem}"
+        )
+        return name
+
+
+def _memref_ty(shape: list[int], elem: str) -> str:
+    if not shape:
+        return f"memref<{elem}>"
+    dims = "x".join(str(int(d)) for d in shape)
+    return f"memref<{dims}x{elem}>"
+
+
+def _amap(out_rank: int, expr: str) -> str:
+    dims = ", ".join(f"d{i}" for i in range(out_rank))
+    return f"affine_map<({dims}) -> ({expr})>"
+
+
+def _reduce_last(ctx: OpContext, init: str, combine: list[str],
+                 in_buf: str | None = None,
+                 in_shape: list[int] | None = None) -> str:
+    """Reduce the last axis of `in_buf` (default in_bufs[0]) → tmp of rank-1-less.
+
+    `combine` is body lines producing %r from %a (element) and %acc.
+    """
+    src = in_buf or ctx.in_bufs[0]
+    sh = in_shape or ctx.in_shapes[0]
+    rank = len(sh)
+    out_sh = sh[:-1]
+    out = ctx.tmp(out_sh)
+    src_ty = _memref_ty(sh, ctx.elem)
+    out_ty = _memref_ty(out_sh, ctx.elem)
+    imap = _amap(rank, ", ".join(f"d{i}" for i in range(rank)))
+    rmap = _amap(rank, ", ".join(f"d{i}" for i in range(rank - 1)))
+    iters = ", ".join(['"parallel"'] * (rank - 1) + ['"reduction"'])
+    cst = ctx.const(init)
+    lines = [
+        f"    linalg.fill ins({cst} : {ctx.elem}) outs({out} : {out_ty})",
+        f"    linalg.generic {{indexing_maps = [{imap}, {rmap}], "
+        f"iterator_types = [{iters}]}} "
+        f"ins({src} : {src_ty}) outs({out} : {out_ty}) {{",
+        "    ^bb0(%a: " + ctx.elem + ", %acc: " + ctx.elem + "):",
+        *combine,
+        "      linalg.yield %r : " + ctx.elem,
+        "    }",
+    ]
+    ctx._preamble.extend(lines)
+    return out
+
+
+def _broadcast_ew(ctx: OpContext, full_buf: str, full_shape: list[int],
+                  red_buf: str, out_buf: str, body: list[str]) -> None:
+    """Elementwise over `full_buf` with a last-axis-broadcast `red_buf` → out_buf.
+
+    body computes %r from %a (full elem) and %b (broadcast elem).
+    """
+    rank = len(full_shape)
+    ft = _memref_ty(full_shape, ctx.elem)
+    rt = _memref_ty(full_shape[:-1], ctx.elem)
+    ot = _memref_ty(full_shape, ctx.elem)
+    fmap = _amap(rank, ", ".join(f"d{i}" for i in range(rank)))
+    bmap = _amap(rank, ", ".join(f"d{i}" for i in range(rank - 1)))
+    iters = ", ".join(['"parallel"'] * rank)
+    lines = [
+        f"    linalg.generic {{indexing_maps = [{fmap}, {bmap}, {fmap}], "
+        f"iterator_types = [{iters}]}} "
+        f"ins({full_buf}, {red_buf} : {ft}, {rt}) outs({out_buf} : {ot}) {{",
+        "    ^bb0(%a: " + ctx.elem + ", %b: " + ctx.elem + ", %o: " + ctx.elem + "):",
+        *body,
+        "      linalg.yield %r : " + ctx.elem,
+        "    }",
+    ]
+    ctx._preamble.extend(lines)
+
+
+# ── OT1: reductions ────────────────────────────────────────────
+
+def _c_reduce_sum(ctx: OpContext) -> list[str]:
+    red = _reduce_last(ctx, "0.0", [
+        "      %r = arith.addf %a, %acc : " + ctx.elem,
+    ])
+    _copy_into(ctx, red, ctx.out_buf, ctx.out_shape)
+    return ctx._preamble
+
+
+def _c_reduce_max(ctx: OpContext) -> list[str]:
+    red = _reduce_last(ctx, "-3.40282347e+38", [
+        "      %r = arith.maximumf %a, %acc : " + ctx.elem,
+    ])
+    _copy_into(ctx, red, ctx.out_buf, ctx.out_shape)
+    return ctx._preamble
+
+
+def _c_reduce_mean(ctx: OpContext) -> list[str]:
+    n = ctx.in_shapes[0][-1]
+    red = _reduce_last(ctx, "0.0", [
+        "      %r = arith.addf %a, %acc : " + ctx.elem,
+    ])
+    # divide by N elementwise
+    ot = _memref_ty(ctx.out_shape, ctx.elem)
+    rank = len(ctx.out_shape)
+    imap = _amap(rank, ", ".join(f"d{i}" for i in range(rank)))
+    iters = ", ".join(['"parallel"'] * rank)
+    ctx._preamble += [
+        f"    linalg.generic {{indexing_maps = [{imap}, {imap}], "
+        f"iterator_types = [{iters}]}} "
+        f"ins({red} : {ot}) outs({ctx.out_buf} : {ot}) {{",
+        "    ^bb0(%a: " + ctx.elem + ", %o: " + ctx.elem + "):",
+        f"      %n = arith.constant {float(n)} : {ctx.elem}",
+        "      %r = arith.divf %a, %n : " + ctx.elem,
+        "      linalg.yield %r : " + ctx.elem,
+        "    }",
+    ]
+    return ctx._preamble
+
+
+# ── OT1: normalizations ────────────────────────────────────────
+
+def _c_softmax(ctx: OpContext) -> list[str]:
+    sh = ctx.in_shapes[0]
+    src = ctx.in_bufs[0]
+    mx = _reduce_last(ctx, "-3.40282347e+38", [
+        "      %r = arith.maximumf %a, %acc : " + ctx.elem,
+    ])
+    ex = ctx.tmp(sh)
+    _broadcast_ew(ctx, src, sh, mx, ex, [
+        "      %s = arith.subf %a, %b : " + ctx.elem,
+        "      %r = math.exp %s : " + ctx.elem,
+    ])
+    sm = _reduce_last(ctx, "0.0", [
+        "      %r = arith.addf %a, %acc : " + ctx.elem,
+    ], in_buf=ex, in_shape=sh)
+    _broadcast_ew(ctx, ex, sh, sm, ctx.out_buf, [
+        "      %r = arith.divf %a, %b : " + ctx.elem,
+    ])
+    return ctx._preamble
+
+
+def _c_layernorm(ctx: OpContext) -> list[str]:
+    # mean/var over last axis, (x-mean)/sqrt(var+eps). weight=1, bias=0.
+    sh = ctx.in_shapes[0]
+    src = ctx.in_bufs[0]
+    n = sh[-1]
+    mean = _reduce_last(ctx, "0.0", [
+        "      %r = arith.addf %a, %acc : " + ctx.elem,
+    ])
+    mean_d = ctx.tmp(sh[:-1])
+    _scalar_div(ctx, mean, mean_d, sh[:-1], float(n))
+    # centered
+    cen = ctx.tmp(sh)
+    _broadcast_ew(ctx, src, sh, mean_d, cen, [
+        "      %r = arith.subf %a, %b : " + ctx.elem,
+    ])
+    # variance = mean(cen^2)
+    sq = ctx.tmp(sh)
+    _unary_ew(ctx, cen, sq, sh, [
+        "      %r = arith.mulf %a, %a : " + ctx.elem,
+    ])
+    var = _reduce_last(ctx, "0.0", [
+        "      %r = arith.addf %a, %acc : " + ctx.elem,
+    ], in_buf=sq, in_shape=sh)
+    var_d = ctx.tmp(sh[:-1])
+    _scalar_div(ctx, var, var_d, sh[:-1], float(n))
+    # rstd = rsqrt(var + eps)
+    rstd = ctx.tmp(sh[:-1])
+    _unary_ew(ctx, var_d, rstd, sh[:-1], [
+        "      %eps = arith.constant 1.0e-05 : " + ctx.elem,
+        "      %ve = arith.addf %a, %eps : " + ctx.elem,
+        "      %r = math.rsqrt %ve : " + ctx.elem,
+    ])
+    # out = cen * rstd
+    _broadcast_ew(ctx, cen, sh, rstd, ctx.out_buf, [
+        "      %r = arith.mulf %a, %b : " + ctx.elem,
+    ])
+    return ctx._preamble
+
+
+def _c_rmsnorm(ctx: OpContext) -> list[str]:
+    # x * rsqrt(mean(x^2) + eps). weight=1.
+    sh = ctx.in_shapes[0]
+    src = ctx.in_bufs[0]
+    n = sh[-1]
+    sq = ctx.tmp(sh)
+    _unary_ew(ctx, src, sq, sh, [
+        "      %r = arith.mulf %a, %a : " + ctx.elem,
+    ])
+    ms = _reduce_last(ctx, "0.0", [
+        "      %r = arith.addf %a, %acc : " + ctx.elem,
+    ], in_buf=sq, in_shape=sh)
+    ms_d = ctx.tmp(sh[:-1])
+    _scalar_div(ctx, ms, ms_d, sh[:-1], float(n))
+    rstd = ctx.tmp(sh[:-1])
+    _unary_ew(ctx, ms_d, rstd, sh[:-1], [
+        "      %eps = arith.constant 1.0e-06 : " + ctx.elem,
+        "      %ve = arith.addf %a, %eps : " + ctx.elem,
+        "      %r = math.rsqrt %ve : " + ctx.elem,
+    ])
+    _broadcast_ew(ctx, src, sh, rstd, ctx.out_buf, [
+        "      %r = arith.mulf %a, %b : " + ctx.elem,
+    ])
+    return ctx._preamble
+
+
+# ── OT2: data movement + dense ─────────────────────────────────
+
+def _c_transpose(ctx: OpContext) -> list[str]:
+    # 2D transpose: out[j,i] = in[i,j]
+    sh = ctx.in_shapes[0]
+    src = ctx.in_bufs[0]
+    m, n = sh
+    it = _memref_ty([m, n], ctx.elem)
+    ot = _memref_ty([n, m], ctx.elem)
+    inmap = "affine_map<(d0, d1) -> (d1, d0)>"
+    outmap = "affine_map<(d0, d1) -> (d0, d1)>"
+    ctx._preamble += [
+        f"    linalg.generic {{indexing_maps = [{inmap}, {outmap}], "
+        'iterator_types = ["parallel", "parallel"]} '
+        f"ins({src} : {it}) outs({ctx.out_buf} : {ot}) {{",
+        "    ^bb0(%a: " + ctx.elem + ", %o: " + ctx.elem + "):",
+        "      linalg.yield %a : " + ctx.elem,
+        "    }",
+    ]
+    return ctx._preamble
+
+
+def _c_batch_matmul(ctx: OpContext) -> list[str]:
+    a, b = ctx.in_bufs
+    (bs, m, k), (bs2, k2, n) = ctx.in_shapes[0], ctx.in_shapes[1]
+    at = _memref_ty([bs, m, k], ctx.elem)
+    bt = _memref_ty([bs, k, n], ctx.elem)
+    ct = _memref_ty([bs, m, n], ctx.elem)
+    zero = ctx.const("0.0")
+    ctx._preamble += [
+        f"    linalg.fill ins({zero} : {ctx.elem}) outs({ctx.out_buf} : {ct})",
+        f"    linalg.batch_matmul ins({a}, {b} : {at}, {bt}) "
+        f"outs({ctx.out_buf} : {ct})",
+    ]
+    return ctx._preamble
+
+
+def _c_copy(ctx: OpContext) -> list[str]:
+    _copy_into(ctx, ctx.in_bufs[0], ctx.out_buf, ctx.out_shape)
+    return ctx._preamble
+
+
+# ── shared helpers ─────────────────────────────────────────────
+
+def _copy_into(ctx: OpContext, src: str, dst: str, shape: list[int]) -> None:
+    ty = _memref_ty(shape, ctx.elem)
+    ctx._preamble.append(f"    memref.copy {src}, {dst} : {ty} to {ty}")
+
+
+def _unary_ew(ctx: OpContext, src: str, dst: str, shape: list[int],
+              body: list[str]) -> None:
+    rank = len(shape)
+    ty = _memref_ty(shape, ctx.elem)
+    imap = _amap(rank, ", ".join(f"d{i}" for i in range(rank))) if rank else \
+        "affine_map<() -> ()>"
+    iters = ", ".join(['"parallel"'] * rank)
+    ctx._preamble += [
+        f"    linalg.generic {{indexing_maps = [{imap}, {imap}], "
+        f"iterator_types = [{iters}]}} "
+        f"ins({src} : {ty}) outs({dst} : {ty}) {{",
+        "    ^bb0(%a: " + ctx.elem + ", %o: " + ctx.elem + "):",
+        *body,
+        "      linalg.yield %r : " + ctx.elem,
+        "    }",
+    ]
+
+
+def _scalar_div(ctx: OpContext, src: str, dst: str, shape: list[int],
+                denom: float) -> None:
+    _unary_ew(ctx, src, dst, shape, [
+        f"      %n = arith.constant {denom} : {ctx.elem}",
+        "      %r = arith.divf %a, %n : " + ctx.elem,
+    ])
+
+
+# ── composite op registry ──────────────────────────────────────
+
+COMPOSITE_SPECS: dict[str, dict] = {
+    "reduce_sum":  {"num_inputs": 1, "emit": _c_reduce_sum,  "out": "reduce_last"},
+    "reduce_max":  {"num_inputs": 1, "emit": _c_reduce_max,  "out": "reduce_last"},
+    "reduce_mean": {"num_inputs": 1, "emit": _c_reduce_mean, "out": "reduce_last"},
+    "softmax":     {"num_inputs": 1, "emit": _c_softmax,     "out": "same"},
+    "layernorm":   {"num_inputs": 1, "emit": _c_layernorm,   "out": "same"},
+    "rmsnorm":     {"num_inputs": 1, "emit": _c_rmsnorm,     "out": "same"},
+    "transpose":   {"num_inputs": 1, "emit": _c_transpose,   "out": "transpose2d"},
+    "batch_matmul":{"num_inputs": 2, "emit": _c_batch_matmul,"out": "bmm"},
+    "copy_":       {"num_inputs": 1, "emit": _c_copy,        "out": "same"},
+}
+
+
+def composite_output_shape(op: str, in_shapes: list[list[int]]) -> list[int]:
+    rule = COMPOSITE_SPECS[op]["out"]
+    if rule == "same":
+        return list(in_shapes[0])
+    if rule == "reduce_last":
+        return list(in_shapes[0][:-1])
+    if rule == "transpose2d":
+        return [in_shapes[0][1], in_shapes[0][0]]
+    if rule == "bmm":
+        (bs, m, k), (bs2, k2, n) = in_shapes[0], in_shapes[1]
+        return [bs, m, n]
+    raise NotImplementedError(f"composite_output_shape: {op}")
+
+
+def emit_composite(op: str, out_buf: str, out_shape: list[int],
+                   in_bufs: list[str], in_shapes: list[list[int]],
+                   elem: str) -> list[str]:
+    ctx = OpContext(op=op, out_buf=out_buf, out_shape=out_shape,
+                    in_bufs=in_bufs, in_shapes=in_shapes, elem=elem)
+    return COMPOSITE_SPECS[op]["emit"](ctx)

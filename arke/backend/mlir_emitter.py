@@ -73,10 +73,13 @@ def infer_output_shape(op: str, in_shapes: list[list[int]]) -> list[int]:
         if k != k2:
             raise ValueError(f"matmul K mismatch: {in_shapes[0]} @ {in_shapes[1]}")
         return [m, n]
-    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS, COMPOSITE_SPECS
     if op in ELEMENTWISE_SPECS:
         # elementwise → same shape as first input
         return list(in_shapes[0])
+    if op in COMPOSITE_SPECS:
+        from arke.backend.mlir_ops import composite_output_shape
+        return composite_output_shape(op, in_shapes)
     raise NotImplementedError(f"MLIR emitter: no shape rule for op {op!r}")
 
 
@@ -139,8 +142,10 @@ _EMITTERS = {
 
 
 def _all_supported_ops() -> frozenset[str]:
-    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
-    return frozenset(_EMITTERS.keys()) | frozenset(ELEMENTWISE_SPECS.keys())
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS, COMPOSITE_SPECS
+    return (frozenset(_EMITTERS.keys())
+            | frozenset(ELEMENTWISE_SPECS.keys())
+            | frozenset(COMPOSITE_SPECS.keys()))
 
 
 SUPPORTED_OPS = _all_supported_ops()
@@ -268,13 +273,14 @@ def emit_kernel(graph: IRGraph) -> EmittedKernel:
 
     body: list[str] = []
     temp_idx = 0
-    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS, COMPOSITE_SPECS, emit_composite
     for node in graph.nodes:
         is_ew = node.op in ELEMENTWISE_SPECS
-        if node.op not in _EMITTERS and not is_ew:
+        is_comp = node.op in COMPOSITE_SPECS
+        if node.op not in _EMITTERS and not is_ew and not is_comp:
             raise NotImplementedError(
                 f"MLIR emitter: op {node.op!r} not yet supported "
-                f"(supported: {sorted(SUPPORTED_OPS | set(ELEMENTWISE_SPECS))})"
+                f"(supported: {sorted(SUPPORTED_OPS)})"
             )
         in_names = list(node.inputs.values())
         in_shapes = [_resolve_shape(graph, n, computed_shapes) for n in in_names]
@@ -295,6 +301,10 @@ def emit_kernel(graph: IRGraph) -> EmittedKernel:
         if is_ew:
             body.extend(_emit_elementwise(
                 node.op, out_buf, in_bufs, out_ty, in_tys, elem, len(out_shape)
+            ))
+        elif is_comp:
+            body.extend(emit_composite(
+                node.op, out_buf, out_shape, in_bufs, in_shapes, elem
             ))
         else:
             body.extend(_EMITTERS[node.op](out_buf, in_bufs, out_ty, in_tys, elem))
