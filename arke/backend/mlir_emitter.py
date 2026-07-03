@@ -73,10 +73,48 @@ def infer_output_shape(op: str, in_shapes: list[list[int]]) -> list[int]:
         if k != k2:
             raise ValueError(f"matmul K mismatch: {in_shapes[0]} @ {in_shapes[1]}")
         return [m, n]
-    if op in ("relu", "gelu", "silu", "add", "mul", "sigmoid", "exp"):
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
+    if op in ELEMENTWISE_SPECS:
         # elementwise → same shape as first input
         return list(in_shapes[0])
     raise NotImplementedError(f"MLIR emitter: no shape rule for op {op!r}")
+
+
+# ── elementwise emitter (linalg.generic) ───────────────────────
+
+def _identity_map(rank: int) -> str:
+    dims = ", ".join(f"d{i}" for i in range(rank))
+    return f"affine_map<({dims}) -> ({dims})>"
+
+
+def _emit_elementwise(op: str, out_buf: str, in_bufs: list[str], out_ty: str,
+                      in_tys: list[str], elem: str, rank: int) -> list[str]:
+    """Emit a linalg.generic elementwise op from an OpSpec body.
+
+    All operands + output share the identity indexing map and all-parallel
+    iterators. The scalar body (from mlir_ops.ELEMENTWISE_SPECS) computes %res
+    from %a0..%aK.
+    """
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
+    spec = ELEMENTWISE_SPECS[op]
+    imap = _identity_map(rank)
+    n = len(in_bufs)
+    maps = ", ".join([imap] * (n + 1))
+    iters = ", ".join(['"parallel"'] * rank)
+    ins = ", ".join(in_bufs)
+    ins_tys = ", ".join(in_tys)
+    # block args: one per input (a0..aK) + the output init (o)
+    block_args = ", ".join([f"%a{i}: {elem}" for i in range(n)] + [f"%o: {elem}"])
+    lines = [
+        f"    linalg.generic {{indexing_maps = [{maps}], "
+        f'iterator_types = [{iters}]}} '
+        f"ins({ins} : {ins_tys}) outs({out_buf} : {out_ty}) {{",
+        f"    ^bb0({block_args}):",
+        *spec.ew_body,
+        "      linalg.yield %res : f32",
+        "    }",
+    ]
+    return lines
 
 
 # ── per-op MLIR body emitters ──────────────────────────────────
@@ -100,7 +138,12 @@ _EMITTERS = {
 }
 
 
-SUPPORTED_OPS = frozenset(_EMITTERS.keys())
+def _all_supported_ops() -> frozenset[str]:
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
+    return frozenset(_EMITTERS.keys()) | frozenset(ELEMENTWISE_SPECS.keys())
+
+
+SUPPORTED_OPS = _all_supported_ops()
 
 
 # ── transform-dialect schedule emission (P3-S1 tiling / P3-S5 L2) ───
@@ -225,11 +268,13 @@ def emit_kernel(graph: IRGraph) -> EmittedKernel:
 
     body: list[str] = []
     temp_idx = 0
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
     for node in graph.nodes:
-        if node.op not in _EMITTERS:
+        is_ew = node.op in ELEMENTWISE_SPECS
+        if node.op not in _EMITTERS and not is_ew:
             raise NotImplementedError(
-                f"MLIR emitter (P3-S1): op {node.op!r} not yet supported "
-                f"(supported: {sorted(SUPPORTED_OPS)})"
+                f"MLIR emitter: op {node.op!r} not yet supported "
+                f"(supported: {sorted(SUPPORTED_OPS | set(ELEMENTWISE_SPECS))})"
             )
         in_names = list(node.inputs.values())
         in_shapes = [_resolve_shape(graph, n, computed_shapes) for n in in_names]
@@ -239,7 +284,7 @@ def emit_kernel(graph: IRGraph) -> EmittedKernel:
         out_shape = infer_output_shape(node.op, in_shapes)
         if len(node.outputs) != 1:
             raise NotImplementedError(
-                f"MLIR emitter (P3-S1): single-output nodes only, node {node.id}"
+                f"MLIR emitter: single-output nodes only, node {node.id}"
             )
         out_name = node.outputs[0]
         out_buf = f"%v{temp_idx}"
@@ -247,7 +292,12 @@ def emit_kernel(graph: IRGraph) -> EmittedKernel:
         out_ty = memref_type(out_shape, elem_dtype)
 
         body.append(f"    {out_buf} = memref.alloc() : {out_ty}")
-        body.extend(_EMITTERS[node.op](out_buf, in_bufs, out_ty, in_tys, elem))
+        if is_ew:
+            body.extend(_emit_elementwise(
+                node.op, out_buf, in_bufs, out_ty, in_tys, elem, len(out_shape)
+            ))
+        else:
+            body.extend(_EMITTERS[node.op](out_buf, in_bufs, out_ty, in_tys, elem))
 
         ssa[out_name] = out_buf
         computed_shapes[out_name] = out_shape

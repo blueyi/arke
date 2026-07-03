@@ -70,6 +70,11 @@ _LOWER_PASSES = [
     "-expand-strided-metadata",
     "-lower-affine",
     "-convert-scf-to-cf",
+    # math lowering: LLVM intrinsics first (exp/log/sqrt/rsqrt), then libm for
+    # the remainder (tanh/erf/…). Order matters — libm errors on ops it can't
+    # legalize, so LLVM-intrinsic-able ops must be consumed first.
+    "-convert-math-to-llvm",
+    "-convert-math-to-libm",
     "-convert-cf-to-llvm",
     "-convert-func-to-llvm",
     "-finalize-memref-to-llvm",
