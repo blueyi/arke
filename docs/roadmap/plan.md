@@ -468,6 +468,12 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 > Verified 2026-07-02: `linalg.matmul` lowers end-to-end and JIT-executes
 > correct numerics on CPU (2×3 @ 3×2 = [[6,6],[6,6]]).
 >
+> **P3-S1 (MLIR lowering framework) is ✅ COMPLETE (2026-07-03):**
+> - CPU: `SemanticIR → linalg → mlir-cpu-runner JIT`, matmul bit-correct vs numpy (7 shapes).
+> - **transform dialect:** `transform.structured.tile_using_for` tiling (full/partial/non-dividing tiles), bit-correct; the P3-S5 StrategyIR-L2 seam.
+> - **GPU:** `SemanticIR → gpu dialect → NVVM → PTX → CUDA driver launch` (cuda-python), matmul bit-correct on RTX 3060 (sm_86) vs numpy + torch.cuda (6 shapes). Ubuntu mlir-18-tools ships NVPTX; PTX launched via driver API (no libmlir_cuda_runtime needed).
+> - 25 P3-S1 tests (14 CPU + tiling wired into 14, 11 GPU). Commits 56d1f84, 313da7d, + GPU commit.
+>
 > **P3-S4 (Ascend via MLIR) is ⏭️ SKIPPED** — consistent with the Phase-2 skip.
 
 **Goal:** Remove Triton's abstraction ceiling. Arke IR lowers to standard MLIR dialects (linalg, transform, scf, gpu), enabling deeper hardware control and more complete operator support. Performance must match or exceed Phase 2 Triton path.

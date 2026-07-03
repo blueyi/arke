@@ -287,3 +287,85 @@ def emit_kernel(graph: IRGraph) -> EmittedKernel:
         result_shape=result_shape,
         result_dtype=elem_dtype,
     )
+
+
+# ── GPU kernel emission (P3-S1 GPU path) ───────────────────────
+
+@dataclass
+class EmittedGPUKernel:
+    """A single-kernel ``gpu.module`` MLIR string + launch metadata."""
+    mlir_text: str
+    kernel_name: str
+    arg_names: list[str]
+    arg_shapes: list[list[int]]
+    arg_dtypes: list[str]
+    result_name: str
+    result_shape: list[int]
+    result_dtype: str
+    grid: tuple[int, int, int]
+    block: tuple[int, int, int]
+    # order of memref args as the kernel expects them (inputs..., output)
+    buffer_order: list[str]
+
+
+def emit_gpu_matmul(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
+    """Emit a single-kernel gpu.module matmul: thread-block (i,j) over MxN grid.
+
+    Each block computes one C[i,j] via a K-loop accumulate. Deliberately simple
+    (1 thread/block, block-per-output-element) — this is the P3-S1 GPU
+    *correctness* proof, not a perf kernel; tiling/blocking come with P3-S2/S3.
+    """
+    if len(graph.nodes) != 1 or graph.nodes[0].op != "matmul":
+        raise NotImplementedError("emit_gpu_matmul: single matmul node only (P3-S1)")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    a_name, b_name = in_names[0], in_names[1]
+    A, B = graph.values[a_name], graph.values[b_name]
+    M, K = A.shape
+    K2, N = B.shape
+    if K != K2:
+        raise ValueError(f"matmul K mismatch: {A.shape} @ {B.shape}")
+    if A.dtype != "float32":
+        raise NotImplementedError("emit_gpu_matmul: f32 only (P3-S1)")
+    out_name = node.outputs[0]
+    at = memref_type([M, K], "float32")
+    bt = memref_type([K, N], "float32")
+    ct = memref_type([M, N], "float32")
+    kernel = graph.name or "matmul"
+    text = "\n".join([
+        "module attributes {gpu.container_module} {",
+        f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{',
+        f"    gpu.func @{kernel}(%A: {at}, %B: {bt}, %C: {ct}) kernel {{",
+        "      %i = gpu.block_id x",
+        "      %j = gpu.block_id y",
+        "      %c0 = arith.constant 0 : index",
+        "      %c1 = arith.constant 1 : index",
+        f"      %cK = arith.constant {K} : index",
+        "      %zero = arith.constant 0.0 : f32",
+        "      %acc = scf.for %k = %c0 to %cK step %c1 "
+        "iter_args(%s = %zero) -> f32 {",
+        f"        %a = memref.load %A[%i, %k] : {at}",
+        f"        %b = memref.load %B[%k, %j] : {bt}",
+        "        %p = arith.mulf %a, %b : f32",
+        "        %ns = arith.addf %s, %p : f32",
+        "        scf.yield %ns : f32",
+        "      }",
+        f"      memref.store %acc, %C[%i, %j] : {ct}",
+        "      gpu.return",
+        "    }",
+        "  }",
+        "}",
+    ])
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[a_name, b_name],
+        arg_shapes=[[M, K], [K, N]],
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=[M, N],
+        result_dtype="float32",
+        grid=(M, N, 1),
+        block=(1, 1, 1),
+        buffer_order=[a_name, b_name, out_name],
+    )
