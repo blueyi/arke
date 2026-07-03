@@ -39,6 +39,7 @@ import numpy as np
 from arke.backend.mlir_emitter import (
     EmittedKernel,
     emit_kernel,
+    emit_transform_schedule,
     mlir_dtype,
     memref_type,
 )
@@ -61,14 +62,26 @@ def mlir_toolchain_available() -> bool:
 
 
 # Standard CPU lowering pipeline: linalg(memref) → loops → LLVM.
+# `-expand-strided-metadata` + `-lower-affine` are required when the input
+# contains tiled `memref.subview`s (from the transform-dialect tiling path),
+# and are harmless no-ops on untiled IR — so we always include them.
 _LOWER_PASSES = [
     "-convert-linalg-to-loops",
+    "-expand-strided-metadata",
+    "-lower-affine",
     "-convert-scf-to-cf",
     "-convert-cf-to-llvm",
     "-convert-func-to-llvm",
     "-finalize-memref-to-llvm",
     "-convert-arith-to-llvm",
     "-reconcile-unrealized-casts",
+]
+
+# Transform-dialect pre-pass: run the tiling schedule, then erase it so the
+# residual IR is plain linalg/scf ready for the lowering pipeline above.
+_TRANSFORM_PASSES = [
+    "-transform-interpreter",
+    "-test-transform-dialect-erase-schedule",
 ]
 
 
@@ -91,15 +104,61 @@ class MLIRBackend:
         from arke.backend.mlir_emitter import SUPPORTED_OPS
         return op_name in SUPPORTED_OPS
 
-    def lower(self, graph: IRGraph) -> BackendArtifact:
-        """Generate executable MLIR text from the IR graph."""
+    def lower(self, graph: IRGraph, tile_sizes: dict[str, list[int]] | None = None) -> BackendArtifact:
+        """Generate executable MLIR text from the IR graph.
+
+        If ``tile_sizes`` is provided (or present in ``graph.metadata['tile_sizes']``),
+        a ``transform.named_sequence`` schedule is emitted alongside the kernel and
+        the module is marked ``transform.with_named_sequence``. The backend then
+        applies the transform-interpreter pre-pass during compile/run — this is the
+        P3-S1 "linalg + transform dialect" path (and the P3-S5 StrategyIR-L2 seam).
+
+        ``tile_sizes`` maps a node op-name (e.g. "matmul") to its per-iteration-dim
+        tile sizes. Only single-tileable-op graphs are supported for the schedule
+        in P3-S1; multi-op tiling schedules land with the P3-S2/S5 op expansion.
+        """
         emitted = emit_kernel(graph)
+        tiling = tile_sizes or graph.metadata.get("tile_sizes")
+        mlir_text = emitted.mlir_text
+        tiled = False
+        schedule = None
+        if tiling:
+            # P3-S1: schedule tiles a single linalg op kind. Pick the first
+            # tileable node's op and its requested tile sizes.
+            op_name, sizes = next(iter(tiling.items()))
+            schedule = emit_transform_schedule(op_name, sizes)
+            mlir_text = self._wrap_with_transform(mlir_text, schedule)
+            tiled = True
         return BackendArtifact(
-            source_code=emitted.mlir_text,
+            source_code=mlir_text,
             backend_name=self.name,
             op_name=graph.nodes[0].op if graph.nodes else "",
-            metadata={"emitted": emitted, "graph_name": graph.name},
+            metadata={
+                "emitted": emitted,
+                "graph_name": graph.name,
+                "tiled": tiled,
+                "schedule": schedule,
+            },
         )
+
+    @staticmethod
+    def _wrap_with_transform(kernel_module: str, schedule: str) -> str:
+        """Inject a transform schedule into the kernel module.
+
+        Rewrites the outer ``module {`` to
+        ``module attributes {transform.with_named_sequence} {`` and inserts the
+        transform named-sequence just before the closing brace.
+        """
+        body = kernel_module.rstrip()
+        assert body.startswith("module {"), f"unexpected module header: {body[:40]!r}"
+        body = body.replace(
+            "module {",
+            "module attributes {transform.with_named_sequence} {",
+            1,
+        )
+        # insert schedule before the final closing brace
+        last_brace = body.rfind("}")
+        return body[:last_brace] + schedule + "\n" + body[last_brace:]
 
     def compile(self, artifact: BackendArtifact) -> CompiledKernel:
         """Verify the kernel lowers cleanly to LLVM (mlir-opt dry run).
@@ -120,6 +179,8 @@ class MLIRBackend:
             emitted=artifact.metadata["emitted"],
             llvm_dialect=llvm_ir,
             graph_name=artifact.metadata.get("graph_name", ""),
+            tiled=artifact.metadata.get("tiled", False),
+            schedule=artifact.metadata.get("schedule"),
         )
 
     def run(self, kernel: CompiledKernel, inputs: dict[str, Any]) -> dict[str, Any]:
@@ -127,27 +188,44 @@ class MLIRBackend:
         if not kernel.success:
             raise RuntimeError(f"Cannot run failed kernel: {kernel.error}")
         emitted: EmittedKernel = kernel.metadata["emitted"]
+        schedule = kernel.metadata.get("schedule")
         np_inputs = {k: _to_numpy(v) for k, v in inputs.items()}
-        harness = self._build_main_harness(emitted, np_inputs)
+        harness = self._build_main_harness(emitted, np_inputs, schedule=schedule)
         result = self._jit_execute(harness, emitted)
         return {emitted.result_name: result}
 
     # ── internals ──────────────────────────────────────────────
 
     def _lower_to_llvm(self, mlir_text: str) -> str:
-        cmd = [self.mlir_opt, *_LOWER_PASSES]
+        """Lower MLIR text to the LLVM dialect.
+
+        If the module carries a transform schedule
+        (``transform.with_named_sequence``), the transform-interpreter pre-pass
+        runs first (tiling the linalg ops), then the schedule is erased, then the
+        standard linalg→LLVM pipeline runs.
+        """
+        passes = list(_LOWER_PASSES)
+        if "transform.with_named_sequence" in mlir_text:
+            passes = _TRANSFORM_PASSES + passes
+        cmd = [self.mlir_opt, *passes]
         proc = subprocess.run(
             cmd, input=mlir_text, capture_output=True, text=True, check=True
         )
         return proc.stdout
 
     def _build_main_harness(
-        self, emitted: EmittedKernel, np_inputs: dict[str, np.ndarray]
+        self, emitted: EmittedKernel, np_inputs: dict[str, np.ndarray],
+        schedule: str | None = None,
     ) -> str:
         """Wrap the kernel with a @main that binds concrete f32 inputs and prints.
 
         P3-S1 restricts execution correctness to f32 (printMemrefF32); other
         dtypes lower/compile fine but their JIT print path lands in a follow-up.
+
+        When ``schedule`` is provided (tiled path), the assembled harness module
+        is marked ``transform.with_named_sequence`` and the transform named
+        sequence is appended so the transform-interpreter pre-pass tiles the
+        kernel's linalg op before lowering.
         """
         if emitted.result_dtype != "float32":
             raise NotImplementedError(
@@ -181,8 +259,19 @@ class MLIRBackend:
         )
         call_sig = f"{all_tys}, {res_ty}" if all_tys else res_ty
 
+        module_header = (
+            "module attributes {transform.with_named_sequence} {"
+            if schedule else "module {"
+        )
+        # kernel body sans its own `module {` header and closing brace
+        kernel_inner = (
+            emitted.mlir_text.rstrip()
+            .removesuffix("}").rstrip()          # drop closing module brace
+            .removeprefix("module {").lstrip("\n")  # drop opening module brace
+        )
         main = [
-            emitted.mlir_text.rstrip().removesuffix("}").rstrip(),  # drop closing module brace
+            module_header,
+            kernel_inner,
             "",
             *globals_lines,
             "  func.func private @printMemrefF32(memref<*xf32>)",
@@ -193,8 +282,10 @@ class MLIRBackend:
             "    func.call @printMemrefF32(%cast) : (memref<*xf32>) -> ()",
             "    return",
             "  }",
-            "}",
         ]
+        if schedule:
+            main.append(schedule)
+        main.append("}")
         return "\n".join(main)
 
     def _jit_execute(self, harness_mlir: str, emitted: EmittedKernel) -> np.ndarray:

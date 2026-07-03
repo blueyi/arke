@@ -103,6 +103,71 @@ _EMITTERS = {
 SUPPORTED_OPS = frozenset(_EMITTERS.keys())
 
 
+# ── transform-dialect schedule emission (P3-S1 tiling / P3-S5 L2) ───
+# Ops that support linalg tiling via `transform.structured.tile_using_for`.
+# Each maps to the number of loops the tiling produces (== number of tile dims
+# with a non-zero size, but we always request the full rank and let MLIR fold
+# zero-size dims). matmul has 3 iteration dims (M, N, K).
+_TILEABLE_LOOP_COUNT = {
+    "matmul": 3,
+}
+
+
+def emit_transform_schedule(op: str, tile_sizes: list[int]) -> str:
+    """Emit a ``transform.named_sequence`` that tiles the given linalg op.
+
+    The schedule is applied by ``mlir-opt -transform-interpreter`` as a pre-pass
+    (then erased with ``-test-transform-dialect-erase-schedule``). This is the
+    P3-S1 "linalg + transform dialect" path and the seam StrategyIR L2 loop-nest
+    decisions lower through in P3-S5.
+
+    Args:
+        op: linalg op name (e.g. "matmul"). Must be in ``_TILEABLE_LOOP_COUNT``.
+        tile_sizes: per-iteration-dim tile sizes. Length must match the op's
+            iteration rank. A size of 0 means "do not tile that dim".
+
+    Returns:
+        The MLIR text of the transform named-sequence module body (the
+        ``transform.named_sequence @__transform_main`` block, indented to sit
+        inside a ``module attributes {transform.with_named_sequence}``).
+    """
+    if op not in _TILEABLE_LOOP_COUNT:
+        raise NotImplementedError(
+            f"transform tiling: op {op!r} not tileable "
+            f"(supported: {sorted(_TILEABLE_LOOP_COUNT)})"
+        )
+    n_loops = _TILEABLE_LOOP_COUNT[op]
+    if len(tile_sizes) != n_loops:
+        raise ValueError(
+            f"transform tiling: op {op!r} needs {n_loops} tile sizes, "
+            f"got {len(tile_sizes)}: {tile_sizes}"
+        )
+    # number of scf.for loops produced == count of non-zero tile sizes
+    n_nonzero = sum(1 for t in tile_sizes if t != 0)
+    linalg_op = f"linalg.{op}"
+    sizes = ", ".join(str(int(t)) for t in tile_sizes)
+    if n_nonzero == 0:
+        # degenerate: no tiling requested
+        loop_results = ""
+        loop_types = ""
+    else:
+        loop_results = ", %loops:" + str(n_nonzero)
+        loop_types = ", " + ", ".join(
+            "!transform.any_op" for _ in range(n_nonzero)
+        )
+    return "\n".join([
+        "  transform.named_sequence @__transform_main("
+        "%arg0: !transform.any_op {transform.readonly}) {",
+        f'    %target = transform.structured.match ops{{["{linalg_op}"]}} '
+        "in %arg0 : (!transform.any_op) -> !transform.any_op",
+        f"    %tiled{loop_results} = transform.structured.tile_using_for "
+        f"%target[{sizes}] : (!transform.any_op) -> "
+        f"(!transform.any_op{loop_types})",
+        "    transform.yield",
+        "  }",
+    ])
+
+
 # ── emitter result ─────────────────────────────────────────────
 
 @dataclass
