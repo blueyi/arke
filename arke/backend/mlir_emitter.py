@@ -429,3 +429,86 @@ def emit_gpu_matmul(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         block=(1, 1, 1),
         buffer_order=[a_name, b_name, out_name],
     )
+
+
+# GPU elementwise ops that lower to PTX via the gpu.module path.
+#
+# Two classes, both bit-correct vs torch on the CUDA driver:
+#   * pure-arith (relu/neg/add/mul) — no external symbols, lower directly.
+#   * transcendental (exp/tanh/sigmoid/silu/gelu/rsqrt) — the math.* ops emit
+#     __nv_* libdevice calls; these are RESOLVED by linking libdevice.bc into
+#     the gpu binary (see arke/backend/mlir_gpu.py::_ptx_passes, which passes
+#     `l=<libdevice.10.bc>` to gpu-module-to-binary). libdevice inlines them to
+#     native PTX (e.g. exp → ex2.approx), so the driver-only load succeeds — no
+#     CUDA_ERROR_INVALID_PTX. This is the correct-linking path, deliberately
+#     chosen over restricting the GPU set to a pure-arith subset.
+GPU_ELEMENTWISE_OPS = frozenset({
+    # pure arith
+    "relu", "neg", "add", "mul",
+    # transcendental via libdevice
+    "exp", "tanh", "sigmoid", "silu", "gelu", "rsqrt",
+})
+
+
+def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
+    """Emit a single-kernel gpu.module for a 2D elementwise op.
+
+    One thread-block per output element (grid = shape, block = 1x1x1). Reuses the
+    scalar body from ``ELEMENTWISE_SPECS`` (same math as the CPU path), so CPU and
+    GPU produce identical numerics. 2D only in P3-S2 (the perf-relevant tensors);
+    higher ranks fold to 2D by the caller if needed.
+    """
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_elementwise: single-node graphs only")
+    node = graph.nodes[0]
+    if node.op not in ELEMENTWISE_SPECS:
+        raise NotImplementedError(f"emit_gpu_elementwise: {node.op} not elementwise")
+    spec = ELEMENTWISE_SPECS[node.op]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    shape = list(in_vals[0].shape)
+    if len(shape) != 2:
+        raise NotImplementedError(
+            f"emit_gpu_elementwise: 2D only (P3-S2), got shape {shape}"
+        )
+    if any(v.dtype != "float32" for v in in_vals):
+        raise NotImplementedError("emit_gpu_elementwise: f32 only")
+    M, N = shape
+    ty = memref_type(shape, "float32")
+    out_name = node.outputs[0]
+    kernel = graph.name or node.op
+    n_in = len(in_names)
+    # kernel params: inputs..., output
+    params = ", ".join(
+        [f"%A{i}: {ty}" for i in range(n_in)] + [f"%O: {ty}"]
+    )
+    # load each input elem as %a0..%aK, run the shared body, store %res
+    loads = [f"      %a{i} = memref.load %A{i}[%i, %j] : {ty}" for i in range(n_in)]
+    text = "\n".join([
+        "module attributes {gpu.container_module} {",
+        f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{',
+        f"    gpu.func @{kernel}({params}) kernel {{",
+        "      %i = gpu.block_id x",
+        "      %j = gpu.block_id y",
+        *loads,
+        *spec.ew_body,
+        f"      memref.store %res, %O[%i, %j] : {ty}",
+        "      gpu.return",
+        "    }",
+        "  }",
+        "}",
+    ])
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=in_names,
+        arg_shapes=[shape for _ in in_names],
+        arg_dtypes=["float32" for _ in in_names],
+        result_name=out_name,
+        result_shape=shape,
+        result_dtype="float32",
+        grid=(M, N, 1),
+        block=(1, 1, 1),
+        buffer_order=in_names + [out_name],
+    )

@@ -79,13 +79,33 @@ def _as_tuple(ret: Any) -> tuple:
 
 _ASM_RE = re.compile(r'assembly = "((?:[^"\\]|\\.)*)"')
 
+# libdevice.bc — CUDA's math library (bitcode). Linked into the gpu binary so
+# transcendentals (math.exp/tanh/… → __nv_* libdevice calls) resolve to native
+# PTX (ex2.approx etc.); without it the driver rejects the PTX (INVALID_PTX).
+def _find_libdevice() -> str | None:
+    for p in (
+        os.environ.get("ARKE_LIBDEVICE"),
+        "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc",
+    ):
+        if p and os.path.exists(p):
+            return p
+    import glob
+    hits = sorted(glob.glob("/usr/local/cuda*/nvvm/libdevice/libdevice.*.bc"))
+    return hits[0] if hits else None
+
+
 # PTX-lowering passes: scf→cf (unroll the K-loop control flow), gpu→nvvm,
-# then serialize the gpu.module to PTX text (format=isa).
-_PTX_PASSES = [
-    "-convert-scf-to-cf",
-    "-convert-gpu-to-nvvm",
-    "-gpu-module-to-binary=format=isa",
-]
+# then serialize the gpu.module to PTX text (format=isa). libdevice linked via -l.
+def _ptx_passes() -> list[str]:
+    libdev = _find_libdevice()
+    fmt = "format=isa"
+    if libdev:
+        fmt = f"format=isa l={libdev}"
+    return [
+        "-convert-scf-to-cf",
+        "-convert-gpu-to-nvvm",
+        f"-gpu-module-to-binary={fmt}",
+    ]
 
 
 def _mlir_unescape(s: str) -> bytes:
@@ -109,9 +129,9 @@ def mlir_gpu_to_ptx(gpu_mlir: str, mlir_opt: str | None = None) -> str:
     """Lower a single-kernel gpu.module MLIR string to PTX text."""
     tool = mlir_opt or _tool("ARKE_MLIR_OPT", "mlir-opt")
     if not tool:
-        raise RuntimeError("mlir-opt not found (source ~/opt/mlir18/env.sh)")
+        raise RuntimeError("mlir-opt not found (source ~/opt/mlir20/env.sh)")
     proc = subprocess.run(
-        [tool, *_PTX_PASSES], input=gpu_mlir,
+        [tool, *_ptx_passes()], input=gpu_mlir,
         capture_output=True, text=True, check=True,
     )
     m = _ASM_RE.search(proc.stdout)
@@ -243,23 +263,30 @@ class MLIRGPUBackend:
         self.mlir_opt = _tool("ARKE_MLIR_OPT", "mlir-opt")
 
     def supports_op(self, op_name: str) -> bool:
-        return op_name == "matmul"  # P3-S1 GPU: matmul first
+        from arke.backend.mlir_emitter import GPU_ELEMENTWISE_OPS
+        return op_name == "matmul" or op_name in GPU_ELEMENTWISE_OPS
 
     def lower(self, graph: Any) -> Any:
-        from arke.backend.mlir_emitter import emit_gpu_matmul
+        from arke.backend.mlir_emitter import (
+            emit_gpu_matmul, emit_gpu_elementwise, GPU_ELEMENTWISE_OPS,
+        )
         from arke.backend.protocol import BackendArtifact
-        emitted = emit_gpu_matmul(graph, chip=self.chip)
+        op = graph.nodes[0].op if graph.nodes else ""
+        if op in GPU_ELEMENTWISE_OPS:
+            emitted = emit_gpu_elementwise(graph, chip=self.chip)
+        else:
+            emitted = emit_gpu_matmul(graph, chip=self.chip)
         return BackendArtifact(
             source_code=emitted.mlir_text,
             backend_name=self.name,
-            op_name="matmul",
+            op_name=op,
             metadata={"emitted": emitted},
         )
 
     def compile(self, artifact: Any) -> Any:
         from arke.backend.protocol import CompiledKernel
         if not self.mlir_opt:
-            return CompiledKernel.fail("mlir-opt not found (source ~/opt/mlir18/env.sh)")
+            return CompiledKernel.fail("mlir-opt not found (source ~/opt/mlir20/env.sh)")
         try:
             ptx = mlir_gpu_to_ptx(artifact.source_code, self.mlir_opt)
         except subprocess.CalledProcessError as e:

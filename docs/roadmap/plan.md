@@ -472,7 +472,8 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 > - CPU: `SemanticIR → linalg → mlir-cpu-runner JIT`, matmul bit-correct vs numpy (7 shapes).
 > - **transform dialect:** `transform.structured.tile_using_for` tiling (full/partial/non-dividing tiles), bit-correct; the P3-S5 StrategyIR-L2 seam.
 > - **GPU:** `SemanticIR → gpu dialect → NVVM → PTX → CUDA driver launch` (cuda-python), matmul bit-correct on RTX 3060 (sm_86) vs numpy + torch.cuda (6 shapes). Ubuntu mlir-18-tools ships NVPTX; PTX launched via driver API (no libmlir_cuda_runtime needed).
-> - 25 P3-S1 tests (14 CPU + tiling wired into 14, 11 GPU). Commits 56d1f84, 313da7d, + GPU commit.
+> - **GPU elementwise + transcendental (2026-07-04):** GPU path extended from matmul-only to 10 elementwise ops. Pure-arith (relu/neg/add/mul) lower directly; **transcendentals (exp/tanh/sigmoid/silu/gelu/rsqrt) lower via libdevice** — `gpu-module-to-binary` is passed `l=<libdevice.10.bc>`, which inlines `math.*`/`__nv_*` calls to native PTX (exp → `ex2.approx`), so the driver-only load succeeds (no `CUDA_ERROR_INVALID_PTX`). All bit-correct vs torch on RTX 3060 (max_err ≤1e-6). This is the correct libdevice-linking path, chosen over restricting the GPU set to a pure-arith subset. 33 new tests: `tests/backend/test_mlir_gpu_elementwise_p3s2.py`.
+> - 25 P3-S1 tests (14 CPU + tiling wired into 14, 11 GPU) + 33 GPU elementwise. Commits 56d1f84, 313da7d, f1be537, + libdevice commit.
 >
 > **P3-S4 (Ascend via MLIR) is ⏭️ SKIPPED** — consistent with the Phase-2 skip.
 >
