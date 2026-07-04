@@ -805,7 +805,7 @@ def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKerne
 GPU_ROWWISE_OPS = frozenset({
     "reduce_sum", "reduce_max", "reduce_mean",
     "softmax", "layernorm", "rmsnorm",
-    "cumsum", "argmax",
+    "cumsum", "argmax", "rope",
 })
 
 
@@ -964,6 +964,41 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         ap("      %idxf = arith.index_cast %res#1 : index to i64")
         ap("      %idxff = arith.sitofp %idxf : i64 to f32")
         ap(f"      memref.store %idxff, %O[%r] : {outty}")
+    elif op == "rope":
+        # rotary position embedding, pos = row index, D even.
+        #   x1=X[r,k], x2=X[r,k+D/2]; theta=10000^(-2k/D); ang=pos*theta
+        #   O[r,k]=x1*cos-x2*sin ; O[r,k+D/2]=x2*cos+x1*sin
+        half = D // 2
+        ap(f"      %chalf = arith.constant {half} : index")
+        ap(f"      %Df = arith.constant {float(D)} : f32")
+        ap("      %two = arith.constant 2.0 : f32")
+        ap("      %base = arith.constant 10000.0 : f32")
+        ap("      %posi = arith.index_cast %r : index to i64")
+        ap("      %posf = arith.sitofp %posi : i64 to f32")
+        ap("      %lnb = math.log %base : f32")
+        ap("      scf.for %k = %c0 to %chalf step %c1 {")
+        ap("        %ki = arith.index_cast %k : index to i64")
+        ap("        %kf = arith.sitofp %ki : i64 to f32")
+        ap("        %e0 = arith.mulf %two, %kf : f32")
+        ap("        %e1 = arith.divf %e0, %Df : f32")
+        ap("        %pw = arith.mulf %e1, %lnb : f32")
+        ap("        %ipw = arith.negf %pw : f32")
+        ap("        %theta = math.exp %ipw : f32")
+        ap("        %ang = arith.mulf %posf, %theta : f32")
+        ap("        %cos = math.cos %ang : f32")
+        ap("        %sin = math.sin %ang : f32")
+        ap("        %k2 = arith.addi %k, %chalf : index")
+        ap(f"        %x1 = memref.load %X[%r, %k] : {inty}")
+        ap(f"        %x2 = memref.load %X[%r, %k2] : {inty}")
+        ap("        %x1c = arith.mulf %x1, %cos : f32")
+        ap("        %x2s = arith.mulf %x2, %sin : f32")
+        ap("        %o1 = arith.subf %x1c, %x2s : f32")
+        ap("        %x2c = arith.mulf %x2, %cos : f32")
+        ap("        %x1s = arith.mulf %x1, %sin : f32")
+        ap("        %o2 = arith.addf %x2c, %x1s : f32")
+        ap(f"        memref.store %o1, %O[%r, %k] : {outty}")
+        ap(f"        memref.store %o2, %O[%r, %k2] : {outty}")
+        ap("      }")
 
     ap("      gpu.return")
     ap("    }")
@@ -982,6 +1017,123 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         grid=(rows, 1, 1),
         block=(1, 1, 1),
         buffer_order=[in_names[0], out_name],
+    )
+
+
+# Two-input row-per-block ops: rmsnorm_residual (rmsnorm(x+res)) and embedding
+# (row gather from a table). Kept separate from emit_gpu_rowwise (single-input).
+GPU_ROWWISE2_OPS = frozenset({"rmsnorm_residual", "embedding"})
+
+
+def emit_gpu_rowwise2(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
+    """Emit a row-per-block gpu.module for a 2-input row-wise op.
+
+      * rmsnorm_residual(x, res): rmsnorm(x + res) over the row (same eps=1e-5).
+      * embedding(idx, table): out[i,:] = table[int(idx[i]), :]. idx is a 1D
+        f32-encoded index vector; table is [vocab, dim]; out is [n_idx, dim].
+    grid=(rows,1,1), block=(1,1,1). f32 only, 2D tensors (idx 1D). Same math as
+    the CPU composite path.
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_rowwise2: single-node graphs only")
+    node = graph.nodes[0]
+    op = node.op
+    if op not in GPU_ROWWISE2_OPS:
+        raise NotImplementedError(f"emit_gpu_rowwise2: {op} unsupported")
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    if any(v.dtype != "float32" for v in in_vals):
+        raise NotImplementedError("emit_gpu_rowwise2: f32 only")
+    out_name = node.outputs[0]
+    kernel = graph.name or op
+    L = []
+    ap = L.append
+
+    if op == "rmsnorm_residual":
+        rows, D = in_vals[0].shape
+        if in_vals[1].shape != in_vals[0].shape:
+            raise ValueError("rmsnorm_residual: x and residual must match")
+        ty = memref_type([rows, D], "float32")
+        ap("module attributes {gpu.container_module} {")
+        ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+        ap(f"    gpu.func @{kernel}(%X: {ty}, %R: {ty}, %O: {ty}) kernel {{")
+        ap("      %r = gpu.block_id x")
+        ap("      %c0 = arith.constant 0 : index")
+        ap("      %c1 = arith.constant 1 : index")
+        ap(f"      %cD = arith.constant {D} : index")
+        ap("      %zero = arith.constant 0.0 : f32")
+        ap(f"      %Df = arith.constant {float(D)} : f32")
+        ap("      %eps = arith.constant 1.000000e-05 : f32")
+        # sum of (x+res)^2
+        ap("      %ssum = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %zero) -> f32 {")
+        ap(f"        %x = memref.load %X[%r, %k] : {ty}")
+        ap(f"        %rr = memref.load %R[%r, %k] : {ty}")
+        ap("        %a = arith.addf %x, %rr : f32")
+        ap("        %sq = arith.mulf %a, %a : f32")
+        ap("        %ns = arith.addf %s, %sq : f32")
+        ap("        scf.yield %ns : f32")
+        ap("      }")
+        ap("      %ms = arith.divf %ssum, %Df : f32")
+        ap("      %mse = arith.addf %ms, %eps : f32")
+        ap("      %inv = math.rsqrt %mse : f32")
+        ap("      scf.for %k = %c0 to %cD step %c1 {")
+        ap(f"        %x = memref.load %X[%r, %k] : {ty}")
+        ap(f"        %rr = memref.load %R[%r, %k] : {ty}")
+        ap("        %a = arith.addf %x, %rr : f32")
+        ap("        %o = arith.mulf %a, %inv : f32")
+        ap(f"        memref.store %o, %O[%r, %k] : {ty}")
+        ap("      }")
+        ap("      gpu.return")
+        ap("    }")
+        ap("  }")
+        ap("}")
+        out_shape = [rows, D]
+        arg_names = [in_names[0], in_names[1]]
+        arg_shapes = [[rows, D], [rows, D]]
+        grid = (rows, 1, 1)
+    else:  # embedding
+        idx_shape = list(in_vals[0].shape)
+        vocab, dim = in_vals[1].shape
+        n_idx = idx_shape[0]
+        idxty = memref_type([n_idx], "float32")
+        tblty = memref_type([vocab, dim], "float32")
+        outty = memref_type([n_idx, dim], "float32")
+        ap("module attributes {gpu.container_module} {")
+        ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+        ap(f"    gpu.func @{kernel}(%I: {idxty}, %T: {tblty}, %O: {outty}) kernel {{")
+        ap("      %r = gpu.block_id x")
+        ap("      %c0 = arith.constant 0 : index")
+        ap("      %c1 = arith.constant 1 : index")
+        ap(f"      %cdim = arith.constant {dim} : index")
+        ap(f"      %fidx = memref.load %I[%r] : {idxty}")
+        ap("      %ii = arith.fptosi %fidx : f32 to i64")
+        ap("      %row = arith.index_cast %ii : i64 to index")
+        ap("      scf.for %d = %c0 to %cdim step %c1 {")
+        ap(f"        %v = memref.load %T[%row, %d] : {tblty}")
+        ap(f"        memref.store %v, %O[%r, %d] : {outty}")
+        ap("      }")
+        ap("      gpu.return")
+        ap("    }")
+        ap("  }")
+        ap("}")
+        out_shape = [n_idx, dim]
+        arg_names = [in_names[0], in_names[1]]
+        arg_shapes = [idx_shape, [vocab, dim]]
+        grid = (n_idx, 1, 1)
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=arg_names,
+        arg_shapes=arg_shapes,
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=grid,
+        block=(1, 1, 1),
+        buffer_order=arg_names + [out_name],
     )
 
 

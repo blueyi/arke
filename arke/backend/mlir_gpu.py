@@ -311,16 +311,19 @@ class MLIRGPUBackend:
     def supports_op(self, op_name: str) -> bool:
         from arke.backend.mlir_emitter import (
             GPU_ELEMENTWISE_OPS, GPU_ROWWISE_OPS, GPU_MOVEMENT_OPS, GPU_GATED_OPS,
+            GPU_ROWWISE2_OPS,
         )
         return (op_name == "matmul" or op_name in GPU_ELEMENTWISE_OPS
                 or op_name in GPU_ROWWISE_OPS or op_name in GPU_MOVEMENT_OPS
-                or op_name in GPU_GATED_OPS)
+                or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS)
 
     def lower(self, graph: Any) -> Any:
         from arke.backend.mlir_emitter import (
             emit_gpu_matmul, emit_gpu_matmul_tiled, emit_gpu_matmul_regblock,
             emit_gpu_elementwise, emit_gpu_rowwise, emit_gpu_movement, emit_gpu_gated,
+            emit_gpu_rowwise2,
             GPU_ELEMENTWISE_OPS, GPU_ROWWISE_OPS, GPU_MOVEMENT_OPS, GPU_GATED_OPS,
+            GPU_ROWWISE2_OPS,
         )
         from arke.backend.protocol import BackendArtifact
         op = graph.nodes[0].op if graph.nodes else ""
@@ -328,6 +331,8 @@ class MLIRGPUBackend:
             emitted = emit_gpu_elementwise(graph, chip=self.chip)
         elif op in GPU_ROWWISE_OPS:
             emitted = emit_gpu_rowwise(graph, chip=self.chip)
+        elif op in GPU_ROWWISE2_OPS:
+            emitted = emit_gpu_rowwise2(graph, chip=self.chip)
         elif op in GPU_MOVEMENT_OPS:
             emitted = emit_gpu_movement(graph, chip=self.chip)
         elif op in GPU_GATED_OPS:
