@@ -475,6 +475,15 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 > - 25 P3-S1 tests (14 CPU + tiling wired into 14, 11 GPU). Commits 56d1f84, 313da7d, + GPU commit.
 >
 > **P3-S4 (Ascend via MLIR) is ⏭️ SKIPPED** — consistent with the Phase-2 skip.
+>
+> **P3-S2 correctness half ✅ (2026-07-03):** 35 ops correct via MLIR
+> (OT0 12/12, OT1 9/10, OT2 11/11 — the "Cat A+B+C" scope) on the CPU
+> mlir-runner JIT path, all bit-correct vs torch (max_err ≤5e-6). Built on a
+> declarative op catalog (`arke/backend/mlir_ops.py`: elementwise via
+> `linalg.generic`, reductions/norms/movement/gated/index ops via
+> multi-linalg + scf composites). Remaining P3-S2 work = perf half
+> (geomean ≥ Phase 2 Triton). Toolchain now **MLIR 20.1.2** (aligns Triton 3.2
+> / PyTorch 2.6). Tests: `tests/backend/test_mlir_ops_p3s2.py`.
 
 **Goal:** Remove Triton's abstraction ceiling. Arke IR lowers to standard MLIR dialects (linalg, transform, scf, gpu), enabling deeper hardware control and more complete operator support. Performance must match or exceed Phase 2 Triton path.
 
