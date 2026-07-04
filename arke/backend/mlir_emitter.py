@@ -960,3 +960,114 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         block=(1, 1, 1),
         buffer_order=[in_names[0], out_name],
     )
+
+
+# 2D data-movement ops the GPU backend covers with an element-per-block kernel
+# (grid = output shape, block=(1,1,1)): pure address remapping, no math.
+GPU_MOVEMENT_OPS = frozenset({
+    "transpose", "copy_", "concat", "split",
+})
+
+
+def emit_gpu_movement(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
+    """Emit an element-per-block gpu.module for a 2D data-movement op.
+
+    grid = output shape, block=(1,1,1); each block writes one output element by
+    reading the mapped input element(s). Same index math as the CPU composite
+    path.
+      * transpose [M,N] -> [N,M]:  O[i,j] = X[j,i]
+      * copy_     [M,N] -> [M,N]:  O[i,j] = X[i,j]
+      * split     [M,2*] -> [M,D]: O[i,j] = X[i,j]      (first-half chunk)
+      * concat    [M,Da]+[M,Db] -> [M,Da+Db]: O[i,j] = j<Da ? A[i,j] : B[i,j-Da]
+    f32 only, 2D only (P3-S2).
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_movement: single-node graphs only")
+    node = graph.nodes[0]
+    op = node.op
+    if op not in GPU_MOVEMENT_OPS:
+        raise NotImplementedError(f"emit_gpu_movement: {op} unsupported")
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    if any(len(v.shape) != 2 for v in in_vals):
+        raise NotImplementedError(f"emit_gpu_movement: 2D only, got {[v.shape for v in in_vals]}")
+    if any(v.dtype != "float32" for v in in_vals):
+        raise NotImplementedError("emit_gpu_movement: f32 only")
+    out_name = node.outputs[0]
+    kernel = graph.name or op
+
+    L = []
+    ap = L.append
+
+    def head(params, out_shape):
+        ap("module attributes {gpu.container_module} {")
+        ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+        ap(f"    gpu.func @{kernel}({params}) kernel {{")
+        ap("      %i = gpu.block_id x")
+        ap("      %j = gpu.block_id y")
+
+    if op == "transpose":
+        M, N = in_vals[0].shape
+        out_shape = [N, M]
+        xt = memref_type([M, N], "float32")
+        ot = memref_type(out_shape, "float32")
+        head(f"%X: {xt}, %O: {ot}", out_shape)
+        # O[i,j] = X[j,i]   (i in [0,N), j in [0,M))
+        ap(f"      %v = memref.load %X[%j, %i] : {xt}")
+        ap(f"      memref.store %v, %O[%i, %j] : {ot}")
+        grid = (N, M, 1)
+        arg_names, arg_shapes = [in_names[0]], [[M, N]]
+    elif op in ("copy_", "split"):
+        M, Din = in_vals[0].shape
+        Dout = Din if op == "copy_" else Din // 2
+        out_shape = [M, Dout]
+        xt = memref_type([M, Din], "float32")
+        ot = memref_type(out_shape, "float32")
+        head(f"%X: {xt}, %O: {ot}", out_shape)
+        ap(f"      %v = memref.load %X[%i, %j] : {xt}")
+        ap(f"      memref.store %v, %O[%i, %j] : {ot}")
+        grid = (M, Dout, 1)
+        arg_names, arg_shapes = [in_names[0]], [[M, Din]]
+    elif op == "concat":
+        M, Da = in_vals[0].shape
+        _, Db = in_vals[1].shape
+        out_shape = [M, Da + Db]
+        at = memref_type([M, Da], "float32")
+        bt = memref_type([M, Db], "float32")
+        ot = memref_type(out_shape, "float32")
+        head(f"%A: {at}, %B: {bt}, %O: {ot}", out_shape)
+        ap(f"      %cDa = arith.constant {Da} : index")
+        ap("      %lt = arith.cmpi ult, %j, %cDa : index")
+        ap("      %v = scf.if %lt -> f32 {")
+        ap(f"        %a = memref.load %A[%i, %j] : {at}")
+        ap("        scf.yield %a : f32")
+        ap("      } else {")
+        ap("        %jb = arith.subi %j, %cDa : index")
+        ap(f"        %b = memref.load %B[%i, %jb] : {bt}")
+        ap("        scf.yield %b : f32")
+        ap("      }")
+        ap(f"      memref.store %v, %O[%i, %j] : {ot}")
+        grid = (M, Da + Db, 1)
+        arg_names = [in_names[0], in_names[1]]
+        arg_shapes = [[M, Da], [M, Db]]
+    else:  # unreachable: op validated against GPU_MOVEMENT_OPS above
+        raise NotImplementedError(f"emit_gpu_movement: {op} not wired")
+
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=arg_names,
+        arg_shapes=arg_shapes,
+        arg_dtypes=["float32" for _ in arg_names],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=grid,
+        block=(1, 1, 1),
+        buffer_order=arg_names + [out_name],
+    )
