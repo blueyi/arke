@@ -314,19 +314,23 @@ class MLIRGPUBackend:
 
     def lower(self, graph: Any) -> Any:
         from arke.backend.mlir_emitter import (
-            emit_gpu_matmul, emit_gpu_matmul_tiled, emit_gpu_elementwise,
-            GPU_ELEMENTWISE_OPS,
+            emit_gpu_matmul, emit_gpu_matmul_tiled, emit_gpu_matmul_regblock,
+            emit_gpu_elementwise, GPU_ELEMENTWISE_OPS,
         )
         from arke.backend.protocol import BackendArtifact
         op = graph.nodes[0].op if graph.nodes else ""
         if op in GPU_ELEMENTWISE_OPS:
             emitted = emit_gpu_elementwise(graph, chip=self.chip)
         elif op == "matmul":
-            # Prefer the shared-memory tiled kernel; fall back to the
-            # correctness kernel for non-tile-aligned shapes.
-            try:
-                emitted = emit_gpu_matmul_tiled(graph, chip=self.chip)
-            except NotImplementedError:
+            # Perf ladder: register-blocked (best) → shared-mem tiled →
+            # correctness kernel, falling back on shape-alignment constraints.
+            for emit in (emit_gpu_matmul_regblock, emit_gpu_matmul_tiled):
+                try:
+                    emitted = emit(graph, chip=self.chip)
+                    break
+                except NotImplementedError:
+                    continue
+            else:
                 emitted = emit_gpu_matmul(graph, chip=self.chip)
         else:
             emitted = emit_gpu_matmul(graph, chip=self.chip)

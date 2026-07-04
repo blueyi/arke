@@ -540,6 +540,182 @@ def emit_gpu_matmul_tiled(graph: IRGraph, chip: str = "sm_86",
     )
 
 
+# Register-blocked (2D thread-tile) matmul params. Each thread computes a
+# TM x TN micro-tile of C held in registers. Block tile = BM x BN, K-step = BK.
+# threads/block = (BN/TN) x (BM/TM). Defaults: 64x64 block, BK=16, 4x4 per
+# thread → 16x16=256 threads, 4 KiB+4 KiB shared, 16 acc regs/thread — a solid
+# arithmetic-intensity point for sm_86 without spilling.
+GPU_MM_BM = 64
+GPU_MM_BN = 64
+GPU_MM_BK = 16
+GPU_MM_TM = 4
+GPU_MM_TN = 4
+
+
+def emit_gpu_matmul_regblock(
+    graph: IRGraph, chip: str = "sm_86",
+    BM: int = GPU_MM_BM, BN: int = GPU_MM_BN, BK: int = GPU_MM_BK,
+    TM: int = GPU_MM_TM, TN: int = GPU_MM_TN,
+) -> EmittedGPUKernel:
+    """Emit a register-blocked (2D thread-tile) matmul gpu.module.
+
+    Each thread computes a ``TM x TN`` micro-tile of C accumulated in a private
+    (register) memref, so each shared-memory value fetched is reused ``TM`` (A)
+    or ``TN`` (B) times — the classic CUTLASS-style blocking that lifts
+    arithmetic intensity far above the 1-output-per-thread tiled kernel.
+
+    Layout: block tile ``BM x BN``, K walked in ``BK`` steps. Threads per block
+    = ``(BN/TN) x (BM/TM)`` (= 16x16 = 256 by default). The block cooperatively
+    stages ``A[BM x BK]`` and ``B[BK x BN]`` into workgroup memory with a
+    stride-``nthreads`` linear load loop, barrier, then each thread reads its
+    ``TM`` A-rows and ``TN`` B-cols from shared and does ``TM*TN`` FMAs per
+    K-element, barrier, next K-tile.
+
+    Requires M % BM == 0, N % BN == 0, K % BK == 0. f32 only. Callers fall back
+    to the simpler tiled/correctness kernels for non-conforming shapes.
+    """
+    if len(graph.nodes) != 1 or graph.nodes[0].op != "matmul":
+        raise NotImplementedError("emit_gpu_matmul_regblock: single matmul node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    a_name, b_name = in_names[0], in_names[1]
+    A, B = graph.values[a_name], graph.values[b_name]
+    M, K = A.shape
+    K2, N = B.shape
+    if K != K2:
+        raise ValueError(f"matmul K mismatch: {A.shape} @ {B.shape}")
+    if A.dtype != "float32":
+        raise NotImplementedError("emit_gpu_matmul_regblock: f32 only")
+    if M % BM or N % BN or K % BK:
+        raise NotImplementedError(
+            f"emit_gpu_matmul_regblock: need M%{BM}==0,N%{BN}==0,K%{BK}==0; got {M},{K},{N}"
+        )
+    if BM % TM or BN % TN:
+        raise ValueError("BM%TM and BN%TN must be 0")
+    nthreads = (BM // TM) * (BN // TN)
+    tdx = BN // TN  # thread grid x (columns of micro-tiles)
+    a_elems = BM * BK
+    b_elems = BK * BN
+    out_name = node.outputs[0]
+    at = memref_type([M, K], "float32")
+    bt = memref_type([K, N], "float32")
+    ct = memref_type([M, N], "float32")
+    saty = f"memref<{BM}x{BK}xf32, #gpu.address_space<workgroup>>"
+    sbty = f"memref<{BK}x{BN}xf32, #gpu.address_space<workgroup>>"
+    accty = f"memref<{TM}x{TN}xf32, #gpu.address_space<private>>"
+    kernel = graph.name or "matmul"
+
+    L = []  # emit lines
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%A: {at}, %B: {bt}, %C: {ct})")
+    ap(f"        workgroup(%sA : {saty}, %sB : {sbty})")
+    ap(f"        private(%acc : {accty})")
+    ap("        kernel {")
+    ap("      %tx = gpu.thread_id x")
+    ap("      %ty = gpu.thread_id y")
+    ap("      %bx = gpu.block_id x")
+    ap("      %by = gpu.block_id y")
+    # constants
+    consts = {0: "%c0", 1: "%c1", TM: "%cTM", TN: "%cTN", BK: "%cBK",
+              BM: "%cBM", BN: "%cBN", K: "%cK", nthreads: "%cNT",
+              a_elems: "%cAE", b_elems: "%cBE", tdx: "%cTDX"}
+    seen = {}
+    for val, nm in consts.items():
+        if val in seen:
+            continue
+        seen[val] = nm
+        ap(f"      {nm} = arith.constant {val} : index")
+    c0, c1 = seen[0], seen[1]
+    cTM, cTN, cBK = seen[TM], seen[TN], seen[BK]
+    cBM, cBN, cK = seen[BM], seen[BN], seen[K]
+    cNT, cAE, cBE, cTDX = seen[nthreads], seen[a_elems], seen[b_elems], seen[tdx]
+    ap("      %zero = arith.constant 0.0 : f32")
+    # linear thread id: tid = ty*tdx + tx
+    ap(f"      %ty_tdx = arith.muli %ty, {cTDX} : index")
+    ap(f"      %tid = arith.addi %ty_tdx, %tx : index")
+    # block origin in C
+    ap(f"      %browbase = arith.muli %by, {cBM} : index")   # by*BM
+    ap(f"      %bcolbase = arith.muli %bx, {cBN} : index")   # bx*BN
+    # this thread's micro-tile origin within the block tile
+    ap(f"      %trow0 = arith.muli %ty, {cTM} : index")      # ty*TM
+    ap(f"      %tcol0 = arith.muli %tx, {cTN} : index")      # tx*TN
+    # zero accumulator
+    ap(f"      scf.for %i = {c0} to {cTM} step {c1} {{")
+    ap(f"        scf.for %j = {c0} to {cTN} step {c1} {{")
+    ap(f"          memref.store %zero, %acc[%i, %j] : {accty}")
+    ap("        }")
+    ap("      }")
+    # K-tile loop
+    ap(f"      scf.for %kk = {c0} to {cK} step {cBK} {{")
+    # cooperative load A[BM x BK] into sA: linear indices tid, tid+NT, ...
+    ap(f"        scf.for %li = %tid to {cAE} step {cNT} {{")
+    ap(f"          %ar = arith.divui %li, {cBK} : index")     # row in tile
+    ap(f"          %ac = arith.remui %li, {cBK} : index")     # col in tile
+    ap(f"          %gar = arith.addi %browbase, %ar : index")
+    ap(f"          %gac = arith.addi %kk, %ac : index")
+    ap(f"          %av = memref.load %A[%gar, %gac] : {at}")
+    ap(f"          memref.store %av, %sA[%ar, %ac] : {saty}")
+    ap("        }")
+    # cooperative load B[BK x BN] into sB
+    ap(f"        scf.for %li = %tid to {cBE} step {cNT} {{")
+    ap(f"          %br = arith.divui %li, {cBN} : index")     # row in tile (k)
+    ap(f"          %bc = arith.remui %li, {cBN} : index")     # col in tile (n)
+    ap(f"          %gbr = arith.addi %kk, %br : index")
+    ap(f"          %gbc = arith.addi %bcolbase, %bc : index")
+    ap(f"          %bv = memref.load %B[%gbr, %gbc] : {bt}")
+    ap(f"          memref.store %bv, %sB[%br, %bc] : {sbty}")
+    ap("        }")
+    ap("        gpu.barrier")
+    # compute: for each k in BK, load TM a-vals + TN b-vals, TM*TN FMAs
+    ap(f"        scf.for %k = {c0} to {cBK} step {c1} {{")
+    ap(f"          scf.for %i = {c0} to {cTM} step {c1} {{")
+    ap("            %arow = arith.addi %trow0, %i : index")
+    ap(f"            %a = memref.load %sA[%arow, %k] : {saty}")
+    ap(f"            scf.for %j = {c0} to {cTN} step {c1} {{")
+    ap("              %bcol = arith.addi %tcol0, %j : index")
+    ap(f"              %b = memref.load %sB[%k, %bcol] : {sbty}")
+    ap(f"              %old = memref.load %acc[%i, %j] : {accty}")
+    ap("              %prod = arith.mulf %a, %b : f32")
+    ap("              %new = arith.addf %old, %prod : f32")
+    ap(f"              memref.store %new, %acc[%i, %j] : {accty}")
+    ap("            }")
+    ap("          }")
+    ap("        }")
+    ap("        gpu.barrier")
+    ap("      }")
+    # write back acc → C
+    ap(f"      scf.for %i = {c0} to {cTM} step {c1} {{")
+    ap("        %crow_l = arith.addi %trow0, %i : index")
+    ap("        %crow = arith.addi %browbase, %crow_l : index")
+    ap(f"        scf.for %j = {c0} to {cTN} step {c1} {{")
+    ap("          %ccol_l = arith.addi %tcol0, %j : index")
+    ap("          %ccol = arith.addi %bcolbase, %ccol_l : index")
+    ap(f"          %v = memref.load %acc[%i, %j] : {accty}")
+    ap(f"          memref.store %v, %C[%crow, %ccol] : {ct}")
+    ap("        }")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[a_name, b_name],
+        arg_shapes=[[M, K], [K, N]],
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=[M, N],
+        result_dtype="float32",
+        grid=(N // BN, M // BM, 1),
+        block=(BN // TN, BM // TM, 1),
+        buffer_order=[a_name, b_name, out_name],
+    )
+
+
 # GPU elementwise ops that lower to PTX via the gpu.module path.
 #
 # Two classes, both bit-correct vs torch on the CUDA driver:
