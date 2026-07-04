@@ -805,6 +805,7 @@ def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKerne
 GPU_ROWWISE_OPS = frozenset({
     "reduce_sum", "reduce_max", "reduce_mean",
     "softmax", "layernorm", "rmsnorm",
+    "cumsum", "argmax",
 })
 
 
@@ -833,7 +834,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
     if any(v.dtype != "float32" for v in in_vals):
         raise NotImplementedError("emit_gpu_rowwise: f32 only")
     rows, D = shape
-    is_reduce = op in ("reduce_sum", "reduce_max", "reduce_mean")
+    is_reduce = op in ("reduce_sum", "reduce_max", "reduce_mean", "argmax")
     out_shape = [rows] if is_reduce else [rows, D]
     inty = memref_type(shape, "float32")
     outty = memref_type(out_shape, "float32")
@@ -941,6 +942,28 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         ap("        %o = arith.mulf %x, %inv : f32")
         ap(f"        memref.store %o, %O[%r, %k] : {outty}")
         ap("      }")
+    elif op == "cumsum":
+        # prefix sum along the row: O[r,k] = sum_{t<=k} X[r,t]
+        ap("      %cs = scf.for %k = %c0 to %cD step %c1 iter_args(%run = %zero) -> f32 {")
+        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+        ap("        %nr = arith.addf %run, %x : f32")
+        ap(f"        memref.store %nr, %O[%r, %k] : {outty}")
+        ap("        scf.yield %nr : f32")
+        ap("      }")
+    elif op == "argmax":
+        # index of the row max (f32-encoded, exact for idx < 2^24)
+        ap(f"      %m0 = memref.load %X[%r, %c0] : {inty}")
+        ap("      %res:2 = scf.for %k = %c0 to %cD step %c1 "
+           "iter_args(%best = %m0, %bi = %c0) -> (f32, index) {")
+        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+        ap("        %gt = arith.cmpf ogt, %x, %best : f32")
+        ap("        %nb = arith.select %gt, %x, %best : f32")
+        ap("        %ni = arith.select %gt, %k, %bi : index")
+        ap("        scf.yield %nb, %ni : f32, index")
+        ap("      }")
+        ap("      %idxf = arith.index_cast %res#1 : index to i64")
+        ap("      %idxff = arith.sitofp %idxf : i64 to f32")
+        ap(f"      memref.store %idxff, %O[%r] : {outty}")
 
     ap("      gpu.return")
     ap("    }")
@@ -1052,6 +1075,117 @@ def emit_gpu_movement(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         arg_shapes = [[M, Da], [M, Db]]
     else:  # unreachable: op validated against GPU_MOVEMENT_OPS above
         raise NotImplementedError(f"emit_gpu_movement: {op} not wired")
+
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=arg_names,
+        arg_shapes=arg_shapes,
+        arg_dtypes=["float32" for _ in arg_names],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=grid,
+        block=(1, 1, 1),
+        buffer_order=arg_names + [out_name],
+    )
+
+
+# Gated / select / cast ops: element-per-block, elementwise-style math.
+#   cast         [M,N] -> [M,N]   f32 identity (benchmark cast targets f32)
+#   where_       cond,a,b -> out  branchless cond*a + (1-cond)*b
+#   silu_and_mul [M,2D] -> [M,D]  silu(X[:, :D]) * X[:, D:]
+#   gelu_and_mul [M,2D] -> [M,D]  gelu(X[:, :D]) * X[:, D:]
+GPU_GATED_OPS = frozenset({
+    "cast", "where_", "silu_and_mul", "gelu_and_mul",
+})
+
+
+def emit_gpu_gated(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
+    """Emit an element-per-block gpu.module for gated/select/cast ops.
+
+    grid = output shape, block=(1,1,1). silu_and_mul/gelu_and_mul reuse the same
+    scalar activation body as the CPU/elementwise path (``ELEMENTWISE_SPECS``),
+    so numerics match; the transcendental ``math.exp``/``math.tanh`` inside lower
+    via libdevice (already linked). where_ is branchless. f32 only, 2D only.
+    """
+    from arke.backend.mlir_ops import ELEMENTWISE_SPECS
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_gated: single-node graphs only")
+    node = graph.nodes[0]
+    op = node.op
+    if op not in GPU_GATED_OPS:
+        raise NotImplementedError(f"emit_gpu_gated: {op} unsupported")
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    if any(len(v.shape) != 2 for v in in_vals):
+        raise NotImplementedError(f"emit_gpu_gated: 2D only, got {[v.shape for v in in_vals]}")
+    if any(v.dtype != "float32" for v in in_vals):
+        raise NotImplementedError("emit_gpu_gated: f32 only")
+    out_name = node.outputs[0]
+    kernel = graph.name or op
+
+    L = []
+    ap = L.append
+
+    def head(params):
+        ap("module attributes {gpu.container_module} {")
+        ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+        ap(f"    gpu.func @{kernel}({params}) kernel {{")
+        ap("      %i = gpu.block_id x")
+        ap("      %j = gpu.block_id y")
+
+    if op == "cast":
+        M, N = in_vals[0].shape
+        out_shape = [M, N]
+        xt = memref_type([M, N], "float32")
+        head(f"%X: {xt}, %O: {xt}")
+        ap(f"      %v = memref.load %X[%i, %j] : {xt}")
+        ap(f"      memref.store %v, %O[%i, %j] : {xt}")
+        grid = (M, N, 1)
+        arg_names, arg_shapes = [in_names[0]], [[M, N]]
+    elif op == "where_":
+        M, N = in_vals[0].shape
+        out_shape = [M, N]
+        ty = memref_type([M, N], "float32")
+        head(f"%C: {ty}, %A: {ty}, %B: {ty}, %O: {ty}")
+        ap("      %one = arith.constant 1.0 : f32")
+        ap(f"      %c = memref.load %C[%i, %j] : {ty}")
+        ap(f"      %a = memref.load %A[%i, %j] : {ty}")
+        ap(f"      %b = memref.load %B[%i, %j] : {ty}")
+        ap("      %ca = arith.mulf %c, %a : f32")
+        ap("      %omc = arith.subf %one, %c : f32")
+        ap("      %ob = arith.mulf %omc, %b : f32")
+        ap("      %v = arith.addf %ca, %ob : f32")
+        ap(f"      memref.store %v, %O[%i, %j] : {ty}")
+        grid = (M, N, 1)
+        arg_names = [in_names[0], in_names[1], in_names[2]]
+        arg_shapes = [[M, N], [M, N], [M, N]]
+    else:  # silu_and_mul / gelu_and_mul
+        act = "silu" if op == "silu_and_mul" else "gelu"
+        spec = ELEMENTWISE_SPECS[act]
+        M, twoD = in_vals[0].shape
+        D = twoD // 2
+        out_shape = [M, D]
+        xt = memref_type([M, twoD], "float32")
+        ot = memref_type(out_shape, "float32")
+        head(f"%X: {xt}, %O: {ot}")
+        ap(f"      %cD = arith.constant {D} : index")
+        ap("      %jg = arith.addi %j, %cD : index")
+        # %a0 = X[i,j] → run act body → %res ; then * X[i, j+D]
+        ap(f"      %a0 = memref.load %X[%i, %j] : {xt}")
+        for line in spec.ew_body:
+            ap(line)
+        ap(f"      %g = memref.load %X[%i, %jg] : {xt}")
+        ap("      %v = arith.mulf %res, %g : f32")
+        ap(f"      memref.store %v, %O[%i, %j] : {ot}")
+        grid = (M, D, 1)
+        arg_names, arg_shapes = [in_names[0]], [[M, twoD]]
 
     ap("      gpu.return")
     ap("    }")
