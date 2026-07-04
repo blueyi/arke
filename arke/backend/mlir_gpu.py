@@ -224,6 +224,25 @@ class CudaLauncher:
         ))
         self._chk(self.driver.cuCtxSynchronize())
 
+    def launch_no_sync(self, fn: Any, grid: tuple[int, int, int],
+                       block: tuple[int, int, int], buffers: list[GPUBuffer]) -> None:
+        """Enqueue the kernel WITHOUT a trailing cuCtxSynchronize.
+
+        For timed benchmarking: the caller records CUDA events around a batch of
+        launches and synchronizes once, so per-launch host sync doesn't pollute
+        the measured GPU time. ``arg_arrays`` is kept alive until the call
+        returns (cuLaunchKernel copies the arg buffer), which is sufficient
+        because we sync before freeing anything.
+        """
+        arg_arrays: list[np.ndarray] = []
+        for b in buffers:
+            arg_arrays += self._memref_args(b)
+        arg_ptrs = np.array([a.ctypes.data for a in arg_arrays], dtype=np.uint64)
+        self._chk(self.driver.cuLaunchKernel(
+            fn, grid[0], grid[1], grid[2], block[0], block[1], block[2],
+            0, 0, arg_ptrs.ctypes.data, 0,
+        ))
+
     def close(self) -> None:
         for dptr in self._allocs:
             self.driver.cuMemFree(dptr)
@@ -234,6 +253,33 @@ class CudaLauncher:
         self._allocs.clear()
         self._modules.clear()
         self.ctx = None
+
+    def time_kernel(self, fn: Any, grid: tuple[int, int, int],
+                    block: tuple[int, int, int], buffers: list[GPUBuffer],
+                    iters: int = 50, warmup: int = 10) -> float:
+        """Return mean kernel-only wall time in ms via CUDA events.
+
+        Excludes H2D/D2H copy and PTX-load cost (those happen once, outside the
+        timed region) — this is the fair *kernel* latency for a perf comparison
+        against Triton/torch, which are also timed kernel-only. Records one
+        start/stop event pair around ``iters`` back-to-back launches (no per-
+        launch host sync) and divides by ``iters``.
+        """
+        drv = self.driver
+        start = self._chk(drv.cuEventCreate(drv.CUevent_flags.CU_EVENT_DEFAULT))
+        stop = self._chk(drv.cuEventCreate(drv.CUevent_flags.CU_EVENT_DEFAULT))
+        for _ in range(warmup):
+            self.launch_no_sync(fn, grid, block, buffers)
+        self._chk(drv.cuCtxSynchronize())
+        self._chk(drv.cuEventRecord(start, 0))
+        for _ in range(iters):
+            self.launch_no_sync(fn, grid, block, buffers)
+        self._chk(drv.cuEventRecord(stop, 0))
+        self._chk(drv.cuEventSynchronize(stop))
+        ms = self._chk(drv.cuEventElapsedTime(start, stop))
+        drv.cuEventDestroy(start)
+        drv.cuEventDestroy(stop)
+        return float(ms) / iters
 
     def __enter__(self) -> "CudaLauncher":
         return self
@@ -320,6 +366,33 @@ class MLIRGPUBackend:
             cu.launch(fn, emitted.grid, emitted.block, bufs)
             result = cu.from_device(out_buf)
         return {emitted.result_name: result}
+
+    def benchmark(self, kernel: Any, inputs: dict[str, Any],
+                  iters: int = 50, warmup: int = 10) -> float:
+        """Mean kernel-only latency (ms) for a compiled kernel.
+
+        Reuses ONE CUDA context, loads the PTX once, copies inputs H2D once, then
+        times ``iters`` back-to-back kernel launches with CUDA events (see
+        ``CudaLauncher.time_kernel``). This isolates kernel execution from the
+        one-time context/JIT/copy overhead that dominates the correctness
+        ``run()`` path — the apples-to-apples number for a Triton/torch perf
+        comparison, which are likewise timed kernel-only.
+        """
+        if not kernel.success:
+            raise RuntimeError(f"Cannot run failed kernel: {kernel.error}")
+        emitted = kernel.metadata["emitted"]
+        ptx = kernel.metadata["ptx"]
+        np_inputs = {k: _to_numpy(v) for k, v in inputs.items()}
+        with CudaLauncher() as cu:
+            fn = cu.load_ptx(ptx, emitted.kernel_name)
+            bufs: list[GPUBuffer] = []
+            for name in emitted.buffer_order:
+                if name == emitted.result_name:
+                    bufs.append(cu.alloc_output(tuple(emitted.result_shape)))
+                else:
+                    bufs.append(cu.to_device(np_inputs[name]))
+            return cu.time_kernel(fn, emitted.grid, emitted.block, bufs,
+                                  iters=iters, warmup=warmup)
 
 
 def _to_numpy(x: Any) -> np.ndarray:
