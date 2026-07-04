@@ -735,13 +735,18 @@ GPU_ELEMENTWISE_OPS = frozenset({
 })
 
 
-def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
-    """Emit a single-kernel gpu.module for a 2D elementwise op.
+def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86",
+                         block: int = 256) -> EmittedGPUKernel:
+    """Emit a flat multi-thread gpu.module for a 2D elementwise op.
 
-    One thread-block per output element (grid = shape, block = 1x1x1). Reuses the
-    scalar body from ``ELEMENTWISE_SPECS`` (same math as the CPU path), so CPU and
-    GPU produce identical numerics. 2D only in P3-S2 (the perf-relevant tensors);
-    higher ranks fold to 2D by the caller if needed.
+    Threads a flat ``M*N`` element space: block=(``block``,1,1),
+    grid=(ceil(M*N/block),1,1). Each thread computes ``gid = bid*blockDim + tid``,
+    guards ``gid < M*N``, maps to ``(i=gid//N, j=gid%N)``, and runs the SAME
+    scalar body from ``ELEMENTWISE_SPECS`` as the CPU path (identical numerics;
+    transcendentals via libdevice). This replaces the earlier one-thread-per-
+    block correctness kernel (block=(1,1,1)), which was ~0.02-0.09x torch from
+    massive under-occupancy — flat blocks of 256 threads saturate the SMs.
+    f32, 2D only.
     """
     from arke.backend.mlir_ops import ELEMENTWISE_SPECS
     if len(graph.nodes) != 1:
@@ -760,25 +765,35 @@ def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKerne
     if any(v.dtype != "float32" for v in in_vals):
         raise NotImplementedError("emit_gpu_elementwise: f32 only")
     M, N = shape
+    total = M * N
+    ngrid = (total + block - 1) // block
     ty = memref_type(shape, "float32")
     out_name = node.outputs[0]
     kernel = graph.name or node.op
     n_in = len(in_names)
-    # kernel params: inputs..., output
-    params = ", ".join(
-        [f"%A{i}: {ty}" for i in range(n_in)] + [f"%O: {ty}"]
-    )
-    # load each input elem as %a0..%aK, run the shared body, store %res
-    loads = [f"      %a{i} = memref.load %A{i}[%i, %j] : {ty}" for i in range(n_in)]
+    params = ", ".join([f"%A{i}: {ty}" for i in range(n_in)] + [f"%O: {ty}"])
+    loads = [f"        %a{i} = memref.load %A{i}[%i, %j] : {ty}" for i in range(n_in)]
+    # ew_body lines are indented for the old top-level scope; re-indent +2 for scf.if.
+    body = ["  " + ln for ln in spec.ew_body]
     text = "\n".join([
         "module attributes {gpu.container_module} {",
         f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{',
         f"    gpu.func @{kernel}({params}) kernel {{",
-        "      %i = gpu.block_id x",
-        "      %j = gpu.block_id y",
+        "      %bid = gpu.block_id x",
+        "      %bdim = gpu.block_dim x",
+        "      %tid = gpu.thread_id x",
+        "      %base = arith.muli %bid, %bdim : index",
+        "      %gid = arith.addi %base, %tid : index",
+        f"      %cN = arith.constant {N} : index",
+        f"      %ctotal = arith.constant {total} : index",
+        "      %in = arith.cmpi ult, %gid, %ctotal : index",
+        "      scf.if %in {",
+        "        %i = arith.divui %gid, %cN : index",
+        "        %j = arith.remui %gid, %cN : index",
         *loads,
-        *spec.ew_body,
-        f"      memref.store %res, %O[%i, %j] : {ty}",
+        *body,
+        f"        memref.store %res, %O[%i, %j] : {ty}",
+        "      }",
         "      gpu.return",
         "    }",
         "  }",
@@ -793,8 +808,8 @@ def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKerne
         result_name=out_name,
         result_shape=shape,
         result_dtype="float32",
-        grid=(M, N, 1),
-        block=(1, 1, 1),
+        grid=(ngrid, 1, 1),
+        block=(block, 1, 1),
         buffer_order=in_names + [out_name],
     )
 
