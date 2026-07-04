@@ -50,7 +50,7 @@ def test_emit_schedule_shape():
     assert "transform.named_sequence @__transform_main" in sched
     assert 'transform.structured.match ops{["linalg.matmul"]}' in sched
     assert "transform.structured.tile_using_for" in sched
-    assert "%target[16, 16, 16]" in sched
+    assert "%target tile_sizes [16, 16, 16]" in sched
     # 3 non-zero tile sizes → 3 loop result types
     assert sched.count("!transform.any_op") >= 4  # target + 3 loops
 
@@ -58,7 +58,7 @@ def test_emit_schedule_shape():
 def test_emit_schedule_partial_tiling():
     # tile only M and N (K untiled) → 2 loops
     sched = emit_transform_schedule("matmul", [8, 8, 0])
-    assert "%target[8, 8, 0]" in sched
+    assert "%target tile_sizes [8, 8, 0]" in sched
     assert "%loops:2" in sched
 
 

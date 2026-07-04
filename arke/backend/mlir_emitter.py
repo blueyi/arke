@@ -209,7 +209,7 @@ def emit_transform_schedule(op: str, tile_sizes: list[int]) -> str:
         f'    %target = transform.structured.match ops{{["{linalg_op}"]}} '
         "in %arg0 : (!transform.any_op) -> !transform.any_op",
         f"    %tiled{loop_results} = transform.structured.tile_using_for "
-        f"%target[{sizes}] : (!transform.any_op) -> "
+        f"%target tile_sizes [{sizes}] : (!transform.any_op) -> "
         f"(!transform.any_op{loop_types})",
         "    transform.yield",
         "  }",

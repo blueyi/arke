@@ -141,9 +141,101 @@ def test_batch_matmul():
     np.testing.assert_allclose(_run("batch_matmul", {"A": a, "B": b}), ref, rtol=1e-3, atol=1e-3)
 
 
+# ── OT0/OT2 extended movement + gated + index ops ──────────────
+
+def test_cast():
+    x = _x((4, 6))
+    np.testing.assert_allclose(_run("cast", {"X": x}), x, rtol=1e-4, atol=1e-4)
+
+
+def test_where():
+    cond = (_RNG.random((4, 6)) > 0.5).astype(np.float32)
+    a, b = _x((4, 6)), _x((4, 6))
+    ref = np.where(cond.astype(bool), a, b)
+    np.testing.assert_allclose(_run("where_", {"C": cond, "A": a, "B": b}), ref, rtol=1e-4, atol=1e-4)
+
+
+def test_permute():
+    x = _x((2, 3, 4))
+    ref = torch.tensor(x).permute(0, 2, 1).numpy()
+    np.testing.assert_allclose(_run("permute", {"X": x}), ref, rtol=1e-4, atol=1e-4)
+
+
+def test_concat():
+    a, b = _x((3, 4)), _x((3, 2))
+    ref = np.concatenate([a, b], axis=-1)
+    np.testing.assert_allclose(_run("concat", {"A": a, "B": b}), ref, rtol=1e-4, atol=1e-4)
+
+
+def test_split():
+    x = _x((4, 8))
+    ref = torch.chunk(torch.tensor(x), 2, dim=-1)[0].numpy()
+    np.testing.assert_allclose(_run("split", {"X": x}), ref, rtol=1e-4, atol=1e-4)
+
+
+def test_rmsnorm_residual():
+    x, res = _x((4, 6)), _x((4, 6))
+    t = torch.tensor(x + res)
+    ref = (t * torch.rsqrt(t.pow(2).mean(-1, keepdim=True) + 1e-6)).numpy()
+    np.testing.assert_allclose(_run("rmsnorm_residual", {"X": x, "R": res}), ref, rtol=1e-3, atol=1e-3)
+
+
+def test_silu_and_mul():
+    x = _x((4, 8))
+    x1, x2 = torch.tensor(x).chunk(2, dim=-1)
+    ref = (F.silu(x1) * x2).numpy()
+    np.testing.assert_allclose(_run("silu_and_mul", {"X": x}), ref, rtol=1e-3, atol=1e-3)
+
+
+def test_gelu_and_mul():
+    x = _x((4, 8))
+    x1, x2 = torch.tensor(x).chunk(2, dim=-1)
+    ref = (F.gelu(x1, approximate="tanh") * x2).numpy()
+    np.testing.assert_allclose(_run("gelu_and_mul", {"X": x}), ref, rtol=1e-3, atol=1e-3)
+
+
+def test_cumsum():
+    x = _x((4, 6))
+    ref = torch.cumsum(torch.tensor(x), -1).numpy()
+    np.testing.assert_allclose(_run("cumsum", {"X": x}), ref, rtol=1e-3, atol=1e-3)
+
+
+def test_argmax():
+    x = _x((4, 6))
+    ref = torch.argmax(torch.tensor(x), -1).numpy().astype(np.float32)
+    np.testing.assert_allclose(_run("argmax", {"X": x}), ref, rtol=1e-4, atol=1e-4)
+
+
+def test_embedding():
+    idx = _RNG.integers(0, 10, size=(5,)).astype(np.float32)
+    tbl = _x((10, 6))
+    ref = F.embedding(torch.tensor(idx).long(), torch.tensor(tbl)).numpy()
+    np.testing.assert_allclose(_run("embedding", {"I": idx, "T": tbl}), ref, rtol=1e-3, atol=1e-3)
+
+
+def test_rope():
+    x = _x((4, 8))
+
+    def _torch_rope(xt):
+        S, D = xt.shape
+        half = D // 2
+        pos = torch.arange(S).float().unsqueeze(1)
+        i = torch.arange(half).float().unsqueeze(0)
+        theta = torch.exp(-(2 * i / D) * np.log(10000.0))
+        ang = pos * theta
+        cos, sin = torch.cos(ang), torch.sin(ang)
+        x1, x2 = xt[:, :half], xt[:, half:]
+        return torch.cat([x1 * cos - x2 * sin, x2 * cos + x1 * sin], -1)
+
+    ref = _torch_rope(torch.tensor(x)).numpy()
+    np.testing.assert_allclose(_run("rope", {"X": x}), ref, rtol=1e-3, atol=1e-3)
+
+
 # ── op-coverage headcount (P3-S2 progress guard) ───────────────
 
 def test_op_coverage_count():
     from arke.backend.mlir_emitter import SUPPORTED_OPS
-    # matmul + 10 OT0 + 6 OT1 + 3 OT2(transpose,batch_matmul,copy_) = 20 so far
-    assert len(SUPPORTED_OPS) >= 20, sorted(SUPPORTED_OPS)
+    # matmul + 11 OT0 (10 ew + cast) + 6 OT1 + rmsnorm_residual + argmax + cumsum
+    # + OT2 (transpose,batch_matmul,copy_,permute,concat,split,embedding)
+    # + OT3 gated (silu_and_mul,gelu_and_mul) + where_ + rope = 32
+    assert len(SUPPORTED_OPS) >= 32, sorted(SUPPORTED_OPS)
