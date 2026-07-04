@@ -830,6 +830,92 @@ def _c_rope(ctx: OpContext) -> list[str]:
     return ctx._preamble
 
 
+def _c_gather(ctx: OpContext) -> list[str]:
+    # gather(src, idx) dim=1: out[i,j] = src[i, int(idx[i,j])]. out shape = idx.
+    src, idx_buf = ctx.in_bufs
+    src_sh, idx_sh = ctx.in_shapes[0], ctx.in_shapes[1]
+    rows, cols = idx_sh
+    src_ty = _memref_ty(src_sh, ctx.elem)
+    idx_ty = _memref_ty(idx_sh, ctx.elem)
+    out_ty = _memref_ty(ctx.out_shape, ctx.elem)
+    u = ctx.out_buf[1:]
+    c0 = ctx.const_idx(0); c1 = ctx.const_idx(1)
+    crows = ctx.const_idx(rows); ccols = ctx.const_idx(cols)
+    ctx._preamble += [
+        f"    scf.for %i_{u} = {c0} to {crows} step {c1} {{",
+        f"      scf.for %j_{u} = {c0} to {ccols} step {c1} {{",
+        f"        %fi_{u} = memref.load {idx_buf}[%i_{u}, %j_{u}] : {idx_ty}",
+        f"        %ii_{u} = arith.fptosi %fi_{u} : {ctx.elem} to i64",
+        f"        %col_{u} = arith.index_cast %ii_{u} : i64 to index",
+        f"        %v_{u} = memref.load {src}[%i_{u}, %col_{u}] : {src_ty}",
+        f"        memref.store %v_{u}, {ctx.out_buf}[%i_{u}, %j_{u}] : {out_ty}",
+        "      }",
+        "    }",
+    ]
+    return ctx._preamble
+
+
+def _c_scatter(ctx: OpContext) -> list[str]:
+    # scatter dim=1: out = zeros_like(base); out[i, int(idx[i,j])] = src[i,j].
+    # inputs: base (for shape), idx, src.
+    base, idx_buf, src = ctx.in_bufs
+    base_sh, idx_sh = ctx.in_shapes[0], ctx.in_shapes[1]
+    rows, cols = idx_sh
+    idx_ty = _memref_ty(idx_sh, ctx.elem)
+    src_ty = _memref_ty(ctx.in_shapes[2], ctx.elem)
+    out_ty = _memref_ty(ctx.out_shape, ctx.elem)
+    u = ctx.out_buf[1:]
+    zero = ctx.const("0.0")
+    c0 = ctx.const_idx(0); c1 = ctx.const_idx(1)
+    crows = ctx.const_idx(rows); ccols = ctx.const_idx(cols)
+    ctx._preamble += [
+        f"    linalg.fill ins({zero} : {ctx.elem}) outs({ctx.out_buf} : {out_ty})",
+        f"    scf.for %i_{u} = {c0} to {crows} step {c1} {{",
+        f"      scf.for %j_{u} = {c0} to {ccols} step {c1} {{",
+        f"        %fi_{u} = memref.load {idx_buf}[%i_{u}, %j_{u}] : {idx_ty}",
+        f"        %ii_{u} = arith.fptosi %fi_{u} : {ctx.elem} to i64",
+        f"        %col_{u} = arith.index_cast %ii_{u} : i64 to index",
+        f"        %v_{u} = memref.load {src}[%i_{u}, %j_{u}] : {src_ty}",
+        f"        memref.store %v_{u}, {ctx.out_buf}[%i_{u}, %col_{u}] : {out_ty}",
+        "      }",
+        "    }",
+    ]
+    return ctx._preamble
+
+
+def _c_grouped_matmul(ctx: OpContext) -> list[str]:
+    # grouped_matmul(a[G,M,K], b[G,K,N]) = cat_g (a[g] @ b[g]) along dim0 → [G*M, N].
+    # Emit as a batch_matmul into a [G,M,N] temp, then copy rows into [G*M,N] out.
+    a, b = ctx.in_bufs
+    (G, M, K), (G2, K2, N) = ctx.in_shapes[0], ctx.in_shapes[1]
+    at = _memref_ty([G, M, K], ctx.elem)
+    bt = _memref_ty([G, K, N], ctx.elem)
+    tmp3 = ctx.tmp([G, M, N])
+    tmp3_ty = _memref_ty([G, M, N], ctx.elem)
+    out_ty = _memref_ty(ctx.out_shape, ctx.elem)
+    u = ctx.out_buf[1:]
+    zero = ctx.const("0.0")
+    c0 = ctx.const_idx(0); c1 = ctx.const_idx(1)
+    cG = ctx.const_idx(G); cM = ctx.const_idx(M); cN = ctx.const_idx(N)
+    cMi = ctx.const_idx(M)
+    ctx._preamble += [
+        f"    linalg.fill ins({zero} : {ctx.elem}) outs({tmp3} : {tmp3_ty})",
+        f"    linalg.batch_matmul ins({a}, {b} : {at}, {bt}) outs({tmp3} : {tmp3_ty})",
+        # reshape [G,M,N] -> [G*M, N] via loop copy: out[g*M+m, n] = tmp3[g,m,n]
+        f"    scf.for %g_{u} = {c0} to {cG} step {c1} {{",
+        f"      scf.for %m_{u} = {c0} to {cM} step {c1} {{",
+        f"        scf.for %n_{u} = {c0} to {cN} step {c1} {{",
+        f"          %v_{u} = memref.load {tmp3}[%g_{u}, %m_{u}, %n_{u}] : {tmp3_ty}",
+        f"          %gm_{u} = arith.muli %g_{u}, {cMi} : index",
+        f"          %row_{u} = arith.addi %gm_{u}, %m_{u} : index",
+        f"          memref.store %v_{u}, {ctx.out_buf}[%row_{u}, %n_{u}] : {out_ty}",
+        "        }",
+        "      }",
+        "    }",
+    ]
+    return ctx._preamble
+
+
 # ── shared helpers ─────────────────────────────────────────────
 
 def _copy_into(ctx: OpContext, src: str, dst: str, shape: list[int]) -> None:
@@ -887,6 +973,9 @@ COMPOSITE_SPECS: dict[str, dict] = {
     "argmax":      {"num_inputs": 1, "emit": _c_argmax,      "out": "reduce_last"},
     "embedding":   {"num_inputs": 2, "emit": _c_embedding,   "out": "embedding"},
     "rope":        {"num_inputs": 1, "emit": _c_rope,        "out": "same"},
+    "gather":      {"num_inputs": 2, "emit": _c_gather,      "out": "gather"},
+    "scatter":     {"num_inputs": 3, "emit": _c_scatter,     "out": "scatter"},
+    "grouped_matmul": {"num_inputs": 2, "emit": _c_grouped_matmul, "out": "grouped_mm"},
 }
 
 
@@ -913,6 +1002,17 @@ def composite_output_shape(op: str, in_shapes: list[list[int]]) -> list[int]:
     if rule == "embedding":
         # out = [n_indices, embed_dim]
         return [in_shapes[0][0], in_shapes[1][1]]
+    if rule == "gather":
+        # out shape == index shape (in_shapes[1])
+        return list(in_shapes[1])
+    if rule == "scatter":
+        # out shape == base shape (in_shapes[0])
+        return list(in_shapes[0])
+    if rule == "grouped_mm":
+        # a[G,M,K] @ b[G,K,N] cat dim0 -> [G*M, N]
+        G, M, K = in_shapes[0]
+        _, _, N = in_shapes[1]
+        return [G * M, N]
     raise NotImplementedError(f"composite_output_shape: {op}")
 
 

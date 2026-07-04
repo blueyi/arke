@@ -231,11 +231,34 @@ def test_rope():
     np.testing.assert_allclose(_run("rope", {"X": x}), ref, rtol=1e-3, atol=1e-3)
 
 
+def test_gather():
+    src = _x((3, 5))
+    idx = _RNG.integers(0, 5, size=(3, 2)).astype(np.float32)
+    ref = torch.gather(torch.tensor(src), 1, torch.tensor(idx).long()).numpy()
+    np.testing.assert_allclose(_run("gather", {"S": src, "I": idx}), ref, rtol=1e-3, atol=1e-3)
+
+
+def test_scatter():
+    base = _x((3, 5))
+    idx = _RNG.integers(0, 5, size=(3, 2)).astype(np.float32)
+    src = _x((3, 2))
+    ref = torch.zeros_like(torch.tensor(base)).scatter_(
+        1, torch.tensor(idx).long(), torch.tensor(src)).numpy()
+    np.testing.assert_allclose(
+        _run("scatter", {"B": base, "I": idx, "S": src}), ref, rtol=1e-3, atol=1e-3)
+
+
+def test_grouped_matmul():
+    a, b = _x((3, 4, 5)), _x((3, 5, 6))
+    ref = torch.cat(
+        [torch.tensor(a[g]) @ torch.tensor(b[g]) for g in range(3)], dim=0).numpy()
+    np.testing.assert_allclose(
+        _run("grouped_matmul", {"A": a, "B": b}), ref, rtol=1e-3, atol=1e-3)
+
+
 # ── op-coverage headcount (P3-S2 progress guard) ───────────────
 
 def test_op_coverage_count():
     from arke.backend.mlir_emitter import SUPPORTED_OPS
-    # matmul + 11 OT0 (10 ew + cast) + 6 OT1 + rmsnorm_residual + argmax + cumsum
-    # + OT2 (transpose,batch_matmul,copy_,permute,concat,split,embedding)
-    # + OT3 gated (silu_and_mul,gelu_and_mul) + where_ + rope = 32
-    assert len(SUPPORTED_OPS) >= 32, sorted(SUPPORTED_OPS)
+    # P3-S2 gate = 35 ops correct via MLIR.
+    assert len(SUPPORTED_OPS) >= 35, sorted(SUPPORTED_OPS)
