@@ -431,6 +431,115 @@ def emit_gpu_matmul(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
     )
 
 
+# Shared-memory tiled matmul tile size. 16x16 = 256 threads/block, 2 KiB shared
+# per operand tile (16*16*4) — comfortable on sm_86 (48-100 KiB shared/SM).
+GPU_MM_TILE = 16
+
+
+def emit_gpu_matmul_tiled(graph: IRGraph, chip: str = "sm_86",
+                          tile: int = GPU_MM_TILE) -> EmittedGPUKernel:
+    """Emit a shared-memory tiled matmul gpu.module (P3-S2 perf path).
+
+    grid = (N/tile, M/tile, 1), block = (tile, tile, 1). Each block computes one
+    ``tile x tile`` output sub-block; each thread (tx,ty) computes one
+    ``C[by*tile+ty, bx*tile+tx]``. The K dimension is walked in ``tile``-wide
+    steps: the block cooperatively stages an A-tile and a B-tile into workgroup
+    (shared) memory, ``gpu.barrier``, does the ``tile``-length inner product from
+    shared memory, ``gpu.barrier`` again, and accumulates. This is the classic
+    blocked-GEMM that reuses each global load ``tile`` times, vs the correctness
+    kernel's one-thread-per-output global-only K-loop.
+
+    Requires M, K, N all divisible by ``tile`` (tile-aligned). Callers fall back
+    to ``emit_gpu_matmul`` for non-aligned shapes. f32 only.
+    """
+    if len(graph.nodes) != 1 or graph.nodes[0].op != "matmul":
+        raise NotImplementedError("emit_gpu_matmul_tiled: single matmul node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    a_name, b_name = in_names[0], in_names[1]
+    A, B = graph.values[a_name], graph.values[b_name]
+    M, K = A.shape
+    K2, N = B.shape
+    if K != K2:
+        raise ValueError(f"matmul K mismatch: {A.shape} @ {B.shape}")
+    if A.dtype != "float32":
+        raise NotImplementedError("emit_gpu_matmul_tiled: f32 only")
+    if M % tile or K % tile or N % tile:
+        raise NotImplementedError(
+            f"emit_gpu_matmul_tiled: tile-aligned only (M,K,N % {tile}), got {M},{K},{N}"
+        )
+    out_name = node.outputs[0]
+    at = memref_type([M, K], "float32")
+    bt = memref_type([K, N], "float32")
+    ct = memref_type([M, N], "float32")
+    sty = f"memref<{tile}x{tile}xf32, #gpu.address_space<workgroup>>"
+    kernel = graph.name or "matmul"
+    text = "\n".join([
+        "module attributes {gpu.container_module} {",
+        f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{',
+        f"    gpu.func @{kernel}(%A: {at}, %B: {bt}, %C: {ct})",
+        # shared tiles as workgroup attributions → real .shared memory (a plain
+        # memref.alloc in workgroup space is lowered to malloc+addrspacecast,
+        # which yields an illegal .shared address at runtime).
+        f"        workgroup(%sA : {sty}, %sB : {sty})",
+        "        kernel {",
+        # thread + block ids
+        "      %tx = gpu.thread_id x",
+        "      %ty = gpu.thread_id y",
+        "      %bx = gpu.block_id x",
+        "      %by = gpu.block_id y",
+        "      %c0 = arith.constant 0 : index",
+        "      %c1 = arith.constant 1 : index",
+        f"      %cT = arith.constant {tile} : index",
+        f"      %cK = arith.constant {K} : index",
+        "      %zero = arith.constant 0.0 : f32",
+        # global row/col this thread owns
+        "      %rbase = arith.muli %by, %cT : index",
+        "      %row = arith.addi %rbase, %ty : index",
+        "      %cbase = arith.muli %bx, %cT : index",
+        "      %col = arith.addi %cbase, %tx : index",
+        # K-tile loop, accumulate in %acc
+        "      %acc = scf.for %kk = %c0 to %cK step %cT iter_args(%s = %zero) -> f32 {",
+        # stage A[row, kk+tx] and B[kk+ty, col] into shared mem
+        "        %ak = arith.addi %kk, %tx : index",
+        f"        %av = memref.load %A[%row, %ak] : {at}",
+        f"        memref.store %av, %sA[%ty, %tx] : {sty}",
+        "        %bk = arith.addi %kk, %ty : index",
+        f"        %bv = memref.load %B[%bk, %col] : {bt}",
+        f"        memref.store %bv, %sB[%ty, %tx] : {sty}",
+        "        gpu.barrier",
+        # inner product over the shared tile
+        "        %p = scf.for %kt = %c0 to %cT step %c1 iter_args(%si = %s) -> f32 {",
+        f"          %sa = memref.load %sA[%ty, %kt] : {sty}",
+        f"          %sb = memref.load %sB[%kt, %tx] : {sty}",
+        "          %m = arith.mulf %sa, %sb : f32",
+        "          %ns = arith.addf %si, %m : f32",
+        "          scf.yield %ns : f32",
+        "        }",
+        "        gpu.barrier",
+        "        scf.yield %p : f32",
+        "      }",
+        f"      memref.store %acc, %C[%row, %col] : {ct}",
+        "      gpu.return",
+        "    }",
+        "  }",
+        "}",
+    ])
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[a_name, b_name],
+        arg_shapes=[[M, K], [K, N]],
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=[M, N],
+        result_dtype="float32",
+        grid=(N // tile, M // tile, 1),
+        block=(tile, tile, 1),
+        buffer_order=[a_name, b_name, out_name],
+    )
+
+
 # GPU elementwise ops that lower to PTX via the gpu.module path.
 #
 # Two classes, both bit-correct vs torch on the CUDA driver:
