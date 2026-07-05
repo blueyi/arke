@@ -1159,7 +1159,8 @@ GPU_MOVEMENT_OPS = frozenset({
 })
 
 
-def emit_gpu_movement(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
+def emit_gpu_movement(graph: IRGraph, chip: str = "sm_86",
+                      block: int = 256) -> EmittedGPUKernel:
     """Emit an element-per-block gpu.module for a 2D data-movement op.
 
     grid = output shape, block=(1,1,1); each block writes one output element by
@@ -1273,13 +1274,16 @@ GPU_GATED_OPS = frozenset({
 })
 
 
-def emit_gpu_gated(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
-    """Emit an element-per-block gpu.module for gated/select/cast ops.
+def emit_gpu_gated(graph: IRGraph, chip: str = "sm_86",
+                   block: int = 256) -> EmittedGPUKernel:
+    """Emit a flat multi-thread gpu.module for gated/select/cast ops.
 
-    grid = output shape, block=(1,1,1). silu_and_mul/gelu_and_mul reuse the same
-    scalar activation body as the CPU/elementwise path (``ELEMENTWISE_SPECS``),
-    so numerics match; the transcendental ``math.exp``/``math.tanh`` inside lower
-    via libdevice (already linked). where_ is branchless. f32 only, 2D only.
+    block=(256,1,1), grid=(ceil(out_rows*out_cols/256),1,1); each thread computes
+    gid=bid*blockDim+tid, guards gid<out_rows*out_cols inside scf.if, maps to
+    (i=gid//out_cols, j=gid%out_cols). silu_and_mul/gelu_and_mul reuse the same
+    scalar activation body as the elementwise path (``ELEMENTWISE_SPECS``); the
+    transcendental math.* lower via libdevice. where_ is branchless. f32, 2D.
+    Multi-thread blocks (was block=(1,1,1)) to saturate the SMs.
     """
     from arke.backend.mlir_ops import ELEMENTWISE_SPECS
     if len(graph.nodes) != 1:
@@ -1300,37 +1304,45 @@ def emit_gpu_gated(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
     L = []
     ap = L.append
 
-    def head(params):
+    def head(params, out_rows, out_cols):
+        total = out_rows * out_cols
         ap("module attributes {gpu.container_module} {")
         ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
         ap(f"    gpu.func @{kernel}({params}) kernel {{")
-        ap("      %i = gpu.block_id x")
-        ap("      %j = gpu.block_id y")
+        ap("      %bid = gpu.block_id x")
+        ap("      %bdim = gpu.block_dim x")
+        ap("      %tid = gpu.thread_id x")
+        ap("      %base = arith.muli %bid, %bdim : index")
+        ap("      %gid = arith.addi %base, %tid : index")
+        ap(f"      %cOC = arith.constant {out_cols} : index")
+        ap(f"      %ctotal = arith.constant {total} : index")
+        ap("      %in = arith.cmpi ult, %gid, %ctotal : index")
+        ap("      scf.if %in {")
+        ap("        %i = arith.divui %gid, %cOC : index")
+        ap("        %j = arith.remui %gid, %cOC : index")
 
     if op == "cast":
         M, N = in_vals[0].shape
         out_shape = [M, N]
         xt = memref_type([M, N], "float32")
-        head(f"%X: {xt}, %O: {xt}")
-        ap(f"      %v = memref.load %X[%i, %j] : {xt}")
-        ap(f"      memref.store %v, %O[%i, %j] : {xt}")
-        grid = (M, N, 1)
+        head(f"%X: {xt}, %O: {xt}", M, N)
+        ap(f"        %v = memref.load %X[%i, %j] : {xt}")
+        ap(f"        memref.store %v, %O[%i, %j] : {xt}")
         arg_names, arg_shapes = [in_names[0]], [[M, N]]
     elif op == "where_":
         M, N = in_vals[0].shape
         out_shape = [M, N]
         ty = memref_type([M, N], "float32")
-        head(f"%C: {ty}, %A: {ty}, %B: {ty}, %O: {ty}")
-        ap("      %one = arith.constant 1.0 : f32")
-        ap(f"      %c = memref.load %C[%i, %j] : {ty}")
-        ap(f"      %a = memref.load %A[%i, %j] : {ty}")
-        ap(f"      %b = memref.load %B[%i, %j] : {ty}")
-        ap("      %ca = arith.mulf %c, %a : f32")
-        ap("      %omc = arith.subf %one, %c : f32")
-        ap("      %ob = arith.mulf %omc, %b : f32")
-        ap("      %v = arith.addf %ca, %ob : f32")
-        ap(f"      memref.store %v, %O[%i, %j] : {ty}")
-        grid = (M, N, 1)
+        head(f"%C: {ty}, %A: {ty}, %B: {ty}, %O: {ty}", M, N)
+        ap("        %one = arith.constant 1.0 : f32")
+        ap(f"        %c = memref.load %C[%i, %j] : {ty}")
+        ap(f"        %a = memref.load %A[%i, %j] : {ty}")
+        ap(f"        %b = memref.load %B[%i, %j] : {ty}")
+        ap("        %ca = arith.mulf %c, %a : f32")
+        ap("        %omc = arith.subf %one, %c : f32")
+        ap("        %ob = arith.mulf %omc, %b : f32")
+        ap("        %v = arith.addf %ca, %ob : f32")
+        ap(f"        memref.store %v, %O[%i, %j] : {ty}")
         arg_names = [in_names[0], in_names[1], in_names[2]]
         arg_shapes = [[M, N], [M, N], [M, N]]
     else:  # silu_and_mul / gelu_and_mul
@@ -1341,19 +1353,20 @@ def emit_gpu_gated(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         out_shape = [M, D]
         xt = memref_type([M, twoD], "float32")
         ot = memref_type(out_shape, "float32")
-        head(f"%X: {xt}, %O: {ot}")
-        ap(f"      %cD = arith.constant {D} : index")
-        ap("      %jg = arith.addi %j, %cD : index")
-        # %a0 = X[i,j] → run act body → %res ; then * X[i, j+D]
-        ap(f"      %a0 = memref.load %X[%i, %j] : {xt}")
+        head(f"%X: {xt}, %O: {ot}", M, D)
+        ap(f"        %cD = arith.constant {D} : index")
+        ap("        %jg = arith.addi %j, %cD : index")
+        ap(f"        %a0 = memref.load %X[%i, %j] : {xt}")
         for line in spec.ew_body:
-            ap(line)
-        ap(f"      %g = memref.load %X[%i, %jg] : {xt}")
-        ap("      %v = arith.mulf %res, %g : f32")
-        ap(f"      memref.store %v, %O[%i, %j] : {ot}")
-        grid = (M, D, 1)
+            ap("  " + line)  # +2 indent: now inside scf.if
+        ap(f"        %g = memref.load %X[%i, %jg] : {xt}")
+        ap("        %v = arith.mulf %res, %g : f32")
+        ap(f"        memref.store %v, %O[%i, %j] : {ot}")
         arg_names, arg_shapes = [in_names[0]], [[M, twoD]]
 
+    out_rows, out_cols = out_shape
+    ngrid = (out_rows * out_cols + block - 1) // block
+    ap("      }")  # close scf.if
     ap("      gpu.return")
     ap("    }")
     ap("  }")
@@ -1368,7 +1381,7 @@ def emit_gpu_gated(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         result_name=out_name,
         result_shape=out_shape,
         result_dtype="float32",
-        grid=grid,
-        block=(1, 1, 1),
+        grid=(ngrid, 1, 1),
+        block=(block, 1, 1),
         buffer_order=arg_names + [out_name],
     )
