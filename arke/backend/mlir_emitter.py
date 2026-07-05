@@ -814,33 +814,52 @@ def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86",
     )
 
 
-# Row-wise ops the GPU backend covers with a row-per-block kernel (grid=(rows,),
-# one thread per block doing a serial two-pass reduction over the last dim).
-# Correctness-first (block=(1,1,1)); block-parallel reduction is a perf follow-up.
+# Row-wise ops: parallel-reduce row-per-block kernel.
+# block=(256,1,1), grid=(rows,1,1), shared-memory tree-reduce.
 GPU_ROWWISE_OPS = frozenset({
     "reduce_sum", "reduce_max", "reduce_mean",
     "softmax", "layernorm", "rmsnorm",
     "cumsum", "argmax", "rope",
 })
 
+_RW_BLOCK = 256
 
-def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
-    """Emit a row-per-block gpu.module for a 2D row-wise reduction/norm op.
 
-    Input is ``[rows, D]``; each thread-block handles one row (grid=(rows,1,1),
-    block=(1,1,1)), doing a serial pass over the D columns. Reductions
-    (reduce_sum/max/mean) write ``[rows]``; norms (softmax/layernorm/rmsnorm)
-    write ``[rows, D]``. Same math as the CPU composite path → identical
-    numerics. f32 only, 2D only (P3-S2). Perf note: one thread/row is a
-    correctness kernel; a shared-memory block-parallel reduction is the perf
-    follow-up (tracked for P3-S3).
+def _rw_tree_reduce(ap, sty, op_name, BLOCK=_RW_BLOCK):
+    """Emit shared-memory tree-reduce (log2 steps) for the value in shared[tid]."""
+    stride = BLOCK // 2
+    step = 0
+    while stride >= 1:
+        ap(f"      %cS{step}_{op_name} = arith.constant {stride} : index")
+        ap(f"      %lt{step}_{op_name} = arith.cmpi ult, %tid, %cS{step}_{op_name} : index")
+        ap(f"      scf.if %lt{step}_{op_name} {{")
+        ap(f"        %ra{step} = memref.load %sh[%tid] : {sty}")
+        ap(f"        %roff{step} = arith.addi %tid, %cS{step}_{op_name} : index")
+        ap(f"        %rb{step} = memref.load %sh[%roff{step}] : {sty}")
+        if "max" in op_name:
+            ap(f"        %rs{step} = arith.maximumf %ra{step}, %rb{step} : f32")
+        else:
+            ap(f"        %rs{step} = arith.addf %ra{step}, %rb{step} : f32")
+        ap(f"        memref.store %rs{step}, %sh[%tid] : {sty}")
+        ap("      }")
+        ap("      gpu.barrier")
+        stride //= 2
+        step += 1
+
+
+def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
+                     block: int = _RW_BLOCK) -> EmittedGPUKernel:
+    """Emit a parallel-reduce row-per-block gpu.module for row-wise ops.
+
+    block=(256,1,1), grid=(rows,1,1). 256 threads cooperate per row via
+    shared-memory tree-reduce. Transcendentals via libdevice. f32, 2D.
     """
     if len(graph.nodes) != 1:
         raise NotImplementedError("emit_gpu_rowwise: single-node graphs only")
     node = graph.nodes[0]
     op = node.op
     if op not in GPU_ROWWISE_OPS:
-        raise NotImplementedError(f"emit_gpu_rowwise: {op} not a supported row-wise op")
+        raise NotImplementedError(f"emit_gpu_rowwise: {op} not supported")
     in_names = list(node.inputs.values())
     in_vals = [graph.values[n] for n in in_names]
     shape = list(in_vals[0].shape)
@@ -853,149 +872,192 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
     out_shape = [rows] if is_reduce else [rows, D]
     inty = memref_type(shape, "float32")
     outty = memref_type(out_shape, "float32")
+    sty = f"memref<{block}xf32, #gpu.address_space<workgroup>>"
     out_name = node.outputs[0]
     kernel = graph.name or op
-
     L = []
     ap = L.append
     ap("module attributes {gpu.container_module} {")
     ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
-    ap(f"    gpu.func @{kernel}(%X: {inty}, %O: {outty}) kernel {{")
-    ap("      %r = gpu.block_id x")
+    ap(f"    gpu.func @{kernel}(%X: {inty}, %O: {outty})")
+    ap(f"        workgroup(%sh : {sty})")
+    ap("        kernel {")
+    ap("      %tid = gpu.thread_id x")
+    ap("      %bid = gpu.block_id x")
     ap("      %c0 = arith.constant 0 : index")
     ap("      %c1 = arith.constant 1 : index")
     ap(f"      %cD = arith.constant {D} : index")
+    ap(f"      %cBLK = arith.constant {block} : index")
     ap("      %zero = arith.constant 0.0 : f32")
-
-    if op == "reduce_sum":
-        ap("      %acc = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %zero) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+    if op in ("reduce_sum", "reduce_mean"):
+        ap("      %local = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %zero) -> f32 {")
+        ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
         ap("        %ns = arith.addf %s, %x : f32")
         ap("        scf.yield %ns : f32")
         ap("      }")
-        ap(f"      memref.store %acc, %O[%r] : {outty}")
-    elif op == "reduce_mean":
-        ap(f"      %Df = arith.constant {float(D)} : f32")
-        ap("      %acc = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %zero) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
-        ap("        %ns = arith.addf %s, %x : f32")
-        ap("        scf.yield %ns : f32")
+        ap(f"      memref.store %local, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "sum")
+        ap("      %is0 = arith.cmpi eq, %tid, %c0 : index")
+        ap("      scf.if %is0 {")
+        ap(f"        %r = memref.load %sh[%c0] : {sty}")
+        if op == "reduce_mean":
+            ap(f"        %Df = arith.constant {float(D)} : f32")
+            ap("        %mean = arith.divf %r, %Df : f32")
+            ap(f"        memref.store %mean, %O[%bid] : {outty}")
+        else:
+            ap(f"        memref.store %r, %O[%bid] : {outty}")
         ap("      }")
-        ap("      %mean = arith.divf %acc, %Df : f32")
-        ap(f"      memref.store %mean, %O[%r] : {outty}")
     elif op == "reduce_max":
-        ap("      %init = memref.load %X[%r, %c0] : " + inty)
-        ap("      %acc = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %init) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+        ap("      %ninf = arith.constant 0xFF800000 : f32")
+        ap("      %local = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %ninf) -> f32 {")
+        ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
         ap("        %ns = arith.maximumf %s, %x : f32")
         ap("        scf.yield %ns : f32")
         ap("      }")
-        ap(f"      memref.store %acc, %O[%r] : {outty}")
+        ap(f"      memref.store %local, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "max")
+        ap("      %is0 = arith.cmpi eq, %tid, %c0 : index")
+        ap("      scf.if %is0 {")
+        ap(f"        %r = memref.load %sh[%c0] : {sty}")
+        ap(f"        memref.store %r, %O[%bid] : {outty}")
+        ap("      }")
     elif op == "softmax":
-        # pass1: max; pass2: sum exp(x-max); pass3: write exp(x-max)/sum
-        ap(f"      %m0 = memref.load %X[%r, %c0] : {inty}")
-        ap("      %mx = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %m0) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+        ap("      %ninf = arith.constant 0xFF800000 : f32")
+        ap("      %lmax = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %ninf) -> f32 {")
+        ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
         ap("        %ns = arith.maximumf %s, %x : f32")
         ap("        scf.yield %ns : f32")
         ap("      }")
-        ap("      %den = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %zero) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
-        ap("        %d = arith.subf %x, %mx : f32")
+        ap(f"      memref.store %lmax, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "smax")
+        ap(f"      %mx = memref.load %sh[%c0] : {sty}")
+        ap("      gpu.barrier")
+        ap("      %lsum = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %zero) -> f32 {")
+        ap(f"        %x2 = memref.load %X[%bid, %k] : {inty}")
+        ap("        %d = arith.subf %x2, %mx : f32")
         ap("        %e = math.exp %d : f32")
-        ap("        %ns = arith.addf %s, %e : f32")
-        ap("        scf.yield %ns : f32")
+        ap("        %ns2 = arith.addf %s, %e : f32")
+        ap("        scf.yield %ns2 : f32")
         ap("      }")
-        ap("      scf.for %k = %c0 to %cD step %c1 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
-        ap("        %d = arith.subf %x, %mx : f32")
-        ap("        %e = math.exp %d : f32")
-        ap("        %o = arith.divf %e, %den : f32")
-        ap(f"        memref.store %o, %O[%r, %k] : {outty}")
+        ap(f"      memref.store %lsum, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "ssum")
+        ap(f"      %den = memref.load %sh[%c0] : {sty}")
+        ap("      gpu.barrier")
+        ap("      scf.for %k = %tid to %cD step %cBLK {")
+        ap(f"        %x3 = memref.load %X[%bid, %k] : {inty}")
+        ap("        %d3 = arith.subf %x3, %mx : f32")
+        ap("        %e3 = math.exp %d3 : f32")
+        ap("        %o3 = arith.divf %e3, %den : f32")
+        ap(f"        memref.store %o3, %O[%bid, %k] : {outty}")
         ap("      }")
     elif op == "layernorm":
-        # mean, var over row; (x-mean)/sqrt(var+eps)
         ap(f"      %Df = arith.constant {float(D)} : f32")
         ap("      %eps = arith.constant 1.000000e-05 : f32")
-        ap("      %sum = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %zero) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+        ap("      %lsum = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %zero) -> f32 {")
+        ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
         ap("        %ns = arith.addf %s, %x : f32")
         ap("        scf.yield %ns : f32")
         ap("      }")
-        ap("      %mean = arith.divf %sum, %Df : f32")
-        ap("      %vsum = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %zero) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
-        ap("        %d = arith.subf %x, %mean : f32")
-        ap("        %sq = arith.mulf %d, %d : f32")
-        ap("        %ns = arith.addf %s, %sq : f32")
-        ap("        scf.yield %ns : f32")
+        ap(f"      memref.store %lsum, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "lnm")
+        ap(f"      %sumv = memref.load %sh[%c0] : {sty}")
+        ap("      %mean = arith.divf %sumv, %Df : f32")
+        ap("      gpu.barrier")
+        ap("      %lvar = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %zero) -> f32 {")
+        ap(f"        %xv = memref.load %X[%bid, %k] : {inty}")
+        ap("        %dv = arith.subf %xv, %mean : f32")
+        ap("        %sq = arith.mulf %dv, %dv : f32")
+        ap("        %nsv = arith.addf %s, %sq : f32")
+        ap("        scf.yield %nsv : f32")
         ap("      }")
-        ap("      %var = arith.divf %vsum, %Df : f32")
+        ap(f"      memref.store %lvar, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "lnv")
+        ap(f"      %varsum = memref.load %sh[%c0] : {sty}")
+        ap("      %var = arith.divf %varsum, %Df : f32")
         ap("      %vare = arith.addf %var, %eps : f32")
         ap("      %inv = math.rsqrt %vare : f32")
-        ap("      scf.for %k = %c0 to %cD step %c1 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
-        ap("        %d = arith.subf %x, %mean : f32")
-        ap("        %o = arith.mulf %d, %inv : f32")
-        ap(f"        memref.store %o, %O[%r, %k] : {outty}")
+        ap("      gpu.barrier")
+        ap("      scf.for %k = %tid to %cD step %cBLK {")
+        ap(f"        %xn = memref.load %X[%bid, %k] : {inty}")
+        ap("        %dn = arith.subf %xn, %mean : f32")
+        ap("        %on = arith.mulf %dn, %inv : f32")
+        ap(f"        memref.store %on, %O[%bid, %k] : {outty}")
         ap("      }")
     elif op == "rmsnorm":
-        # x / sqrt(mean(x^2)+eps)
         ap(f"      %Df = arith.constant {float(D)} : f32")
         ap("      %eps = arith.constant 1.000000e-05 : f32")
-        ap("      %ssum = scf.for %k = %c0 to %cD step %c1 iter_args(%s = %zero) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+        ap("      %lsq = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %zero) -> f32 {")
+        ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
         ap("        %sq = arith.mulf %x, %x : f32")
         ap("        %ns = arith.addf %s, %sq : f32")
         ap("        scf.yield %ns : f32")
         ap("      }")
-        ap("      %ms = arith.divf %ssum, %Df : f32")
+        ap(f"      memref.store %lsq, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "rms")
+        ap(f"      %sqsum = memref.load %sh[%c0] : {sty}")
+        ap("      %ms = arith.divf %sqsum, %Df : f32")
         ap("      %mse = arith.addf %ms, %eps : f32")
         ap("      %inv = math.rsqrt %mse : f32")
-        ap("      scf.for %k = %c0 to %cD step %c1 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
-        ap("        %o = arith.mulf %x, %inv : f32")
-        ap(f"        memref.store %o, %O[%r, %k] : {outty}")
+        ap("      gpu.barrier")
+        ap("      scf.for %k = %tid to %cD step %cBLK {")
+        ap(f"        %xn = memref.load %X[%bid, %k] : {inty}")
+        ap("        %on = arith.mulf %xn, %inv : f32")
+        ap(f"        memref.store %on, %O[%bid, %k] : {outty}")
         ap("      }")
     elif op == "cumsum":
-        # prefix sum along the row: O[r,k] = sum_{t<=k} X[r,t]
+        ap("      %is0c = arith.cmpi eq, %tid, %c0 : index")
+        ap("      scf.if %is0c {")
         ap("      %cs = scf.for %k = %c0 to %cD step %c1 iter_args(%run = %zero) -> f32 {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
+        ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
         ap("        %nr = arith.addf %run, %x : f32")
-        ap(f"        memref.store %nr, %O[%r, %k] : {outty}")
+        ap(f"        memref.store %nr, %O[%bid, %k] : {outty}")
         ap("        scf.yield %nr : f32")
         ap("      }")
-    elif op == "argmax":
-        # index of the row max (f32-encoded, exact for idx < 2^24)
-        ap(f"      %m0 = memref.load %X[%r, %c0] : {inty}")
-        ap("      %res:2 = scf.for %k = %c0 to %cD step %c1 "
-           "iter_args(%best = %m0, %bi = %c0) -> (f32, index) {")
-        ap(f"        %x = memref.load %X[%r, %k] : {inty}")
-        ap("        %gt = arith.cmpf ogt, %x, %best : f32")
-        ap("        %nb = arith.select %gt, %x, %best : f32")
-        ap("        %ni = arith.select %gt, %k, %bi : index")
-        ap("        scf.yield %nb, %ni : f32, index")
         ap("      }")
-        ap("      %idxf = arith.index_cast %res#1 : index to i64")
-        ap("      %idxff = arith.sitofp %idxf : i64 to f32")
-        ap(f"      memref.store %idxff, %O[%r] : {outty}")
+    elif op == "argmax":
+        ap("      %ninf = arith.constant 0xFF800000 : f32")
+        ap("      %lmax = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %ninf) -> f32 {")
+        ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
+        ap("        %ns = arith.maximumf %s, %x : f32")
+        ap("        scf.yield %ns : f32")
+        ap("      }")
+        ap(f"      memref.store %lmax, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        _rw_tree_reduce(ap, sty, "amax")
+        ap("      %is0a = arith.cmpi eq, %tid, %c0 : index")
+        ap("      scf.if %is0a {")
+        ap(f"        %mx = memref.load %sh[%c0] : {sty}")
+        ap("        %idx = scf.for %k = %c0 to %cD step %c1 iter_args(%bi = %c0) -> index {")
+        ap(f"          %xv = memref.load %X[%bid, %k] : {inty}")
+        ap("          %eq = arith.cmpf oeq, %xv, %mx : f32")
+        ap("          %ni = arith.select %eq, %k, %bi : index")
+        ap("          scf.yield %ni : index")
+        ap("        }")
+        ap("        %idxi = arith.index_cast %idx : index to i64")
+        ap("        %idxf = arith.sitofp %idxi : i64 to f32")
+        ap(f"        memref.store %idxf, %O[%bid] : {outty}")
+        ap("      }")
     elif op == "rope":
-        # rotary position embedding, pos = row index, D even.
-        #   x1=X[r,k], x2=X[r,k+D/2]; theta=10000^(-2k/D); ang=pos*theta
-        #   O[r,k]=x1*cos-x2*sin ; O[r,k+D/2]=x2*cos+x1*sin
         half = D // 2
         ap(f"      %chalf = arith.constant {half} : index")
-        ap(f"      %Df = arith.constant {float(D)} : f32")
+        ap(f"      %Dfr = arith.constant {float(D)} : f32")
         ap("      %two = arith.constant 2.0 : f32")
         ap("      %base = arith.constant 10000.0 : f32")
-        ap("      %posi = arith.index_cast %r : index to i64")
+        ap("      %posi = arith.index_cast %bid : index to i64")
         ap("      %posf = arith.sitofp %posi : i64 to f32")
         ap("      %lnb = math.log %base : f32")
-        ap("      scf.for %k = %c0 to %chalf step %c1 {")
+        ap("      scf.for %k = %tid to %chalf step %cBLK {")
         ap("        %ki = arith.index_cast %k : index to i64")
         ap("        %kf = arith.sitofp %ki : i64 to f32")
         ap("        %e0 = arith.mulf %two, %kf : f32")
-        ap("        %e1 = arith.divf %e0, %Df : f32")
+        ap("        %e1 = arith.divf %e0, %Dfr : f32")
         ap("        %pw = arith.mulf %e1, %lnb : f32")
         ap("        %ipw = arith.negf %pw : f32")
         ap("        %theta = math.exp %ipw : f32")
@@ -1003,18 +1065,17 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         ap("        %cos = math.cos %ang : f32")
         ap("        %sin = math.sin %ang : f32")
         ap("        %k2 = arith.addi %k, %chalf : index")
-        ap(f"        %x1 = memref.load %X[%r, %k] : {inty}")
-        ap(f"        %x2 = memref.load %X[%r, %k2] : {inty}")
+        ap(f"        %x1 = memref.load %X[%bid, %k] : {inty}")
+        ap(f"        %x2 = memref.load %X[%bid, %k2] : {inty}")
         ap("        %x1c = arith.mulf %x1, %cos : f32")
         ap("        %x2s = arith.mulf %x2, %sin : f32")
         ap("        %o1 = arith.subf %x1c, %x2s : f32")
         ap("        %x2c = arith.mulf %x2, %cos : f32")
         ap("        %x1s = arith.mulf %x1, %sin : f32")
         ap("        %o2 = arith.addf %x2c, %x1s : f32")
-        ap(f"        memref.store %o1, %O[%r, %k] : {outty}")
-        ap(f"        memref.store %o2, %O[%r, %k2] : {outty}")
+        ap(f"        memref.store %o1, %O[%bid, %k] : {outty}")
+        ap(f"        memref.store %o2, %O[%bid, %k2] : {outty}")
         ap("      }")
-
     ap("      gpu.return")
     ap("    }")
     ap("  }")
@@ -1030,7 +1091,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
         result_shape=out_shape,
         result_dtype="float32",
         grid=(rows, 1, 1),
-        block=(1, 1, 1),
+        block=(block, 1, 1),
         buffer_order=[in_names[0], out_name],
     )
 
