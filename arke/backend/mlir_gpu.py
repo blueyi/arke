@@ -123,6 +123,40 @@ def _cubin_passes() -> list[str]:
     ]
 
 
+# nvgpu-aware PTX lowering: convert nvgpu → nvvm first, then the normal pipeline.
+# Used for tensor-core matmul kernels that emit nvgpu.mma.sync / ldmatrix / cp.async.
+def _nvgpu_ptx_passes() -> list[str]:
+    libdev = _find_libdevice()
+    fmt = "format=isa"
+    if libdev:
+        fmt = f"format=isa l={libdev}"
+    return [
+        "-convert-nvgpu-to-nvvm",
+        "-convert-vector-to-llvm",
+        "-convert-arith-to-llvm",
+        "-convert-scf-to-cf",
+        "-convert-gpu-to-nvvm",
+        "-reconcile-unrealized-casts",
+        f"-gpu-module-to-binary={fmt}",
+    ]
+
+
+def _nvgpu_cubin_passes() -> list[str]:
+    libdev = _find_libdevice()
+    fmt = "format=bin"
+    if libdev:
+        fmt = f"format=bin l={libdev}"
+    return [
+        "-convert-nvgpu-to-nvvm",
+        "-convert-vector-to-llvm",
+        "-convert-arith-to-llvm",
+        "-convert-scf-to-cf",
+        "-convert-gpu-to-nvvm",
+        "-reconcile-unrealized-casts",
+        f"-gpu-module-to-binary={fmt}",
+    ]
+
+
 def _mlir_unescape(s: str) -> bytes:
     """Decode an MLIR string literal (``\\\\``, ``\\"``, ``\\HH`` hex escapes)."""
     out = bytearray()
@@ -140,13 +174,18 @@ def _mlir_unescape(s: str) -> bytes:
     return bytes(out)
 
 
-def mlir_gpu_to_ptx(gpu_mlir: str, mlir_opt: str | None = None) -> str:
-    """Lower a single-kernel gpu.module MLIR string to PTX text."""
+def mlir_gpu_to_ptx(gpu_mlir: str, mlir_opt: str | None = None,
+                    passes: list[str] | None = None) -> str:
+    """Lower a single-kernel gpu.module MLIR string to PTX text.
+
+    If *passes* is given it replaces the default ``_ptx_passes()`` pipeline.
+    Use ``_nvgpu_ptx_passes()`` for kernels that contain nvgpu ops.
+    """
     tool = mlir_opt or _tool("ARKE_MLIR_OPT", "mlir-opt")
     if not tool:
         raise RuntimeError("mlir-opt not found (source ~/opt/mlir20/env.sh)")
     proc = subprocess.run(
-        [tool, *_ptx_passes()], input=gpu_mlir,
+        [tool, *(passes or _ptx_passes())], input=gpu_mlir,
         capture_output=True, text=True, check=True,
     )
     m = _ASM_RE.search(proc.stdout)
@@ -155,19 +194,19 @@ def mlir_gpu_to_ptx(gpu_mlir: str, mlir_opt: str | None = None) -> str:
     return _mlir_unescape(m.group(1)).decode("utf-8", "replace")
 
 
-def mlir_gpu_to_cubin(gpu_mlir: str, mlir_opt: str | None = None) -> bytes:
+def mlir_gpu_to_cubin(gpu_mlir: str, mlir_opt: str | None = None,
+                      passes: list[str] | None = None) -> bytes:
     """Lower a single-kernel gpu.module MLIR string to a native cubin (ELF).
 
-    Uses ``format=bin`` so that ``mlir-opt`` invokes ``ptxas`` internally,
-    producing a native SASS binary with ptxas-managed register allocation and
-    instruction scheduling. The cubin can be loaded directly via
-    ``cuModuleLoadData`` — the CUDA driver recognises the ELF magic.
+    Uses ``format=bin`` so that ``mlir-opt`` invokes ``ptxas`` internally.
+    If *passes* is given it replaces the default ``_cubin_passes()`` pipeline.
+    Use ``_nvgpu_cubin_passes()`` for kernels that contain nvgpu ops.
     """
     tool = mlir_opt or _tool("ARKE_MLIR_OPT", "mlir-opt")
     if not tool:
         raise RuntimeError("mlir-opt not found (source ~/opt/mlir20/env.sh)")
     proc = subprocess.run(
-        [tool, *_cubin_passes()], input=gpu_mlir,
+        [tool, *(passes or _cubin_passes())], input=gpu_mlir,
         capture_output=True, text=True, check=True,
     )
     m = _BIN_RE.search(proc.stdout)
