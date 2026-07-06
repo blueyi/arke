@@ -72,26 +72,27 @@ def _build_cases(ops, rng):
     cases = []
     for op in ops:
         if op == "matmul":
-            for (M, K, N) in [(256, 256, 256), (512, 512, 512), (1024, 1024, 1024)]:
+            for (M, K, N) in [(256, 256, 256), (512, 512, 512),
+                              (1024, 1024, 1024), (2048, 2048, 2048)]:
                 gi = _mm_inputs(M, K, N, rng)
                 cases.append(OpCase(
                     op, gi, {"A": "A", "B": "B"},
                     lambda t: t["A"] @ t["B"], f"{M}x{K}x{N}"))
         elif op in ("relu", "gelu", "silu", "tanh", "sigmoid", "exp", "neg", "rsqrt"):
-            for (M, N) in [(512, 512), (1024, 1024)]:
+            for (M, N) in [(512, 512), (1024, 1024), (2048, 2048)]:
                 gi = _ew_inputs(M, N, rng)
                 if op == "rsqrt":
                     gi["X"] = np.abs(gi["X"]) + 0.1
                 ref = _ew_ref(op)
                 cases.append(OpCase(op, gi, {"X": "X"}, ref, f"{M}x{N}"))
         elif op in ("add", "mul"):
-            for (M, N) in [(512, 512), (1024, 1024)]:
+            for (M, N) in [(512, 512), (1024, 1024), (2048, 2048)]:
                 gi = _ew_inputs(M, N, rng, n=2)
                 ref = (lambda t: t["A"] + t["B"]) if op == "add" else (lambda t: t["A"] * t["B"])
                 cases.append(OpCase(op, gi, {"A": "A", "B": "B"}, ref, f"{M}x{N}"))
         elif op in ("softmax", "layernorm", "rmsnorm", "reduce_sum",
                     "reduce_max", "reduce_mean", "cumsum"):
-            for (R, D) in [(512, 512), (1024, 1024)]:
+            for (R, D) in [(512, 512), (1024, 1024), (2048, 2048)]:
                 gi = _rowwise_inputs(R, D, rng)
                 cases.append(OpCase(op, gi, {"X": "X"}, _rowwise_ref(op), f"{R}x{D}"))
     return cases
