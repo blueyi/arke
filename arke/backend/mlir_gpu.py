@@ -78,6 +78,7 @@ def _as_tuple(ret: Any) -> tuple:
 # ── PTX extraction ─────────────────────────────────────────────
 
 _ASM_RE = re.compile(r'assembly = "((?:[^"\\]|\\.)*)"')
+_BIN_RE = re.compile(r'bin = "((?:[^"\\]|\\.)*)"')
 
 # libdevice.bc — CUDA's math library (bitcode). Linked into the gpu binary so
 # transcendentals (math.exp/tanh/… → __nv_* libdevice calls) resolve to native
@@ -101,6 +102,20 @@ def _ptx_passes() -> list[str]:
     fmt = "format=isa"
     if libdev:
         fmt = f"format=isa l={libdev}"
+    return [
+        "-convert-scf-to-cf",
+        "-convert-gpu-to-nvvm",
+        f"-gpu-module-to-binary={fmt}",
+    ]
+
+
+# cubin-lowering passes: same as PTX but format=bin → ptxas compiles to native
+# SASS (register allocation, instruction scheduling, occupancy tuning).
+def _cubin_passes() -> list[str]:
+    libdev = _find_libdevice()
+    fmt = "format=bin"
+    if libdev:
+        fmt = f"format=bin l={libdev}"
     return [
         "-convert-scf-to-cf",
         "-convert-gpu-to-nvvm",
@@ -140,6 +155,29 @@ def mlir_gpu_to_ptx(gpu_mlir: str, mlir_opt: str | None = None) -> str:
     return _mlir_unescape(m.group(1)).decode("utf-8", "replace")
 
 
+def mlir_gpu_to_cubin(gpu_mlir: str, mlir_opt: str | None = None) -> bytes:
+    """Lower a single-kernel gpu.module MLIR string to a native cubin (ELF).
+
+    Uses ``format=bin`` so that ``mlir-opt`` invokes ``ptxas`` internally,
+    producing a native SASS binary with ptxas-managed register allocation and
+    instruction scheduling. The cubin can be loaded directly via
+    ``cuModuleLoadData`` — the CUDA driver recognises the ELF magic.
+    """
+    tool = mlir_opt or _tool("ARKE_MLIR_OPT", "mlir-opt")
+    if not tool:
+        raise RuntimeError("mlir-opt not found (source ~/opt/mlir20/env.sh)")
+    proc = subprocess.run(
+        [tool, *_cubin_passes()], input=gpu_mlir,
+        capture_output=True, text=True, check=True,
+    )
+    m = _BIN_RE.search(proc.stdout)
+    if not m:
+        raise RuntimeError(
+            f"no cubin blob in gpu-module-to-binary output:\n{proc.stdout[:500]}"
+        )
+    return _mlir_unescape(m.group(1))
+
+
 # ── CUDA driver launch ─────────────────────────────────────────
 
 @dataclass
@@ -173,6 +211,12 @@ class CudaLauncher:
 
     def load_ptx(self, ptx: str, entry: str) -> Any:
         mod = self._chk(self.driver.cuModuleLoadData(ptx.encode()))
+        self._modules.append(mod)
+        return self._chk(self.driver.cuModuleGetFunction(mod, entry.encode()))
+
+    def load_cubin(self, cubin: bytes, entry: str) -> Any:
+        """Load a native cubin (ELF) binary and return the kernel function."""
+        mod = self._chk(self.driver.cuModuleLoadData(cubin))
         self._modules.append(mod)
         return self._chk(self.driver.cuModuleGetFunction(mod, entry.encode()))
 
@@ -382,6 +426,20 @@ class MLIRGPUBackend:
         from arke.backend.protocol import CompiledKernel
         if not self.mlir_opt:
             return CompiledKernel.fail("mlir-opt not found (source ~/opt/mlir20/env.sh)")
+        # Try cubin (native SASS via ptxas) first for better register allocation
+        # and instruction scheduling; fall back to PTX if ptxas unavailable.
+        cubin: bytes | None = None
+        try:
+            cubin = mlir_gpu_to_cubin(artifact.source_code, self.mlir_opt)
+        except (subprocess.CalledProcessError, RuntimeError):
+            pass  # fall through to PTX
+        if cubin:
+            return CompiledKernel.ok(
+                fn=None,
+                backend_name=self.name,
+                emitted=artifact.metadata["emitted"],
+                cubin=cubin,
+            )
         try:
             ptx = mlir_gpu_to_ptx(artifact.source_code, self.mlir_opt)
         except subprocess.CalledProcessError as e:
@@ -395,14 +453,20 @@ class MLIRGPUBackend:
             ptx=ptx,
         )
 
+    def _load_kernel(self, kernel: Any, cu: "CudaLauncher") -> Any:
+        """Load the compiled kernel into a CUDA context (cubin or PTX)."""
+        emitted = kernel.metadata["emitted"]
+        if "cubin" in kernel.metadata:
+            return cu.load_cubin(kernel.metadata["cubin"], emitted.kernel_name)
+        return cu.load_ptx(kernel.metadata["ptx"], emitted.kernel_name)
+
     def run(self, kernel: Any, inputs: dict[str, Any]) -> dict[str, Any]:
         if not kernel.success:
             raise RuntimeError(f"Cannot run failed kernel: {kernel.error}")
         emitted = kernel.metadata["emitted"]
-        ptx = kernel.metadata["ptx"]
         np_inputs = {k: _to_numpy(v) for k, v in inputs.items()}
         with CudaLauncher() as cu:
-            fn = cu.load_ptx(ptx, emitted.kernel_name)
+            fn = self._load_kernel(kernel, cu)
             bufs: list[GPUBuffer] = []
             out_buf: GPUBuffer | None = None
             for name in emitted.buffer_order:
@@ -430,10 +494,9 @@ class MLIRGPUBackend:
         if not kernel.success:
             raise RuntimeError(f"Cannot run failed kernel: {kernel.error}")
         emitted = kernel.metadata["emitted"]
-        ptx = kernel.metadata["ptx"]
         np_inputs = {k: _to_numpy(v) for k, v in inputs.items()}
         with CudaLauncher() as cu:
-            fn = cu.load_ptx(ptx, emitted.kernel_name)
+            fn = self._load_kernel(kernel, cu)
             bufs: list[GPUBuffer] = []
             for name in emitted.buffer_order:
                 if name == emitted.result_name:
