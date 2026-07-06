@@ -543,8 +543,8 @@ def emit_gpu_matmul_tiled(graph: IRGraph, chip: str = "sm_86",
 # Register-blocked (2D thread-tile) matmul params. Each thread computes a
 # TM x TN micro-tile of C held in registers. Block tile = BM x BN, K-step = BK.
 # threads/block = (BN/TN) x (BM/TM). Defaults: 64x64 block, BK=16, 4x4 per
-# thread → 16x16=256 threads, 4 KiB+4 KiB shared, 16 acc regs/thread — a solid
-# arithmetic-intensity point for sm_86 without spilling.
+# thread → 16x16=256 threads, 4 KiB+4 KiB shared, 16 acc regs/thread, FMA inner
+# loop — a solid compute/memory balance for sm_86 without register spilling.
 GPU_MM_BM = 64
 GPU_MM_BN = 64
 GPU_MM_BK = 16
@@ -677,8 +677,8 @@ def emit_gpu_matmul_regblock(
     ap("              %bcol = arith.addi %tcol0, %j : index")
     ap(f"              %b = memref.load %sB[%k, %bcol] : {sbty}")
     ap(f"              %old = memref.load %acc[%i, %j] : {accty}")
-    ap("              %prod = arith.mulf %a, %b : f32")
-    ap("              %new = arith.addf %old, %prod : f32")
+    ap("              %prod = arith.mulf %a, %b fastmath<contract> : f32")
+    ap("              %new = arith.addf %old, %prod fastmath<contract> : f32")
     ap(f"              memref.store %new, %acc[%i, %j] : {accty}")
     ap("            }")
     ap("          }")

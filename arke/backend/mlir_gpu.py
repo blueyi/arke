@@ -340,9 +340,19 @@ class MLIRGPUBackend:
         elif op == "matmul":
             # Perf ladder: register-blocked (best) → shared-mem tiled →
             # correctness kernel, falling back on shape-alignment constraints.
+            # Shape-adaptive BK: large K benefits from BK=32 (fewer barriers,
+            # better load amortization); small K uses default BK=16.
+            node = graph.nodes[0]
+            in_names = list(node.inputs.values())
+            A_val = graph.values[in_names[0]]
+            K_dim = A_val.shape[1] if len(A_val.shape) == 2 else 0
+            bk_large = 32 if (K_dim >= 1024 and K_dim % 32 == 0) else None
             for emit in (emit_gpu_matmul_regblock, emit_gpu_matmul_tiled):
                 try:
-                    emitted = emit(graph, chip=self.chip)
+                    kwargs = {"chip": self.chip}
+                    if bk_large and emit is emit_gpu_matmul_regblock:
+                        kwargs["BK"] = bk_large
+                    emitted = emit(graph, **kwargs)
                     break
                 except NotImplementedError:
                     continue
