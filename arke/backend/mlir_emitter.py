@@ -649,24 +649,59 @@ def emit_gpu_matmul_regblock(
     ap("      }")
     # K-tile loop
     ap(f"      scf.for %kk = {c0} to {cK} step {cBK} {{")
-    # cooperative load A[BM x BK] into sA: linear indices tid, tid+NT, ...
-    ap(f"        scf.for %li = %tid to {cAE} step {cNT} {{")
-    ap(f"          %ar = arith.divui %li, {cBK} : index")     # row in tile
-    ap(f"          %ac = arith.remui %li, {cBK} : index")     # col in tile
-    ap(f"          %gar = arith.addi %browbase, %ar : index")
-    ap(f"          %gac = arith.addi %kk, %ac : index")
-    ap(f"          %av = memref.load %A[%gar, %gac] : {at}")
-    ap(f"          memref.store %av, %sA[%ar, %ac] : {saty}")
-    ap("        }")
+    # cooperative load A[BM x BK] into sA.
+    # Pre-compute each thread's fixed (row, col) in the tile and stride
+    # by nthreads/BK rows per iteration — this avoids per-iteration
+    # divui/remui that the linear-index approach needs.
+    a_row_stride = nthreads // BK
+    if a_row_stride * BK == nthreads:  # evenly divisible → 2D loop
+        cARS = seen.get(a_row_stride)
+        if cARS is None:
+            cARS = f"%cARS"
+            ap(f"        {cARS} = arith.constant {a_row_stride} : index")
+            seen[a_row_stride] = cARS
+        ap(f"        %a_col0 = arith.remui %tid, {cBK} : index")
+        ap(f"        %a_row0 = arith.divui %tid, {cBK} : index")
+        ap(f"        %a_gac = arith.addi %kk, %a_col0 : index")
+        ap(f"        scf.for %ar = %a_row0 to {cBM} step {cARS} {{")
+        ap(f"          %gar = arith.addi %browbase, %ar : index")
+        ap(f"          %av = memref.load %A[%gar, %a_gac] : {at}")
+        ap(f"          memref.store %av, %sA[%ar, %a_col0] : {saty}")
+        ap("        }")
+    else:  # fallback: original linear-index loop
+        ap(f"        scf.for %li = %tid to {cAE} step {cNT} {{")
+        ap(f"          %ar = arith.divui %li, {cBK} : index")
+        ap(f"          %ac = arith.remui %li, {cBK} : index")
+        ap(f"          %gar = arith.addi %browbase, %ar : index")
+        ap(f"          %gac = arith.addi %kk, %ac : index")
+        ap(f"          %av = memref.load %A[%gar, %gac] : {at}")
+        ap(f"          memref.store %av, %sA[%ar, %ac] : {saty}")
+        ap("        }")
     # cooperative load B[BK x BN] into sB
-    ap(f"        scf.for %li = %tid to {cBE} step {cNT} {{")
-    ap(f"          %br = arith.divui %li, {cBN} : index")     # row in tile (k)
-    ap(f"          %bc = arith.remui %li, {cBN} : index")     # col in tile (n)
-    ap(f"          %gbr = arith.addi %kk, %br : index")
-    ap(f"          %gbc = arith.addi %bcolbase, %bc : index")
-    ap(f"          %bv = memref.load %B[%gbr, %gbc] : {bt}")
-    ap(f"          memref.store %bv, %sB[%br, %bc] : {sbty}")
-    ap("        }")
+    b_row_stride = nthreads // BN
+    if b_row_stride * BN == nthreads:  # evenly divisible → 2D loop
+        cBRS = seen.get(b_row_stride)
+        if cBRS is None:
+            cBRS = f"%cBRS"
+            ap(f"        {cBRS} = arith.constant {b_row_stride} : index")
+            seen[b_row_stride] = cBRS
+        ap(f"        %b_col0 = arith.remui %tid, {cBN} : index")
+        ap(f"        %b_row0 = arith.divui %tid, {cBN} : index")
+        ap(f"        %b_gbc = arith.addi %bcolbase, %b_col0 : index")
+        ap(f"        scf.for %br = %b_row0 to {cBK} step {cBRS} {{")
+        ap(f"          %gbr = arith.addi %kk, %br : index")
+        ap(f"          %bv = memref.load %B[%gbr, %b_gbc] : {bt}")
+        ap(f"          memref.store %bv, %sB[%br, %b_col0] : {sbty}")
+        ap("        }")
+    else:  # fallback: original linear-index loop
+        ap(f"        scf.for %li = %tid to {cBE} step {cNT} {{")
+        ap(f"          %br = arith.divui %li, {cBN} : index")
+        ap(f"          %bc = arith.remui %li, {cBN} : index")
+        ap(f"          %gbr = arith.addi %kk, %br : index")
+        ap(f"          %gbc = arith.addi %bcolbase, %bc : index")
+        ap(f"          %bv = memref.load %B[%gbr, %gbc] : {bt}")
+        ap(f"          memref.store %bv, %sB[%br, %bc] : {sbty}")
+        ap("        ")
     ap("        gpu.barrier")
     # compute: for each k in BK, load TM a-vals + TN b-vals, TM*TN FMAs
     ap(f"        scf.for %k = {c0} to {cBK} step {c1} {{")
