@@ -117,9 +117,9 @@ def test_backend_picks_regblock_for_conforming():
 
 def test_backend_ladder_falls_to_tiled_then_correctness():
     be = MLIRGPUBackend()
-    # 32-aligned but not 64: regblock rejects → tiled (workgroup, no private)
+    # 32-aligned: regblock now picks BM=32 TM=2 for small shapes (private used)
     art = be.lower(_mm(32, 32, 32))
-    assert "private(" not in art.source_code
+    assert "private(" in art.source_code  # small-shape regblock
     assert "workgroup(" in art.source_code
     # fully non-aligned → correctness kernel (neither)
     art2 = be.lower(_mm(17, 13, 19))

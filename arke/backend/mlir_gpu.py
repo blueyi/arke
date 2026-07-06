@@ -340,19 +340,30 @@ class MLIRGPUBackend:
         elif op == "matmul":
             # Perf ladder: register-blocked (best) → shared-mem tiled →
             # correctness kernel, falling back on shape-alignment constraints.
-            # Shape-adaptive BK: large K benefits from BK=32 (fewer barriers,
-            # better load amortization); small K uses default BK=16.
+            # Shape-adaptive tile selection:
+            # - Small matrices (M,N ≤ 256): BM=BN=32, TM=TN=2 maximizes
+            #   parallelism (more blocks → all SMs active).
+            # - Medium/large: BM=BN=64, TM=TN=4 for higher arithmetic
+            #   intensity; BK=32 for K≥1024 (fewer barriers).
             node = graph.nodes[0]
             in_names = list(node.inputs.values())
             A_val = graph.values[in_names[0]]
+            B_val = graph.values[in_names[1]]
+            M_dim = A_val.shape[0] if len(A_val.shape) == 2 else 0
             K_dim = A_val.shape[1] if len(A_val.shape) == 2 else 0
-            bk_large = 32 if (K_dim >= 1024 and K_dim % 32 == 0) else None
+            N_dim = B_val.shape[1] if len(B_val.shape) == 2 else 0
+            small = max(M_dim, N_dim) <= 256
+            tile_kw: dict = {}
+            if small and M_dim % 32 == 0 and N_dim % 32 == 0 and K_dim % 16 == 0:
+                tile_kw = {"BM": 32, "BN": 32, "TM": 2, "TN": 2, "BK": 16}
+            elif K_dim >= 1024 and K_dim % 32 == 0:
+                tile_kw = {"BK": 32}
             for emit in (emit_gpu_matmul_regblock, emit_gpu_matmul_tiled):
                 try:
-                    kwargs = {"chip": self.chip}
-                    if bk_large and emit is emit_gpu_matmul_regblock:
-                        kwargs["BK"] = bk_large
-                    emitted = emit(graph, **kwargs)
+                    kw = {"chip": self.chip}
+                    if emit is emit_gpu_matmul_regblock:
+                        kw.update(tile_kw)
+                    emitted = emit(graph, **kw)
                     break
                 except NotImplementedError:
                     continue
