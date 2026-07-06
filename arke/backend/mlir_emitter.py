@@ -512,8 +512,8 @@ def emit_gpu_matmul_tiled(graph: IRGraph, chip: str = "sm_86",
         "        %p = scf.for %kt = %c0 to %cT step %c1 iter_args(%si = %s) -> f32 {",
         f"          %sa = memref.load %sA[%ty, %kt] : {sty}",
         f"          %sb = memref.load %sB[%kt, %tx] : {sty}",
-        "          %m = arith.mulf %sa, %sb : f32",
-        "          %ns = arith.addf %si, %m : f32",
+        "          %m = arith.mulf %sa, %sb fastmath<contract> : f32",
+        "          %ns = arith.addf %si, %m fastmath<contract> : f32",
         "          scf.yield %ns : f32",
         "        }",
         "        gpu.barrier",
@@ -1006,8 +1006,8 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      %lvar = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %zero) -> f32 {")
         ap(f"        %xv = memref.load %X[%bid, %k] : {inty}")
         ap("        %dv = arith.subf %xv, %mean : f32")
-        ap("        %sq = arith.mulf %dv, %dv : f32")
-        ap("        %nsv = arith.addf %s, %sq : f32")
+        ap("        %sq = arith.mulf %dv, %dv fastmath<contract> : f32")
+        ap("        %nsv = arith.addf %s, %sq fastmath<contract> : f32")
         ap("        scf.yield %nsv : f32")
         ap("      }")
         ap(f"      memref.store %lvar, %sh[%tid] : {sty}")
@@ -1029,8 +1029,8 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      %eps = arith.constant 1.000000e-05 : f32")
         ap("      %lsq = scf.for %k = %tid to %cD step %cBLK iter_args(%s = %zero) -> f32 {")
         ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
-        ap("        %sq = arith.mulf %x, %x : f32")
-        ap("        %ns = arith.addf %s, %sq : f32")
+        ap("        %sq = arith.mulf %x, %x fastmath<contract> : f32")
+        ap("        %ns = arith.addf %s, %sq fastmath<contract> : f32")
         ap("        scf.yield %ns : f32")
         ap("      }")
         ap(f"      memref.store %lsq, %sh[%tid] : {sty}")
