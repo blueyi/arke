@@ -339,3 +339,88 @@ Outer loop (k-tiles, software-pipelined):
 The `numGroups` attribute on `device_async_wait` controls pipeline depth:
 - `numGroups = 0`: wait for ALL groups (no pipelining)
 - `numGroups = N-1`: allow N-1 groups in flight (N-stage pipeline)
+
+---
+
+## 6. Implementation Status (2026-07-07, commit `0ccbc1b`)
+
+The research above is now **shipped as a production emitter**. Result:
+**tensor-core matmul geomean 0.91× cuBLAS**, beating cuBLAS at inference sizes
+(1024³ 1.16×, 2048³ 1.41×) vs the scalar-f32 regblock's 0.52×.
+
+### 6.1 What was built
+
+- `arke/backend/mlir_emitter.py::emit_gpu_matmul_mma` — warp-register-blocked
+  GEMM. f32 inputs → `arith.truncf` to f16 into shared, warp-level
+  `vector.contract`, f32 accumulation. Block `BM×BN`, `WM×WN` warps, each warp
+  owns a `WTM×WTN` grid of 16×16 output sub-tiles held as `WTM*WTN*2` f32
+  register accumulators. Each A-fragment is reused `WTN×`, each B-fragment `WTM×`
+  (the CUTLASS-style arithmetic-intensity multiplier). Defaults `WM=WN=2`,
+  `WTM=2 WTN=4` → `BM=64 BN=128 BK=16`, 128 threads/block.
+- `arke/backend/mlir_gpu.py::mlir_nvgpu_to_cubin` — the verified two-stage
+  lowering (see §6.2).
+- `MLIRGPUBackend(use_tensor_core=True)` — **opt-in** flag. Default backend keeps
+  the bit-accurate scalar-f32 matmul (see §6.4).
+- Tests: `tests/backend/test_mlir_gpu_matmul_mma_p3s2.py` (11).
+
+### 6.2 The lowering path that actually works (two-stage, NOT single-pass)
+
+The manual single-pass list (`-convert-nvgpu-to-nvvm -convert-vector-to-llvm
+-convert-arith-to-llvm -convert-scf-to-cf -convert-gpu-to-nvvm
+-reconcile-unrealized-casts -gpu-module-to-binary`) **FAILS** on these kernels:
+when `gpu.lane_id` + workgroup-address-space memrefs are present (introduced by
+`--convert-vector-to-gpu=use-nvgpu`), the memref-space→integer conversion errors.
+
+Verified working path:
+```
+stage 1: --convert-vector-to-gpu=use-nvgpu
+         (distributes warp vector.contract → per-thread nvgpu.ldmatrix + mma.sync)
+stage 2: -convert-nvgpu-to-nvvm -gpu-lower-to-nvvm-pipeline=cubin-chip=sm_86
+         (one-shot pipeline handles the workgroup memref-space conversion)
+```
+The cubin is extracted from the emitted `#gpu.object<#nvvm.target<...>, "BLOB">`
+attribute (NOT the `bin = "..."` of `-gpu-module-to-binary=format=bin`). Cubin
+magic `50ed55ba` (NVIDIA fatbin).
+
+**Two hard guards** (both cost debug time):
+- After stage 1, assert `"nvgpu.mma.sync" in output`. If absent, the
+  `vector.transfer_read`s aren't sourcing **workgroup (shared) memory** (reading
+  from a global memref silently fails to distribute), or the contract shape isn't
+  a valid MMA shape.
+- `vector.contract` MxNxK must be a hardware MMA shape. **m16n8k16 works;
+  m16n16k16 does NOT** ("unimplemented variant"). To compute a 16×16 output tile,
+  emit TWO m16n8k16 contracts (each 16×8), never one 16×16. B is read with a
+  transpose `permutation_map` as `vector<8x16xf16>` ([n,k]); contract indexing
+  maps are A=(m,k), B=(n,k), C=(m,n).
+
+### 6.3 Precision (honest finding)
+
+Reduced-precision throughput path. Output is bit-close vs an **fp16-input**
+reference (~1e-6 rel) but ~3e-4 rel vs strict-f32 cuBLAS. This is the inherent
+tensor-core tradeoff: cuBLAS itself uses **tf32** tensor cores by default for f32
+inputs on Ampere (a comparable reduced-precision class). Both fp16 and tf32
+tensor cores differ from a strict-f32 result on ~0.35% of (near-zero) elements
+(max abs err ~0.08 on values up to ~100). Tests validate against the fp16
+reference, which is the correct precision class for a tensor-core kernel.
+
+### 6.4 Why it is opt-in (not the default matmul path)
+
+Making tensor-core the DEFAULT matmul lowering changes the **precision class of
+all matmul gate results** (bit-accurate f32 → tf32/fp16-grade). That is a
+benchmark-semantics decision — a hard stop requiring project-lead sign-off — so
+the emitter ships behind `use_tensor_core=True`. `lower()` tags
+`metadata["is_mma"]`; `compile()` routes tagged artifacts through the nvgpu
+pipeline; the emitter raises `NotImplementedError` on shapes that don't MMA-tile,
+falling through to the scalar-f32 ladder (verified: 32³/64³ fall back and stay
+bit-accurate).
+
+### 6.5 Not yet done (future perf headroom)
+
+- **cp.async double-buffering** (§5.3): the current kernel uses synchronous
+  cooperative loads + two barriers per K-tile. Software-pipelined
+  `nvgpu.device_async_copy` with `numGroups = N-1` would overlap the next tile's
+  global→shared transfer with the current tile's mma.sync — the main remaining
+  gap to cuBLAS at 512³ and the driver-overhead-bound small shapes.
+- `--nvgpu-optimize-shared-memory` (XOR bank-conflict swizzle) not yet applied.
+- tf32 mma path (`mmaShape=[16,8,8] tf32Enabled`) as an exact-cuBLAS-precision
+  alternative to the f16 cast.
