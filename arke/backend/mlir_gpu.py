@@ -157,6 +157,64 @@ def _nvgpu_cubin_passes() -> list[str]:
     ]
 
 
+# nvgpu two-stage lowering for tensor-core kernels (nvgpu.mma.sync / ldmatrix /
+# cp.async). The emitter produces warp-level `vector.contract`; stage 1 distributes
+# it into per-thread nvgpu fragment ops, stage 2 lowers to a cubin.
+#
+# VERIFIED path (2026-07-07, RTX 3060 sm_86): the single-pass list does NOT work
+# when `gpu.lane_id` + workgroup memrefs appear (the memref-space conversion the
+# manual `-convert-gpu-to-nvvm` does fails). The `-gpu-lower-to-nvvm-pipeline`
+# one-shot handles memref-space conversion internally, so we run:
+#   stage 1: --convert-vector-to-gpu=use-nvgpu
+#   stage 2: -convert-nvgpu-to-nvvm -gpu-lower-to-nvvm-pipeline=cubin-chip=<chip>
+# and extract the cubin blob from the emitted `#gpu.object<..., "BLOB">`.
+def _nvgpu_stage1_passes() -> list[str]:
+    return ["--convert-vector-to-gpu=use-nvgpu"]
+
+
+def _nvgpu_stage2_passes(chip: str) -> list[str]:
+    return [
+        "-convert-nvgpu-to-nvvm",
+        f"-gpu-lower-to-nvvm-pipeline=cubin-chip={chip}",
+    ]
+
+
+# Extracts the cubin blob from a `#gpu.object<#nvvm.target<...>, "BLOB">` attr
+# (what -gpu-lower-to-nvvm-pipeline emits, vs the `bin = "..."` of
+# -gpu-module-to-binary=format=bin).
+_OBJ_RE = re.compile(r'#gpu\.object<[^,]*,\s*"((?:[^"\\]|\\.)*)"')
+
+
+def mlir_nvgpu_to_cubin(gpu_mlir: str, chip: str = "sm_86",
+                        mlir_opt: str | None = None) -> bytes:
+    """Lower a tensor-core (nvgpu) gpu.module MLIR string to a native cubin.
+
+    Runs the verified two-stage nvgpu pipeline and extracts the cubin blob from
+    the emitted ``#gpu.object``. Raises on any stage failure.
+    """
+    tool = mlir_opt or _tool("ARKE_MLIR_OPT", "mlir-opt")
+    if not tool:
+        raise RuntimeError("mlir-opt not found (source ~/opt/mlir20/env.sh)")
+    s1 = subprocess.run(
+        [tool, *_nvgpu_stage1_passes()], input=gpu_mlir,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    if "nvgpu.mma.sync" not in s1:
+        raise RuntimeError(
+            "nvgpu stage1 did not distribute vector.contract → nvgpu.mma.sync "
+            "(check that transfer_reads source workgroup memory and the "
+            "contract shape is a valid MMA shape, e.g. m16n8k16)"
+        )
+    s2 = subprocess.run(
+        [tool, *_nvgpu_stage2_passes(chip)], input=s1,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    m = _OBJ_RE.search(s2)
+    if not m:
+        raise RuntimeError(f"no #gpu.object blob in nvgpu lowering output:\n{s2[:500]}")
+    return _mlir_unescape(m.group(1))
+
+
 def _mlir_unescape(s: str) -> bytes:
     """Decode an MLIR string literal (``\\\\``, ``\\"``, ``\\HH`` hex escapes)."""
     out = bytearray()
@@ -387,9 +445,16 @@ class MLIRGPUBackend:
 
     name = "mlir-gpu"
 
-    def __init__(self, chip: str = "sm_86") -> None:
+    def __init__(self, chip: str = "sm_86", use_tensor_core: bool = False) -> None:
         self.chip = chip
         self.mlir_opt = _tool("ARKE_MLIR_OPT", "mlir-opt")
+        # Opt-in tensor-core (nvgpu.mma.sync) matmul path. When True, matmul
+        # lowering prefers emit_gpu_matmul_mma (f16 tensor core, ~1e-3 rel vs
+        # strict f32) for MMA-tileable shapes, falling back to the scalar FP32
+        # ladder otherwise. Kept off by default so the bit-accurate f32 matmul
+        # stays the default precision class (the tensor-core precision tradeoff
+        # is a benchmark-semantics decision, not silently changed here).
+        self.use_tensor_core = use_tensor_core
 
     def supports_op(self, op_name: str) -> bool:
         from arke.backend.mlir_emitter import (
@@ -410,6 +475,7 @@ class MLIRGPUBackend:
         )
         from arke.backend.protocol import BackendArtifact
         op = graph.nodes[0].op if graph.nodes else ""
+        is_mma = False
         if op in GPU_ELEMENTWISE_OPS:
             emitted = emit_gpu_elementwise(graph, chip=self.chip)
         elif op in GPU_ROWWISE_OPS:
@@ -441,6 +507,22 @@ class MLIRGPUBackend:
                 tile_kw = {"BM": 32, "BN": 32, "TM": 2, "TN": 2, "BK": 16}
             elif K_dim >= 1024 and K_dim % 32 == 0:
                 tile_kw = {"BK": 32}
+            # Opt-in tensor-core path: prefer nvgpu.mma.sync for MMA-tileable
+            # f32 shapes. Falls through to the scalar FP32 ladder on shapes that
+            # don't tile evenly (or when the emitter raises NotImplementedError).
+            if self.use_tensor_core:
+                from arke.backend.mlir_emitter import emit_gpu_matmul_mma
+                try:
+                    emitted = emit_gpu_matmul_mma(graph, chip=self.chip)
+                    is_mma = True
+                    return BackendArtifact(
+                        source_code=emitted.mlir_text,
+                        backend_name=self.name,
+                        op_name=op,
+                        metadata={"emitted": emitted, "is_mma": True},
+                    )
+                except NotImplementedError:
+                    pass
             for emit in (emit_gpu_matmul_regblock, emit_gpu_matmul_tiled):
                 try:
                     kw = {"chip": self.chip}
@@ -465,6 +547,20 @@ class MLIRGPUBackend:
         from arke.backend.protocol import CompiledKernel
         if not self.mlir_opt:
             return CompiledKernel.fail("mlir-opt not found (source ~/opt/mlir20/env.sh)")
+        # Tensor-core (nvgpu) kernels need the two-stage nvgpu pipeline, not the
+        # scalar gpu→PTX/cubin path. Route them through mlir_nvgpu_to_cubin.
+        if artifact.metadata.get("is_mma"):
+            try:
+                cubin = mlir_nvgpu_to_cubin(artifact.source_code, self.chip, self.mlir_opt)
+            except (subprocess.CalledProcessError, RuntimeError) as e:
+                msg = e.stderr if isinstance(e, subprocess.CalledProcessError) else str(e)
+                return CompiledKernel.fail(f"nvgpu tensor-core lowering failed: {msg}")
+            return CompiledKernel.ok(
+                fn=None,
+                backend_name=self.name,
+                emitted=artifact.metadata["emitted"],
+                cubin=cubin,
+            )
         # Try cubin (native SASS via ptxas) first for better register allocation
         # and instruction scheduling; fall back to PTX if ptxas unavailable.
         cubin: bytes | None = None

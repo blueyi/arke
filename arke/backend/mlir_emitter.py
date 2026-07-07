@@ -751,6 +751,222 @@ def emit_gpu_matmul_regblock(
     )
 
 
+# ── Tensor-core (nvgpu.mma.sync) matmul ────────────────────────
+#
+# Warp-register-blocked tensor-core GEMM. Unlike the FP32 regblock kernel
+# above (scalar FMA, bit-accurate f32), this path drives the Ampere tensor
+# cores via MLIR's ``nvgpu`` dialect for cuBLAS-competitive throughput.
+#
+# Layout hierarchy:
+#   * block tile  BM x BN,  K-step BK      (BM = WM*WTM*16, BN = WN*WTN*16)
+#   * WM x WN warps per block (32 threads each)
+#   * each warp computes a WTM x WTN grid of 16x16 output sub-tiles, each held
+#     as two f32 accumulators (vector<16x8xf32>) in registers → WTM*WTN*2 accs
+#   * per 16-wide K-step: warp loads WTM A-fragments (vector<16x16xf16>) and
+#     WTN*2 B-fragments (vector<8x16xf16>) from shared, issues WTM*WTN*2
+#     m16n8k16 ``nvgpu.mma.sync`` — each A-frag reused WTN times, each B-frag
+#     reused WTM times (the CUTLASS-style arithmetic-intensity multiplier).
+#
+# Precision: f32 inputs are truncated to f16 as they are staged into shared
+# memory; the tensor core accumulates in f32. This is the reduced-precision
+# throughput path (cuBLAS uses tf32 tensor cores by default for f32 on Ampere,
+# a comparable precision class). Output is bit-accurate vs an *fp16-input*
+# reference, NOT vs strict-f32 cuBLAS — the ~1e-3 relative delta is the
+# inherent tensor-core precision tradeoff. Validate against fp16 references.
+#
+# The emitted kernel contains ``vector.contract`` at warp granularity; the
+# lowering (arke/backend/mlir_gpu.py::_nvgpu_* two-stage pipeline:
+# ``--convert-vector-to-gpu=use-nvgpu`` then ``-convert-nvgpu-to-nvvm
+# -gpu-lower-to-nvvm-pipeline=cubin-chip=<chip>``) auto-distributes it into
+# per-thread ldmatrix + mma.sync fragments — no manual warp-lane→element map.
+
+# Tensor-core matmul default block/warp params. WM=WN=2 (4 warps=128 threads),
+# WTM=2 WTN=4 → BM=64, BN=128, BK=16. 16 accs/thread, good occupancy on sm_86.
+GPU_MMA_WM = 2
+GPU_MMA_WN = 2
+GPU_MMA_WTM = 2
+GPU_MMA_WTN = 4
+GPU_MMA_BK = 16
+
+
+def emit_gpu_matmul_mma(
+    graph: IRGraph, chip: str = "sm_86",
+    WM: int = GPU_MMA_WM, WN: int = GPU_MMA_WN,
+    WTM: int = GPU_MMA_WTM, WTN: int = GPU_MMA_WTN, BK: int = GPU_MMA_BK,
+) -> EmittedGPUKernel:
+    """Emit a warp-register-blocked tensor-core (nvgpu.mma.sync) matmul.
+
+    f32 inputs, f16 tensor-core compute with f32 accumulation. Requires
+    M % BM == 0, N % BN == 0, K % BK == 0 with BM = WM*WTM*16, BN = WN*WTN*16,
+    BK % 16 == 0. Callers fall back to the scalar FP32 kernels for shapes that
+    don't tile evenly. See the module comment above for the precision contract.
+    """
+    if len(graph.nodes) != 1 or graph.nodes[0].op != "matmul":
+        raise NotImplementedError("emit_gpu_matmul_mma: single matmul node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    a_name, b_name = in_names[0], in_names[1]
+    A, B = graph.values[a_name], graph.values[b_name]
+    M, K = A.shape
+    K2, N = B.shape
+    if K != K2:
+        raise ValueError(f"matmul K mismatch: {A.shape} @ {B.shape}")
+    if A.dtype != "float32":
+        raise NotImplementedError("emit_gpu_matmul_mma: f32 inputs only")
+    if BK % 16:
+        raise ValueError("emit_gpu_matmul_mma: BK must be a multiple of 16")
+    BM, BN = WM * WTM * 16, WN * WTN * 16
+    if M % BM or N % BN or K % BK:
+        raise NotImplementedError(
+            f"emit_gpu_matmul_mma: need M%{BM}==0,N%{BN}==0,K%{BK}==0; got {M},{K},{N}"
+        )
+    out_name = node.outputs[0]
+    nthreads = WM * WN * 32
+    a_elems, b_elems = BM * BK, BK * BN
+    naccs = WTM * WTN * 2
+    kernel = graph.name or "matmul"
+    at = memref_type([M, K], "float32")
+    bt = memref_type([K, N], "float32")
+    ct = memref_type([M, N], "float32")
+    wg = "#gpu.address_space<workgroup>"
+    saty = f"memref<{BM}x{BK}xf16, {wg}>"
+    sbty = f"memref<{BK}x{BN}xf16, {wg}>"
+
+    L: list[str] = []
+    ap = L.append
+    ap("#mapT = affine_map<(d0, d1) -> (d1, d0)>")
+    ap("#mA = affine_map<(m, n, k) -> (m, k)>")
+    ap("#mB = affine_map<(m, n, k) -> (n, k)>")
+    ap("#mC = affine_map<(m, n, k) -> (m, n)>")
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%A: {at}, %B: {bt}, %C: {ct})")
+    ap(f"        workgroup(%sA: {saty}, %sB: {sbty})")
+    ap(f"        kernel attributes {{gpu.known_block_size = array<i32: {nthreads}, 1, 1>}} {{")
+    ap("      %c0 = arith.constant 0 : index")
+    ap("      %c8 = arith.constant 8 : index")
+    ap("      %c16 = arith.constant 16 : index")
+    ap("      %c32 = arith.constant 32 : index")
+    ap(f"      %cBK = arith.constant {BK} : index")
+    ap(f"      %cBM = arith.constant {BM} : index")
+    ap(f"      %cBN = arith.constant {BN} : index")
+    ap(f"      %cNT = arith.constant {nthreads} : index")
+    ap(f"      %cAE = arith.constant {a_elems} : index")
+    ap(f"      %cBE = arith.constant {b_elems} : index")
+    ap(f"      %cK = arith.constant {K} : index")
+    ap(f"      %cWN = arith.constant {WN} : index")
+    ap(f"      %cWTM = arith.constant {WTM * 16} : index")
+    ap(f"      %cWTN = arith.constant {WTN * 16} : index")
+    ap("      %cst = arith.constant 0.0 : f16")
+    ap("      %fz = arith.constant 0.0 : f32")
+    ap("      %bx = gpu.block_id x")
+    ap("      %by = gpu.block_id y")
+    ap("      %tid = gpu.thread_id x")
+    ap("      %warp = arith.divui %tid, %c32 : index")
+    ap("      %wm = arith.divui %warp, %cWN : index")
+    ap("      %wn = arith.remui %warp, %cWN : index")
+    ap("      %browbase = arith.muli %by, %cBM : index")
+    ap("      %bcolbase = arith.muli %bx, %cBN : index")
+    ap("      %wrowbase = arith.muli %wm, %cWTM : index")
+    ap("      %wcolbase = arith.muli %wn, %cWTN : index")
+    ap("      %cinit = vector.broadcast %fz : f32 to vector<16x8xf32>")
+    acc_names = [f"%acc_{i}" for i in range(naccs)]
+    acc_ty = ", ".join(["vector<16x8xf32>"] * naccs)
+    iter_init = ", ".join(f"{n} = %cinit" for n in acc_names)
+    ap(f"      %res:{naccs} = scf.for %kk = %c0 to %cK step %cBK")
+    ap(f"          iter_args({iter_init}) -> ({acc_ty}) {{")
+    # cooperative load A[BM x BK] with f32→f16 truncation
+    ap("        scf.for %li = %tid to %cAE step %cNT {")
+    ap("          %ar = arith.divui %li, %cBK : index")
+    ap("          %ac = arith.remui %li, %cBK : index")
+    ap("          %gar = arith.addi %browbase, %ar : index")
+    ap("          %gac = arith.addi %kk, %ac : index")
+    ap(f"          %av32 = memref.load %A[%gar, %gac] : {at}")
+    ap("          %av = arith.truncf %av32 : f32 to f16")
+    ap(f"          memref.store %av, %sA[%ar, %ac] : {saty}")
+    ap("        }")
+    # cooperative load B[BK x BN] with f32→f16 truncation
+    ap("        scf.for %li = %tid to %cBE step %cNT {")
+    ap("          %br = arith.divui %li, %cBN : index")
+    ap("          %bc = arith.remui %li, %cBN : index")
+    ap("          %gbr = arith.addi %kk, %br : index")
+    ap("          %gbc = arith.addi %bcolbase, %bc : index")
+    ap(f"          %bv32 = memref.load %B[%gbr, %gbc] : {bt}")
+    ap("          %bv = arith.truncf %bv32 : f32 to f16")
+    ap(f"          memref.store %bv, %sB[%br, %bc] : {sbty}")
+    ap("        }")
+    ap("        gpu.barrier")
+    # inner K-step loop carrying accumulators
+    inner_init = ", ".join(f"%i_{i} = {acc_names[i]}" for i in range(naccs))
+    ap(f"        %r:{naccs} = scf.for %ki = %c0 to %cBK step %c16")
+    ap(f"            iter_args({inner_init}) -> ({acc_ty}) {{")
+    for i in range(WTM):
+        ap(f"          %aoff_{i} = arith.constant {i * 16} : index")
+        ap(f"          %arowp_{i} = arith.addi %wrowbase, %aoff_{i} : index")
+        ap(f"          %af_{i} = vector.transfer_read %sA[%arowp_{i}, %ki], %cst {{in_bounds = [true, true]}}")
+        ap(f"              : {saty}, vector<16x16xf16>")
+    for j in range(WTN):
+        ap(f"          %boff_{j} = arith.constant {j * 16} : index")
+        ap(f"          %bcolp_{j} = arith.addi %wcolbase, %boff_{j} : index")
+        ap(f"          %bf_{j}_0 = vector.transfer_read %sB[%ki, %bcolp_{j}], %cst")
+        ap(f"              {{permutation_map = #mapT, in_bounds = [true, true]}}")
+        ap(f"              : {sbty}, vector<8x16xf16>")
+        ap(f"          %bcolp8_{j} = arith.addi %bcolp_{j}, %c8 : index")
+        ap(f"          %bf_{j}_1 = vector.transfer_read %sB[%ki, %bcolp8_{j}], %cst")
+        ap(f"              {{permutation_map = #mapT, in_bounds = [true, true]}}")
+        ap(f"              : {sbty}, vector<8x16xf16>")
+    out_names = []
+    for i in range(WTM):
+        for j in range(WTN):
+            for h in range(2):
+                idx = (i * WTN + j) * 2 + h
+                on = f"%o_{idx}"
+                out_names.append(on)
+                ap(f"          {on} = vector.contract {{indexing_maps = [#mA, #mB, #mC],")
+                ap('              iterator_types = ["parallel","parallel","reduction"],')
+                ap("              kind = #vector.kind<add>}")
+                ap(f"              %af_{i}, %bf_{j}_{h}, %i_{idx} : vector<16x16xf16>, vector<8x16xf16> into vector<16x8xf32>")
+    ap(f"          scf.yield {', '.join(out_names)} : {acc_ty}")
+    ap("        }")
+    ap("        gpu.barrier")
+    yield_inner = ", ".join(f"%r#{i}" for i in range(naccs))
+    ap(f"        scf.yield {yield_inner} : {acc_ty}")
+    ap("      }")
+    # write out each WTM x WTN sub-tile (two 16x8 halves)
+    for i in range(WTM):
+        for j in range(WTN):
+            ap(f"      %woff_{i}_{j} = arith.constant {i * 16} : index")
+            ap(f"      %wcoff_{i}_{j} = arith.constant {j * 16} : index")
+            ap(f"      %crow_{i}_{j}a = arith.addi %browbase, %wrowbase : index")
+            ap(f"      %crow_{i}_{j} = arith.addi %crow_{i}_{j}a, %woff_{i}_{j} : index")
+            ap(f"      %ccol_{i}_{j}a = arith.addi %bcolbase, %wcolbase : index")
+            ap(f"      %ccol_{i}_{j} = arith.addi %ccol_{i}_{j}a, %wcoff_{i}_{j} : index")
+            idx0 = (i * WTN + j) * 2
+            ap(f"      vector.transfer_write %res#{idx0}, %C[%crow_{i}_{j}, %ccol_{i}_{j}] {{in_bounds = [true, true]}}")
+            ap(f"          : vector<16x8xf32>, {ct}")
+            ap(f"      %ccol8_{i}_{j} = arith.addi %ccol_{i}_{j}, %c8 : index")
+            ap(f"      vector.transfer_write %res#{idx0 + 1}, %C[%crow_{i}_{j}, %ccol8_{i}_{j}] {{in_bounds = [true, true]}}")
+            ap(f"          : vector<16x8xf32>, {ct}")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[a_name, b_name],
+        arg_shapes=[[M, K], [K, N]],
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=[M, N],
+        result_dtype="float32",
+        grid=(N // BN, M // BM, 1),
+        block=(nthreads, 1, 1),
+        buffer_order=[a_name, b_name, out_name],
+    )
+
+
 # GPU elementwise ops that lower to PTX via the gpu.module path.
 #
 # Two classes, both bit-correct vs torch on the CUDA driver:
