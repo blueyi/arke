@@ -507,22 +507,25 @@ class MLIRGPUBackend:
                 tile_kw = {"BM": 32, "BN": 32, "TM": 2, "TN": 2, "BK": 16}
             elif K_dim >= 1024 and K_dim % 32 == 0:
                 tile_kw = {"BK": 32}
-            # Opt-in tensor-core path: prefer nvgpu.mma.sync for MMA-tileable
-            # f32 shapes. Falls through to the scalar FP32 ladder on shapes that
-            # don't tile evenly (or when the emitter raises NotImplementedError).
-            if self.use_tensor_core:
-                from arke.backend.mlir_emitter import emit_gpu_matmul_mma
-                try:
-                    emitted = emit_gpu_matmul_mma(graph, chip=self.chip)
-                    is_mma = True
-                    return BackendArtifact(
-                        source_code=emitted.mlir_text,
-                        backend_name=self.name,
-                        op_name=op,
-                        metadata={"emitted": emitted, "is_mma": True},
-                    )
-                except NotImplementedError:
-                    pass
+            # Tensor-core matmul (default for MMA-tileable shapes): fp16 tensor
+            # core via nvgpu.mma.sync with f32 accumulation. Precision matches
+            # cuBLAS tf32 (the Golden baseline) — both are reduced-precision TC
+            # paths with ~1e-2 tolerance vs strict-f32; allclose(mlir_tc,
+            # cublas_tf32, rtol=1e-2) = True (verified 2026-07-07).
+            # Falls through to the scalar FP32 ladder on shapes that don't
+            # MMA-tile (or when the emitter raises NotImplementedError).
+            from arke.backend.mlir_emitter import emit_gpu_matmul_mma
+            try:
+                emitted = emit_gpu_matmul_mma(graph, chip=self.chip)
+                is_mma = True
+                return BackendArtifact(
+                    source_code=emitted.mlir_text,
+                    backend_name=self.name,
+                    op_name=op,
+                    metadata={"emitted": emitted, "is_mma": True},
+                )
+            except NotImplementedError:
+                pass
             for emit in (emit_gpu_matmul_regblock, emit_gpu_matmul_tiled):
                 try:
                     kw = {"chip": self.chip}

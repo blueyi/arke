@@ -104,13 +104,17 @@ def test_regblock_correct_vs_numpy(M, K, N):
 
 
 def test_backend_picks_regblock_for_conforming():
-    """lower() must select regblock (private attribution) for a 64-aligned shape."""
+    """lower() must select regblock (private attribution) for a 64-aligned shape
+    that doesn't MMA-tile (tensor-core is now the preferred default, so regblock
+    only fires for shapes the MMA emitter can't handle)."""
     be = MLIRGPUBackend()
-    art = be.lower(_mm(128, 128, 128))
+    # 64x64x64: MMA needs M%BM=0 (BM=64 OK) BUT N%BN=0 (BN=128, 64%128≠0) → mma
+    # fallthrough → regblock picks it up.
+    art = be.lower(_mm(64, 64, 64))
     assert "private(" in art.source_code   # regblock signature
     rng = np.random.default_rng(3)
-    A = rng.standard_normal((128, 128)).astype(np.float32)
-    B = rng.standard_normal((128, 128)).astype(np.float32)
+    A = rng.standard_normal((64, 64)).astype(np.float32)
+    B = rng.standard_normal((64, 64)).astype(np.float32)
     out = be.run(be.compile(art), {"A": A, "B": B})["C"]
     np.testing.assert_allclose(out, A @ B, rtol=1e-3, atol=1e-2)
 

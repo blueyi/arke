@@ -140,34 +140,30 @@ def test_mma_correct_vs_fp16_ref(M, K, N):
 
 # ── backend routing: opt-in + shape-gated fallback ─────────────
 
-def test_backend_routes_mma_only_when_opt_in():
+def test_backend_routes_mma_by_default_for_tileable():
     BM = GPU_MMA_WM * GPU_MMA_WTM * 16
     BN = GPU_MMA_WN * GPU_MMA_WTN * 16
-    # default backend: scalar f32, never tensor core
+    # Default backend: tensor-core for MMA-tileable shapes (precision matches
+    # cuBLAS tf32 Golden baseline, verified allclose rtol=1e-2).
     be_default = MLIRGPUBackend()
     art_d = be_default.lower(_mm(BM, GPU_MMA_BK, BN))
-    assert not art_d.metadata.get("is_mma")
-    assert "vector.contract" not in art_d.source_code
-    # opt-in backend: routes to mma for a tileable shape
-    be_tc = MLIRGPUBackend(use_tensor_core=True)
-    art_t = be_tc.lower(_mm(BM, GPU_MMA_BK, BN))
-    assert art_t.metadata.get("is_mma")
-    assert "vector.contract" in art_t.source_code
+    assert art_d.metadata.get("is_mma")
+    assert "vector.contract" in art_d.source_code
 
 
 def test_backend_falls_back_for_small_shape():
-    """Opt-in backend must fall back to scalar f32 when the shape can't MMA-tile."""
-    be_tc = MLIRGPUBackend(use_tensor_core=True)
+    """Default backend must fall back to scalar f32 when the shape can't MMA-tile."""
+    be = MLIRGPUBackend()
     # 32x32x32 is smaller than the default MMA block tile → NotImplementedError
     # inside emit_gpu_matmul_mma → falls through to the scalar regblock ladder.
-    art = be_tc.lower(_mm(32, 32, 32))
+    art = be.lower(_mm(32, 32, 32))
     assert not art.metadata.get("is_mma")
     assert "vector.contract" not in art.source_code
     # and it still runs correctly (bit-accurate f32)
     rng = np.random.default_rng(1)
     A = rng.standard_normal((32, 32)).astype(np.float32)
     B = rng.standard_normal((32, 32)).astype(np.float32)
-    out = be_tc.run(be_tc.compile(art), {"A": A, "B": B})["C"]
+    out = be.run(be.compile(art), {"A": A, "B": B})["C"]
     np.testing.assert_allclose(out, A @ B, rtol=1e-3, atol=1e-2)
 
 

@@ -34,12 +34,18 @@ from arke.backend.mlir_emitter import (
     emit_gpu_matmul_tiled,
     GPU_MM_TILE,
 )
+from arke.backend.protocol import CompiledKernel
 
 
 pytestmark = pytest.mark.skipif(
     not gpu_toolchain_available(),
     reason="GPU toolchain unavailable (needs mlir-opt+NVPTX, cuda-python, CUDA device)",
 )
+
+
+def _compile(emitted):
+    ptx = mlir_gpu_to_ptx(emitted.mlir_text)
+    return CompiledKernel.ok(fn=None, backend_name="mlir-gpu", emitted=emitted, ptx=ptx)
 
 
 def _mm(M: int, K: int, N: int) -> IRGraph:
@@ -98,11 +104,12 @@ def test_tiled_correct_vs_numpy(M, K, N):
     rng = np.random.default_rng(0)
     A = rng.standard_normal((M, K)).astype(np.float32)
     B = rng.standard_normal((K, N)).astype(np.float32)
-    # lower() should pick the tiled kernel for these aligned shapes
-    art = be.lower(_mm(M, K, N))
-    assert "workgroup(" in art.source_code
-    ker = be.compile(art)
-    assert ker.success, ker.error
+    # call emit_gpu_matmul_tiled directly — the default backend now prefers
+    # tensor-core for MMA-tileable shapes, so going through be.lower() would
+    # route 128/256 to the mma emitter instead. This test validates the
+    # *tiled* kernel specifically.
+    e = emit_gpu_matmul_tiled(_mm(M, K, N))
+    ker = _compile(e)
     out = be.run(ker, {"A": A, "B": B})["C"]
     assert out.shape == (M, N)
     # f32 tiled accumulation: looser tol on larger K
@@ -118,7 +125,7 @@ def test_tiled_matches_torch_cuda():
     rng = np.random.default_rng(7)
     A = rng.standard_normal((M, K)).astype(np.float32)
     B = rng.standard_normal((K, N)).astype(np.float32)
-    out = be.run(be.compile(be.lower(_mm(M, K, N))), {"A": A, "B": B})["C"]
+    out = be.run(_compile(emit_gpu_matmul_tiled(_mm(M, K, N))), {"A": A, "B": B})["C"]
     ref = (torch.tensor(A, device="cuda") @ torch.tensor(B, device="cuda")).cpu().numpy()
     np.testing.assert_allclose(out, ref, rtol=1e-3, atol=1e-2)
 
