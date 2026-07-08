@@ -990,14 +990,15 @@ def emit_gpu_elementwise(graph: IRGraph, chip: str = "sm_86",
                          block: int = 256) -> EmittedGPUKernel:
     """Emit a flat multi-thread gpu.module for a 2D elementwise op.
 
-    Threads a flat ``M*N`` element space: block=(``block``,1,1),
-    grid=(ceil(M*N/block),1,1). Each thread computes ``gid = bid*blockDim + tid``,
-    guards ``gid < M*N``, maps to ``(i=gid//N, j=gid%N)``, and runs the SAME
-    scalar body from ``ELEMENTWISE_SPECS`` as the CPU path (identical numerics;
-    transcendentals via libdevice). This replaces the earlier one-thread-per-
-    block correctness kernel (block=(1,1,1)), which was ~0.02-0.09x torch from
-    massive under-occupancy — flat blocks of 256 threads saturate the SMs.
-    f32, 2D only.
+    Each thread processes one element: gid = bid*blockDim + tid. Flat-index
+    mapping (gid → (i,j) via divui/remui) with one thread per element is the
+    simplest and fastest pattern for elementwise — the kernel body is tiny
+    (1 load + 1 op + 1 store) so adding per-thread loops or vectorization adds
+    more overhead than it saves. cuBLAS/cuDNN elementwise kernels use the same
+    pattern.
+
+    f32, 2D only. Identical numerics to the CPU path (``ELEMENTWISE_SPECS``);
+    transcendentals via libdevice.
     """
     from arke.backend.mlir_ops import ELEMENTWISE_SPECS
     if len(graph.nodes) != 1:
@@ -1286,14 +1287,50 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap(f"        memref.store %on, %O[%bid, %k] : {outty}")
         ap("      }")
     elif op == "cumsum":
-        ap("      %is0c = arith.cmpi eq, %tid, %c0 : index")
-        ap("      scf.if %is0c {")
-        ap("      %cs = scf.for %k = %c0 to %cD step %c1 iter_args(%run = %zero) -> f32 {")
+        # Chunked parallel cumsum: each thread scans D/BLOCK elements
+        # sequentially (chunk scan), stores the partial sum to shared memory,
+        # thread-0 does an exclusive prefix scan of the partial sums, then each
+        # thread offsets its chunk. Total work: O(D/BLOCK) per thread + O(BLOCK)
+        # serial, vs the old O(D) single-thread.
+        chunk = (D + block - 1) // block
+        ap(f"      %cCHUNK = arith.constant {chunk} : index")
+        # Phase 1: each thread scans its own chunk [tid*chunk, min((tid+1)*chunk,D))
+        ap("      %chStart = arith.muli %tid, %cCHUNK : index")
+        ap("      %chEnd0 = arith.addi %chStart, %cCHUNK : index")
+        ap("      %chEnd = arith.minui %chEnd0, %cD : index")
+        ap("      %ps = scf.for %k = %chStart to %chEnd step %c1"
+           " iter_args(%run = %zero) -> f32 {")
         ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
         ap("        %nr = arith.addf %run, %x : f32")
         ap(f"        memref.store %nr, %O[%bid, %k] : {outty}")
         ap("        scf.yield %nr : f32")
         ap("      }")
+        # Store partial sum in shared memory
+        ap(f"      memref.store %ps, %sh[%tid] : {sty}")
+        ap("      gpu.barrier")
+        # Phase 2: thread-0 does exclusive prefix scan of shared sums
+        ap("      %is0cs = arith.cmpi eq, %tid, %c0 : index")
+        ap("      scf.if %is0cs {")
+        ap(f"        %cNT = arith.constant {min(block, (D + chunk - 1) // chunk)} : index")
+        ap("        scf.for %t = %c1 to %cNT step %c1 {")
+        ap(f"          %tm1 = arith.subi %t, %c1 : index")
+        ap(f"          %pa = memref.load %sh[%tm1] : {sty}")
+        ap(f"          %pb = memref.load %sh[%t] : {sty}")
+        ap(f"          %pc = arith.addf %pa, %pb : f32")
+        ap(f"          memref.store %pc, %sh[%t] : {sty}")
+        ap("        }")
+        ap("      }")
+        ap("      gpu.barrier")
+        # Phase 3: each thread (except tid=0) adds its prefix to its chunk
+        ap("      %gt0 = arith.cmpi ugt, %tid, %c0 : index")
+        ap("      scf.if %gt0 {")
+        ap("        %tidm1 = arith.subi %tid, %c1 : index")
+        ap(f"        %prefix = memref.load %sh[%tidm1] : {sty}")
+        ap("        scf.for %k = %chStart to %chEnd step %c1 {")
+        ap(f"          %ov = memref.load %O[%bid, %k] : {outty}")
+        ap("          %nv = arith.addf %ov, %prefix : f32")
+        ap(f"          memref.store %nv, %O[%bid, %k] : {outty}")
+        ap("        }")
         ap("      }")
     elif op == "argmax":
         ap("      %ninf = arith.constant 0xFF800000 : f32")
