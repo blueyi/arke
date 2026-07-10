@@ -2558,3 +2558,123 @@ def emit_gpu_cross_entropy(graph: IRGraph, chip: str = "sm_86",
         block=(block, 1, 1),
         buffer_order=[in_names[0], in_names[1], out_name],
     )
+
+def emit_gpu_fused_linear_cross_entropy(graph: "IRGraph", chip: str = "sm_86",
+                                         block: int = _RW_BLOCK) -> "EmittedGPUKernel":
+    """Emit a GPU kernel for fused_linear_cross_entropy: loss = CE(X @ W.T, labels).
+
+    Three inputs: X [B,D], W [V,D], labels [B] (f32-encoded integers).
+    Output: [B] per-row losses. Host averages for scalar.
+    Each block handles one batch element. Each thread computes logits for a
+    subset of V classes on-the-fly and tracks (max, sum_exp) via online softmax.
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_fused_linear_cross_entropy: single-node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    x_shape = list(in_vals[0].shape)
+    w_shape = list(in_vals[1].shape)
+    label_shape = list(in_vals[2].shape)
+    B, D = x_shape
+    V, D2 = w_shape
+    assert D == D2
+    out_shape = [B]
+    out_name = node.outputs[0]
+    kernel = graph.name or "fused_linear_cross_entropy"
+
+    x_ty = memref_type(x_shape, "float32")
+    w_ty = memref_type(w_shape, "float32")
+    l_ty = memref_type(label_shape, "float32")
+    o_ty = memref_type(out_shape, "float32")
+    sty = f"memref<{block}xf32, #gpu.address_space<workgroup>>"
+
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%X: {x_ty}, %W: {w_ty}, %LABELS: {l_ty}, %O: {o_ty})")
+    ap(f"        workgroup(%sh : {sty})")
+    ap("        kernel {")
+    ap("      %tid = gpu.thread_id x")
+    ap("      %bid = gpu.block_id x")
+    ap("      %c0 = arith.constant 0 : index")
+    ap("      %c1 = arith.constant 1 : index")
+    ap(f"      %cV = arith.constant {V} : index")
+    ap(f"      %cD = arith.constant {D} : index")
+    ap(f"      %cBLK = arith.constant {block} : index")
+    ap("      %zero = arith.constant 0.0 : f32")
+    ap("      %ninf = arith.constant 0xFF800000 : f32")
+    # Online softmax over logits computed on-the-fly
+    ap("      %os:2 = scf.for %j = %tid to %cV step %cBLK"
+       " iter_args(%m = %ninf, %s = %zero) -> (f32, f32) {")
+    ap("        %lj = scf.for %k = %c0 to %cD step %c1"
+       " iter_args(%dacc = %zero) -> f32 {")
+    ap(f"          %xv = memref.load %X[%bid, %k] : {x_ty}")
+    ap(f"          %wv = memref.load %W[%j, %k] : {w_ty}")
+    ap("          %p = arith.mulf %xv, %wv fastmath<contract> : f32")
+    ap("          %nd = arith.addf %dacc, %p fastmath<contract> : f32")
+    ap("          scf.yield %nd : f32")
+    ap("        }")
+    ap("        %nm = arith.maximumf %m, %lj : f32")
+    ap("        %corr = arith.subf %m, %nm : f32")
+    ap("        %ecorr = math.exp %corr : f32")
+    ap("        %xd = arith.subf %lj, %nm : f32")
+    ap("        %ex = math.exp %xd : f32")
+    ap("        %sc = arith.mulf %s, %ecorr fastmath<contract> : f32")
+    ap("        %ns = arith.addf %sc, %ex fastmath<contract> : f32")
+    ap("        scf.yield %nm, %ns : f32, f32")
+    ap("      }")
+    # Reduce max
+    ap(f"      memref.store %os#0, %sh[%tid] : {sty}")
+    ap("      gpu.barrier")
+    _rw_tree_reduce(ap, sty, "flcemax")
+    ap(f"      %mx = memref.load %sh[%c0] : {sty}")
+    ap("      gpu.barrier")
+    # Correct + reduce sum
+    ap("      %mc = arith.subf %os#0, %mx : f32")
+    ap("      %emc = math.exp %mc : f32")
+    ap("      %csum = arith.mulf %os#1, %emc fastmath<contract> : f32")
+    ap(f"      memref.store %csum, %sh[%tid] : {sty}")
+    ap("      gpu.barrier")
+    _rw_tree_reduce(ap, sty, "flcesum")
+    ap(f"      %sumv = memref.load %sh[%c0] : {sty}")
+    ap("      gpu.barrier")
+    # Thread 0: label logit + loss
+    ap("      %is0 = arith.cmpi eq, %tid, %c0 : index")
+    ap("      scf.if %is0 {")
+    ap(f"        %lf = memref.load %LABELS[%bid] : {l_ty}")
+    ap("        %li = arith.fptosi %lf : f32 to i64")
+    ap("        %lidx = arith.index_cast %li : i64 to index")
+    ap("        %label_logit = scf.for %k = %c0 to %cD step %c1"
+       " iter_args(%la = %zero) -> f32 {")
+    ap(f"          %xk = memref.load %X[%bid, %k] : {x_ty}")
+    ap(f"          %wk = memref.load %W[%lidx, %k] : {w_ty}")
+    ap("          %lp = arith.mulf %xk, %wk fastmath<contract> : f32")
+    ap("          %nla = arith.addf %la, %lp fastmath<contract> : f32")
+    ap("          scf.yield %nla : f32")
+    ap("        }")
+    ap("        %log_sum = math.log %sumv : f32")
+    ap("        %loss = arith.subf %mx, %label_logit : f32")
+    ap("        %loss2 = arith.addf %loss, %log_sum : f32")
+    ap(f"        memref.store %loss2, %O[%bid] : {o_ty}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[in_names[0], in_names[1], in_names[2]],
+        arg_shapes=[x_shape, w_shape, label_shape],
+        arg_dtypes=["float32", "float32", "float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(B, 1, 1),
+        block=(block, 1, 1),
+        buffer_order=[in_names[0], in_names[1], in_names[2], out_name],
+    )
