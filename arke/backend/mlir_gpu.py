@@ -466,6 +466,7 @@ class MLIRGPUBackend:
                 or op_name == "topk" or op_name == "cross_entropy"
                 or op_name == "quantize_per_token"
                 or op_name == "dequantize_per_channel"
+                or op_name == "swiglu_packed"
                 or op_name in GPU_ELEMENTWISE_OPS
                 or op_name in GPU_ROWWISE_OPS or op_name in GPU_MOVEMENT_OPS
                 or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS
@@ -509,6 +510,9 @@ class MLIRGPUBackend:
         elif op == "dequantize_per_channel":
             from arke.backend.mlir_emitter import emit_gpu_dequantize_per_channel
             emitted = emit_gpu_dequantize_per_channel(graph, chip=self.chip)
+        elif op == "swiglu_packed":
+            from arke.backend.mlir_emitter import emit_gpu_swiglu_packed
+            emitted = emit_gpu_swiglu_packed(graph, chip=self.chip)
         elif op == "matmul":
             # Perf ladder: register-blocked (best) → shared-mem tiled →
             # correctness kernel, falling back on shape-alignment constraints.

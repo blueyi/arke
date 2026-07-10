@@ -2267,6 +2267,96 @@ def emit_gpu_dequantize_per_channel(graph: IRGraph, chip: str = "sm_86",
         buffer_order=[in_names[0], in_names[1], in_names[2], out_name],
     )
 
+
+def emit_gpu_swiglu_packed(graph: IRGraph, chip: str = "sm_86",
+                           block: int = 256) -> EmittedGPUKernel:
+    """Emit a GPU kernel for swiglu_packed: Y = (silu(X[:,:D]) * X[:,D:]) @ W.
+
+    Fused single-kernel: each thread computes one output element of the matmul
+    with the hidden vector computed on-the-fly from X.
+    X [M, 2D], W [D, N] → Y [M, N].
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_swiglu_packed: single-node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    x_shape = list(in_vals[0].shape)
+    w_shape = list(in_vals[1].shape)
+    M, D2 = x_shape
+    D = D2 // 2
+    D_w, N = w_shape
+    assert D == D_w, f"swiglu_packed: D mismatch {D} vs {D_w}"
+    out_shape = [M, N]
+    total = M * N
+    ngrid = (total + block - 1) // block
+    out_name = node.outputs[0]
+    kernel = graph.name or "swiglu_packed"
+
+    x_ty = memref_type(x_shape, "float32")
+    w_ty = memref_type(w_shape, "float32")
+    o_ty = memref_type(out_shape, "float32")
+
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%X: {x_ty}, %W: {w_ty}, %O: {o_ty}) kernel {{")
+    ap("      %bid = gpu.block_id x")
+    ap("      %tid = gpu.thread_id x")
+    ap(f"      %cBLK = arith.constant {block} : index")
+    ap(f"      %cTOT = arith.constant {total} : index")
+    ap(f"      %cN = arith.constant {N} : index")
+    ap(f"      %cD = arith.constant {D} : index")
+    ap("      %c0 = arith.constant 0 : index")
+    ap("      %c1 = arith.constant 1 : index")
+    ap("      %zero = arith.constant 0.0 : f32")
+    ap("      %one_sw = arith.constant 1.0 : f32")
+    ap("      %gid = arith.muli %bid, %cBLK : index")
+    ap("      %gid2 = arith.addi %gid, %tid : index")
+    ap("      %inb = arith.cmpi ult, %gid2, %cTOT : index")
+    ap("      scf.if %inb {")
+    ap("        %i = arith.divui %gid2, %cN : index")
+    ap("        %j = arith.remui %gid2, %cN : index")
+    ap("        %dot = scf.for %k = %c0 to %cD step %c1"
+       " iter_args(%acc = %zero) -> f32 {")
+    ap(f"          %gate = memref.load %X[%i, %k] : {x_ty}")
+    ap("          %kD = arith.addi %k, %cD : index")
+    ap(f"          %up = memref.load %X[%i, %kD] : {x_ty}")
+    ap("          %neg_g = arith.negf %gate : f32")
+    ap("          %exp_ng = math.exp %neg_g : f32")
+    ap("          %denom = arith.addf %one_sw, %exp_ng : f32")
+    ap("          %sig = arith.divf %one_sw, %denom : f32")
+    ap("          %silu_g = arith.mulf %gate, %sig fastmath<contract> : f32")
+    ap("          %h = arith.mulf %silu_g, %up fastmath<contract> : f32")
+    ap(f"          %w = memref.load %W[%k, %j] : {w_ty}")
+    ap("          %prod = arith.mulf %h, %w fastmath<contract> : f32")
+    ap("          %nacc = arith.addf %acc, %prod fastmath<contract> : f32")
+    ap("          scf.yield %nacc : f32")
+    ap("        }")
+    ap(f"        memref.store %dot, %O[%i, %j] : {o_ty}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[in_names[0], in_names[1]],
+        arg_shapes=[x_shape, w_shape],
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(ngrid, 1, 1),
+        block=(block, 1, 1),
+        buffer_order=[in_names[0], in_names[1], out_name],
+    )
+
+
 def emit_gpu_topk(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
     """Emit a GPU kernel for topk: find the k largest values per row.
 
