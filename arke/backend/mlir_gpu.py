@@ -174,6 +174,7 @@ def _nvgpu_stage1_passes() -> list[str]:
 
 def _nvgpu_stage2_passes(chip: str) -> list[str]:
     return [
+        "--nvgpu-optimize-shared-memory",
         "-convert-nvgpu-to-nvvm",
         f"-gpu-lower-to-nvvm-pipeline=cubin-chip={chip}",
     ]
