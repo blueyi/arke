@@ -2678,3 +2678,306 @@ def emit_gpu_fused_linear_cross_entropy(graph: "IRGraph", chip: str = "sm_86",
         block=(block, 1, 1),
         buffer_order=[in_names[0], in_names[1], in_names[2], out_name],
     )
+
+
+def emit_gpu_grouped_matmul(graph: "IRGraph", chip: str = "sm_86",
+                            block: int = 256) -> "EmittedGPUKernel":
+    """GPU grouped_matmul: Y[b,i,j] = sum(X[b,i,k] * W[indices[b],k,j], k).
+
+    Three inputs: X [B,M,K], W [E,K,N], indices [B] (f32-encoded).
+    Flat multi-thread: each thread computes one element of Y [B,M,N].
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("single-node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    x_sh = list(in_vals[0].shape)  # [B,M,K]
+    w_sh = list(in_vals[1].shape)  # [E,K,N]
+    idx_sh = list(in_vals[2].shape)  # [B]
+    B, M, K = x_sh
+    E, K2, N = w_sh
+    out_shape = [B, M, N]
+    total = B * M * N
+    ngrid = (total + block - 1) // block
+    out_name = node.outputs[0]
+    kernel = graph.name or "grouped_matmul"
+    x_ty = memref_type(x_sh, "float32")
+    w_ty = memref_type(w_sh, "float32")
+    i_ty = memref_type(idx_sh, "float32")
+    o_ty = memref_type(out_shape, "float32")
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%X: {x_ty}, %W: {w_ty}, %IDX: {i_ty}, %O: {o_ty}) kernel {{")
+    ap("      %bid = gpu.block_id x")
+    ap("      %tid = gpu.thread_id x")
+    ap(f"      %cBLK = arith.constant {block} : index")
+    ap(f"      %cTOT = arith.constant {total} : index")
+    ap(f"      %cMN = arith.constant {M * N} : index")
+    ap(f"      %cN = arith.constant {N} : index")
+    ap(f"      %cK = arith.constant {K} : index")
+    ap("      %c0 = arith.constant 0 : index")
+    ap("      %c1 = arith.constant 1 : index")
+    ap("      %zero = arith.constant 0.0 : f32")
+    ap("      %gid = arith.muli %bid, %cBLK : index")
+    ap("      %gid2 = arith.addi %gid, %tid : index")
+    ap("      %inb = arith.cmpi ult, %gid2, %cTOT : index")
+    ap("      scf.if %inb {")
+    ap("        %b = arith.divui %gid2, %cMN : index")
+    ap("        %rem = arith.remui %gid2, %cMN : index")
+    ap("        %i = arith.divui %rem, %cN : index")
+    ap("        %j = arith.remui %rem, %cN : index")
+    # Load expert index for this batch
+    ap(f"        %idxf = memref.load %IDX[%b] : {i_ty}")
+    ap("        %idxi = arith.fptosi %idxf : f32 to i64")
+    ap("        %eidx = arith.index_cast %idxi : i64 to index")
+    # dot product over K
+    ap("        %dot = scf.for %k = %c0 to %cK step %c1"
+       " iter_args(%acc = %zero) -> f32 {")
+    ap(f"          %xv = memref.load %X[%b, %i, %k] : {x_ty}")
+    ap(f"          %wv = memref.load %W[%eidx, %k, %j] : {w_ty}")
+    ap("          %p = arith.mulf %xv, %wv fastmath<contract> : f32")
+    ap("          %na = arith.addf %acc, %p fastmath<contract> : f32")
+    ap("          scf.yield %na : f32")
+    ap("        }")
+    ap(f"        memref.store %dot, %O[%b, %i, %j] : {o_ty}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text, kernel_name=kernel,
+        arg_names=[in_names[0], in_names[1], in_names[2]],
+        arg_shapes=[x_sh, w_sh, idx_sh],
+        arg_dtypes=["float32", "float32", "float32"],
+        result_name=out_name, result_shape=out_shape, result_dtype="float32",
+        grid=(ngrid, 1, 1), block=(block, 1, 1),
+        buffer_order=[in_names[0], in_names[1], in_names[2], out_name],
+    )
+
+
+
+
+def emit_gpu_attention(graph: "IRGraph", chip: str = "sm_86",
+                       block: int = 256) -> "EmittedGPUKernel":
+    """Unified GPU emitter for all attention ops (naive SDPA, not flash).
+
+    Handles: flash_attention, cross_attention, grouped_query_attention,
+    multi_latent_attention, paged_attention.
+
+    For correctness (not perf): each thread computes one output element
+    O[b,h,i,d] by iterating over all KV positions. Online softmax for
+    numerical stability. Single-thread-per-output-element.
+
+    Preprocessing (done on host before kernel launch):
+    - grouped_query_attention: K/V heads repeated to match Q heads
+    - multi_latent_attention: KV decompressed from latent
+    - paged_attention: KV assembled from block table
+    All preprocessing produces standard Q[B,H,Sq,D], K[B,H,Skv,D], V[B,H,Skv,D]
+    which are handled via MLIRGPUBackend.run() preprocessing.
+
+    For the GPU kernel itself, inputs are always Q[B,H,Sq,D], K[B,H,Skv,D], V[B,H,Skv,D].
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_attention: single-node only")
+    node = graph.nodes[0]
+    op = node.op
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+
+    # For all attention ops, the first 3 inputs after preprocessing are Q, K, V
+    # with shapes [B,H,Sq,D], [B,H,Skv,D], [B,H,Skv,D]
+    q_shape = list(in_vals[0].shape)  # [B,H,Sq,D] or similar
+
+    if op in ("flash_attention", "cross_attention"):
+        # Q[B,H,Sq,D], K[B,H,Skv,D], V[B,H,Skv,D]
+        k_shape = list(in_vals[1].shape)
+        v_shape = list(in_vals[2].shape)
+        B, H, Sq, D = q_shape
+        Skv = k_shape[2]
+        extra_inputs = []
+        extra_shapes = []
+        extra_dtypes = []
+    elif op == "grouped_query_attention":
+        # Q[B,Hq,S,D], K[B,Hkv,S,D], V[B,Hkv,S,D]
+        # The emitter treats K/V as if they had Hq heads (host repeats them)
+        k_shape = list(in_vals[1].shape)
+        v_shape = list(in_vals[2].shape)
+        B, H, Sq, D = q_shape
+        Skv = k_shape[2]
+        # For the kernel, we'll handle GQA inline by computing the KV head index
+        Hkv = k_shape[1]
+        extra_inputs = []
+        extra_shapes = []
+        extra_dtypes = []
+    elif op == "multi_latent_attention":
+        # Q[B,H,S,D], KV_compressed[B,S,Dc], W_uk[Dc,H,D], W_uv[Dc,H,D]
+        # We'll decompress inline: K[b,h,s,d] = sum_c KV[b,s,c] * Wuk[c,h,d]
+        kv_shape = list(in_vals[1].shape)  # [B,S,Dc]
+        wuk_shape = list(in_vals[2].shape)  # [Dc,H,D]
+        wuv_shape = list(in_vals[3].shape)  # [Dc,H,D]
+        B, H, Sq, D = q_shape
+        Skv = kv_shape[1]
+        Dc = kv_shape[2]
+        extra_inputs = in_names[1:]
+        extra_shapes = [kv_shape, wuk_shape, wuv_shape]
+        extra_dtypes = ["float32"] * 3
+    elif op == "paged_attention":
+        # Q[B,H,1,D], K_cache[NB,BS,H,D], V_cache[NB,BS,H,D], block_table[B,MB]
+        k_cache_shape = list(in_vals[1].shape)
+        v_cache_shape = list(in_vals[2].shape)
+        bt_shape = list(in_vals[3].shape)
+        B, H, _, D = q_shape
+        Sq = 1
+        NB, BS_val = k_cache_shape[0], k_cache_shape[1]
+        MB = bt_shape[1]
+        Skv = MB * BS_val
+        extra_inputs = in_names[1:]
+        extra_shapes = [k_cache_shape, v_cache_shape, bt_shape]
+        extra_dtypes = ["float32"] * 3
+    else:
+        raise NotImplementedError(f"emit_gpu_attention: unknown op {op}")
+
+    out_shape = [B, H, Sq, D]
+    out_name = node.outputs[0]
+    total = B * H * Sq * D
+    ngrid = (total + block - 1) // block
+    kernel = graph.name or op
+
+    import math
+    scale_val = 1.0 / math.sqrt(D)
+
+    o_ty = memref_type(out_shape, "float32")
+
+    # For flash/cross/GQA, use standard Q/K/V memrefs
+    if op in ("flash_attention", "cross_attention", "grouped_query_attention"):
+        q_ty = memref_type(q_shape, "float32")
+        k_ty = memref_type(k_shape, "float32")
+        v_ty = memref_type(v_shape, "float32")
+        Hkv_val = k_shape[1] if op == "grouped_query_attention" else H
+
+        L = []
+        ap = L.append
+        ap("module attributes {gpu.container_module} {")
+        ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+        ap(f"    gpu.func @{kernel}(%Q: {q_ty}, %K: {k_ty}, %V: {v_ty}, %O: {o_ty}) kernel {{")
+        ap("      %bid = gpu.block_id x")
+        ap("      %tid = gpu.thread_id x")
+        ap(f"      %cBLK = arith.constant {block} : index")
+        ap(f"      %cTOT = arith.constant {total} : index")
+        ap(f"      %cHSD = arith.constant {H * Sq * D} : index")
+        ap(f"      %cSD = arith.constant {Sq * D} : index")
+        ap(f"      %cD = arith.constant {D} : index")
+        ap(f"      %cSk = arith.constant {Skv} : index")
+        if op == "grouped_query_attention":
+            n_rep = H // Hkv_val
+            ap(f"      %cNrep = arith.constant {n_rep} : index")
+        ap("      %c0 = arith.constant 0 : index")
+        ap("      %c1 = arith.constant 1 : index")
+        ap(f"      %scale = arith.constant {scale_val} : f32")
+        ap("      %zero_a = arith.constant 0.0 : f32")
+        ap("      %one_a = arith.constant 1.0 : f32")
+        ap("      %ninf_a = arith.constant 0xFF800000 : f32")
+        ap("      %gid = arith.muli %bid, %cBLK : index")
+        ap("      %gid2 = arith.addi %gid, %tid : index")
+        ap("      %inb = arith.cmpi ult, %gid2, %cTOT : index")
+        ap("      scf.if %inb {")
+        # gid2 -> (b, h, i, d)
+        ap("        %b = arith.divui %gid2, %cHSD : index")
+        ap("        %r1 = arith.remui %gid2, %cHSD : index")
+        ap("        %h = arith.divui %r1, %cSD : index")
+        ap("        %r2 = arith.remui %r1, %cSD : index")
+        ap("        %i = arith.divui %r2, %cD : index")
+        ap("        %d = arith.remui %r2, %cD : index")
+        if op == "grouped_query_attention":
+            ap("        %hkv = arith.divui %h, %cNrep : index")
+        else:
+            ap("        %hkv = arith.constant 0 : index")  # placeholder
+        # Compute O[b,h,i,d] = sum_s attn_s * V[b,hkv,s,d]
+        # where attn_s = exp(score_s - max) / sum_exp
+        # score_s = sum_dd Q[b,h,i,dd]*K[b,hkv,s,dd] / sqrt(D)
+        # Two-pass: pass1 compute max+sum (online), pass2 compute weighted sum
+        # Pass 1: online softmax for max and sum
+        ap("        %os:2 = scf.for %s = %c0 to %cSk step %c1"
+           " iter_args(%mx = %ninf_a, %sm = %zero_a) -> (f32, f32) {")
+        ap("          %sc = scf.for %dd = %c0 to %cD step %c1"
+           " iter_args(%sa = %zero_a) -> f32 {")
+        ap(f"            %qv = memref.load %Q[%b, %h, %i, %dd] : {q_ty}")
+        if op == "grouped_query_attention":
+            ap(f"            %kv = memref.load %K[%b, %hkv, %s, %dd] : {k_ty}")
+        else:
+            ap(f"            %kv = memref.load %K[%b, %h, %s, %dd] : {k_ty}")
+        ap("            %p = arith.mulf %qv, %kv fastmath<contract> : f32")
+        ap("            %nsa = arith.addf %sa, %p fastmath<contract> : f32")
+        ap("            scf.yield %nsa : f32")
+        ap("          }")
+        ap("          %score = arith.mulf %sc, %scale fastmath<contract> : f32")
+        ap("          %nmx = arith.maximumf %mx, %score : f32")
+        ap("          %corr = arith.subf %mx, %nmx : f32")
+        ap("          %ec = math.exp %corr : f32")
+        ap("          %sd = arith.subf %score, %nmx : f32")
+        ap("          %es = math.exp %sd : f32")
+        ap("          %smc = arith.mulf %sm, %ec fastmath<contract> : f32")
+        ap("          %nsm = arith.addf %smc, %es fastmath<contract> : f32")
+        ap("          scf.yield %nmx, %nsm : f32, f32")
+        ap("        }")
+        # Pass 2: weighted sum
+        ap("        %rcp = arith.divf %one_a, %os#1 : f32")
+        ap("        %ov = scf.for %s = %c0 to %cSk step %c1"
+           " iter_args(%oa = %zero_a) -> f32 {")
+        # Recompute score
+        ap("          %sc2 = scf.for %dd = %c0 to %cD step %c1"
+           " iter_args(%sa2 = %zero_a) -> f32 {")
+        ap(f"            %qv2 = memref.load %Q[%b, %h, %i, %dd] : {q_ty}")
+        if op == "grouped_query_attention":
+            ap(f"            %kv2 = memref.load %K[%b, %hkv, %s, %dd] : {k_ty}")
+        else:
+            ap(f"            %kv2 = memref.load %K[%b, %h, %s, %dd] : {k_ty}")
+        ap("            %p2 = arith.mulf %qv2, %kv2 fastmath<contract> : f32")
+        ap("            %nsa2 = arith.addf %sa2, %p2 fastmath<contract> : f32")
+        ap("            scf.yield %nsa2 : f32")
+        ap("          }")
+        ap("          %score2 = arith.mulf %sc2, %scale fastmath<contract> : f32")
+        ap("          %e2 = arith.subf %score2, %os#0 : f32")
+        ap("          %attn = math.exp %e2 : f32")
+        ap("          %nattn = arith.mulf %attn, %rcp fastmath<contract> : f32")
+        if op == "grouped_query_attention":
+            ap(f"          %vv = memref.load %V[%b, %hkv, %s, %d] : {v_ty}")
+        else:
+            ap(f"          %vv = memref.load %V[%b, %h, %s, %d] : {v_ty}")
+        ap("          %c_a = arith.mulf %nattn, %vv fastmath<contract> : f32")
+        ap("          %noa = arith.addf %oa, %c_a fastmath<contract> : f32")
+        ap("          scf.yield %noa : f32")
+        ap("        }")
+        ap(f"        memref.store %ov, %O[%b, %h, %i, %d] : {o_ty}")
+        ap("      }")
+        ap("      gpu.return")
+        ap("    }")
+        ap("  }")
+        ap("}")
+
+        text = "\n".join(L)
+        # For GQA, hkv = h // n_rep is handled INSIDE the kernel
+        buf_order = [in_names[0], in_names[1], in_names[2], out_name]
+        return EmittedGPUKernel(
+            mlir_text=text, kernel_name=kernel,
+            arg_names=[in_names[0], in_names[1], in_names[2]],
+            arg_shapes=[q_shape, k_shape, v_shape],
+            arg_dtypes=["float32", "float32", "float32"],
+            result_name=out_name, result_shape=out_shape, result_dtype="float32",
+            grid=(ngrid, 1, 1), block=(block, 1, 1),
+            buffer_order=buf_order,
+        )
+
+    # For MLA and paged_attention, preprocessing is needed on the host side.
+    # We implement these by expanding inputs to standard Q/K/V in run().
+    # The emitter just generates a standard SDPA kernel for the expanded shapes.
+    raise NotImplementedError(
+        f"emit_gpu_attention: {op} requires host-side input preprocessing "
+        f"(MLA KV decompression or paged-attention block-table assembly). "
+        f"Implement via MLIRGPUBackend.run() preprocessing."
+    )

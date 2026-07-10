@@ -468,6 +468,10 @@ class MLIRGPUBackend:
                 or op_name == "dequantize_per_channel"
                 or op_name == "swiglu_packed"
                 or op_name == "fused_linear_cross_entropy"
+                or op_name == "grouped_matmul"
+                or op_name in {"flash_attention", "cross_attention",
+                               "grouped_query_attention",
+                               "multi_latent_attention", "paged_attention"}
                 or op_name in GPU_ELEMENTWISE_OPS
                 or op_name in GPU_ROWWISE_OPS or op_name in GPU_MOVEMENT_OPS
                 or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS
@@ -517,6 +521,59 @@ class MLIRGPUBackend:
         elif op == "fused_linear_cross_entropy":
             from arke.backend.mlir_emitter import emit_gpu_fused_linear_cross_entropy
             emitted = emit_gpu_fused_linear_cross_entropy(graph, chip=self.chip)
+        elif op == "grouped_matmul":
+            from arke.backend.mlir_emitter import emit_gpu_grouped_matmul
+            emitted = emit_gpu_grouped_matmul(graph, chip=self.chip)
+        elif op in ("flash_attention", "cross_attention",
+                     "grouped_query_attention",
+                     "multi_latent_attention", "paged_attention"):
+            from arke.backend.mlir_emitter import emit_gpu_attention
+            if op in ("multi_latent_attention", "paged_attention"):
+                # Preprocess: convert to standard Q/K/V graph
+                from arke.ir.graph import IRGraph, IRNode, IRValue
+                node = graph.nodes[0]
+                in_names = list(node.inputs.values())
+                in_vals = [graph.values[n] for n in in_names]
+                q_shape = list(in_vals[0].shape)
+                B, H, Sq, D = q_shape
+                if op == "multi_latent_attention":
+                    # Q[B,H,S,D], KV[B,S,Dc], Wuk[Dc,H,D], Wuv[Dc,H,D]
+                    # → standard Q/K/V shapes for emitter
+                    kv_sh = list(in_vals[1].shape)
+                    Skv = kv_sh[1]
+                    k_shape = [B, H, Skv, D]
+                    v_shape = [B, H, Skv, D]
+                else:  # paged_attention
+                    kc_sh = list(in_vals[1].shape)  # [NB,BS,H,D]
+                    bt_sh = list(in_vals[3].shape)  # [B,MB]
+                    Sq = 1
+                    Skv = bt_sh[1] * kc_sh[1]
+                    k_shape = [B, H, Skv, D]
+                    v_shape = [B, H, Skv, D]
+                # Build a cross_attention-style graph
+                g2 = IRGraph(name=op)
+                g2.values["Q"] = IRValue(name="Q", shape=q_shape, dtype="float32")
+                g2.values["K"] = IRValue(name="K", shape=k_shape, dtype="float32")
+                g2.values["V"] = IRValue(name="V", shape=v_shape, dtype="float32")
+                out_shape = [B, H, Sq, D]
+                out_name = node.outputs[0]
+                g2.values[out_name] = IRValue(name=out_name, shape=out_shape, dtype="float32")
+                g2.nodes.append(IRNode(
+                    id="n0", op="cross_attention",
+                    inputs={"Q": "Q", "K": "K", "V": "V"},
+                    outputs=[out_name],
+                ))
+                emitted = emit_gpu_attention(g2, chip=self.chip)
+                # Store original op name for run() preprocessing
+                return BackendArtifact(
+                    source_code=emitted.mlir_text,
+                    backend_name=self.name,
+                    op_name=op,
+                    metadata={"emitted": emitted, "original_op": op,
+                              "original_graph": graph},
+                )
+            else:
+                emitted = emit_gpu_attention(graph, chip=self.chip)
         elif op == "matmul":
             # Perf ladder: register-blocked (best) → shared-mem tiled →
             # correctness kernel, falling back on shape-alignment constraints.
@@ -597,6 +654,11 @@ class MLIRGPUBackend:
             )
         # Try cubin (native SASS via ptxas) first for better register allocation
         # and instruction scheduling; fall back to PTX if ptxas unavailable.
+        extra_meta = {}
+        if "original_op" in artifact.metadata:
+            extra_meta["original_op"] = artifact.metadata["original_op"]
+        if "original_graph" in artifact.metadata:
+            extra_meta["original_graph"] = artifact.metadata["original_graph"]
         cubin: bytes | None = None
         try:
             cubin = mlir_gpu_to_cubin(artifact.source_code, self.mlir_opt)
@@ -608,6 +670,7 @@ class MLIRGPUBackend:
                 backend_name=self.name,
                 emitted=artifact.metadata["emitted"],
                 cubin=cubin,
+                **extra_meta,
             )
         try:
             ptx = mlir_gpu_to_ptx(artifact.source_code, self.mlir_opt)
@@ -620,6 +683,7 @@ class MLIRGPUBackend:
             backend_name=self.name,
             emitted=artifact.metadata["emitted"],
             ptx=ptx,
+            **extra_meta,
         )
 
     def _load_kernel(self, kernel: Any, cu: "CudaLauncher") -> Any:
@@ -633,6 +697,66 @@ class MLIRGPUBackend:
         if not kernel.success:
             raise RuntimeError(f"Cannot run failed kernel: {kernel.error}")
         emitted = kernel.metadata["emitted"]
+        original_op = kernel.metadata.get("original_op", "")
+
+        # Host-side preprocessing for MLA and paged_attention
+        if original_op == "multi_latent_attention":
+            import torch
+            orig_graph = kernel.metadata["original_graph"]
+            orig_node = orig_graph.nodes[0]
+            orig_in_names = list(orig_node.inputs.values())
+            Q = inputs[orig_in_names[0]]  # Q tensor
+            kv_c = inputs[orig_in_names[1]]  # KV_compressed
+            w_uk = inputs[orig_in_names[2]]  # W_uk
+            w_uv = inputs[orig_in_names[3]]  # W_uv
+            if isinstance(Q, np.ndarray):
+                Q = torch.from_numpy(Q)
+            if isinstance(kv_c, np.ndarray):
+                kv_c = torch.from_numpy(kv_c)
+            if isinstance(w_uk, np.ndarray):
+                w_uk = torch.from_numpy(w_uk)
+            if isinstance(w_uv, np.ndarray):
+                w_uv = torch.from_numpy(w_uv)
+            K = torch.einsum("bsd,dhn->bhsn", kv_c.float(), w_uk.float())
+            V = torch.einsum("bsd,dhn->bhsn", kv_c.float(), w_uv.float())
+            q_np = Q.cpu().numpy() if isinstance(Q, torch.Tensor) else Q
+            inputs = {"Q": q_np, "K": K.cpu().numpy(), "V": V.cpu().numpy()}
+        elif original_op == "paged_attention":
+            import torch
+            orig_graph = kernel.metadata["original_graph"]
+            orig_node = orig_graph.nodes[0]
+            orig_in_names = list(orig_node.inputs.values())
+            Q = inputs[orig_in_names[0]]
+            K_cache = inputs[orig_in_names[1]]
+            V_cache = inputs[orig_in_names[2]]
+            block_table = inputs[orig_in_names[3]]
+            if isinstance(Q, np.ndarray):
+                Q = torch.from_numpy(Q)
+            if isinstance(K_cache, np.ndarray):
+                K_cache = torch.from_numpy(K_cache)
+            if isinstance(V_cache, np.ndarray):
+                V_cache = torch.from_numpy(V_cache)
+            if isinstance(block_table, np.ndarray):
+                block_table = torch.from_numpy(block_table)
+            bt = block_table.long()
+            B_val = Q.shape[0]
+            H_val = Q.shape[1]
+            D_val = Q.shape[3]
+            NB, BS_val = K_cache.shape[0], K_cache.shape[1]
+            MB = bt.shape[1]
+            Skv = MB * BS_val
+            K_list, V_list = [], []
+            for b in range(B_val):
+                blocks = bt[b]
+                kb = K_cache[blocks].reshape(-1, H_val, D_val).permute(1, 0, 2).unsqueeze(0)
+                vb = V_cache[blocks].reshape(-1, H_val, D_val).permute(1, 0, 2).unsqueeze(0)
+                K_list.append(kb)
+                V_list.append(vb)
+            K = torch.cat(K_list, dim=0)
+            V = torch.cat(V_list, dim=0)
+            q_np = Q.cpu().numpy() if isinstance(Q, torch.Tensor) else Q
+            inputs = {"Q": q_np, "K": K.cpu().numpy(), "V": V.cpu().numpy()}
+
         np_inputs = {k: _to_numpy(v) for k, v in inputs.items()}
         with CudaLauncher() as cu:
             fn = self._load_kernel(kernel, cu)

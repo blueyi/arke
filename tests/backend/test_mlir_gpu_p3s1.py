@@ -50,7 +50,7 @@ def test_gpu_backend_implements_protocol():
     assert isinstance(be, ArkeBackend)
     assert be.name == "mlir-gpu"
     assert be.supports_op("matmul")
-    assert not be.supports_op("flash_attention")
+    assert be.supports_op("flash_attention")
 
 
 def test_emit_gpu_matmul_shape_metadata():
