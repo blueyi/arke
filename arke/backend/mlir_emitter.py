@@ -2113,3 +2113,206 @@ def emit_gpu_batch_matmul(graph: IRGraph, chip: str = "sm_86",
         block=(block, 1, 1),
         buffer_order=[in_names[0], in_names[1], out_name],
     )
+
+
+def emit_gpu_topk(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
+    """Emit a GPU kernel for topk: find the k largest values per row.
+
+    Single-thread-per-row serial scan: block=(1,1,1), grid=(rows,1,1).
+    Each block scans one row, maintaining k candidates in registers via
+    a private(register) memref. O(N*k) per row — correct and simple.
+
+    The k parameter comes from ``graph.nodes[0].attrs['k']``.
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_topk: single-node only")
+    node = graph.nodes[0]
+    k = node.attrs.get("k", 1)
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    shape = list(in_vals[0].shape)
+    if len(shape) != 2:
+        raise NotImplementedError(f"emit_gpu_topk: 2D only, got {shape}")
+    rows, D = shape
+    out_shape = [rows, k]
+    out_name = node.outputs[0]
+    kernel = graph.name or "topk"
+    inty = memref_type(shape, "float32")
+    outty = memref_type(out_shape, "float32")
+    # Private memref for top-k candidates (register-resident)
+    kty = f"memref<{k}xf32, #gpu.address_space<private>>"
+
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%X: {inty}, %O: {outty})")
+    ap(f"        private(%topk : {kty})")
+    ap("        kernel {")
+    ap("      %bid = gpu.block_id x")
+    ap(f"      %cD = arith.constant {D} : index")
+    ap(f"      %cK = arith.constant {k} : index")
+    ap("      %c0 = arith.constant 0 : index")
+    ap("      %c1 = arith.constant 1 : index")
+    ap("      %ninf = arith.constant 0xFF800000 : f32")
+    # Initialize top-k array with -inf
+    ap(f"      scf.for %i = %c0 to %cK step %c1 {{")
+    ap(f"        memref.store %ninf, %topk[%i] : {kty}")
+    ap("      }")
+    # Scan through row, insertion-sort each element into top-k
+    # For each element x: find the min in topk, if x > min, replace min with x
+    ap(f"      scf.for %j = %c0 to %cD step %c1 {{")
+    ap(f"        %x = memref.load %X[%bid, %j] : {inty}")
+    # Find index of minimum in topk
+    ap(f"        %min0 = memref.load %topk[%c0] : {kty}")
+    ap(f"        %mi:2 = scf.for %ki = %c1 to %cK step %c1"
+       " iter_args(%mval = %min0, %midx = %c0) -> (f32, index) {")
+    ap(f"          %kv = memref.load %topk[%ki] : {kty}")
+    ap("          %lt = arith.cmpf olt, %kv, %mval : f32")
+    ap("          %nmval = arith.select %lt, %kv, %mval : f32")
+    ap("          %nmidx = arith.select %lt, %ki, %midx : index")
+    ap("          scf.yield %nmval, %nmidx : f32, index")
+    ap("        }")
+    # If x > min of topk, replace
+    ap("        %gt = arith.cmpf ogt, %x, %mi#0 : f32")
+    ap("        scf.if %gt {")
+    ap(f"          memref.store %x, %topk[%mi#1] : {kty}")
+    ap("        }")
+    ap("      }")
+    # Sort topk descending (bubble sort, k is small)
+    if k > 1:
+        ap(f"      %cKm1 = arith.constant {k - 1} : index")
+        ap(f"      scf.for %pass = %c0 to %cKm1 step %c1 {{")
+        ap(f"        scf.for %si = %c0 to %cKm1 step %c1 {{")
+        ap(f"          %si1 = arith.addi %si, %c1 : index")
+        ap(f"          %sv1 = memref.load %topk[%si] : {kty}")
+        ap(f"          %sv2 = memref.load %topk[%si1] : {kty}")
+        ap("          %swap = arith.cmpf olt, %sv1, %sv2 : f32")
+        ap("          scf.if %swap {")
+        ap(f"            memref.store %sv2, %topk[%si] : {kty}")
+        ap(f"            memref.store %sv1, %topk[%si1] : {kty}")
+        ap("          }")
+        ap("        }")
+        ap("      }")
+    # Write sorted topk to output
+    ap(f"      scf.for %oi = %c0 to %cK step %c1 {{")
+    ap(f"        %ov = memref.load %topk[%oi] : {kty}")
+    ap(f"        memref.store %ov, %O[%bid, %oi] : {outty}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[in_names[0]],
+        arg_shapes=[shape],
+        arg_dtypes=["float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(rows, 1, 1),
+        block=(1, 1, 1),
+        buffer_order=[in_names[0], out_name],
+    )
+
+
+def emit_gpu_cross_entropy(graph: IRGraph, chip: str = "sm_86",
+                           block: int = _RW_BLOCK) -> EmittedGPUKernel:
+    """Emit a GPU kernel for cross_entropy: loss_i = -logits[i,label_i] + max + log(sum_exp).
+
+    Two inputs: logits [B,V] (f32), labels [B] (f32-encoded integers).
+    Output: [B] per-row losses. Host averages to get scalar.
+    Each row gets one thread-block (256 threads cooperate for max + sum).
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_cross_entropy: single-node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    logit_shape = list(in_vals[0].shape)
+    label_shape = list(in_vals[1].shape)
+    if len(logit_shape) != 2:
+        raise NotImplementedError(f"emit_gpu_cross_entropy: 2D logits only")
+    B, V = logit_shape
+    out_shape = [B]
+    out_name = node.outputs[0]
+    kernel = graph.name or "cross_entropy"
+
+    logit_ty = memref_type(logit_shape, "float32")
+    label_ty = memref_type(label_shape, "float32")
+    out_ty = memref_type(out_shape, "float32")
+    sty = f"memref<{block}xf32, #gpu.address_space<workgroup>>"
+
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%LOGITS: {logit_ty}, %LABELS: {label_ty}, %O: {out_ty})")
+    ap(f"        workgroup(%sh : {sty})")
+    ap("        kernel {")
+    ap("      %tid = gpu.thread_id x")
+    ap("      %bid = gpu.block_id x")
+    ap("      %c0 = arith.constant 0 : index")
+    ap(f"      %cV = arith.constant {V} : index")
+    ap(f"      %cBLK = arith.constant {block} : index")
+    ap("      %zero = arith.constant 0.0 : f32")
+    ap("      %ninf = arith.constant 0xFF800000 : f32")
+    # Pass 1: row max
+    ap("      %lmax = scf.for %k = %tid to %cV step %cBLK iter_args(%m = %ninf) -> f32 {")
+    ap(f"        %x = memref.load %LOGITS[%bid, %k] : {logit_ty}")
+    ap("        %nm = arith.maximumf %m, %x : f32")
+    ap("        scf.yield %nm : f32")
+    ap("      }")
+    ap(f"      memref.store %lmax, %sh[%tid] : {sty}")
+    ap("      gpu.barrier")
+    _rw_tree_reduce(ap, sty, "cemax")
+    ap(f"      %mx = memref.load %sh[%c0] : {sty}")
+    ap("      gpu.barrier")
+    # Pass 2: sum(exp(x - max))
+    ap("      %lse = scf.for %k = %tid to %cV step %cBLK iter_args(%s = %zero) -> f32 {")
+    ap(f"        %x2 = memref.load %LOGITS[%bid, %k] : {logit_ty}")
+    ap("        %d = arith.subf %x2, %mx : f32")
+    ap("        %e = math.exp %d : f32")
+    ap("        %ns = arith.addf %s, %e fastmath<contract> : f32")
+    ap("        scf.yield %ns : f32")
+    ap("      }")
+    ap(f"      memref.store %lse, %sh[%tid] : {sty}")
+    ap("      gpu.barrier")
+    _rw_tree_reduce(ap, sty, "cesum")
+    ap(f"      %sumv = memref.load %sh[%c0] : {sty}")
+    ap("      gpu.barrier")
+    # Thread 0: loss = max - logits[label] + log(sum)
+    ap("      %is0 = arith.cmpi eq, %tid, %c0 : index")
+    ap("      scf.if %is0 {")
+    ap(f"        %lf = memref.load %LABELS[%bid] : {label_ty}")
+    ap("        %li = arith.fptosi %lf : f32 to i64")
+    ap("        %lidx = arith.index_cast %li : i64 to index")
+    ap(f"        %lv = memref.load %LOGITS[%bid, %lidx] : {logit_ty}")
+    ap("        %log_sum = math.log %sumv : f32")
+    ap("        %loss = arith.subf %mx, %lv : f32")
+    ap("        %loss2 = arith.addf %loss, %log_sum : f32")
+    ap(f"        memref.store %loss2, %O[%bid] : {out_ty}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[in_names[0], in_names[1]],
+        arg_shapes=[logit_shape, label_shape],
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(B, 1, 1),
+        block=(block, 1, 1),
+        buffer_order=[in_names[0], in_names[1], out_name],
+    )

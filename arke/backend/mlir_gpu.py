@@ -463,6 +463,7 @@ class MLIRGPUBackend:
             GPU_ROWWISE2_OPS, GPU_INDEX_OPS,
         )
         return (op_name == "matmul" or op_name == "batch_matmul"
+                or op_name == "topk" or op_name == "cross_entropy"
                 or op_name in GPU_ELEMENTWISE_OPS
                 or op_name in GPU_ROWWISE_OPS or op_name in GPU_MOVEMENT_OPS
                 or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS
@@ -494,6 +495,12 @@ class MLIRGPUBackend:
         elif op == "batch_matmul":
             from arke.backend.mlir_emitter import emit_gpu_batch_matmul
             emitted = emit_gpu_batch_matmul(graph, chip=self.chip)
+        elif op == "topk":
+            from arke.backend.mlir_emitter import emit_gpu_topk
+            emitted = emit_gpu_topk(graph, chip=self.chip)
+        elif op == "cross_entropy":
+            from arke.backend.mlir_emitter import emit_gpu_cross_entropy
+            emitted = emit_gpu_cross_entropy(graph, chip=self.chip)
         elif op == "matmul":
             # Perf ladder: register-blocked (best) → shared-mem tiled →
             # correctness kernel, falling back on shape-alignment constraints.
