@@ -2115,6 +2115,158 @@ def emit_gpu_batch_matmul(graph: IRGraph, chip: str = "sm_86",
     )
 
 
+def emit_gpu_quantize_per_token(graph: IRGraph, chip: str = "sm_86",
+                                block: int = _RW_BLOCK) -> EmittedGPUKernel:
+    """Emit a GPU kernel for quantize_per_token: Y = round(X / scale).clamp(-128,127).
+
+    scale = abs_max(row) / 127. Output is f32-encoded int8 values.
+    Row-per-block pattern (256 threads cooperate for abs_max reduce).
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_quantize_per_token: single-node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    shape = list(in_vals[0].shape)
+    if len(shape) != 2:
+        raise NotImplementedError("emit_gpu_quantize_per_token: 2D only")
+    rows, D = shape
+    out_shape = [rows, D]
+    out_name = node.outputs[0]
+    kernel = graph.name or "quantize_per_token"
+    inty = memref_type(shape, "float32")
+    outty = memref_type(out_shape, "float32")
+    sty = f"memref<{block}xf32, #gpu.address_space<workgroup>>"
+
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%X: {inty}, %O: {outty})")
+    ap(f"        workgroup(%sh : {sty})")
+    ap("        kernel {")
+    ap("      %tid = gpu.thread_id x")
+    ap("      %bid = gpu.block_id x")
+    ap("      %c0 = arith.constant 0 : index")
+    ap(f"      %cD = arith.constant {D} : index")
+    ap(f"      %cBLK = arith.constant {block} : index")
+    ap("      %zero = arith.constant 0.0 : f32")
+    ap("      %c127f = arith.constant 127.0 : f32")
+    ap("      %cn128f = arith.constant -128.0 : f32")
+    # Pass 1: per-row abs_max
+    ap("      %lam = scf.for %k = %tid to %cD step %cBLK iter_args(%m = %zero) -> f32 {")
+    ap(f"        %x = memref.load %X[%bid, %k] : {inty}")
+    ap("        %ax = math.absf %x : f32")
+    ap("        %nm = arith.maximumf %m, %ax : f32")
+    ap("        scf.yield %nm : f32")
+    ap("      }")
+    ap(f"      memref.store %lam, %sh[%tid] : {sty}")
+    ap("      gpu.barrier")
+    _rw_tree_reduce(ap, sty, "qmax")
+    ap(f"      %amax = memref.load %sh[%c0] : {sty}")
+    ap("      gpu.barrier")
+    # scale = amax / 127, inv_scale = 127 / amax
+    ap("      %eps = arith.constant 1.0e-10 : f32")
+    ap("      %safe = arith.maximumf %amax, %eps : f32")
+    ap("      %inv_scale = arith.divf %c127f, %safe : f32")
+    # Pass 2: quantize
+    ap("      scf.for %k = %tid to %cD step %cBLK {")
+    ap(f"        %xq = memref.load %X[%bid, %k] : {inty}")
+    ap("        %scaled = arith.mulf %xq, %inv_scale fastmath<contract> : f32")
+    ap("        %rounded = math.roundeven %scaled : f32")
+    ap("        %clo = arith.maximumf %rounded, %cn128f : f32")
+    ap("        %chi = arith.minimumf %clo, %c127f : f32")
+    ap(f"        memref.store %chi, %O[%bid, %k] : {outty}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[in_names[0]],
+        arg_shapes=[shape],
+        arg_dtypes=["float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(rows, 1, 1),
+        block=(block, 1, 1),
+        buffer_order=[in_names[0], out_name],
+    )
+
+
+def emit_gpu_dequantize_per_channel(graph: IRGraph, chip: str = "sm_86",
+                                     block: int = 256) -> EmittedGPUKernel:
+    """Emit a GPU kernel for dequantize_per_channel: Y = (X_int8 - zero_point) * scale.
+
+    Three inputs: X_int8 [M,N] (f32), scale [N] (f32), zero_point [N] (f32).
+    Flat multi-thread elementwise kernel.
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_dequantize_per_channel: single-node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    x_shape = list(in_vals[0].shape)
+    M, N = x_shape
+    out_shape = [M, N]
+    total = M * N
+    ngrid = (total + block - 1) // block
+    out_name = node.outputs[0]
+    kernel = graph.name or "dequantize_per_channel"
+
+    x_ty = memref_type(x_shape, "float32")
+    s_ty = memref_type([N], "float32")
+    z_ty = memref_type([N], "float32")
+    o_ty = memref_type(out_shape, "float32")
+
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%XI: {x_ty}, %SC: {s_ty}, %ZP: {z_ty}, %O: {o_ty}) kernel {{")
+    ap("      %bid = gpu.block_id x")
+    ap("      %tid = gpu.thread_id x")
+    ap(f"      %cBLK = arith.constant {block} : index")
+    ap(f"      %cTOT = arith.constant {total} : index")
+    ap(f"      %cN = arith.constant {N} : index")
+    ap("      %gid = arith.muli %bid, %cBLK : index")
+    ap("      %gid2 = arith.addi %gid, %tid : index")
+    ap("      %inb = arith.cmpi ult, %gid2, %cTOT : index")
+    ap("      scf.if %inb {")
+    ap("        %i = arith.divui %gid2, %cN : index")
+    ap("        %j = arith.remui %gid2, %cN : index")
+    ap(f"        %xi = memref.load %XI[%i, %j] : {x_ty}")
+    ap(f"        %sc = memref.load %SC[%j] : {s_ty}")
+    ap(f"        %zp = memref.load %ZP[%j] : {z_ty}")
+    ap("        %diff = arith.subf %xi, %zp : f32")
+    ap("        %out = arith.mulf %diff, %sc fastmath<contract> : f32")
+    ap(f"        memref.store %out, %O[%i, %j] : {o_ty}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[in_names[0], in_names[1], in_names[2]],
+        arg_shapes=[x_shape, [N], [N]],
+        arg_dtypes=["float32", "float32", "float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(ngrid, 1, 1),
+        block=(block, 1, 1),
+        buffer_order=[in_names[0], in_names[1], in_names[2], out_name],
+    )
+
 def emit_gpu_topk(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
     """Emit a GPU kernel for topk: find the k largest values per row.
 
