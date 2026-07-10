@@ -1099,6 +1099,103 @@ def _rw_tree_reduce(ap, sty, op_name, BLOCK=_RW_BLOCK):
         step += 1
 
 
+_WARP_SIZE = 32
+
+
+def _rw_warp_reduce_inline(ap, val_ssa: str, op_name: str,
+                           is_max: bool = False) -> str:
+    """Emit 5-step warp-shuffle reduction (no barriers) for a register value.
+
+    Generates ``gpu.shuffle down`` at offsets 16, 8, 4, 2, 1 and returns
+    the SSA name holding the lane-0 result.  Works for both ``addf`` (sum)
+    and ``maximumf`` (max) reductions.
+    """
+    cur = val_ssa
+    for i, offset in enumerate((16, 8, 4, 2, 1)):
+        off_name = f"%woff{i}_{op_name}"
+        width_name = f"%ww{i}_{op_name}"
+        shfl_name = f"%ws{i}_{op_name}"
+        valid_name = f"%wv{i}_{op_name}"
+        res_name = f"%wr{i}_{op_name}"
+        ap(f"      {off_name} = arith.constant {offset} : i32")
+        ap(f"      {width_name} = arith.constant {_WARP_SIZE} : i32")
+        ap(f"      {shfl_name}, {valid_name} = gpu.shuffle down {cur},"
+           f" {off_name}, {width_name} : f32")
+        if is_max:
+            ap(f"      {res_name} = arith.maximumf {cur}, {shfl_name} : f32")
+        else:
+            ap(f"      {res_name} = arith.addf {cur}, {shfl_name} : f32")
+        cur = res_name
+    return cur
+
+
+def _rw_block_reduce_fast(ap, sty, val_ssa: str, op_name: str,
+                          is_max: bool = False, BLOCK: int = _RW_BLOCK) -> str:
+    """Emit a warp-shuffle + cross-warp shared-memory reduce.
+
+    1. Intra-warp reduction via ``gpu.shuffle down`` (5 steps, 0 barriers).
+    2. Lane-0 of each warp stores to shared memory.
+    3. Cross-warp tree-reduce in shared memory (log2(BLOCK/32) steps,
+       each with 1 barrier) — only warp-0 threads participate.
+    4. Result is in shared[0].
+
+    Returns the SSA name of the reduced value that ALL threads can read
+    (caller should ``memref.load %sh[%c0]`` after the final barrier).
+
+    Compared to the old ``_rw_tree_reduce``:
+      256 threads: 8 barriers → **3 barriers** (62% fewer).
+    """
+    n_warps = BLOCK // _WARP_SIZE   # 8 for BLOCK=256
+
+    # Step 1: warp-local reduction (no barriers)
+    warp_result = _rw_warp_reduce_inline(ap, val_ssa, op_name, is_max=is_max)
+
+    # Compute warp_id = tid / 32  and  lane = tid % 32
+    cWARP = f"%cWARP_{op_name}"
+    warp_id_name = f"%warp_id_{op_name}"
+    lane_name = f"%lane_{op_name}"
+    ap(f"      {cWARP} = arith.constant {_WARP_SIZE} : index")
+    ap(f"      {warp_id_name} = arith.divui %tid, {cWARP} : index")
+    ap(f"      {lane_name} = arith.remui %tid, {cWARP} : index")
+
+    # Step 2: lane 0 of each warp stores warp result to shared[warp_id]
+    is_lane0 = f"%is_lane0_{op_name}"
+    ap(f"      {is_lane0} = arith.cmpi eq, {lane_name}, %c0 : index")
+    ap(f"      scf.if {is_lane0} {{")
+    ap(f"        memref.store {warp_result}, %sh[{warp_id_name}] : {sty}")
+    ap("      }")
+    ap("      gpu.barrier")
+
+    # Step 3: cross-warp reduction (only first n_warps threads)
+    # n_warps = 8 for BLOCK=256 → 3 steps with barriers
+    stride = n_warps // 2
+    step = 0
+    while stride >= 1:
+        cS = f"%cwS{step}_{op_name}"
+        lt = f"%cwlt{step}_{op_name}"
+        ap(f"      {cS} = arith.constant {stride} : index")
+        ap(f"      {lt} = arith.cmpi ult, %tid, {cS} : index")
+        ap(f"      scf.if {lt} {{")
+        ra = f"%cwa{step}_{op_name}"
+        off = f"%cwoff{step}_{op_name}"
+        rb = f"%cwb{step}_{op_name}"
+        rs = f"%cws{step}_{op_name}"
+        ap(f"        {ra} = memref.load %sh[%tid] : {sty}")
+        ap(f"        {off} = arith.addi %tid, {cS} : index")
+        ap(f"        {rb} = memref.load %sh[{off}] : {sty}")
+        if is_max:
+            ap(f"        {rs} = arith.maximumf {ra}, {rb} : f32")
+        else:
+            ap(f"        {rs} = arith.addf {ra}, {rb} : f32")
+        ap(f"        memref.store {rs}, %sh[%tid] : {sty}")
+        ap("      }")
+        ap("      gpu.barrier")
+        stride //= 2
+        step += 1
+
+    return f"%sh[%c0]"  # caller loads from shared[0]
+
+
 def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
                      block: int = _RW_BLOCK) -> EmittedGPUKernel:
     """Emit a parallel-reduce row-per-block gpu.module for row-wise ops.
@@ -1182,6 +1279,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         #   new_sum = old_sum * exp(old_max - new_max) + exp(x - new_max)
         # This eliminates one tree-reduce (max) vs the 3-pass approach,
         # cutting ~9 barriers out of 20 → 11.
+        # Normalization uses multiply-by-reciprocal (mulf vs divf on GPU).
         ap("      %ninf = arith.constant 0xFF800000 : f32")
         # Pass 1: online max+sum accumulation (single pass over data)
         ap("      %os:2 = scf.for %k = %tid to %cD step %cBLK"
@@ -1196,17 +1294,6 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("        %ns = arith.addf %sc, %ex fastmath<contract> : f32")
         ap("        scf.yield %nm, %ns : f32, f32")
         ap("      }")
-        # Store (max, sum) into shared memory for tree-reduce.
-        # We need TWO shared memory arrays — use %sh for max and a second
-        # workgroup attribution for sum. But we only have ONE %sh.
-        # Workaround: do tree-reduce on max first, then correct sums, then
-        # tree-reduce on sum. This still saves the initial max stride-accumulate.
-        # Actually, simpler: do two separate tree-reduces on two shmem regions.
-        # But we only declared one workgroup attribution.
-        #
-        # Fallback: use the same %sh for sequential reduces. First reduce max,
-        # broadcast it, then correct all local sums with the global max, store
-        # to %sh, reduce sum, broadcast.
         ap(f"      memref.store %os#0, %sh[%tid] : {sty}")  # store local max
         ap("      gpu.barrier")
         _rw_tree_reduce(ap, sty, "smax")
@@ -1221,12 +1308,15 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         _rw_tree_reduce(ap, sty, "ssum")
         ap(f"      %den = memref.load %sh[%c0] : {sty}")
         ap("      gpu.barrier")
-        # Pass 2: normalize (exp(x - global_max) / global_sum)
+        # Precompute reciprocal (1/sum) — single div, then N muls vs N divs
+        ap("      %one_sm = arith.constant 1.0 : f32")
+        ap("      %rcp = arith.divf %one_sm, %den : f32")
+        # Pass 2: normalize (exp(x - global_max) * (1/global_sum))
         ap("      scf.for %k = %tid to %cD step %cBLK {")
         ap(f"        %x3 = memref.load %X[%bid, %k] : {inty}")
         ap("        %d3 = arith.subf %x3, %mx : f32")
         ap("        %e3 = math.exp %d3 : f32")
-        ap("        %o3 = arith.divf %e3, %den : f32")
+        ap("        %o3 = arith.mulf %e3, %rcp fastmath<contract> : f32")
         ap(f"        memref.store %o3, %O[%bid, %k] : {outty}")
         ap("      }")
     elif op == "layernorm":
@@ -1528,7 +1618,12 @@ def emit_gpu_rowwise2(graph: IRGraph, chip: str = "sm_86") -> EmittedGPUKernel:
 # (grid = output shape, block=(1,1,1)): pure address remapping, no math.
 GPU_MOVEMENT_OPS = frozenset({
     "transpose", "copy_", "concat", "split",
+    "permute",
 })
+
+
+# Index ops: gather/scatter — flat multi-thread kernels with f32→index cast.
+GPU_INDEX_OPS = frozenset({"gather", "scatter"})
 
 
 def emit_gpu_movement(graph: IRGraph, chip: str = "sm_86",
@@ -1552,7 +1647,12 @@ def emit_gpu_movement(graph: IRGraph, chip: str = "sm_86",
         raise NotImplementedError(f"emit_gpu_movement: {op} unsupported")
     in_names = list(node.inputs.values())
     in_vals = [graph.values[n] for n in in_names]
-    if any(len(v.shape) != 2 for v in in_vals):
+    if op == "permute":
+        # permute allows 3D
+        if any(len(v.shape) not in (2, 3) for v in in_vals):
+            raise NotImplementedError(
+                f"emit_gpu_movement: permute needs 2D/3D, got {[v.shape for v in in_vals]}")
+    elif any(len(v.shape) != 2 for v in in_vals):
         raise NotImplementedError(f"emit_gpu_movement: 2D only, got {[v.shape for v in in_vals]}")
     if any(v.dtype != "float32" for v in in_vals):
         raise NotImplementedError("emit_gpu_movement: f32 only")
@@ -1613,6 +1713,45 @@ def emit_gpu_movement(graph: IRGraph, chip: str = "sm_86",
         grid = (M, Da + Db, 1)
         arg_names = [in_names[0], in_names[1]]
         arg_shapes = [[M, Da], [M, Db]]
+    elif op == "permute":
+        # permute(0,2,1): 3D transpose [B,M,N] -> [B,N,M].
+        # Our GPU path uses 2D grid. Reshape logically: collapse B into grid.
+        sh = in_vals[0].shape
+        if len(sh) == 3:
+            B, M, N = sh
+            out_shape = [B, N, M]
+            xt = memref_type([B, M, N], "float32")
+            ot = memref_type(out_shape, "float32")
+            # grid = (B*N, M, 1); block = (1,1,1)
+            # bid_x maps to (b, n_out): b = bid_x / N, n_out = bid_x % N
+            # bid_y maps to m_out
+            # O[b, n_out, m_out] = X[b, m_out, n_out]
+            ap("module attributes {gpu.container_module} {")
+            ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+            ap(f"    gpu.func @{kernel}(%X: {xt}, %O: {ot}) kernel {{")
+            ap("      %bidx = gpu.block_id x")
+            ap("      %bidy = gpu.block_id y")
+            ap(f"      %cN = arith.constant {N} : index")
+            ap("      %b = arith.divui %bidx, %cN : index")
+            ap("      %n = arith.remui %bidx, %cN : index")
+            # O[b, n, bidy] = X[b, bidy, n]
+            ap(f"      %v = memref.load %X[%b, %bidy, %n] : {xt}")
+            ap(f"      memref.store %v, %O[%b, %n, %bidy] : {ot}")
+            grid = (B * N, M, 1)
+            arg_names = [in_names[0]]
+            arg_shapes = [[B, M, N]]
+        else:
+            # 2D permute = transpose (already handled)
+            M, N = sh
+            out_shape = [N, M]
+            xt = memref_type([M, N], "float32")
+            ot = memref_type(out_shape, "float32")
+            head(f"%X: {xt}, %O: {ot}", out_shape)
+            ap(f"      %v = memref.load %X[%j, %i] : {xt}")
+            ap(f"      memref.store %v, %O[%i, %j] : {ot}")
+            grid = (N, M, 1)
+            arg_names = [in_names[0]]
+            arg_shapes = [[M, N]]
     else:  # unreachable: op validated against GPU_MOVEMENT_OPS above
         raise NotImplementedError(f"emit_gpu_movement: {op} not wired")
 
@@ -1756,4 +1895,134 @@ def emit_gpu_gated(graph: IRGraph, chip: str = "sm_86",
         grid=(ngrid, 1, 1),
         block=(block, 1, 1),
         buffer_order=arg_names + [out_name],
+    )
+
+
+def emit_gpu_index(graph: IRGraph, chip: str = "sm_86",
+                   block: int = 256) -> EmittedGPUKernel:
+    """Emit a flat multi-thread gpu.module for gather/scatter (index ops).
+
+    gather(src[M,N], idx[M,K]) -> out[M,K]:
+        out[i,j] = src[i, int(idx[i,j])]
+    scatter(base[M,N], idx[M,K], src[M,K]) -> out[M,N]:
+        out = zeros_like(base); out[i, int(idx[i,j])] = src[i,j]
+    Index tensors are f32 → fptosi → index_cast. f32, 2D.
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_index: single-node graphs only")
+    node = graph.nodes[0]
+    op = node.op
+    if op not in GPU_INDEX_OPS:
+        raise NotImplementedError(f"emit_gpu_index: {op} unsupported")
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    if any(v.dtype != "float32" for v in in_vals):
+        raise NotImplementedError("emit_gpu_index: f32 only")
+    out_name = node.outputs[0]
+    kernel = graph.name or op
+
+    L = []
+    ap = L.append
+
+    if op == "gather":
+        # gather: src[M,N], idx[M,K] -> out[M,K]
+        src_shape = list(in_vals[0].shape)
+        idx_shape = list(in_vals[1].shape)
+        M, K = idx_shape
+        out_shape = [M, K]
+        total = M * K
+        ngrid = (total + block - 1) // block
+        src_ty = memref_type(src_shape, "float32")
+        idx_ty = memref_type(idx_shape, "float32")
+        out_ty = memref_type(out_shape, "float32")
+        ap("module attributes {gpu.container_module} {")
+        ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+        ap(f"    gpu.func @{kernel}(%SRC: {src_ty}, %IDX: {idx_ty}, "
+           f"%O: {out_ty}) kernel {{")
+        ap("      %bid = gpu.block_id x")
+        ap("      %tid = gpu.thread_id x")
+        ap(f"      %cBLK = arith.constant {block} : index")
+        ap(f"      %cTOT = arith.constant {total} : index")
+        ap(f"      %cK = arith.constant {K} : index")
+        ap("      %gid = arith.muli %bid, %cBLK : index")
+        ap("      %gid2 = arith.addi %gid, %tid : index")
+        ap("      %inb = arith.cmpi ult, %gid2, %cTOT : index")
+        ap("      scf.if %inb {")
+        ap("        %i = arith.divui %gid2, %cK : index")
+        ap("        %j = arith.remui %gid2, %cK : index")
+        ap(f"        %fi = memref.load %IDX[%i, %j] : {idx_ty}")
+        ap("        %ii = arith.fptosi %fi : f32 to i64")
+        ap("        %col = arith.index_cast %ii : i64 to index")
+        ap(f"        %v = memref.load %SRC[%i, %col] : {src_ty}")
+        ap(f"        memref.store %v, %O[%i, %j] : {out_ty}")
+        ap("      }")
+        ap("      gpu.return")
+        ap("    }")
+        ap("  }")
+        ap("}")
+        arg_names_list = [in_names[0], in_names[1]]
+        arg_shapes = [src_shape, idx_shape]
+    elif op == "scatter":
+        # scatter: base[M,N], idx[M,K], src[M,K] -> out[M,N]
+        # Two-pass: first zero-fill, then scatter.
+        base_shape = list(in_vals[0].shape)
+        idx_shape = list(in_vals[1].shape)
+        src_shape = list(in_vals[2].shape)
+        M, N = base_shape
+        _, K = idx_shape
+        out_shape = [M, N]
+        total = M * K
+        ngrid = (total + block - 1) // block
+        # For zero-fill, need total_out elements
+        total_out = M * N
+        ngrid_fill = (total_out + block - 1) // block
+        base_ty = memref_type(base_shape, "float32")
+        idx_ty = memref_type(idx_shape, "float32")
+        src_ty = memref_type(src_shape, "float32")
+        out_ty = memref_type(out_shape, "float32")
+        # We'll zero-fill from the host side (simpler). The scatter kernel
+        # just writes. Host zeroes the output buffer before launch.
+        ap("module attributes {gpu.container_module} {")
+        ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+        ap(f"    gpu.func @{kernel}(%BASE: {base_ty}, %IDX: {idx_ty}, "
+           f"%SRC: {src_ty}, %O: {out_ty}) kernel {{")
+        ap("      %bid = gpu.block_id x")
+        ap("      %tid = gpu.thread_id x")
+        ap(f"      %cBLK = arith.constant {block} : index")
+        ap(f"      %cTOT = arith.constant {total} : index")
+        ap(f"      %cK = arith.constant {K} : index")
+        ap("      %gid = arith.muli %bid, %cBLK : index")
+        ap("      %gid2 = arith.addi %gid, %tid : index")
+        ap("      %inb = arith.cmpi ult, %gid2, %cTOT : index")
+        ap("      scf.if %inb {")
+        ap("        %i = arith.divui %gid2, %cK : index")
+        ap("        %j = arith.remui %gid2, %cK : index")
+        ap(f"        %fi = memref.load %IDX[%i, %j] : {idx_ty}")
+        ap("        %ii = arith.fptosi %fi : f32 to i64")
+        ap("        %col = arith.index_cast %ii : i64 to index")
+        ap(f"        %v = memref.load %SRC[%i, %j] : {src_ty}")
+        ap(f"        memref.store %v, %O[%i, %col] : {out_ty}")
+        ap("      }")
+        ap("      gpu.return")
+        ap("    }")
+        ap("  }")
+        ap("}")
+        arg_names_list = [in_names[0], in_names[1], in_names[2]]
+        arg_shapes = [base_shape, idx_shape, src_shape]
+    else:
+        raise NotImplementedError(f"emit_gpu_index: {op} not wired")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=arg_names_list,
+        arg_shapes=arg_shapes,
+        arg_dtypes=["float32" for _ in arg_names_list],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(ngrid, 1, 1),
+        block=(block, 1, 1),
+        buffer_order=arg_names_list + [out_name],
     )

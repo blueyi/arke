@@ -459,19 +459,20 @@ class MLIRGPUBackend:
     def supports_op(self, op_name: str) -> bool:
         from arke.backend.mlir_emitter import (
             GPU_ELEMENTWISE_OPS, GPU_ROWWISE_OPS, GPU_MOVEMENT_OPS, GPU_GATED_OPS,
-            GPU_ROWWISE2_OPS,
+            GPU_ROWWISE2_OPS, GPU_INDEX_OPS,
         )
         return (op_name == "matmul" or op_name in GPU_ELEMENTWISE_OPS
                 or op_name in GPU_ROWWISE_OPS or op_name in GPU_MOVEMENT_OPS
-                or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS)
+                or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS
+                or op_name in GPU_INDEX_OPS)
 
     def lower(self, graph: Any) -> Any:
         from arke.backend.mlir_emitter import (
             emit_gpu_matmul, emit_gpu_matmul_tiled, emit_gpu_matmul_regblock,
             emit_gpu_elementwise, emit_gpu_rowwise, emit_gpu_movement, emit_gpu_gated,
-            emit_gpu_rowwise2,
+            emit_gpu_rowwise2, emit_gpu_index,
             GPU_ELEMENTWISE_OPS, GPU_ROWWISE_OPS, GPU_MOVEMENT_OPS, GPU_GATED_OPS,
-            GPU_ROWWISE2_OPS,
+            GPU_ROWWISE2_OPS, GPU_INDEX_OPS,
         )
         from arke.backend.protocol import BackendArtifact
         op = graph.nodes[0].op if graph.nodes else ""
@@ -486,6 +487,8 @@ class MLIRGPUBackend:
             emitted = emit_gpu_movement(graph, chip=self.chip)
         elif op in GPU_GATED_OPS:
             emitted = emit_gpu_gated(graph, chip=self.chip)
+        elif op in GPU_INDEX_OPS:
+            emitted = emit_gpu_index(graph, chip=self.chip)
         elif op == "matmul":
             # Perf ladder: register-blocked (best) → shared-mem tiled →
             # correctness kernel, falling back on shape-alignment constraints.
@@ -609,7 +612,12 @@ class MLIRGPUBackend:
             out_buf: GPUBuffer | None = None
             for name in emitted.buffer_order:
                 if name == emitted.result_name:
-                    out_buf = cu.alloc_output(tuple(emitted.result_shape))
+                    # scatter needs zero-filled output; other ops use uninitialized
+                    if getattr(emitted, 'kernel_name', '') == 'scatter':
+                        zeros = np.zeros(emitted.result_shape, dtype=np.float32)
+                        out_buf = cu.to_device(zeros)
+                    else:
+                        out_buf = cu.alloc_output(tuple(emitted.result_shape))
                     bufs.append(out_buf)
                 else:
                     bufs.append(cu.to_device(np_inputs[name]))
