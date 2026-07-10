@@ -461,7 +461,8 @@ class MLIRGPUBackend:
             GPU_ELEMENTWISE_OPS, GPU_ROWWISE_OPS, GPU_MOVEMENT_OPS, GPU_GATED_OPS,
             GPU_ROWWISE2_OPS, GPU_INDEX_OPS,
         )
-        return (op_name == "matmul" or op_name in GPU_ELEMENTWISE_OPS
+        return (op_name == "matmul" or op_name == "batch_matmul"
+                or op_name in GPU_ELEMENTWISE_OPS
                 or op_name in GPU_ROWWISE_OPS or op_name in GPU_MOVEMENT_OPS
                 or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS
                 or op_name in GPU_INDEX_OPS)
@@ -489,6 +490,9 @@ class MLIRGPUBackend:
             emitted = emit_gpu_gated(graph, chip=self.chip)
         elif op in GPU_INDEX_OPS:
             emitted = emit_gpu_index(graph, chip=self.chip)
+        elif op == "batch_matmul":
+            from arke.backend.mlir_emitter import emit_gpu_batch_matmul
+            emitted = emit_gpu_batch_matmul(graph, chip=self.chip)
         elif op == "matmul":
             # Perf ladder: register-blocked (best) → shared-mem tiled →
             # correctness kernel, falling back on shape-alignment constraints.

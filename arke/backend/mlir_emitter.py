@@ -2026,3 +2026,90 @@ def emit_gpu_index(graph: IRGraph, chip: str = "sm_86",
         block=(block, 1, 1),
         buffer_order=arg_names_list + [out_name],
     )
+
+
+def emit_gpu_batch_matmul(graph: IRGraph, chip: str = "sm_86",
+                          block: int = 256) -> EmittedGPUKernel:
+    """Emit a GPU kernel for batch_matmul: C[b,i,j] = sum(A[b,i,k] * B[b,k,j], k).
+
+    flat multi-thread kernel: each thread computes one output element.
+    grid = ceil(B*M*N / block), block = (256,1,1).
+    gid → (b, i, j) via integer arithmetic.
+    f32, 3D inputs [B,M,K] × [B,K,N] → [B,M,N].
+    """
+    if len(graph.nodes) != 1:
+        raise NotImplementedError("emit_gpu_batch_matmul: single-node only")
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    in_vals = [graph.values[n] for n in in_names]
+    A_shape = list(in_vals[0].shape)
+    B_shape = list(in_vals[1].shape)
+    if len(A_shape) != 3 or len(B_shape) != 3:
+        raise NotImplementedError("emit_gpu_batch_matmul: 3D only")
+    BS, M, K = A_shape
+    BS2, K2, N = B_shape
+    assert BS == BS2 and K == K2
+    out_shape = [BS, M, N]
+    total = BS * M * N
+    ngrid = (total + block - 1) // block
+    out_name = node.outputs[0]
+    kernel = graph.name or "batch_matmul"
+
+    At = memref_type(A_shape, "float32")
+    Bt = memref_type(B_shape, "float32")
+    Ct = memref_type(out_shape, "float32")
+
+    L = []
+    ap = L.append
+    ap("module attributes {gpu.container_module} {")
+    ap(f'  gpu.module @{kernel}_mod [#nvvm.target<chip = "{chip}">] {{')
+    ap(f"    gpu.func @{kernel}(%A: {At}, %B: {Bt}, %C: {Ct}) kernel {{")
+    ap("      %bid = gpu.block_id x")
+    ap("      %tid = gpu.thread_id x")
+    ap(f"      %cBLK = arith.constant {block} : index")
+    ap(f"      %cTOT = arith.constant {total} : index")
+    ap(f"      %cMN = arith.constant {M * N} : index")
+    ap(f"      %cN = arith.constant {N} : index")
+    ap(f"      %cK = arith.constant {K} : index")
+    ap("      %c0 = arith.constant 0 : index")
+    ap("      %c1 = arith.constant 1 : index")
+    ap("      %zero = arith.constant 0.0 : f32")
+    ap("      %gid = arith.muli %bid, %cBLK : index")
+    ap("      %gid2 = arith.addi %gid, %tid : index")
+    ap("      %inb = arith.cmpi ult, %gid2, %cTOT : index")
+    ap("      scf.if %inb {")
+    # gid2 → (b, i, j)
+    ap("        %b = arith.divui %gid2, %cMN : index")
+    ap("        %rem = arith.remui %gid2, %cMN : index")
+    ap("        %i = arith.divui %rem, %cN : index")
+    ap("        %j = arith.remui %rem, %cN : index")
+    # dot product: sum over k
+    ap("        %dot = scf.for %k = %c0 to %cK step %c1"
+       " iter_args(%acc = %zero) -> f32 {")
+    ap(f"          %a = memref.load %A[%b, %i, %k] : {At}")
+    ap(f"          %bv = memref.load %B[%b, %k, %j] : {Bt}")
+    ap("          %prod = arith.mulf %a, %bv fastmath<contract> : f32")
+    ap("          %nacc = arith.addf %acc, %prod fastmath<contract> : f32")
+    ap("          scf.yield %nacc : f32")
+    ap("        }")
+    ap(f"        memref.store %dot, %C[%b, %i, %j] : {Ct}")
+    ap("      }")
+    ap("      gpu.return")
+    ap("    }")
+    ap("  }")
+    ap("}")
+
+    text = "\n".join(L)
+    return EmittedGPUKernel(
+        mlir_text=text,
+        kernel_name=kernel,
+        arg_names=[in_names[0], in_names[1]],
+        arg_shapes=[A_shape, B_shape],
+        arg_dtypes=["float32", "float32"],
+        result_name=out_name,
+        result_shape=out_shape,
+        result_dtype="float32",
+        grid=(ngrid, 1, 1),
+        block=(block, 1, 1),
+        buffer_order=[in_names[0], in_names[1], out_name],
+    )
