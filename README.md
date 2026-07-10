@@ -173,6 +173,7 @@ Other setup profiles:
 ```bash
 make setup-cpu
 make setup-gpu
+make setup-mlir    # Phase 3 MLIR-GPU development
 make setup-bench
 ```
 

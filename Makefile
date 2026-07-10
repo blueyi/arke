@@ -1,4 +1,4 @@
-.PHONY: help setup setup-cpu setup-gpu setup-bench git-setup-defaults install dev test test-gpu lint format check bench clean
+.PHONY: help setup setup-cpu setup-gpu setup-mlir setup-bench git-setup-defaults install dev test test-gpu lint format check bench clean
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
@@ -15,6 +15,9 @@ setup-cpu:  ## Create a fresh CPU/dev environment in $(VENV)
 
 setup-gpu:  ## Create a fresh GPU/dev environment in $(VENV)
 	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh gpu-dev
+
+setup-mlir:  ## Create a fresh MLIR-GPU/Phase 3 environment in $(VENV)
+	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh mlir-gpu
 
 setup-bench:  ## Create a fresh benchmark environment in $(VENV)
 	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh bench

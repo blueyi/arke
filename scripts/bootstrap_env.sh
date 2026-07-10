@@ -8,12 +8,13 @@ PROFILE="${1:-gpu-dev}"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/bootstrap_env.sh [cpu-dev|gpu-dev|bench]
+Usage: scripts/bootstrap_env.sh [cpu-dev|gpu-dev|mlir-gpu|bench]
 
 Profiles:
-  cpu-dev  Create a fresh venv and install editable Arke + dev deps
-  gpu-dev  Create a fresh venv and install editable Arke + dev + GPU deps
-  bench    Create a fresh venv and install editable Arke + benchmark stack
+  cpu-dev   Create a fresh venv and install editable Arke + dev deps
+  gpu-dev   Create a fresh venv and install editable Arke + dev + GPU deps
+  mlir-gpu  Create a fresh venv and install editable Arke + dev + GPU + MLIR deps (Phase 3)
+  bench     Create a fresh venv and install editable Arke + benchmark stack
 
 Environment variables:
   ARKE_VENV    Override venv path (default: ./.venv)
@@ -32,7 +33,7 @@ if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
 fi
 
 case "$PROFILE" in
-  cpu-dev|gpu-dev|bench) ;;
+  cpu-dev|gpu-dev|mlir-gpu|bench) ;;
   *)
     echo "error: unknown profile: $PROFILE" >&2
     usage
@@ -55,6 +56,21 @@ case "$PROFILE" in
     ;;
   gpu-dev)
     "$VENV_DIR/bin/pip" install -e ".[dev,gpu]"
+    ;;
+  mlir-gpu)
+    "$VENV_DIR/bin/pip" install -e ".[dev,gpu,mlir-gpu]"
+    # Install MLIR 20 toolchain (user-local, no root required)
+    echo "==> Checking MLIR 20 toolchain"
+    if command -v mlir-opt >/dev/null 2>&1; then
+      echo "    mlir-opt found: $(which mlir-opt)"
+    elif [[ -f "$HOME/opt/mlir20/env.sh" ]]; then
+      echo "    MLIR 20 installed at ~/opt/mlir20 — source ~/opt/mlir20/env.sh to use"
+    else
+      echo "    MLIR 20 not found."
+      echo "    Install via: dpkg-deb -x mlir-20-tools.deb ~/opt/mlir20"
+      echo "    Then add source ~/opt/mlir20/env.sh to your shell profile."
+      echo "    See docs/architecture/python-environment-setup.md for details."
+    fi
     ;;
   bench)
     "$VENV_DIR/bin/pip" install -e ".[dev,gpu]"
@@ -92,6 +108,25 @@ try:
         print(f"GPU: {torch.cuda.get_device_name(0)}")
 except Exception as e:
     print(f"Torch verification skipped/failed: {e}")
+PY
+fi
+
+if [[ "$PROFILE" == "mlir-gpu" ]]; then
+  "$VENV_DIR/bin/python" - <<'PY'
+try:
+    import cuda.cuda
+    print("cuda-python: OK")
+except Exception as e:
+    print(f"cuda-python verification failed: {e}")
+try:
+    import subprocess
+    r = subprocess.run(["mlir-opt", "--version"], capture_output=True, text=True)
+    if r.returncode == 0:
+        print(f"mlir-opt: {r.stdout.strip()}")
+    else:
+        print("mlir-opt: NOT FOUND in PATH (source ~/opt/mlir20/env.sh first)")
+except FileNotFoundError:
+    print("mlir-opt: NOT FOUND in PATH (source ~/opt/mlir20/env.sh first)")
 PY
 fi
 
