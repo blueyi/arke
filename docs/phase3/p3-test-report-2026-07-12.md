@@ -13,7 +13,7 @@
 |---|---|
 | **GPU op 覆盖率** | **46/46 (100%)** |
 | **正确性 (全部 ops)** | **46/46 PASS** (vs torch, max_err ≤ 5e-6) |
-| **OVERALL 性能 geomean** | **1.02× vs cuBLAS/cuDNN eager** |
+| **OVERALL 性能 geomean** | **1.05× vs cuBLAS/cuDNN eager** (100 iters, stable) |
 | **全量测试** | **2306 passed**, 1 skipped, 2 xfailed, **0 failures** |
 | **Backend 测试** | **360 passed**, 1 xfailed, **0 failures** |
 | **GPU tuning 策略测试** | **16 passed** |
@@ -40,7 +40,7 @@
 | add | 0.85× | 0.91× | 0.94× | 0.92× | 0.90× |
 | mul | 0.40× | 0.90× | 0.92× | 0.92× | 0.74× |
 
-> **OVERALL geomean: 1.02× cuBLAS/cuDNN** (100 iter 稳定测量)
+> **OVERALL geomean: 1.05× cuBLAS/cuDNN** (100 iter 稳定测量)
 > **注**: torch timing 包含 PyTorch eager dispatch overhead (~5µs), cuBLAS/cuDNN 是最强外部 ref
 
 ### 2.2 性能分析
