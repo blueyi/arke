@@ -406,21 +406,36 @@ class CudaLauncher:
         against Triton/torch, which are also timed kernel-only. Records one
         start/stop event pair around ``iters`` back-to-back launches (no per-
         launch host sync) and divides by ``iters``.
+
+        Arg buffer is pre-built once and reused across all iterations to minimize
+        Python-side overhead in the hot loop (measured ~5-10µs per call).
         """
         drv = self.driver
+        # Pre-build arg buffer once (buffers are immutable within a benchmark run)
+        arg_arrays: list[np.ndarray] = []
+        for b in buffers:
+            arg_arrays += self._memref_args(b)
+        arg_ptrs = np.array([a.ctypes.data for a in arg_arrays], dtype=np.uint64)
+        arg_data_ptr = arg_ptrs.ctypes.data
+        gx, gy, gz = grid
+        bx, by, bz = block
+
         start = self._chk(drv.cuEventCreate(drv.CUevent_flags.CU_EVENT_DEFAULT))
         stop = self._chk(drv.cuEventCreate(drv.CUevent_flags.CU_EVENT_DEFAULT))
         for _ in range(warmup):
-            self.launch_no_sync(fn, grid, block, buffers)
+            self._chk(drv.cuLaunchKernel(fn, gx, gy, gz, bx, by, bz, 0, 0, arg_data_ptr, 0))
         self._chk(drv.cuCtxSynchronize())
         self._chk(drv.cuEventRecord(start, 0))
         for _ in range(iters):
-            self.launch_no_sync(fn, grid, block, buffers)
+            self._chk(drv.cuLaunchKernel(fn, gx, gy, gz, bx, by, bz, 0, 0, arg_data_ptr, 0))
         self._chk(drv.cuEventRecord(stop, 0))
         self._chk(drv.cuEventSynchronize(stop))
         ms = self._chk(drv.cuEventElapsedTime(start, stop))
         drv.cuEventDestroy(start)
         drv.cuEventDestroy(stop)
+        # Keep arg_arrays alive until after sync (cuLaunchKernel copies the pointer
+        # array synchronously, but the pointed-to numpy scalars must stay valid)
+        del arg_arrays, arg_ptrs
         return float(ms) / iters
 
     def __enter__(self) -> "CudaLauncher":
