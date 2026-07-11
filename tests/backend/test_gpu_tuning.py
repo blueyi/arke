@@ -70,9 +70,15 @@ class TestMMAConfig:
         cfg = matmul_mma_config(300, 300, 300)
         assert cfg is None
 
+    def test_small_shape_returns_none(self):
+        # 256×256 is tileable but too small for MMA to be beneficial
+        cfg = matmul_mma_config(256, 256, 256)
+        assert cfg is None
+
     def test_boundary_shapes(self):
-        assert matmul_mma_config(64, 128, 16) is not None
-        assert matmul_mma_config(63, 128, 16) is None
+        # 512×512 passes the minimum output-elements threshold (262144)
+        assert matmul_mma_config(512, 512, 512) is not None
+        assert matmul_mma_config(64, 128, 16) is None  # too small (64*128 = 8192 < 262144)
 
 
 class TestKernelFamilySelection:

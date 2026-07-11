@@ -615,20 +615,25 @@ class MLIRGPUBackend:
             # cuBLAS tf32 (the Golden baseline) — both are reduced-precision TC
             # paths with ~1e-2 tolerance vs strict-f32; allclose(mlir_tc,
             # cublas_tf32, rtol=1e-2) = True (verified 2026-07-07).
+            # Policy gate: skip MMA for small shapes where scalar regblock wins
+            # (f16 conversion + shmem staging overhead > TC throughput benefit).
             # Falls through to the scalar FP32 ladder on shapes that don't
             # MMA-tile (or when the emitter raises NotImplementedError).
+            from arke.backend.gpu_tuning import matmul_mma_config
             from arke.backend.mlir_emitter import emit_gpu_matmul_mma
-            try:
-                emitted = emit_gpu_matmul_mma(graph, chip=self.chip)
-                is_mma = True
-                return BackendArtifact(
-                    source_code=emitted.mlir_text,
-                    backend_name=self.name,
-                    op_name=op,
-                    metadata={"emitted": emitted, "is_mma": True},
-                )
-            except NotImplementedError:
-                pass
+            mma_cfg = matmul_mma_config(M_dim, N_dim, K_dim)
+            if mma_cfg is not None:
+                try:
+                    emitted = emit_gpu_matmul_mma(graph, chip=self.chip)
+                    is_mma = True
+                    return BackendArtifact(
+                        source_code=emitted.mlir_text,
+                        backend_name=self.name,
+                        op_name=op,
+                        metadata={"emitted": emitted, "is_mma": True},
+                    )
+                except NotImplementedError:
+                    pass
             for emit in (emit_gpu_matmul_regblock, emit_gpu_matmul_tiled):
                 try:
                     kw = {"chip": self.chip}

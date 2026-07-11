@@ -116,10 +116,9 @@ def test_mma_lowers_to_cubin():
 # ── correctness on the CUDA driver (vs fp16-precision reference) ─
 
 @pytest.mark.parametrize("M,K,N", [
-    (128, 128, 128),
-    (256, 256, 256),
     (512, 512, 512),
-    (128, 256, 384),   # rectangular, MMA-tileable
+    (1024, 1024, 1024),
+    (512, 256, 512),   # rectangular, MMA-tileable, M*N >= 262144
 ])
 def test_mma_correct_vs_fp16_ref(M, K, N):
     be = MLIRGPUBackend(use_tensor_core=True)
@@ -141,12 +140,10 @@ def test_mma_correct_vs_fp16_ref(M, K, N):
 # ── backend routing: opt-in + shape-gated fallback ─────────────
 
 def test_backend_routes_mma_by_default_for_tileable():
-    BM = GPU_MMA_WM * GPU_MMA_WTM * 16
-    BN = GPU_MMA_WN * GPU_MMA_WTN * 16
-    # Default backend: tensor-core for MMA-tileable shapes (precision matches
-    # cuBLAS tf32 Golden baseline, verified allclose rtol=1e-2).
+    # Default backend: tensor-core for MMA-tileable shapes that are large enough
+    # (policy threshold: M*N >= 512*512 = 262144 output elements).
     be_default = MLIRGPUBackend()
-    art_d = be_default.lower(_mm(BM, GPU_MMA_BK, BN))
+    art_d = be_default.lower(_mm(512, 512, 512))
     assert art_d.metadata.get("is_mma")
     assert "vector.contract" in art_d.source_code
 
@@ -165,6 +162,19 @@ def test_backend_falls_back_for_small_shape():
     B = rng.standard_normal((32, 32)).astype(np.float32)
     out = be.run(be.compile(art), {"A": A, "B": B})["C"]
     np.testing.assert_allclose(out, A @ B, rtol=1e-3, atol=1e-2)
+
+
+def test_backend_falls_back_for_tileable_but_small():
+    """256×256 is MMA-tileable but below the policy threshold (M*N < 262144)."""
+    be = MLIRGPUBackend()
+    art = be.lower(_mm(256, 256, 256))
+    assert not art.metadata.get("is_mma"), "256×256 should use regblock, not MMA"
+    # Correctness: scalar regblock is bit-accurate f32
+    rng = np.random.default_rng(2)
+    A = rng.standard_normal((256, 256)).astype(np.float32)
+    B = rng.standard_normal((256, 256)).astype(np.float32)
+    out = be.run(be.compile(art), {"A": A, "B": B})["C"]
+    np.testing.assert_allclose(out, A @ B, rtol=1e-4, atol=1e-4)
 
 
 def test_mma_matches_torch_fp16_cuda():

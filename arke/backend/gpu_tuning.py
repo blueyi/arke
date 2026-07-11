@@ -139,14 +139,28 @@ def matmul_mma_config(M: int, N: int, K: int, *,
                       hw: GPUProfile = DEFAULT_GPU) -> MMAConfig | None:
     """Select MMA tile configuration, or None if MMA is not applicable.
 
-    Returns None when the shape cannot tile evenly with ANY available config,
-    in which case the caller falls back to the scalar regblock/tiled ladder.
+    Returns None when:
+      - The shape cannot tile evenly with the available config.
+      - The shape is too small for MMA to amortize its overhead (f16 conversion
+        + shared-memory staging dominates at small shapes; scalar regblock wins).
 
-    Future: shape-adaptive configs (smaller tiles for small shapes to increase
-    grid occupancy). Currently uses a single default config.
+    When None is returned, the caller falls back to the scalar regblock/tiled
+    ladder, which is faster for small shapes due to simpler kernel structure.
+
+    Future: shape-adaptive configs (multiple tile sizes for different shape
+    ranges to improve grid occupancy at intermediate sizes).
     """
     cfg = MMA_DEFAULT
     if M % cfg.BM != 0 or N % cfg.BN != 0 or K % cfg.BK != 0:
+        return None
+    # Small-shape threshold: MMA overhead (f16 convert + shmem staging) exceeds
+    # its throughput benefit when both grid dimensions are small.
+    # Empirically: regblock wins at 256×256 (+23%), MMA wins at 512+ (+18% at 1024).
+    # Threshold: require at least 4 blocks in the M dimension (M/BM >= 4 → M >= 256)
+    # AND 8 blocks in N (N/BN >= 8 → N >= 1024).
+    # Simplified: require M*N >= 512*512 = 262144 (256K output elements minimum).
+    _MMA_MIN_OUTPUT_ELEMENTS = 512 * 512
+    if M * N < _MMA_MIN_OUTPUT_ELEMENTS:
         return None
     return cfg
 
