@@ -1200,8 +1200,14 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
                      block: int = _RW_BLOCK) -> EmittedGPUKernel:
     """Emit a parallel-reduce row-per-block gpu.module for row-wise ops.
 
-    block=(256,1,1), grid=(rows,1,1). 256 threads cooperate per row via
-    shared-memory tree-reduce. Transcendentals via libdevice. f32, 2D.
+    block=(256,1,1) or (512,1,1), grid=(rows,1,1). Threads cooperate per row
+    via shared-memory tree-reduce. Transcendentals via libdevice. f32, 2D.
+
+    Adaptive block size: when called with the default block=256 AND the row
+    dimension D >= 2048, automatically uses block=512 (more threads per row
+    → fewer elements per thread → better latency on large rows where the extra
+    tree-reduce step is amortized). The caller can override by passing an
+    explicit block size.
     """
     if len(graph.nodes) != 1:
         raise NotImplementedError("emit_gpu_rowwise: single-node graphs only")
@@ -1217,6 +1223,11 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
     if any(v.dtype != "float32" for v in in_vals):
         raise NotImplementedError("emit_gpu_rowwise: f32 only")
     rows, D = shape
+    # Adaptive block size: 512 threads for very wide rows (amortizes the extra
+    # tree-reduce level), 256 for narrower rows (avoids under-utilization).
+    # Threshold empirically set: 512 wins at D>=4096, loses at D<=1024.
+    if block == _RW_BLOCK and D >= 4096:
+        block = 512
     is_reduce = op in ("reduce_sum", "reduce_max", "reduce_mean", "argmax")
     out_shape = [rows] if is_reduce else [rows, D]
     inty = memref_type(shape, "float32")
@@ -1246,7 +1257,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      }")
         ap(f"      memref.store %local, %sh[%tid] : {sty}")
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "sum")
+        _rw_tree_reduce(ap, sty, "sum", BLOCK=block)
         ap("      %is0 = arith.cmpi eq, %tid, %c0 : index")
         ap("      scf.if %is0 {")
         ap(f"        %r = memref.load %sh[%c0] : {sty}")
@@ -1266,7 +1277,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      }")
         ap(f"      memref.store %local, %sh[%tid] : {sty}")
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "max")
+        _rw_tree_reduce(ap, sty, "max", BLOCK=block)
         ap("      %is0 = arith.cmpi eq, %tid, %c0 : index")
         ap("      scf.if %is0 {")
         ap(f"        %r = memref.load %sh[%c0] : {sty}")
@@ -1296,7 +1307,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      }")
         ap(f"      memref.store %os#0, %sh[%tid] : {sty}")  # store local max
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "smax")
+        _rw_tree_reduce(ap, sty, "smax", BLOCK=block)
         ap(f"      %mx = memref.load %sh[%c0] : {sty}")     # global max
         ap("      gpu.barrier")
         # Correct local sum: local_sum * exp(local_max - global_max)
@@ -1305,7 +1316,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      %csum = arith.mulf %os#1, %emc fastmath<contract> : f32")
         ap(f"      memref.store %csum, %sh[%tid] : {sty}")
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "ssum")
+        _rw_tree_reduce(ap, sty, "ssum", BLOCK=block)
         ap(f"      %den = memref.load %sh[%c0] : {sty}")
         ap("      gpu.barrier")
         # Precompute reciprocal (1/sum) — single div, then N muls vs N divs
@@ -1329,7 +1340,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      }")
         ap(f"      memref.store %lsum, %sh[%tid] : {sty}")
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "lnm")
+        _rw_tree_reduce(ap, sty, "lnm", BLOCK=block)
         ap(f"      %sumv = memref.load %sh[%c0] : {sty}")
         ap("      %mean = arith.divf %sumv, %Df : f32")
         ap("      gpu.barrier")
@@ -1342,7 +1353,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      }")
         ap(f"      memref.store %lvar, %sh[%tid] : {sty}")
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "lnv")
+        _rw_tree_reduce(ap, sty, "lnv", BLOCK=block)
         ap(f"      %varsum = memref.load %sh[%c0] : {sty}")
         ap("      %var = arith.divf %varsum, %Df : f32")
         ap("      %vare = arith.addf %var, %eps : f32")
@@ -1365,7 +1376,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      }")
         ap(f"      memref.store %lsq, %sh[%tid] : {sty}")
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "rms")
+        _rw_tree_reduce(ap, sty, "rms", BLOCK=block)
         ap(f"      %sqsum = memref.load %sh[%c0] : {sty}")
         ap("      %ms = arith.divf %sqsum, %Df : f32")
         ap("      %mse = arith.addf %ms, %eps : f32")
@@ -1431,7 +1442,7 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
         ap("      }")
         ap(f"      memref.store %lmax, %sh[%tid] : {sty}")
         ap("      gpu.barrier")
-        _rw_tree_reduce(ap, sty, "amax")
+        _rw_tree_reduce(ap, sty, "amax", BLOCK=block)
         ap("      %is0a = arith.cmpi eq, %tid, %c0 : index")
         ap("      scf.if %is0a {")
         ap(f"        %mx = memref.load %sh[%c0] : {sty}")
@@ -2162,7 +2173,7 @@ def emit_gpu_quantize_per_token(graph: IRGraph, chip: str = "sm_86",
     ap("      }")
     ap(f"      memref.store %lam, %sh[%tid] : {sty}")
     ap("      gpu.barrier")
-    _rw_tree_reduce(ap, sty, "qmax")
+    _rw_tree_reduce(ap, sty, "qmax", BLOCK=block)
     ap(f"      %amax = memref.load %sh[%c0] : {sty}")
     ap("      gpu.barrier")
     # scale = amax / 127, inv_scale = 127 / amax
@@ -2511,7 +2522,7 @@ def emit_gpu_cross_entropy(graph: IRGraph, chip: str = "sm_86",
     ap("      }")
     ap(f"      memref.store %lmax, %sh[%tid] : {sty}")
     ap("      gpu.barrier")
-    _rw_tree_reduce(ap, sty, "cemax")
+    _rw_tree_reduce(ap, sty, "cemax", BLOCK=block)
     ap(f"      %mx = memref.load %sh[%c0] : {sty}")
     ap("      gpu.barrier")
     # Pass 2: sum(exp(x - max))
@@ -2524,7 +2535,7 @@ def emit_gpu_cross_entropy(graph: IRGraph, chip: str = "sm_86",
     ap("      }")
     ap(f"      memref.store %lse, %sh[%tid] : {sty}")
     ap("      gpu.barrier")
-    _rw_tree_reduce(ap, sty, "cesum")
+    _rw_tree_reduce(ap, sty, "cesum", BLOCK=block)
     ap(f"      %sumv = memref.load %sh[%c0] : {sty}")
     ap("      gpu.barrier")
     # Thread 0: loss = max - logits[label] + log(sum)
@@ -2628,7 +2639,7 @@ def emit_gpu_fused_linear_cross_entropy(graph: "IRGraph", chip: str = "sm_86",
     # Reduce max
     ap(f"      memref.store %os#0, %sh[%tid] : {sty}")
     ap("      gpu.barrier")
-    _rw_tree_reduce(ap, sty, "flcemax")
+    _rw_tree_reduce(ap, sty, "flcemax", BLOCK=block)
     ap(f"      %mx = memref.load %sh[%c0] : {sty}")
     ap("      gpu.barrier")
     # Correct + reduce sum
@@ -2637,7 +2648,7 @@ def emit_gpu_fused_linear_cross_entropy(graph: "IRGraph", chip: str = "sm_86",
     ap("      %csum = arith.mulf %os#1, %emc fastmath<contract> : f32")
     ap(f"      memref.store %csum, %sh[%tid] : {sty}")
     ap("      gpu.barrier")
-    _rw_tree_reduce(ap, sty, "flcesum")
+    _rw_tree_reduce(ap, sty, "flcesum", BLOCK=block)
     ap(f"      %sumv = memref.load %sh[%c0] : {sty}")
     ap("      gpu.barrier")
     # Thread 0: label logit + loss
