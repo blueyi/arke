@@ -1200,15 +1200,15 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
                      block: int = _RW_BLOCK) -> EmittedGPUKernel:
     """Emit a parallel-reduce row-per-block gpu.module for row-wise ops.
 
-    block=(256,1,1) or (512,1,1), grid=(rows,1,1). Threads cooperate per row
-    via shared-memory tree-reduce. Transcendentals via libdevice. f32, 2D.
+    Threads cooperate per row via shared-memory tree-reduce (log2(block) levels).
+    Transcendentals via libdevice. f32, 2D.
 
-    Adaptive block size: when called with the default block=256 AND the row
-    dimension D >= 2048, automatically uses block=512 (more threads per row
-    → fewer elements per thread → better latency on large rows where the extra
-    tree-reduce step is amortized). The caller can override by passing an
-    explicit block size.
+    Block size is selected by the gpu_tuning policy (shape-adaptive): wider rows
+    get larger blocks to reduce per-thread work and improve latency. The caller
+    can override by passing an explicit block size.
     """
+    from arke.backend.gpu_tuning import rowwise_block_size
+
     if len(graph.nodes) != 1:
         raise NotImplementedError("emit_gpu_rowwise: single-node graphs only")
     node = graph.nodes[0]
@@ -1223,11 +1223,9 @@ def emit_gpu_rowwise(graph: IRGraph, chip: str = "sm_86",
     if any(v.dtype != "float32" for v in in_vals):
         raise NotImplementedError("emit_gpu_rowwise: f32 only")
     rows, D = shape
-    # Adaptive block size: 512 threads for very wide rows (amortizes the extra
-    # tree-reduce level), 256 for narrower rows (avoids under-utilization).
-    # Threshold empirically set: 512 wins at D>=4096, loses at D<=1024.
-    if block == _RW_BLOCK and D >= 4096:
-        block = 512
+    # Apply tuning policy when caller uses the default block size
+    if block == _RW_BLOCK:
+        block = rowwise_block_size(D)
     is_reduce = op in ("reduce_sum", "reduce_max", "reduce_mean", "argmax")
     out_shape = [rows] if is_reduce else [rows, D]
     inty = memref_type(shape, "float32")
