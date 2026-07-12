@@ -377,6 +377,22 @@ class CudaCBackend:
         cls._EMITTERS["reduce_sum"] = emit_cuda_c_reduce_sum
         cls._EMITTERS["reduce_max"] = emit_cuda_c_reduce_max
         cls._EMITTERS["reduce_mean"] = emit_cuda_c_reduce_mean
+        # Extra ops
+        from arke.backend.cuda_c_extra import (
+            emit_cuda_c_cast, emit_cuda_c_embedding, emit_cuda_c_batch_matmul,
+            emit_cuda_c_rmsnorm_residual, emit_cuda_c_concat, emit_cuda_c_split,
+            emit_cuda_c_permute,
+        )
+        cls._EMITTERS["cast"] = emit_cuda_c_cast
+        cls._EMITTERS["embedding"] = emit_cuda_c_embedding
+        cls._EMITTERS["batch_matmul"] = emit_cuda_c_batch_matmul
+        cls._EMITTERS["rmsnorm_residual"] = emit_cuda_c_rmsnorm_residual
+        cls._EMITTERS["concat"] = emit_cuda_c_concat
+        cls._EMITTERS["split"] = emit_cuda_c_split
+        cls._EMITTERS["permute"] = emit_cuda_c_permute
+        # Cross entropy uses the softmax emitter's shared-mem pattern
+        from arke.backend.cuda_c_rowwise import emit_cuda_c_cross_entropy
+        cls._EMITTERS["cross_entropy"] = emit_cuda_c_cross_entropy
 
     name = "cuda-c"
 

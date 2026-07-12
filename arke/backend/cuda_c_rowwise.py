@@ -436,3 +436,86 @@ ROWWISE_EMITTERS = {
     "reduce_max": emit_cuda_c_reduce_max,
     "reduce_mean": emit_cuda_c_reduce_mean,
 }
+
+
+def emit_cuda_c_cross_entropy(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
+    """Emit CUDA C for cross-entropy loss: -log(softmax(logits)[target]).
+
+    Input: logits [M, N], targets [M] (int indices). Output: loss [M, 1].
+    One block per row: softmax + log-pick.
+    """
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    logits_name = in_names[0]  # [M, N]
+    targets_name = in_names[1]  # [M]
+    out_name = node.outputs[0]
+
+    logits_val = graph.get_value(logits_name)
+    targets_val = graph.get_value(targets_name)
+    shape = list(logits_val.shape)
+    M, N = shape
+    dtype = logits_val.dtype or "float32"
+    c_type = _ir_dtype_to_c(dtype)
+    BLOCK = 256
+    kernel_name = f"arke_cross_entropy_{M}x{N}"
+
+    source = f"""\
+#include <cuda_runtime.h>
+#include <math.h>
+#define BLOCK_SIZE {BLOCK}
+extern "C"
+__global__ void {kernel_name}(
+    const {c_type}* __restrict__ logits,
+    const int* __restrict__ targets,
+    {c_type}* __restrict__ loss,
+    int M, int N)
+{{
+    __shared__ {c_type} shared[BLOCK_SIZE];
+    int row = blockIdx.x;
+    int tid = threadIdx.x;
+
+    // Step 1: find max (for numerical stability)
+    {c_type} mx = -1e30f;
+    for (int j = tid; j < N; j += BLOCK_SIZE) {{
+        {c_type} v = logits[row * N + j];
+        if (v > mx) mx = v;
+    }}
+    shared[tid] = mx;
+    __syncthreads();
+    for (int s = BLOCK_SIZE / 2; s > 0; s >>= 1) {{
+        if (tid < s && shared[tid + s] > shared[tid])
+            shared[tid] = shared[tid + s];
+        __syncthreads();
+    }}
+    mx = shared[0];
+
+    // Step 2: sum of exp(x - max)
+    {c_type} local_sum = ({c_type})0;
+    for (int j = tid; j < N; j += BLOCK_SIZE) {{
+        local_sum += expf(logits[row * N + j] - mx);
+    }}
+    shared[tid] = local_sum;
+    __syncthreads();
+    for (int s = BLOCK_SIZE / 2; s > 0; s >>= 1) {{
+        if (tid < s) shared[tid] += shared[tid + s];
+        __syncthreads();
+    }}
+    {c_type} log_sum_exp = logf(shared[0]) + mx;
+
+    // Step 3: loss = -(logits[target] - log_sum_exp)
+    if (tid == 0) {{
+        int target = targets[row];
+        loss[row] = -(logits[row * N + target] - log_sum_exp);
+    }}
+}}
+"""
+    return CudaCKernel(
+        kernel_name=kernel_name, source=source, op_name="cross_entropy",
+        param_names=[logits_name, targets_name, out_name],
+        output_name=out_name,
+        shapes={logits_name: [M, N], targets_name: [M], out_name: [M, 1]},
+        dtypes={logits_name: dtype, targets_name: "int32", out_name: dtype},
+        grid=(M, 1, 1), block=(BLOCK, 1, 1),
+        kernel_args=[("ptr", logits_name), ("ptr", targets_name), ("ptr", out_name),
+                     ("int", M), ("int", N)],
+    )
