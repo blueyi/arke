@@ -493,6 +493,18 @@ class CompileAndProfileTool(ArkeTool):
             except Exception as e:
                 validation_note = (validation_note or "") + f" | profiling skipped: {e}"
 
+        # D2: discrete robust reward (anti-reward-hacking, CUDA Agent schedule).
+        # baseline_ratio here is the eager ratio; strong_ratio is not separately
+        # measured in this tool yet (Same-Backend-Fairness denominator lives in
+        # the bench harness), so we pass it as the strong ratio too when > 1 to
+        # avoid over-rewarding. This is recorded for trajectory/RL consumption.
+        from arke.agent.verification import robust_reward as _robust_reward
+        reward_tier = int(_robust_reward(
+            correct=correct,
+            eager_ratio=baseline_ratio,
+            strong_ratio=baseline_ratio,
+        ))
+
         data = {
             "op_name": op_name,
             "pipeline_passes": result.passes_run,
@@ -501,6 +513,7 @@ class CompileAndProfileTool(ArkeTool):
             "max_diff": max_diff,
             "latency_ms": latency_ms,
             "baseline_ratio": baseline_ratio,
+            "robust_reward": reward_tier,
             "backend": backend_label,
             "num_real_kernels": artifact.metadata.get("num_real_kernels"),
             "num_fallback": artifact.metadata.get("num_fallback"),
