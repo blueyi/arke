@@ -8,7 +8,39 @@ import numpy as np
 from arke.agent.verification import (
     RobustReward, robust_reward,
     GateStage, GateReport, staged_correctness_gate,
+    classify_failure, reflexion_feedback,
 )
+
+
+class TestReflexion:
+    def test_classify_by_stage(self):
+        assert classify_failure("compile", "") == "compile"
+        assert classify_failure("correctness", "") == "correctness"
+        assert classify_failure("performance", "") == "performance"
+
+    def test_classify_by_message(self):
+        assert classify_failure("?", "nvcc compilation failed") == "compile"
+        assert classify_failure("?", "redefinition of SSA value") == "compile"
+        assert classify_failure("?", "max_diff mismatch in allclose") == "correctness"
+        assert classify_failure("?", "kernel timed out after 120s") == "timeout"
+
+    def test_feedback_contains_category_and_hint(self):
+        fb = reflexion_feedback(stage="compile", error_message="nvcc: redefinition of %e",
+                                attempt=2, max_attempts=3)
+        assert "attempt 2/3" in fb
+        assert "category=compile" in fb
+        assert "COMPILE" in fb
+        assert "redefinition" in fb
+
+    def test_feedback_trims_long_traces(self):
+        long_err = "x" * 2000
+        fb = reflexion_feedback(stage="compile", error_message=long_err)
+        assert "trimmed" in fb
+        assert len(fb) < 1500
+
+    def test_correctness_hint_mentions_barrier(self):
+        fb = reflexion_feedback(stage="correctness", error_message="wrong output")
+        assert "__syncthreads" in fb or "barrier" in fb
 
 
 class TestRobustReward:

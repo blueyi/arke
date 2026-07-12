@@ -218,6 +218,79 @@ def staged_correctness_gate(
     return GateReport(all_passed=True, stages=results, first_failure=None)
 
 
+# ─────────────────────────────────────────────────────────────────────
+# 3. Reflexion error-trace feedback (GEAK, arXiv 2507.23194)
+# ─────────────────────────────────────────────────────────────────────
+
+# Error categories the reflector recognizes, each with a corrective hint.
+# GEAK's insight: an error trace fed back with a targeted hint lets the LLM
+# self-correct far better than a bare stack trace.
+_REFLEXION_HINTS: dict[str, str] = {
+    "compile": (
+        "The generated kernel failed to COMPILE. Common causes: SSA value "
+        "redefinition, undeclared variables, shared-memory over-allocation, "
+        "or an illegal tile/block config. Re-read the error, fix the specific "
+        "line, and prefer a smaller/simpler tiling if the config was illegal."
+    ),
+    "correctness": (
+        "The kernel COMPILED but produced WRONG results (V1 failed). Common "
+        "causes: incorrect index arithmetic, missing boundary guards for "
+        "non-divisible shapes, a divergent __syncthreads() (threads that "
+        "early-return skip the barrier = UB), or wrong reduction order. Check "
+        "boundary handling and barrier placement first."
+    ),
+    "performance": (
+        "The kernel is CORRECT but SLOW (V2 below target). Consider: larger "
+        "tiles to amortize memory traffic, tensor-core path for matmul, "
+        "shape-adaptive block size, or vectorized loads. Do NOT sacrifice "
+        "correctness for speed."
+    ),
+    "timeout": (
+        "The kernel TIMED OUT or hung. Likely an infinite loop, a deadlocked "
+        "barrier (divergent __syncthreads), or a grossly oversized launch. "
+        "Reduce the work per thread and verify all threads reach every barrier."
+    ),
+}
+
+
+def classify_failure(stage: str, error_message: str) -> str:
+    """Map a failure to a reflexion category (compile/correctness/performance/timeout)."""
+    msg = (error_message or "").lower()
+    if stage in _REFLEXION_HINTS:
+        return stage
+    if "timeout" in msg or "timed out" in msg or "hang" in msg:
+        return "timeout"
+    if "compil" in msg or "nvcc" in msg or "ptx" in msg or "redefinition" in msg:
+        return "compile"
+    if "correct" in msg or "mismatch" in msg or "allclose" in msg:
+        return "correctness"
+    return "compile"  # default: treat unknown as a compile-class problem
+
+
+def reflexion_feedback(*, stage: str, error_message: str,
+                       attempt: int = 1, max_attempts: int = 3) -> str:
+    """Build a GEAK-style corrective feedback message for the LLM.
+
+    Turns a raw failure into an actionable reflection the Agent can act on in
+    the next turn, including the error category, a targeted hint, and the
+    retry budget. Returns a string suitable for injection as a tool/user
+    message in the optimization loop.
+    """
+    category = classify_failure(stage, error_message)
+    hint = _REFLEXION_HINTS.get(category, _REFLEXION_HINTS["compile"])
+    trimmed = (error_message or "").strip()
+    if len(trimmed) > 800:
+        trimmed = trimmed[:400] + "\n...[trimmed]...\n" + trimmed[-400:]
+    return (
+        f"[REFLEXION — attempt {attempt}/{max_attempts}, category={category}]\n"
+        f"{hint}\n\n"
+        f"Error trace:\n{trimmed}\n\n"
+        f"Propose a corrected decision that addresses the root cause above. "
+        f"If you have retried the same approach twice, try a fundamentally "
+        f"different tiling/algorithm instead of another incremental tweak."
+    )
+
+
 __all__ = [
     "RobustReward",
     "robust_reward",
@@ -225,4 +298,6 @@ __all__ = [
     "StageResult",
     "GateReport",
     "staged_correctness_gate",
+    "classify_failure",
+    "reflexion_feedback",
 ]
