@@ -141,8 +141,93 @@ class TestCudaCCompilation:
 
     def test_unsupported_op_raises(self, backend):
         graph = IRGraph(name="test")
-        graph.add_input("x", dtype="float32", shape=[64])
-        graph.add_node(IRNode(id="n0", op="relu", inputs={"x": "x"}, outputs=["out"]))
+        graph.add_input("x", dtype="float32", shape=[64, 64])
+        graph.add_node(IRNode(id="n0", op="nonexistent_xyz", inputs={"x": "x"}, outputs=["out"]))
         graph.set_outputs(["out"])
         with pytest.raises(ValueError, match="does not support"):
             backend.lower(graph)
+
+
+# ── Elementwise op tests ──────────────────────────────────────
+
+def _ref_elementwise(op: str, *arrays):
+    """Numpy reference for elementwise ops."""
+    if op == "relu":
+        return np.maximum(0, arrays[0])
+    elif op == "gelu":
+        x = arrays[0]
+        return x * 0.5 * (1.0 + np.tanh(0.7978845608 * (x + 0.044715 * x**3)))
+    elif op == "silu":
+        x = arrays[0]
+        return x * (1.0 / (1.0 + np.exp(-x)))
+    elif op == "tanh":
+        return np.tanh(arrays[0])
+    elif op == "sigmoid":
+        return 1.0 / (1.0 + np.exp(-arrays[0]))
+    elif op == "exp":
+        return np.exp(arrays[0])
+    elif op == "neg":
+        return -arrays[0]
+    elif op == "rsqrt":
+        return 1.0 / np.sqrt(arrays[0])
+    elif op == "add":
+        return arrays[0] + arrays[1]
+    elif op == "mul":
+        return arrays[0] * arrays[1]
+    raise ValueError(f"Unknown op: {op}")
+
+
+_UNARY_OPS = ["relu", "gelu", "silu", "tanh", "sigmoid", "exp", "neg", "rsqrt"]
+_BINARY_OPS = ["add", "mul"]
+
+
+class TestCudaCElementwise:
+    """End-to-end correctness tests for elementwise ops via CUDA-C backend."""
+
+    @pytest.mark.parametrize("op", _UNARY_OPS)
+    def test_unary_ops(self, backend, op):
+        M, N = 512, 512
+        graph = IRGraph(name=f"{op}_test")
+        graph.add_input("x", dtype="float32", shape=[M, N])
+        graph.add_node(IRNode(id="n0", op=op, inputs={"x": "x"}, outputs=["out"]))
+        graph.set_outputs(["out"])
+
+        artifact = backend.lower(graph)
+        kernel = backend.compile(artifact)
+        assert kernel.success, f"Compile failed: {kernel.error}"
+
+        np.random.seed(123)
+        if op == "rsqrt":
+            x = np.random.uniform(0.1, 10.0, (M, N)).astype(np.float32)
+        else:
+            x = np.random.randn(M, N).astype(np.float32)
+
+        result = backend.run(kernel, {"x": x})
+        out = result["out"]
+        ref = _ref_elementwise(op, x).astype(np.float32)
+
+        atol = 1e-3 if op == "gelu" else 1e-4
+        np.testing.assert_allclose(out, ref, atol=atol, rtol=1e-4)
+
+    @pytest.mark.parametrize("op", _BINARY_OPS)
+    def test_binary_ops(self, backend, op):
+        M, N = 512, 512
+        graph = IRGraph(name=f"{op}_test")
+        graph.add_input("A", dtype="float32", shape=[M, N])
+        graph.add_input("B", dtype="float32", shape=[M, N])
+        graph.add_node(IRNode(id="n0", op=op, inputs={"a": "A", "b": "B"}, outputs=["out"]))
+        graph.set_outputs(["out"])
+
+        artifact = backend.lower(graph)
+        kernel = backend.compile(artifact)
+        assert kernel.success, f"Compile failed: {kernel.error}"
+
+        np.random.seed(456)
+        A = np.random.randn(M, N).astype(np.float32)
+        B = np.random.randn(M, N).astype(np.float32)
+
+        result = backend.run(kernel, {"A": A, "B": B})
+        out = result["out"]
+        ref = _ref_elementwise(op, A, B).astype(np.float32)
+
+        np.testing.assert_allclose(out, ref, atol=1e-4, rtol=1e-4)
