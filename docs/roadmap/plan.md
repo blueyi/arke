@@ -456,7 +456,7 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 >
 > Phase 3 validated the Arke MLIR-GPU backend on NVIDIA (RTX 3060, SM 8.6):
 > - **46/46 ops** (OT0-OT4) GPU-supported and correctness-verified vs torch.
-> - **OVERALL geomean 1.05× vs cuBLAS/cuDNN eager** (100 iters, kernel-only).
+> - **OVERALL geomean 1.14× vs cuBLAS/cuDNN eager** (100 iters, kernel-only, post pre-build-kernel-args + adaptive-block optimization).
 > - **MLIR 20.1.2** toolchain (LLVM 20, aligns Triton 3.2 / PyTorch 2.6).
 > - StrategyIR L2 → MLIR transform dialect verified (3+ ops).
 > - Architecture: `gpu_tuning.py` centralized policy, `protocol.py` backend extension seam.
@@ -509,8 +509,8 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | Stage          | Milestone                 | Exit Criteria                                                           | Status |
 | -------------- | ------------------------- | ----------------------------------------------------------------------- | ------ |
 | **P3-S1**      | MLIR lowering framework   | SemanticIR → linalg + transform dialect, matmul correct                 | ✅     |
-| **P3-S2**      | Cat A+B+C via MLIR        | 35 ops correct + geomean ≥ Phase 2 Triton                               | ✅ 46 ops, 1.05× cuBLAS |
-| **P3-S3**      | MLIR performance ≥ Triton | All Cat A+B+C+D MLIR geomean ≥ Phase 2 Triton                           | ✅ geomean 1.05× cuBLAS (cuBLAS > Triton) |
+| **P3-S2**      | Cat A+B+C via MLIR        | 35 ops correct + geomean ≥ Phase 2 Triton                               | ✅ 46 ops, 1.14× cuBLAS |
+| **P3-S3**      | MLIR performance ≥ Triton | All Cat A+B+C+D MLIR geomean ≥ Phase 2 Triton                           | ✅ geomean 1.14× cuBLAS (cuBLAS > Triton) |
 | **P3-S4**      | ~~Ascend via MLIR~~ ⏭️ SKIPPED | ~~matmul+rmsnorm correct on Ascend via MLIR~~ — skipped (Phase-2 Ascend skip, 2026-07-02) | ⏭️ |
 | **P3-S5**      | LLM Level 2 decisions     | StrategyIR L2 (loop nests) → MLIR transform dialect, verified on ≥3 ops | ✅     |
 | **P3-S_FINAL** | Phase 3 acceptance        | MLIR path performance ≥ Triton + multi-hardware via MLIR                | ✅ perf ≥ Triton ✓, multi-hw NVIDIA (Ascend/AMD deferred per P3-S4 skip) |
@@ -619,4 +619,4 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ---
 
-*Last updated: 2026-06-26 (Phase 1 CLOSED 2026-06-25 on dev-HW: S0–S6 ✅, S7 ✅ 13/14 closed + followups landed, S8 ✅ gate 6/6 PASS, S9 ✅ CLOSED — Thesis L1 SIMT validated. G9[4]/[6] release tags waived by project lead. Phase 2/Ascend remains PAUSED — backend extensibility preserved via `arke/backend/protocol.py`. Footer status synced to plan status table L100–110.)*
+*Last updated: 2026-07-12 (Phase 1 CLOSED 2026-06-25 on dev-HW: S0–S6 ✅, S7 ✅ 13/14 closed + followups landed, S8 ✅ gate 6/6 PASS, S9 ✅ CLOSED — Thesis L1 SIMT validated. G9[4]/[6] release tags waived by project lead. Phase 2/Ascend PAUSED — backend extensibility preserved via `arke/backend/protocol.py`. Phase 3 COMPLETE 2026-07-12: 46/46 ops GPU, OVERALL 1.14× cuBLAS, 2306 tests pass. Phase 4 in progress.)*

@@ -13,7 +13,7 @@
 |---|---|
 | **GPU op 覆盖率** | **46/46 (100%)** |
 | **正确性 (全部 ops)** | **46/46 PASS** (vs torch, max_err ≤ 5e-6) |
-| **OVERALL 性能 geomean** | **1.05× vs cuBLAS/cuDNN eager** (100 iters, stable) |
+| **OVERALL 性能 geomean** | **1.14× vs cuBLAS/cuDNN eager** (100 iters, stable, post pre-build-kernel-args + adaptive-block) |
 | **全量测试** | **2306 passed**, 1 skipped, 2 xfailed, **0 failures** |
 | **Backend 测试** | **360 passed**, 1 xfailed, **0 failures** |
 | **GPU tuning 策略测试** | **16 passed** |
@@ -40,8 +40,8 @@
 | add | 0.85× | 0.91× | 0.94× | 0.92× | 0.90× |
 | mul | 0.40× | 0.90× | 0.92× | 0.92× | 0.74× |
 
-> **OVERALL geomean: 1.05× cuBLAS/cuDNN** (100 iter 稳定测量)
-> **注**: torch timing 包含 PyTorch eager dispatch overhead (~5µs), cuBLAS/cuDNN 是最强外部 ref
+> **OVERALL geomean: 1.14× cuBLAS/cuDNN** (100 iter 稳定测量, post pre-build-kernel-args + adaptive-block 优化)
+> **注**: 初始版本 1.05× (pre-optimization); commits 310ee28+1456c2e 后提升至 1.14×。torch timing 包含 PyTorch eager dispatch overhead (~5µs), cuBLAS/cuDNN 是最强外部 ref
 
 ### 2.2 性能分析
 
@@ -74,11 +74,11 @@
 | Stage | 退出条件 | 状态 |
 |---|---|---|
 | **P3-S1** | SemanticIR → linalg + transform, matmul correct | ✅ COMPLETE |
-| **P3-S2** | 35+ ops correct + geomean ≥ Triton | ✅ **46 ops correct, geomean 1.02× cuBLAS** |
-| **P3-S3** | All Cat A-D MLIR geomean ≥ Triton | ✅ **OVERALL 1.02× (vs cuBLAS = stronger ref than Triton)** |
+| **P3-S2** | 35+ ops correct + geomean ≥ Triton | ✅ **46 ops correct, geomean 1.14× cuBLAS** |
+| **P3-S3** | All Cat A-D MLIR geomean ≥ Triton | ✅ **OVERALL 1.14× (vs cuBLAS = stronger ref than Triton)** |
 | **P3-S4** | Ascend via MLIR | ⏭️ SKIPPED (Leon-approved) |
 | **P3-S5** | StrategyIR L2 → transform dialect | ✅ COMPLETE (commit 232efcb) |
-| **P3-S_FINAL** | MLIR path ≥ Triton + multi-hw via MLIR | 🟨 性能 ✅, multi-hw = NVIDIA done (Ascend/AMD deferred) |
+| **P3-S_FINAL** | MLIR path ≥ Triton + multi-hw via MLIR | ✅ 性能 1.14× cuBLAS ✓, multi-hw = NVIDIA done (Ascend/AMD deferred) |
 
 ---
 

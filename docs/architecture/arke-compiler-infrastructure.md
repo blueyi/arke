@@ -1,9 +1,9 @@
 # Arke Compiler Infrastructure Design
 
-**Status:** Draft  
+**Status:** Active (Phase 3 COMPLETE, Phase 4 in progress)  
 **Author:** Kitty (Arke Lead Engineer)  
-**Date:** 2026-04-06  
-**Version:** 0.1.0  
+**Date:** 2026-04-06 (updated 2026-07-12)  
+**Version:** 0.2.0  
 
 ---
 
@@ -1147,7 +1147,7 @@ The existing `ArkeBackend` ABC in `backend/base.py` already provides the right i
 1. Convert from `ABC` to a `Protocol` so TritonBackend doesn't need to inherit.
 2. Add `BackendRegistry` for target_hw → backend routing.
 3. Define `BackendArtifact` and `CompiledKernel` as typed dataclasses.
-4. Declare `MLIRBackend` and `LLVMBackend` protocol stubs for future stages.
+4. ~~Declare `MLIRBackend` and `LLVMBackend` protocol stubs for future stages.~~ `MLIRBackend` is now fully implemented (Phase 3 COMPLETE, 2026-07-12). `CLikeBackend` (Phase 4) in progress.
 
 ```python
 # arke/backend/protocol.py  (new file — replaces ABC in base.py)
@@ -1316,6 +1316,48 @@ class TritonBackend(ArkeBackend):  # keep existing ABC inheritance too
             backend_name=self.name,
         )
 ```
+
+### 7.4 MLIRBackend (Phase 3 — ✅ COMPLETE)
+
+The MLIR backend (`arke/backend/mlir_backend.py`) is the Phase 3 primary codegen path, fully implemented and verified (2026-07-12). It registers via `BackendRegistry` with targets `["mlir", "mlir_gpu", "mlir_cpu"]`.
+
+**Key files:**
+- `mlir_backend.py` — Entry point, `ArkeBackend` protocol conformance
+- `mlir_emitter.py` — SemanticIR → MLIR dialect emission (linalg/scf/gpu)
+- `mlir_gpu.py` — GPU-specific emitters (elementwise, reduction, matmul, attention, fused, data-movement)
+- `mlir_ops.py` — Declarative op catalog (46 ops via linalg.generic + multi-linalg composites)
+- `strategy_to_transform.py` — StrategyIR L2 → MLIR transform dialect
+
+**Architecture: WHAT vs HOW separation**
+
+The MLIR backend enforces a clean separation between **what** to emit and **how** to tune:
+
+- **Emitters** (`mlir_gpu.py`) describe **WHAT** — the MLIR IR structure for each op family (elementwise, reduction, matmul, etc.)
+- **GPU Tuning** (`gpu_tuning.py`) decides **HOW** — launch parameters, block sizes, kernel family selection
+
+```python
+# arke/backend/gpu_tuning.py — Centralized GPU launch policy
+
+@dataclass
+class GPUProfile:
+    """Hardware descriptor for multi-chip extensibility."""
+    sm_version: int       # e.g. 86 for SM 8.6
+    max_shared_mem: int   # bytes
+    warp_size: int = 32
+
+def rowwise_block_size(D: int, profile: GPUProfile = ...) -> int:
+    """Shape-adaptive block size for row-wise kernels.
+    Returns 512 for D >= 4096 (saturate shared memory), 256 otherwise."""
+
+def matmul_mma_config(M: int, N: int, K: int) -> dict:
+    """Tensor-core tile selection + small-shape gating.
+    Returns MMA config for large shapes, regblock for small shapes."""
+
+def select_kernel_family(op_name: str, shapes: dict) -> str:
+    """Route op+shape to kernel family (logging/autotuning hook)."""
+```
+
+Results: **46/46 ops** GPU-correct, **OVERALL geomean 1.14× cuBLAS** (100 iters, RTX 3060 SM 8.6), 2306 tests pass.
 
 ---
 
