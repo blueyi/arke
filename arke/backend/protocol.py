@@ -6,10 +6,11 @@
 Defines the ArkeBackend protocol that all backends must implement.
 
 Backend roadmap (extensibility seam — keep this clean):
-  Phase 1: TritonBackend (NVIDIA GPU via Triton)        ← ACTIVE
+  Phase 1: TritonBackend (NVIDIA GPU via Triton)        ← CLOSED (2026-06-25)
   Phase 2: TritonBackend (Ascend) + MLIR skeleton       ⏸️ PAUSED (2026-06-24)
-  Phase 3: MLIRBackend (full compiler control)          (future)
-  Phase 4: LLVMBackend (direct LLVM IR)                 (future)
+  Phase 3: MLIRBackend (full compiler control)          ✅ COMPLETE (2026-07-12)
+  Phase 4: CudaCBackend (CUDA C via nvcc)               🚧 IN PROGRESS
+  Phase 5: LLVMBackend (direct LLVM IR)                 (future)
 
 ⏸️ Ascend / Phase-2 development is PAUSED (Leon, 2026-06-24): all current
 effort is on the NVIDIA/Triton path to validate the LLM-Native thesis at
