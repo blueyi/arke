@@ -71,18 +71,31 @@ class MatmulConfig:
 
     @classmethod
     def default_for_shape(cls, M: int, N: int, K: int) -> "MatmulConfig":
-        """Auto-select config based on shape (no StrategyIR)."""
-        # Use tensor core for shapes where it pays off (M,N,K all >= 64 and divisible by 16)
-        if (M >= 64 and N >= 64 and K >= 64
-                and M % 16 == 0 and N % 16 == 0 and K % 16 == 0):
+        """Auto-select config based on shape (no StrategyIR).
+
+        Data-driven crossover (RTX 3060, measured 2026-07-12):
+          - Small shapes (max dim < 1024): the scalar register-blocked kernel
+            WINS — TC's fp16-convert + shmem-staging overhead isn't amortized,
+            and at N=256 the scalar kernel hits 0.92× vs TC's 0.28×. Scalar is
+            also bit-exact (fp32) vs TC's fp16 accumulation.
+          - Large shapes (max dim >= 1024): the WMMA tensor-core kernel WINS
+            (N=2048: 1.06× vs scalar 0.50×) — TC throughput dominates once the
+            staging cost is amortized over enough work.
+        """
+        max_dim = max(M, N, K)
+        tc_eligible = (M % 16 == 0 and N % 16 == 0 and K % 16 == 0
+                       and M >= 64 and N >= 64 and K >= 64)
+        # Large + TC-eligible → tensor core.
+        if max_dim >= 1024 and tc_eligible:
             return cls(BM=64, BN=64, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16,
                        algorithm="tensor_core")
-        elif M >= 512 and N >= 512 and K >= 512:
-            return cls(BM=64, BN=64, BK=16, UNROLL_K=4, THREADS_M=16, THREADS_N=16)
-        elif M >= 128 and N >= 128:
+        # Small/medium → scalar register-blocked (wins at these sizes, bit-exact).
+        if M >= 64 and N >= 64:
+            return cls(BM=64, BN=64, BK=16, UNROLL_K=4, THREADS_M=16, THREADS_N=16,
+                       algorithm="scalar_tiled")
+        if M >= 128 and N >= 128:
             return cls(BM=32, BN=32, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
-        else:
-            return cls(BM=16, BN=16, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
+        return cls(BM=16, BN=16, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
 
 
 def emit_cuda_c_matmul_parameterized(
