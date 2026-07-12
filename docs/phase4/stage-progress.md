@@ -64,17 +64,18 @@ IRGraph → emit_cuda_c_matmul() → CUDA C source
 
 ---
 
-## P4-S2 Complete (2026-07-12) — 31 ops, all 5 tiers
+## P4-S2 Complete (2026-07-12) — 46/46 ops, FULL catalog coverage
 
-CudaCBackend now covers **31 ops across all 5 tiers (OT0-OT4)**:
-- **OT0 elementwise (11):** relu, gelu, silu, tanh, sigmoid, exp, neg, rsqrt, add, mul, cast
-- **OT1 reduction (6):** softmax, layernorm, rmsnorm, reduce_sum, reduce_max, reduce_mean
-- **OT2 movement/dense (8):** matmul, batch_matmul, transpose, copy_, concat, split, permute, embedding
-- **OT3 fused (5):** silu_and_mul, gelu_and_mul, rmsnorm_residual, where_, cross_entropy
-- **OT4 attention (1):** flash_attention (online softmax, warp-per-row)
+CudaCBackend now covers **ALL 46 ops across all 5 tiers (OT0-OT4)** — complete
+op parity with the Phase-3 MLIR-GPU backend:
+- **OT0 elementwise:** relu, gelu, silu, tanh, sigmoid, exp, neg, rsqrt, add, mul, cast
+- **OT1 reduction:** softmax, layernorm, rmsnorm, reduce_sum/max/mean, argmax, topk, cumsum, quantize_per_token
+- **OT2 movement/dense:** matmul, batch_matmul, grouped_matmul, transpose, copy_, concat, split, permute, embedding, gather, scatter
+- **OT3 fused:** silu_and_mul, gelu_and_mul, swiglu_packed, rmsnorm_residual, where_, cross_entropy, fused_linear_cross_entropy, rope, dequantize_per_channel
+- **OT4 attention:** flash_attention, grouped_query_attention, cross_attention, multi_latent_attention, paged_attention
 
-Modular emitters: cuda_c_backend + cuda_c_rowwise + cuda_c_movement + cuda_c_gated
-+ cuda_c_extra + cuda_c_matmul_templates + cuda_c_attention. 44 backend tests pass.
+Modular emitters: cuda_c_backend + rowwise + movement + gated + extra +
+matmul_templates + attention + exotic + final5. **70 backend tests pass.**
 
 ### Performance (kernel-only CUDA events vs cuBLAS/cuDNN)
 - **rmsnorm 3.6×**, softmax 1.14× (4096), reduce_* ~1.0-1.3×, elementwise 1.0-1.2× — win/parity
