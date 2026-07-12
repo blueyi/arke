@@ -1359,6 +1359,20 @@ def select_kernel_family(op_name: str, shapes: dict) -> str:
 
 Results: **46/46 ops** GPU-correct, **OVERALL geomean 1.14× cuBLAS** (100 iters, RTX 3060 SM 8.6), 2306 tests pass.
 
+### 7.5 CudaCBackend (Phase 4 — 🚧 In Progress)
+
+The CUDA-C backend (`arke/backend/cuda_c_backend.py`) generates vendor-native CUDA C source code, compiles via `nvcc` to cubin, and executes via `cuda.bindings.driver` API. Registered with target `"cuda-c"`.
+
+**Pipeline:** IRGraph → CUDA C source → `nvcc --cubin` → `cuModuleLoadData` → `cuLaunchKernel`
+
+**Key design points:**
+- **cubin output** (not .so) — same `cuModuleLoadData` pattern as Phase 3 MLIR GPU
+- **SHA256 caching** — avoids recompilation when source unchanged
+- **cuda.bindings.driver** — no torch dependency in critical path
+- **Extensible emitter dispatch** — `_EMITTERS` dict maps op_name → emit function
+
+**Status (P4-S1):** matmul verified correct across 8 shapes (16×16 to 1024×1024, including non-power-of-2). 16 tests pass.
+
 ---
 
 ## 8. SSA Validator Design
