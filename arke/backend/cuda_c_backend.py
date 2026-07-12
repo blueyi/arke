@@ -396,6 +396,21 @@ class CudaCBackend:
         # OT4 attention (C-line)
         from arke.backend.cuda_c_attention import emit_cuda_c_flash_attention
         cls._EMITTERS["flash_attention"] = emit_cuda_c_flash_attention
+        # Exotic ops
+        from arke.backend.cuda_c_exotic import (
+            emit_cuda_c_argmax, emit_cuda_c_cumsum, emit_cuda_c_gather,
+            emit_cuda_c_scatter, emit_cuda_c_rope,
+            emit_cuda_c_dequantize_per_channel, emit_cuda_c_swiglu_packed,
+            emit_cuda_c_topk,
+        )
+        cls._EMITTERS["argmax"] = emit_cuda_c_argmax
+        cls._EMITTERS["cumsum"] = emit_cuda_c_cumsum
+        cls._EMITTERS["gather"] = emit_cuda_c_gather
+        cls._EMITTERS["scatter"] = emit_cuda_c_scatter
+        cls._EMITTERS["rope"] = emit_cuda_c_rope
+        cls._EMITTERS["dequantize_per_channel"] = emit_cuda_c_dequantize_per_channel
+        cls._EMITTERS["swiglu_packed"] = emit_cuda_c_swiglu_packed
+        cls._EMITTERS["topk"] = emit_cuda_c_topk
 
     name = "cuda-c"
 
