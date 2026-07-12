@@ -393,6 +393,9 @@ class CudaCBackend:
         # Cross entropy uses the softmax emitter's shared-mem pattern
         from arke.backend.cuda_c_rowwise import emit_cuda_c_cross_entropy
         cls._EMITTERS["cross_entropy"] = emit_cuda_c_cross_entropy
+        # OT4 attention (C-line)
+        from arke.backend.cuda_c_attention import emit_cuda_c_flash_attention
+        cls._EMITTERS["flash_attention"] = emit_cuda_c_flash_attention
 
     name = "cuda-c"
 
@@ -586,6 +589,8 @@ class CudaCBackend:
                 arg_buffers.append(np.array([gpu_ptrs[arg_val]], dtype=np.uint64))
             elif arg_type == "int":
                 arg_buffers.append(np.array([arg_val], dtype=np.int32))
+            elif arg_type == "float":
+                arg_buffers.append(np.array([arg_val], dtype=np.float32))
 
         arg_ptrs = np.array([a.ctypes.data for a in arg_buffers], dtype=np.uint64)
 
@@ -703,6 +708,8 @@ class CudaCBackend:
                 arg_buffers.append(np.array([gpu_ptrs[arg_val]], dtype=np.uint64))
             elif arg_type == "int":
                 arg_buffers.append(np.array([arg_val], dtype=np.int32))
+            elif arg_type == "float":
+                arg_buffers.append(np.array([arg_val], dtype=np.float32))
         arg_ptrs = np.array([a.ctypes.data for a in arg_buffers], dtype=np.uint64)
         arg_data_ptr = arg_ptrs.ctypes.data
 
