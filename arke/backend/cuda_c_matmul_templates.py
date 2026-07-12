@@ -1,0 +1,224 @@
+# Copyright 2026 Arke Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Parameterized CUDA-C matmul templates driven by StrategyIR decisions.
+
+This module implements the "reverse enhancement" from perf-gap-analysis:
+instead of one hardcoded matmul kernel, we provide parameterized templates
+that the Agent can configure through StrategyIR decisions.
+
+Templates:
+  - matmul_scalar_tiled: configurable tile + unroll FP32 kernel
+  - matmul_tensor_core: (future) wmma/mma-based kernel
+
+Usage via StrategyIR:
+  Decision(kind="tile", params={"BM": 64, "BN": 64, "BK": 16})
+  Decision(kind="unroll", params={"loop": "K_tile", "factor": 4})
+  Decision(kind="algorithm", params={"name": "tensor_core"})  # future
+"""
+
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Any
+
+from arke.backend.cuda_c_backend import CudaCKernel, _ir_dtype_to_c
+from arke.ir.graph import IRGraph
+
+
+@dataclass
+class MatmulConfig:
+    """Matmul kernel configuration derived from StrategyIR decisions."""
+    BM: int = 32       # tile size in M dimension
+    BN: int = 32       # tile size in N dimension
+    BK: int = 16       # tile size in K dimension
+    UNROLL_K: int = 0  # K-loop unroll factor (0 = no pragma unroll)
+    THREADS_M: int = 16  # threads per block in M
+    THREADS_N: int = 16  # threads per block in N
+    VEC_LOAD: int = 1  # vectorized load width (1 = scalar, 4 = float4)
+    algorithm: str = "scalar_tiled"  # "scalar_tiled" or "tensor_core"
+
+    @classmethod
+    def from_strategy(cls, decisions: list[Any]) -> "MatmulConfig":
+        """Extract matmul config from StrategyIR decisions."""
+        cfg = cls()
+        for d in decisions:
+            if hasattr(d, 'kind') and hasattr(d, 'params'):
+                if d.kind == "tile":
+                    p = d.params
+                    if "BM" in p: cfg.BM = p["BM"]
+                    if "BN" in p: cfg.BN = p["BN"]
+                    if "BK" in p: cfg.BK = p["BK"]
+                elif d.kind == "unroll":
+                    if d.params.get("loop") in ("K_tile", "K"):
+                        cfg.UNROLL_K = d.params.get("factor", 4)
+                elif d.kind == "vectorize":
+                    cfg.VEC_LOAD = d.params.get("width", 1)
+                elif d.kind == "algorithm":
+                    cfg.algorithm = d.params.get("name", "scalar_tiled")
+                elif d.kind == "compute":
+                    # Derive thread config from warp count
+                    warps = d.params.get("warps", 4)
+                    total_threads = warps * 32
+                    # Square-ish thread block
+                    import math
+                    side = int(math.sqrt(total_threads))
+                    cfg.THREADS_M = side
+                    cfg.THREADS_N = total_threads // side
+        # Ensure thread block covers tile
+        cfg.THREADS_M = min(cfg.THREADS_M, cfg.BM)
+        cfg.THREADS_N = min(cfg.THREADS_N, cfg.BN)
+        return cfg
+
+    @classmethod
+    def default_for_shape(cls, M: int, N: int, K: int) -> "MatmulConfig":
+        """Auto-select config based on shape (no StrategyIR)."""
+        if M >= 512 and N >= 512 and K >= 512:
+            # Large shapes: bigger tiles, unrolled K
+            return cls(BM=64, BN=64, BK=16, UNROLL_K=4, THREADS_M=16, THREADS_N=16)
+        elif M >= 128 and N >= 128:
+            return cls(BM=32, BN=32, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
+        else:
+            return cls(BM=16, BN=16, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
+
+
+def emit_cuda_c_matmul_parameterized(
+    graph: IRGraph,
+    chip: str = "sm_86",
+    config: MatmulConfig | None = None,
+) -> CudaCKernel:
+    """Emit a parameterized CUDA-C matmul kernel.
+
+    If config is None, auto-selects based on shape.
+    If config is provided (from StrategyIR), uses those parameters.
+    """
+    node = graph.nodes[0]
+    assert node.op == "matmul", f"Expected matmul, got {node.op}"
+
+    input_names = list(node.inputs.values())
+    a_name, b_name = input_names[0], input_names[1]
+    out_name = node.outputs[0]
+
+    a_val = graph.get_value(a_name)
+    b_val = graph.get_value(b_name)
+    a_shape = list(a_val.shape) if a_val.shape else [64, 64]
+    b_shape = list(b_val.shape) if b_val.shape else [64, 64]
+
+    M, K = a_shape[0], a_shape[1]
+    K2, N = b_shape[0], b_shape[1]
+    assert K == K2, f"K mismatch: {K} vs {K2}"
+
+    if config is None:
+        config = MatmulConfig.default_for_shape(M, N, K)
+
+    dtype = a_val.dtype or "float32"
+    c_type = _ir_dtype_to_c(dtype)
+
+    BM, BN, BK = config.BM, config.BN, config.BK
+    TM, TN = config.THREADS_M, config.THREADS_N
+    # Elements per thread
+    EPT_M = BM // TM  # rows per thread
+    EPT_N = BN // TN  # cols per thread
+
+    kernel_name = f"arke_matmul_{M}x{N}x{K}_bm{BM}_bn{BN}_bk{BK}"
+    unroll_pragma = "#pragma unroll" if config.UNROLL_K > 0 else ""
+
+    source = f"""\
+// Auto-generated by Arke CudaCBackend (Phase 4, parameterized matmul)
+// Shape: [{M},{K}] @ [{K},{N}] -> [{M},{N}]
+// Config: BM={BM} BN={BN} BK={BK} TM={TM} TN={TN} EPT={EPT_M}x{EPT_N}
+#include <cuda_runtime.h>
+
+#define BM {BM}
+#define BN {BN}
+#define BK {BK}
+#define TM {TM}
+#define TN {TN}
+
+extern "C"
+__global__ void {kernel_name}(
+    const {c_type}* __restrict__ A,
+    const {c_type}* __restrict__ B,
+    {c_type}* __restrict__ C,
+    int M_dim, int N_dim, int K_dim)
+{{
+    // Block computes a BM x BN output tile
+    __shared__ {c_type} sA[BK][BM];  // transposed for coalesced writes
+    __shared__ {c_type} sB[BK][BN];
+
+    int bm = blockIdx.y * BM;
+    int bn = blockIdx.x * BN;
+    int tid = threadIdx.y * TN + threadIdx.x;
+    int total_threads = TM * TN;
+
+    // Each thread accumulates a EPT_M x EPT_N register tile
+    {c_type} acc[{EPT_M}][{EPT_N}];
+    for (int i = 0; i < {EPT_M}; i++)
+        for (int j = 0; j < {EPT_N}; j++)
+            acc[i][j] = ({c_type})0;
+
+    // Iterate over K dimension in BK-sized tiles
+    for (int bk = 0; bk < K_dim; bk += BK) {{
+        // Cooperative load: all threads load sA and sB
+        for (int t = tid; t < BM * BK; t += total_threads) {{
+            int sm_row = t / BK;
+            int sm_col = t % BK;
+            int gm_row = bm + sm_row;
+            int gm_col = bk + sm_col;
+            sA[sm_col][sm_row] = (gm_row < M_dim && gm_col < K_dim)
+                ? A[gm_row * K_dim + gm_col] : ({c_type})0;
+        }}
+        for (int t = tid; t < BK * BN; t += total_threads) {{
+            int sm_row = t / BN;
+            int sm_col = t % BN;
+            int gm_row = bk + sm_row;
+            int gm_col = bn + sm_col;
+            sB[sm_row][sm_col] = (gm_row < K_dim && gm_col < N_dim)
+                ? B[gm_row * N_dim + gm_col] : ({c_type})0;
+        }}
+        __syncthreads();
+
+        // Compute: each thread processes its EPT_M x EPT_N tile
+        {unroll_pragma}
+        for (int k = 0; k < BK; k++) {{
+            for (int i = 0; i < {EPT_M}; i++) {{
+                {c_type} a_val = sA[k][threadIdx.y * {EPT_M} + i];
+                for (int j = 0; j < {EPT_N}; j++) {{
+                    acc[i][j] += a_val * sB[k][threadIdx.x * {EPT_N} + j];
+                }}
+            }}
+        }}
+        __syncthreads();
+    }}
+
+    // Write results
+    for (int i = 0; i < {EPT_M}; i++) {{
+        for (int j = 0; j < {EPT_N}; j++) {{
+            int gm_row = bm + threadIdx.y * {EPT_M} + i;
+            int gm_col = bn + threadIdx.x * {EPT_N} + j;
+            if (gm_row < M_dim && gm_col < N_dim) {{
+                C[gm_row * N_dim + gm_col] = acc[i][j];
+            }}
+        }}
+    }}
+}}
+"""
+
+    grid = ((N + BN - 1) // BN, (M + BM - 1) // BM, 1)
+    block = (TN, TM, 1)
+
+    return CudaCKernel(
+        kernel_name=kernel_name,
+        source=source,
+        op_name="matmul",
+        param_names=[a_name, b_name, out_name],
+        output_name=out_name,
+        shapes={a_name: a_shape, b_name: b_shape, out_name: [M, N]},
+        dtypes={a_name: dtype, b_name: dtype, out_name: dtype},
+        grid=grid,
+        block=block,
+        shared_mem=0,
+        kernel_args=[
+            ("ptr", a_name), ("ptr", b_name), ("ptr", out_name),
+            ("int", M), ("int", N), ("int", K),
+        ],
+    )

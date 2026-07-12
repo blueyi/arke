@@ -406,8 +406,14 @@ class CudaCBackend:
         self._init_emitters()
         return op_name in self._EMITTERS
 
-    def lower(self, graph: IRGraph) -> BackendArtifact:
-        """Generate CUDA C source from IRGraph."""
+    def lower(self, graph: IRGraph, strategy: Any = None) -> BackendArtifact:
+        """Generate CUDA C source from IRGraph, optionally guided by StrategyIR.
+
+        When strategy is provided, its decisions configure the kernel template
+        (tile sizes, algorithm choice, unroll factors, etc.). This is the
+        StrategyIR → CUDA-C consumption path — the "reverse enhancement" that
+        lets Agent decisions drive kernel generation.
+        """
         self._init_emitters()
         if not graph.nodes:
             raise ValueError("Empty IRGraph — nothing to lower")
@@ -418,7 +424,28 @@ class CudaCBackend:
                 f"CudaCBackend does not support op '{op}'. "
                 f"Supported: {list(self._EMITTERS.keys())}"
             )
-        emitted: CudaCKernel = emitter(graph, chip=self.chip)
+
+        # StrategyIR-aware lowering for matmul
+        if op == "matmul" and strategy is not None:
+            from arke.backend.cuda_c_matmul_templates import (
+                MatmulConfig, emit_cuda_c_matmul_parameterized,
+            )
+            decisions = []
+            if hasattr(strategy, 'decisions'):
+                decisions = strategy.decisions
+            elif isinstance(strategy, list):
+                decisions = strategy
+            config = MatmulConfig.from_strategy(decisions)
+            emitted: CudaCKernel = emit_cuda_c_matmul_parameterized(
+                graph, chip=self.chip, config=config)
+        elif op == "matmul":
+            # No strategy: use auto-tuned parameterized template
+            from arke.backend.cuda_c_matmul_templates import (
+                MatmulConfig, emit_cuda_c_matmul_parameterized,
+            )
+            emitted = emit_cuda_c_matmul_parameterized(graph, chip=self.chip)
+        else:
+            emitted = emitter(graph, chip=self.chip)
         return BackendArtifact(
             source_code=emitted.source,
             backend_name=self.name,
