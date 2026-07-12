@@ -394,8 +394,13 @@ class CudaCBackend:
         from arke.backend.cuda_c_rowwise import emit_cuda_c_cross_entropy
         cls._EMITTERS["cross_entropy"] = emit_cuda_c_cross_entropy
         # OT4 attention (C-line)
-        from arke.backend.cuda_c_attention import emit_cuda_c_flash_attention
+        from arke.backend.cuda_c_attention import (
+            emit_cuda_c_flash_attention, emit_cuda_c_gqa,
+            emit_cuda_c_cross_attention,
+        )
         cls._EMITTERS["flash_attention"] = emit_cuda_c_flash_attention
+        cls._EMITTERS["grouped_query_attention"] = emit_cuda_c_gqa
+        cls._EMITTERS["cross_attention"] = emit_cuda_c_cross_attention
         # Exotic ops
         from arke.backend.cuda_c_exotic import (
             emit_cuda_c_argmax, emit_cuda_c_cumsum, emit_cuda_c_gather,
@@ -411,6 +416,17 @@ class CudaCBackend:
         cls._EMITTERS["dequantize_per_channel"] = emit_cuda_c_dequantize_per_channel
         cls._EMITTERS["swiglu_packed"] = emit_cuda_c_swiglu_packed
         cls._EMITTERS["topk"] = emit_cuda_c_topk
+        # Final 5 → full 46/46 catalog coverage
+        from arke.backend.cuda_c_final5 import (
+            emit_cuda_c_grouped_matmul, emit_cuda_c_quantize_per_token,
+            emit_cuda_c_fused_linear_cross_entropy, emit_cuda_c_paged_attention,
+            emit_cuda_c_mla,
+        )
+        cls._EMITTERS["grouped_matmul"] = emit_cuda_c_grouped_matmul
+        cls._EMITTERS["quantize_per_token"] = emit_cuda_c_quantize_per_token
+        cls._EMITTERS["fused_linear_cross_entropy"] = emit_cuda_c_fused_linear_cross_entropy
+        cls._EMITTERS["paged_attention"] = emit_cuda_c_paged_attention
+        cls._EMITTERS["multi_latent_attention"] = emit_cuda_c_mla
 
     name = "cuda-c"
 
