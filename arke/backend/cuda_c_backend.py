@@ -600,3 +600,114 @@ class CudaCBackend:
             raise RuntimeError(f"CUDA driver error: {err}")
         rest = t[1:]
         return rest[0] if len(rest) == 1 else rest
+
+    def benchmark(self, kernel: CompiledKernel, inputs: dict[str, Any],
+                  iters: int = 50, warmup: int = 10) -> float:
+        """Mean kernel-only latency (ms) via CUDA events.
+
+        One-time setup: load cubin, alloc GPU buffers, H2D copy.
+        Timed region: N back-to-back kernel launches, no host sync between them.
+        This is the apples-to-apples comparison against torch/MLIR kernel-only timing.
+        """
+        if not kernel.success:
+            raise RuntimeError(f"Cannot benchmark failed kernel: {kernel.error}")
+
+        from cuda.bindings import driver
+        _as_tuple(driver.cuInit(0))
+
+        # Ensure context
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.init()
+        except ImportError:
+            pass
+
+        err, ctx = _as_tuple(driver.cuCtxGetCurrent())
+        if err != driver.CUresult.CUDA_SUCCESS or int(ctx) == 0:
+            dev = self._chk(driver, driver.cuDeviceGet(0))
+            ctx = self._chk(driver, driver.cuCtxCreate(
+                driver.CUctxCreateParams(), 0, dev
+            ))
+
+        emitted: CudaCKernel = kernel.metadata["emitted"]
+        cubin: bytes = kernel.metadata["cubin"]
+
+        # Load module + get function
+        mod = self._chk(driver, driver.cuModuleLoadData(cubin))
+        func = self._chk(driver, driver.cuModuleGetFunction(
+            mod, emitted.kernel_name.encode()
+        ))
+
+        # Convert inputs + alloc GPU
+        allocs: list[int] = []
+        gpu_ptrs: dict[str, int] = {}
+        for name in emitted.param_names:
+            if name == emitted.output_name:
+                out_shape = emitted.shapes[name]
+                np_dtype = _ir_dtype_to_numpy(emitted.dtypes.get(name, "float32"))
+                nbytes = int(np.prod(out_shape)) * np_dtype.itemsize
+                dptr = self._chk(driver, driver.cuMemAlloc(nbytes))
+                gpu_ptrs[name] = int(dptr)
+                allocs.append(int(dptr))
+            else:
+                val = inputs.get(name)
+                if val is None:
+                    raise ValueError(f"Missing input: {name}")
+                try:
+                    import torch as _t
+                    if isinstance(val, _t.Tensor):
+                        val = val.detach().cpu().numpy()
+                except ImportError:
+                    pass
+                if not isinstance(val, np.ndarray):
+                    val = np.array(val)
+                np_dtype = _ir_dtype_to_numpy(emitted.dtypes.get(name, "float32"))
+                arr = np.ascontiguousarray(val, dtype=np_dtype)
+                dptr = self._chk(driver, driver.cuMemAlloc(arr.nbytes))
+                self._chk(driver, driver.cuMemcpyHtoD(dptr, arr.ctypes.data, arr.nbytes))
+                gpu_ptrs[name] = int(dptr)
+                allocs.append(int(dptr))
+
+        # Build kernel args (once)
+        arg_buffers: list[np.ndarray] = []
+        for arg_type, arg_val in emitted.kernel_args:
+            if arg_type == "ptr":
+                arg_buffers.append(np.array([gpu_ptrs[arg_val]], dtype=np.uint64))
+            elif arg_type == "int":
+                arg_buffers.append(np.array([arg_val], dtype=np.int32))
+        arg_ptrs = np.array([a.ctypes.data for a in arg_buffers], dtype=np.uint64)
+        arg_data_ptr = arg_ptrs.ctypes.data
+
+        gx, gy, gz = emitted.grid
+        bx, by, bz = emitted.block
+        smem = emitted.shared_mem
+
+        # Warmup
+        for _ in range(warmup):
+            self._chk(driver, driver.cuLaunchKernel(
+                func, gx, gy, gz, bx, by, bz, smem, 0, arg_data_ptr, 0))
+        self._chk(driver, driver.cuCtxSynchronize())
+
+        # Timed region: CUDA events
+        start = self._chk(driver, driver.cuEventCreate(
+            driver.CUevent_flags.CU_EVENT_DEFAULT))
+        stop = self._chk(driver, driver.cuEventCreate(
+            driver.CUevent_flags.CU_EVENT_DEFAULT))
+        self._chk(driver, driver.cuEventRecord(start, 0))
+        for _ in range(iters):
+            self._chk(driver, driver.cuLaunchKernel(
+                func, gx, gy, gz, bx, by, bz, smem, 0, arg_data_ptr, 0))
+        self._chk(driver, driver.cuEventRecord(stop, 0))
+        self._chk(driver, driver.cuEventSynchronize(stop))
+        ms = self._chk(driver, driver.cuEventElapsedTime(start, stop))
+
+        # Cleanup
+        driver.cuEventDestroy(start)
+        driver.cuEventDestroy(stop)
+        for dptr in allocs:
+            driver.cuMemFree(dptr)
+        driver.cuModuleUnload(mod)
+        del arg_buffers, arg_ptrs
+
+        return float(ms) / iters

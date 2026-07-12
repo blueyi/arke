@@ -93,9 +93,9 @@ __global__ void {kernel_name}(
 def emit_cuda_c_layernorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     node = graph.nodes[0]
     assert node.op == "layernorm"
-    x_name = node.inputs["x"]
-    w_name = node.inputs["W"]
-    b_name = node.inputs["B"]
+    x_name = list(node.inputs.values())[0]
+    w_name = list(node.inputs.values())[1]
+    b_name = list(node.inputs.values())[2]
     out_name = node.outputs[0]
     x_val = graph.get_value(x_name)
     shape = list(x_val.shape)
@@ -168,8 +168,8 @@ __global__ void {kernel_name}(
 def emit_cuda_c_rmsnorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     node = graph.nodes[0]
     assert node.op == "rmsnorm"
-    x_name = node.inputs["x"]
-    w_name = node.inputs["W"]
+    x_name = list(node.inputs.values())[0]
+    w_name = list(node.inputs.values())[1]
     out_name = node.outputs[0]
     x_val = graph.get_value(x_name)
     shape = list(x_val.shape)
