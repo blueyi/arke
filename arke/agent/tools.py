@@ -319,8 +319,18 @@ class CompileAndProfileTool(ArkeTool):
         # only when CUDA is unavailable (CPU CI). The chosen backend is
         # reported in the result so the trajectory records measurement
         # provenance honestly.
+        # Optional backend override (non-breaking additive param): the caller
+        # may request a specific backend via params["backend"] ∈ {"triton",
+        # "cuda_c"}. Defaults to "triton" on CUDA (unchanged behavior), MockBackend
+        # on CPU. This lets the Agent drive the Phase-4 CUDA-C backend through the
+        # same Façade tool (StrategyIR → CUDA-C consumption path).
         use_cuda = torch.cuda.is_available() and params.get("force_mock") is not True
-        if use_cuda:
+        requested_backend = params.get("backend", "triton")
+        if use_cuda and requested_backend == "cuda_c":
+            from arke.backend.cuda_c_backend import CudaCBackend
+            backend = CudaCBackend(chip="sm_86")
+            backend_label = "cuda_c"
+        elif use_cuda:
             from arke.backend.triton_backend import TritonBackend
             backend = TritonBackend(device="cuda")
             backend_label = "triton"
@@ -423,6 +433,12 @@ class CompileAndProfileTool(ArkeTool):
             if output_tensor is None and outputs:
                 output_tensor = next(iter(outputs.values()))
 
+        # CUDA-C backend returns numpy arrays; normalize to torch tensors so the
+        # downstream V1/V2 code (which uses torch methods) works uniformly.
+        import numpy as _np
+        if isinstance(output_tensor, _np.ndarray):
+            output_tensor = torch.from_numpy(output_tensor).to(dev)
+
         # V1: validate against the reference interpreter (fp64 CPU escape to
         # avoid the FlagGems aten::mm hijack when comparing on GPU).
         try:
@@ -455,9 +471,16 @@ class CompileAndProfileTool(ArkeTool):
         if use_cuda and output_tensor is not None:
             try:
                 from benchmarks.measure import bench_fn
-                arke_fn = lambda: backend.run(compiled, inputs)  # noqa: E731
-                arke_bench = bench_fn(arke_fn, warmup=25, reps=100, trials=3)
-                latency_ms = round(arke_bench.latency_us / 1000.0, 6)
+                # Prefer the backend's own kernel-only benchmark() when it exposes
+                # one (CUDA-C uses CUDA events, pre-allocating buffers once so the
+                # measurement is kernel-only — apples-to-apples with Triton/torch).
+                bench_method = getattr(backend, "benchmark", None)
+                if backend_label == "cuda_c" and callable(bench_method):
+                    latency_ms = round(float(bench_method(compiled, inputs, iters=100, warmup=25)), 6)
+                else:
+                    arke_fn = lambda: backend.run(compiled, inputs)  # noqa: E731
+                    arke_bench = bench_fn(arke_fn, warmup=25, reps=100, trials=3)
+                    latency_ms = round(arke_bench.latency_us / 1000.0, 6)
                 # PyTorch-eager baseline via the interpreter on-device.
                 try:
                     base_fn = lambda: INTERPRETER.execute(op_name, inputs)  # noqa: E731
