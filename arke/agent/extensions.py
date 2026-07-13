@@ -221,3 +221,63 @@ def sweep_design_space(
     correct.sort(key=lambda v: float(v.latency_ms))  # type: ignore[arg-type]
     best = correct[0] if correct else None
     return best, results
+
+
+# ── C6: Plateau early-stop hook ──────────────────────────────────────────────
+
+class PlateauEarlyStop:
+    """PostProfile hook that signals plateau (no improvement for N compiles).
+
+    Attach to a ``HookRegistry`` via ``reg.register("PostProfile", hook)``.
+    The hook sets ``hook.should_stop = True`` once N consecutive compiles show
+    no improvement in ``baseline_ratio``. The outer optimize loop can check
+    ``hook.should_stop`` after each turn.
+
+    This does NOT modify the frozen runner — it uses the existing D2 hooks seam
+    (``PostProfile`` observation hook). The runner remains unaware; the caller
+    inspects ``should_stop`` and can break early if desired.
+    """
+
+    def __init__(self, patience: int = 3, min_improvement: float = 0.01):
+        self.patience = patience
+        self.min_improvement = min_improvement
+        self.best_ratio: float = 0.0
+        self.stale_count: int = 0
+        self.should_stop: bool = False
+        self.history: list[float] = []
+
+    def __call__(self, context: dict[str, Any]) -> None:
+        result = context.get("result", {})
+        if isinstance(result, str):
+            import json
+            try:
+                result = json.loads(result)
+            except (json.JSONDecodeError, TypeError):
+                return
+        data = result.get("data", result) if isinstance(result, dict) else {}
+        ratio = data.get("baseline_ratio")
+        if ratio is None:
+            return
+        ratio = float(ratio)
+        self.history.append(ratio)
+        if ratio > self.best_ratio + self.min_improvement:
+            self.best_ratio = ratio
+            self.stale_count = 0
+        else:
+            self.stale_count += 1
+        if self.stale_count >= self.patience:
+            self.should_stop = True
+
+    def reset(self) -> None:
+        self.best_ratio = 0.0
+        self.stale_count = 0
+        self.should_stop = False
+        self.history.clear()
+
+
+__all__ = [
+    "Skill", "SkillSelector", "skills_prompt_block",
+    "Hook", "HookRegistry", "HOOK_POINTS",
+    "SweepVariant", "sweep_design_space",
+    "PlateauEarlyStop",
+]
