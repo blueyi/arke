@@ -62,7 +62,7 @@ dev = [
 ]
 
 # [project.scripts]
-# arke = "arkec.main:cli"  # TODO: Phase 1.6
+# arkec = "arkec.main:cli"  # historical alias, now delegates to arke.cli
 
 [project.urls]
 Repository = "https://github.com/arke-lang/arke"

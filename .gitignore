@@ -42,3 +42,4 @@ Thumbs.db
 # Chinese doc mirror (generated from docs/)
 docs_zh/
 benchmarks/results/optimize/
+benchmarks/results/phase1/stage8/track1/optimize/
