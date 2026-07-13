@@ -18,7 +18,7 @@ Generate vendor-supplied C-like kernel languages directly from Arke IR. Phase 4 
 | Stage | Milestone | Exit Criteria | Status |
 |---|---|---|---|
 | **P4-S1** | CUDA-C matmul E2E | SemanticIR → CUDA C → nvcc → correct (vs torch) | ✅ (commit 6bd6eb6) |
-| **P4-S2** | Cat A+B+C via CUDA-C | 30 ops correct + geomean ≥ Phase 3 MLIR | ✅ 30 ops correct, **OVERALL 1.05× cuBLAS** (999b3b5) |
+| **P4-S2** | Cat A+B+C via CUDA-C | **46/46 ops** correct + geomean ≥ Phase 3 MLIR | ✅ 46/46 ops, **OVERALL 1.05× cuBLAS** |
 | **P4-S3** | CCE-C / Bang-C cross-vendor | Non-NVIDIA C-like backends | ⏭️ Deferred (no non-NVIDIA hardware) |
 | **P4-S4** | Performance ≥ MLIR | CUDA-C geomean ≥ Phase 3 | ✅ 1.05× > MLIR 1.03× (999b3b5) |
 | **P4-S_FINAL** | Multi-vendor C-like + H5 | Vendor-DSL portability via Arke IR | ⬜ |

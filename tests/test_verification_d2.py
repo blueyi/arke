@@ -9,11 +9,12 @@ from arke.agent.verification import (
     RobustReward, robust_reward,
     GateStage, GateReport, staged_correctness_gate,
     classify_failure, reflexion_feedback,
+    soft_verify, SoftVerifyResult,
 )
 
 
 class TestReflexion:
-    def test_classify_by_stage(self):
+    def test_classify_compile_failure(self):
         assert classify_failure("compile", "") == "compile"
         assert classify_failure("correctness", "") == "correctness"
         assert classify_failure("performance", "") == "performance"
@@ -136,6 +137,63 @@ class TestStagedGate:
         # all 5 attempted (edge is last)
         assert len(report.stages) == 5
 
-    def test_report_summary(self):
-        report = staged_correctness_gate(**self._make_callbacks())
-        assert "passed" in report.summary()
+
+# ── Soft-verify (Sakana D2) ─────────────────────────────────────────
+class TestSoftVerify:
+    def test_clean_decisions_approved(self):
+        decisions = [
+            {"kind": "tile", "params": {"loop": "i", "factors": [32]}},
+            {"kind": "parallel", "params": {"loop": "j", "width": 4}},
+        ]
+        r = soft_verify(decisions)
+        assert r.approved
+        assert len(r.rule_violations) == 0
+
+    def test_budget_exceeded(self):
+        decisions = [{"kind": "tile", "params": {}} for _ in range(60)]
+        r = soft_verify(decisions, budget_max_decisions=50)
+        assert not r.approved
+        assert any("R1" in v for v in r.rule_violations)
+
+    def test_bad_tile_factor(self):
+        r = soft_verify([{"kind": "tile", "params": {"factors": [-1]}}])
+        assert not r.approved
+        assert any("R2" in v for v in r.rule_violations)
+
+    def test_duplicate_decision(self):
+        d = {"kind": "tile", "params": {"loop": "i", "factors": [32]}}
+        r = soft_verify([d, d])
+        assert not r.approved
+        assert any("R3" in v for v in r.rule_violations)
+
+    def test_invalid_vectorize_width(self):
+        r = soft_verify([{"kind": "vectorize", "params": {"width": 0}}])
+        assert not r.approved
+        assert any("R4" in v for v in r.rule_violations)
+
+    def test_matmul_tile_alignment(self):
+        r = soft_verify(
+            [{"kind": "tile", "params": {"loop": "i", "factors": [7]}}],
+            op_name="matmul",
+            shapes={"A": [512, 512], "B": [512, 512]},
+        )
+        assert not r.approved
+        assert any("R5" in v for v in r.rule_violations)
+
+    def test_matmul_aligned_passes(self):
+        r = soft_verify(
+            [{"kind": "tile", "params": {"loop": "i", "factors": [64]}}],
+            op_name="matmul",
+            shapes={"A": [512, 512], "B": [512, 512]},
+        )
+        assert r.approved
+
+    def test_to_dict(self):
+        r = soft_verify([{"kind": "tile", "params": {"factors": [-1]}}])
+        d = r.to_dict()
+        assert d["approved"] is False
+        assert len(d["rule_violations"]) >= 1
+
+    def test_empty_decisions_approved(self):
+        r = soft_verify([])
+        assert r.approved

@@ -291,6 +291,123 @@ def reflexion_feedback(*, stage: str, error_message: str,
     )
 
 
+# ─────────────────────────────────────────────────────────────────────
+# 4. Sakana-style LLM soft-verifier pre-filter (D2, Sakana arXiv 2402.14244)
+# ─────────────────────────────────────────────────────────────────────
+# Before spending a compile/profile budget token on the GPU, ask a cheap LLM
+# whether the current strategy "looks correct". If the soft-verifier says NO,
+# the agent can self-correct without wasting hardware resources.
+#
+# Design: the soft-verifier is a STATELESS function that takes a strategy
+# snapshot + hw profile and returns a (verdict, reason) tuple. It does NOT
+# need actual compilation — it's a fast heuristic check using either:
+# (a) rule-based checks (tile-alignment, budget-exceeded, conflicting decisions)
+# (b) optionally, an LLM call (the "Sakana" mode — if a cheap model is available)
+#
+# For Phase 4 we implement (a) — the deterministic rule-based soft-verify —
+# which catches the most common strategy mistakes without needing LLM tokens.
+# The LLM-backed mode (b) is additive and can be layered on top when D3/M4
+# provides a fine-tuned verifier model.
+
+@dataclass
+class SoftVerifyResult:
+    """Outcome of a soft-verify pre-check."""
+    approved: bool
+    reason: str = ""
+    rule_violations: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {"approved": self.approved, "reason": self.reason,
+                "rule_violations": self.rule_violations}
+
+
+def soft_verify(
+    decisions: list[dict],
+    *,
+    op_name: str = "",
+    shapes: dict | None = None,
+    hw_name: str = "nvidia_ampere",
+    budget_max_decisions: int = 50,
+    budget_max_compiles: int = 30,
+) -> SoftVerifyResult:
+    """Rule-based soft-verify pre-filter (Sakana D2).
+
+    Checks a sequence of decisions for obvious strategy errors BEFORE
+    spending a compile/profile budget token. Returns ``approved=True`` if
+    no violations found.
+
+    Rules:
+      R1. Decision count must not exceed budget.
+      R2. Tile factors must be positive integers.
+      R3. No duplicate identical decisions (exact kind+params repeat = loop bug).
+      R4. Parallel/vectorize decisions must have width > 0.
+      R5. If op is matmul and shapes are known, tile factors must divide the
+          corresponding dimension.
+    """
+    violations: list[str] = []
+
+    # R1: budget
+    if len(decisions) > budget_max_decisions:
+        violations.append(
+            f"R1: {len(decisions)} decisions exceeds budget {budget_max_decisions}")
+
+    # R2 + R4: tile/vectorize param validation
+    for i, d in enumerate(decisions):
+        kind = d.get("kind", "")
+        params = d.get("params") or {}
+        if kind == "tile":
+            factors = params.get("factors", [])
+            if isinstance(factors, (list, tuple)):
+                for f in factors:
+                    if not isinstance(f, int) or f <= 0:
+                        violations.append(
+                            f"R2: decision[{i}] tile factor {f} is not a positive int")
+        if kind in ("vectorize", "parallel"):
+            width = params.get("width", params.get("factor"))
+            if width is not None and (not isinstance(width, int) or width <= 0):
+                violations.append(
+                    f"R4: decision[{i}] {kind} width/factor={width} invalid")
+
+    # R3: exact duplicates
+    seen: set[str] = set()
+    for i, d in enumerate(decisions):
+        key = f"{d.get('kind')}|{d.get('params')}"
+        if key in seen:
+            violations.append(
+                f"R3: decision[{i}] is an exact duplicate (loop bug?)")
+        seen.add(key)
+
+    # R5: matmul tile alignment
+    if op_name == "matmul" and shapes:
+        dims = list(shapes.values())
+        if dims:
+            M = dims[0][0] if len(dims[0]) >= 1 else None
+            N = dims[0][1] if len(dims[0]) >= 2 else None
+            K = dims[1][1] if len(dims) > 1 and len(dims[1]) >= 2 else None
+            for d in decisions:
+                if d.get("kind") == "tile":
+                    params = d.get("params") or {}
+                    loop = params.get("loop", "")
+                    factors = params.get("factors", [])
+                    if factors and isinstance(factors[0], int):
+                        f = factors[0]
+                        dim_val = None
+                        if "i" in loop and M:
+                            dim_val = M
+                        elif "j" in loop and N:
+                            dim_val = N
+                        elif "k" in loop and K:
+                            dim_val = K
+                        if dim_val and f > 0 and dim_val % f != 0:
+                            violations.append(
+                                f"R5: tile({loop},{f}) does not divide dim={dim_val}")
+
+    approved = len(violations) == 0
+    reason = "approved" if approved else f"{len(violations)} rule violation(s)"
+    return SoftVerifyResult(approved=approved, reason=reason,
+                            rule_violations=violations)
+
+
 __all__ = [
     "RobustReward",
     "robust_reward",
@@ -300,4 +417,6 @@ __all__ = [
     "staged_correctness_gate",
     "classify_failure",
     "reflexion_feedback",
+    "SoftVerifyResult",
+    "soft_verify",
 ]
