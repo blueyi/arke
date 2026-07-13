@@ -79,7 +79,11 @@ class ArkeMCPServer:
     def _initialize(self) -> dict[str, Any]:
         return {
             "protocolVersion": MCP_PROTOCOL_VERSION,
-            "capabilities": {"tools": {"listChanged": False}},
+            "capabilities": {
+                "tools": {"listChanged": False},
+                "resources": {"listChanged": False, "subscribe": False},
+                "prompts": {"listChanged": False},
+            },
             "serverInfo": {
                 "name": _SERVER_NAME,
                 "version": FACADE_VERSION,
@@ -88,6 +92,95 @@ class ArkeMCPServer:
                 "target_hw": self.target_hw,
             },
         }
+
+    # ── resources primitive ───────────────────────────────────────────
+    def _resources_list(self) -> dict[str, Any]:
+        """Expose Arke optimization context as readable MCP resources."""
+        return {"resources": [
+            {"uri": "arke://context/op",
+             "name": "Optimization context",
+             "description": "Current op, shapes, and target hardware.",
+             "mimeType": "application/json"},
+            {"uri": "arke://hw/profile",
+             "name": "Hardware profile",
+             "description": "Target HW constraints (SM, smem, regs, warp size).",
+             "mimeType": "application/json"},
+            {"uri": "arke://strategy/current",
+             "name": "Current StrategyIR",
+             "description": "The StrategyIR + decision log accumulated so far.",
+             "mimeType": "application/json"},
+            {"uri": "arke://actions/legal",
+             "name": "Legal actions",
+             "description": "The compiler-legal move set for the current state.",
+             "mimeType": "application/json"},
+        ]}
+
+    def _resources_read(self, params: dict[str, Any]) -> dict[str, Any]:
+        uri = params.get("uri", "")
+        if uri == "arke://context/op":
+            body = {"op": self.op_name, "shapes": self.env.op_inputs,
+                    "target_hw": self.target_hw}
+        elif uri == "arke://hw/profile":
+            hw = self.env.hw_profile
+            body = getattr(hw, "to_dict", lambda: {"name": hw.name})()
+        elif uri == "arke://strategy/current":
+            body = self.env.state.to_dict()
+        elif uri == "arke://actions/legal":
+            payload = json.loads(
+                self.registry.get("list_legal_actions").execute({}).to_json())
+            body = payload.get("data", payload)
+        else:
+            raise ValueError(f"unknown resource uri: {uri!r}")
+        return {"contents": [{
+            "uri": uri, "mimeType": "application/json",
+            "text": json.dumps(body, default=str, indent=2),
+        }]}
+
+    # ── prompts primitive ─────────────────────────────────────────────
+    def _prompts_list(self) -> dict[str, Any]:
+        """Expose reusable optimization-workflow prompt templates."""
+        return {"prompts": [
+            {"name": "optimize_kernel",
+             "description": "Guide the agent through the bounded compile→verify→"
+                            "profile→adjust loop for the current op.",
+             "arguments": [
+                 {"name": "target_ratio", "description":
+                  "Target speedup vs baseline (e.g. 1.0 = parity)", "required": False},
+             ]},
+            {"name": "explain_strategy",
+             "description": "Summarize the current StrategyIR + @rationale trail.",
+             "arguments": []},
+        ]}
+
+    def _prompts_get(self, params: dict[str, Any]) -> dict[str, Any]:
+        name = params.get("name")
+        args = params.get("arguments", {}) or {}
+        if name == "optimize_kernel":
+            target = args.get("target_ratio", "1.0")
+            text = (
+                f"You are optimizing the '{self.op_name}' kernel "
+                f"(shapes={self.env.op_inputs}) for {self.target_hw}.\n"
+                "Loop: (1) get_hw_profile + analyze_compute; (2) list_legal_actions; "
+                "(3) apply_decision with a concrete @rationale for WHY; "
+                "(4) verify_correctness (V1); (5) compile_and_profile (V2). "
+                "checkpoint before risky exploration, rollback if a branch regresses. "
+                f"Only apply moves from list_legal_actions. Target baseline_ratio >= {target}. "
+                "Every decision MUST carry a non-empty rationale."
+            )
+        elif name == "explain_strategy":
+            snap = self.env.state.to_dict()
+            text = (
+                "Summarize the current optimization strategy. Decision log:\n"
+                + json.dumps(snap.get("decision_log", snap), default=str, indent=2)
+            )
+        else:
+            raise ValueError(f"unknown prompt: {name!r}")
+        return {
+            "description": f"Arke prompt: {name}",
+            "messages": [{"role": "user",
+                          "content": {"type": "text", "text": text}}],
+        }
+
 
     # ── JSON-RPC dispatch ─────────────────────────────────────────────
     def handle(self, request: dict[str, Any]) -> dict[str, Any] | None:
@@ -110,6 +203,14 @@ class ArkeMCPServer:
                 result = self._tools_list()
             elif method == "tools/call":
                 result = self._tools_call(params)
+            elif method == "resources/list":
+                result = self._resources_list()
+            elif method == "resources/read":
+                result = self._resources_read(params)
+            elif method == "prompts/list":
+                result = self._prompts_list()
+            elif method == "prompts/get":
+                result = self._prompts_get(params)
             else:
                 return {"jsonrpc": "2.0", "id": req_id,
                         "error": {"code": -32601, "message": f"method not found: {method}"}}
@@ -141,6 +242,87 @@ class ArkeMCPServer:
                 wr.flush()
 
 
+    # ── Streamable HTTP transport (remote) ────────────────────────────
+    def build_http_server(self, host: str = "127.0.0.1", port: int = 8765):
+        """Construct (but do not start) an ``http.server.HTTPServer`` bound to
+        ``host:port`` that serves this MCP env over Streamable HTTP.
+
+        Returns the ``HTTPServer`` instance; call ``.serve_forever()`` to run
+        or ``.shutdown()`` to stop. :meth:`serve_http` uses this internally.
+        Passing ``port=0`` binds an ephemeral port (read back via
+        ``httpd.server_address[1]``) — handy for tests.
+        """
+        import http.server
+
+        server_self = self
+
+        class _Handler(http.server.BaseHTTPRequestHandler):
+            def _send(self, code: int, body: dict, ctype: str = "application/json"):
+                data = json.dumps(body, default=str).encode("utf-8")
+                self.send_response(code)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def do_GET(self):  # noqa: N802
+                if self.path.rstrip("/") in ("/mcp", "/health", ""):
+                    self._send(200, {
+                        "server": _SERVER_NAME, "version": FACADE_VERSION,
+                        "protocolVersion": MCP_PROTOCOL_VERSION,
+                        "transport": "streamable-http", "op": server_self.op_name,
+                    })
+                else:
+                    self._send(404, {"error": "not found"})
+
+            def do_POST(self):  # noqa: N802
+                if self.path.rstrip("/") != "/mcp":
+                    self._send(404, {"error": "not found; POST to /mcp"})
+                    return
+                length = int(self.headers.get("Content-Length", 0) or 0)
+                raw = self.rfile.read(length).decode("utf-8") if length else ""
+                try:
+                    request = json.loads(raw)
+                except json.JSONDecodeError:
+                    self._send(200, {"jsonrpc": "2.0", "id": None,
+                                     "error": {"code": -32700, "message": "parse error"}})
+                    return
+                response = server_self.handle(request)
+                if response is None:  # notification → 202 Accepted
+                    self.send_response(202)
+                    self.end_headers()
+                    return
+                self._send(200, response)
+
+            def log_message(self, format, *args):  # noqa: A002 — silence logging
+                pass
+
+        return http.server.HTTPServer((host, port), _Handler)
+
+    def serve_http(self, host: str = "127.0.0.1", port: int = 8765) -> None:
+        """Serve MCP over Streamable HTTP (remote transport).
+
+        Implements the MCP Streamable-HTTP shape with the Python stdlib only
+        (zero runtime deps, matching the stdio server): a single ``POST /mcp``
+        endpoint accepting a JSON-RPC request body and returning a JSON-RPC
+        response; ``GET /mcp`` (or ``/health``) returns a liveness document.
+        This lets a remote MCP client (another host/container) drive the same
+        8-tool Façade + resources + prompts.
+        """
+        httpd = self.build_http_server(host=host, port=port)
+        try:
+            httpd.serve_forever()
+        finally:
+            httpd.server_close()
+
+
 def serve(op_name: str, shapes: dict[str, list[int]], target_hw: str = "nvidia_ampere") -> None:
-    """Entry point for ``arke mcp serve``."""
+    """Entry point for ``arke mcp serve`` (stdio)."""
     ArkeMCPServer(op_name, shapes, target_hw).serve_stdio()
+
+
+def serve_http(op_name: str, shapes: dict[str, list[int]],
+               target_hw: str = "nvidia_ampere",
+               host: str = "127.0.0.1", port: int = 8765) -> None:
+    """Entry point for ``arke mcp serve --http`` (Streamable HTTP, remote)."""
+    ArkeMCPServer(op_name, shapes, target_hw).serve_http(host=host, port=port)

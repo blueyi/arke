@@ -178,6 +178,12 @@ def _build_parser() -> argparse.ArgumentParser:
                               help="Shape, comma-separated (op-specific, e.g. 512,512,512)")
     serve_parser.add_argument("--target", default="nvidia_ampere",
                               help="Target hardware label")
+    serve_parser.add_argument("--http", action="store_true",
+                              help="Serve over Streamable HTTP (remote) instead of stdio")
+    serve_parser.add_argument("--host", default="127.0.0.1",
+                              help="HTTP bind host (with --http)")
+    serve_parser.add_argument("--port", type=int, default=8765,
+                              help="HTTP bind port (with --http)")
 
     return parser
 
@@ -232,12 +238,16 @@ def _cmd_mcp(args) -> int:
     if getattr(args, "mcp_command", None) != "serve":
         print("usage: arke mcp serve --kernel <op> [--shape d,d,...] [--target hw]", file=sys.stderr)
         return 1
-    from arke.agent.mcp_server import serve
     from benchmarks.live.run_live_optimize import _shapes_for
 
     dims = [int(x) for x in args.shape.split(",") if x.strip()] if args.shape else []
     shapes = _shapes_for(args.kernel, dims)
-    serve(args.kernel, shapes, args.target)
+    if getattr(args, "http", False):
+        from arke.agent.mcp_server import serve_http
+        serve_http(args.kernel, shapes, args.target, host=args.host, port=args.port)
+    else:
+        from arke.agent.mcp_server import serve
+        serve(args.kernel, shapes, args.target)
     return 0
 
 
