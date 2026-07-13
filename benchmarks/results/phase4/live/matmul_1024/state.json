@@ -1,0 +1,156 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "matmul",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "i",
+        "tile_factors": [
+          128
+        ],
+        "mapping": "threadblock.y"
+      },
+      {
+        "loop": "j",
+        "tile_factors": [
+          128
+        ],
+        "mapping": "threadblock.x",
+        "vector_width": 8
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tile the M-dimension (i) with factor 128. A 128-row block tile is the standard GEMM output-block height for Ampere, balancing register pressure and occupancy while producing enough work per CTA (128\u00d7128 = 16K output elements) to hide memory latency across 30 SMs.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tile the N-dimension (j) with factor 128 to match the i-tile. A 128\u00d7128 output block per CTA maximizes data reuse in shared memory (A tile: 128\u00d732, B tile: 32\u00d7128, both fit in 48 KB), and 64 CTAs (1024/128)\u00b2 fill all 30 SMs ~2\u00d7 for good wave occupancy.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 3,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the M-dimension (i) tiles to threadblock.y. This assigns each 128-row output tile to a distinct CTA row, enabling all 30 SMs to execute CTAs concurrently. Separating i\u2192y and j\u2192x avoids threadblock dimension conflicts and matches standard row-major GEMM CTA grid layout.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 4,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the N-dimension (j) tiles to threadblock.x. This creates a 2D CTA grid of (M/128) \u00d7 (N/128) = 8\u00d78 = 64 CTAs, providing ~2 waves over 30 SMs for good utilization. threadblock.x for the column dimension is conventional for coalesced global-memory access to B.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 5,
+        "effect": "vectorize:j",
+        "rationale": {
+          "text": "Vectorize the j (N) inner loop with width 8. For FP16, width-8 maps to 128-bit (float4) vector loads/stores from global memory, maximizing memory bandwidth utilization. This also enables the compiler to generate efficient LDG.128 instructions on Ampere.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          128
+        ],
+        "loop": "i"
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the M-dimension (i) with factor 128. A 128-row block tile is the standard GEMM output-block height for Ampere, balancing register pressure and occupancy while producing enough work per CTA (128\u00d7128 = 16K output elements) to hide memory latency across 30 SMs.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          128
+        ],
+        "loop": "j"
+      },
+      "step": 2,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the N-dimension (j) with factor 128 to match the i-tile. A 128\u00d7128 output block per CTA maximizes data reuse in shared memory (A tile: 128\u00d732, B tile: 32\u00d7128, both fit in 48 KB), and 64 CTAs (1024/128)\u00b2 fill all 30 SMs ~2\u00d7 for good wave occupancy.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "i": "threadblock.y"
+        }
+      },
+      "step": 3,
+      "level": 1,
+      "rationale": {
+        "text": "Map the M-dimension (i) tiles to threadblock.y. This assigns each 128-row output tile to a distinct CTA row, enabling all 30 SMs to execute CTAs concurrently. Separating i\u2192y and j\u2192x avoids threadblock dimension conflicts and matches standard row-major GEMM CTA grid layout.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "j": "threadblock.x"
+        }
+      },
+      "step": 4,
+      "level": 1,
+      "rationale": {
+        "text": "Map the N-dimension (j) tiles to threadblock.x. This creates a 2D CTA grid of (M/128) \u00d7 (N/128) = 8\u00d78 = 64 CTAs, providing ~2 waves over 30 SMs for good utilization. threadblock.x for the column dimension is conventional for coalesced global-memory access to B.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "vectorize",
+      "params": {
+        "loop": "j",
+        "width": 8
+      },
+      "step": 5,
+      "level": 1,
+      "rationale": {
+        "text": "Vectorize the j (N) inner loop with width 8. For FP16, width-8 maps to 128-bit (float4) vector loads/stores from global memory, maximizing memory bandwidth utilization. This also enables the compiler to generate efficient LDG.128 instructions on Ampere.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [],
+  "best_result": null,
+  "checkpoints": {},
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 5,
+    "compiles_used": 0
+  }
+}

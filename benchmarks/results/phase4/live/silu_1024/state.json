@@ -1,0 +1,173 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "silu",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "i",
+        "tile_factors": [
+          128
+        ],
+        "mapping": "threadblock.x"
+      },
+      {
+        "loop": "j",
+        "tile_factors": [
+          128
+        ],
+        "vector_width": 4
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tile the outer `i` dimension by 128 to create 8 independent row-groups (1024/128=8). This maps cleanly to the 30-SM device, giving 8\u00d7(j-tiles) thread-blocks that can be scheduled across SMs. 128 rows per tile also keeps L1 reuse high for elementwise ops.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tile the inner `j` dimension by 128 to create 8 column-groups (1024/128=8). With 128 elements per tile, we get 64 total thread-blocks (8\u00d78), which is 2\u00d7 the SM count (30), ensuring good wave occupancy. The 128-wide inner tile will allow vectorized 128-bit loads (4\u00d7float32) along `j`.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 3,
+        "effect": "vectorize:j",
+        "rationale": {
+          "text": "Vectorize the `j` loop with width=4 to emit 128-bit vector loads/stores (float4). The `j` axis is the contiguous (row-major) dimension, so 4\u00d7float32 = 128-bit aligned accesses match the Ampere L1/L2 cache line structure and maximize memory bandwidth utilization for this memory-bound elementwise kernel.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 4,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map tiled `i` outer loop to threadblock.x so each tile of 128 rows becomes an independent GPU thread-block. Combined with the `j` tiling, this generates 8\u00d78=64 thread-blocks total \u2014 about 2 full waves across 30 SMs \u2014 keeping all SMs busy and hiding launch/scheduling overhead.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "tile",
+      "params": {
+        "loop": "i",
+        "factors": [
+          128
+        ]
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the outer `i` dimension by 128 to create 8 independent row-groups (1024/128=8). This maps cleanly to the 30-SM device, giving 8\u00d7(j-tiles) thread-blocks that can be scheduled across SMs. 128 rows per tile also keeps L1 reuse high for elementwise ops.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          128
+        ],
+        "loop": "j"
+      },
+      "step": 2,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the inner `j` dimension by 128 to create 8 column-groups (1024/128=8). With 128 elements per tile, we get 64 total thread-blocks (8\u00d78), which is 2\u00d7 the SM count (30), ensuring good wave occupancy. The 128-wide inner tile will allow vectorized 128-bit loads (4\u00d7float32) along `j`.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "vectorize",
+      "params": {
+        "loop": "j",
+        "width": 4
+      },
+      "step": 3,
+      "level": 1,
+      "rationale": {
+        "text": "Vectorize the `j` loop with width=4 to emit 128-bit vector loads/stores (float4). The `j` axis is the contiguous (row-major) dimension, so 4\u00d7float32 = 128-bit aligned accesses match the Ampere L1/L2 cache line structure and maximize memory bandwidth utilization for this memory-bound elementwise kernel.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "i": "threadblock.x"
+        }
+      },
+      "step": 4,
+      "level": 1,
+      "rationale": {
+        "text": "Map tiled `i` outer loop to threadblock.x so each tile of 128 rows becomes an independent GPU thread-block. Combined with the `j` tiling, this generates 8\u00d78=64 thread-blocks total \u2014 about 2 full waves across 30 SMs \u2014 keeping all SMs busy and hiding launch/scheduling overhead.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0019245147705078125,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 0.0019245147705078125,
+    "metadata": {
+      "validation_tier": "V1_triton",
+      "rtol": 0.001,
+      "atol": 1e-05
+    }
+  },
+  "checkpoints": {
+    "initial": {
+      "label": "initial",
+      "timestamp": 1783904768.9636877,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "silu",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 4,
+    "compiles_used": 1
+  }
+}

@@ -1,0 +1,7 @@
+{"kind": "header", "data": {"op": "softmax", "contract_id": "arke-live-trajectory"}}
+{"kind": "profile", "data": {"latency_ms": 0.045199, "baseline_ratio": 0.614, "correct": true, "backend": "triton"}}
+{"kind": "decision", "data": {"kind": "parallel", "params": {"loop": "i"}, "rationale": "Each of the 64 rows is independent; mapping row-loop `i` to parallel GPU thread-blocks lets all 30 SMs contribute and eliminates sequential row iteration. With 64 rows and 30 SMs this gives ~2 waves \u2014 close to full utilisation.", "op": "softmax"}}
+{"kind": "decision", "data": {"kind": "tile", "params": {"loop": "j", "factors": [1024]}, "rationale": "Tiling the reduction axis `j` with 1024 threads per tile matches the max_threads_per_block=1024 on Ampere. For a 4096-wide row, this creates 4 chunks that can be reduced with efficient warp-shuffle + shared-memory tree reductions. 1024 elements \u00d7 4 bytes = 4 KB per tile, well within the 49 KB shared memory budget.", "op": "softmax"}}
+{"kind": "compile", "data": {"correct": true}}
+{"kind": "profile", "data": {"latency_ms": 0.091197, "baseline_ratio": 0.3155, "correct": true, "backend": "triton"}}
+{"kind": "decision", "data": {"kind": "vectorize", "params": {"loop": "j", "width": 4}, "rationale": "Vectorizing the inner reduction loop `j` with width=4 enables 128-bit memory loads (float4), which is the optimal load width on Ampere for FP32. This improves memory bandwidth utilization for the row-wise read pattern and reduces instruction count by 4\u00d7.", "op": "softmax"}}

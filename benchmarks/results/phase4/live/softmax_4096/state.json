@@ -1,0 +1,204 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "softmax",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "j",
+        "tile_factors": [
+          1024
+        ],
+        "vector_width": 4
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "parallel",
+        "source_step": 1,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Each of the 64 rows is independent; mapping row-loop `i` to parallel GPU thread-blocks lets all 30 SMs contribute and eliminates sequential row iteration. With 64 rows and 30 SMs this gives ~2 waves \u2014 close to full utilisation.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tiling the reduction axis `j` with 1024 threads per tile matches the max_threads_per_block=1024 on Ampere. For a 4096-wide row, this creates 4 chunks that can be reduced with efficient warp-shuffle + shared-memory tree reductions. 1024 elements \u00d7 4 bytes = 4 KB per tile, well within the 49 KB shared memory budget.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 3,
+        "effect": "vectorize:j",
+        "rationale": {
+          "text": "Vectorizing the inner reduction loop `j` with width=4 enables 128-bit memory loads (float4), which is the optimal load width on Ampere for FP32. This improves memory bandwidth utilization for the row-wise read pattern and reduces instruction count by 4\u00d7.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "parallel",
+      "params": {
+        "loop": "i"
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Each of the 64 rows is independent; mapping row-loop `i` to parallel GPU thread-blocks lets all 30 SMs contribute and eliminates sequential row iteration. With 64 rows and 30 SMs this gives ~2 waves \u2014 close to full utilisation.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "loop": "j",
+        "factors": [
+          1024
+        ]
+      },
+      "step": 2,
+      "level": 1,
+      "rationale": {
+        "text": "Tiling the reduction axis `j` with 1024 threads per tile matches the max_threads_per_block=1024 on Ampere. For a 4096-wide row, this creates 4 chunks that can be reduced with efficient warp-shuffle + shared-memory tree reductions. 1024 elements \u00d7 4 bytes = 4 KB per tile, well within the 49 KB shared memory budget.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "vectorize",
+      "params": {
+        "loop": "j",
+        "width": 4
+      },
+      "step": 3,
+      "level": 1,
+      "rationale": {
+        "text": "Vectorizing the inner reduction loop `j` with width=4 enables 128-bit memory loads (float4), which is the optimal load width on Ampere for FP32. This improves memory bandwidth utilization for the row-wise read pattern and reduces instruction count by 4\u00d7.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 2.5210902094841003e-06,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 2.5210902094841003e-06,
+    "metadata": {
+      "validation_tier": "V1_triton",
+      "rtol": 0.001,
+      "atol": 1e-05
+    }
+  },
+  "checkpoints": {
+    "after_parallel_tile1024": {
+      "label": "after_parallel_tile1024",
+      "timestamp": 1783904672.7526772,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "softmax",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "j",
+            "tile_factors": [
+              1024
+            ]
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "parallel",
+            "source_step": 1,
+            "effect": "parallel-map",
+            "rationale": {
+              "text": "Each of the 64 rows is independent; mapping row-loop `i` to parallel GPU thread-blocks lets all 30 SMs contribute and eliminates sequential row iteration. With 64 rows and 30 SMs this gives ~2 waves \u2014 close to full utilisation.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 2,
+            "effect": "tile:j",
+            "rationale": {
+              "text": "Tiling the reduction axis `j` with 1024 threads per tile matches the max_threads_per_block=1024 on Ampere. For a 4096-wide row, this creates 4 chunks that can be reduced with efficient warp-shuffle + shared-memory tree reductions. 1024 elements \u00d7 4 bytes = 4 KB per tile, well within the 49 KB shared memory budget.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "parallel",
+          "params": {
+            "loop": "i"
+          },
+          "step": 1,
+          "level": 1,
+          "rationale": {
+            "text": "Each of the 64 rows is independent; mapping row-loop `i` to parallel GPU thread-blocks lets all 30 SMs contribute and eliminates sequential row iteration. With 64 rows and 30 SMs this gives ~2 waves \u2014 close to full utilisation.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "loop": "j",
+            "factors": [
+              1024
+            ]
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Tiling the reduction axis `j` with 1024 threads per tile matches the max_threads_per_block=1024 on Ampere. For a 4096-wide row, this creates 4 chunks that can be reduced with efficient warp-shuffle + shared-memory tree reductions. 1024 elements \u00d7 4 bytes = 4 KB per tile, well within the 49 KB shared memory budget.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "triton",
+        "correct": true,
+        "max_diff": 2.5210902094841003e-06,
+        "metadata": {
+          "validation_tier": "V1_triton",
+          "rtol": 0.001,
+          "atol": 1e-05
+        }
+      },
+      "decision_count_at": 2,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 3,
+    "compiles_used": 1
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "add",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "i",
+        "tile_factors": [
+          32
+        ],
+        "mapping": "threadblock.x"
+      },
+      {
+        "loop": "j",
+        "tile_factors": [
+          128
+        ],
+        "mapping": "warp",
+        "vector_width": 4
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tile the outer i-dimension by 32 to create 512/32=16 outer tiles. This exposes parallelism across the 30 SMs on Ampere; each tile maps to a CUDA thread block, giving ~16 blocks along i that can be spread across SMs.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tile j by 128 to create inner tiles of 128 elements. This aligns with 128-byte cache lines (32 fp32 elements) \u00d7 4 = 128-element vector chunks, enabling coalesced 128-bit LDG.128 loads. Each tile fits nicely in registers without spilling on Ampere's 65536-register file.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 3,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the tiled i outer loop to threadblock.x so each block of 32 rows is processed by a distinct CUDA block. With 512/32=16 tiles along i and 512/128=4 tiles along j, we get 16\u00d74=64 blocks \u2014 more than enough to saturate 30 SMs with 2 waves.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 4,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "Map the j tile loop to warps within each block. Each 128-element j-tile is handled by warps in lockstep \u2014 with 128/32=4 warps per block, this gives 4\u00d732=128 threads per block doing coalesced 32-element (128-byte) warp-level memory transactions.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 5,
+        "effect": "vectorize:j",
+        "rationale": {
+          "text": "Vectorize the j inner loop with width 4 (float4 = 128 bits). This uses LDG.128 instructions, the widest load unit on Ampere, halving the number of memory transactions and improving L2/DRAM throughput utilization for this BW-bound elementwise op.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "tile",
+      "params": {
+        "loop": "i",
+        "factors": [
+          32
+        ]
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the outer i-dimension by 32 to create 512/32=16 outer tiles. This exposes parallelism across the 30 SMs on Ampere; each tile maps to a CUDA thread block, giving ~16 blocks along i that can be spread across SMs.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "loop": "j",
+        "factors": [
+          128
+        ]
+      },
+      "step": 2,
+      "level": 1,
+      "rationale": {
+        "text": "Tile j by 128 to create inner tiles of 128 elements. This aligns with 128-byte cache lines (32 fp32 elements) \u00d7 4 = 128-element vector chunks, enabling coalesced 128-bit LDG.128 loads. Each tile fits nicely in registers without spilling on Ampere's 65536-register file.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "i": "threadblock.x"
+        }
+      },
+      "step": 3,
+      "level": 1,
+      "rationale": {
+        "text": "Map the tiled i outer loop to threadblock.x so each block of 32 rows is processed by a distinct CUDA block. With 512/32=16 tiles along i and 512/128=4 tiles along j, we get 16\u00d74=64 blocks \u2014 more than enough to saturate 30 SMs with 2 waves.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "parallel",
+      "params": {
+        "mapping": {
+          "j": "warp"
+        }
+      },
+      "step": 4,
+      "level": 1,
+      "rationale": {
+        "text": "Map the j tile loop to warps within each block. Each 128-element j-tile is handled by warps in lockstep \u2014 with 128/32=4 warps per block, this gives 4\u00d732=128 threads per block doing coalesced 32-element (128-byte) warp-level memory transactions.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "vectorize",
+      "params": {
+        "loop": "j",
+        "width": 4
+      },
+      "step": 5,
+      "level": 1,
+      "rationale": {
+        "text": "Vectorize the j inner loop with width 4 (float4 = 128 bits). This uses LDG.128 instructions, the widest load unit on Ampere, halving the number of memory transactions and improving L2/DRAM throughput utilization for this BW-bound elementwise op.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0009765625,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 0.0009765625,
+    "metadata": {
+      "validation_tier": "V1_triton",
+      "rtol": 0.001,
+      "atol": 1e-05
+    }
+  },
+  "checkpoints": {},
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 5,
+    "compiles_used": 1
+  }
+}

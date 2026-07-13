@@ -1,0 +1,307 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "matmul",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "i",
+        "tile_factors": [
+          32
+        ]
+      },
+      {
+        "loop": "j",
+        "tile_factors": [
+          32
+        ]
+      },
+      {
+        "loop": "k",
+        "tile_factors": [
+          16
+        ]
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Tile the M-dimension (i) with factor 64. A 64-row tile per thread-block is a standard choice for Ampere GEMM \u2014 it keeps each CTA working on a 64\u00d764 output tile, giving enough reuse to amortize shared-memory loads while keeping register pressure manageable. 256/64 = 4 tiles along M, which distributes well across 30 SMs.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Tile the N-dimension (j) with factor 64 to match the i-tile. A symmetric 64\u00d764 output tile per CTA is the textbook blocked-GEMM configuration: both A-tile (64\u00d7k_tile) and B-tile (k_tile\u00d764) fit in the 49KB shared memory, maximises data reuse on both operands, and produces a square output tile that maps cleanly to warp-level MMA layouts on Ampere.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 3,
+        "effect": "tile:k",
+        "rationale": {
+          "text": "Tile the K-reduction axis with factor 16. A k-tile of 16 means each iteration loads a 64\u00d716 slice of A and a 16\u00d764 slice of B into shared memory (64\u00d716 + 16\u00d764 = 2048 fp32 elements = 8KB, well within 49KB), then accumulates into the 64\u00d764 register tile. 16 steps of 16 across the K=256 dimension gives 16 pipelineable stages \u2014 small enough to hide latency without over-subscribing registers.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 4,
+        "effect": "tile:i",
+        "rationale": {
+          "text": "Switch to a 32-row tile on i. For a 256\u00d7256 problem, 64\u00d764 tiles yielded only 16 CTAs (under-utilizing 30 SMs). With tile=32 on both i and j we get 8\u00d78=64 CTAs, spreading work across all 30 SMs with ~2 waves, far better occupancy than the 64-based strategy.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 5,
+        "effect": "tile:j",
+        "rationale": {
+          "text": "Symmetric 32-column tile on j to pair with the 32-row i-tile. The 32\u00d732 output tile fits cleanly within warp-level MMA fragments on Ampere and keeps the shared-memory footprint (32\u00d716 + 16\u00d732 = 1024 fp32 = 4KB) well within 49KB budget, leaving headroom for double-buffering later.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "tile",
+      "params": {
+        "loop": "i",
+        "factors": [
+          64
+        ]
+      },
+      "step": 1,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the M-dimension (i) with factor 64. A 64-row tile per thread-block is a standard choice for Ampere GEMM \u2014 it keeps each CTA working on a 64\u00d764 output tile, giving enough reuse to amortize shared-memory loads while keeping register pressure manageable. 256/64 = 4 tiles along M, which distributes well across 30 SMs.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          64
+        ],
+        "loop": "j"
+      },
+      "step": 2,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the N-dimension (j) with factor 64 to match the i-tile. A symmetric 64\u00d764 output tile per CTA is the textbook blocked-GEMM configuration: both A-tile (64\u00d7k_tile) and B-tile (k_tile\u00d764) fit in the 49KB shared memory, maximises data reuse on both operands, and produces a square output tile that maps cleanly to warp-level MMA layouts on Ampere.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          16
+        ],
+        "loop": "k"
+      },
+      "step": 3,
+      "level": 1,
+      "rationale": {
+        "text": "Tile the K-reduction axis with factor 16. A k-tile of 16 means each iteration loads a 64\u00d716 slice of A and a 16\u00d764 slice of B into shared memory (64\u00d716 + 16\u00d764 = 2048 fp32 elements = 8KB, well within 49KB), then accumulates into the 64\u00d764 register tile. 16 steps of 16 across the K=256 dimension gives 16 pipelineable stages \u2014 small enough to hide latency without over-subscribing registers.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          32
+        ],
+        "loop": "i"
+      },
+      "step": 4,
+      "level": 1,
+      "rationale": {
+        "text": "Switch to a 32-row tile on i. For a 256\u00d7256 problem, 64\u00d764 tiles yielded only 16 CTAs (under-utilizing 30 SMs). With tile=32 on both i and j we get 8\u00d78=64 CTAs, spreading work across all 30 SMs with ~2 waves, far better occupancy than the 64-based strategy.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "tile",
+      "params": {
+        "factors": [
+          32
+        ],
+        "loop": "j"
+      },
+      "step": 5,
+      "level": 1,
+      "rationale": {
+        "text": "Symmetric 32-column tile on j to pair with the 32-row i-tile. The 32\u00d732 output tile fits cleanly within warp-level MMA fragments on Ampere and keeps the shared-memory footprint (32\u00d716 + 16\u00d732 = 1024 fp32 = 4KB) well within 49KB budget, leaving headroom for double-buffering later.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0207977294921875,
+      "metadata": {
+        "validation_tier": "V1_triton",
+        "rtol": 0.001,
+        "atol": 1e-05
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 0.0207977294921875,
+    "metadata": {
+      "validation_tier": "V1_triton",
+      "rtol": 0.001,
+      "atol": 1e-05
+    }
+  },
+  "checkpoints": {
+    "baseline_only": {
+      "label": "baseline_only",
+      "timestamp": 1783904612.990709,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "i",
+            "tile_factors": [
+              64
+            ]
+          },
+          {
+            "loop": "j",
+            "tile_factors": [
+              64
+            ]
+          },
+          {
+            "loop": "k",
+            "tile_factors": [
+              16
+            ]
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "tile",
+            "source_step": 1,
+            "effect": "tile:i",
+            "rationale": {
+              "text": "Tile the M-dimension (i) with factor 64. A 64-row tile per thread-block is a standard choice for Ampere GEMM \u2014 it keeps each CTA working on a 64\u00d764 output tile, giving enough reuse to amortize shared-memory loads while keeping register pressure manageable. 256/64 = 4 tiles along M, which distributes well across 30 SMs.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 2,
+            "effect": "tile:j",
+            "rationale": {
+              "text": "Tile the N-dimension (j) with factor 64 to match the i-tile. A symmetric 64\u00d764 output tile per CTA is the textbook blocked-GEMM configuration: both A-tile (64\u00d7k_tile) and B-tile (k_tile\u00d764) fit in the 49KB shared memory, maximises data reuse on both operands, and produces a square output tile that maps cleanly to warp-level MMA layouts on Ampere.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "tile",
+            "source_step": 3,
+            "effect": "tile:k",
+            "rationale": {
+              "text": "Tile the K-reduction axis with factor 16. A k-tile of 16 means each iteration loads a 64\u00d716 slice of A and a 16\u00d764 slice of B into shared memory (64\u00d716 + 16\u00d764 = 2048 fp32 elements = 8KB, well within 49KB), then accumulates into the 64\u00d764 register tile. 16 steps of 16 across the K=256 dimension gives 16 pipelineable stages \u2014 small enough to hide latency without over-subscribing registers.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "tile",
+          "params": {
+            "loop": "i",
+            "factors": [
+              64
+            ]
+          },
+          "step": 1,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the M-dimension (i) with factor 64. A 64-row tile per thread-block is a standard choice for Ampere GEMM \u2014 it keeps each CTA working on a 64\u00d764 output tile, giving enough reuse to amortize shared-memory loads while keeping register pressure manageable. 256/64 = 4 tiles along M, which distributes well across 30 SMs.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              64
+            ],
+            "loop": "j"
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the N-dimension (j) with factor 64 to match the i-tile. A symmetric 64\u00d764 output tile per CTA is the textbook blocked-GEMM configuration: both A-tile (64\u00d7k_tile) and B-tile (k_tile\u00d764) fit in the 49KB shared memory, maximises data reuse on both operands, and produces a square output tile that maps cleanly to warp-level MMA layouts on Ampere.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "tile",
+          "params": {
+            "factors": [
+              16
+            ],
+            "loop": "k"
+          },
+          "step": 3,
+          "level": 1,
+          "rationale": {
+            "text": "Tile the K-reduction axis with factor 16. A k-tile of 16 means each iteration loads a 64\u00d716 slice of A and a 16\u00d764 slice of B into shared memory (64\u00d716 + 16\u00d764 = 2048 fp32 elements = 8KB, well within 49KB), then accumulates into the 64\u00d764 register tile. 16 steps of 16 across the K=256 dimension gives 16 pipelineable stages \u2014 small enough to hide latency without over-subscribing registers.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "triton",
+        "correct": true,
+        "max_diff": 0.0207977294921875,
+        "metadata": {
+          "validation_tier": "V1_triton",
+          "rtol": 0.001,
+          "atol": 1e-05
+        }
+      },
+      "decision_count_at": 3,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 5,
+    "compiles_used": 1
+  }
+}
