@@ -25,7 +25,12 @@ except ImportError:
 
 
 def _ensure_enabled() -> None:
-    """Enable FlagGems globally (once). Persistent, no cleanup needed."""
+    """Enable FlagGems globally (once). Persistent, no cleanup needed.
+
+    NOTE: this permanently hijacks the ``aten`` dispatch table. Prefer
+    :func:`scoped_gems` for correctness paths so the hijack is torn down
+    afterwards (avoids cross-test pollution — see C5 in the 2026-07-13 audit).
+    """
     global _ENABLED
     if _ENABLED:
         return
@@ -33,6 +38,26 @@ def _ensure_enabled() -> None:
 
     flag_gems.enable()
     _ENABLED = True
+
+
+def scoped_gems():
+    """Context manager that enables FlagGems only within the ``with`` block.
+
+    Uses ``flag_gems.use_gems()`` whose ``__exit__`` calls ``lib._destroy()``
+    to tear down the ``aten`` override, so the global dispatch table is
+    restored on exit. This is the pollution-free alternative to the persistent
+    ``_ensure_enabled()`` global hijack. Falls back to a null-context if
+    FlagGems or ``use_gems`` is unavailable.
+    """
+    import contextlib
+    try:
+        import flag_gems
+        use_gems = getattr(flag_gems, "use_gems", None)
+        if use_gems is not None:
+            return use_gems()
+    except Exception:
+        pass
+    return contextlib.nullcontext()
 
 
 @register_baseline
