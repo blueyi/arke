@@ -1,0 +1,36 @@
+# Arke Harness — BYOK LLM config (Hermes-compatible scheme).
+#
+# Copy to ./arke_llm.yaml or ~/.arke/llm.yaml, or point $ARKE_LLM_CONFIG at it.
+# Each provider names a `key_env` — the environment variable holding your API
+# key (Bring Your Own Key). Secrets stay out of this file.
+#
+# Loaded by arke.agent.llm_config.load_config() (YAML first, env-var fallback).
+
+model:
+  default: claude-sonnet-4-6      # default model name
+  provider: yunwu-claude          # default provider alias (key into `providers`)
+  # fallback: [openai]            # optional; else all other resolved providers
+
+providers:
+  yunwu-claude:
+    base_url: https://yunwu.ai/v1        # clean OpenAI-compatible endpoint
+    key_env: ARKE_YUNWU_CLAUDE_API_KEY   # BYOK: export this env var with your key
+    api_mode: chat_completions           # → openai protocol (recommended)
+    default_model: claude-sonnet-4-6
+    models:                              # optional allow-list
+      - claude-sonnet-4-6
+      - claude-opus-4-8
+
+  openai:
+    base_url: https://api.openai.com/v1
+    key_env: OPENAI_API_KEY
+    api_mode: chat_completions
+    default_model: gpt-4o
+
+  # A raw Anthropic Messages endpoint (only if you specifically need it — note
+  # the bare yunwu.ai Anthropic endpoint injects Claude-Code context; prefer /v1).
+  # anthropic:
+  #   base_url: https://api.anthropic.com
+  #   key_env: ANTHROPIC_API_KEY
+  #   api_mode: anthropic
+  #   default_model: claude-sonnet-4-20250514

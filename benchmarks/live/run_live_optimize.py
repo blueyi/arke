@@ -191,11 +191,13 @@ def main() -> int:
     ap.add_argument("--resume-from", default=None, help="resume from a prior run's dir/state.json")
     args = ap.parse_args()
 
-    from arke.agent.llm_config import LLMConfigError, load_from_env
+    from arke.agent.llm_config import LLMConfigError, load_config
     from arke.agent.runner import LLMRunner
 
     try:
-        config = load_from_env()
+        # BYOK: prefer a YAML config (ARKE_LLM_CONFIG / ./arke_llm.yaml /
+        # ~/.arke/llm.yaml), fall back to env vars. See load_config().
+        config = load_config()
     except LLMConfigError as e:
         logger.error("No LLM provider configured: %s", e)
         return 1

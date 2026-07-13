@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal
 
 Protocol = Literal["anthropic", "openai"]
@@ -55,6 +56,15 @@ class ProviderConfig:
     api_key: str
     base_url: str | None
     default_model: str
+    models: tuple[str, ...] = ()   # BYOK allow-list; empty = any model permitted
+
+    def allows(self, model: str) -> bool:
+        """Whether ``model`` is permitted by this provider's allow-list.
+
+        An empty ``models`` tuple means no restriction (any model allowed) —
+        preserves backward-compatible behavior for env-derived providers.
+        """
+        return not self.models or model in self.models
 
     def redacted(self) -> dict[str, str | None]:
         """Safe-to-log view (api_key masked)."""
@@ -247,6 +257,144 @@ def load_from_env(
     fallback = [a for a in providers if a != primary]
 
     return LLMConfig(primary=primary, providers=providers, fallback=fallback)
+
+
+def _api_mode_to_protocol(api_mode: str | None) -> Protocol:
+    """Map a Hermes-style ``api_mode`` to an Arke protocol.
+
+    ``chat_completions`` / ``responses`` → ``openai``; ``anthropic`` /
+    ``messages`` → ``anthropic``. Defaults to ``openai`` (the clean surface).
+    """
+    m = (api_mode or "").lower()
+    if m in ("anthropic", "messages"):
+        return "anthropic"
+    return "openai"
+
+
+def load_from_yaml(path: str | os.PathLike | None = None) -> LLMConfig:
+    """Build an :class:`LLMConfig` from a Hermes-compatible BYOK YAML file.
+
+    This implements the same model-configuration scheme Hermes uses, so a user
+    can Bring Your Own Key via a config file instead of hard-wired env vars.
+
+    Schema (Hermes-compatible)::
+
+        model:
+          default: claude-sonnet-4-6      # default model name
+          provider: yunwu-claude          # default provider alias (key into providers)
+        providers:
+          yunwu-claude:
+            base_url: https://yunwu.ai/v1
+            key_env: ARKE_YUNWU_CLAUDE_API_KEY   # BYOK: env var holding the key
+            api_mode: chat_completions           # → openai protocol
+            default_model: claude-sonnet-4-6
+            models: [claude-sonnet-4-6, claude-opus-4-8]   # allow-list (optional)
+            fallback: [openai, yunwu-all]        # optional per-config fallback order
+
+    Key resolution (BYOK): each provider names ``key_env``; the actual secret is
+    read from that environment variable at load time. A literal ``api_key`` field
+    is also honored (discouraged — keeps secrets out of the file by default).
+
+    Search order when ``path`` is None:
+      1. ``$ARKE_LLM_CONFIG``
+      2. ``./arke_llm.yaml`` (cwd)
+      3. ``~/.arke/llm.yaml``
+
+    Raises :class:`LLMConfigError` if no file is found or no provider resolves.
+    """
+    import yaml  # local import — keeps PyYAML optional for env-only users
+
+    candidates: list[Path] = []
+    if path is not None:
+        candidates.append(Path(path))
+    else:
+        env_path = os.environ.get("ARKE_LLM_CONFIG")
+        if env_path:
+            candidates.append(Path(env_path))
+        candidates.append(Path.cwd() / "arke_llm.yaml")
+        candidates.append(Path.home() / ".arke" / "llm.yaml")
+
+    cfg_path = next((p for p in candidates if p.exists()), None)
+    if cfg_path is None:
+        raise LLMConfigError(
+            "No Arke LLM YAML config found. Looked in: "
+            + ", ".join(str(p) for p in candidates)
+        )
+
+    doc = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+    model_sec = doc.get("model", {}) or {}
+    providers_sec = doc.get("providers", {}) or {}
+    if not providers_sec:
+        raise LLMConfigError(f"{cfg_path}: no 'providers' section.")
+
+    providers: dict[str, ProviderConfig] = {}
+    for alias, pc in providers_sec.items():
+        pc = pc or {}
+        key_env = pc.get("key_env")
+        api_key = pc.get("api_key") or (os.environ.get(key_env) if key_env else None)
+        if not api_key:
+            # Skip providers whose key isn't present in the env — a user may
+            # declare several and only have keys for some (Hermes behavior).
+            continue
+        default_model = pc.get("default_model") or pc.get("model") or ""
+        models = tuple(pc.get("models", []) or ())
+        if not default_model and models:
+            default_model = models[0]
+        providers[alias] = ProviderConfig(
+            alias=alias,
+            protocol=_api_mode_to_protocol(pc.get("api_mode") or pc.get("protocol")),
+            api_key=api_key,
+            base_url=pc.get("base_url"),
+            default_model=default_model,
+            models=models,
+        )
+
+    if not providers:
+        raise LLMConfigError(
+            f"{cfg_path}: no provider had a resolvable key. Set the key_env "
+            "environment variables (BYOK)."
+        )
+
+    primary = model_sec.get("provider")
+    if primary and primary not in providers:
+        # Named default provider has no key — fall back to any resolved one.
+        primary = None
+    primary = primary or next(iter(providers))
+
+    # Optional: a top-level or per-primary fallback list; else all-others.
+    fallback = model_sec.get("fallback") or providers_sec.get(primary, {}).get("fallback")
+    if fallback:
+        fallback = [a for a in fallback if a in providers and a != primary]
+    else:
+        fallback = [a for a in providers if a != primary]
+
+    # A top-level default model overrides the primary provider's default.
+    default_model = model_sec.get("default")
+    if default_model and providers[primary].default_model != default_model:
+        p = providers[primary]
+        providers[primary] = ProviderConfig(
+            alias=p.alias, protocol=p.protocol, api_key=p.api_key,
+            base_url=p.base_url, default_model=default_model, models=p.models,
+        )
+
+    return LLMConfig(primary=primary, providers=providers, fallback=fallback)
+
+
+def load_config(path: str | os.PathLike | None = None) -> LLMConfig:
+    """Unified loader: prefer a BYOK YAML config, fall back to env vars.
+
+    Resolution order:
+      1. If a YAML config is found (explicit ``path``, ``$ARKE_LLM_CONFIG``,
+         ``./arke_llm.yaml``, or ``~/.arke/llm.yaml``) → :func:`load_from_yaml`.
+      2. Otherwise → :func:`load_from_env`.
+
+    This is the recommended entry point; it gives users Hermes-style BYOK via a
+    config file while preserving the zero-config env-var path.
+    """
+    try:
+        return load_from_yaml(path)
+    except (LLMConfigError, ImportError):
+        return load_from_env()
 
 
 def load_from_openclaw(**kwargs) -> LLMConfig:
