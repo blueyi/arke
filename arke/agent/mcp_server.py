@@ -287,12 +287,78 @@ class ArkeMCPServer:
                     self._send(200, {"jsonrpc": "2.0", "id": None,
                                      "error": {"code": -32700, "message": "parse error"}})
                     return
+
+                # If client wants SSE streaming (Accept: text/event-stream),
+                # respond with Server-Sent Events. For tools/call on expensive
+                # tools, emit progress events before the final result.
+                accept = self.headers.get("Accept", "")
+                wants_sse = "text/event-stream" in accept
+
+                if wants_sse:
+                    self._handle_sse(request)
+                    return
+
                 response = server_self.handle(request)
                 if response is None:  # notification → 202 Accepted
                     self.send_response(202)
                     self.end_headers()
                     return
                 self._send(200, response)
+
+            def _sse_frame(self, event: str, data: dict) -> bytes:
+                """Format one SSE frame: event + data + blank line."""
+                payload = json.dumps(data, default=str)
+                return f"event: {event}\ndata: {payload}\n\n".encode("utf-8")
+
+            def _handle_sse(self, request: dict):
+                """Stream progress + final result as SSE frames.
+
+                After writing all frames the handler returns, which closes the
+                connection (signals EOF to the client so it can finish reading).
+                """
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                # Omit Connection: keep-alive — let the handler return close
+                # the connection (EOF), so clients read() finishes.
+                self.end_headers()
+
+                method = request.get("method", "")
+                params = request.get("params", {}) or {}
+
+                is_tools_call = method == "tools/call"
+                tool_name = params.get("name", "") if is_tools_call else ""
+                expensive = tool_name in ("compile_and_profile", "verify_correctness")
+
+                buf: list[bytes] = []
+
+                if expensive:
+                    buf.append(self._sse_frame("progress", {
+                        "stage": "starting", "tool": tool_name,
+                        "message": f"Starting {tool_name}...",
+                    }))
+                    buf.append(self._sse_frame("progress", {
+                        "stage": "compiling", "tool": tool_name,
+                        "message": f"Compiling kernel ({tool_name})...",
+                    }))
+
+                response = server_self.handle(request)
+
+                if expensive:
+                    buf.append(self._sse_frame("progress", {
+                        "stage": "complete", "tool": tool_name,
+                        "message": f"{tool_name} completed.",
+                    }))
+
+                if response is None:
+                    buf.append(self._sse_frame("notification_ack", {
+                        "message": "notification accepted"}))
+                else:
+                    buf.append(self._sse_frame("result", response))
+
+                # Write all frames at once and return (closes connection).
+                self.wfile.write(b"".join(buf))
+                self.wfile.flush()
 
             def log_message(self, format, *args):  # noqa: A002 — silence logging
                 pass

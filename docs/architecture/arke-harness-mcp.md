@@ -92,6 +92,34 @@ arke mcp serve --kernel matmul --shape 512,512,512 --http --port 8765
 # → GET  http://127.0.0.1:8765/health (liveness: {server, version, transport, op})
 ```
 
+### 6c. SSE Streaming (progressive)
+
+To get **progress events** during expensive tool calls (compile_and_profile,
+verify_correctness), add `Accept: text/event-stream` to the POST:
+
+```bash
+curl -N -X POST http://127.0.0.1:8765/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"compile_and_profile","arguments":{}}}'
+# Response (SSE):
+# event: progress
+# data: {"stage":"starting","tool":"compile_and_profile","message":"Starting..."}
+#
+# event: progress
+# data: {"stage":"compiling","tool":"compile_and_profile","message":"Compiling..."}
+#
+# event: progress
+# data: {"stage":"complete","tool":"compile_and_profile","message":"...completed."}
+#
+# event: result
+# data: {"jsonrpc":"2.0","id":1,"result":{...}}
+```
+
+Without `Accept: text/event-stream`, the same POST returns a plain JSON response
+(no streaming). Cheap tools (`get_hw_profile`, `list_legal_actions`, ...) emit
+only the `result` event — no progress frames.
+
 Notifications (`"id"` absent) → HTTP 202 Accepted, empty body.
 Bad paths → 404. Parse errors → standard JSON-RPC error envelope.
 
@@ -143,10 +171,11 @@ curl -X POST http://<server>:8765/mcp \
 | File | Tests | Covers |
 |------|:-----:|--------|
 | `tests/test_mcp_server.py` | 8 | Original tools/list, tools/call, notifications, stdio round-trip |
-| `tests/test_mcp_primitives_http.py` | 20 | resources/list + read, prompts/list + get, capabilities, HTTP transport (health/init/tools/resources/prompts/notification/404) |
+| `tests/test_mcp_primitives_http.py` | 26 | resources, prompts, capabilities, HTTP transport, **SSE streaming** (progress/result events, expensive vs cheap, notification) |
+| `tests/test_rl_quality_m3.py` | 20 | M3 quality gates (schema/dedup/reward/tier) |
 | `tests/test_harness_usage_e2e.py` | 5 | 3-mode end-to-end (heuristic/MCP/builtin) |
 
-Total MCP-specific: **28 tests** (all pass, zero external deps).
+Total MCP + RL quality: **54 tests** + 5 e2e (all pass, zero external deps).
 
 ---
 

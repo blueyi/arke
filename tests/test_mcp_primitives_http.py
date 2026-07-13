@@ -170,3 +170,79 @@ class TestHttpTransport:
             assert False, "expected 404"
         except urllib.error.HTTPError as e:
             assert e.code == 404
+
+
+# ── SSE Streaming ─────────────────────────────────────────────────────
+def _post_sse(port, payload) -> list[dict]:
+    """POST with Accept: text/event-stream, parse SSE frames."""
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/mcp", data=data,
+        headers={"Content-Type": "application/json",
+                 "Accept": "text/event-stream"}, method="POST")
+    with urllib.request.urlopen(req, timeout=10) as r:
+        raw = r.read().decode()
+    # Parse SSE frames: "event: <name>\ndata: <json>\n\n"
+    events = []
+    current: dict[str, str] = {}
+    for line in raw.split("\n"):
+        if line.startswith("event: "):
+            current["event"] = line[len("event: "):]
+        elif line.startswith("data: "):
+            current["data"] = line[len("data: "):]
+        elif line == "" and current:
+            if "data" in current:
+                current["parsed"] = json.loads(current["data"])
+            events.append(current)
+            current = {}
+    return events
+
+
+class TestSSEStreaming:
+    def test_sse_tools_list_returns_result_event(self, http_server):
+        events = _post_sse(http_server, _req("tools/list"))
+        assert len(events) >= 1
+        result_ev = [e for e in events if e.get("event") == "result"]
+        assert len(result_ev) == 1
+        assert len(result_ev[0]["parsed"]["result"]["tools"]) == 8
+
+    def test_sse_initialize(self, http_server):
+        events = _post_sse(http_server, _req("initialize"))
+        result_ev = [e for e in events if e.get("event") == "result"]
+        assert result_ev[0]["parsed"]["result"]["protocolVersion"] == MCP_PROTOCOL_VERSION
+
+    def test_sse_expensive_tool_emits_progress(self, http_server):
+        """compile_and_profile emits progress events before result."""
+        # Use get_hw_profile (cheap — no progress) vs a compile-class tool.
+        # Since we can't run actual GPU compile in tests, use verify_correctness
+        # which is marked expensive but will error (no prior compile) — that's
+        # fine, we're testing the SSE frame structure, not the tool outcome.
+        events = _post_sse(http_server, _req("tools/call", {
+            "name": "verify_correctness", "arguments": {}}))
+        progress = [e for e in events if e.get("event") == "progress"]
+        result = [e for e in events if e.get("event") == "result"]
+        # At least "starting" and "compiling" progress, then "complete", then result
+        assert len(progress) >= 2, f"expected progress events, got {progress}"
+        assert progress[0]["parsed"]["stage"] == "starting"
+        assert len(result) == 1
+
+    def test_sse_cheap_tool_no_progress(self, http_server):
+        """get_hw_profile (cheap) should NOT emit progress events."""
+        events = _post_sse(http_server, _req("tools/call", {
+            "name": "get_hw_profile", "arguments": {}}))
+        progress = [e for e in events if e.get("event") == "progress"]
+        result = [e for e in events if e.get("event") == "result"]
+        assert len(progress) == 0
+        assert len(result) == 1
+
+    def test_sse_resources_read(self, http_server):
+        events = _post_sse(http_server, _req("resources/read",
+                           {"uri": "arke://context/op"}))
+        result = [e for e in events if e.get("event") == "result"]
+        payload = json.loads(result[0]["parsed"]["result"]["contents"][0]["text"])
+        assert payload["op"] == "matmul"
+
+    def test_sse_notification(self, http_server):
+        events = _post_sse(http_server, {"jsonrpc": "2.0",
+                           "method": "notifications/initialized"})
+        assert any(e.get("event") == "notification_ack" for e in events)

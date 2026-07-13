@@ -131,9 +131,9 @@ external frameworks own the training loop.
 
 | Milestone | Scope | Status |
 |---|---|---|
-| M1 corpus schema + miner | rl_dataset.py, step+trajectory samples, D2 reward | ✅ (2026-07-13) |
-| M2 corpus accumulation | batch live-LLM autotuning across ops/shapes → rl_corpus.jsonl | 🚧 (batch_autotune.sh) |
-| M3 corpus stats + quality gates | reward histogram, dedup, min-coverage per op-tier | ⬜ |
+| M3 corpus schema + miner | rl_dataset.py, step+trajectory samples, D2 reward | ✅ (2026-07-13) |
+| M2 corpus accumulation | batch live-LLM autotuning across ops/shapes → rl_corpus.jsonl | ✅ (2026-07-13) |
+| **M3** | **语料质量门禁** | ✅ (2026-07-13) |
 | M4 SFT export | filter final_reward>=2 → prompt/completion pairs | ⬜ Phase 5+ |
 | M5 RL fine-tune harness | maskable-PPO on step samples via external framework | ⬜ Phase 5+ |
 
