@@ -336,7 +336,41 @@ class ArkeEnv:
         # (e.g. tile with same factors already applied to same loop)
         candidates = self._filter_redundant(candidates)
 
-        return candidates[:top_n]
+        # Kind-balanced sampling: ensure the returned set represents ALL
+        # available kinds, not just the first kind that happens to generate
+        # the most raw candidates. Without balancing, tile (which typically
+        # produces more candidates due to many loop×factor combos) would
+        # crowd out unroll/vectorize/parallel at low top_n.
+        if top_n < len(candidates):
+            candidates = self._kind_balanced_sample(candidates, top_n)
+        else:
+            candidates = candidates[:top_n]
+
+        return candidates
+
+    @staticmethod
+    def _kind_balanced_sample(candidates: list[Decision], n: int) -> list[Decision]:
+        """Round-robin across kinds to fill n slots fairly."""
+        from collections import defaultdict
+        by_kind: dict[str, list[Decision]] = defaultdict(list)
+        for c in candidates:
+            by_kind[c.kind].append(c)
+        # Ensure stable kind ordering
+        kind_order = list(by_kind.keys())
+        result: list[Decision] = []
+        idx = {k: 0 for k in kind_order}
+        while len(result) < n:
+            added = False
+            for k in kind_order:
+                if idx[k] < len(by_kind[k]):
+                    result.append(by_kind[k][idx[k]])
+                    idx[k] += 1
+                    added = True
+                    if len(result) >= n:
+                        break
+            if not added:
+                break
+        return result
 
     def _filter_redundant(self, candidates: list[Decision]) -> list[Decision]:
         """Drop candidates that would duplicate an already-applied decision."""
