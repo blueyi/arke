@@ -137,3 +137,47 @@ class BackendRegistry:
 
     def __contains__(self, target: str) -> bool:
         return target in self._target_map or target in self._backends
+
+
+# ── Default registry singleton ────────────────────────────────────
+_default_registry: BackendRegistry | None = None
+
+
+def get_default_registry() -> BackendRegistry:
+    """Lazily build and return the singleton BackendRegistry.
+
+    Registers all known backends (Triton, MLIR-GPU, CUDA-C) with their
+    target strings. Import errors for optional backends are silently
+    skipped so the registry works even when only a subset is installed.
+    """
+    global _default_registry
+    if _default_registry is not None:
+        return _default_registry
+    reg = BackendRegistry()
+
+    # Triton (Phase 1)
+    try:
+        from arke.backend.triton_backend import TritonBackend
+        tb = TritonBackend()
+        reg.register(tb, ["triton", "nvidia_generic", "nvidia_ampere"])
+    except Exception:
+        pass
+
+    # MLIR-GPU (Phase 3)
+    try:
+        from arke.backend.mlir_gpu import MLIRGPUBackend
+        mb = MLIRGPUBackend()
+        reg.register(mb, ["mlir_gpu", "mlir"])
+    except Exception:
+        pass
+
+    # CUDA-C (Phase 4)
+    try:
+        from arke.backend.cuda_c_backend import CudaCBackend
+        cb = CudaCBackend(chip="sm_86")
+        reg.register(cb, ["cuda_c", "cuda-c", "cuda"])
+    except Exception:
+        pass
+
+    _default_registry = reg
+    return reg

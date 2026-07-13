@@ -29,7 +29,8 @@ from typing import Any
 # Backends that drive the Façade via an external MCP client rather than in-tree.
 EXTERNAL_MCP_BACKENDS = ("hermes", "openclaw", "cline", "continue", "claude-desktop", "mcp")
 BUILTIN_BACKENDS = ("builtin", "heuristic")
-ALL_BACKENDS = BUILTIN_BACKENDS + EXTERNAL_MCP_BACKENDS
+REGISTRY_BACKENDS = ("triton", "mlir_gpu", "mlir", "cuda_c", "cuda-c", "cuda")
+ALL_BACKENDS = BUILTIN_BACKENDS + REGISTRY_BACKENDS + EXTERNAL_MCP_BACKENDS
 
 
 @dataclass
@@ -86,6 +87,11 @@ def run_backend(
     if backend in EXTERNAL_MCP_BACKENDS:
         return _mcp_contract(
             backend=backend, op_name=op_name, shapes=shapes, target_hw=target_hw,
+        )
+    if backend in REGISTRY_BACKENDS:
+        return _run_registry_backend(
+            backend=backend, op_name=op_name, shapes=shapes, target_hw=target_hw,
+            output_dir=output_dir,
         )
     raise ValueError(
         f"Unknown agent backend {backend!r}. "
@@ -177,4 +183,72 @@ def _mcp_contract(*, backend, op_name, shapes, target_hw) -> BackendResult:
 
 
 __all__ = ["BackendResult", "run_backend", "ALL_BACKENDS",
-           "BUILTIN_BACKENDS", "EXTERNAL_MCP_BACKENDS"]
+           "BUILTIN_BACKENDS", "REGISTRY_BACKENDS", "EXTERNAL_MCP_BACKENDS"]
+
+
+def _run_registry_backend(
+    *,
+    backend: str,
+    op_name: str,
+    shapes: dict[str, list[int]],
+    target_hw: str = "nvidia_ampere",
+    output_dir: str | None = None,
+) -> BackendResult:
+    """Run a single compile-and-execute pass through a registered backend.
+
+    This is NOT an LLM-driven loop — it compiles the op with default/heuristic
+    StrategyIR and reports the result. Useful for sanity-checking that a backend
+    can handle a given op.
+    """
+    from arke.backend.protocol import get_default_registry
+    from arke.ir.graph import IRGraph, IRNode
+
+    reg = get_default_registry()
+    try:
+        be = reg.get(backend)
+    except KeyError as e:
+        return BackendResult(backend=backend, op_name=op_name, success=False,
+                             mode="registry", message=str(e))
+
+    # Build a minimal IRGraph for the op
+    inputs_list = list(shapes.keys())
+    g = IRGraph(name=op_name)
+    for inp_name, shape in shapes.items():
+        g.add_input(inp_name, dtype="float32", shape=shape)
+    outputs = [f"{op_name}_out"]
+    g.add_node(IRNode(
+        id="n0", op=op_name,
+        inputs={k.lower(): v for k, v in zip(["x", "y", "z", "w"][:len(inputs_list)], inputs_list)},
+        outputs=outputs,
+    ))
+    g.set_outputs(outputs)
+
+    if not be.supports_op(op_name):
+        return BackendResult(
+            backend=backend, op_name=op_name, success=False, mode="registry",
+            message=f"Backend {backend!r} does not support op {op_name!r}",
+        )
+
+    try:
+        art = be.lower(g)
+        kernel = be.compile(art)
+    except Exception as e:
+        return BackendResult(backend=backend, op_name=op_name, success=False,
+                             mode="registry", message=f"compile error: {e}")
+
+    import numpy as np
+    test_inputs = {}
+    for inp_name, shape in shapes.items():
+        test_inputs[inp_name] = np.random.randn(*shape).astype(np.float32)
+
+    try:
+        out = be.run(kernel, test_inputs)
+    except Exception as e:
+        return BackendResult(backend=backend, op_name=op_name, success=False,
+                             mode="registry", message=f"run error: {e}")
+
+    return BackendResult(
+        backend=backend, op_name=op_name, success=True, mode="registry",
+        message=f"Backend {backend!r} compiled and ran {op_name} successfully.",
+        detail={"output_keys": list(out.keys()) if isinstance(out, dict) else ["result"]},
+    )
