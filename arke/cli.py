@@ -142,6 +142,29 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Print machine-readable summary JSON",
     )
 
+    # ── run (unified Harness entry: pick an agent backend) ────────────
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run the Harness on an op with a chosen agent backend "
+             "(builtin live-LLM / heuristic / hermes / openclaw / mcp)",
+    )
+    run_parser.add_argument("--kernel", required=True,
+                            help="Operator to optimize (e.g. matmul, softmax)")
+    run_parser.add_argument("--shape", default=None,
+                            help="Shape, comma-separated (op-specific, e.g. 512,512,512)")
+    run_parser.add_argument("--backend", default="builtin",
+                            help="Agent backend: builtin | heuristic | hermes | openclaw | mcp")
+    run_parser.add_argument("--model", default=None,
+                            help="model_spec for builtin backend, e.g. yunwu/claude-sonnet-4-6")
+    run_parser.add_argument("--max-turns", type=int, default=15)
+    run_parser.add_argument("--timeout", type=float, default=180.0)
+    run_parser.add_argument("--target", default="nvidia_ampere",
+                            help="Target hardware label")
+    run_parser.add_argument("-o", "--output", default=None,
+                            help="Output dir for state/trajectory artifacts")
+    run_parser.add_argument("--json", action="store_true",
+                            help="Print machine-readable result JSON")
+
     # ── mcp serve (Mode C, N3) ────────────────────────────────────────
     mcp_parser = subparsers.add_parser(
         "mcp",
@@ -171,11 +194,37 @@ def main() -> None:
         sys.exit(_cmd_compile(args))
     if args.command == "optimize":
         sys.exit(_cmd_optimize(args))
+    if args.command == "run":
+        sys.exit(_cmd_run(args))
     if args.command == "mcp":
         sys.exit(_cmd_mcp(args))
 
     parser.print_help()
     sys.exit(1)
+
+
+def _cmd_run(args) -> int:
+    """Unified Harness entry — dispatch to the selected agent backend."""
+    from arke.agent.backends import run_backend
+    from benchmarks.live.run_live_optimize import _shapes_for
+
+    dims = [int(x) for x in args.shape.split(",") if x.strip()] if args.shape else []
+    shapes = _shapes_for(args.kernel, dims)
+    result = run_backend(
+        args.backend,
+        op_name=args.kernel, shapes=shapes, target_hw=args.target,
+        max_turns=args.max_turns, model_spec=args.model,
+        output_dir=args.output, timeout=args.timeout,
+    )
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2, default=str))
+    else:
+        status = "OK" if result.success else "FAILED"
+        print(f"arke run [{result.backend}/{result.mode}] {status}: {result.op_name}")
+        print(f"  {result.message}")
+        if result.mode == "mcp-server":
+            print(f"  server: {result.detail.get('server_command')}")
+    return 0 if result.success else 1
 
 
 def _cmd_mcp(args) -> int:

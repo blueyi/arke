@@ -58,7 +58,53 @@ must be serial.
 
 ---
 
-## 3. Running an optimization loop
+## 3. Three ways to run — with end-to-end verifiable examples
+
+All three modes drive the **same** frozen 8-tool Façade. Pick by *who drives the
+tools*: the built-in live-LLM runner, an external agent over MCP, or your own
+code. The unified `arke run --backend <...>` CLI selects among them.
+
+### Mode selector: `arke run`
+
+```bash
+arke run --kernel <op> --shape <dims> --backend <backend> [--model ...] [-o out]
+```
+`--backend` ∈ `builtin` (live LLM, BYOK) · `heuristic` (no-LLM dry-run) ·
+`hermes` / `openclaw` / `cline` / `mcp` (external agent over MCP — prints the
+server launch contract).
+
+#### ✅ E2E example A — heuristic backend (no creds, always runnable)
+```bash
+$ arke run --kernel matmul --shape 512,512,512 --backend heuristic
+arke run [heuristic/heuristic] OK: matmul
+  heuristic dry-run: 11 decisions, 3 cycles
+```
+Verify: exit code 0, prints decision + cycle counts. Deterministic, zero network.
+
+#### ✅ E2E example B — external agent (Hermes/OpenClaw) over MCP
+```bash
+$ arke run --kernel softmax --shape 64,4096 --backend hermes
+arke run [hermes/mcp-server] OK: softmax
+  Arke runs as an MCP server; drive it from hermes via:
+  arke mcp serve --kernel softmax --shape 64,4096 --target nvidia_ampere
+```
+Verify: prints the exact `arke mcp serve` command to register in the external
+agent's MCP config. Arke is the tool server; Hermes/OpenClaw is the client.
+
+#### ✅ E2E example C — builtin live-LLM (BYOK)
+```bash
+export ARKE_YUNWU_CLAUDE_API_KEY="sk-..."      # BYOK key
+cp examples/arke_llm.yaml.example ~/.arke/llm.yaml
+arke run --kernel matmul --shape 512,512,512 --backend builtin \
+  --model yunwu/claude-sonnet-4-6 -o results/matmul_512
+# → arke run [builtin/live] OK: matmul
+#   live run: 6 decisions, 18 tool calls, model=claude-sonnet-4-6
+```
+Verify: `results/matmul_512/{result,state,trajectory}.json` + a real GPU profile.
+
+---
+
+## 3bis. Direct drivers (under the hood)
 
 ### 3a. Live-LLM driver (recommended entry point)
 
@@ -188,6 +234,19 @@ training integration.
 | clean models | `claude-sonnet-4-6`, `gpt-4o`, `deepseek-v3` |
 | GPU | RTX 3060 Laptop, SM 8.6, 6 GB |
 | contract test | `pytest tests/test_facade_contract_v1.py` (guards the frozen 8-tool surface) |
+| e2e usage test | `pytest tests/test_harness_usage_e2e.py` (guards the 3 documented modes) |
+
+### CLI commands (`arke` console script → `arke.cli:main`)
+
+| Command | Purpose |
+|---------|---------|
+| `arke compile <file.ak> [-o out.akir]` | Compile .ak → Arke IR (JSON). |
+| `arke optimize <input> [--kernel --shape ...]` | Heuristic dry-run StrategyIR + trajectory (no LLM). |
+| `arke run --kernel <op> --shape <dims> --backend <b>` | **Unified entry** — pick agent backend: `builtin`/`heuristic`/`hermes`/`openclaw`/`cline`/`mcp`. |
+| `arke mcp serve --kernel <op> [--shape ...]` | Run as an MCP server (Mode C) for external agents. |
+
+`python -m arkec.main …` is a backward-compatible shim that delegates to the
+same CLI.
 
 **Do not modify the Façade** (tool names/signatures/meta) — it is frozen at
 v1.0. Additive changes only (new tools/event kinds) within MAJOR 1. Any contract

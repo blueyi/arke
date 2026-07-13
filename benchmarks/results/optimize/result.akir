@@ -1,0 +1,507 @@
+{
+  "format": "akir",
+  "version": "0.1.0",
+  "semantic_ir": {
+    "version": "0.1.0",
+    "kernel_id": "matmul_kernel",
+    "params": [
+      {
+        "name": "A",
+        "shape": [
+          64,
+          64
+        ],
+        "dtype": "f16"
+      },
+      {
+        "name": "B",
+        "shape": [
+          64,
+          64
+        ],
+        "dtype": "f16"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "matmul_0",
+        "op": "matmul",
+        "inputs": {
+          "A": {
+            "ref": "param",
+            "name": "A"
+          },
+          "B": {
+            "ref": "param",
+            "name": "B"
+          }
+        },
+        "output": {
+          "shape": [
+            64,
+            64
+          ],
+          "dtype": "f16"
+        },
+        "semantics": {
+          "computation": "C[i,j] = sum(A[i,k] * B[k,j], axis=k)",
+          "index_vars": [
+            "i",
+            "j",
+            "k"
+          ],
+          "reduction_axes": [
+            "k"
+          ],
+          "properties": [
+            "associative",
+            "distributive"
+          ]
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "param:A",
+        "to": "matmul_0",
+        "tensor": "A"
+      },
+      {
+        "from": "param:B",
+        "to": "matmul_0",
+        "tensor": "B"
+      }
+    ],
+    "return_node": "matmul_0"
+  },
+  "strategy_ir": {
+    "version": "0.1.0",
+    "kernel_id": "matmul_kernel",
+    "target_hw": "nvidia_ampere",
+    "decisions": [
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "M",
+          "factors": [
+            128
+          ]
+        },
+        "step": 1,
+        "level": 1,
+        "rationale": {
+          "text": "heuristic matmul tile for M",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "N",
+          "factors": [
+            128
+          ]
+        },
+        "step": 2,
+        "level": 1,
+        "rationale": {
+          "text": "heuristic matmul tile for N",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "K",
+          "factors": [
+            32
+          ]
+        },
+        "step": 3,
+        "level": 1,
+        "rationale": {
+          "text": "heuristic matmul tile for K",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "reorder",
+        "params": {
+          "order": [
+            "M",
+            "N",
+            "K"
+          ]
+        },
+        "step": 4,
+        "level": 1,
+        "rationale": {
+          "text": "keep output-tile loops outermost",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "parallel",
+        "params": {
+          "loops": [
+            "M",
+            "N"
+          ],
+          "mapping": {
+            "M": "blockIdx.x",
+            "N": "blockIdx.y"
+          }
+        },
+        "step": 5,
+        "level": 1,
+        "rationale": {
+          "text": "map output tiles to CTA grid",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "place",
+        "params": {
+          "tensor": "A_tile",
+          "memory": "shared"
+        },
+        "step": 6,
+        "level": 1,
+        "rationale": {
+          "text": "stage lhs tile in shared memory",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "place",
+        "params": {
+          "tensor": "B_tile",
+          "memory": "shared"
+        },
+        "step": 7,
+        "level": 1,
+        "rationale": {
+          "text": "stage rhs tile in shared memory",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "compute",
+        "params": {
+          "warps": 4,
+          "num_stages": 3,
+          "shared_memory": 49152
+        },
+        "step": 8,
+        "level": 2,
+        "rationale": {
+          "text": "conservative Ampere tensor-core resource seed",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "vectorize",
+        "params": {
+          "loop": "M",
+          "width": 4
+        },
+        "step": 9,
+        "level": 1,
+        "rationale": {
+          "text": "cycle 1 adjustment: vectorize memory-bound traversal",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "compute",
+        "params": {
+          "warps": 4,
+          "num_stages": 2,
+          "shared_memory": 32768
+        },
+        "step": 10,
+        "level": 2,
+        "rationale": {
+          "text": "cycle 2 adjustment: cap shared-memory use for occupancy",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "unroll",
+        "params": {
+          "loop": "M",
+          "factor": 2
+        },
+        "step": 11,
+        "level": 1,
+        "rationale": {
+          "text": "cycle 3 adjustment: expose instruction-level parallelism",
+          "lang": "en"
+        }
+      }
+    ],
+    "metadata": {
+      "generated_by": "heuristic-s8-mvp",
+      "bounded_action_space": [
+        "tile",
+        "reorder",
+        "parallel",
+        "vectorize",
+        "place",
+        "compute"
+      ]
+    }
+  },
+  "schedule_ir": {
+    "version": "0.1.0",
+    "kernel_id": "matmul_kernel",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "M",
+        "tile_factors": [
+          128
+        ],
+        "order": 0,
+        "mapping": "blockIdx.x",
+        "vector_width": 4,
+        "unroll_factor": 2
+      },
+      {
+        "loop": "N",
+        "tile_factors": [
+          128
+        ],
+        "order": 1,
+        "mapping": "blockIdx.y"
+      },
+      {
+        "loop": "K",
+        "tile_factors": [
+          32
+        ],
+        "order": 2
+      }
+    ],
+    "placements": [
+      {
+        "tensor": "A_tile",
+        "memory": "shared"
+      },
+      {
+        "tensor": "B_tile",
+        "memory": "shared"
+      }
+    ],
+    "fusion_groups": [],
+    "resources": {
+      "warps": 4,
+      "num_stages": 2,
+      "shared_memory": 32768,
+      "pipeline_depth": 2,
+      "threads_per_block": 128
+    },
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:M",
+        "rationale": {
+          "text": "heuristic matmul tile for M",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:N",
+        "rationale": {
+          "text": "heuristic matmul tile for N",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 3,
+        "effect": "tile:K",
+        "rationale": {
+          "text": "heuristic matmul tile for K",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "reorder",
+        "source_step": 4,
+        "effect": "reorder",
+        "rationale": {
+          "text": "keep output-tile loops outermost",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 5,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "map output tiles to CTA grid",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "place",
+        "source_step": 6,
+        "effect": "place:A_tile",
+        "rationale": {
+          "text": "stage lhs tile in shared memory",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "place",
+        "source_step": 7,
+        "effect": "place:B_tile",
+        "rationale": {
+          "text": "stage rhs tile in shared memory",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "compute",
+        "source_step": 8,
+        "effect": "compute",
+        "rationale": {
+          "text": "conservative Ampere tensor-core resource seed",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 9,
+        "effect": "vectorize:M",
+        "rationale": {
+          "text": "cycle 1 adjustment: vectorize memory-bound traversal",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "compute",
+        "source_step": 10,
+        "effect": "compute",
+        "rationale": {
+          "text": "cycle 2 adjustment: cap shared-memory use for occupancy",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "unroll",
+        "source_step": 11,
+        "effect": "unroll:M",
+        "rationale": {
+          "text": "cycle 3 adjustment: expose instruction-level parallelism",
+          "lang": "en"
+        }
+      }
+    ],
+    "metadata": {
+      "generated_by": "heuristic-s8-mvp",
+      "bounded_action_space": [
+        "tile",
+        "reorder",
+        "parallel",
+        "vectorize",
+        "place",
+        "compute"
+      ]
+    }
+  },
+  "instruction_ir": {
+    "version": "0.1.0",
+    "kernel_id": "matmul_kernel",
+    "target_hw": "nvidia_ampere",
+    "blocks": [
+      {
+        "name": "entry",
+        "instructions": [
+          {
+            "opcode": "loop.configure",
+            "operands": [
+              "M"
+            ],
+            "attrs": {
+              "loop": "M",
+              "tile_factors": [
+                128
+              ],
+              "order": 0,
+              "mapping": "blockIdx.x",
+              "vector_width": 4,
+              "unroll_factor": 2
+            },
+            "comment": "derived from ScheduleIR loop nest"
+          },
+          {
+            "opcode": "loop.configure",
+            "operands": [
+              "N"
+            ],
+            "attrs": {
+              "loop": "N",
+              "tile_factors": [
+                128
+              ],
+              "order": 1,
+              "mapping": "blockIdx.y"
+            },
+            "comment": "derived from ScheduleIR loop nest"
+          },
+          {
+            "opcode": "loop.configure",
+            "operands": [
+              "K"
+            ],
+            "attrs": {
+              "loop": "K",
+              "tile_factors": [
+                32
+              ],
+              "order": 2
+            },
+            "comment": "derived from ScheduleIR loop nest"
+          },
+          {
+            "opcode": "memory.place",
+            "operands": [
+              "A_tile",
+              "shared"
+            ],
+            "comment": "derived from ScheduleIR placement"
+          },
+          {
+            "opcode": "memory.place",
+            "operands": [
+              "B_tile",
+              "shared"
+            ],
+            "comment": "derived from ScheduleIR placement"
+          },
+          {
+            "opcode": "resource.bind",
+            "operands": [],
+            "attrs": {
+              "warps": 4,
+              "num_stages": 2,
+              "shared_memory": 32768,
+              "pipeline_depth": 2,
+              "threads_per_block": 128
+            },
+            "comment": "derived from compute/resource schedule"
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "node_count": 1,
+      "return_node": "matmul_0"
+    }
+  }
+}
