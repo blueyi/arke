@@ -1,0 +1,403 @@
+{
+  "format": "akir",
+  "version": "0.1.0",
+  "semantic_ir": {
+    "version": "0.1.0",
+    "kernel_id": "layernorm",
+    "params": [
+      {
+        "name": "X",
+        "shape": [
+          128,
+          768
+        ],
+        "dtype": "f16"
+      },
+      {
+        "name": "weight",
+        "shape": [
+          768
+        ],
+        "dtype": "f16"
+      },
+      {
+        "name": "bias",
+        "shape": [
+          768
+        ],
+        "dtype": "f16"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "layernorm_0",
+        "op": "layernorm",
+        "inputs": {
+          "X": {
+            "ref": "param",
+            "name": "X"
+          },
+          "weight": {
+            "ref": "param",
+            "name": "weight"
+          },
+          "bias": {
+            "ref": "param",
+            "name": "bias"
+          }
+        },
+        "output": {
+          "shape": [
+            128,
+            768
+          ],
+          "dtype": "f16"
+        },
+        "semantics": {
+          "computation": "Y[i,j]=(X[i,j]-mean(X[i,:]))/sqrt(var(X[i,:])+eps)*W[j]+B[j]",
+          "index_vars": [
+            "i",
+            "j"
+          ],
+          "reduction_axes": [
+            "j"
+          ],
+          "properties": [
+            "row-wise"
+          ]
+        },
+        "attrs": {
+          "eps": 1e-05
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "param:X",
+        "to": "layernorm_0",
+        "tensor": "X"
+      },
+      {
+        "from": "param:weight",
+        "to": "layernorm_0",
+        "tensor": "weight"
+      },
+      {
+        "from": "param:bias",
+        "to": "layernorm_0",
+        "tensor": "bias"
+      }
+    ],
+    "return_node": "layernorm_0",
+    "symbolic_dims": [
+      {
+        "sym": "B",
+        "max": 64
+      },
+      {
+        "sym": "S",
+        "max": 8192
+      },
+      {
+        "sym": "D",
+        "is_static": true
+      }
+    ],
+    "shape_constraints": [
+      {
+        "expr": "B <= 64",
+        "reason": "where B max bound"
+      },
+      {
+        "expr": "S <= 8192",
+        "reason": "where S max bound"
+      },
+      {
+        "expr": "D is static",
+        "reason": "where D: static"
+      }
+    ]
+  },
+  "strategy_ir": {
+    "version": "0.1.0",
+    "kernel_id": "layernorm",
+    "target_hw": "nvidia_ampere",
+    "decisions": [
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "B",
+          "factors": [
+            128
+          ]
+        },
+        "step": 1,
+        "level": 1,
+        "rationale": {
+          "text": "batch rows for reduction loop B",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "tile",
+        "params": {
+          "loop": "D",
+          "factors": [
+            64
+          ]
+        },
+        "step": 2,
+        "level": 1,
+        "rationale": {
+          "text": "bounded reduction tile for D",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "parallel",
+        "params": {
+          "loops": [
+            "B"
+          ],
+          "mapping": {
+            "B": "blockIdx.x"
+          }
+        },
+        "step": 3,
+        "level": 1,
+        "rationale": {
+          "text": "parallelize independent reductions",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "compute",
+        "params": {
+          "warps": 4,
+          "num_stages": 2
+        },
+        "step": 4,
+        "level": 2,
+        "rationale": {
+          "text": "reduction-friendly warp budget",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "vectorize",
+        "params": {
+          "loop": "B",
+          "width": 4
+        },
+        "step": 5,
+        "level": 1,
+        "rationale": {
+          "text": "cycle 1 adjustment: vectorize memory-bound traversal",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "compute",
+        "params": {
+          "warps": 4,
+          "num_stages": 2,
+          "shared_memory": 32768
+        },
+        "step": 6,
+        "level": 2,
+        "rationale": {
+          "text": "cycle 2 adjustment: cap shared-memory use for occupancy",
+          "lang": "en"
+        }
+      },
+      {
+        "kind": "unroll",
+        "params": {
+          "loop": "B",
+          "factor": 2
+        },
+        "step": 7,
+        "level": 1,
+        "rationale": {
+          "text": "cycle 3 adjustment: expose instruction-level parallelism",
+          "lang": "en"
+        }
+      }
+    ],
+    "metadata": {
+      "generated_by": "heuristic-s8-mvp",
+      "bounded_action_space": [
+        "tile",
+        "reorder",
+        "parallel",
+        "vectorize",
+        "place",
+        "compute"
+      ]
+    }
+  },
+  "schedule_ir": {
+    "version": "0.1.0",
+    "kernel_id": "layernorm",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [
+      {
+        "loop": "B",
+        "tile_factors": [
+          128
+        ],
+        "mapping": "blockIdx.x",
+        "vector_width": 4,
+        "unroll_factor": 2
+      },
+      {
+        "loop": "D",
+        "tile_factors": [
+          64
+        ]
+      }
+    ],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {
+      "warps": 4,
+      "num_stages": 2,
+      "shared_memory": 32768,
+      "pipeline_depth": 2,
+      "threads_per_block": 128
+    },
+    "provenance": [
+      {
+        "source_kind": "tile",
+        "source_step": 1,
+        "effect": "tile:B",
+        "rationale": {
+          "text": "batch rows for reduction loop B",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "tile",
+        "source_step": 2,
+        "effect": "tile:D",
+        "rationale": {
+          "text": "bounded reduction tile for D",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "parallel",
+        "source_step": 3,
+        "effect": "parallel-map",
+        "rationale": {
+          "text": "parallelize independent reductions",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "compute",
+        "source_step": 4,
+        "effect": "compute",
+        "rationale": {
+          "text": "reduction-friendly warp budget",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "vectorize",
+        "source_step": 5,
+        "effect": "vectorize:B",
+        "rationale": {
+          "text": "cycle 1 adjustment: vectorize memory-bound traversal",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "compute",
+        "source_step": 6,
+        "effect": "compute",
+        "rationale": {
+          "text": "cycle 2 adjustment: cap shared-memory use for occupancy",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "unroll",
+        "source_step": 7,
+        "effect": "unroll:B",
+        "rationale": {
+          "text": "cycle 3 adjustment: expose instruction-level parallelism",
+          "lang": "en"
+        }
+      }
+    ],
+    "metadata": {
+      "generated_by": "heuristic-s8-mvp",
+      "bounded_action_space": [
+        "tile",
+        "reorder",
+        "parallel",
+        "vectorize",
+        "place",
+        "compute"
+      ]
+    }
+  },
+  "instruction_ir": {
+    "version": "0.1.0",
+    "kernel_id": "layernorm",
+    "target_hw": "nvidia_ampere",
+    "blocks": [
+      {
+        "name": "entry",
+        "instructions": [
+          {
+            "opcode": "loop.configure",
+            "operands": [
+              "B"
+            ],
+            "attrs": {
+              "loop": "B",
+              "tile_factors": [
+                128
+              ],
+              "mapping": "blockIdx.x",
+              "vector_width": 4,
+              "unroll_factor": 2
+            },
+            "comment": "derived from ScheduleIR loop nest"
+          },
+          {
+            "opcode": "loop.configure",
+            "operands": [
+              "D"
+            ],
+            "attrs": {
+              "loop": "D",
+              "tile_factors": [
+                64
+              ]
+            },
+            "comment": "derived from ScheduleIR loop nest"
+          },
+          {
+            "opcode": "resource.bind",
+            "operands": [],
+            "attrs": {
+              "warps": 4,
+              "num_stages": 2,
+              "shared_memory": 32768,
+              "pipeline_depth": 2,
+              "threads_per_block": 128
+            },
+            "comment": "derived from compute/resource schedule"
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "node_count": 1,
+      "return_node": "layernorm_0"
+    }
+  }
+}

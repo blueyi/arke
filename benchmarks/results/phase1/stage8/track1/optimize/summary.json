@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "kernel_id": "layernorm",
+  "input_path": "examples/operators/04_layernorm.ak",
+  "input_kind": "ak_file",
+  "normalized_source_path": "benchmarks/results/phase1/stage8/track1/optimize/input.ak",
+  "source_text_path": null,
+  "output_dir": "benchmarks/results/phase1/stage8/track1/optimize",
+  "strategy_path": "benchmarks/results/phase1/stage8/track1/optimize/strategy.json",
+  "akir_path": "benchmarks/results/phase1/stage8/track1/optimize/result.akir",
+  "trajectory_path": "benchmarks/results/phase1/stage8/track1/optimize/trajectory.jsonl",
+  "summary_path": "benchmarks/results/phase1/stage8/track1/optimize/summary.json",
+  "cycles_completed": 3,
+  "decision_count": 7,
+  "best_score": 1.0,
+  "errors": [],
+  "warnings": []
+}
