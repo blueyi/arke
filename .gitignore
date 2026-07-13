@@ -41,3 +41,4 @@ Thumbs.db
 
 # Chinese doc mirror (generated from docs/)
 docs_zh/
+benchmarks/results/optimize/
