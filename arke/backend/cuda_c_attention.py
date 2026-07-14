@@ -22,23 +22,20 @@ from arke.ir.graph import IRGraph
 # (BR=32) over-subscribes and drops to 1-2 blocks/SM. BC=32 keeps the K/V
 # shared tile small enough for good occupancy on Ampere (48KB smem).
 #
-# C2 (2026-07-13): Adaptive BR/BC for large-seq scenarios.
-# When S is large (≥256), we reduce BR to 4 (fewer query rows per block)
-# so more blocks can run concurrently, improving SM utilization on the
-# outer Q-tile loop. BC is doubled to 64 so each K-tile iteration does
-# more work before the next syncthreads, amortizing synchronization cost.
-# This is NOT a full FA-2 rewrite (cross-block K-split + atomic reduction)
-# but it addresses the worst wave-quantization inefficiency on large S.
+# C2 (2026-07-13): MEASURED that adaptive BR=4/BC=64 for large-seq made
+# S=512/1024/2048 ~17% SLOWER (kernel-only CUDA-events), so it was reverted.
+# BR=8/BC=32 remains the measured-optimal for this warp-per-row kernel.
+# The large-seq performance gap (0.15× vs SDPA at S=2048) is inherent to the
+# O(S) serial K-scan per query warp — closing it needs a true FlashAttention-2
+# rewrite (cross-block K-split + two-pass/atomic reduction), tracked as a
+# week-level follow-up. See docs/phase4/audit-2026-07-13.md C2.
 _BR_DEFAULT = 8
 _BC_DEFAULT = 32
-_BR_LARGESEQ = 4   # fewer Q-rows/block → more blocks → better wave fill
-_BC_LARGESEQ = 64   # more K-cols/tile → fewer sync barriers per block
 
 
 def _select_br_bc(S: int, D: int) -> tuple[int, int]:
-    """Adaptively select BR/BC based on sequence length."""
-    if S >= 256 and D <= 128:
-        return _BR_LARGESEQ, _BC_LARGESEQ
+    """Select BR/BC. BR=8/BC=32 is measured-optimal across all S for this
+    warp-per-row kernel (adaptive large-seq variant was measured slower)."""
     return _BR_DEFAULT, _BC_DEFAULT
 
 
