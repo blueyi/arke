@@ -82,12 +82,13 @@ class MatmulConfig:
             (N=2048: 1.06× vs scalar 0.50×) — TC throughput dominates once the
             staging cost is amortized over enough work.
 
-        C3 (2026-07-13): Added occupancy-aware tile search for small shapes.
-        Instead of fixed BM=BN=64 for all small shapes, we pick tiles that
-        maximize occupancy (fill SM waves) on the target GPU:
-          - RTX 3060 has 30 SMs × 1024 max_threads = 30720 max concurrent threads
-          - Blocks = ceil(M/BM) × ceil(N/BN); each block uses THREADS_M × THREADS_N threads
-          - We want blocks ≥ SM_count to avoid idle SMs (wave-quantization)
+        C3 (2026-07-13): MEASURED that an occupancy-maximizing tile search
+        (favoring many small BM=BN=16 blocks for wave-fill) was 2-4.5× SLOWER
+        than fixed BM=BN=64 at N=256/512 (kernel-only CUDA events):
+          N=256: 0.44× of old,  N=512: 0.22× of old.
+        Reason: tiny tiles destroy arithmetic intensity — poor register/shmem
+        data reuse dominates over any wave-fill benefit. Reverted to the
+        measured-optimal fixed BM=BN=64 register-blocked kernel.
         """
         max_dim = max(M, N, K)
         tc_eligible = (M % 16 == 0 and N % 16 == 0 and K % 16 == 0
@@ -96,59 +97,13 @@ class MatmulConfig:
         if max_dim >= 1024 and tc_eligible:
             return cls(BM=64, BN=64, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16,
                        algorithm="tensor_core")
-        # Small/medium → occupancy-aware scalar tile search.
-        return cls._occupancy_search(M, N, K)
-
-    @classmethod
-    def _occupancy_search(cls, M: int, N: int, K: int,
-                          sm_count: int = 30,
-                          max_threads_per_block: int = 1024) -> "MatmulConfig":
-        """Pick scalar tile config that maximizes SM occupancy for small shapes.
-
-        Searches over candidate (BM, BN) tile sizes, scoring each by:
-        1. Blocks launched = ceil(M/BM) × ceil(N/BN) — more blocks = better wave fill
-        2. Block size = min(BM,TM) × min(BN,TN) threads — must not exceed limit
-        3. Work per thread = BM×BN×K / threads — prefer larger (more ILP)
-        4. Penalty if blocks < sm_count (under-occupancy)
-
-        Picks the config with the best score.
-        """
-        import math
-        candidates = [16, 32, 64, 128]
-        best_score = -1.0
-        best_cfg = cls(BM=16, BN=16, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
-
-        for bm in candidates:
-            if bm > max(M, 16):
-                continue
-            for bn in candidates:
-                if bn > max(N, 16):
-                    continue
-                tm = min(bm, 16)
-                tn = min(bn, 16)
-                block_threads = tm * tn
-                if block_threads > max_threads_per_block:
-                    continue
-                blocks_m = math.ceil(M / bm)
-                blocks_n = math.ceil(N / bn)
-                total_blocks = blocks_m * blocks_n
-                # Score: maximize blocks (wave fill), penalize under-occupancy
-                waves = math.ceil(total_blocks / sm_count)
-                wave_fill = total_blocks / (waves * sm_count)  # 0..1
-                work_per_thread = (bm * bn * K) / block_threads
-                # Normalize work to [0,1] range (16*16*K/256 to 128*128*K/256)
-                work_norm = min(work_per_thread / (128 * 128 * K / 256), 1.0)
-                # Combined score: occupancy dominates, work is secondary
-                score = wave_fill * 0.7 + work_norm * 0.3
-                if total_blocks < sm_count:
-                    score *= 0.5  # heavy penalty for under-occupancy
-                if score > best_score:
-                    best_score = score
-                    unroll = 4 if K >= 64 else 0
-                    best_cfg = cls(BM=bm, BN=bn, BK=16, UNROLL_K=unroll,
-                                   THREADS_M=tm, THREADS_N=tn,
-                                   algorithm="scalar_tiled")
-        return best_cfg
+        # Small/medium → scalar register-blocked (measured-optimal, bit-exact).
+        if M >= 64 and N >= 64:
+            return cls(BM=64, BN=64, BK=16, UNROLL_K=4, THREADS_M=16, THREADS_N=16,
+                       algorithm="scalar_tiled")
+        if M >= 128 and N >= 128:
+            return cls(BM=32, BN=32, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
+        return cls(BM=16, BN=16, BK=16, UNROLL_K=0, THREADS_M=16, THREADS_N=16)
 
 
 def emit_cuda_c_matmul_parameterized(
