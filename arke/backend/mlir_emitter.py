@@ -2903,9 +2903,9 @@ def emit_gpu_attention(graph: "IRGraph", chip: str = "sm_86",
         ap("        %i = arith.divui %r2, %cD : index")
         ap("        %d = arith.remui %r2, %cD : index")
         if op == "grouped_query_attention":
+            # GQA: query head h maps to KV head h // n_rep (heads share KV).
             ap("        %hkv = arith.divui %h, %cNrep : index")
-        else:
-            ap("        %hkv = arith.constant 0 : index")  # placeholder
+        # (non-GQA path indexes K/V directly by %h below — no %hkv needed.)
         # Compute O[b,h,i,d] = sum_s attn_s * V[b,hkv,s,d]
         # where attn_s = exp(score_s - max) / sum_exp
         # score_s = sum_dd Q[b,h,i,dd]*K[b,hkv,s,dd] / sqrt(D)

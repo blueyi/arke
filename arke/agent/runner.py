@@ -219,9 +219,10 @@ class LLMRunner:
                 max_turns=25, model_spec="anthropic/claude-sonnet-4-20250514",
             )
 
-    Currently supports the **Anthropic Messages API** protocol (covers the
-    yunwu.ai relay). OpenAI-protocol providers raise NotImplementedError
-    for now (the function-calling translation is a small future add).
+    Supports both the **Anthropic Messages API** protocol (covers the
+    yunwu.ai relay) and the **OpenAI Chat Completions** protocol (any
+    OpenAI-compatible endpoint). The protocol is selected per-provider via
+    ``ProviderConfig.protocol``. An unknown protocol raises NotImplementedError.
     """
 
     def __init__(self, config: LLMConfig, *, timeout: float = 300.0) -> None:
