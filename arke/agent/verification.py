@@ -408,6 +408,124 @@ def soft_verify(
                             rule_violations=violations)
 
 
+# ── 4b. LLM-backed soft-verify (Sakana mode) ────────────────────────
+
+def llm_soft_verify(
+    decisions: list[dict],
+    *,
+    op_name: str = "",
+    shapes: dict | None = None,
+    hw_name: str = "nvidia_ampere",
+    model: str = "gpt-4o-mini",
+    base_url: str | None = None,
+    api_key: str | None = None,
+    timeout: float = 15.0,
+) -> SoftVerifyResult:
+    """LLM-backed soft-verify pre-filter (Sakana D2, mode b).
+
+    First runs the rule-based ``soft_verify()``; if rules pass, asks a cheap
+    LLM whether the strategy "looks correct" before spending a compile token.
+
+    The LLM receives a structured prompt with op/shapes/hw/decisions and
+    must respond with a JSON ``{"approved": bool, "reason": str}``.
+    On LLM failure (timeout, parse error), falls back to approved=True
+    (fail-open: don't block the optimization loop on LLM flakiness).
+
+    Args:
+        model: Model name for the cheap verifier (default gpt-4o-mini).
+        base_url: OpenAI-compatible API base URL. If None, uses env
+            ARKE_LLM_BASE_URL or OPENAI_BASE_URL.
+        api_key: API key. If None, uses env ARKE_LLM_API_KEY or OPENAI_API_KEY.
+        timeout: Max seconds to wait for LLM response.
+
+    Returns:
+        SoftVerifyResult with rule_violations from rules + LLM reason.
+    """
+    import json as _json
+    import os
+
+    # Phase 1: deterministic rules (always)
+    rule_result = soft_verify(
+        decisions, op_name=op_name, shapes=shapes, hw_name=hw_name,
+    )
+    if not rule_result.approved:
+        return rule_result  # rules caught something — no need for LLM
+
+    # Phase 2: LLM pre-check
+    api_key = api_key or os.environ.get("ARKE_LLM_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
+    base_url = base_url or os.environ.get("ARKE_LLM_BASE_URL") or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    if not api_key:
+        # No credentials — fail open
+        return SoftVerifyResult(approved=True, reason="llm_soft_verify: no API key, skipped")
+
+    prompt = _build_verify_prompt(decisions, op_name, shapes, hw_name)
+
+    try:
+        import urllib.request
+        url = f"{base_url.rstrip('/')}/chat/completions"
+        body = _json.dumps({
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "You are an expert GPU kernel optimization reviewer. "
+                 "Given a sequence of optimization decisions, determine if they are likely correct "
+                 "and will produce a valid, efficient kernel. Respond ONLY with JSON: "
+                 '{\"approved\": true/false, \"reason\": \"brief explanation\"}'},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.0,
+            "max_tokens": 200,
+        }).encode()
+        req = urllib.request.Request(
+            url, data=body,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = _json.loads(resp.read())
+        content = data["choices"][0]["message"]["content"].strip()
+        # Parse JSON from the LLM response
+        # Handle cases where LLM wraps in markdown code block
+        if content.startswith("```"):
+            content = content.split("```")[1]
+            if content.startswith("json"):
+                content = content[4:]
+        parsed = _json.loads(content)
+        approved = bool(parsed.get("approved", True))
+        reason = str(parsed.get("reason", ""))
+        violations = rule_result.rule_violations.copy()
+        if not approved:
+            violations.append(f"LLM: {reason}")
+        return SoftVerifyResult(approved=approved, reason=reason,
+                                rule_violations=violations)
+    except Exception as e:
+        # Fail open: LLM flakiness should not block the optimization loop
+        return SoftVerifyResult(
+            approved=True,
+            reason=f"llm_soft_verify: LLM call failed ({type(e).__name__}: {e}), fail-open",
+        )
+
+
+def _build_verify_prompt(
+    decisions: list[dict], op_name: str, shapes: dict | None, hw_name: str,
+) -> str:
+    """Build the structured prompt for the LLM verifier."""
+    import json as _json
+    lines = [
+        f"Operator: {op_name}",
+        f"Shapes: {_json.dumps(shapes or {})}",
+        f"Hardware: {hw_name}",
+        f"Decision count: {len(decisions)}",
+        "Decisions:",
+    ]
+    for i, d in enumerate(decisions):
+        lines.append(f"  [{i}] kind={d.get('kind')} params={d.get('params')} "
+                      f"rationale={d.get('rationale', 'none')}")
+    lines.append("")
+    lines.append("Are these decisions likely to produce a correct, efficient kernel? "
+                  "Check for: impossible tile sizes, conflicting decisions, "
+                  "missing required optimizations for this op type.")
+    return "\n".join(lines)
+
+
 __all__ = [
     "RobustReward",
     "robust_reward",
@@ -419,4 +537,5 @@ __all__ = [
     "reflexion_feedback",
     "SoftVerifyResult",
     "soft_verify",
+    "llm_soft_verify",
 ]

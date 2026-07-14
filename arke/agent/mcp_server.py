@@ -41,11 +41,27 @@ _SERVER_NAME = "arke-harness"
 class ArkeMCPServer:
     """A minimal MCP server exposing the 8 Façade tools over JSON-RPC/stdio."""
 
+    # Resource URIs that exist in this server (used for subscribe validation).
+    _KNOWN_URIS: frozenset[str] = frozenset({
+        "arke://context/op", "arke://hw/profile",
+        "arke://strategy/current", "arke://actions/legal",
+    })
+
+    # Tools whose execution mutates strategy / legal-actions state.
+    _STATE_MUTATING_TOOLS: frozenset[str] = frozenset({
+        "apply_decision", "rollback", "checkpoint",
+    })
+
     def __init__(self, op_name: str, shapes: dict[str, list[int]], target_hw: str = "nvidia_ampere"):
         self.env = ArkeEnv.from_op(op_name, shapes or {})
         self.registry = ToolRegistry.with_env(self.env)
         self.op_name = op_name
         self.target_hw = target_hw
+        # Subscription state: client_id → set of subscribed resource URIs.
+        self._subscriptions: dict[str, set[str]] = {}
+        # Pending notifications queue (for HTTP poll delivery).
+        # Each entry is a full JSON-RPC notification dict.
+        self._pending_notifications: list[dict[str, Any]] = []
 
     # ── MCP method handlers ───────────────────────────────────────────
     def _tools_list(self) -> dict[str, Any]:
@@ -71,6 +87,12 @@ class ArkeMCPServer:
         result = tool.execute(arguments)
         payload = json.loads(result.to_json())
         is_error = not payload.get("success", True)
+
+        # After state-mutating tools succeed, notify subscribers.
+        if not is_error and name in self._STATE_MUTATING_TOOLS:
+            self.notify_resource_changed("arke://strategy/current")
+            self.notify_resource_changed("arke://actions/legal")
+
         return {
             "content": [{"type": "text", "text": json.dumps(payload, default=str)}],
             "isError": is_error,
@@ -81,7 +103,7 @@ class ArkeMCPServer:
             "protocolVersion": MCP_PROTOCOL_VERSION,
             "capabilities": {
                 "tools": {"listChanged": False},
-                "resources": {"listChanged": False, "subscribe": False},
+                "resources": {"listChanged": False, "subscribe": True},
                 "prompts": {"listChanged": False},
             },
             "serverInfo": {
@@ -135,6 +157,44 @@ class ArkeMCPServer:
             "uri": uri, "mimeType": "application/json",
             "text": json.dumps(body, default=str, indent=2),
         }]}
+
+    # ── resource subscriptions (MCP §5.8) ─────────────────────────────
+    def _resources_subscribe(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Subscribe a client to change notifications for a resource URI."""
+        uri = params.get("uri", "")
+        if uri not in self._KNOWN_URIS:
+            raise ValueError(f"unknown resource uri: {uri!r}")
+        # Use a default client id; real multi-client servers would use session ids.
+        client_id = params.get("_client_id", "_default")
+        self._subscriptions.setdefault(client_id, set()).add(uri)
+        return {}
+
+    def _resources_unsubscribe(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Unsubscribe a client from change notifications for a resource URI."""
+        uri = params.get("uri", "")
+        if uri not in self._KNOWN_URIS:
+            raise ValueError(f"unknown resource uri: {uri!r}")
+        client_id = params.get("_client_id", "_default")
+        subs = self._subscriptions.get(client_id)
+        if subs:
+            subs.discard(uri)
+        return {}
+
+    def notify_resource_changed(self, uri: str) -> list[dict[str, Any]]:
+        """Build ``notifications/resources/updated`` JSON-RPC notifications for
+        every client subscribed to *uri*.  Notifications are appended to
+        ``_pending_notifications`` (pollable over HTTP) and also returned."""
+        notifications: list[dict[str, Any]] = []
+        for _client_id, uris in self._subscriptions.items():
+            if uri in uris:
+                note = {
+                    "jsonrpc": "2.0",
+                    "method": "notifications/resources/updated",
+                    "params": {"uri": uri},
+                }
+                notifications.append(note)
+                self._pending_notifications.append(note)
+        return notifications
 
     # ── prompts primitive ─────────────────────────────────────────────
     def _prompts_list(self) -> dict[str, Any]:
@@ -207,6 +267,10 @@ class ArkeMCPServer:
                 result = self._resources_list()
             elif method == "resources/read":
                 result = self._resources_read(params)
+            elif method == "resources/subscribe":
+                result = self._resources_subscribe(params)
+            elif method == "resources/unsubscribe":
+                result = self._resources_unsubscribe(params)
             elif method == "prompts/list":
                 result = self._prompts_list()
             elif method == "prompts/get":
