@@ -21,8 +21,25 @@ from arke.ir.graph import IRGraph
 # BR=8 warps (256 threads) balances occupancy vs per-block work: 1024 threads
 # (BR=32) over-subscribes and drops to 1-2 blocks/SM. BC=32 keeps the K/V
 # shared tile small enough for good occupancy on Ampere (48KB smem).
-_BR = 8
-_BC = 32
+#
+# C2 (2026-07-13): Adaptive BR/BC for large-seq scenarios.
+# When S is large (≥256), we reduce BR to 4 (fewer query rows per block)
+# so more blocks can run concurrently, improving SM utilization on the
+# outer Q-tile loop. BC is doubled to 64 so each K-tile iteration does
+# more work before the next syncthreads, amortizing synchronization cost.
+# This is NOT a full FA-2 rewrite (cross-block K-split + atomic reduction)
+# but it addresses the worst wave-quantization inefficiency on large S.
+_BR_DEFAULT = 8
+_BC_DEFAULT = 32
+_BR_LARGESEQ = 4   # fewer Q-rows/block → more blocks → better wave fill
+_BC_LARGESEQ = 64   # more K-cols/tile → fewer sync barriers per block
+
+
+def _select_br_bc(S: int, D: int) -> tuple[int, int]:
+    """Adaptively select BR/BC based on sequence length."""
+    if S >= 256 and D <= 128:
+        return _BR_LARGESEQ, _BC_LARGESEQ
+    return _BR_DEFAULT, _BC_DEFAULT
 
 
 def emit_cuda_c_flash_attention(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
@@ -48,13 +65,15 @@ def emit_cuda_c_flash_attention(graph: IRGraph, chip: str = "sm_86") -> CudaCKer
     import math
     scale = 1.0 / math.sqrt(D)
 
+    BR, BC = _select_br_bc(S, D)
+
     kernel_name = f"arke_flash_attn_{B}x{H}x{S}x{D}"
 
     # Warp-per-query-row parallelization: each of WARPS warps in a block owns
     # one query row; its 32 lanes split the D dimension. This gives 32× the
     # parallelism of the naive 1-thread-per-row kernel on both the Q·K dot
     # product (warp-shuffle reduction) and the P·V accumulation.
-    WARPS = _BR  # BR query rows per block → BR warps
+    WARPS = BR  # BR query rows per block → BR warps
     THREADS = WARPS * 32
     # Per-lane register slice of the head dim: ceil(D/32).
     DPL = (D + 31) // 32
@@ -67,8 +86,8 @@ def emit_cuda_c_flash_attention(graph: IRGraph, chip: str = "sm_86") -> CudaCKer
 #include <math.h>
 #include <float.h>
 
-#define BR {_BR}
-#define BC {_BC}
+#define BR {BR}
+#define BC {BC}
 #define HEAD_DIM {D}
 #define DPL {DPL}
 
@@ -163,7 +182,7 @@ __global__ void {kernel_name}(
 }}
 """
 
-    grid = ((S + _BR - 1) // _BR, B * H, 1)
+    grid = ((S + BR - 1) // BR, B * H, 1)
     block = (WARPS * 32, 1, 1)
 
     return CudaCKernel(
@@ -206,7 +225,9 @@ def emit_cuda_c_gqa(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     import math
     scale = 1.0 / math.sqrt(D)
     group = Hq // Hkv
-    WARPS = _BR
+
+    BR, BC = _BR_DEFAULT, _BC_DEFAULT
+    WARPS = BR
     THREADS = WARPS * 32
     DPL = (D + 31) // 32
     kernel_name = f"arke_gqa_{B}x{Hq}x{Hkv}x{S}x{D}"
@@ -217,8 +238,8 @@ def emit_cuda_c_gqa(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
 #include <cuda_runtime.h>
 #include <math.h>
 #include <float.h>
-#define BR {_BR}
-#define BC {_BC}
+#define BR {BR}
+#define BC {BC}
 #define HEAD_DIM {D}
 #define DPL {DPL}
 #define GROUP {group}
@@ -296,7 +317,7 @@ __global__ void {kernel_name}(
     }}
 }}
 """
-    grid = ((S + _BR - 1) // _BR, B * Hq, 1)
+    grid = ((S + BR - 1) // BR, B * Hq, 1)
     block = (THREADS, 1, 1)
     return CudaCKernel(
         kernel_name=kernel_name, source=source, op_name="grouped_query_attention",
@@ -330,7 +351,9 @@ def emit_cuda_c_cross_attention(graph: IRGraph, chip: str = "sm_86") -> CudaCKer
 
     import math
     scale = 1.0 / math.sqrt(D)
-    WARPS = _BR
+
+    BR, BC = _BR_DEFAULT, _BC_DEFAULT
+    WARPS = BR
     THREADS = WARPS * 32
     DPL = (D + 31) // 32
     kernel_name = f"arke_cross_attn_{B}x{H}x{Sq}x{Skv}x{D}"
@@ -341,8 +364,8 @@ def emit_cuda_c_cross_attention(graph: IRGraph, chip: str = "sm_86") -> CudaCKer
 #include <cuda_runtime.h>
 #include <math.h>
 #include <float.h>
-#define BR {_BR}
-#define BC {_BC}
+#define BR {BR}
+#define BC {BC}
 #define HEAD_DIM {D}
 #define DPL {DPL}
 
@@ -415,7 +438,7 @@ __global__ void {kernel_name}(
     }}
 }}
 """
-    grid = ((Sq + _BR - 1) // _BR, B * H, 1)
+    grid = ((Sq + BR - 1) // BR, B * H, 1)
     block = (THREADS, 1, 1)
     return CudaCKernel(
         kernel_name=kernel_name, source=source, op_name="cross_attention",
