@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 _AVAILABLE = False
 _ENABLED = False
+_LIB_HANDLE = None
 try:
     import flag_gems  # noqa: F401
 
@@ -31,13 +32,35 @@ def _ensure_enabled() -> None:
     :func:`scoped_gems` for correctness paths so the hijack is torn down
     afterwards (avoids cross-test pollution — see C5 in the 2026-07-13 audit).
     """
-    global _ENABLED
+    global _ENABLED, _LIB_HANDLE
     if _ENABLED:
         return
     import flag_gems
 
-    flag_gems.enable()
+    _LIB_HANDLE = flag_gems.enable()
     _ENABLED = True
+
+
+def teardown_gems() -> None:
+    """Tear down the FlagGems aten override registered by _ensure_enabled().
+
+    Calls ``lib._destroy()`` on the Library object returned by ``enable()``.
+    After this, the torch aten dispatch table is restored and subsequent
+    torch.mm / torch.matmul calls go through the normal PyTorch path.
+
+    NOTE: Once torn down, re-enabling requires creating a NEW Library
+    (the old one is dead). Reset _ENABLED/_LIB_HANDLE so _ensure_enabled
+    can re-register from scratch if needed.
+    """
+    global _ENABLED, _LIB_HANDLE
+    if _LIB_HANDLE is not None:
+        try:
+            if hasattr(_LIB_HANDLE, '_destroy'):
+                _LIB_HANDLE._destroy()
+        except Exception:
+            pass
+        _LIB_HANDLE = None
+    _ENABLED = False
 
 
 def scoped_gems():
