@@ -32,7 +32,7 @@ dev:  ## Install with dev dependencies
 	pip install -e ".[dev]"
 
 test:  ## Run full test suite (per-file process isolation — clean green baseline)
-	pytest tests/ --dist loadfile -n 4 --tb=short
+	pytest tests/ --dist loadfile -n 2 --tb=short
 
 test-serial:  ## Run tests in-process (single worker; ~50 FlagGems-pollution fails expected)
 	pytest tests/ -v --tb=short
