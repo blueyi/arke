@@ -31,11 +31,14 @@ install:  ## Install arke package
 dev:  ## Install with dev dependencies
 	pip install -e ".[dev]"
 
-test:  ## Run tests (CPU only)
+test:  ## Run full test suite (per-file process isolation — clean green baseline)
+	pytest tests/ --dist loadfile -n 4 --tb=short
+
+test-serial:  ## Run tests in-process (single worker; ~50 FlagGems-pollution fails expected)
 	pytest tests/ -v --tb=short
 
-test-gpu:  ## Run tests including GPU correctness tests
-	ARKE_GPU_TESTS=1 pytest tests/ -v --tb=short
+test-gpu:  ## Run tests including GPU correctness tests (isolated)
+	ARKE_GPU_TESTS=1 pytest tests/ --dist loadfile -n 4 --tb=short
 
 lint:  ## Run linter
 	ruff check arke/ tests/ benchmarks/

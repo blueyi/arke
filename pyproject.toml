@@ -55,6 +55,7 @@ agent = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-xdist>=3.0",  # --dist loadfile for FlagGems per-file isolation (C5)
     "ruff>=0.4",
     "mypy>=1.0",
     "jsonschema>=4.20",
@@ -100,6 +101,17 @@ testpaths = ["tests"]
 markers = [
     "cuda: tests that require CUDA availability",
 ]
+# NOTE: The canonical full-suite command is:
+#     pytest tests/ --dist loadfile -n 4
+# The `--dist loadfile` flag (pytest-xdist) runs each test FILE in its own
+# worker process. This is REQUIRED to get a clean full-suite run: the FlagGems
+# baseline (benchmarks/baselines/flaggems.py) permanently hijacks the torch
+# `aten` dispatch table at import time via flag_gems.enable(), which cannot be
+# reversed in-process (see docs/phase4/audit-2026-07-13.md C5). Per-file worker
+# isolation confines that hijack to the workers that actually import FlagGems.
+# Without it, ~50 triton-codegen/probe tests fail from cross-file pollution.
+# We deliberately do NOT put `-n` in addopts so single-test debugging and IDE
+# runs stay in-process; use the Makefile `test` target for the full green run.
 
 [tool.mypy]
 python_version = "3.10"
