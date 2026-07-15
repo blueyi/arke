@@ -83,4 +83,66 @@ outside the SSOT should hardcode the count.
 
 ---
 
-*Last updated: 2026-04-05*
+## Development Session Discipline (for Kitty / any dev-agent working on Arke)
+
+A fresh session starts with an EMPTY context window. Load *just enough* to
+resume; don't flood it.
+
+### Session 0 — startup sequence
+
+```
+0. read ~/workspace/INBOX.md             # latest交接单 (status + task pointers)
+1. read ~/workspace/SOUL.md              # identity
+2. read ~/workspace/USER.md              # Leon's preferences
+3. read ~/workspace/memory/YYYY-MM-DD.md # today + yesterday
+4. cd ~/workspace/repos/arke && git status -sb && git log --oneline -5
+```
+
+### Context-window discipline (5 rules)
+
+1. **Pointer in, full-text on disk.** Start with a one-line pointer
+   (e.g. "读 `INBOX.md`，按交接单从 T1 开始") — NOT a paste of reports/audits.
+   Use `read_file` on demand: reads are repeatable after compaction; pasted
+   text is lost once the window compresses.
+2. **Handoff note is an INDEX, not the content.** `INBOX.md` stays ~2–3 KB:
+   status one-liners + file pointers (which doc, which §) + task table.
+   Detail lives in the referenced md files; pull only what's needed now.
+3. **One session, one big thing.** An output-heavy / multi-week task
+   (e.g. Tensor-Core kernel iteration — nvcc/ptxas/bench dumps eat context)
+   gets its OWN session. Batch cheap doc/small fixes together in a DIFFERENT
+   session. Don't mix a context-heavy build with unrelated chores.
+4. **Delegate the dirty work.** Full test suite, repo-wide grep,
+   compile-and-try → `delegate_task` subagent; only the CONCLUSION returns
+   to the main window. Main session stays for decisions + orchestration.
+5. **Write state back before the window fills.** Nearing the limit or
+   finishing a stage → rewrite `INBOX.md` (+ append
+   `~/workspace/memory/YYYY-MM-DD.md`) so the next session starts clean.
+   Window is volatile; disk is durable — externalize memory.
+
+**One-liner:** pointer in / full-text on disk; one session one big thing;
+dirty work to subagents; write state back on exit.
+
+### Key files for session handoff
+
+| File | Purpose |
+|:---|:---|
+| `~/workspace/INBOX.md` | Latest交接单 — current status + task table + file pointers |
+| `docs/phase4/audit-verify-*.md §5` | Active task backlog with DoD per item |
+| `docs/phase5/c2-tensorcore-*.md §9` | TC attention next-steps (6-stage route) |
+| `docs/phase5/rl-pipeline-deepening-*.md` | RL multi-round pipeline state |
+| `~/workspace/memory/YYYY-MM-DD.md` | Daily work log (append-only within day) |
+
+### Environment
+
+| Item | Value |
+|:---|:---|
+| venv | `source ~/.venvs/arke/bin/activate` (Python 3.10) |
+| GPU | RTX 3060 Laptop 6 GB (sm_86), CUDA 12.4 |
+| nvcc | CUDA 13.2 (`/usr/local/cuda-13.2/bin`) |
+| MLIR | `source ~/opt/mlir20/env.sh` (needed for `--backend mlir_gpu`) |
+| Full test | `make test` (pytest-xdist `--dist loadfile -n 2`) |
+| Baseline | 2534 passed / 0 failed (2026-07-15) |
+
+---
+
+*Last updated: 2026-07-15*
