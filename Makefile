@@ -3,6 +3,7 @@
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
+LLVM_VERSION ?= 20
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -11,16 +12,16 @@ help:  ## Show this help
 setup: setup-gpu  ## Default one-click environment setup (GPU/dev profile)
 
 setup-cpu:  ## Create a fresh CPU/dev environment in $(VENV)
-	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh cpu-dev
+	ARKE_VENV=$(VENV) ARKE_LLVM_VERSION=$(LLVM_VERSION) scripts/bootstrap_env.sh cpu-dev
 
-setup-gpu:  ## Create a fresh GPU/dev environment in $(VENV)
-	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh gpu-dev
+setup-gpu:  ## Create a fresh GPU/dev environment in $(VENV) with LLVM $(LLVM_VERSION)
+	ARKE_VENV=$(VENV) ARKE_LLVM_VERSION=$(LLVM_VERSION) scripts/bootstrap_env.sh gpu-dev
 
-setup-mlir:  ## Create a fresh MLIR-GPU/Phase 3 environment in $(VENV)
-	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh mlir-gpu
+setup-mlir:  ## Create a fresh MLIR-GPU/Phase 3+5 environment in $(VENV) with LLVM $(LLVM_VERSION)
+	ARKE_VENV=$(VENV) ARKE_LLVM_VERSION=$(LLVM_VERSION) scripts/bootstrap_env.sh mlir-gpu
 
-setup-bench:  ## Create a fresh benchmark environment in $(VENV)
-	ARKE_VENV=$(VENV) scripts/bootstrap_env.sh bench
+setup-bench:  ## Create a fresh benchmark environment in $(VENV) with LLVM $(LLVM_VERSION)
+	ARKE_VENV=$(VENV) ARKE_LLVM_VERSION=$(LLVM_VERSION) scripts/bootstrap_env.sh bench
 
 git-setup-defaults:  ## Configure repo-local git push defaults for current branch
 	scripts/git_setup_defaults.sh

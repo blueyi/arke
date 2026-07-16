@@ -6,6 +6,12 @@ VENV_DIR="${ARKE_VENV:-$ROOT_DIR/.venv}"
 PYTHON_BIN="${ARKE_PYTHON:-python3}"
 PROFILE="${1:-gpu-dev}"
 
+# ── LLVM version config ──────────────────────────────────────
+# Default: LLVM 20 (aligned with MLIR 20 / Triton 3.2 / PyTorch 2.6).
+# Override: ARKE_LLVM_VERSION=18 scripts/bootstrap_env.sh gpu-dev
+LLVM_VERSION="${ARKE_LLVM_VERSION:-20}"
+LLVM_INSTALL_DIR="${ARKE_LLVM_HOME:-$HOME/opt/mlir20/root}"
+
 usage() {
   cat <<'EOF'
 Usage: scripts/bootstrap_env.sh [cpu-dev|gpu-dev|mlir-gpu|bench]
@@ -13,12 +19,14 @@ Usage: scripts/bootstrap_env.sh [cpu-dev|gpu-dev|mlir-gpu|bench]
 Profiles:
   cpu-dev   Create a fresh venv and install editable Arke + dev deps
   gpu-dev   Create a fresh venv and install editable Arke + dev + GPU deps
-  mlir-gpu  Create a fresh venv and install editable Arke + dev + GPU + MLIR deps (Phase 3)
+  mlir-gpu  Create a fresh venv and install editable Arke + dev + GPU + MLIR deps (Phase 3+5)
   bench     Create a fresh venv and install editable Arke + benchmark stack
 
 Environment variables:
-  ARKE_VENV    Override venv path (default: ./.venv)
-  ARKE_PYTHON  Override Python executable used to create the venv (default: python3)
+  ARKE_VENV          Override venv path (default: ./.venv)
+  ARKE_PYTHON        Override Python executable (default: python3)
+  ARKE_LLVM_VERSION  LLVM version to use (default: 20; supports 18, 20)
+  ARKE_LLVM_HOME     Override LLVM install prefix (default: ~/opt/mlir20/root)
 EOF
 }
 
@@ -45,6 +53,7 @@ echo "==> Root: $ROOT_DIR"
 echo "==> Python: $PYTHON_BIN"
 echo "==> Venv: $VENV_DIR"
 echo "==> Profile: $PROFILE"
+echo "==> LLVM version: $LLVM_VERSION"
 
 rm -rf "$VENV_DIR"
 "$PYTHON_BIN" -m venv "$VENV_DIR"
@@ -59,24 +68,109 @@ case "$PROFILE" in
     ;;
   mlir-gpu)
     "$VENV_DIR/bin/pip" install -e ".[dev,gpu,mlir-gpu]"
-    # Install MLIR 20 toolchain (user-local, no root required)
-    echo "==> Checking MLIR 20 toolchain"
-    if command -v mlir-opt >/dev/null 2>&1; then
-      echo "    mlir-opt found: $(which mlir-opt)"
-    elif [[ -f "$HOME/opt/mlir20/env.sh" ]]; then
-      echo "    MLIR 20 installed at ~/opt/mlir20 — source ~/opt/mlir20/env.sh to use"
-    else
-      echo "    MLIR 20 not found."
-      echo "    Install via: dpkg-deb -x mlir-20-tools.deb ~/opt/mlir20"
-      echo "    Then add source ~/opt/mlir20/env.sh to your shell profile."
-      echo "    See docs/architecture/python-environment-setup.md for details."
-    fi
     ;;
   bench)
     "$VENV_DIR/bin/pip" install -e ".[dev,gpu]"
     "$VENV_DIR/bin/pip" install -r "$ROOT_DIR/requirements-benchmark.txt"
     ;;
 esac
+
+# ── LLVM/MLIR toolchain setup (gpu-dev, mlir-gpu, bench) ─────
+if [[ "$PROFILE" != "cpu-dev" ]]; then
+  _setup_llvm_toolchain() {
+    local llvm_ver="$1"
+    local install_dir="$2"
+    local llvm_bin_dir="$install_dir/usr/lib/llvm-${llvm_ver}/bin"
+    local env_sh="$HOME/opt/mlir20/env.sh"
+
+    echo "==> Checking LLVM ${llvm_ver} toolchain"
+
+    # Check if llc is already installed at expected location
+    if [[ -f "$llvm_bin_dir/llc" ]]; then
+      echo "    llc found: $llvm_bin_dir/llc"
+      "$llvm_bin_dir/llc" --version 2>&1 | head -1
+    else
+      echo "    llc-${llvm_ver} not found at $llvm_bin_dir"
+      echo "    Attempting to download and extract llvm-${llvm_ver}..."
+
+      # Try apt download + dpkg-deb extract (no root needed)
+      if command -v apt-get >/dev/null 2>&1; then
+        local tmp_dir
+        tmp_dir=$(mktemp -d)
+        pushd "$tmp_dir" >/dev/null
+        if apt-get download "llvm-${llvm_ver}" 2>/dev/null; then
+          local deb_file
+          deb_file=$(ls llvm-${llvm_ver}*.deb 2>/dev/null | head -1)
+          if [[ -n "$deb_file" ]]; then
+            dpkg-deb -x "$deb_file" "$install_dir"
+            echo "    ✅ llvm-${llvm_ver} extracted to $install_dir"
+          fi
+        else
+          echo "    ⚠️  apt-get download llvm-${llvm_ver} failed."
+          echo "    Manual install: apt download llvm-${llvm_ver} && dpkg-deb -x llvm-${llvm_ver}*.deb $install_dir"
+        fi
+        popd >/dev/null
+        rm -rf "$tmp_dir"
+      else
+        echo "    ⚠️  apt-get not available. Install llvm-${llvm_ver} manually."
+        echo "    Then set ARKE_LLC=$llvm_bin_dir/llc"
+      fi
+    fi
+
+    # Check MLIR tools
+    if [[ -f "$llvm_bin_dir/mlir-opt" ]]; then
+      echo "    mlir-opt found: $llvm_bin_dir/mlir-opt"
+    elif [[ "$PROFILE" == "mlir-gpu" ]]; then
+      echo "    ⚠️  mlir-opt not found. Install mlir-${llvm_ver}-tools:"
+      echo "       apt download mlir-${llvm_ver}-tools libmlir-${llvm_ver}"
+      echo "       dpkg-deb -x mlir-${llvm_ver}-tools*.deb $install_dir"
+      echo "       dpkg-deb -x libmlir-${llvm_ver}*.deb $install_dir"
+    fi
+
+    # Write/update env.sh if it doesn't exist or is outdated
+    if [[ ! -f "$env_sh" ]] || ! grep -q "LLVM.*${llvm_ver}" "$env_sh" 2>/dev/null; then
+      echo "==> Generating $env_sh for LLVM ${llvm_ver}"
+      mkdir -p "$(dirname "$env_sh")"
+      cat > "$env_sh" <<ENVEOF
+#!/usr/bin/env bash
+# Arke LLVM/MLIR toolchain environment (auto-generated by bootstrap_env.sh).
+# LLVM version: ${llvm_ver} (aligned with Triton 3.2 / PyTorch 2.6)
+# Source this to activate: source ~/opt/mlir20/env.sh
+export MLIR_HOME="$install_dir/usr/lib/llvm-${llvm_ver}"
+export PATH="\$MLIR_HOME/bin:\$PATH"
+export LD_LIBRARY_PATH="\$MLIR_HOME/lib:\${LD_LIBRARY_PATH:-}"
+# MLIR runner libs (Phase 3 MLIR GPU):
+export ARKE_MLIR_RUNNER_UTILS="\$MLIR_HOME/lib/libmlir_runner_utils.so.${llvm_ver}.1"
+export ARKE_MLIR_C_RUNNER_UTILS="\$MLIR_HOME/lib/libmlir_c_runner_utils.so.${llvm_ver}.1"
+export ARKE_MLIR_OPT="\$MLIR_HOME/bin/mlir-opt"
+export ARKE_MLIR_TRANSLATE="\$MLIR_HOME/bin/mlir-translate"
+export ARKE_MLIR_CPU_RUNNER="\$MLIR_HOME/bin/mlir-runner"
+# Phase 5 LLVM-IR backend:
+export ARKE_LLC="\$MLIR_HOME/bin/llc"
+# GPU (NVPTX):
+if [ -d /usr/local/cuda/bin ]; then export PATH="/usr/local/cuda/bin:\$PATH"; fi
+export ARKE_GPU_CHIP="\${ARKE_GPU_CHIP:-sm_86}"
+ENVEOF
+    fi
+
+    # Inject source env.sh into venv activate script
+    local activate="$VENV_DIR/bin/activate"
+    if [[ -f "$activate" ]] && ! grep -q "mlir20/env.sh" "$activate" 2>/dev/null; then
+      echo "==> Injecting LLVM/MLIR env into venv activate"
+      cat >> "$activate" <<ACTEOF
+
+# ── Arke LLVM/MLIR toolchain (auto-injected by bootstrap_env.sh) ──
+# LLVM ${llvm_ver}, aligned with Triton 3.2 / PyTorch 2.6
+if [ -f "\$HOME/opt/mlir20/env.sh" ]; then
+    source "\$HOME/opt/mlir20/env.sh"
+fi
+export GEMS_VENDOR="\${GEMS_VENDOR:-nvidia}"
+ACTEOF
+    fi
+  }
+
+  _setup_llvm_toolchain "$LLVM_VERSION" "$LLVM_INSTALL_DIR"
+fi
 
 echo "==> Verifying environment"
 "$VENV_DIR/bin/python" - <<'PY'
@@ -130,13 +224,43 @@ except FileNotFoundError:
 PY
 fi
 
+# Verify LLVM toolchain for non-cpu profiles
+if [[ "$PROFILE" != "cpu-dev" ]]; then
+  echo "==> Verifying LLVM toolchain"
+  "$VENV_DIR/bin/python" - <<PY
+import os, subprocess, shutil
+
+# Check llc
+llc = os.environ.get("ARKE_LLC") or shutil.which("llc")
+if llc and os.path.isfile(llc):
+    r = subprocess.run([llc, "--version"], capture_output=True, text=True)
+    ver_line = r.stdout.split("\\n")[0] if r.stdout else "(unknown)"
+    print(f"llc: {llc} ({ver_line})")
+    if "${LLVM_VERSION}" not in ver_line:
+        print(f"  ⚠️  Expected LLVM ${LLVM_VERSION}, got: {ver_line}")
+else:
+    print("llc: NOT FOUND — Phase 5 LLVM-IR backend will not work")
+    print("  Fix: source ~/opt/mlir20/env.sh or set ARKE_LLC")
+
+# Check ptxas
+ptxas = shutil.which("ptxas")
+if ptxas:
+    print(f"ptxas: {ptxas}")
+else:
+    print("ptxas: NOT FOUND — add /usr/local/cuda/bin to PATH")
+PY
+fi
+
 cat <<EOF
 
 Environment ready.
 Activate it with:
   source "$VENV_DIR/bin/activate"
 
+LLVM/MLIR toolchain: LLVM $LLVM_VERSION (auto-sourced on venv activate)
+Override LLVM version: ARKE_LLVM_VERSION=18 scripts/bootstrap_env.sh $PROFILE
+
 Recommended next steps:
   $VENV_DIR/bin/python -m pytest tests/test_parser.py -q
-  $VENV_DIR/bin/python -m benchmarks --layer L1
+  $VENV_DIR/bin/python -m pytest tests/backend/test_llvm_backend.py -q
 EOF

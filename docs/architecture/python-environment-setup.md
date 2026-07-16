@@ -150,42 +150,69 @@ Arke dependency layers are split as follows:
 
 This keeps standard development installation lightweight while still supporting a full benchmark environment.
 
-## MLIR Toolchain Setup (Phase 3)
+## MLIR & LLVM Toolchain Setup (Phase 3 + Phase 5)
 
-Phase 3 (Arke → MLIR Dialect) requires the MLIR 20 toolchain for GPU kernel compilation. The toolchain is installed **user-local** — no root privileges needed.
+Phase 3 (Arke → MLIR Dialect) and Phase 5 (Arke → LLVM IR) require the **LLVM 20** toolchain. This provides:
+- **Phase 3:** `mlir-opt`, `mlir-translate`, `mlir-runner` for MLIR GPU kernel compilation
+- **Phase 5:** `llc` (LLVM IR → PTX), plus `ptxas` (PTX → cubin) from the CUDA toolkit
+
+The toolchain is installed **user-local** — no root privileges needed.
+
+### LLVM Version Policy
+
+Arke defaults to **LLVM 20** (aligned with MLIR 20 / Triton 3.2 / PyTorch 2.6). This is enforced at three levels:
+
+| Level | Mechanism | Override |
+|---|---|---|
+| Bootstrap | `ARKE_LLVM_VERSION` env var | `ARKE_LLVM_VERSION=18 make setup-gpu` |
+| Runtime | `ARKE_LLC` env var | `ARKE_LLC=/path/to/llc-20 arke run --backend llvm ...` |
+| Code | `_find_llc()` priority chain | `ARKE_LLC` → `MLIR_HOME/bin/llc` → `~/opt/mlir20` → PATH |
+
+> **⚠️ Do NOT use system LLVM 18 for Arke.** The nvptx64 codegen in LLVM 18 may produce PTX incompatible with the CUDA 13.x ptxas, and MLIR 20 dialect compatibility requires LLVM 20.
 
 ### Prerequisites
 
-- NVIDIA GPU with CUDA 12.x
+- NVIDIA GPU with CUDA 12.x+
 - Python `cuda-python` package (installed by `pip install -e ".[mlir-gpu]"`)
-- MLIR 20 CLI tools: `mlir-opt`, `mlir-translate`, `mlir-cpu-runner`
+- LLVM 20 CLI tools: `llc`, `opt` (Phase 5), `mlir-opt`, `mlir-translate`, `mlir-runner` (Phase 3)
 
-### One-Click MLIR Setup
+### One-Click Setup
 
 ```bash
-make setup-mlir
+# Default: installs LLVM 20 automatically
+make setup-gpu          # GPU/dev profile
+make setup-mlir         # MLIR+GPU profile (Phase 3+5)
+
+# Override LLVM version (not recommended):
+make setup-gpu LLVM_VERSION=18
 ```
 
 Or directly:
 
 ```bash
-ARKE_VENV=~/.venvs/arke scripts/bootstrap_env.sh mlir-gpu
+ARKE_LLVM_VERSION=20 scripts/bootstrap_env.sh gpu-dev
 ```
 
-### Installing MLIR 20 Toolchain
+The bootstrap script:
+1. Downloads `llvm-20` deb via `apt-get download` (no root)
+2. Extracts to `~/opt/mlir20/root/` via `dpkg-deb -x`
+3. Generates/updates `~/opt/mlir20/env.sh` with all LLVM 20 paths
+4. Injects `source ~/opt/mlir20/env.sh` into the venv's `activate` script
+
+### Manual LLVM 20 Install (if bootstrap fails)
 
 On Ubuntu/WSL2, MLIR 20 tools can be installed user-local from the official LLVM
 packages:
 
 ```bash
-# Download the Ubuntu mlir-20-tools and libmlir-20 deb packages
-# (adjust the Ubuntu version suffix for your system)
-apt download mlir-20-tools libmlir-20
+# Download the Ubuntu LLVM 20, mlir-20-tools and libmlir-20 deb packages
+apt download llvm-20 mlir-20-tools libmlir-20
 
 # Extract to user-local directory (no root needed)
-mkdir -p ~/opt/mlir20
-dpkg-deb -x mlir-20-tools_*.deb ~/opt/mlir20
-dpkg-deb -x libmlir-20_*.deb ~/opt/mlir20
+mkdir -p ~/opt/mlir20/root
+dpkg-deb -x llvm-20_*.deb ~/opt/mlir20/root
+dpkg-deb -x mlir-20-tools_*.deb ~/opt/mlir20/root
+dpkg-deb -x libmlir-20_*.deb ~/opt/mlir20/root
 ```
 
 Create an activation script at `~/opt/mlir20/env.sh`:
