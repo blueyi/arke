@@ -8,7 +8,7 @@ PROFILE="${1:-gpu-dev}"
 
 # ── LLVM version config ──────────────────────────────────────
 # Default: LLVM 20 (aligned with MLIR 20 / Triton 3.2 / PyTorch 2.6).
-# Override version:  ARKE_LLVM_VERSION=18 scripts/bootstrap_env.sh gpu-dev
+# Override version:  ARKE_LLVM_VERSION=20 scripts/bootstrap_env.sh gpu-dev
 # Source build:      ARKE_LLVM_SRC=/path/to/llvm-project scripts/bootstrap_env.sh gpu-dev
 #   (builds LLVM from source with NVPTX + MLIR enabled, installs to ARKE_LLVM_HOME)
 LLVM_VERSION="${ARKE_LLVM_VERSION:-20}"
@@ -28,7 +28,7 @@ Profiles:
 Environment variables:
   ARKE_VENV          Override venv path (default: ./.venv)
   ARKE_PYTHON        Override Python executable (default: python3)
-  ARKE_LLVM_VERSION  LLVM version to use (default: 20; supports 18, 20)
+  ARKE_LLVM_VERSION  LLVM version to use (default: 20)
   ARKE_LLVM_HOME     Override LLVM install prefix (default: ~/opt/mlir20/root)
   ARKE_LLVM_SRC      Path to llvm-project source tree — build from source
                      (cmake + ninja required; builds with NVPTX + MLIR enabled)
@@ -303,7 +303,8 @@ Activate it with:
   source "$VENV_DIR/bin/activate"
 
 LLVM/MLIR toolchain: LLVM $LLVM_VERSION (auto-sourced on venv activate)
-Override LLVM version: ARKE_LLVM_VERSION=18 scripts/bootstrap_env.sh $PROFILE
+To override LLVM version (not recommended — default 20 is aligned with MLIR/Triton):
+  ARKE_LLVM_VERSION=<ver> scripts/bootstrap_env.sh $PROFILE
 
 Recommended next steps:
   $VENV_DIR/bin/python -m pytest tests/test_parser.py -q

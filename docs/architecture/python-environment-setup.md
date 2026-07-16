@@ -164,11 +164,11 @@ Arke defaults to **LLVM 20** (aligned with MLIR 20 / Triton 3.2 / PyTorch 2.6). 
 
 | Level | Mechanism | Override |
 |---|---|---|
-| Bootstrap | `ARKE_LLVM_VERSION` env var | `ARKE_LLVM_VERSION=18 make setup-gpu` |
+| Bootstrap | `ARKE_LLVM_VERSION` env var | `ARKE_LLVM_VERSION=20 make setup-gpu` |
 | Runtime | `ARKE_LLC` env var | `ARKE_LLC=/path/to/llc-20 arke run --backend llvm ...` |
 | Code | `_find_llc()` priority chain | `ARKE_LLC` → `MLIR_HOME/bin/llc` → `~/opt/mlir20` → PATH |
 
-> **⚠️ Do NOT use system LLVM 18 for Arke.** The nvptx64 codegen in LLVM 18 may produce PTX incompatible with the CUDA 13.x ptxas, and MLIR 20 dialect compatibility requires LLVM 20.
+> **⚠️ Always use LLVM 20 for Arke.** Older LLVM versions (e.g. system LLVM 18) have incompatible nvptx64 codegen and MLIR dialects.
 
 ### Prerequisites
 
@@ -184,7 +184,8 @@ make setup-gpu          # GPU/dev profile
 make setup-mlir         # MLIR+GPU profile (Phase 3+5)
 
 # Override LLVM version (not recommended):
-make setup-gpu LLVM_VERSION=18
+# LLVM_VERSION defaults to 20 — override only if you know what you're doing
+make setup-gpu LLVM_VERSION=20
 ```
 
 Or directly:

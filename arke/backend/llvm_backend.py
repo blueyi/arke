@@ -43,8 +43,9 @@ def _find_llc() -> str | None:
         candidate = os.path.join(mlir_home, "bin", "llc")
         if os.path.isfile(candidate):
             return candidate
-    # 3. Well-known LLVM 20 path
+    # 3. Well-known LLVM 20 paths (source build + deb extract)
     for candidate in [
+        os.path.expanduser("~/opt/llvm20-src/usr/lib/llvm-20/bin/llc"),
         os.path.expanduser("~/opt/mlir20/root/usr/lib/llvm-20/bin/llc"),
     ]:
         if os.path.isfile(candidate):
