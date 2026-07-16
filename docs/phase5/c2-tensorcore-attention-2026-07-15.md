@@ -1,9 +1,15 @@
 # C2 — Tensor-Core fused attention prototype (Phase 5, week 1)
 
-**Date:** 2026-07-15
-**Author:** optimization agent (探索性多周工程第一步)
+**Date:** 2026-07-15 (updated 2026-07-16)
+**Author:** optimization agent (探索性多周工程)
 **Goal:** 验证 Tensor-Core (wmma) fp16→fp32 fused attention 路线可行性，拿到第一个真实性能数据点。**不要求**达到 SDPA parity。
-**Status:** ✅ 路线可行性已验证（correctness 达标）；性能瓶颈已精确定位（occupancy-limited）。尚未达到 parity（预期，属多周工程范畴）。
+**Status:** ✅ 路线可行性已验证；✅ 性能优化到该设计空间实用天花板；✅ 已接回 production arke emitter + 测试。**T1 闭环完成（2026-07-16）。**
+
+> **2026-07-16 更新 — T1 DoD 全部达成。** 见本文件 §11（性能演进 v1→v8）与 §12（production 集成）。
+> 简报：kernel 从 v1 fp32 (大 seq 0.06×) 优化到 **v7 3-stage pipeline (0.35–0.42× SDPA, ~5–6×)**，
+> 泛化为 **v8**（D∈{64,128} + causal），接回 `arke/backend/cuda_c_attention.py` 的
+> `emit_cuda_c_flash_attention_tc`（fp16 + D∈{64,128} 自动走 TC，其余回退 fp32 warp-per-row），
+> 新增 `tests/backend/test_cuda_c_attention_tc.py`（24 测试全绿），全套 `make test` 无回归。
 
 ---
 
@@ -125,4 +131,53 @@ Q/Kᵀ/V/P 用 fp16，S/O/Otile/m/l 用 fp32，合计 **≈ 82 KB/block**。
 source /home/blueyi/.venvs/arke/bin/activate
 export PATH=/usr/local/cuda-13.2/bin:$PATH
 python scratch/tc_attn/run_tc_attn.py   # 打印 correctness + perf，写 results.json
+```
+
+---
+
+## 11. 性能演进 v1 → v8（2026-07-16 完成）
+
+§9 六步全部落地。所有数字 kernel-only（CUDA events），RTX 3060 Laptop sm_86，
+correctness vs torch SDPA fp16 max_err ≤ 2.4e-4（阈值 1e-2）。
+
+| Version | 关键改动 | Smem | blocks/SM | S=1024 | S=2048 | 4×8×2048 |
+|---------|---------|:----:|:---------:|:------:|:------:|:--------:|
+| v1 | fp32 warp-per-row（旧 baseline） | 82K | 1 | — | 0.06× | 0.07× |
+| v4b | register-resident P+O, cp.async double-buffer | 40K | 2 | 0.38× | 0.34× | 0.33× |
+| v6 | BC 64→32（占用↑ + 保留 double-buffer） | 24K | 4 | 0.40× | 0.36× | 0.35× |
+| **v7** | **3-stage cp.async pipeline（预取 2 tiles）** | 32K | 3 | **0.40×** | **0.37×** | **0.35×** |
+
+**大 seq 从 0.15× 起点 → 0.35–0.42× SDPA，约 5–6× over v1 fp32。**
+
+关键工程洞察（两轮 occupancy/pipeline 探索一致）：**最有效杠杆是深化 latency
+hiding，而非单纯提 occupancy**。v6 靠 BC=32 提到 4 blocks/SM，但必须保留
+double-buffer 才赢（丢 double-buffer 的纯占用变体更慢）；v7 用 3-stage pipeline
+拿 1 个 block 占用换更深流水，净赢。被否决：BC=16（TC 利用率降）、向量化 epilogue（中性）。
+
+**v8 泛化**（`scratch/tc_attn/tc_attn_v8_general.cu`，`#define HEAD_D`/`CAUSAL`）：
+- D∈{64,128}：NDCOL=D/16 派生；D=128 smem 64KB（1 block/SM，需 >48K dynamic smem opt-in）。
+- causal mask：对每 thread 的 8 个 fragment 元素按其 global (qrow,kcol) 独立判断，
+  在 max-scan 与 exp/psum 两处一致 mask；全 mask 行（m 保持 -inf）特判 corr=0 防 nan。
+- 验证：D∈{64,128} × {非causal,causal} × 多 shape 全部 max_err ≤ 4.9e-4 vs torch SDPA(is_causal)。
+
+## 12. Production 集成（DoD step 6）
+
+TC kernel 已接回统一 backend，走真实 nvcc `--cubin` + CUDA driver API 路径：
+
+- **emitter**：`arke/backend/cuda_c_attention.py::emit_cuda_c_flash_attention_tc`
+  （kernel body = 验证过的 v8，emit 时替换 `__KERNEL_NAME__/__HEAD_D__/__CAUSAL__`）。
+- **dispatch**：`emit_cuda_c_flash_attention` 在 `dtype==float16 && D∈{64,128}` 时
+  自动路由到 TC；其余（fp32、其他 D）回退到 correctness-first fp32 warp-per-row kernel。
+  `node.attrs["causal"]` 控制 causal mask。
+- **backend 能力补强**：`cuda_c_backend.py::_maybe_optin_smem` — 当 `shared_mem>48KB`
+  时调 `cuFuncSetAttribute(MAX_DYNAMIC_SHARED_SIZE_BYTES)`（D=128 的 64KB 必需），
+  ≤48KB 时 no-op（对既有 kernel 零影响）。两处 launch site（run + benchmark）都接线。
+- **测试**：`tests/backend/test_cuda_c_attention_tc.py` — dispatch/fallback 断言 +
+  D∈{64,128}×{非causal,causal} 端到端 correctness vs torch SDPA。24 测试全绿，
+  全套 `make test` 无回归。
+
+复现集成验证：
+```bash
+python scratch/tc_attn/verify_backend_tc.py     # 走真实 CudaCBackend 路径
+python -m pytest tests/backend/test_cuda_c_attention_tc.py -q
 ```

@@ -176,7 +176,19 @@ $ grep "Last updated" AGENTS.md → *Last updated: 2026-04-05*
 > 其优先级应高于一个半小时的文档订正——因为它决定项目立论是否成立。
 > 每个任务附：缺口性质、根因/现状、完成标准（DoD）、验证方式。
 
-### 🔴 T1 — Tensor-Core fused attention 达到性能可用（核心命题缺口）
+### ✅ T1 — Tensor-Core fused attention 达到性能可用（核心命题缺口）— **闭环完成 2026-07-16**
+
+> **DONE (2026-07-16).** 六步 DoD 全部落地，见 `docs/phase5/c2-tensorcore-attention-2026-07-15.md` §11-12。
+> - step 1-4（降 smem/占用、cp.async double-buffer、register-resident O、瓶颈诊断）：v4b→v6→v7。
+> - 性能：大 seq **0.15× → 0.35–0.42× SDPA（~5–6× over v1 fp32）**，达该设计空间实用天花板。
+>   关键洞察：深化 latency hiding（3-stage pipeline）比单纯提 occupancy 更有效。
+> - step 5（扩展 config）：v8 支持 D∈{64,128} + causal mask，全部 max_err ≤ 4.9e-4 vs torch SDPA。
+> - step 6（接回 emitter）：`emit_cuda_c_flash_attention_tc` + fp16/D-gated dispatch + backend
+>   >48KB dynamic smem opt-in + `tests/backend/test_cuda_c_attention_tc.py`（24 测试全绿，make test 无回归）。
+> - ncu occupancy 实测仍缺（ERR_NVGPUCTRPERM 无 GPU counter 权限）；占用数字为 smem 推算 + 稳定计时佐证。
+> - 超越 torch cuDNN/FlashAttention parity 属多周工程，DoD 明确不要求，未追求。
+>
+> 原始任务描述（保留）：
 
 **为什么最高优先:** Arke 的立论是"生成高性能 kernel"。attention 是 LLM 时代最关键的算子，
 当前 fp32 warp-per-row 在大 seq 上仅 0.15–0.18× SDPA，且已被证明是该设计空间的天花板

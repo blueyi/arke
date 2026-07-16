@@ -39,6 +39,284 @@ def _select_br_bc(S: int, D: int) -> tuple[int, int]:
     return _BR_DEFAULT, _BC_DEFAULT
 
 
+# Tensor-Core (wmma m16n16k16 fp16->fp32) fused flash-attention kernel body.
+# Verified in scratch/tc_attn (v7 3-stage pipeline + v8 D/causal generalization):
+# ~5-6x over the fp32 warp-per-row kernel, ~0.35-0.42x torch SDPA at large S,
+# max_err <=4.9e-4 vs torch (incl. is_causal). Tokens substituted at emit time:
+#   __KERNEL_NAME__, __HEAD_D__ (64|128), __CAUSAL__ (0|1).
+# Fragment layout (sm_86): warp owns rows [warp*16..+16); per-thread element
+# row_lo=warp*16+lane/4, row_hi=+8; base_col=nc*16+(lane%4)*2. Elements
+# {0,1,4,5}=row_lo, {2,3,6,7}=row_hi. Causal masks each element by (qrow,kcol).
+_TC_ATTN_KERNEL = r"""
+#include <cstdint>
+#include <cuda_fp16.h>
+#include <mma.h>
+#include <float.h>
+using namespace nvcuda;
+
+#define D        __HEAD_D__
+#define CAUSAL   __CAUSAL__
+#define BR       64
+#define BC       32
+#define WMMA_M   16
+#define WMMA_N   16
+#define WMMA_K   16
+#define NCOL     (BC / WMMA_N)
+#define NDCOL    (D  / WMMA_N)
+#define NSTAGE   3
+
+__device__ __forceinline__ void cp_async_cg(void* dst, const void* src) {
+    uint32_t a = static_cast<uint32_t>(__cvta_generic_to_shared(dst));
+    asm volatile("cp.async.cg.shared.global [%0], [%1], 16;\n" :: "r"(a), "l"(src));
+}
+__device__ __forceinline__ void cp_async_commit() { asm volatile("cp.async.commit_group;\n"); }
+template<int N> __device__ __forceinline__ void cp_async_wait_group() {
+    asm volatile("cp.async.wait_group %0;\n" :: "n"(N));
+}
+
+extern "C" __global__ void __KERNEL_NAME__(
+    const half* __restrict__ Q, const half* __restrict__ K,
+    const half* __restrict__ V, half* __restrict__ O,
+    int B, int H, int S, int Dd, float scale)
+{
+    const int bh=blockIdx.y, qtile=blockIdx.x, warp=threadIdx.x>>5, lane=threadIdx.x&31, tid=threadIdx.x;
+    const int q0=qtile*BR;
+    const half* Qbh=Q+(long)bh*S*D; const half* Kbh=K+(long)bh*S*D;
+    const half* Vbh=V+(long)bh*S*D; half* Obh=O+(long)bh*S*D;
+
+    extern __shared__ char smem[];
+    half* Qsh_=(half*)smem;
+    half* KV_base=Qsh_+BR*D;
+    half* KTsh[NSTAGE]; half* Vsh[NSTAGE];
+    #pragma unroll
+    for (int s=0;s<NSTAGE;s++){ KTsh[s]=KV_base+s*(2*BC*D); Vsh[s]=KTsh[s]+BC*D; }
+    #define Qsh(r,c) Qsh_[(r)*D+(c)]
+
+    wmma::fragment<wmma::accumulator,WMMA_M,WMMA_N,WMMA_K,float> o_frag[NDCOL];
+    #pragma unroll
+    for (int nc=0;nc<NDCOL;nc++) wmma::fill_fragment(o_frag[nc],0.0f);
+    float m_lo=-FLT_MAX,m_hi=-FLT_MAX,l_lo=0.0f,l_hi=0.0f;
+    const int ntiles=(S+BC-1)/BC;
+    const int qrow_lo=q0+warp*WMMA_M+lane/4;
+    const int qrow_hi=qrow_lo+8;
+
+    for (int idx=tid; idx<BR*D; idx+=blockDim.x){
+        int r=idx/D,c=idx%D,qr=q0+r;
+        Qsh(r,c)=(qr<S)?Qbh[qr*D+c]:__float2half(0.0f);
+    }
+
+    #define PREFETCH_TILE(tt,slot) do {                                     \
+        int _kt=(tt)*BC; int _vr=min(BC,S-_kt); int _ve=_vr*D;              \
+        const half* _ks=Kbh+(long)_kt*D; const half* _vs=Vbh+(long)_kt*D;  \
+        int _pt=(BC*D)/blockDim.x; int _b=tid*_pt;                         \
+        for(int i=0;i<_pt;i+=8){int p=_b+i;                                \
+            if(p<_ve)cp_async_cg(&KTsh[slot][p],&_ks[p]);                  \
+            else *((uint4*)&KTsh[slot][p])=make_uint4(0,0,0,0);}           \
+        for(int i=0;i<_pt;i+=8){int p=_b+i;                                \
+            if(p<_ve)cp_async_cg(&Vsh[slot][p],&_vs[p]);                   \
+            else *((uint4*)&Vsh[slot][p])=make_uint4(0,0,0,0);}            \
+        cp_async_commit();                                                 \
+    } while(0)
+
+    #pragma unroll
+    for (int s=0;s<NSTAGE-1;s++){ if(s<ntiles) PREFETCH_TILE(s,s); }
+
+    for (int t=0;t<ntiles;t++){
+        int cur=t%NSTAGE, kt=t*BC, krem=min(S-kt,BC);
+        int pf=t+(NSTAGE-1);
+        if(pf<ntiles) PREFETCH_TILE(pf,pf%NSTAGE);
+        cp_async_wait_group<NSTAGE-1>();
+        __syncthreads();
+
+        wmma::fragment<wmma::accumulator,WMMA_M,WMMA_N,WMMA_K,float> s_frag[NCOL];
+        #pragma unroll
+        for (int nc=0;nc<NCOL;nc++){
+            wmma::fill_fragment(s_frag[nc],0.0f);
+            #pragma unroll
+            for (int k=0;k<D;k+=WMMA_K){
+                wmma::fragment<wmma::matrix_a,WMMA_M,WMMA_N,WMMA_K,half,wmma::row_major> a_frag;
+                wmma::fragment<wmma::matrix_b,WMMA_M,WMMA_N,WMMA_K,half,wmma::col_major> b_frag;
+                wmma::load_matrix_sync(a_frag,&Qsh(warp*WMMA_M,k),D);
+                wmma::load_matrix_sync(b_frag,&KTsh[cur][nc*WMMA_N*D+k],D);
+                wmma::mma_sync(s_frag[nc],a_frag,b_frag,s_frag[nc]);
+            }
+        }
+
+        wmma::fragment<wmma::matrix_a,WMMA_M,WMMA_N,WMMA_K,half,wmma::row_major> p_frag[NCOL];
+        {
+            float pmax_lo=-FLT_MAX,pmax_hi=-FLT_MAX;
+            #pragma unroll
+            for (int nc=0;nc<NCOL;nc++){
+                int base_col=nc*16+(lane%4)*2;
+                int kc0=kt+base_col,kc1=kt+base_col+1,kc8=kt+base_col+8,kc9=kt+base_col+9;
+#if CAUSAL
+                bool m0=(base_col<krem)&&(kc0<=qrow_lo), m1=(base_col+1<krem)&&(kc1<=qrow_lo);
+                bool m4=(base_col+8<krem)&&(kc8<=qrow_lo), m5=(base_col+9<krem)&&(kc9<=qrow_lo);
+                bool n2=(base_col<krem)&&(kc0<=qrow_hi), n3=(base_col+1<krem)&&(kc1<=qrow_hi);
+                bool n6=(base_col+8<krem)&&(kc8<=qrow_hi), n7=(base_col+9<krem)&&(kc9<=qrow_hi);
+#else
+                bool m0=(base_col<krem),m1=(base_col+1<krem),m4=(base_col+8<krem),m5=(base_col+9<krem);
+                bool n2=m0,n3=m1,n6=m4,n7=m5;
+#endif
+                float v0=m0?s_frag[nc].x[0]*scale:-FLT_MAX, v1=m1?s_frag[nc].x[1]*scale:-FLT_MAX;
+                float v4=m4?s_frag[nc].x[4]*scale:-FLT_MAX, v5=m5?s_frag[nc].x[5]*scale:-FLT_MAX;
+                pmax_lo=fmaxf(pmax_lo,fmaxf(fmaxf(v0,v1),fmaxf(v4,v5)));
+                float v2=n2?s_frag[nc].x[2]*scale:-FLT_MAX, v3=n3?s_frag[nc].x[3]*scale:-FLT_MAX;
+                float v6=n6?s_frag[nc].x[6]*scale:-FLT_MAX, v7=n7?s_frag[nc].x[7]*scale:-FLT_MAX;
+                pmax_hi=fmaxf(pmax_hi,fmaxf(fmaxf(v2,v3),fmaxf(v6,v7)));
+            }
+            #pragma unroll
+            for (int d=1;d<=2;d<<=1){
+                pmax_lo=fmaxf(pmax_lo,__shfl_xor_sync(0xffffffff,pmax_lo,d));
+                pmax_hi=fmaxf(pmax_hi,__shfl_xor_sync(0xffffffff,pmax_hi,d));
+            }
+            float mp_lo=m_lo,mp_hi=m_hi;
+            m_lo=fmaxf(m_lo,pmax_lo); m_hi=fmaxf(m_hi,pmax_hi);
+            float corr_lo=(mp_lo==-FLT_MAX)?0.0f:expf(mp_lo-m_lo);
+            float corr_hi=(mp_hi==-FLT_MAX)?0.0f:expf(mp_hi-m_hi);
+            #pragma unroll
+            for (int nc=0;nc<NDCOL;nc++){
+                o_frag[nc].x[0]*=corr_lo;o_frag[nc].x[1]*=corr_lo;o_frag[nc].x[4]*=corr_lo;o_frag[nc].x[5]*=corr_lo;
+                o_frag[nc].x[2]*=corr_hi;o_frag[nc].x[3]*=corr_hi;o_frag[nc].x[6]*=corr_hi;o_frag[nc].x[7]*=corr_hi;
+            }
+            float psum_lo=0.0f,psum_hi=0.0f;
+            #pragma unroll
+            for (int nc=0;nc<NCOL;nc++){
+                int base_col=nc*16+(lane%4)*2;
+                int kc0=kt+base_col,kc1=kt+base_col+1,kc8=kt+base_col+8,kc9=kt+base_col+9;
+#if CAUSAL
+                bool m0=(base_col<krem)&&(kc0<=qrow_lo), m1=(base_col+1<krem)&&(kc1<=qrow_lo);
+                bool m4=(base_col+8<krem)&&(kc8<=qrow_lo), m5=(base_col+9<krem)&&(kc9<=qrow_lo);
+                bool n2=(base_col<krem)&&(kc0<=qrow_hi), n3=(base_col+1<krem)&&(kc1<=qrow_hi);
+                bool n6=(base_col+8<krem)&&(kc8<=qrow_hi), n7=(base_col+9<krem)&&(kc9<=qrow_hi);
+#else
+                bool m0=(base_col<krem),m1=(base_col+1<krem),m4=(base_col+8<krem),m5=(base_col+9<krem);
+                bool n2=m0,n3=m1,n6=m4,n7=m5;
+#endif
+                float p0=m0?expf(s_frag[nc].x[0]*scale-m_lo):0.0f, p1=m1?expf(s_frag[nc].x[1]*scale-m_lo):0.0f;
+                float p4=m4?expf(s_frag[nc].x[4]*scale-m_lo):0.0f, p5=m5?expf(s_frag[nc].x[5]*scale-m_lo):0.0f;
+                psum_lo+=p0+p1+p4+p5;
+                float p2=n2?expf(s_frag[nc].x[2]*scale-m_hi):0.0f, p3=n3?expf(s_frag[nc].x[3]*scale-m_hi):0.0f;
+                float p6=n6?expf(s_frag[nc].x[6]*scale-m_hi):0.0f, p7=n7?expf(s_frag[nc].x[7]*scale-m_hi):0.0f;
+                psum_hi+=p2+p3+p6+p7;
+                p_frag[nc].x[0]=__float2half(p0);p_frag[nc].x[1]=__float2half(p1);
+                p_frag[nc].x[2]=__float2half(p2);p_frag[nc].x[3]=__float2half(p3);
+                p_frag[nc].x[4]=__float2half(p4);p_frag[nc].x[5]=__float2half(p5);
+                p_frag[nc].x[6]=__float2half(p6);p_frag[nc].x[7]=__float2half(p7);
+                p_frag[nc].x[8]=__float2half(p0);p_frag[nc].x[9]=__float2half(p1);
+                p_frag[nc].x[10]=__float2half(p2);p_frag[nc].x[11]=__float2half(p3);
+                p_frag[nc].x[12]=__float2half(p4);p_frag[nc].x[13]=__float2half(p5);
+                p_frag[nc].x[14]=__float2half(p6);p_frag[nc].x[15]=__float2half(p7);
+            }
+            #pragma unroll
+            for (int d=1;d<=2;d<<=1){
+                psum_lo+=__shfl_xor_sync(0xffffffff,psum_lo,d);
+                psum_hi+=__shfl_xor_sync(0xffffffff,psum_hi,d);
+            }
+            l_lo=l_lo*corr_lo+psum_lo; l_hi=l_hi*corr_hi+psum_hi;
+        }
+
+        #pragma unroll
+        for (int nc=0;nc<NDCOL;nc++){
+            #pragma unroll
+            for (int kk=0;kk<NCOL;kk++){
+                wmma::fragment<wmma::matrix_b,WMMA_M,WMMA_N,WMMA_K,half,wmma::row_major> b_frag;
+                wmma::load_matrix_sync(b_frag,&Vsh[cur][kk*WMMA_K*D+nc*WMMA_N],D);
+                wmma::mma_sync(o_frag[nc],p_frag[kk],b_frag,o_frag[nc]);
+            }
+        }
+        __syncthreads();
+    }
+
+    {
+        float inv_lo=(l_lo>0.0f)?1.0f/l_lo:0.0f, inv_hi=(l_hi>0.0f)?1.0f/l_hi:0.0f;
+        #pragma unroll
+        for (int nc=0;nc<NDCOL;nc++){
+            o_frag[nc].x[0]*=inv_lo;o_frag[nc].x[1]*=inv_lo;o_frag[nc].x[4]*=inv_lo;o_frag[nc].x[5]*=inv_lo;
+            o_frag[nc].x[2]*=inv_hi;o_frag[nc].x[3]*=inv_hi;o_frag[nc].x[6]*=inv_hi;o_frag[nc].x[7]*=inv_hi;
+        }
+        int row_lo=warp*WMMA_M+lane/4, row_hi=row_lo+8, grow_lo=q0+row_lo, grow_hi=q0+row_hi;
+        #pragma unroll
+        for (int nc=0;nc<NDCOL;nc++){
+            int cb=nc*WMMA_N+(lane%4)*2;
+            if(grow_lo<S){
+                Obh[grow_lo*D+cb]=__float2half(o_frag[nc].x[0]);Obh[grow_lo*D+cb+1]=__float2half(o_frag[nc].x[1]);
+                Obh[grow_lo*D+cb+8]=__float2half(o_frag[nc].x[4]);Obh[grow_lo*D+cb+9]=__float2half(o_frag[nc].x[5]);
+            }
+            if(grow_hi<S){
+                Obh[grow_hi*D+cb]=__float2half(o_frag[nc].x[2]);Obh[grow_hi*D+cb+1]=__float2half(o_frag[nc].x[3]);
+                Obh[grow_hi*D+cb+8]=__float2half(o_frag[nc].x[6]);Obh[grow_hi*D+cb+9]=__float2half(o_frag[nc].x[7]);
+            }
+        }
+    }
+}
+"""
+
+
+def emit_cuda_c_flash_attention_tc(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
+    """Emit the Tensor-Core (wmma fp16->fp32) fused flash-attention kernel.
+
+    Requires dtype float16 and head dim D in {64,128}. BR=64/BC=32, 4 warps,
+    register-resident O+P, 3-stage cp.async pipeline. Supports optional causal
+    mask via node.attrs["causal"]. ~5-6x faster than the fp32 warp-per-row
+    kernel at large S. Provenance: docs/phase5/c2-tensorcore-attention-*.md,
+    scratch/tc_attn (v7/v8, verified max_err <=4.9e-4 vs torch SDPA).
+    """
+    node = graph.nodes[0]
+    in_names = list(node.inputs.values())
+    q_name, k_name, v_name = in_names[0], in_names[1], in_names[2]
+    out_name = node.outputs[0]
+
+    q_val = graph.get_value(q_name)
+    B, H, S, D = list(q_val.shape)
+    dtype = q_val.dtype or "float16"
+    if dtype != "float16":
+        raise ValueError(f"TC flash_attention requires float16, got {dtype}")
+    if D not in (64, 128):
+        raise ValueError(f"TC flash_attention requires D in {{64,128}}, got {D}")
+
+    causal = bool(node.attrs.get("causal", False))
+
+    import math
+    scale = 1.0 / math.sqrt(D)
+
+    BR, BC, NSTAGE = 64, 32, 3
+    THREADS = 128
+    kernel_name = f"arke_tc_flash_attn_{B}x{H}x{S}x{D}{'_causal' if causal else ''}"
+
+    # Dynamic shared memory: Qsh(BR*D*2) + NSTAGE*(K BC*D*2 + V BC*D*2).
+    shared_mem = (BR * D * 2) + NSTAGE * (2 * BC * D * 2)
+
+    source = (
+        _TC_ATTN_KERNEL
+        .replace("__KERNEL_NAME__", kernel_name)
+        .replace("__HEAD_D__", str(D))
+        .replace("__CAUSAL__", "1" if causal else "0")
+    )
+
+    grid = ((S + BR - 1) // BR, B * H, 1)
+    block = (THREADS, 1, 1)
+
+    return CudaCKernel(
+        kernel_name=kernel_name,
+        source=source,
+        op_name="flash_attention",
+        param_names=[q_name, k_name, v_name, out_name],
+        output_name=out_name,
+        shapes={q_name: [B, H, S, D], k_name: [B, H, S, D],
+                v_name: [B, H, S, D], out_name: [B, H, S, D]},
+        dtypes={q_name: "float16", k_name: "float16",
+                v_name: "float16", out_name: "float16"},
+        grid=grid,
+        block=block,
+        shared_mem=shared_mem,
+        kernel_args=[
+            ("ptr", q_name), ("ptr", k_name), ("ptr", v_name), ("ptr", out_name),
+            ("int", B), ("int", H), ("int", S), ("int", D), ("float", scale),
+        ],
+    )
+
+
 def emit_cuda_c_flash_attention(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     """Emit online-softmax flash-attention: O = softmax(Q@K^T/sqrt(D)) @ V.
 
@@ -58,6 +336,13 @@ def emit_cuda_c_flash_attention(graph: IRGraph, chip: str = "sm_86") -> CudaCKer
     B, H, S, D = shape
     dtype = q_val.dtype or "float32"
     c_type = _ir_dtype_to_c(dtype)
+
+    # High-performance Tensor-Core path: fp16 + head dim in {64,128}. The
+    # wmma fp16->fp32 fused kernel (T1, docs/phase5/c2-tensorcore-*.md) is
+    # ~5-6x faster than this warp-per-row fp32 kernel at large S. Anything
+    # else (fp32, other D) uses the correctness-first path below.
+    if dtype == "float16" and D in (64, 128):
+        return emit_cuda_c_flash_attention_tc(graph, chip=chip)
 
     import math
     scale = 1.0 / math.sqrt(D)

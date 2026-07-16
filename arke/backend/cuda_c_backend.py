@@ -574,6 +574,7 @@ class CudaCBackend:
         func = self._chk(driver, driver.cuModuleGetFunction(
             mod, emitted.kernel_name.encode()
         ))
+        self._maybe_optin_smem(driver, func, emitted.shared_mem)
 
         # Convert inputs to numpy + allocate GPU memory
         np_inputs: dict[str, np.ndarray] = {}
@@ -664,6 +665,22 @@ class CudaCBackend:
         rest = t[1:]
         return rest[0] if len(rest) == 1 else rest
 
+    def _maybe_optin_smem(self, driver: Any, func: Any, shared_mem: int) -> None:
+        """Opt in to dynamic shared memory above the 48 KB static default.
+
+        Kernels requesting >48 KB dynamic smem (e.g. the Tensor-Core attention
+        variant at D=128, 64 KB) must raise CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_
+        SHARED_SIZE_BYTES per-function or the launch fails with
+        CUDA_ERROR_INVALID_VALUE. No-op for the common <=48 KB case.
+        """
+        if shared_mem <= 49152:
+            return
+        self._chk(driver, driver.cuFuncSetAttribute(
+            func,
+            driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
+            shared_mem,
+        ))
+
     def benchmark(self, kernel: CompiledKernel, inputs: dict[str, Any],
                   iters: int = 50, warmup: int = 10) -> float:
         """Mean kernel-only latency (ms) via CUDA events.
@@ -701,6 +718,7 @@ class CudaCBackend:
         func = self._chk(driver, driver.cuModuleGetFunction(
             mod, emitted.kernel_name.encode()
         ))
+        self._maybe_optin_smem(driver, func, emitted.shared_mem)
 
         # Convert inputs + alloc GPU
         allocs: list[int] = []
