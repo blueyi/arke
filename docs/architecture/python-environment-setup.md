@@ -201,6 +201,8 @@ The bootstrap script:
 
 ### Manual LLVM 20 Install (if bootstrap fails)
 
+#### Option A: From Ubuntu .deb packages (recommended, no root)
+
 On Ubuntu/WSL2, MLIR 20 tools can be installed user-local from the official LLVM
 packages:
 
@@ -229,7 +231,31 @@ Then source it in your shell:
 ```bash
 source ~/opt/mlir20/env.sh
 mlir-opt --version  # verify
+llc --version       # verify — should show LLVM 20
 ```
+
+#### Option B: Build from source (any platform, custom LLVM version)
+
+For full control or non-Ubuntu systems, build LLVM from source:
+
+```bash
+# Clone llvm-project (or use an existing checkout)
+git clone --depth 1 --branch llvmorg-20.1.2 https://github.com/llvm/llvm-project.git ~/llvm-project
+
+# Bootstrap with source build — cmake + ninja required
+ARKE_LLVM_SRC=~/llvm-project scripts/bootstrap_env.sh gpu-dev
+
+# Or specify a custom version:
+ARKE_LLVM_SRC=~/llvm-project ARKE_LLVM_VERSION=20 make setup-gpu
+```
+
+The bootstrap script runs cmake with:
+- `LLVM_ENABLE_PROJECTS="mlir;clang"` (MLIR + Clang)
+- `LLVM_TARGETS_TO_BUILD="host;NVPTX"` (host CPU + NVIDIA PTX)
+- `CMAKE_BUILD_TYPE=Release`
+- Auto-detects Ninja if available (faster), falls back to Make
+
+Build output is installed to the same prefix as the .deb method (`~/opt/mlir20/root/usr/lib/llvm-20/`), so `env.sh` works identically.
 
 ### MLIR GPU Pipeline (How It Works)
 

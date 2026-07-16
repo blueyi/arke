@@ -8,9 +8,12 @@ PROFILE="${1:-gpu-dev}"
 
 # ── LLVM version config ──────────────────────────────────────
 # Default: LLVM 20 (aligned with MLIR 20 / Triton 3.2 / PyTorch 2.6).
-# Override: ARKE_LLVM_VERSION=18 scripts/bootstrap_env.sh gpu-dev
+# Override version:  ARKE_LLVM_VERSION=18 scripts/bootstrap_env.sh gpu-dev
+# Source build:      ARKE_LLVM_SRC=/path/to/llvm-project scripts/bootstrap_env.sh gpu-dev
+#   (builds LLVM from source with NVPTX + MLIR enabled, installs to ARKE_LLVM_HOME)
 LLVM_VERSION="${ARKE_LLVM_VERSION:-20}"
 LLVM_INSTALL_DIR="${ARKE_LLVM_HOME:-$HOME/opt/mlir20/root}"
+LLVM_SRC="${ARKE_LLVM_SRC:-}"
 
 usage() {
   cat <<'EOF'
@@ -27,6 +30,8 @@ Environment variables:
   ARKE_PYTHON        Override Python executable (default: python3)
   ARKE_LLVM_VERSION  LLVM version to use (default: 20; supports 18, 20)
   ARKE_LLVM_HOME     Override LLVM install prefix (default: ~/opt/mlir20/root)
+  ARKE_LLVM_SRC      Path to llvm-project source tree — build from source
+                     (cmake + ninja required; builds with NVPTX + MLIR enabled)
 EOF
 }
 
@@ -89,6 +94,46 @@ if [[ "$PROFILE" != "cpu-dev" ]]; then
     if [[ -f "$llvm_bin_dir/llc" ]]; then
       echo "    llc found: $llvm_bin_dir/llc"
       "$llvm_bin_dir/llc" --version 2>&1 | head -1
+    elif [[ -n "$LLVM_SRC" ]]; then
+      # ── Build from source ──────────────────────────────────
+      echo "    Building LLVM from source: $LLVM_SRC"
+      if [[ ! -d "$LLVM_SRC/llvm" ]]; then
+        echo "error: ARKE_LLVM_SRC=$LLVM_SRC does not contain llvm/ subdirectory" >&2
+        echo "       Expected: a llvm-project checkout (git clone https://github.com/llvm/llvm-project.git)" >&2
+        exit 1
+      fi
+      if ! command -v cmake >/dev/null 2>&1; then
+        echo "error: cmake not found — required for LLVM source build" >&2
+        exit 1
+      fi
+
+      local build_dir="$LLVM_SRC/build-arke"
+      local cmake_gen="Unix Makefiles"
+      if command -v ninja >/dev/null 2>&1; then
+        cmake_gen="Ninja"
+      fi
+
+      local install_prefix="$install_dir/usr/lib/llvm-${llvm_ver}"
+      mkdir -p "$build_dir"
+
+      echo "    cmake generator: $cmake_gen"
+      echo "    install prefix:  $install_prefix"
+      echo "    This may take 30-60 minutes..."
+
+      cmake -S "$LLVM_SRC/llvm" -B "$build_dir" \
+        -G "$cmake_gen" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$install_prefix" \
+        -DLLVM_ENABLE_PROJECTS="mlir;clang" \
+        -DLLVM_TARGETS_TO_BUILD="host;NVPTX" \
+        -DLLVM_INSTALL_UTILS=ON \
+        -DMLIR_ENABLE_BINDINGS_PYTHON=OFF \
+        -DLLVM_ENABLE_ASSERTIONS=OFF \
+        -DLLVM_ENABLE_RTTI=ON
+
+      cmake --build "$build_dir" --target install -- -j"$(nproc)"
+
+      echo "    ✅ LLVM ${llvm_ver} built and installed to $install_prefix"
     else
       echo "    llc-${llvm_ver} not found at $llvm_bin_dir"
       echo "    Attempting to download and extract llvm-${llvm_ver}..."
