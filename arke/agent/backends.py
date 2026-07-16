@@ -202,6 +202,7 @@ def _run_registry_backend(
     """
     from arke.backend.protocol import get_default_registry
     from arke.ir.graph import IRGraph, IRNode
+    from arke.ir.ops.registry import REGISTRY as OP_REGISTRY
 
     reg = get_default_registry()
     try:
@@ -210,15 +211,36 @@ def _run_registry_backend(
         return BackendResult(backend=backend, op_name=op_name, success=False,
                              mode="registry", message=str(e))
 
-    # Build a minimal IRGraph for the op
-    inputs_list = list(shapes.keys())
+    # Build a minimal IRGraph for the op.
+    #
+    # IRNode.inputs maps {schema_input_name: value_name_in_graph}.
+    # _shapes_for() returns keys that match OpSchema.inputs (e.g. "A", "B"
+    # for matmul, "X" for relu, "Q", "K", "V" for flash_attention).
+    # We look up the OpSchema to get the canonical input ordering and pair
+    # each schema input with the corresponding shapes-dict key by position.
+    # Fallback: identity mapping when the schema is unavailable.
+    shapes_keys = list(shapes.keys())
     g = IRGraph(name=op_name)
     for inp_name, shape in shapes.items():
         g.add_input(inp_name, dtype="float32", shape=shape)
     outputs = [f"{op_name}_out"]
+
+    try:
+        op_schema = OP_REGISTRY.get(op_name)
+        schema_input_names = list(op_schema.inputs.keys())
+    except KeyError:
+        schema_input_names = None
+
+    if schema_input_names and len(schema_input_names) == len(shapes_keys):
+        # Pair schema inputs with graph value names positionally.
+        node_inputs = dict(zip(schema_input_names, shapes_keys))
+    else:
+        # Fallback: identity mapping (shapes keys ARE the input names).
+        node_inputs = {k: k for k in shapes_keys}
+
     g.add_node(IRNode(
         id="n0", op=op_name,
-        inputs={k.lower(): v for k, v in zip(["x", "y", "z", "w"][:len(inputs_list)], inputs_list)},
+        inputs=node_inputs,
         outputs=outputs,
     ))
     g.set_outputs(outputs)
@@ -236,10 +258,13 @@ def _run_registry_backend(
         return BackendResult(backend=backend, op_name=op_name, success=False,
                              mode="registry", message=f"compile error: {e}")
 
-    import numpy as np
+    # Build test inputs as torch.Tensor on device — backends (Triton, CUDA-C,
+    # MLIR-GPU) all expect torch tensors, not numpy arrays.
+    import torch as _torch
     test_inputs = {}
     for inp_name, shape in shapes.items():
-        test_inputs[inp_name] = np.random.randn(*shape).astype(np.float32)
+        test_inputs[inp_name] = _torch.randn(*shape, dtype=_torch.float32,
+                                              device="cuda" if _torch.cuda.is_available() else "cpu")
 
     try:
         out = be.run(kernel, test_inputs)

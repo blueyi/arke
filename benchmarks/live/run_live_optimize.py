@@ -48,10 +48,15 @@ def _shapes_for(op: str, dims: list[int]) -> dict[str, list[int]]:
     if op == "layernorm":
         m, n = (dims[0], dims[1]) if len(dims) >= 2 else (4096, 4096)
         return {"X": [m, n], "W": [n], "B": [n]}
-    if op in ("softmax", "relu", "gelu", "silu"):
+    if op in ("softmax", "relu", "gelu", "silu", "sigmoid", "exp"):
         if len(dims) >= 2:
             return {"X": [dims[0], dims[1]]}
         return {"X": [4096, 4096]}
+    if op in ("add", "mul"):
+        # Binary elementwise: A[M,N] op B[M,N]
+        if len(dims) >= 2:
+            return {"A": [dims[0], dims[1]], "B": [dims[0], dims[1]]}
+        return {"A": [4096, 4096], "B": [4096, 4096]}
     if op in ("flash_attention", "grouped_query_attention"):
         # B,H,S,D
         if len(dims) >= 4:
