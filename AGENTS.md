@@ -51,6 +51,27 @@ checkpoint() / rollback() → Explore and backtrack safely
 > All operator-level Gate criteria align to the BL/OT/ST/L benchmark system in `docs/benchmark/benchmark-design.md`.
 > See `docs/roadmap/plan.md` § Gate-Purpose Mapping for the full mapping.
 
+## Phase 1 Roadmap — CLOSED ✅ (2026-06-25)
+
+| Stage | Gate | Objective | Status |
+|:---:|:---:|:---|:---:|
+| S0 | G0 | Environment + CI | ✅ |
+| S1 | G1 | Baseline benchmarks | ✅ |
+| S2 | G2 | Heuristic optimizer | ✅ |
+| S3 | G3 | GPT-2 E2E pipeline | ✅ |
+| S4 | G4 | IR v1 + codegen | ✅ |
+| S5 | G5 | Agent v1 | ✅ |
+| S6 | G6 | Compiler infrastructure (BL4×L1, 46 ops, ≥1.00× P3) | ✅ |
+| S7 | G7 | Lang & IR v2 (BL5×L1+L2) | ✅ |
+| S8 | G8 | Agent autonomy (BL5 + BL6×L3, 3 models) | ✅ |
+| S9 | G9 | Phase 1 final (BL6×L3, 4 models + BL5) | ✅ CLOSED |
+
+**Post-Phase 1:**
+- Phase 3 (MLIR backend): ✅ COMPLETE (46/46 ops GPU, 1.05× cuBLAS)
+- Phase 4 (CUDA-C backend): ✅ COMPLETE (46/46 ops, BYOK, MCP, Harness upgrades)
+- Phase 2 (Ascend): ⏸️ PAUSED
+- Phase 5 (LLVM IR): Future
+
 ## Architecture
 
 ```
@@ -60,7 +81,7 @@ arke/backend/     — Triton codegen (Arke-Compiler)
 arke/compiler/    — Compiler pipeline
 arke/agent/       — Agent session, tools, prompts (Arke-Agent)
 arke/engine/      — ArkeEnv optimization engine
-arke/integration/ — KernelCache, PyTorch integration
+arke/integration/ — torch_bridge (G8 PyTorch 桥接, 197 LOC)
 benchmarks/       — Gate system, baselines
 ```
 
@@ -145,4 +166,4 @@ dirty work to subagents; write state back on exit.
 
 ---
 
-*Last updated: 2026-07-15*
+*Last updated: 2026-07-16*
