@@ -179,5 +179,13 @@ def get_default_registry() -> BackendRegistry:
     except Exception:
         pass
 
+    # LLVM IR (Phase 5)
+    try:
+        from arke.backend.llvm_backend import LLVMBackend
+        lb = LLVMBackend(chip="sm_86")
+        reg.register(lb, ["llvm", "llvm_ir"])
+    except Exception:
+        pass
+
     _default_registry = reg
     return reg

@@ -29,7 +29,7 @@ from typing import Any
 # Backends that drive the Façade via an external MCP client rather than in-tree.
 EXTERNAL_MCP_BACKENDS = ("hermes", "openclaw", "cline", "continue", "claude-desktop", "mcp")
 BUILTIN_BACKENDS = ("builtin", "heuristic")
-REGISTRY_BACKENDS = ("triton", "mlir_gpu", "mlir", "cuda_c", "cuda-c", "cuda")
+REGISTRY_BACKENDS = ("triton", "mlir_gpu", "mlir", "cuda_c", "cuda-c", "cuda", "llvm", "llvm_ir")
 ALL_BACKENDS = BUILTIN_BACKENDS + REGISTRY_BACKENDS + EXTERNAL_MCP_BACKENDS
 
 
