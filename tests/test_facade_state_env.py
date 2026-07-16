@@ -220,6 +220,43 @@ def test_list_legal_actions_filters_redundant():
     assert not found_dup, "Redundant tile candidate not filtered"
 
 
+def test_list_legal_actions_cumulative_tile_shrink():
+    """After N consecutive tile applies on the same loop, the tile candidate
+    count for that loop must monotonically decrease (A5 cumulative filter).
+
+    Since default small shapes may produce few candidates per loop,
+    we test directly via _filter_redundant with synthetic candidates.
+    """
+    env = ArkeEnv.from_op("rmsnorm")
+
+    # Build synthetic candidates: 5 tile decisions on loop "i" with different factors
+    synthetic_candidates = [
+        Decision(kind="tile", params={"loop": "i", "factors": [f]}, level=1)
+        for f in [16, 32, 64, 128, 256]
+    ]
+
+    # Before any applies, all 5 should survive
+    filtered = env._filter_redundant(synthetic_candidates)
+    prev_count = len(filtered)
+    assert prev_count == 5
+
+    # Apply tiles one by one; each apply should shrink the filtered set by 1
+    for step, factor in enumerate([16, 32, 64, 128], start=1):
+        env.state.apply_decision(
+            Decision(kind="tile", params={"loop": "i", "factors": [factor]})
+        )
+        filtered = env._filter_redundant(synthetic_candidates)
+        cur_count = len(filtered)
+        assert cur_count == prev_count - 1, (
+            f"Step {step}: applied factors=[{factor}] on loop 'i'. "
+            f"Expected {prev_count - 1} candidates, got {cur_count}."
+        )
+        prev_count = cur_count
+
+    # After 4 applies, only 1 candidate (factors=[256]) should remain
+    assert prev_count == 1
+
+
 def test_arkeenv_summary_contains_hints():
     env = ArkeEnv.from_op("rmsnorm")
     s = env.summary()

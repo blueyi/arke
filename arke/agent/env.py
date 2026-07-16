@@ -373,29 +373,46 @@ class ArkeEnv:
         return result
 
     def _filter_redundant(self, candidates: list[Decision]) -> list[Decision]:
-        """Drop candidates that would duplicate an already-applied decision."""
-        applied_tile = {
-            d.params.get("loop"): tuple(d.params.get("factors", []))
-            for d in self.state.decision_log if d.kind == "tile"
-        }
-        applied_unroll = {
-            d.params.get("loop"): d.params.get("factor")
-            for d in self.state.decision_log if d.kind == "unroll"
-        }
-        applied_vectorize = {
-            d.params.get("loop"): d.params.get("width")
-            for d in self.state.decision_log if d.kind == "vectorize"
-        }
+        """Drop candidates that would duplicate an already-applied decision.
+
+        Accumulates ALL previously applied factors/params per loop so that
+        applying N tile decisions on the same loop cumulatively shrinks the
+        candidate set (not just last-write-wins).
+        """
+        from collections import defaultdict
+
+        # Accumulate ALL applied factors per loop (set, not overwrite)
+        applied_tile: dict[str, set[tuple]] = defaultdict(set)
+        for d in self.state.decision_log:
+            if d.kind == "tile":
+                loop = d.params.get("loop")
+                factors = tuple(d.params.get("factors", []))
+                applied_tile[loop].add(factors)
+
+        applied_unroll: dict[str, set] = defaultdict(set)
+        for d in self.state.decision_log:
+            if d.kind == "unroll":
+                loop = d.params.get("loop")
+                factor = d.params.get("factor")
+                applied_unroll[loop].add(factor)
+
+        applied_vectorize: dict[str, set] = defaultdict(set)
+        for d in self.state.decision_log:
+            if d.kind == "vectorize":
+                loop = d.params.get("loop")
+                width = d.params.get("width")
+                applied_vectorize[loop].add(width)
+
         out: list[Decision] = []
         for d in candidates:
             if d.kind == "tile":
-                if applied_tile.get(d.params["loop"]) == tuple(d.params["factors"]):
+                if tuple(d.params["factors"]) in applied_tile.get(d.params["loop"], set()):
                     continue
             elif d.kind == "unroll":
-                if applied_unroll.get(d.params["loop"]) == d.params["factor"]:
+                if d.params["factor"] in applied_unroll.get(d.params["loop"], set()):
                     continue
             elif d.kind == "vectorize":
-                if applied_vectorize.get(d.params["loop"]) == d.params["width"]:
+                if d.params["width"] in applied_vectorize.get(d.params["loop"], set()):
                     continue
             out.append(d)
         return out
