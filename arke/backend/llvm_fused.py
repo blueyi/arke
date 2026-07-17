@@ -512,7 +512,7 @@ abs_body:
 
 abs_done:
   ; scale = max_abs / 127.0 (avoid div by zero with max(max_abs, 1e-10))
-  %safe_max = call float @llvm.maxnum.f32(float %new_max_abs, float 0x3DDB7CDFE0000000)
+  %safe_max = call float @llvm.maxnum.f32(float %max_abs, float 0x3DDB7CDFE0000000)
   %scale = fdiv float %safe_max, 1.270000e+02
   %inv_scale = fdiv float 0x405FC00000000000, %safe_max
   ; Pass 2: quantize
