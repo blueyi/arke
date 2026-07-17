@@ -134,13 +134,27 @@ def _warp_reduce_sum_ir(acc_name: str, result_name: str, prefix: str = "") -> st
 
 
 # ---------------------------------------------------------------------------
-# 1. softmax -- 3-pass warp-parallel: max, exp+sum, normalize.
+# 1. softmax -- 2-pass online softmax (Milakov & Gimelshein).
+#    Pass 1: fused running max + running sum (online update).
+#    Pass 2: exp(x - global_max) * inv_sum  (normalize in one pass).
+#    Reduces memory reads from 3N to 2N per row.
 #    Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row.
 # ---------------------------------------------------------------------------
 
 
 def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(32,1,1)."""
+    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(32,1,1).
+
+    Uses 2-pass online softmax algorithm:
+      Pass 1: Each thread tracks running_max and running_sum simultaneously.
+              For each element x:
+                new_max = max(running_max, x)
+                correction = exp2((old_max - new_max) * log2e)
+                running_sum = running_sum * correction + exp2((x - new_max) * log2e)
+                running_max = new_max
+              Then warp-reduce max, correct local sums, warp-reduce sum.
+      Pass 2: Read X again, compute exp(x - global_max) * inv_sum, store.
+    """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     kernel_name = "arke_softmax"
 
@@ -153,72 +167,73 @@ entry:
   %row64 = sext i32 %row to i64
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
-  ; ---- Pass 1: find row max (each thread finds local max, then warp reduce) ----
-  br label %max_loop
+  ; ---- Pass 1: online softmax -- fused running max + running sum ----
+  br label %online_loop
 
-max_loop:
-  %j1 = phi i32 [%tid, %entry], [%j1_next, %max_body]
-  %local_max = phi float [0xFFF0000000000000, %entry], [%new_max, %max_body]
+online_loop:
+  %j1 = phi i32 [%tid, %entry], [%j1_next, %online_body]
+  %run_max = phi float [0xFFF0000000000000, %entry], [%updated_max, %online_body]
+  %run_sum = phi float [0.0, %entry], [%updated_sum, %online_body]
   %cmp1 = icmp slt i32 %j1, %N
-  br i1 %cmp1, label %max_body, label %max_reduce
+  br i1 %cmp1, label %online_body, label %warp_reduce
 
-max_body:
+online_body:
   %j1_64 = sext i32 %j1 to i64
   %idx1 = add i64 %base, %j1_64
   %ptr1 = getelementptr float, float addrspace(1)* %X, i64 %idx1
   %val1 = load float, float addrspace(1)* %ptr1
-  %new_max = call float @llvm.maxnum.f32(float %local_max, float %val1)
+  ; new_max = max(running_max, x)
+  %updated_max = call float @llvm.maxnum.f32(float %run_max, float %val1)
+  ; correction = exp2((old_max - new_max) * log2e)
+  ; Note: log2e factor is needed for natural exp via exp2. But since
+  ; (old_max - new_max) is already the natural-log-scale difference and
+  ; we use exp2(z * log2e) = exp(z), we apply log2e here.
+  %corr_diff = fsub float %run_max, %updated_max
+  %corr_scaled = fmul float %corr_diff, 0x3FF7154760000000
+  %correction = call float @llvm.nvvm.ex2.approx.f(float %corr_scaled)
+  ; exp_x = exp2((x - new_max) * log2e) = exp(x - new_max)
+  %x_diff = fsub float %val1, %updated_max
+  %x_scaled = fmul float %x_diff, 0x3FF7154760000000
+  %exp_x = call float @llvm.nvvm.ex2.approx.f(float %x_scaled)
+  ; running_sum = running_sum * correction + exp_x
+  %corrected_sum = fmul float %run_sum, %correction
+  %updated_sum = fadd float %corrected_sum, %exp_x
   %j1_next = add i32 %j1, 32
-  br label %max_loop
+  br label %online_loop
 
-max_reduce:
-  ; Warp reduce max + broadcast
-{_warp_reduce_max_ir("local_max", "row_max", "mx_")}
-  ; ---- Pass 2: exp(x - max) and local sum ----
-  br label %exp_loop
+warp_reduce:
+  ; Step 1: Warp reduce max + broadcast to get global_max
+{_warp_reduce_max_ir("run_max", "global_max", "mx_")}
+  ; Step 2: Each thread corrects its local sum to account for global_max
+  ;         local_sum *= exp2((local_max - global_max) * log2e)
+  %lm_diff = fsub float %run_max, %global_max
+  %lm_scaled = fmul float %lm_diff, 0x3FF7154760000000
+  %lm_corr = call float @llvm.nvvm.ex2.approx.f(float %lm_scaled)
+  %corrected_local_sum = fmul float %run_sum, %lm_corr
+  ; Step 3: Warp reduce sum + broadcast
+{_warp_reduce_sum_ir("corrected_local_sum", "global_sum", "sm_")}
+  ; Step 4: Compute 1/sum via rcp.approx.ftz.f
+  %inv_sum = call float @llvm.nvvm.rcp.approx.ftz.f(float %global_sum)
+  ; ---- Pass 2: normalize -- exp(x - global_max) * inv_sum ----
+  br label %norm_loop
 
-exp_loop:
-  %j2 = phi i32 [%tid, %max_reduce], [%j2_next, %exp_body]
-  %local_sum = phi float [0.0, %max_reduce], [%new_sum, %exp_body]
+norm_loop:
+  %j2 = phi i32 [%tid, %warp_reduce], [%j2_next, %norm_body]
   %cmp2 = icmp slt i32 %j2, %N
-  br i1 %cmp2, label %exp_body, label %sum_reduce
+  br i1 %cmp2, label %norm_body, label %done
 
-exp_body:
+norm_body:
   %j2_64 = sext i32 %j2 to i64
   %idx2 = add i64 %base, %j2_64
   %ptr2 = getelementptr float, float addrspace(1)* %X, i64 %idx2
   %val2 = load float, float addrspace(1)* %ptr2
-  %shifted = fsub float %val2, %row_max
+  %shifted = fsub float %val2, %global_max
   %shifted_lg2e = fmul float %shifted, 0x3FF7154760000000
   %exp_val = call float @llvm.nvvm.ex2.approx.f(float %shifted_lg2e)
-  ; Store exp(x-max) in output buffer
+  %normed = fmul float %exp_val, %inv_sum
   %optr2 = getelementptr float, float addrspace(1)* %Out, i64 %idx2
-  store float %exp_val, float addrspace(1)* %optr2
-  %new_sum = fadd float %local_sum, %exp_val
+  store float %normed, float addrspace(1)* %optr2
   %j2_next = add i32 %j2, 32
-  br label %exp_loop
-
-sum_reduce:
-  ; Warp reduce sum + broadcast
-{_warp_reduce_sum_ir("local_sum", "row_sum", "sm_")}
-  ; Compute 1/sum via rcp.approx.ftz.f
-  %inv_sum = call float @llvm.nvvm.rcp.approx.ftz.f(float %row_sum)
-  ; ---- Pass 3: normalize ----
-  br label %norm_loop
-
-norm_loop:
-  %j3 = phi i32 [%tid, %sum_reduce], [%j3_next, %norm_body]
-  %cmp3 = icmp slt i32 %j3, %N
-  br i1 %cmp3, label %norm_body, label %done
-
-norm_body:
-  %j3_64 = sext i32 %j3 to i64
-  %idx3 = add i64 %base, %j3_64
-  %optr3 = getelementptr float, float addrspace(1)* %Out, i64 %idx3
-  %exp_stored = load float, float addrspace(1)* %optr3
-  %normed = fmul float %exp_stored, %inv_sum
-  store float %normed, float addrspace(1)* %optr3
-  %j3_next = add i32 %j3, 32
   br label %norm_loop
 
 done:
