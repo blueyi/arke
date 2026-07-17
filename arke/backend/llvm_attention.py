@@ -17,6 +17,21 @@ from __future__ import annotations
 
 import math
 
+
+def _float_hex(val: float) -> str:
+    """Convert a Python float to LLVM IR float32-compatible hex constant."""
+    import struct as _struct
+    if val == 0.0:
+        return "0.0"
+    if val == 1.0:
+        return "1.0"
+    if val == -1.0:
+        return "-1.0"
+    f32_bytes = _struct.pack('<f', val)
+    f32_val = _struct.unpack('<f', f32_bytes)[0]
+    d64_bytes = _struct.pack('>d', f32_val)
+    return f"0x{d64_bytes.hex().upper()}"
+
 from arke.backend.cuda_c_backend import CudaCKernel
 from arke.ir.graph import IRGraph
 
@@ -202,7 +217,7 @@ def _gen_flash_attention_ir(
     ln("")
     # Online softmax update
     ln("softmax_update:")
-    ln(f"  %score = fmul float %dot_acc, {scale:#.8e}")
+    ln(f"  %score = fmul float %dot_acc, {_float_hex(scale)}")
     ln("  %m_new = call float @llvm.maxnum.f32(float %m_val, float %score)")
     # corr = exp(m_old - m_new), p = exp(score - m_new)
     ln("  %m_diff = fsub float %m_val, %m_new")
@@ -425,7 +440,7 @@ def _gen_gqa_ir(
     ln("")
     # Softmax update
     ln("softmax_update:")
-    ln(f"  %score = fmul float %dot_acc, {scale:#.8e}")
+    ln(f"  %score = fmul float %dot_acc, {_float_hex(scale)}")
     ln("  %m_new = call float @llvm.maxnum.f32(float %m_val2, float %score)")
     ln("  %m_diff = fsub float %m_val2, %m_new")
     ln("  %corr_lg2e = fmul float %m_diff, 0x3FF7154760000000")
@@ -634,7 +649,7 @@ def _gen_cross_attention_ir(
     ln("  br label %dot_loop_header")
     ln("")
     ln("softmax_update:")
-    ln(f"  %score = fmul float %dot_acc, {scale:#.8e}")
+    ln(f"  %score = fmul float %dot_acc, {_float_hex(scale)}")
     ln("  %m_new = call float @llvm.maxnum.f32(float %m_val2, float %score)")
     ln("  %m_diff = fsub float %m_val2, %m_new")
     ln("  %corr_lg2e = fmul float %m_diff, 0x3FF7154760000000")
@@ -884,7 +899,7 @@ def _gen_paged_attention_ir(
     ln("  br label %dot_loop_header")
     ln("")
     ln("softmax_update:")
-    ln(f"  %score = fmul float %dot_acc, {scale:#.8e}")
+    ln(f"  %score = fmul float %dot_acc, {_float_hex(scale)}")
     ln("  %m_new = call float @llvm.maxnum.f32(float %m_pos, float %score)")
     ln("  %m_diff = fsub float %m_pos, %m_new")
     ln("  %corr_lg2e = fmul float %m_diff, 0x3FF7154760000000")
@@ -1159,7 +1174,7 @@ def _gen_mla_ir(
     ln("")
     # Online softmax
     ln("softmax_update:")
-    ln(f"  %score = fmul float %score_acc, {scale:#.8e}")
+    ln(f"  %score = fmul float %score_acc, {_float_hex(scale)}")
     ln("  %m_new = call float @llvm.maxnum.f32(float %m_val2, float %score)")
     ln("  %m_diff = fsub float %m_val2, %m_new")
     ln("  %corr_lg2e = fmul float %m_diff, 0x3FF7154760000000")
