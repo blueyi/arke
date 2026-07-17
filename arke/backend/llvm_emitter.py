@@ -1,7 +1,7 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""LLVM IR emitter for Arke (Phase 5, P5-S1).
+"""LLVM IR emitter for Arke (Phase 5, P5-S2).
 
 Generates LLVM IR text targeting nvptx64-nvidia-cuda for compilation via
 llc + ptxas.  The emitted IR uses:
@@ -9,6 +9,9 @@ llc + ptxas.  The emitted IR uses:
   - address space 3 for shared memory (module-level globals)
   - NVVM intrinsics for thread/block IDs and barriers
   - !nvvm.annotations metadata for kernel entry points
+
+This module re-exports all per-category emitters and provides the unified
+dispatch table used by LLVMBackend.
 """
 
 from __future__ import annotations
@@ -16,6 +19,73 @@ from __future__ import annotations
 from arke.backend.cuda_c_backend import CudaCKernel
 from arke.ir.graph import IRGraph
 
+# ── Elementwise (OT0) ────────────────────────────────────────────────
+from arke.backend.llvm_elementwise import (
+    emit_llvm_ir_relu,
+    emit_llvm_ir_gelu,
+    emit_llvm_ir_silu,
+    emit_llvm_ir_tanh,
+    emit_llvm_ir_sigmoid,
+    emit_llvm_ir_exp,
+    emit_llvm_ir_neg,
+    emit_llvm_ir_rsqrt,
+    emit_llvm_ir_add,
+    emit_llvm_ir_mul,
+    emit_llvm_ir_cast,
+    emit_llvm_ir_where,
+)
+
+# ── Rowwise / Reduction (OT1) ───────────────────────────────────────
+from arke.backend.llvm_rowwise import (
+    emit_llvm_ir_softmax,
+    emit_llvm_ir_layernorm,
+    emit_llvm_ir_rmsnorm,
+    emit_llvm_ir_reduce_sum,
+    emit_llvm_ir_reduce_max,
+    emit_llvm_ir_reduce_mean,
+    emit_llvm_ir_argmax,
+    emit_llvm_ir_cumsum,
+    emit_llvm_ir_topk,
+    emit_llvm_ir_rmsnorm_residual,
+)
+
+# ── Dense / Data Movement (OT2) ─────────────────────────────────────
+from arke.backend.llvm_dense import (
+    emit_llvm_ir_batch_matmul,
+    emit_llvm_ir_grouped_matmul,
+    emit_llvm_ir_concat,
+    emit_llvm_ir_copy_,
+    emit_llvm_ir_embedding,
+    emit_llvm_ir_gather,
+    emit_llvm_ir_scatter,
+    emit_llvm_ir_permute,
+    emit_llvm_ir_split,
+    emit_llvm_ir_transpose,
+)
+
+# ── Fused Compound (OT3) ────────────────────────────────────────────
+from arke.backend.llvm_fused import (
+    emit_llvm_ir_cross_entropy,
+    emit_llvm_ir_dequantize_per_channel,
+    emit_llvm_ir_fused_linear_cross_entropy,
+    emit_llvm_ir_gelu_and_mul,
+    emit_llvm_ir_quantize_per_token,
+    emit_llvm_ir_rope,
+    emit_llvm_ir_silu_and_mul,
+    emit_llvm_ir_swiglu_packed,
+)
+
+# ── Attention (OT4) ─────────────────────────────────────────────────
+from arke.backend.llvm_attention import (
+    emit_llvm_ir_flash_attention,
+    emit_llvm_ir_grouped_query_attention,
+    emit_llvm_ir_cross_attention,
+    emit_llvm_ir_paged_attention,
+    emit_llvm_ir_multi_latent_attention,
+)
+
+
+# ── Matmul (original P5-S1 implementation) ───────────────────────────
 
 def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     """Emit a tiled shared-memory matmul kernel as LLVM IR text.
@@ -74,22 +144,7 @@ def _gen_tiled_matmul_ir(
     kernel_name: str, M: int, K: int, N: int,
     BM: int, BN: int, BK: int, num_tiles: int,
 ) -> str:
-    """Generate the complete LLVM IR text for a tiled matmul kernel.
-
-    The kernel implements:
-      row = blockIdx.y * BM + threadIdx.y
-      col = blockIdx.x * BN + threadIdx.x
-      acc = 0.0
-      for t in 0..num_tiles:
-          load A[row, t*BK+tx] -> shmem_A[ty][tx]  (with bounds check)
-          load B[t*BK+ty, col] -> shmem_B[ty][tx]   (with bounds check)
-          barrier
-          for k in 0..BK:  acc += shmem_A[ty][k] * shmem_B[k][tx]
-          barrier
-      if row < M and col < N: C[row*N+col] = acc
-
-    The inner k-loop is fully unrolled in the IR for clarity and performance.
-    """
+    """Generate the complete LLVM IR text for a tiled matmul kernel."""
     lines = []
     ln = lines.append
 
@@ -139,15 +194,12 @@ def _gen_tiled_matmul_ir(
     ln("  br i1 %tile_done, label %store_result, label %load_tile")
     ln("")
 
-    # ── Load tile: A[row, t*BK+tx] -> shmem_A[ty][tx], B[t*BK+ty, col] -> shmem_B[ty][tx] ──
+    # ── Load tile ──
     ln("load_tile:")
-
-    # a_col = t * BK + tx
-    ln(f"  %a_col = add i32 %tx, 0")  # placeholder
+    ln(f"  %a_col = add i32 %tx, 0")
     ln(f"  %t_times_bk = mul i32 %t, {BK}")
     ln("  %a_col_real = add i32 %t_times_bk, %tx")
 
-    # bounds check for A: row < M && a_col < K
     ln("  %a_row_ok = icmp slt i32 %row, %M")
     ln("  %a_col_ok = icmp slt i32 %a_col_real, %K")
     ln("  %a_valid = and i1 %a_row_ok, %a_col_ok")
@@ -171,10 +223,8 @@ def _gen_tiled_matmul_ir(
     ln(f"  %sa_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 %ty, i32 %tx")
     ln("  store float %a_data, float addrspace(3)* %sa_ptr")
 
-    # b_row = t * BK + ty
     ln("  %b_row = add i32 %t_times_bk, %ty")
 
-    # bounds check for B: b_row < K && col < N
     ln("  %b_row_ok = icmp slt i32 %b_row, %K")
     ln("  %b_col_ok = icmp slt i32 %col, %N")
     ln("  %b_valid = and i1 %b_row_ok, %b_col_ok")
@@ -201,8 +251,7 @@ def _gen_tiled_matmul_ir(
     # __syncthreads
     ln("  call void @llvm.nvvm.barrier0()")
 
-    # ── Unrolled k-loop: acc += shmem_A[ty][k] * shmem_B[k][tx] ──
-    # Generate as a loop to keep IR manageable for larger BK
+    # ── k-loop ──
     ln("  br label %k_loop_header")
     ln("")
 
@@ -214,13 +263,10 @@ def _gen_tiled_matmul_ir(
     ln("")
 
     ln("k_loop_body:")
-    # Load shmem_A[ty][ki]
     ln(f"  %sa_k_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 %ty, i32 %ki")
     ln("  %sa_k_val = load float, float addrspace(3)* %sa_k_ptr")
-    # Load shmem_B[ki][tx]
     ln(f"  %sb_k_ptr = getelementptr [{BK} x [{BN} x float]], [{BK} x [{BN} x float]] addrspace(3)* @shmem_B, i32 0, i32 %ki, i32 %tx")
     ln("  %sb_k_val = load float, float addrspace(3)* %sb_k_ptr")
-    # acc += a * b
     ln("  %prod = fmul float %sa_k_val, %sb_k_val")
     ln("  %acc_k_next = fadd float %acc_k, %prod")
     ln("  %ki_next = add i32 %ki, 1")
@@ -228,10 +274,8 @@ def _gen_tiled_matmul_ir(
     ln("")
 
     ln("k_loop_exit:")
-    # __syncthreads
     ln("  call void @llvm.nvvm.barrier0()")
 
-    # Increment tile counter
     ln("  br label %tile_loop_latch")
     ln("")
 
@@ -241,7 +285,7 @@ def _gen_tiled_matmul_ir(
     ln("  br label %tile_loop_header")
     ln("")
 
-    # ── Store result: C[row*N+col] = acc ──
+    # ── Store result ──
     ln("store_result:")
     ln("  %final_acc = phi float [ %acc, %tile_loop_header ]")
     ln("  %row_ok = icmp slt i32 %row, %M")
@@ -269,3 +313,62 @@ def _gen_tiled_matmul_ir(
     ln("")
 
     return "\n".join(lines)
+
+
+from typing import Any, Callable
+
+# ── Unified Emitter Dispatch Table ───────────────────────────────────
+
+LLVM_EMITTERS: dict[str, Callable[..., Any]] = {
+    # OT0: Elementwise
+    "relu": emit_llvm_ir_relu,
+    "gelu": emit_llvm_ir_gelu,
+    "silu": emit_llvm_ir_silu,
+    "tanh": emit_llvm_ir_tanh,
+    "sigmoid": emit_llvm_ir_sigmoid,
+    "exp": emit_llvm_ir_exp,
+    "neg": emit_llvm_ir_neg,
+    "rsqrt": emit_llvm_ir_rsqrt,
+    "add": emit_llvm_ir_add,
+    "mul": emit_llvm_ir_mul,
+    "cast": emit_llvm_ir_cast,
+    "where_": emit_llvm_ir_where,
+    # OT1: Rowwise / Reduction
+    "softmax": emit_llvm_ir_softmax,
+    "layernorm": emit_llvm_ir_layernorm,
+    "rmsnorm": emit_llvm_ir_rmsnorm,
+    "reduce_sum": emit_llvm_ir_reduce_sum,
+    "reduce_max": emit_llvm_ir_reduce_max,
+    "reduce_mean": emit_llvm_ir_reduce_mean,
+    "argmax": emit_llvm_ir_argmax,
+    "cumsum": emit_llvm_ir_cumsum,
+    "topk": emit_llvm_ir_topk,
+    "rmsnorm_residual": emit_llvm_ir_rmsnorm_residual,
+    # OT2: Dense / Data Movement
+    "matmul": emit_llvm_ir_matmul,
+    "batch_matmul": emit_llvm_ir_batch_matmul,
+    "grouped_matmul": emit_llvm_ir_grouped_matmul,
+    "concat": emit_llvm_ir_concat,
+    "copy_": emit_llvm_ir_copy_,
+    "embedding": emit_llvm_ir_embedding,
+    "gather": emit_llvm_ir_gather,
+    "scatter": emit_llvm_ir_scatter,
+    "permute": emit_llvm_ir_permute,
+    "split": emit_llvm_ir_split,
+    "transpose": emit_llvm_ir_transpose,
+    # OT3: Fused Compound
+    "cross_entropy": emit_llvm_ir_cross_entropy,
+    "dequantize_per_channel": emit_llvm_ir_dequantize_per_channel,
+    "fused_linear_cross_entropy": emit_llvm_ir_fused_linear_cross_entropy,
+    "gelu_and_mul": emit_llvm_ir_gelu_and_mul,
+    "quantize_per_token": emit_llvm_ir_quantize_per_token,
+    "rope": emit_llvm_ir_rope,
+    "silu_and_mul": emit_llvm_ir_silu_and_mul,
+    "swiglu_packed": emit_llvm_ir_swiglu_packed,
+    # OT4: Attention
+    "flash_attention": emit_llvm_ir_flash_attention,
+    "grouped_query_attention": emit_llvm_ir_grouped_query_attention,
+    "cross_attention": emit_llvm_ir_cross_attention,
+    "paged_attention": emit_llvm_ir_paged_attention,
+    "multi_latent_attention": emit_llvm_ir_multi_latent_attention,
+}

@@ -24,7 +24,7 @@ from typing import Any
 import numpy as np
 
 from arke.backend.cuda_c_backend import CudaCKernel, _as_tuple, _ir_dtype_to_numpy
-from arke.backend.llvm_emitter import emit_llvm_ir_matmul
+from arke.backend.llvm_emitter import emit_llvm_ir_matmul, LLVM_EMITTERS
 from arke.backend.protocol import BackendArtifact, CompiledKernel
 from arke.ir.graph import IRGraph
 
@@ -52,6 +52,46 @@ def _find_llc() -> str | None:
             return candidate
     # 4. PATH fallback
     return shutil.which("llc")
+
+
+def _find_llvm_link() -> str | None:
+    """Find llvm-link binary — same search order as llc."""
+    p = os.environ.get("ARKE_LLVM_LINK")
+    if p and os.path.isfile(p):
+        return p
+    mlir_home = os.environ.get("MLIR_HOME", "")
+    if mlir_home:
+        candidate = os.path.join(mlir_home, "bin", "llvm-link")
+        if os.path.isfile(candidate):
+            return candidate
+    for candidate in [
+        os.path.expanduser("~/opt/llvm20-src/usr/lib/llvm-20/bin/llvm-link"),
+        os.path.expanduser("~/opt/mlir20/root/usr/lib/llvm-20/bin/llvm-link"),
+    ]:
+        if os.path.isfile(candidate):
+            return candidate
+    return shutil.which("llvm-link")
+
+
+def _find_libdevice() -> str | None:
+    """Find NVIDIA libdevice.10.bc bitcode library."""
+    p = os.environ.get("ARKE_LIBDEVICE")
+    if p and os.path.isfile(p):
+        return p
+    for candidate in [
+        "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc",
+        "/usr/local/cuda-13.2/nvvm/libdevice/libdevice.10.bc",
+        "/usr/local/cuda-12.4/nvvm/libdevice/libdevice.10.bc",
+    ]:
+        if os.path.isfile(candidate):
+            return candidate
+    # Try via CUDA_HOME
+    cuda_home = os.environ.get("CUDA_HOME", "")
+    if cuda_home:
+        c = os.path.join(cuda_home, "nvvm", "libdevice", "libdevice.10.bc")
+        if os.path.isfile(c):
+            return c
+    return None
 
 
 def _find_ptxas() -> str | None:
@@ -97,19 +137,19 @@ class LLVMBackend:
         os.makedirs(self._cache_dir, exist_ok=True)
 
     def supports_op(self, op_name: str) -> bool:
-        """P5-S1: only matmul."""
-        return op_name == "matmul"
+        """P5-S2: all 46 ops supported."""
+        return op_name in LLVM_EMITTERS
 
     def lower(self, graph: IRGraph) -> BackendArtifact:
         """Generate LLVM IR source from IRGraph."""
         node = graph.nodes[0]
         op = node.op
 
-        if op == "matmul":
-            emitted = emit_llvm_ir_matmul(graph, chip=self.chip)
-        else:
-            raise ValueError(f"LLVM backend does not support op {op!r} yet (P5-S1: matmul only)")
+        if op not in LLVM_EMITTERS:
+            raise ValueError(f"LLVM backend does not support op {op!r}")
 
+        emitter = LLVM_EMITTERS[op]
+        emitted = emitter(graph, chip=self.chip)
         return BackendArtifact(
             source_code=emitted.source,
             backend_name=self.name,
@@ -118,7 +158,11 @@ class LLVMBackend:
         )
 
     def compile(self, artifact: BackendArtifact) -> CompiledKernel:
-        """Compile LLVM IR -> PTX (via llc) -> cubin (via ptxas)."""
+        """Compile LLVM IR -> PTX (via llc) -> cubin (via ptxas).
+
+        If the IR references libdevice functions (__nv_expf, __nv_logf, etc.),
+        links libdevice.10.bc before compilation via llvm-link.
+        """
         if not self.llc:
             return CompiledKernel.fail("llc not found. Install LLVM with nvptx64 support.")
         if not self.ptxas:
@@ -131,6 +175,7 @@ class LLVMBackend:
         # Hash for caching
         src_hash = hashlib.sha256(artifact.source_code.encode()).hexdigest()[:16]
         ll_path = os.path.join(self._cache_dir, f"{emitted.kernel_name}_{src_hash}.ll")
+        linked_path = ll_path.replace(".ll", "_linked.ll")
         ptx_path = ll_path.replace(".ll", ".ptx")
         cubin_path = ll_path.replace(".ll", ".cubin")
 
@@ -141,13 +186,41 @@ class LLVMBackend:
 
             sm = self.chip.replace("sm_", "")
 
+            # Step 0: Link libdevice if needed (resolves __nv_expf etc.)
+            needs_libdevice = "__nv_" in artifact.source_code
+            compile_input = ll_path
+
+            if needs_libdevice:
+                libdevice = _find_libdevice()
+                llvm_link = _find_llvm_link()
+                if libdevice and llvm_link:
+                    cmd_link = [
+                        llvm_link,
+                        ll_path,
+                        libdevice,
+                        "-o", linked_path,
+                        "--internalize",
+                    ]
+                    try:
+                        subprocess.run(cmd_link, capture_output=True, text=True,
+                                       check=True, timeout=60)
+                        compile_input = linked_path
+                    except subprocess.CalledProcessError as e:
+                        return CompiledKernel.fail(f"llvm-link failed:\n{e.stderr}")
+                    except subprocess.TimeoutExpired:
+                        return CompiledKernel.fail("llvm-link timed out (60s)")
+                elif not libdevice:
+                    return CompiledKernel.fail(
+                        "libdevice.10.bc not found. Install CUDA toolkit."
+                    )
+
             # Step 1: llc -> PTX
             cmd_llc = [
                 self.llc,
                 "-march=nvptx64",
                 f"-mcpu=sm_{sm}",
                 "-o", ptx_path,
-                ll_path,
+                compile_input,
             ]
             try:
                 subprocess.run(cmd_llc, capture_output=True, text=True, check=True, timeout=120)
