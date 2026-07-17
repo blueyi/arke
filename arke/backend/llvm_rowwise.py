@@ -306,13 +306,24 @@ done:
 
 
 def emit_llvm_ir_layernorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row layer normalization. Grid=(M,1,1), Block=(32,1,1)."""
+    """Emit LLVM IR for per-row layer normalization. Grid=(M,1,1), Block=(256,1,1).
+
+    Uses 8-warp (256 thread) parallelism with 2-level reduction:
+      - Intra-warp: shfl.sync.down (5 steps)
+      - Cross-warp: shared memory tree reduction (8 slots)
+    3-pass: mean, variance, normalize+affine.
+    """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     w_name = input_names[1]
     b_name = input_names[2]
     kernel_name = "arke_layernorm"
 
     source = _module_header_warp()
+    source += """\
+@smem_ln_mean = internal addrspace(3) global [8 x float] undef
+@smem_ln_var = internal addrspace(3) global [8 x float] undef
+
+"""
     source += f"""\
 define void @{kernel_name}(float addrspace(1)* %X, float addrspace(1)* %W, float addrspace(1)* %B, float addrspace(1)* %Out, i32 %M, i32 %N) {{
 entry:
@@ -321,14 +332,15 @@ entry:
   %row64 = sext i32 %row to i64
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
-  ; ---- Pass 1: partial sum for mean ----
+  %warp_id = lshr i32 %tid, 5
+  ; ---- Pass 1: partial sum for mean (stride 256) ----
   br label %mean_loop
 
 mean_loop:
   %j1 = phi i32 [%tid, %entry], [%j1_next, %mean_body]
   %psum = phi float [0.0, %entry], [%new_psum, %mean_body]
   %cmp1 = icmp slt i32 %j1, %N
-  br i1 %cmp1, label %mean_body, label %mean_reduce
+  br i1 %cmp1, label %mean_body, label %mean_warp_reduce
 
 mean_body:
   %j1_64 = sext i32 %j1 to i64
@@ -336,23 +348,50 @@ mean_body:
   %ptr1 = getelementptr float, float addrspace(1)* %X, i64 %idx1
   %val1 = load float, float addrspace(1)* %ptr1
   %new_psum = fadd float %psum, %val1
-  %j1_next = add i32 %j1, 32
+  %j1_next = add i32 %j1, 256
   br label %mean_loop
 
-mean_reduce:
-  ; Warp reduce sum for mean + broadcast
-{_warp_reduce_sum_ir("psum", "total_sum", "mn_")}
+mean_warp_reduce:
+  ; Level 1: Intra-warp sum reduction
+{_warp_reduce_sum_ir("psum", "warp_mean_sum", "mn_")}
+  ; Level 2: Cross-warp sum via shared memory
+  %mn_smem_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 %warp_id
+  store float %warp_mean_sum, float addrspace(3)* %mn_smem_ptr
+  call void asm sideeffect "bar.sync 0;", ""()
+  %mn_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 0
+  %mn_v0 = load float, float addrspace(3)* %mn_v0_ptr
+  %mn_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 1
+  %mn_v1 = load float, float addrspace(3)* %mn_v1_ptr
+  %mn_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 2
+  %mn_v2 = load float, float addrspace(3)* %mn_v2_ptr
+  %mn_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 3
+  %mn_v3 = load float, float addrspace(3)* %mn_v3_ptr
+  %mn_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 4
+  %mn_v4 = load float, float addrspace(3)* %mn_v4_ptr
+  %mn_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 5
+  %mn_v5 = load float, float addrspace(3)* %mn_v5_ptr
+  %mn_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 6
+  %mn_v6 = load float, float addrspace(3)* %mn_v6_ptr
+  %mn_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 7
+  %mn_v7 = load float, float addrspace(3)* %mn_v7_ptr
+  %mn_r1_0 = fadd float %mn_v0, %mn_v1
+  %mn_r1_1 = fadd float %mn_v2, %mn_v3
+  %mn_r1_2 = fadd float %mn_v4, %mn_v5
+  %mn_r1_3 = fadd float %mn_v6, %mn_v7
+  %mn_r2_0 = fadd float %mn_r1_0, %mn_r1_1
+  %mn_r2_1 = fadd float %mn_r1_2, %mn_r1_3
+  %total_sum = fadd float %mn_r2_0, %mn_r2_1
   %Nf = sitofp i32 %N to float
   %inv_N = call float @llvm.nvvm.rcp.approx.ftz.f(float %Nf)
   %mean = fmul float %total_sum, %inv_N
-  ; ---- Pass 2: partial variance ----
+  ; ---- Pass 2: partial variance (stride 256) ----
   br label %var_loop
 
 var_loop:
-  %j2 = phi i32 [%tid, %mean_reduce], [%j2_next, %var_body]
-  %pvar = phi float [0.0, %mean_reduce], [%new_pvar, %var_body]
+  %j2 = phi i32 [%tid, %mean_warp_reduce], [%j2_next, %var_body]
+  %pvar = phi float [0.0, %mean_warp_reduce], [%new_pvar, %var_body]
   %cmp2 = icmp slt i32 %j2, %N
-  br i1 %cmp2, label %var_body, label %var_reduce
+  br i1 %cmp2, label %var_body, label %var_warp_reduce
 
 var_body:
   %j2_64 = sext i32 %j2 to i64
@@ -362,21 +401,48 @@ var_body:
   %diff = fsub float %val2, %mean
   %sq = fmul float %diff, %diff
   %new_pvar = fadd float %pvar, %sq
-  %j2_next = add i32 %j2, 32
+  %j2_next = add i32 %j2, 256
   br label %var_loop
 
-var_reduce:
-  ; Warp reduce sum for variance + broadcast
-{_warp_reduce_sum_ir("pvar", "total_var", "vr_")}
+var_warp_reduce:
+  ; Level 1: Intra-warp sum reduction
+{_warp_reduce_sum_ir("pvar", "warp_var_sum", "vr_")}
+  ; Level 2: Cross-warp sum via shared memory
+  %vr_smem_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 %warp_id
+  store float %warp_var_sum, float addrspace(3)* %vr_smem_ptr
+  call void asm sideeffect "bar.sync 0;", ""()
+  %vr_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 0
+  %vr_v0 = load float, float addrspace(3)* %vr_v0_ptr
+  %vr_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 1
+  %vr_v1 = load float, float addrspace(3)* %vr_v1_ptr
+  %vr_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 2
+  %vr_v2 = load float, float addrspace(3)* %vr_v2_ptr
+  %vr_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 3
+  %vr_v3 = load float, float addrspace(3)* %vr_v3_ptr
+  %vr_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 4
+  %vr_v4 = load float, float addrspace(3)* %vr_v4_ptr
+  %vr_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 5
+  %vr_v5 = load float, float addrspace(3)* %vr_v5_ptr
+  %vr_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 6
+  %vr_v6 = load float, float addrspace(3)* %vr_v6_ptr
+  %vr_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 7
+  %vr_v7 = load float, float addrspace(3)* %vr_v7_ptr
+  %vr_r1_0 = fadd float %vr_v0, %vr_v1
+  %vr_r1_1 = fadd float %vr_v2, %vr_v3
+  %vr_r1_2 = fadd float %vr_v4, %vr_v5
+  %vr_r1_3 = fadd float %vr_v6, %vr_v7
+  %vr_r2_0 = fadd float %vr_r1_0, %vr_r1_1
+  %vr_r2_1 = fadd float %vr_r1_2, %vr_r1_3
+  %total_var = fadd float %vr_r2_0, %vr_r2_1
   %var = fmul float %total_var, %inv_N
   %var_eps = fadd float %var, 0x3EE4F8B580000000
   ; rsqrt(var + eps) for normalization
   %rstd = call float @llvm.nvvm.rsqrt.approx.f(float %var_eps)
-  ; ---- Pass 3: normalize + affine ----
+  ; ---- Pass 3: normalize + affine (stride 256) ----
   br label %norm_loop
 
 norm_loop:
-  %j3 = phi i32 [%tid, %var_reduce], [%j3_next, %norm_body]
+  %j3 = phi i32 [%tid, %var_warp_reduce], [%j3_next, %norm_body]
   %cmp3 = icmp slt i32 %j3, %N
   br i1 %cmp3, label %norm_body, label %done
 
@@ -397,7 +463,7 @@ norm_body:
   %out_val = fadd float %scaled, %b
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %idx3
   store float %out_val, float addrspace(1)* %optr
-  %j3_next = add i32 %j3, 32
+  %j3_next = add i32 %j3, 256
   br label %norm_loop
 
 done:
@@ -417,7 +483,7 @@ done:
         shapes={x_name: [M, N], w_name: [N], b_name: [N], out_name: [M, N]},
         dtypes={x_name: dtype, w_name: dtype, b_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(32, 1, 1),
+        block=(256, 1, 1),
         shared_mem=0,
         kernel_args=[
             ("ptr", x_name), ("ptr", w_name), ("ptr", b_name),
@@ -433,12 +499,22 @@ done:
 
 
 def emit_llvm_ir_rmsnorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row RMS normalization. Grid=(M,1,1), Block=(32,1,1)."""
+    """Emit LLVM IR for per-row RMS normalization. Grid=(M,1,1), Block=(256,1,1).
+
+    Uses 8-warp (256 thread) parallelism with 2-level reduction:
+      - Intra-warp: shfl.sync.down (5 steps)
+      - Cross-warp: shared memory tree reduction (8 slots)
+    2-pass: sum-of-squares, normalize+scale.
+    """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     w_name = input_names[1]
     kernel_name = "arke_rmsnorm"
 
     source = _module_header_warp()
+    source += """\
+@smem_rms = internal addrspace(3) global [8 x float] undef
+
+"""
     source += f"""\
 define void @{kernel_name}(float addrspace(1)* %X, float addrspace(1)* %W, float addrspace(1)* %Out, i32 %M, i32 %N) {{
 entry:
@@ -447,14 +523,15 @@ entry:
   %row64 = sext i32 %row to i64
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
-  ; ---- Pass 1: partial sum of squares ----
+  %warp_id = lshr i32 %tid, 5
+  ; ---- Pass 1: partial sum of squares (stride 256) ----
   br label %ss_loop
 
 ss_loop:
   %j1 = phi i32 [%tid, %entry], [%j1_next, %ss_body]
   %pss = phi float [0.0, %entry], [%new_pss, %ss_body]
   %cmp1 = icmp slt i32 %j1, %N
-  br i1 %cmp1, label %ss_body, label %ss_reduce
+  br i1 %cmp1, label %ss_body, label %ss_warp_reduce
 
 ss_body:
   %j1_64 = sext i32 %j1 to i64
@@ -463,23 +540,50 @@ ss_body:
   %val1 = load float, float addrspace(1)* %ptr1
   %sq = fmul float %val1, %val1
   %new_pss = fadd float %pss, %sq
-  %j1_next = add i32 %j1, 32
+  %j1_next = add i32 %j1, 256
   br label %ss_loop
 
-ss_reduce:
-  ; Warp reduce sum for sum-of-squares + broadcast
-{_warp_reduce_sum_ir("pss", "total_ss", "ss_")}
+ss_warp_reduce:
+  ; Level 1: Intra-warp sum reduction
+{_warp_reduce_sum_ir("pss", "warp_ss", "ss_")}
+  ; Level 2: Cross-warp sum via shared memory
+  %ss_smem_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 %warp_id
+  store float %warp_ss, float addrspace(3)* %ss_smem_ptr
+  call void asm sideeffect "bar.sync 0;", ""()
+  %ss_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 0
+  %ss_v0 = load float, float addrspace(3)* %ss_v0_ptr
+  %ss_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 1
+  %ss_v1 = load float, float addrspace(3)* %ss_v1_ptr
+  %ss_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 2
+  %ss_v2 = load float, float addrspace(3)* %ss_v2_ptr
+  %ss_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 3
+  %ss_v3 = load float, float addrspace(3)* %ss_v3_ptr
+  %ss_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 4
+  %ss_v4 = load float, float addrspace(3)* %ss_v4_ptr
+  %ss_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 5
+  %ss_v5 = load float, float addrspace(3)* %ss_v5_ptr
+  %ss_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 6
+  %ss_v6 = load float, float addrspace(3)* %ss_v6_ptr
+  %ss_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 7
+  %ss_v7 = load float, float addrspace(3)* %ss_v7_ptr
+  %ss_r1_0 = fadd float %ss_v0, %ss_v1
+  %ss_r1_1 = fadd float %ss_v2, %ss_v3
+  %ss_r1_2 = fadd float %ss_v4, %ss_v5
+  %ss_r1_3 = fadd float %ss_v6, %ss_v7
+  %ss_r2_0 = fadd float %ss_r1_0, %ss_r1_1
+  %ss_r2_1 = fadd float %ss_r1_2, %ss_r1_3
+  %total_ss = fadd float %ss_r2_0, %ss_r2_1
   %Nf = sitofp i32 %N to float
   %inv_N = call float @llvm.nvvm.rcp.approx.ftz.f(float %Nf)
   %mean_ss = fmul float %total_ss, %inv_N
   %eps_val = fadd float %mean_ss, 0x3EE4F8B580000000
   ; rsqrt(mean_ss + eps) = 1/rms
   %inv_rms = call float @llvm.nvvm.rsqrt.approx.f(float %eps_val)
-  ; ---- Pass 2: normalize and scale by weight ----
+  ; ---- Pass 2: normalize and scale by weight (stride 256) ----
   br label %norm_loop
 
 norm_loop:
-  %j2 = phi i32 [%tid, %ss_reduce], [%j2_next, %norm_body]
+  %j2 = phi i32 [%tid, %ss_warp_reduce], [%j2_next, %norm_body]
   %cmp2 = icmp slt i32 %j2, %N
   br i1 %cmp2, label %norm_body, label %done
 
@@ -494,7 +598,7 @@ norm_body:
   %out_val = fmul float %normed, %w
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %idx2
   store float %out_val, float addrspace(1)* %optr
-  %j2_next = add i32 %j2, 32
+  %j2_next = add i32 %j2, 256
   br label %norm_loop
 
 done:
@@ -514,7 +618,7 @@ done:
         shapes={x_name: [M, N], w_name: [N], out_name: [M, N]},
         dtypes={x_name: dtype, w_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(32, 1, 1),
+        block=(256, 1, 1),
         shared_mem=0,
         kernel_args=[
             ("ptr", x_name), ("ptr", w_name), ("ptr", out_name),
