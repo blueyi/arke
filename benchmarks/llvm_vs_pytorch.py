@@ -3,10 +3,11 @@
 
 Measures latency for representative ops at realistic shapes.
 Reports:
-  - LLVM end-to-end (b.run(): H2D + kernel + D2H + module load/unload each call)
-  - LLVM kernel-only (load module once, alloc+H2D once, time only launch+sync)
+  - LLVM e2e legacy (module load + alloc + H2D + kernel + D2H + free each call)
+  - LLVM cached (H2D + kernel + D2H, module pre-loaded, buffers pre-allocated)
+  - LLVM kernel-only (just cuLaunchKernel + cuCtxSynchronize)
   - PyTorch (CUDA events on GPU-resident tensors)
-  - Ratios: LLVM_e2e/PT, LLVM_kern/PT
+  - Ratios: cached/PT, kern/PT
 
 Usage:
     cd ~/workspace/repos/arke && source ~/.venvs/arke/bin/activate
@@ -25,8 +26,8 @@ from arke.ir.graph import IRGraph, IRNode
 
 
 # ─── Config ────────────────────────────────────────────────────
-WARMUP = 5
-TRIALS = 20
+WARMUP = 10
+TRIALS = 50
 DEVICE = "cuda"
 
 
@@ -84,7 +85,6 @@ def _graph_rmsnorm(M: int, N: int) -> IRGraph:
 def _time_pytorch(fn, warmup=WARMUP, trials=TRIALS):
     """Time a PyTorch callable using CUDA events. Returns median µs."""
     torch.cuda.synchronize()
-    # Warmup
     for _ in range(warmup):
         fn()
     torch.cuda.synchronize()
@@ -102,254 +102,97 @@ def _time_pytorch(fn, warmup=WARMUP, trials=TRIALS):
 
 
 def _time_llvm_e2e(backend, kernel, inputs_fn, warmup=WARMUP, trials=TRIALS):
-    """Time b.run() end-to-end (H2D + kernel + D2H + module load/unload each call).
-    Uses time.perf_counter since b.run() calls cuCtxSynchronize internally.
-    Returns median µs."""
-    # Warmup
+    """Time b.run() end-to-end (module load + alloc + H2D + kernel + D2H + free each call)."""
     for _ in range(warmup):
         backend.run(kernel, inputs_fn())
-    
+
     times = []
     for _ in range(trials):
         inp = inputs_fn()
         t0 = time.perf_counter()
         backend.run(kernel, inp)
         t1 = time.perf_counter()
-        times.append((t1 - t0) * 1e6)  # s -> µs
+        times.append((t1 - t0) * 1e6)
+    return statistics.median(times)
+
+
+def _time_llvm_cached(backend, kernel, inputs_fn, warmup=WARMUP, trials=TRIALS):
+    """Time using cached execution: H2D + kernel + sync + D2H.
+    Module loaded once, GPU buffers pre-allocated.
+    Returns median µs."""
+    cached = backend.prepare(kernel)
+
+    # Warmup
+    for _ in range(warmup):
+        backend.run_fast(cached, inputs_fn())
+
+    times = []
+    for _ in range(trials):
+        inp = inputs_fn()
+        t0 = time.perf_counter()
+        backend.run_fast(cached, inp)
+        t1 = time.perf_counter()
+        times.append((t1 - t0) * 1e6)
+
+    backend.release(cached)
     return statistics.median(times)
 
 
 def _time_llvm_kernel_only(backend, kernel, inputs_fn, warmup=WARMUP, trials=TRIALS):
-    """Time ONLY the kernel launch + sync, excluding module load, alloc, H2D, D2H.
-    Loads the module once, allocates GPU buffers once, copies H2D once,
-    then times only cuLaunchKernel + cuCtxSynchronize.
+    """Time ONLY kernel launch + sync (no H2D/D2H, no module load, no alloc).
+    Uses cached API with run_fast_no_copy.
     Returns median µs."""
-    from cuda.bindings import driver
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
+    
+    cached = backend.prepare(kernel)
 
-    emitted: CudaCKernel = kernel.metadata["emitted"]
-    cubin: bytes = kernel.metadata["cubin"]
-
-    # Load module once
-    mod = backend._chk(driver, driver.cuModuleLoadData(cubin))
-    func = backend._chk(driver, driver.cuModuleGetFunction(
-        mod, emitted.kernel_name.encode()
-    ))
-
-    # Prepare inputs
-    sample_inputs = inputs_fn()
-    np_inputs = {}
-    for name in emitted.param_names:
-        if name == emitted.output_name:
-            continue
-        val = sample_inputs[name]
-        if not isinstance(val, np.ndarray):
-            val = np.array(val)
-        np_dtype = _ir_dtype_to_numpy(emitted.dtypes.get(name, "float32"))
-        np_inputs[name] = np.ascontiguousarray(val, dtype=np_dtype)
-
-    # Allocate GPU memory + H2D (once)
-    gpu_ptrs = {}
-    allocs = []
-    for name in emitted.param_names:
-        if name == emitted.output_name:
-            out_shape = emitted.shapes[name]
-            np_dtype = _ir_dtype_to_numpy(emitted.dtypes.get(name, "float32"))
-            nbytes = int(np.prod(out_shape)) * np_dtype.itemsize
-            dptr = backend._chk(driver, driver.cuMemAlloc(nbytes))
-            gpu_ptrs[name] = int(dptr)
-            allocs.append(int(dptr))
-        else:
-            arr = np_inputs[name]
-            dptr = backend._chk(driver, driver.cuMemAlloc(arr.nbytes))
-            backend._chk(driver, driver.cuMemcpyHtoD(dptr, arr.ctypes.data, arr.nbytes))
-            gpu_ptrs[name] = int(dptr)
-            allocs.append(int(dptr))
-
-    # Build kernel args (once)
-    arg_buffers = []
-    for arg_type, arg_val in emitted.kernel_args:
-        if arg_type == "ptr":
-            arg_buffers.append(np.array([gpu_ptrs[arg_val]], dtype=np.uint64))
-        elif arg_type == "int":
-            arg_buffers.append(np.array([arg_val], dtype=np.int32))
-        elif arg_type == "float":
-            arg_buffers.append(np.array([arg_val], dtype=np.float32))
-
-    arg_ptrs = np.array([a.ctypes.data for a in arg_buffers], dtype=np.uint64)
-    gx, gy, gz = emitted.grid
-    bx, by, bz = emitted.block
+    # Do one H2D to fill buffers with valid data
+    backend.run_fast(cached, inputs_fn())
 
     # Warmup
     for _ in range(warmup):
-        backend._chk(driver, driver.cuLaunchKernel(
-            func, gx, gy, gz, bx, by, bz,
-            emitted.shared_mem, 0, arg_ptrs.ctypes.data, 0,
-        ))
-        backend._chk(driver, driver.cuCtxSynchronize())
+        backend.run_fast_no_copy(cached)
 
-    # Timed runs
     times = []
     for _ in range(trials):
         t0 = time.perf_counter()
-        backend._chk(driver, driver.cuLaunchKernel(
-            func, gx, gy, gz, bx, by, bz,
-            emitted.shared_mem, 0, arg_ptrs.ctypes.data, 0,
-        ))
-        backend._chk(driver, driver.cuCtxSynchronize())
+        backend.run_fast_no_copy(cached)
         t1 = time.perf_counter()
         times.append((t1 - t0) * 1e6)
 
-    # Cleanup
-    for dptr in allocs:
-        driver.cuMemFree(dptr)
-    driver.cuModuleUnload(mod)
-
+    backend.release(cached)
     return statistics.median(times)
 
 
-# ─── Benchmark definitions ─────────────────────────────────────
+# ─── Benchmark wrappers ────────────────────────────────────────
 
-def bench_unary_elementwise(op_name, M, N, pt_fn, backend):
-    """Benchmark a unary elementwise op."""
-    graph = _graph_unary(op_name, M, N)
+def _bench_op(op_name, graph, pt_fn_setup, backend):
+    """Generic benchmark for an op. Returns (e2e, cached, kern, pytorch) in µs."""
     art = backend.lower(graph)
     kern = backend.compile(art)
     assert kern.success, f"LLVM compile failed for {op_name}: {kern.error}"
 
-    # LLVM inputs: numpy
+    emitted = kern.metadata["emitted"]
+
+    # Build input factory for LLVM (numpy)
     def llvm_inputs():
-        return {"X": np.random.randn(M, N).astype(np.float32)}
+        result = {}
+        for name in emitted.param_names:
+            if name == emitted.output_name:
+                continue
+            shape = emitted.shapes[name]
+            np_dtype = _ir_dtype_to_numpy(emitted.dtypes.get(name, "float32"))
+            result[name] = np.random.randn(*shape).astype(np_dtype)
+        return result
 
-    # PyTorch
-    x_gpu = torch.randn(M, N, device=DEVICE, dtype=torch.float32)
-    def pt_call():
-        return pt_fn(x_gpu)
+    t_pt = _time_pytorch(pt_fn_setup)
+    t_e2e = _time_llvm_e2e(backend, kern, llvm_inputs)
+    t_cached = _time_llvm_cached(backend, kern, llvm_inputs)
+    t_kern = _time_llvm_kernel_only(backend, kern, llvm_inputs)
 
-    t_pt = _time_pytorch(pt_call)
-    t_llvm_e2e = _time_llvm_e2e(backend, kern, llvm_inputs)
-    t_llvm_kern = _time_llvm_kernel_only(backend, kern, llvm_inputs)
-
-    return t_llvm_e2e, t_llvm_kern, t_pt
-
-
-def bench_softmax(M, N, backend):
-    graph = _graph_unary("softmax", M, N)
-    art = backend.lower(graph)
-    kern = backend.compile(art)
-    assert kern.success, f"LLVM compile failed for softmax: {kern.error}"
-
-    def llvm_inputs():
-        return {"X": np.random.randn(M, N).astype(np.float32)}
-
-    x_gpu = torch.randn(M, N, device=DEVICE, dtype=torch.float32)
-    def pt_call():
-        return F.softmax(x_gpu, dim=-1)
-
-    t_pt = _time_pytorch(pt_call)
-    t_llvm_e2e = _time_llvm_e2e(backend, kern, llvm_inputs)
-    t_llvm_kern = _time_llvm_kernel_only(backend, kern, llvm_inputs)
-
-    return t_llvm_e2e, t_llvm_kern, t_pt
-
-
-def bench_layernorm(M, N, backend):
-    graph = _graph_layernorm(M, N)
-    art = backend.lower(graph)
-    kern = backend.compile(art)
-    assert kern.success, f"LLVM compile failed for layernorm: {kern.error}"
-
-    def llvm_inputs():
-        return {
-            "X": np.random.randn(M, N).astype(np.float32),
-            "W": np.ones((1, N), dtype=np.float32),
-            "Bias": np.zeros((1, N), dtype=np.float32),
-        }
-
-    x_gpu = torch.randn(M, N, device=DEVICE, dtype=torch.float32)
-    w_gpu = torch.ones(N, device=DEVICE, dtype=torch.float32)
-    b_gpu = torch.zeros(N, device=DEVICE, dtype=torch.float32)
-    def pt_call():
-        return F.layer_norm(x_gpu, [N], weight=w_gpu, bias=b_gpu)
-
-    t_pt = _time_pytorch(pt_call)
-    t_llvm_e2e = _time_llvm_e2e(backend, kern, llvm_inputs)
-    t_llvm_kern = _time_llvm_kernel_only(backend, kern, llvm_inputs)
-
-    return t_llvm_e2e, t_llvm_kern, t_pt
-
-
-def bench_rmsnorm(M, N, backend):
-    graph = _graph_rmsnorm(M, N)
-    art = backend.lower(graph)
-    kern = backend.compile(art)
-    assert kern.success, f"LLVM compile failed for rmsnorm: {kern.error}"
-
-    def llvm_inputs():
-        return {
-            "X": np.random.randn(M, N).astype(np.float32),
-            "W": np.ones((1, N), dtype=np.float32),
-        }
-
-    x_gpu = torch.randn(M, N, device=DEVICE, dtype=torch.float32)
-    w_gpu = torch.ones(N, device=DEVICE, dtype=torch.float32)
-    eps = 1e-5
-    def pt_call():
-        rms = torch.sqrt(torch.mean(x_gpu ** 2, dim=-1, keepdim=True) + eps)
-        return (x_gpu / rms) * w_gpu
-
-    t_pt = _time_pytorch(pt_call)
-    t_llvm_e2e = _time_llvm_e2e(backend, kern, llvm_inputs)
-    t_llvm_kern = _time_llvm_kernel_only(backend, kern, llvm_inputs)
-
-    return t_llvm_e2e, t_llvm_kern, t_pt
-
-
-def bench_matmul(M, K, N, backend):
-    graph = _graph_matmul(M, K, N)
-    art = backend.lower(graph)
-    kern = backend.compile(art)
-    assert kern.success, f"LLVM compile failed for matmul: {kern.error}"
-
-    def llvm_inputs():
-        return {
-            "A": np.random.randn(M, K).astype(np.float32),
-            "B": np.random.randn(K, N).astype(np.float32),
-        }
-
-    a_gpu = torch.randn(M, K, device=DEVICE, dtype=torch.float32)
-    b_gpu = torch.randn(K, N, device=DEVICE, dtype=torch.float32)
-    def pt_call():
-        return torch.mm(a_gpu, b_gpu)
-
-    t_pt = _time_pytorch(pt_call)
-    t_llvm_e2e = _time_llvm_e2e(backend, kern, llvm_inputs)
-    t_llvm_kern = _time_llvm_kernel_only(backend, kern, llvm_inputs)
-
-    return t_llvm_e2e, t_llvm_kern, t_pt
-
-
-def bench_silu_and_mul(M, N, backend):
-    graph = _graph_binary("silu_and_mul", M, N)
-    art = backend.lower(graph)
-    kern = backend.compile(art)
-    assert kern.success, f"LLVM compile failed for silu_and_mul: {kern.error}"
-
-    def llvm_inputs():
-        return {
-            "A": np.random.randn(M, N).astype(np.float32),
-            "B": np.random.randn(M, N).astype(np.float32),
-        }
-
-    a_gpu = torch.randn(M, N, device=DEVICE, dtype=torch.float32)
-    b_gpu = torch.randn(M, N, device=DEVICE, dtype=torch.float32)
-    def pt_call():
-        return F.silu(a_gpu) * b_gpu
-
-    t_pt = _time_pytorch(pt_call)
-    t_llvm_e2e = _time_llvm_e2e(backend, kern, llvm_inputs)
-    t_llvm_kern = _time_llvm_kernel_only(backend, kern, llvm_inputs)
-
-    return t_llvm_e2e, t_llvm_kern, t_pt
+    return t_e2e, t_cached, t_kern, t_pt
 
 
 # ─── Main ──────────────────────────────────────────────────────
@@ -358,12 +201,28 @@ def main():
     assert llvm_toolchain_available(), "LLVM toolchain not available!"
     assert torch.cuda.is_available(), "CUDA not available!"
 
+    # Pre-warm PyTorch CUDA runtime
+    print("Warming up PyTorch CUDA runtime...")
+    _warmup = torch.randn(4096, 4096, device=DEVICE)
+    for fn in [torch.relu, F.gelu, F.silu, torch.exp, torch.sigmoid]:
+        for _ in range(3):
+            fn(_warmup)
+    F.softmax(_warmup[:1024], dim=-1)
+    F.layer_norm(_warmup[:1024], [4096])
+    torch.mm(_warmup[:1024, :1024], _warmup[:1024, :1024])
+    _ = F.silu(_warmup[:2048]) * _warmup[:2048]
+    _rms = torch.sqrt(torch.mean(_warmup[:1024] ** 2, dim=-1, keepdim=True) + 1e-5)
+    _ = (_warmup[:1024] / _rms)
+    del _warmup, _rms
+    torch.cuda.synchronize()
+    print("Warmup done.\n")
+
     backend = LLVMBackend(chip="sm_86")
 
     # Header
-    hdr = (f"{'op':<15} | {'shape':<14} | {'LLVM e2e(µs)':>12} | "
-           f"{'LLVM kern(µs)':>13} | {'PyTorch(µs)':>11} | "
-           f"{'e2e/PT':>8} | {'kern/PT':>8}")
+    hdr = (f"{'op':<15} | {'shape':<14} | {'e2e(µs)':>10} | {'cached(µs)':>11} | "
+           f"{'kern(µs)':>10} | {'PT(µs)':>10} | "
+           f"{'e2e/PT':>7} | {'cch/PT':>7} | {'krn/PT':>7}")
     sep = "-" * len(hdr)
     print(f"\nArke LLVM Backend vs PyTorch/cuBLAS  (warmup={WARMUP}, trials={TRIALS})")
     print(f"GPU: {torch.cuda.get_device_name(0)}")
@@ -374,6 +233,15 @@ def main():
 
     results = []
 
+    def _print_row(name, shape_str, t_e2e, t_cached, t_kern, t_pt):
+        r_e2e = t_e2e / t_pt if t_pt > 0 else float('inf')
+        r_cch = t_cached / t_pt if t_pt > 0 else float('inf')
+        r_krn = t_kern / t_pt if t_pt > 0 else float('inf')
+        print(f"{name:<15} | {shape_str:<14} | {t_e2e:>10.1f} | {t_cached:>11.1f} | "
+              f"{t_kern:>10.1f} | {t_pt:>10.1f} | "
+              f"{r_e2e:>6.1f}x | {r_cch:>6.1f}x | {r_krn:>6.1f}x")
+        results.append((name, shape_str, t_e2e, t_cached, t_kern, t_pt, r_e2e, r_cch, r_krn))
+
     # --- Elementwise ops [4096, 4096] ---
     ew_ops = [
         ("relu",    lambda x: torch.relu(x)),
@@ -382,76 +250,95 @@ def main():
         ("exp",     lambda x: torch.exp(x)),
         ("sigmoid", lambda x: torch.sigmoid(x)),
     ]
+    x_gpu = torch.randn(4096, 4096, device=DEVICE, dtype=torch.float32)
     for op_name, pt_fn in ew_ops:
         try:
-            t_e2e, t_kern, t_pt = bench_unary_elementwise(op_name, 4096, 4096, pt_fn, backend)
-            ratio_e2e = t_e2e / t_pt if t_pt > 0 else float('inf')
-            ratio_kern = t_kern / t_pt if t_pt > 0 else float('inf')
-            shape_str = "4096x4096"
-            print(f"{op_name:<15} | {shape_str:<14} | {t_e2e:>12.2f} | {t_kern:>13.2f} | "
-                  f"{t_pt:>11.2f} | {ratio_e2e:>7.2f}x | {ratio_kern:>7.2f}x")
-            results.append((op_name, shape_str, t_e2e, t_kern, t_pt, ratio_e2e, ratio_kern))
+            graph = _graph_unary(op_name, 4096, 4096)
+            t_e2e, t_cached, t_kern, t_pt = _bench_op(
+                op_name, graph, lambda: pt_fn(x_gpu), backend)
+            _print_row(op_name, "4096x4096", t_e2e, t_cached, t_kern, t_pt)
         except Exception as e:
-            print(f"{op_name:<15} | {'4096x4096':<14} | {'FAILED':>12} | {'':>13} | {'':>11} | {'':>8} | {'':>8}  ({e})")
+            print(f"{op_name:<15} | {'4096x4096':<14} | FAILED: {e}")
 
     # --- Reduction ops [1024, 4096] ---
-    red_benchmarks = [
-        ("softmax",   lambda: bench_softmax(1024, 4096, backend)),
-        ("layernorm", lambda: bench_layernorm(1024, 4096, backend)),
-        ("rmsnorm",   lambda: bench_rmsnorm(1024, 4096, backend)),
-    ]
-    for op_name, bench_fn in red_benchmarks:
-        try:
-            t_e2e, t_kern, t_pt = bench_fn()
-            ratio_e2e = t_e2e / t_pt if t_pt > 0 else float('inf')
-            ratio_kern = t_kern / t_pt if t_pt > 0 else float('inf')
-            shape_str = "1024x4096"
-            print(f"{op_name:<15} | {shape_str:<14} | {t_e2e:>12.2f} | {t_kern:>13.2f} | "
-                  f"{t_pt:>11.2f} | {ratio_e2e:>7.2f}x | {ratio_kern:>7.2f}x")
-            results.append((op_name, shape_str, t_e2e, t_kern, t_pt, ratio_e2e, ratio_kern))
-        except Exception as e:
-            print(f"{op_name:<15} | {'1024x4096':<14} | {'FAILED':>12} | {'':>13} | {'':>11} | {'':>8} | {'':>8}  ({e})")
+    x_red = torch.randn(1024, 4096, device=DEVICE, dtype=torch.float32)
 
-    # --- Dense: matmul [1024, 1024, 1024] ---
+    # softmax
     try:
-        t_e2e, t_kern, t_pt = bench_matmul(1024, 1024, 1024, backend)
-        ratio_e2e = t_e2e / t_pt if t_pt > 0 else float('inf')
-        ratio_kern = t_kern / t_pt if t_pt > 0 else float('inf')
-        shape_str = "1024x1024x1024"
-        print(f"{'matmul':<15} | {shape_str:<14} | {t_e2e:>12.2f} | {t_kern:>13.2f} | "
-              f"{t_pt:>11.2f} | {ratio_e2e:>7.2f}x | {ratio_kern:>7.2f}x")
-        results.append(("matmul", shape_str, t_e2e, t_kern, t_pt, ratio_e2e, ratio_kern))
+        graph = _graph_unary("softmax", 1024, 4096)
+        t_e2e, t_cached, t_kern, t_pt = _bench_op(
+            "softmax", graph, lambda: F.softmax(x_red, dim=-1), backend)
+        _print_row("softmax", "1024x4096", t_e2e, t_cached, t_kern, t_pt)
     except Exception as e:
-        print(f"{'matmul':<15} | {'1024x1024x1024':<14} | {'FAILED':>12} | {'':>13} | {'':>11} | {'':>8} | {'':>8}  ({e})")
+        print(f"{'softmax':<15} | {'1024x4096':<14} | FAILED: {e}")
+
+    # layernorm
+    try:
+        graph = _graph_layernorm(1024, 4096)
+        w_ln = torch.ones(4096, device=DEVICE)
+        b_ln = torch.zeros(4096, device=DEVICE)
+        t_e2e, t_cached, t_kern, t_pt = _bench_op(
+            "layernorm", graph, lambda: F.layer_norm(x_red, [4096], weight=w_ln, bias=b_ln), backend)
+        _print_row("layernorm", "1024x4096", t_e2e, t_cached, t_kern, t_pt)
+    except Exception as e:
+        print(f"{'layernorm':<15} | {'1024x4096':<14} | FAILED: {e}")
+
+    # rmsnorm
+    try:
+        graph = _graph_rmsnorm(1024, 4096)
+        w_rms = torch.ones(4096, device=DEVICE)
+        def _pt_rmsnorm():
+            rms = torch.sqrt(torch.mean(x_red ** 2, dim=-1, keepdim=True) + 1e-5)
+            return (x_red / rms) * w_rms
+        t_e2e, t_cached, t_kern, t_pt = _bench_op(
+            "rmsnorm", graph, _pt_rmsnorm, backend)
+        _print_row("rmsnorm", "1024x4096", t_e2e, t_cached, t_kern, t_pt)
+    except Exception as e:
+        print(f"{'rmsnorm':<15} | {'1024x4096':<14} | FAILED: {e}")
+
+    # --- Matmul [1024, 1024, 1024] ---
+    try:
+        graph = _graph_matmul(1024, 1024, 1024)
+        a_mm = torch.randn(1024, 1024, device=DEVICE)
+        b_mm = torch.randn(1024, 1024, device=DEVICE)
+        t_e2e, t_cached, t_kern, t_pt = _bench_op(
+            "matmul", graph, lambda: torch.mm(a_mm, b_mm), backend)
+        _print_row("matmul", "1024³", t_e2e, t_cached, t_kern, t_pt)
+    except Exception as e:
+        print(f"{'matmul':<15} | {'1024³':<14} | FAILED: {e}")
 
     # --- Fused: silu_and_mul [2048, 4096] ---
     try:
-        t_e2e, t_kern, t_pt = bench_silu_and_mul(2048, 4096, backend)
-        ratio_e2e = t_e2e / t_pt if t_pt > 0 else float('inf')
-        ratio_kern = t_kern / t_pt if t_pt > 0 else float('inf')
-        shape_str = "2048x4096"
-        print(f"{'silu_and_mul':<15} | {shape_str:<14} | {t_e2e:>12.2f} | {t_kern:>13.2f} | "
-              f"{t_pt:>11.2f} | {ratio_e2e:>7.2f}x | {ratio_kern:>7.2f}x")
-        results.append(("silu_and_mul", shape_str, t_e2e, t_kern, t_pt, ratio_e2e, ratio_kern))
+        graph = _graph_binary("silu_and_mul", 2048, 4096)
+        a_fused = torch.randn(2048, 4096, device=DEVICE)
+        b_fused = torch.randn(2048, 4096, device=DEVICE)
+        t_e2e, t_cached, t_kern, t_pt = _bench_op(
+            "silu_and_mul", graph, lambda: F.silu(a_fused) * b_fused, backend)
+        _print_row("silu_and_mul", "2048x4096", t_e2e, t_cached, t_kern, t_pt)
     except Exception as e:
-        print(f"{'silu_and_mul':<15} | {'2048x4096':<14} | {'FAILED':>12} | {'':>13} | {'':>11} | {'':>8} | {'':>8}  ({e})")
+        print(f"{'silu_and_mul':<15} | {'2048x4096':<14} | FAILED: {e}")
 
     # --- Summary ---
     print(sep)
     if results:
-        avg_e2e = statistics.mean([r[5] for r in results])
-        avg_kern = statistics.mean([r[6] for r in results])
-        print(f"\nGeometric mean ratios:")
         from math import exp, log
-        geo_e2e = exp(statistics.mean([log(r[5]) for r in results]))
-        geo_kern = exp(statistics.mean([log(r[6]) for r in results]))
-        print(f"  LLVM e2e / PyTorch:    {geo_e2e:.2f}x  (geomean)")
-        print(f"  LLVM kernel / PyTorch: {geo_kern:.2f}x  (geomean)")
-        print(f"\nNote: LLVM e2e includes module load + H2D + kernel + D2H + module unload per call.")
-        print(f"      LLVM kernel-only times just cuLaunchKernel + cuCtxSynchronize.")
-        print(f"      PyTorch times just the kernel on GPU-resident data.")
-        print(f"      Ratio < 1.0 means LLVM is faster.")
+        geo_e2e = exp(statistics.mean([log(r[6]) for r in results]))
+        geo_cch = exp(statistics.mean([log(r[7]) for r in results]))
+        geo_krn = exp(statistics.mean([log(r[8]) for r in results]))
+        print(f"\nGeometric mean ratios (vs PyTorch):")
+        print(f"  Legacy e2e: {geo_e2e:.2f}x")
+        print(f"  Cached:     {geo_cch:.2f}x  ← P5-S3 target: close to kernel-only")
+        print(f"  Kernel-only:{geo_krn:.2f}x  ← pure compute gap (no transfer)")
+        print()
+        print("Legend:")
+        print("  e2e    = legacy run() — module load + alloc + H2D + kernel + D2H + free per call")
+        print("  cached = prepare() once, run_fast() — H2D + kernel + sync + D2H only")
+        print("  kern   = kernel launch + sync only (GPU-resident data)")
+        print("  PT     = PyTorch on GPU-resident tensors")
+        print("  Ratio < 1.0 means LLVM is faster")
     print()
+
+    backend.release_all()
 
 
 if __name__ == "__main__":
