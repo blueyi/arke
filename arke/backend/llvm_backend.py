@@ -219,6 +219,7 @@ class LLVMBackend:
                 self.llc,
                 "-march=nvptx64",
                 f"-mcpu=sm_{sm}",
+                "-O2",
                 "-o", ptx_path,
                 compile_input,
             ]
@@ -233,6 +234,7 @@ class LLVMBackend:
             cmd_ptxas = [
                 self.ptxas,
                 f"--gpu-name=sm_{sm}",
+                "-O3",
                 "-o", cubin_path,
                 ptx_path,
             ]
