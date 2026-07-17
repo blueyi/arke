@@ -32,6 +32,7 @@ declare float @llvm.nvvm.sqrt.rn.f(float)
 declare float @llvm.nvvm.lg2.approx.f(float)
 declare float @llvm.fabs.f32(float)
 declare float @llvm.maxnum.f32(float, float)
+declare float @llvm.nvvm.rcp.approx.ftz.f(float)
 """
 
 
@@ -439,7 +440,7 @@ compute:
   %neg_scaled_lg2e = fmul float %neg_scaled, 0x3FF7154760000000
   %exp_neg = call float @llvm.nvvm.ex2.approx.f(float %neg_scaled_lg2e)
   %denom = fadd float 1.0, %exp_neg
-  %sig = fdiv float 1.0, %denom
+  %sig = call float @llvm.nvvm.rcp.approx.ftz.f(float %denom)
   %gelu = fmul float %a, %sig
   ; out = gelu(a) * b
   %out_val = fmul float %gelu, %b
@@ -718,7 +719,8 @@ compute:
   %neg_a_lg2e = fmul float %neg_a, 0x3FF7154760000000
   %exp_neg_a = call float @llvm.nvvm.ex2.approx.f(float %neg_a_lg2e)
   %denom = fadd float 1.0, %exp_neg_a
-  %sig = fdiv float %a, %denom
+  %rcp_denom = call float @llvm.nvvm.rcp.approx.ftz.f(float %denom)
+  %sig = fmul float %a, %rcp_denom
   ; out = silu(a) * b
   %out_val = fmul float %sig, %b
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %gid64
@@ -829,7 +831,8 @@ k_body:
   %neg_gate_lg2e = fmul float %neg_gate, 0x3FF7154760000000
   %exp_ng = call float @llvm.nvvm.ex2.approx.f(float %neg_gate_lg2e)
   %denom = fadd float 1.0, %exp_ng
-  %silu_gate = fdiv float %gate, %denom
+  %rcp_d = call float @llvm.nvvm.rcp.approx.ftz.f(float %denom)
+  %silu_gate = fmul float %gate, %rcp_d
   ; activated = silu(gate) * up
   %activated = fmul float %silu_gate, %up
   ; W[kk, n]: row-major index = kk * N + n

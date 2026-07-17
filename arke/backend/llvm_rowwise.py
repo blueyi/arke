@@ -6,8 +6,14 @@ Implements 10 rowwise ops as NVPTX LLVM IR kernels:
   softmax, layernorm, rmsnorm, reduce_sum, reduce_max, reduce_mean,
   argmax, cumsum, topk, rmsnorm_residual
 
-All reduction ops use a simplified 1-thread-per-row approach:
-  Grid=(M,1,1), Block=(1,1,1) — thread 0 loops sequentially over N.
+softmax, layernorm, rmsnorm use warp-level parallelism:
+  Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row, 32 threads cooperate.
+  Each thread handles ceil(N/32) elements via strided access.
+  Warp reductions via inline PTX shfl.sync.down.b32.
+  Broadcast from lane 0 via shfl.sync.idx.b32.
+
+All other reduction ops use 1-thread-per-row:
+  Grid=(M,1,1), Block=(1,1,1) -- thread 0 loops sequentially over N.
 """
 from __future__ import annotations
 
@@ -35,9 +41,25 @@ declare float @llvm.fabs.f32(float)
 declare float @llvm.maxnum.f32(float, float)
 """
 
+_INTRINSICS_WARP = """\
+declare i32 @llvm.nvvm.read.ptx.sreg.tid.x()
+declare i32 @llvm.nvvm.read.ptx.sreg.ctaid.x()
+declare float @llvm.nvvm.ex2.approx.f(float)
+declare float @llvm.nvvm.sqrt.rn.f(float)
+declare float @llvm.nvvm.lg2.approx.f(float)
+declare float @llvm.nvvm.rcp.approx.ftz.f(float)
+declare float @llvm.nvvm.rsqrt.approx.f(float)
+declare float @llvm.fabs.f32(float)
+declare float @llvm.maxnum.f32(float, float)
+"""
+
 
 def _module_header() -> str:
     return f"{_DATALAYOUT}\n{_TRIPLE}\n\n{_INTRINSICS}\n"
+
+
+def _module_header_warp() -> str:
+    return f"{_DATALAYOUT}\n{_TRIPLE}\n\n{_INTRINSICS_WARP}\n"
 
 
 def _nvvm_annotation(kernel_name: str) -> str:
@@ -68,72 +90,124 @@ def _extract_2d(graph: IRGraph, input_idx: int = 0):
 
 
 # ---------------------------------------------------------------------------
-# 1. softmax — 3-pass: max, exp+sum, normalize. 1 thread per row.
+# Warp reduce helpers (inline PTX asm patterns as IR strings)
+# ---------------------------------------------------------------------------
+
+def _warp_reduce_max_ir(acc_name: str, result_name: str, prefix: str = "") -> str:
+    """Generate LLVM IR for 5-step warp max reduction + broadcast.
+
+    Takes accumulator %{acc_name}, produces %{result_name} (broadcast to all lanes).
+    """
+    p = prefix  # unique prefix to avoid SSA conflicts
+    return f"""\
+  %{p}s1 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{acc_name}, i32 16, i32 31, i32 -1)
+  %{p}m1 = call float @llvm.maxnum.f32(float %{acc_name}, float %{p}s1)
+  %{p}s2 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m1, i32 8, i32 31, i32 -1)
+  %{p}m2 = call float @llvm.maxnum.f32(float %{p}m1, float %{p}s2)
+  %{p}s3 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m2, i32 4, i32 31, i32 -1)
+  %{p}m3 = call float @llvm.maxnum.f32(float %{p}m2, float %{p}s3)
+  %{p}s4 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m3, i32 2, i32 31, i32 -1)
+  %{p}m4 = call float @llvm.maxnum.f32(float %{p}m3, float %{p}s4)
+  %{p}s5 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m4, i32 1, i32 31, i32 -1)
+  %{p}m5 = call float @llvm.maxnum.f32(float %{p}m4, float %{p}s5)
+  %{result_name} = call float asm "shfl.sync.idx.b32 $0, $1, 0, 31, $2;", "=f,f,r"(float %{p}m5, i32 -1)"""
+
+
+def _warp_reduce_sum_ir(acc_name: str, result_name: str, prefix: str = "") -> str:
+    """Generate LLVM IR for 5-step warp sum reduction + broadcast.
+
+    Takes accumulator %{acc_name}, produces %{result_name} (broadcast to all lanes).
+    """
+    p = prefix
+    return f"""\
+  %{p}s1 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{acc_name}, i32 16, i32 31, i32 -1)
+  %{p}m1 = fadd float %{acc_name}, %{p}s1
+  %{p}s2 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m1, i32 8, i32 31, i32 -1)
+  %{p}m2 = fadd float %{p}m1, %{p}s2
+  %{p}s3 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m2, i32 4, i32 31, i32 -1)
+  %{p}m3 = fadd float %{p}m2, %{p}s3
+  %{p}s4 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m3, i32 2, i32 31, i32 -1)
+  %{p}m4 = fadd float %{p}m3, %{p}s4
+  %{p}s5 = call float asm "shfl.sync.down.b32 $0, $1, $2, $3, $4;", "=f,f,r,r,r"(float %{p}m4, i32 1, i32 31, i32 -1)
+  %{p}m5 = fadd float %{p}m4, %{p}s5
+  %{result_name} = call float asm "shfl.sync.idx.b32 $0, $1, 0, 31, $2;", "=f,f,r"(float %{p}m5, i32 -1)"""
+
+
+# ---------------------------------------------------------------------------
+# 1. softmax -- 3-pass warp-parallel: max, exp+sum, normalize.
+#    Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row.
 # ---------------------------------------------------------------------------
 
 
 def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(1,1,1)."""
+    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(32,1,1)."""
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     kernel_name = "arke_softmax"
 
-    source = _module_header()
+    source = _module_header_warp()
     source += f"""\
 define void @{kernel_name}(float addrspace(1)* %X, float addrspace(1)* %Out, i32 %M, i32 %N) {{
 entry:
+  %tid = call i32 @llvm.nvvm.read.ptx.sreg.tid.x()
   %row = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x()
   %row64 = sext i32 %row to i64
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
-  ; Pass 1: find max
+  ; ---- Pass 1: find row max (each thread finds local max, then warp reduce) ----
   br label %max_loop
 
 max_loop:
-  %j1 = phi i32 [0, %entry], [%j1_next, %max_body]
-  %cur_max = phi float [0xFFF0000000000000, %entry], [%new_max, %max_body]
+  %j1 = phi i32 [%tid, %entry], [%j1_next, %max_body]
+  %local_max = phi float [0xFFF0000000000000, %entry], [%new_max, %max_body]
   %cmp1 = icmp slt i32 %j1, %N
-  br i1 %cmp1, label %max_body, label %exp_sum_init
+  br i1 %cmp1, label %max_body, label %max_reduce
 
 max_body:
   %j1_64 = sext i32 %j1 to i64
   %idx1 = add i64 %base, %j1_64
   %ptr1 = getelementptr float, float addrspace(1)* %X, i64 %idx1
   %val1 = load float, float addrspace(1)* %ptr1
-  %new_max = call float @llvm.maxnum.f32(float %cur_max, float %val1)
-  %j1_next = add i32 %j1, 1
+  %new_max = call float @llvm.maxnum.f32(float %local_max, float %val1)
+  %j1_next = add i32 %j1, 32
   br label %max_loop
 
-exp_sum_init:
-  ; Pass 2: compute exp(x-max) and sum
+max_reduce:
+  ; Warp reduce max + broadcast
+{_warp_reduce_max_ir("local_max", "row_max", "mx_")}
+  ; ---- Pass 2: exp(x - max) and local sum ----
   br label %exp_loop
 
 exp_loop:
-  %j2 = phi i32 [0, %exp_sum_init], [%j2_next, %exp_body]
-  %sum_acc = phi float [0.0, %exp_sum_init], [%new_sum, %exp_body]
+  %j2 = phi i32 [%tid, %max_reduce], [%j2_next, %exp_body]
+  %local_sum = phi float [0.0, %max_reduce], [%new_sum, %exp_body]
   %cmp2 = icmp slt i32 %j2, %N
-  br i1 %cmp2, label %exp_body, label %norm_init
+  br i1 %cmp2, label %exp_body, label %sum_reduce
 
 exp_body:
   %j2_64 = sext i32 %j2 to i64
   %idx2 = add i64 %base, %j2_64
   %ptr2 = getelementptr float, float addrspace(1)* %X, i64 %idx2
   %val2 = load float, float addrspace(1)* %ptr2
-  %shifted = fsub float %val2, %cur_max
+  %shifted = fsub float %val2, %row_max
   %shifted_lg2e = fmul float %shifted, 0x3FF7154760000000
   %exp_val = call float @llvm.nvvm.ex2.approx.f(float %shifted_lg2e)
-  ; Store exp(x-max) temporarily in output
+  ; Store exp(x-max) in output buffer
   %optr2 = getelementptr float, float addrspace(1)* %Out, i64 %idx2
   store float %exp_val, float addrspace(1)* %optr2
-  %new_sum = fadd float %sum_acc, %exp_val
-  %j2_next = add i32 %j2, 1
+  %new_sum = fadd float %local_sum, %exp_val
+  %j2_next = add i32 %j2, 32
   br label %exp_loop
 
-norm_init:
-  ; Pass 3: normalize by sum
+sum_reduce:
+  ; Warp reduce sum + broadcast
+{_warp_reduce_sum_ir("local_sum", "row_sum", "sm_")}
+  ; Compute 1/sum via rcp.approx.ftz.f
+  %inv_sum = call float @llvm.nvvm.rcp.approx.ftz.f(float %row_sum)
+  ; ---- Pass 3: normalize ----
   br label %norm_loop
 
 norm_loop:
-  %j3 = phi i32 [0, %norm_init], [%j3_next, %norm_body]
+  %j3 = phi i32 [%tid, %sum_reduce], [%j3_next, %norm_body]
   %cmp3 = icmp slt i32 %j3, %N
   br i1 %cmp3, label %norm_body, label %done
 
@@ -142,9 +216,9 @@ norm_body:
   %idx3 = add i64 %base, %j3_64
   %optr3 = getelementptr float, float addrspace(1)* %Out, i64 %idx3
   %exp_stored = load float, float addrspace(1)* %optr3
-  %normed = fdiv float %exp_stored, %sum_acc
+  %normed = fmul float %exp_stored, %inv_sum
   store float %normed, float addrspace(1)* %optr3
-  %j3_next = add i32 %j3, 1
+  %j3_next = add i32 %j3, 32
   br label %norm_loop
 
 done:
@@ -152,7 +226,8 @@ done:
 }}
 
 """
-    source += _nvvm_annotation(kernel_name)
+    sig = "void (float addrspace(1)*, float addrspace(1)*, i32, i32)"
+    source += _nvvm_annotation_custom(kernel_name, sig)
 
     return CudaCKernel(
         kernel_name=kernel_name,
@@ -163,62 +238,66 @@ done:
         shapes={x_name: [M, N], out_name: [M, N]},
         dtypes={x_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(1, 1, 1),
+        block=(32, 1, 1),
         shared_mem=0,
         kernel_args=[("ptr", x_name), ("ptr", out_name), ("int", M), ("int", N)],
     )
 
 
 # ---------------------------------------------------------------------------
-# 2. layernorm — inputs: X[M,N], W[N], B[N]. 1 thread per row.
+# 2. layernorm -- 3-pass warp-parallel + affine: mean, variance, normalize.
+#    Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row.
 # ---------------------------------------------------------------------------
 
 
 def emit_llvm_ir_layernorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row layer normalization."""
+    """Emit LLVM IR for per-row layer normalization. Grid=(M,1,1), Block=(32,1,1)."""
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     w_name = input_names[1]
     b_name = input_names[2]
     kernel_name = "arke_layernorm"
-    eps = 1e-5
 
-    source = _module_header()
+    source = _module_header_warp()
     source += f"""\
 define void @{kernel_name}(float addrspace(1)* %X, float addrspace(1)* %W, float addrspace(1)* %B, float addrspace(1)* %Out, i32 %M, i32 %N) {{
 entry:
+  %tid = call i32 @llvm.nvvm.read.ptx.sreg.tid.x()
   %row = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x()
   %row64 = sext i32 %row to i64
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
-  ; Pass 1: compute mean
+  ; ---- Pass 1: partial sum for mean ----
   br label %mean_loop
 
 mean_loop:
-  %j1 = phi i32 [0, %entry], [%j1_next, %mean_body]
-  %sum1 = phi float [0.0, %entry], [%new_sum1, %mean_body]
+  %j1 = phi i32 [%tid, %entry], [%j1_next, %mean_body]
+  %psum = phi float [0.0, %entry], [%new_psum, %mean_body]
   %cmp1 = icmp slt i32 %j1, %N
-  br i1 %cmp1, label %mean_body, label %mean_done
+  br i1 %cmp1, label %mean_body, label %mean_reduce
 
 mean_body:
   %j1_64 = sext i32 %j1 to i64
   %idx1 = add i64 %base, %j1_64
   %ptr1 = getelementptr float, float addrspace(1)* %X, i64 %idx1
   %val1 = load float, float addrspace(1)* %ptr1
-  %new_sum1 = fadd float %sum1, %val1
-  %j1_next = add i32 %j1, 1
+  %new_psum = fadd float %psum, %val1
+  %j1_next = add i32 %j1, 32
   br label %mean_loop
 
-mean_done:
+mean_reduce:
+  ; Warp reduce sum for mean + broadcast
+{_warp_reduce_sum_ir("psum", "total_sum", "mn_")}
   %Nf = sitofp i32 %N to float
-  %mean = fdiv float %sum1, %Nf
-  ; Pass 2: compute variance
+  %inv_N = call float @llvm.nvvm.rcp.approx.ftz.f(float %Nf)
+  %mean = fmul float %total_sum, %inv_N
+  ; ---- Pass 2: partial variance ----
   br label %var_loop
 
 var_loop:
-  %j2 = phi i32 [0, %mean_done], [%j2_next, %var_body]
-  %sum2 = phi float [0.0, %mean_done], [%new_sum2, %var_body]
+  %j2 = phi i32 [%tid, %mean_reduce], [%j2_next, %var_body]
+  %pvar = phi float [0.0, %mean_reduce], [%new_pvar, %var_body]
   %cmp2 = icmp slt i32 %j2, %N
-  br i1 %cmp2, label %var_body, label %var_done
+  br i1 %cmp2, label %var_body, label %var_reduce
 
 var_body:
   %j2_64 = sext i32 %j2 to i64
@@ -227,19 +306,22 @@ var_body:
   %val2 = load float, float addrspace(1)* %ptr2
   %diff = fsub float %val2, %mean
   %sq = fmul float %diff, %diff
-  %new_sum2 = fadd float %sum2, %sq
-  %j2_next = add i32 %j2, 1
+  %new_pvar = fadd float %pvar, %sq
+  %j2_next = add i32 %j2, 32
   br label %var_loop
 
-var_done:
-  %var = fdiv float %sum2, %Nf
-  %eps_val = fadd float %var, 0x3EE4F8B580000000
-  %rstd = call float @llvm.nvvm.sqrt.rn.f(float %eps_val)
-  ; Pass 3: normalize and apply affine
+var_reduce:
+  ; Warp reduce sum for variance + broadcast
+{_warp_reduce_sum_ir("pvar", "total_var", "vr_")}
+  %var = fmul float %total_var, %inv_N
+  %var_eps = fadd float %var, 0x3EE4F8B580000000
+  ; rsqrt(var + eps) for normalization
+  %rstd = call float @llvm.nvvm.rsqrt.approx.f(float %var_eps)
+  ; ---- Pass 3: normalize + affine ----
   br label %norm_loop
 
 norm_loop:
-  %j3 = phi i32 [0, %var_done], [%j3_next, %norm_body]
+  %j3 = phi i32 [%tid, %var_reduce], [%j3_next, %norm_body]
   %cmp3 = icmp slt i32 %j3, %N
   br i1 %cmp3, label %norm_body, label %done
 
@@ -249,8 +331,8 @@ norm_body:
   %ptr3 = getelementptr float, float addrspace(1)* %X, i64 %idx3
   %val3 = load float, float addrspace(1)* %ptr3
   %diff3 = fsub float %val3, %mean
-  %normed = fdiv float %diff3, %rstd
-  ; Load weight and bias
+  %normed = fmul float %diff3, %rstd
+  ; Load weight and bias (1D indexing by column)
   %wptr = getelementptr float, float addrspace(1)* %W, i64 %j3_64
   %w = load float, float addrspace(1)* %wptr
   %bptr = getelementptr float, float addrspace(1)* %B, i64 %j3_64
@@ -260,7 +342,7 @@ norm_body:
   %out_val = fadd float %scaled, %b
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %idx3
   store float %out_val, float addrspace(1)* %optr
-  %j3_next = add i32 %j3, 1
+  %j3_next = add i32 %j3, 32
   br label %norm_loop
 
 done:
@@ -280,7 +362,7 @@ done:
         shapes={x_name: [M, N], w_name: [N], b_name: [N], out_name: [M, N]},
         dtypes={x_name: dtype, w_name: dtype, b_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(1, 1, 1),
+        block=(32, 1, 1),
         shared_mem=0,
         kernel_args=[
             ("ptr", x_name), ("ptr", w_name), ("ptr", b_name),
@@ -290,33 +372,34 @@ done:
 
 
 # ---------------------------------------------------------------------------
-# 3. rmsnorm — inputs: X[M,N], W[N]. 1 thread per row.
+# 3. rmsnorm -- 2-pass warp-parallel + affine: sum-of-squares, normalize.
+#    Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row.
 # ---------------------------------------------------------------------------
 
 
 def emit_llvm_ir_rmsnorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row RMS normalization."""
+    """Emit LLVM IR for per-row RMS normalization. Grid=(M,1,1), Block=(32,1,1)."""
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     w_name = input_names[1]
     kernel_name = "arke_rmsnorm"
-    eps = 1e-5
 
-    source = _module_header()
+    source = _module_header_warp()
     source += f"""\
 define void @{kernel_name}(float addrspace(1)* %X, float addrspace(1)* %W, float addrspace(1)* %Out, i32 %M, i32 %N) {{
 entry:
+  %tid = call i32 @llvm.nvvm.read.ptx.sreg.tid.x()
   %row = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x()
   %row64 = sext i32 %row to i64
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
-  ; Pass 1: sum of squares
+  ; ---- Pass 1: partial sum of squares ----
   br label %ss_loop
 
 ss_loop:
-  %j1 = phi i32 [0, %entry], [%j1_next, %ss_body]
-  %ss = phi float [0.0, %entry], [%new_ss, %ss_body]
+  %j1 = phi i32 [%tid, %entry], [%j1_next, %ss_body]
+  %pss = phi float [0.0, %entry], [%new_pss, %ss_body]
   %cmp1 = icmp slt i32 %j1, %N
-  br i1 %cmp1, label %ss_body, label %ss_done
+  br i1 %cmp1, label %ss_body, label %ss_reduce
 
 ss_body:
   %j1_64 = sext i32 %j1 to i64
@@ -324,20 +407,24 @@ ss_body:
   %ptr1 = getelementptr float, float addrspace(1)* %X, i64 %idx1
   %val1 = load float, float addrspace(1)* %ptr1
   %sq = fmul float %val1, %val1
-  %new_ss = fadd float %ss, %sq
-  %j1_next = add i32 %j1, 1
+  %new_pss = fadd float %pss, %sq
+  %j1_next = add i32 %j1, 32
   br label %ss_loop
 
-ss_done:
+ss_reduce:
+  ; Warp reduce sum for sum-of-squares + broadcast
+{_warp_reduce_sum_ir("pss", "total_ss", "ss_")}
   %Nf = sitofp i32 %N to float
-  %mean_ss = fdiv float %ss, %Nf
+  %inv_N = call float @llvm.nvvm.rcp.approx.ftz.f(float %Nf)
+  %mean_ss = fmul float %total_ss, %inv_N
   %eps_val = fadd float %mean_ss, 0x3EE4F8B580000000
-  %rms = call float @llvm.nvvm.sqrt.rn.f(float %eps_val)
-  ; Pass 2: normalize and scale
+  ; rsqrt(mean_ss + eps) = 1/rms
+  %inv_rms = call float @llvm.nvvm.rsqrt.approx.f(float %eps_val)
+  ; ---- Pass 2: normalize and scale by weight ----
   br label %norm_loop
 
 norm_loop:
-  %j2 = phi i32 [0, %ss_done], [%j2_next, %norm_body]
+  %j2 = phi i32 [%tid, %ss_reduce], [%j2_next, %norm_body]
   %cmp2 = icmp slt i32 %j2, %N
   br i1 %cmp2, label %norm_body, label %done
 
@@ -346,13 +433,13 @@ norm_body:
   %idx2 = add i64 %base, %j2_64
   %ptr2 = getelementptr float, float addrspace(1)* %X, i64 %idx2
   %val2 = load float, float addrspace(1)* %ptr2
-  %normed = fdiv float %val2, %rms
+  %normed = fmul float %val2, %inv_rms
   %wptr = getelementptr float, float addrspace(1)* %W, i64 %j2_64
   %w = load float, float addrspace(1)* %wptr
   %out_val = fmul float %normed, %w
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %idx2
   store float %out_val, float addrspace(1)* %optr
-  %j2_next = add i32 %j2, 1
+  %j2_next = add i32 %j2, 32
   br label %norm_loop
 
 done:
@@ -372,7 +459,7 @@ done:
         shapes={x_name: [M, N], w_name: [N], out_name: [M, N]},
         dtypes={x_name: dtype, w_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(1, 1, 1),
+        block=(32, 1, 1),
         shared_mem=0,
         kernel_args=[
             ("ptr", x_name), ("ptr", w_name), ("ptr", out_name),
@@ -382,7 +469,7 @@ done:
 
 
 # ---------------------------------------------------------------------------
-# 4. reduce_sum — 1 thread per row, sequential sum.
+# 4. reduce_sum -- 1 thread per row, sequential sum.
 # ---------------------------------------------------------------------------
 
 
@@ -441,7 +528,7 @@ loop_exit:
 
 
 # ---------------------------------------------------------------------------
-# 5. reduce_max — 1 thread per row, sequential max.
+# 5. reduce_max -- 1 thread per row, sequential max.
 # ---------------------------------------------------------------------------
 
 
@@ -500,7 +587,7 @@ loop_exit:
 
 
 # ---------------------------------------------------------------------------
-# 6. reduce_mean — 1 thread per row, sum/N.
+# 6. reduce_mean -- 1 thread per row, sum/N.
 # ---------------------------------------------------------------------------
 
 
@@ -561,7 +648,7 @@ loop_exit:
 
 
 # ---------------------------------------------------------------------------
-# 7. argmax — per-row argmax. X[M,N] -> out[M] (int32). 1 thread per row.
+# 7. argmax -- per-row argmax. X[M,N] -> out[M] (int32). 1 thread per row.
 # ---------------------------------------------------------------------------
 
 
@@ -624,7 +711,7 @@ loop_exit:
 
 
 # ---------------------------------------------------------------------------
-# 8. cumsum — per-row inclusive prefix sum. 1 thread per row (sequential).
+# 8. cumsum -- per-row inclusive prefix sum. 1 thread per row (sequential).
 # ---------------------------------------------------------------------------
 
 
@@ -683,7 +770,7 @@ done:
 
 
 # ---------------------------------------------------------------------------
-# 9. topk — per-row top-K selection. X[M,N] -> out[M,K]. 1 thread per row.
+# 9. topk -- per-row top-K selection. X[M,N] -> out[M,K]. 1 thread per row.
 # ---------------------------------------------------------------------------
 
 
@@ -811,7 +898,7 @@ done:
 
 
 # ---------------------------------------------------------------------------
-# 10. rmsnorm_residual — inputs: X[M,N], R[M,N], W[N]. y = rmsnorm(x+r)*w.
+# 10. rmsnorm_residual -- inputs: X[M,N], R[M,N], W[N]. y = rmsnorm(x+r)*w.
 # ---------------------------------------------------------------------------
 
 
