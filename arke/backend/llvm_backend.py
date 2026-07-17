@@ -605,6 +605,48 @@ class LLVMBackend:
         ))
         self._chk(drv, drv.cuCtxSynchronize())
 
+    def benchmark_cached(self, cached: _CachedModule,
+                         iters: int = 100, warmup: int = 30) -> float:
+        """Mean kernel-only latency (ms) via CUDA events.
+
+        Apples-to-apples with CudaCBackend.benchmark: `iters` back-to-back
+        kernel launches inside a single CUDA-event region with ONE sync,
+        rather than sync-per-launch. Caller must have done H2D via prepare()
+        or run_fast() so GPU data is resident.
+        """
+        drv = cached.driver
+
+        err, start = _as_tuple(drv.cuEventCreate(0))
+        if err != drv.CUresult.CUDA_SUCCESS:
+            raise RuntimeError(f"cuEventCreate failed: {err}")
+        err, stop = _as_tuple(drv.cuEventCreate(0))
+        if err != drv.CUresult.CUDA_SUCCESS:
+            raise RuntimeError(f"cuEventCreate failed: {err}")
+
+        def _launch():
+            self._chk(drv, drv.cuLaunchKernel(
+                cached.function,
+                cached.gx, cached.gy, cached.gz,
+                cached.bx, cached.by, cached.bz,
+                cached.shared_mem, 0,
+                cached.arg_ptrs_array.ctypes.data, 0,
+            ))
+
+        for _ in range(warmup):
+            _launch()
+        self._chk(drv, drv.cuCtxSynchronize())
+
+        self._chk(drv, drv.cuEventRecord(start, 0))
+        for _ in range(iters):
+            _launch()
+        self._chk(drv, drv.cuEventRecord(stop, 0))
+        self._chk(drv, drv.cuEventSynchronize(stop))
+        elapsed_ms = self._chk(drv, drv.cuEventElapsedTime(start, stop))
+
+        drv.cuEventDestroy(start)
+        drv.cuEventDestroy(stop)
+        return float(elapsed_ms) / iters
+
     def release(self, cached: _CachedModule) -> None:
         """Release a cached module's GPU resources."""
         cached.release()
