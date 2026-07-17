@@ -85,17 +85,17 @@ from arke.backend.llvm_attention import (
 )
 
 
-# ── Matmul (original P5-S1 implementation) ───────────────────────────
+# ── Matmul (P5-S2: upgraded 64x64 tiling) ────────────────────────────
 
 def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     """Emit a tiled shared-memory matmul kernel as LLVM IR text.
 
     C[M,N] = A[M,K] @ B[K,N]
 
-    Register-blocked tiling: BM=32, BN=32, BK=16, TM=2, TN=2.
-    Each thread computes a 2x2 sub-tile of C.
-    Block: (16, 16) = 256 threads covers the 32x32 output tile.
-    Grid: (ceil(N/BN), ceil(M/BM), 1).
+    Register-blocked tiling: BM=64, BN=64, BK=16, TM=4, TN=4.
+    Each thread computes a 4x4 sub-tile of C (16 accumulators).
+    Block: (16, 16) = 256 threads covers the 64x64 output tile.
+    Grid: (ceil(N/64), ceil(M/64), 1).
     """
     node = graph.nodes[0]
     assert node.op == "matmul", f"Expected matmul, got {node.op}"
@@ -114,7 +114,7 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     assert K == K2, f"K mismatch: {K} vs {K2}"
 
     dtype = a_val.dtype or "float32"
-    BM, BN, BK = 32, 32, 16
+    BM, BN, BK = 64, 64, 16
     num_tiles = (K + BK - 1) // BK
 
     kernel_name = f"arke_matmul_{M}x{N}x{K}"
@@ -148,16 +148,16 @@ def _gen_tiled_matmul_ir(
 ) -> str:
     """Generate LLVM IR for register-blocked tiled matmul.
 
-    BM=32, BN=32, BK=16, TM=2, TN=2.
-    Block = (16,16) = 256 threads; each thread computes 2x2 output elements.
-    Thread (tx, ty) owns C rows [by*32 + ty*2 + 0..1] x cols [bx*32 + tx*2 + 0..1].
-    Shared memory: shmem_A[32][16], shmem_B[16][32].
-    Each thread cooperatively loads 2 elements of A and 2 elements of B per tile.
+    BM=64, BN=64, BK=16, TM=4, TN=4.
+    Block = (16,16) = 256 threads; each thread computes 4x4 output elements.
+    Thread (tx, ty) owns C rows [by*64 + ty*4 + 0..3] x cols [bx*64 + tx*4 + 0..3].
+    Shared memory: shmem_A[64][16], shmem_B[16][64].
+    Each thread cooperatively loads 4 elements of A and 4 elements of B per tile.
     """
-    TM, TN = 2, 2
+    TM, TN = 4, 4
     BLOCK_X, BLOCK_Y = 16, 16
 
-    lines = []
+    lines: list[str] = []
     ln = lines.append
 
     # ── Module header ──
@@ -165,7 +165,7 @@ def _gen_tiled_matmul_ir(
     ln('target triple = "nvptx64-nvidia-cuda"')
     ln("")
 
-    # ── Shared memory: shmem_A[BM][BK] = [32][16], shmem_B[BK][BN] = [16][32] ──
+    # ── Shared memory: shmem_A[BM][BK] = [64][16], shmem_B[BK][BN] = [16][64] ──
     ln(f"@shmem_A = internal addrspace(3) global [{BM} x [{BK} x float]] undef")
     ln(f"@shmem_B = internal addrspace(3) global [{BK} x [{BN} x float]] undef")
     ln("")
@@ -188,219 +188,155 @@ def _gen_tiled_matmul_ir(
     ln("  %bx = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x()")
     ln("  %by = call i32 @llvm.nvvm.read.ptx.sreg.ctaid.y()")
 
-    # Base row/col for this thread's 2x2 sub-tile
-    # row0 = by * BM + ty * TM, col0 = bx * BN + tx * TN
+    # Base row/col for this thread's 4x4 sub-tile
+    # row0 = by * 64 + ty * 4, col0 = bx * 64 + tx * 4
     ln(f"  %row_base = mul i32 %by, {BM}")
     ln(f"  %ty_x_tm = mul i32 %ty, {TM}")
     ln("  %row0 = add i32 %row_base, %ty_x_tm")
     ln("  %row1 = add i32 %row0, 1")
+    ln("  %row2 = add i32 %row0, 2")
+    ln("  %row3 = add i32 %row0, 3")
     ln(f"  %col_base = mul i32 %bx, {BN}")
     ln(f"  %tx_x_tn = mul i32 %tx, {TN}")
     ln("  %col0 = add i32 %col_base, %tx_x_tn")
     ln("  %col1 = add i32 %col0, 1")
+    ln("  %col2 = add i32 %col0, 2")
+    ln("  %col3 = add i32 %col0, 3")
+
+    # Linear thread id for cooperative loading
+    ln(f"  %lin_id = mul i32 %ty, {BLOCK_X}")
+    ln("  %lin_id2 = add i32 %lin_id, %tx")
 
     ln("  br label %tile_loop_header")
     ln("")
 
-    # ── Tile loop header (PHI for tile index + 4 accumulators) ──
+    # ── Tile loop header (PHI for tile index + 16 accumulators) ──
     ln("tile_loop_header:")
     ln("  %t = phi i32 [ 0, %entry ], [ %t_next, %tile_loop_latch ]")
-    ln("  %acc_r0c0 = phi float [ 0.0, %entry ], [ %acc_r0c0_out, %tile_loop_latch ]")
-    ln("  %acc_r0c1 = phi float [ 0.0, %entry ], [ %acc_r0c1_out, %tile_loop_latch ]")
-    ln("  %acc_r1c0 = phi float [ 0.0, %entry ], [ %acc_r1c0_out, %tile_loop_latch ]")
-    ln("  %acc_r1c1 = phi float [ 0.0, %entry ], [ %acc_r1c1_out, %tile_loop_latch ]")
+    for r in range(TM):
+        for c in range(TN):
+            ln(f"  %acc_r{r}c{c} = phi float [ 0.0, %entry ], [ %acc_r{r}c{c}_out, %tile_loop_latch ]")
     ln(f"  %tile_done = icmp sge i32 %t, {num_tiles}")
     ln("  br i1 %tile_done, label %store_result, label %load_tile")
     ln("")
 
     # ── Load tile into shared memory ──
-    # shmem_A[BM][BK] = [32][16] = 512 floats, 256 threads → 2 per thread
-    # shmem_B[BK][BN] = [16][32] = 512 floats, 256 threads → 2 per thread
-    #
-    # For shmem_A: thread lin_id loads elements at flat indices lin_id and lin_id+256
-    #   flat index f → shmem_A[f / BK][f % BK] = shmem_A[f / 16][f % 16]
-    #   Global A: row = by*BM + f/BK, col = t*BK + f%BK
-    #
-    # For shmem_B: same pattern
-    #   flat index f → shmem_B[f / BN][f % BN] = shmem_B[f / 32][f % 32]
-    #   Global B: row = t*BK + f/BN, col = bx*BN + f%BN
+    # shmem_A[64][16] = 1024 floats, 256 threads → 4 per thread
+    # shmem_B[16][64] = 1024 floats, 256 threads → 4 per thread
+    # lin_id * 4 + i gives flat index
+    # For A: flat_idx / 16 = shmem_row, flat_idx % 16 = shmem_col
+    # For B: flat_idx / 64 = shmem_row, flat_idx % 64 = shmem_col
 
     ln("load_tile:")
     ln(f"  %t_times_bk = mul i32 %t, {BK}")
 
-    # Recompute lin_id correctly here: ty * 16 + tx
-    ln(f"  %ty_x_blockx = mul i32 %ty, {BLOCK_X}")
-    ln("  %lin = add i32 %ty_x_blockx, %tx")
+    # Base flat index = lin_id2 * 4
+    ln("  %flat_base = mul i32 %lin_id2, 4")
 
-    # ── Load shmem_A element 0: flat index = lin ──
-    ln(f"  %sa0_srow = udiv i32 %lin, {BK}")
-    ln(f"  %sa0_scol = urem i32 %lin, {BK}")
-    ln("  %sa0_grow = add i32 %row_base, %sa0_srow")
-    ln("  %sa0_gcol = add i32 %t_times_bk, %sa0_scol")
-    ln("  %sa0_row_ok = icmp slt i32 %sa0_grow, %M")
-    ln("  %sa0_col_ok = icmp slt i32 %sa0_gcol, %K")
-    ln("  %sa0_valid = and i1 %sa0_row_ok, %sa0_col_ok")
-    ln("  br i1 %sa0_valid, label %load_sa0_valid, label %load_sa0_zero")
-    ln("")
+    # Load 4 elements of A into shared memory
+    for i in range(4):
+        sfx = f"sa{i}"
+        ln(f"  %{sfx}_flat = add i32 %flat_base, {i}")
+        ln(f"  %{sfx}_srow = lshr i32 %{sfx}_flat, 4")  # / 16
+        ln(f"  %{sfx}_scol = and i32 %{sfx}_flat, 15")   # % 16
+        ln(f"  %{sfx}_grow = add i32 %row_base, %{sfx}_srow")
+        ln(f"  %{sfx}_gcol = add i32 %t_times_bk, %{sfx}_scol")
+        ln(f"  %{sfx}_row_ok = icmp slt i32 %{sfx}_grow, %M")
+        ln(f"  %{sfx}_col_ok = icmp slt i32 %{sfx}_gcol, %K")
+        ln(f"  %{sfx}_valid = and i1 %{sfx}_row_ok, %{sfx}_col_ok")
+        ln(f"  br i1 %{sfx}_valid, label %load_{sfx}_valid, label %load_{sfx}_zero")
+        ln("")
 
-    ln("load_sa0_valid:")
-    ln("  %sa0_gidx = mul i32 %sa0_grow, %K")
-    ln("  %sa0_gidx2 = add i32 %sa0_gidx, %sa0_gcol")
-    ln("  %sa0_gep = getelementptr float, float addrspace(1)* %A, i32 %sa0_gidx2")
-    ln("  %sa0_val = load float, float addrspace(1)* %sa0_gep")
-    ln("  br label %store_sa0")
-    ln("")
+        ln(f"load_{sfx}_valid:")
+        ln(f"  %{sfx}_gidx = mul i32 %{sfx}_grow, %K")
+        ln(f"  %{sfx}_gidx2 = add i32 %{sfx}_gidx, %{sfx}_gcol")
+        ln(f"  %{sfx}_gep = getelementptr float, float addrspace(1)* %A, i32 %{sfx}_gidx2")
+        ln(f"  %{sfx}_val = load float, float addrspace(1)* %{sfx}_gep")
+        ln(f"  br label %store_{sfx}")
+        ln("")
 
-    ln("load_sa0_zero:")
-    ln("  br label %store_sa0")
-    ln("")
+        ln(f"load_{sfx}_zero:")
+        ln(f"  br label %store_{sfx}")
+        ln("")
 
-    ln("store_sa0:")
-    ln("  %sa0_data = phi float [ %sa0_val, %load_sa0_valid ], [ 0.0, %load_sa0_zero ]")
-    ln(f"  %sa0_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 %sa0_srow, i32 %sa0_scol")
-    ln("  store float %sa0_data, float addrspace(3)* %sa0_ptr")
+        ln(f"store_{sfx}:")
+        prev_label_valid = f"%{sfx}_val"
+        ln(f"  %{sfx}_data = phi float [ {prev_label_valid}, %load_{sfx}_valid ], [ 0.0, %load_{sfx}_zero ]")
+        ln(f"  %{sfx}_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 %{sfx}_srow, i32 %{sfx}_scol")
+        ln(f"  store float %{sfx}_data, float addrspace(3)* %{sfx}_ptr")
 
-    # ── Load shmem_A element 1: flat index = lin + 256 ──
-    ln("  %lin_plus_256 = add i32 %lin, 256")
-    ln(f"  %sa1_srow = udiv i32 %lin_plus_256, {BK}")
-    ln(f"  %sa1_scol = urem i32 %lin_plus_256, {BK}")
-    ln("  %sa1_grow = add i32 %row_base, %sa1_srow")
-    ln("  %sa1_gcol = add i32 %t_times_bk, %sa1_scol")
-    ln("  %sa1_row_ok = icmp slt i32 %sa1_grow, %M")
-    ln("  %sa1_col_ok = icmp slt i32 %sa1_gcol, %K")
-    ln("  %sa1_valid = and i1 %sa1_row_ok, %sa1_col_ok")
-    ln("  br i1 %sa1_valid, label %load_sa1_valid, label %load_sa1_zero")
-    ln("")
+    # Load 4 elements of B into shared memory
+    for i in range(4):
+        sfx = f"sb{i}"
+        ln(f"  %{sfx}_flat = add i32 %flat_base, {i}")
+        ln(f"  %{sfx}_srow = lshr i32 %{sfx}_flat, 6")  # / 64
+        ln(f"  %{sfx}_scol = and i32 %{sfx}_flat, 63")   # % 64
+        ln(f"  %{sfx}_grow = add i32 %t_times_bk, %{sfx}_srow")
+        ln(f"  %{sfx}_gcol = add i32 %col_base, %{sfx}_scol")
+        ln(f"  %{sfx}_row_ok = icmp slt i32 %{sfx}_grow, %K")
+        ln(f"  %{sfx}_col_ok = icmp slt i32 %{sfx}_gcol, %N")
+        ln(f"  %{sfx}_valid = and i1 %{sfx}_row_ok, %{sfx}_col_ok")
+        ln(f"  br i1 %{sfx}_valid, label %load_{sfx}_valid, label %load_{sfx}_zero")
+        ln("")
 
-    ln("load_sa1_valid:")
-    ln("  %sa1_gidx = mul i32 %sa1_grow, %K")
-    ln("  %sa1_gidx2 = add i32 %sa1_gidx, %sa1_gcol")
-    ln("  %sa1_gep = getelementptr float, float addrspace(1)* %A, i32 %sa1_gidx2")
-    ln("  %sa1_val = load float, float addrspace(1)* %sa1_gep")
-    ln("  br label %store_sa1")
-    ln("")
+        ln(f"load_{sfx}_valid:")
+        ln(f"  %{sfx}_gidx = mul i32 %{sfx}_grow, %N")
+        ln(f"  %{sfx}_gidx2 = add i32 %{sfx}_gidx, %{sfx}_gcol")
+        ln(f"  %{sfx}_gep = getelementptr float, float addrspace(1)* %B, i32 %{sfx}_gidx2")
+        ln(f"  %{sfx}_val = load float, float addrspace(1)* %{sfx}_gep")
+        ln(f"  br label %store_{sfx}")
+        ln("")
 
-    ln("load_sa1_zero:")
-    ln("  br label %store_sa1")
-    ln("")
+        ln(f"load_{sfx}_zero:")
+        ln(f"  br label %store_{sfx}")
+        ln("")
 
-    ln("store_sa1:")
-    ln("  %sa1_data = phi float [ %sa1_val, %load_sa1_valid ], [ 0.0, %load_sa1_zero ]")
-    ln(f"  %sa1_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 %sa1_srow, i32 %sa1_scol")
-    ln("  store float %sa1_data, float addrspace(3)* %sa1_ptr")
-
-    # ── Load shmem_B element 0: flat index = lin ──
-    # shmem_B[BK][BN] = [16][32], flat f → row = f/32, col = f%32
-    ln(f"  %sb0_srow = udiv i32 %lin, {BN}")
-    ln(f"  %sb0_scol = urem i32 %lin, {BN}")
-    ln("  %sb0_grow = add i32 %t_times_bk, %sb0_srow")
-    ln("  %sb0_gcol = add i32 %col_base, %sb0_scol")
-    ln("  %sb0_row_ok = icmp slt i32 %sb0_grow, %K")
-    ln("  %sb0_col_ok = icmp slt i32 %sb0_gcol, %N")
-    ln("  %sb0_valid = and i1 %sb0_row_ok, %sb0_col_ok")
-    ln("  br i1 %sb0_valid, label %load_sb0_valid, label %load_sb0_zero")
-    ln("")
-
-    ln("load_sb0_valid:")
-    ln("  %sb0_gidx = mul i32 %sb0_grow, %N")
-    ln("  %sb0_gidx2 = add i32 %sb0_gidx, %sb0_gcol")
-    ln("  %sb0_gep = getelementptr float, float addrspace(1)* %B, i32 %sb0_gidx2")
-    ln("  %sb0_val = load float, float addrspace(1)* %sb0_gep")
-    ln("  br label %store_sb0")
-    ln("")
-
-    ln("load_sb0_zero:")
-    ln("  br label %store_sb0")
-    ln("")
-
-    ln("store_sb0:")
-    ln("  %sb0_data = phi float [ %sb0_val, %load_sb0_valid ], [ 0.0, %load_sb0_zero ]")
-    ln(f"  %sb0_ptr = getelementptr [{BK} x [{BN} x float]], [{BK} x [{BN} x float]] addrspace(3)* @shmem_B, i32 0, i32 %sb0_srow, i32 %sb0_scol")
-    ln("  store float %sb0_data, float addrspace(3)* %sb0_ptr")
-
-    # ── Load shmem_B element 1: flat index = lin + 256 ──
-    ln(f"  %sb1_srow = udiv i32 %lin_plus_256, {BN}")
-    ln(f"  %sb1_scol = urem i32 %lin_plus_256, {BN}")
-    ln("  %sb1_grow = add i32 %t_times_bk, %sb1_srow")
-    ln("  %sb1_gcol = add i32 %col_base, %sb1_scol")
-    ln("  %sb1_row_ok = icmp slt i32 %sb1_grow, %K")
-    ln("  %sb1_col_ok = icmp slt i32 %sb1_gcol, %N")
-    ln("  %sb1_valid = and i1 %sb1_row_ok, %sb1_col_ok")
-    ln("  br i1 %sb1_valid, label %load_sb1_valid, label %load_sb1_zero")
-    ln("")
-
-    ln("load_sb1_valid:")
-    ln("  %sb1_gidx = mul i32 %sb1_grow, %N")
-    ln("  %sb1_gidx2 = add i32 %sb1_gidx, %sb1_gcol")
-    ln("  %sb1_gep = getelementptr float, float addrspace(1)* %B, i32 %sb1_gidx2")
-    ln("  %sb1_val = load float, float addrspace(1)* %sb1_gep")
-    ln("  br label %store_sb1")
-    ln("")
-
-    ln("load_sb1_zero:")
-    ln("  br label %store_sb1")
-    ln("")
-
-    ln("store_sb1:")
-    ln("  %sb1_data = phi float [ %sb1_val, %load_sb1_valid ], [ 0.0, %load_sb1_zero ]")
-    ln(f"  %sb1_ptr = getelementptr [{BK} x [{BN} x float]], [{BK} x [{BN} x float]] addrspace(3)* @shmem_B, i32 0, i32 %sb1_srow, i32 %sb1_scol")
-    ln("  store float %sb1_data, float addrspace(3)* %sb1_ptr")
+        ln(f"store_{sfx}:")
+        prev_label_valid = f"%{sfx}_val"
+        ln(f"  %{sfx}_data = phi float [ {prev_label_valid}, %load_{sfx}_valid ], [ 0.0, %load_{sfx}_zero ]")
+        ln(f"  %{sfx}_ptr = getelementptr [{BK} x [{BN} x float]], [{BK} x [{BN} x float]] addrspace(3)* @shmem_B, i32 0, i32 %{sfx}_srow, i32 %{sfx}_scol")
+        ln(f"  store float %{sfx}_data, float addrspace(3)* %{sfx}_ptr")
 
     # __syncthreads after loading shared memory
     ln("  call void @llvm.nvvm.barrier0()")
-
-    # ── k-loop: iterate over BK dimension ──
     ln("  br label %k_loop_header")
     ln("")
 
+    # ── k-loop header: iterate over BK=16 dimension ──
+    # The last store block is store_sb3
     ln("k_loop_header:")
-    ln("  %ki = phi i32 [ 0, %store_sb1 ], [ %ki_next, %k_loop_body ]")
-    ln("  %acc_k_r0c0 = phi float [ %acc_r0c0, %store_sb1 ], [ %acc_k_r0c0_next, %k_loop_body ]")
-    ln("  %acc_k_r0c1 = phi float [ %acc_r0c1, %store_sb1 ], [ %acc_k_r0c1_next, %k_loop_body ]")
-    ln("  %acc_k_r1c0 = phi float [ %acc_r1c0, %store_sb1 ], [ %acc_k_r1c0_next, %k_loop_body ]")
-    ln("  %acc_k_r1c1 = phi float [ %acc_r1c1, %store_sb1 ], [ %acc_k_r1c1_next, %k_loop_body ]")
+    ln("  %ki = phi i32 [ 0, %store_sb3 ], [ %ki_next, %k_loop_body ]")
+    for r in range(TM):
+        for c in range(TN):
+            ln(f"  %acc_k_r{r}c{c} = phi float [ %acc_r{r}c{c}, %store_sb3 ], [ %acc_k_r{r}c{c}_next, %k_loop_body ]")
     ln(f"  %k_done = icmp sge i32 %ki, {BK}")
     ln("  br i1 %k_done, label %k_loop_exit, label %k_loop_body")
     ln("")
 
-    # ── k-loop body: register-blocked 2x2 accumulation ──
-    # Load 2 values from shmem_A: shmem_A[ty*2 + 0][ki], shmem_A[ty*2 + 1][ki]
-    # Load 2 values from shmem_B: shmem_B[ki][tx*2 + 0], shmem_B[ki][tx*2 + 1]
-    # Compute 4 products and accumulate
+    # ── k-loop body: register-blocked 4x4 accumulation ──
     ln("k_loop_body:")
 
-    # shmem_A row indices: ty*TM+0 = row in shared mem
-    # We precomputed ty_x_tm = ty*2, so rows are ty_x_tm and ty_x_tm+1
-    # But ty_x_tm was computed in entry block - we can use it here since it dominates
-    ln(f"  %sa_r0_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 %ty_x_tm, i32 %ki")
-    ln("  %a_r0 = load float, float addrspace(3)* %sa_r0_ptr")
+    # Load 4 values from shmem_A: shmem_A[ty*4+r][ki] for r=0..3
+    for r in range(TM):
+        row_reg = f"%ty_x_tm" if r == 0 else f"%ty_tm_p{r}"
+        if r > 0:
+            ln(f"  %ty_tm_p{r} = add i32 %ty_x_tm, {r}")
+        ln(f"  %sa_r{r}_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 {row_reg}, i32 %ki")
+        ln(f"  %a_reg{r} = load float, float addrspace(3)* %sa_r{r}_ptr")
 
-    # shmem_A[ty*2 + 1][ki]
-    ln("  %ty_tm_p1 = add i32 %ty_x_tm, 1")
-    ln(f"  %sa_r1_ptr = getelementptr [{BM} x [{BK} x float]], [{BM} x [{BK} x float]] addrspace(3)* @shmem_A, i32 0, i32 %ty_tm_p1, i32 %ki")
-    ln("  %a_r1 = load float, float addrspace(3)* %sa_r1_ptr")
+    # Load 4 values from shmem_B: shmem_B[ki][tx*4+c] for c=0..3
+    for c in range(TN):
+        col_reg = f"%tx_x_tn" if c == 0 else f"%tx_tn_p{c}"
+        if c > 0:
+            ln(f"  %tx_tn_p{c} = add i32 %tx_x_tn, {c}")
+        ln(f"  %sb_c{c}_ptr = getelementptr [{BK} x [{BN} x float]], [{BK} x [{BN} x float]] addrspace(3)* @shmem_B, i32 0, i32 %ki, i32 {col_reg}")
+        ln(f"  %b_reg{c} = load float, float addrspace(3)* %sb_c{c}_ptr")
 
-    # shmem_B[ki][tx*2 + 0]
-    ln(f"  %sb_c0_ptr = getelementptr [{BK} x [{BN} x float]], [{BK} x [{BN} x float]] addrspace(3)* @shmem_B, i32 0, i32 %ki, i32 %tx_x_tn")
-    ln("  %b_c0 = load float, float addrspace(3)* %sb_c0_ptr")
-
-    # shmem_B[ki][tx*2 + 1]
-    ln("  %tx_tn_p1 = add i32 %tx_x_tn, 1")
-    ln(f"  %sb_c1_ptr = getelementptr [{BK} x [{BN} x float]], [{BK} x [{BN} x float]] addrspace(3)* @shmem_B, i32 0, i32 %ki, i32 %tx_tn_p1")
-    ln("  %b_c1 = load float, float addrspace(3)* %sb_c1_ptr")
-
-    # 4 FMAs: acc[r][c] += a_r[r] * b_c[c]
-    ln("  %prod_r0c0 = fmul float %a_r0, %b_c0")
-    ln("  %acc_k_r0c0_next = fadd float %acc_k_r0c0, %prod_r0c0")
-
-    ln("  %prod_r0c1 = fmul float %a_r0, %b_c1")
-    ln("  %acc_k_r0c1_next = fadd float %acc_k_r0c1, %prod_r0c1")
-
-    ln("  %prod_r1c0 = fmul float %a_r1, %b_c0")
-    ln("  %acc_k_r1c0_next = fadd float %acc_k_r1c0, %prod_r1c0")
-
-    ln("  %prod_r1c1 = fmul float %a_r1, %b_c1")
-    ln("  %acc_k_r1c1_next = fadd float %acc_k_r1c1, %prod_r1c1")
+    # 16 FMAs: acc[r][c] += a_reg[r] * b_reg[c]
+    for r in range(TM):
+        for c in range(TN):
+            ln(f"  %prod_r{r}c{c} = fmul float %a_reg{r}, %b_reg{c}")
+            ln(f"  %acc_k_r{r}c{c}_next = fadd float %acc_k_r{r}c{c}, %prod_r{r}c{c}")
 
     ln("  %ki_next = add i32 %ki, 1")
     ln("  br label %k_loop_header")
@@ -413,79 +349,50 @@ def _gen_tiled_matmul_ir(
     ln("")
 
     ln("tile_loop_latch:")
-    ln("  %acc_r0c0_out = phi float [ %acc_k_r0c0, %k_loop_exit ]")
-    ln("  %acc_r0c1_out = phi float [ %acc_k_r0c1, %k_loop_exit ]")
-    ln("  %acc_r1c0_out = phi float [ %acc_k_r1c0, %k_loop_exit ]")
-    ln("  %acc_r1c1_out = phi float [ %acc_k_r1c1, %k_loop_exit ]")
+    for r in range(TM):
+        for c in range(TN):
+            ln(f"  %acc_r{r}c{c}_out = phi float [ %acc_k_r{r}c{c}, %k_loop_exit ]")
     ln("  %t_next = add i32 %t, 1")
     ln("  br label %tile_loop_header")
     ln("")
 
-    # ── Store 2x2 result ──
+    # ── Store 4x4 result with bounds checking ──
     ln("store_result:")
-    ln("  %final_r0c0 = phi float [ %acc_r0c0, %tile_loop_header ]")
-    ln("  %final_r0c1 = phi float [ %acc_r0c1, %tile_loop_header ]")
-    ln("  %final_r1c0 = phi float [ %acc_r1c0, %tile_loop_header ]")
-    ln("  %final_r1c1 = phi float [ %acc_r1c1, %tile_loop_header ]")
+    for r in range(TM):
+        for c in range(TN):
+            ln(f"  %final_r{r}c{c} = phi float [ %acc_r{r}c{c}, %tile_loop_header ]")
 
-    # Store C[row0][col0]
+    # Precompute row/col bounds
     ln("  %r0_ok = icmp slt i32 %row0, %M")
-    ln("  %c0_ok = icmp slt i32 %col0, %N")
-    ln("  %rc00_ok = and i1 %r0_ok, %c0_ok")
-    ln("  br i1 %rc00_ok, label %do_store_r0c0, label %check_r0c1")
-    ln("")
-
-    ln("do_store_r0c0:")
-    ln("  %c_off_r0 = mul i32 %row0, %N")
-    ln("  %c_idx_r0c0 = add i32 %c_off_r0, %col0")
-    ln("  %c_gep_r0c0 = getelementptr float, float addrspace(1)* %C, i32 %c_idx_r0c0")
-    ln("  store float %final_r0c0, float addrspace(1)* %c_gep_r0c0")
-    ln("  br label %check_r0c1")
-    ln("")
-
-    # Store C[row0][col1]
-    ln("check_r0c1:")
-    ln("  %c1_ok = icmp slt i32 %col1, %N")
-    ln("  %rc01_ok = and i1 %r0_ok, %c1_ok")
-    ln("  br i1 %rc01_ok, label %do_store_r0c1, label %check_r1c0")
-    ln("")
-
-    ln("do_store_r0c1:")
-    ln("  %c_off_r0b = mul i32 %row0, %N")
-    ln("  %c_idx_r0c1 = add i32 %c_off_r0b, %col1")
-    ln("  %c_gep_r0c1 = getelementptr float, float addrspace(1)* %C, i32 %c_idx_r0c1")
-    ln("  store float %final_r0c1, float addrspace(1)* %c_gep_r0c1")
-    ln("  br label %check_r1c0")
-    ln("")
-
-    # Store C[row1][col0]
-    ln("check_r1c0:")
     ln("  %r1_ok = icmp slt i32 %row1, %M")
-    ln("  %rc10_ok = and i1 %r1_ok, %c0_ok")
-    ln("  br i1 %rc10_ok, label %do_store_r1c0, label %check_r1c1")
+    ln("  %r2_ok = icmp slt i32 %row2, %M")
+    ln("  %r3_ok = icmp slt i32 %row3, %M")
+    ln("  %c0_ok = icmp slt i32 %col0, %N")
+    ln("  %c1_ok = icmp slt i32 %col1, %N")
+    ln("  %c2_ok = icmp slt i32 %col2, %N")
+    ln("  %c3_ok = icmp slt i32 %col3, %N")
+
+    # Generate 16 bounded stores using a chain of blocks
+    store_pairs = [(r, c) for r in range(TM) for c in range(TN)]
+    first_label = f"check_r{store_pairs[0][0]}c{store_pairs[0][1]}"
+    ln(f"  br label %{first_label}")
     ln("")
 
-    ln("do_store_r1c0:")
-    ln("  %c_off_r1 = mul i32 %row1, %N")
-    ln("  %c_idx_r1c0 = add i32 %c_off_r1, %col0")
-    ln("  %c_gep_r1c0 = getelementptr float, float addrspace(1)* %C, i32 %c_idx_r1c0")
-    ln("  store float %final_r1c0, float addrspace(1)* %c_gep_r1c0")
-    ln("  br label %check_r1c1")
-    ln("")
+    for idx, (r, c) in enumerate(store_pairs):
+        next_label = f"check_r{store_pairs[idx+1][0]}c{store_pairs[idx+1][1]}" if idx + 1 < len(store_pairs) else "done"
 
-    # Store C[row1][col1]
-    ln("check_r1c1:")
-    ln("  %rc11_ok = and i1 %r1_ok, %c1_ok")
-    ln("  br i1 %rc11_ok, label %do_store_r1c1, label %done")
-    ln("")
+        ln(f"check_r{r}c{c}:")
+        ln(f"  %rc{r}{c}_ok = and i1 %r{r}_ok, %c{c}_ok")
+        ln(f"  br i1 %rc{r}{c}_ok, label %do_store_r{r}c{c}, label %{next_label}")
+        ln("")
 
-    ln("do_store_r1c1:")
-    ln("  %c_off_r1b = mul i32 %row1, %N")
-    ln("  %c_idx_r1c1 = add i32 %c_off_r1b, %col1")
-    ln("  %c_gep_r1c1 = getelementptr float, float addrspace(1)* %C, i32 %c_idx_r1c1")
-    ln("  store float %final_r1c1, float addrspace(1)* %c_gep_r1c1")
-    ln("  br label %done")
-    ln("")
+        ln(f"do_store_r{r}c{c}:")
+        ln(f"  %c_off_r{r}c{c} = mul i32 %row{r}, %N")
+        ln(f"  %c_idx_r{r}c{c} = add i32 %c_off_r{r}c{c}, %col{c}")
+        ln(f"  %c_gep_r{r}c{c} = getelementptr float, float addrspace(1)* %C, i32 %c_idx_r{r}c{c}")
+        ln(f"  store float %final_r{r}c{c}, float addrspace(1)* %c_gep_r{r}c{c}")
+        ln(f"  br label %{next_label}")
+        ln("")
 
     ln("done:")
     ln("  ret void")

@@ -6,7 +6,12 @@ Implements 10 rowwise ops as NVPTX LLVM IR kernels:
   softmax, layernorm, rmsnorm, reduce_sum, reduce_max, reduce_mean,
   argmax, cumsum, topk, rmsnorm_residual
 
-softmax, layernorm, rmsnorm use warp-level parallelism:
+softmax uses 4-warp parallelism:
+  Grid=(M,1,1), Block=(128,1,1) -- 4 warps per row, 128 threads cooperate.
+  Each thread handles ceil(N/128) elements via strided access.
+  2-level reduction: intra-warp shfl.sync.down + cross-warp via shared memory.
+
+layernorm, rmsnorm use single-warp parallelism:
   Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row, 32 threads cooperate.
   Each thread handles ceil(N/32) elements via strided access.
   Warp reductions via inline PTX shfl.sync.down.b32.
@@ -143,22 +148,25 @@ def _warp_reduce_sum_ir(acc_name: str, result_name: str, prefix: str = "") -> st
 
 
 def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(32,1,1).
+    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(128,1,1).
 
-    Uses 2-pass online softmax algorithm:
-      Pass 1: Each thread tracks running_max and running_sum simultaneously.
-              For each element x:
-                new_max = max(running_max, x)
-                correction = exp2((old_max - new_max) * log2e)
-                running_sum = running_sum * correction + exp2((x - new_max) * log2e)
-                running_max = new_max
-              Then warp-reduce max, correct local sums, warp-reduce sum.
+    Uses 2-pass online softmax algorithm with 4-warp (128 thread) parallelism:
+      Pass 1: Each thread tracks running_max and running_sum simultaneously
+              over stride-128 elements. Then 2-level reduction:
+              - Intra-warp shfl.sync.down (5 steps) → 4 partial results
+              - Cross-warp via shared memory + barrier
       Pass 2: Read X again, compute exp(x - global_max) * inv_sum, store.
     """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     kernel_name = "arke_softmax"
 
     source = _module_header_warp()
+    # Add shared memory for cross-warp reduction
+    source += """\
+@smem_max = internal addrspace(3) global [4 x float] undef
+@smem_sum = internal addrspace(3) global [4 x float] undef
+
+"""
     source += f"""\
 define void @{kernel_name}(float addrspace(1)* %X, float addrspace(1)* %Out, i32 %M, i32 %N) {{
 entry:
@@ -167,7 +175,8 @@ entry:
   %row64 = sext i32 %row to i64
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
-  ; ---- Pass 1: online softmax -- fused running max + running sum ----
+  %warp_id = lshr i32 %tid, 5
+  ; ---- Pass 1: online softmax -- fused running max + running sum (stride 128) ----
   br label %online_loop
 
 online_loop:
@@ -175,7 +184,7 @@ online_loop:
   %run_max = phi float [0xFFF0000000000000, %entry], [%updated_max, %online_body]
   %run_sum = phi float [0.0, %entry], [%updated_sum, %online_body]
   %cmp1 = icmp slt i32 %j1, %N
-  br i1 %cmp1, label %online_body, label %warp_reduce
+  br i1 %cmp1, label %online_body, label %warp_reduce_max
 
 online_body:
   %j1_64 = sext i32 %j1 to i64
@@ -185,9 +194,6 @@ online_body:
   ; new_max = max(running_max, x)
   %updated_max = call float @llvm.maxnum.f32(float %run_max, float %val1)
   ; correction = exp2((old_max - new_max) * log2e)
-  ; Note: log2e factor is needed for natural exp via exp2. But since
-  ; (old_max - new_max) is already the natural-log-scale difference and
-  ; we use exp2(z * log2e) = exp(z), we apply log2e here.
   %corr_diff = fsub float %run_max, %updated_max
   %corr_scaled = fmul float %corr_diff, 0x3FF7154760000000
   %correction = call float @llvm.nvvm.ex2.approx.f(float %corr_scaled)
@@ -198,27 +204,61 @@ online_body:
   ; running_sum = running_sum * correction + exp_x
   %corrected_sum = fmul float %run_sum, %correction
   %updated_sum = fadd float %corrected_sum, %exp_x
-  %j1_next = add i32 %j1, 32
+  %j1_next = add i32 %j1, 128
   br label %online_loop
 
-warp_reduce:
-  ; Step 1: Warp reduce max + broadcast to get global_max
-{_warp_reduce_max_ir("run_max", "global_max", "mx_")}
-  ; Step 2: Each thread corrects its local sum to account for global_max
-  ;         local_sum *= exp2((local_max - global_max) * log2e)
+warp_reduce_max:
+  ; Level 1: Intra-warp max reduction (shfl.sync.down, 5 steps)
+  ; After this, ALL lanes have warp_max via broadcast (shfl.sync.idx)
+{_warp_reduce_max_ir("run_max", "warp_max", "mx_")}
+  ; Level 2: Cross-warp max via shared memory
+  ; ALL threads in each warp write the same value (broadcast result) - no branch needed
+  %smem_max_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 %warp_id
+  store float %warp_max, float addrspace(3)* %smem_max_ptr
+  call void asm sideeffect "bar.sync 0;", ""()
+  ; All threads read 4 warp-max values and reduce
+  %mx_v0_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 0
+  %mx_v0 = load float, float addrspace(3)* %mx_v0_ptr
+  %mx_v1_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 1
+  %mx_v1 = load float, float addrspace(3)* %mx_v1_ptr
+  %mx_v2_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 2
+  %mx_v2 = load float, float addrspace(3)* %mx_v2_ptr
+  %mx_v3_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 3
+  %mx_v3 = load float, float addrspace(3)* %mx_v3_ptr
+  %mx_m01 = call float @llvm.maxnum.f32(float %mx_v0, float %mx_v1)
+  %mx_m23 = call float @llvm.maxnum.f32(float %mx_v2, float %mx_v3)
+  %global_max = call float @llvm.maxnum.f32(float %mx_m01, float %mx_m23)
+  ; Each thread corrects its local sum to account for global_max
   %lm_diff = fsub float %run_max, %global_max
   %lm_scaled = fmul float %lm_diff, 0x3FF7154760000000
   %lm_corr = call float @llvm.nvvm.ex2.approx.f(float %lm_scaled)
   %corrected_local_sum = fmul float %run_sum, %lm_corr
-  ; Step 3: Warp reduce sum + broadcast
-{_warp_reduce_sum_ir("corrected_local_sum", "global_sum", "sm_")}
-  ; Step 4: Compute 1/sum via rcp.approx.ftz.f
+  ; Level 1: Intra-warp sum reduction (shfl.sync.down, 5 steps)
+  ; After this, ALL lanes have warp_sum via broadcast
+{_warp_reduce_sum_ir("corrected_local_sum", "warp_sum", "sm_")}
+  ; Level 2: Cross-warp sum via shared memory
+  %smem_sum_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 %warp_id
+  store float %warp_sum, float addrspace(3)* %smem_sum_ptr
+  call void asm sideeffect "bar.sync 0;", ""()
+  ; All threads read 4 warp-sum values and reduce
+  %sm_v0_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 0
+  %sm_v0 = load float, float addrspace(3)* %sm_v0_ptr
+  %sm_v1_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 1
+  %sm_v1 = load float, float addrspace(3)* %sm_v1_ptr
+  %sm_v2_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 2
+  %sm_v2 = load float, float addrspace(3)* %sm_v2_ptr
+  %sm_v3_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 3
+  %sm_v3 = load float, float addrspace(3)* %sm_v3_ptr
+  %sm_s01 = fadd float %sm_v0, %sm_v1
+  %sm_s23 = fadd float %sm_v2, %sm_v3
+  %global_sum = fadd float %sm_s01, %sm_s23
+  ; Compute 1/sum via rcp.approx.ftz.f
   %inv_sum = call float @llvm.nvvm.rcp.approx.ftz.f(float %global_sum)
-  ; ---- Pass 2: normalize -- exp(x - global_max) * inv_sum ----
+  ; ---- Pass 2: normalize -- exp(x - global_max) * inv_sum (stride 128) ----
   br label %norm_loop
 
 norm_loop:
-  %j2 = phi i32 [%tid, %warp_reduce], [%j2_next, %norm_body]
+  %j2 = phi i32 [%tid, %warp_reduce_max], [%j2_next, %norm_body]
   %cmp2 = icmp slt i32 %j2, %N
   br i1 %cmp2, label %norm_body, label %done
 
@@ -233,7 +273,7 @@ norm_body:
   %normed = fmul float %exp_val, %inv_sum
   %optr2 = getelementptr float, float addrspace(1)* %Out, i64 %idx2
   store float %normed, float addrspace(1)* %optr2
-  %j2_next = add i32 %j2, 32
+  %j2_next = add i32 %j2, 128
   br label %norm_loop
 
 done:
@@ -253,7 +293,7 @@ done:
         shapes={x_name: [M, N], out_name: [M, N]},
         dtypes={x_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(32, 1, 1),
+        block=(128, 1, 1),
         shared_mem=0,
         kernel_args=[("ptr", x_name), ("ptr", out_name), ("int", M), ("int", N)],
     )
