@@ -163,8 +163,8 @@ def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     source = _module_header_warp()
     # Add shared memory for cross-warp reduction
     source += """\
-@smem_max = internal addrspace(3) global [4 x float] undef
-@smem_sum = internal addrspace(3) global [4 x float] undef
+@smem_max = internal addrspace(3) global [8 x float] undef
+@smem_sum = internal addrspace(3) global [8 x float] undef
 
 """
     source += f"""\
@@ -204,7 +204,7 @@ online_body:
   ; running_sum = running_sum * correction + exp_x
   %corrected_sum = fmul float %run_sum, %correction
   %updated_sum = fadd float %corrected_sum, %exp_x
-  %j1_next = add i32 %j1, 128
+  %j1_next = add i32 %j1, 256
   br label %online_loop
 
 warp_reduce_max:
@@ -213,21 +213,33 @@ warp_reduce_max:
 {_warp_reduce_max_ir("run_max", "warp_max", "mx_")}
   ; Level 2: Cross-warp max via shared memory
   ; ALL threads in each warp write the same value (broadcast result) - no branch needed
-  %smem_max_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 %warp_id
+  %smem_max_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 %warp_id
   store float %warp_max, float addrspace(3)* %smem_max_ptr
   call void asm sideeffect "bar.sync 0;", ""()
-  ; All threads read 4 warp-max values and reduce
-  %mx_v0_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 0
+  ; All threads read 8 warp-max values and reduce
+  %mx_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 0
   %mx_v0 = load float, float addrspace(3)* %mx_v0_ptr
-  %mx_v1_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 1
+  %mx_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 1
   %mx_v1 = load float, float addrspace(3)* %mx_v1_ptr
-  %mx_v2_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 2
+  %mx_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 2
   %mx_v2 = load float, float addrspace(3)* %mx_v2_ptr
-  %mx_v3_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_max, i32 0, i32 3
+  %mx_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 3
   %mx_v3 = load float, float addrspace(3)* %mx_v3_ptr
+  %mx_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 4
+  %mx_v4 = load float, float addrspace(3)* %mx_v4_ptr
+  %mx_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 5
+  %mx_v5 = load float, float addrspace(3)* %mx_v5_ptr
+  %mx_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 6
+  %mx_v6 = load float, float addrspace(3)* %mx_v6_ptr
+  %mx_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 7
+  %mx_v7 = load float, float addrspace(3)* %mx_v7_ptr
   %mx_m01 = call float @llvm.maxnum.f32(float %mx_v0, float %mx_v1)
   %mx_m23 = call float @llvm.maxnum.f32(float %mx_v2, float %mx_v3)
-  %global_max = call float @llvm.maxnum.f32(float %mx_m01, float %mx_m23)
+  %mx_m45 = call float @llvm.maxnum.f32(float %mx_v4, float %mx_v5)
+  %mx_m67 = call float @llvm.maxnum.f32(float %mx_v6, float %mx_v7)
+  %mx_m0123 = call float @llvm.maxnum.f32(float %mx_m01, float %mx_m23)
+  %mx_m4567 = call float @llvm.maxnum.f32(float %mx_m45, float %mx_m67)
+  %global_max = call float @llvm.maxnum.f32(float %mx_m0123, float %mx_m4567)
   ; Each thread corrects its local sum to account for global_max
   %lm_diff = fsub float %run_max, %global_max
   %lm_scaled = fmul float %lm_diff, 0x3FF7154760000000
@@ -237,21 +249,33 @@ warp_reduce_max:
   ; After this, ALL lanes have warp_sum via broadcast
 {_warp_reduce_sum_ir("corrected_local_sum", "warp_sum", "sm_")}
   ; Level 2: Cross-warp sum via shared memory
-  %smem_sum_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 %warp_id
+  %smem_sum_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 %warp_id
   store float %warp_sum, float addrspace(3)* %smem_sum_ptr
   call void asm sideeffect "bar.sync 0;", ""()
-  ; All threads read 4 warp-sum values and reduce
-  %sm_v0_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 0
+  ; All threads read 8 warp-sum values and reduce
+  %sm_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 0
   %sm_v0 = load float, float addrspace(3)* %sm_v0_ptr
-  %sm_v1_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 1
+  %sm_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 1
   %sm_v1 = load float, float addrspace(3)* %sm_v1_ptr
-  %sm_v2_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 2
+  %sm_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 2
   %sm_v2 = load float, float addrspace(3)* %sm_v2_ptr
-  %sm_v3_ptr = getelementptr [4 x float], [4 x float] addrspace(3)* @smem_sum, i32 0, i32 3
+  %sm_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 3
   %sm_v3 = load float, float addrspace(3)* %sm_v3_ptr
+  %sm_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 4
+  %sm_v4 = load float, float addrspace(3)* %sm_v4_ptr
+  %sm_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 5
+  %sm_v5 = load float, float addrspace(3)* %sm_v5_ptr
+  %sm_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 6
+  %sm_v6 = load float, float addrspace(3)* %sm_v6_ptr
+  %sm_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 7
+  %sm_v7 = load float, float addrspace(3)* %sm_v7_ptr
   %sm_s01 = fadd float %sm_v0, %sm_v1
   %sm_s23 = fadd float %sm_v2, %sm_v3
-  %global_sum = fadd float %sm_s01, %sm_s23
+  %sm_s45 = fadd float %sm_v4, %sm_v5
+  %sm_s67 = fadd float %sm_v6, %sm_v7
+  %sm_s0123 = fadd float %sm_s01, %sm_s23
+  %sm_s4567 = fadd float %sm_s45, %sm_s67
+  %global_sum = fadd float %sm_s0123, %sm_s4567
   ; Compute 1/sum via rcp.approx.ftz.f
   %inv_sum = call float @llvm.nvvm.rcp.approx.ftz.f(float %global_sum)
   ; ---- Pass 2: normalize -- exp(x - global_max) * inv_sum (stride 128) ----
@@ -273,7 +297,7 @@ norm_body:
   %normed = fmul float %exp_val, %inv_sum
   %optr2 = getelementptr float, float addrspace(1)* %Out, i64 %idx2
   store float %normed, float addrspace(1)* %optr2
-  %j2_next = add i32 %j2, 128
+  %j2_next = add i32 %j2, 256
   br label %norm_loop
 
 done:
@@ -293,7 +317,7 @@ done:
         shapes={x_name: [M, N], out_name: [M, N]},
         dtypes={x_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(128, 1, 1),
+        block=(256, 1, 1),
         shared_mem=0,
         kernel_args=[("ptr", x_name), ("ptr", out_name), ("int", M), ("int", N)],
     )
