@@ -6,16 +6,10 @@ Implements 10 rowwise ops as NVPTX LLVM IR kernels:
   softmax, layernorm, rmsnorm, reduce_sum, reduce_max, reduce_mean,
   argmax, cumsum, topk, rmsnorm_residual
 
-softmax uses 4-warp parallelism:
-  Grid=(M,1,1), Block=(128,1,1) -- 4 warps per row, 128 threads cooperate.
-  Each thread handles ceil(N/128) elements via strided access.
+softmax, layernorm, rmsnorm use adaptive multi-warp parallelism:
+  Grid=(M,1,1), Block=(nthreads,1,1) where nthreads = 512 if N>=2048 else 256.
+  Each thread handles ceil(N/nthreads) elements via strided access.
   2-level reduction: intra-warp shfl.sync.down + cross-warp via shared memory.
-
-layernorm, rmsnorm use single-warp parallelism:
-  Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row, 32 threads cooperate.
-  Each thread handles ceil(N/32) elements via strided access.
-  Warp reductions via inline PTX shfl.sync.down.b32.
-  Broadcast from lane 0 via shfl.sync.idx.b32.
 
 All other reduction ops use 1-thread-per-row:
   Grid=(M,1,1), Block=(1,1,1) -- thread 0 loops sequentially over N.
@@ -139,32 +133,91 @@ def _warp_reduce_sum_ir(acc_name: str, result_name: str, prefix: str = "") -> st
 
 
 # ---------------------------------------------------------------------------
+# Shape-adaptive block size + cross-warp reduction helper
+# ---------------------------------------------------------------------------
+
+def _rowwise_nthreads(N: int) -> int:
+    """Shape-adaptive block size for rowwise (1-block-per-row) kernels.
+
+    Mirrors CudaCBackend.rowwise_block_for_n so LLVM and CU-C run the SAME
+    thread count per row (apples-to-apples for the P5-S3 gate):
+      N >= 2048 -> 512 threads (16 warps); else 256 threads (8 warps).
+    At large N the extra warps hide memory latency; at small N they'd just
+    waste threads and drop occupancy, so 256 stays optimal there.
+    """
+    return 512 if N >= 2048 else 256
+
+
+def _cross_warp_reduce_ir(num_warps, smem_name, in_val, out_name, prefix, op):
+    """Emit cross-warp reduction IR: store each warp's (broadcast) partial to
+    shared memory, barrier, then balanced tree-reduce all `num_warps` slots
+    into %{out_name}.
+
+    op = "add" (fadd) or "max" (llvm.maxnum.f32). num_warps must be a power
+    of 2. Every lane holds the same %{in_val} (from the prior intra-warp shfl
+    reduce), so all threads in a warp write the identical slot value.
+    """
+    arr_ty = f"[{num_warps} x float]"
+    if op == "add":
+        def _combine(res, a, b):
+            return f"  {res} = fadd float {a}, {b}"
+    elif op == "max":
+        def _combine(res, a, b):
+            return f"  {res} = call float @llvm.maxnum.f32(float {a}, float {b})"
+    else:
+        raise ValueError(f"unknown reduce op: {op}")
+    L = [
+        f"  %{prefix}_smem_ptr = getelementptr {arr_ty}, {arr_ty} addrspace(3)* @{smem_name}, i32 0, i32 %warp_id",
+        f"  store float %{in_val}, float addrspace(3)* %{prefix}_smem_ptr",
+        '  call void asm sideeffect "bar.sync 0;", ""()',
+    ]
+    for i in range(num_warps):
+        L.append(f"  %{prefix}_v{i}_ptr = getelementptr {arr_ty}, {arr_ty} addrspace(3)* @{smem_name}, i32 0, i32 {i}")
+        L.append(f"  %{prefix}_v{i} = load float, float addrspace(3)* %{prefix}_v{i}_ptr")
+    cur = [f"%{prefix}_v{i}" for i in range(num_warps)]
+    lvl = 0
+    while len(cur) > 1:
+        nxt = []
+        for k in range(len(cur) // 2):
+            is_last = (len(cur) == 2)
+            res = f"%{out_name}" if is_last else f"%{prefix}_r{lvl}_{k}"
+            L.append(_combine(res, cur[2 * k], cur[2 * k + 1]))
+            nxt.append(res)
+        cur = nxt
+        lvl += 1
+    return "\n".join(L)
+
+
+# ---------------------------------------------------------------------------
 # 1. softmax -- 2-pass online softmax (Milakov & Gimelshein).
 #    Pass 1: fused running max + running sum (online update).
 #    Pass 2: exp(x - global_max) * inv_sum  (normalize in one pass).
 #    Reduces memory reads from 3N to 2N per row.
-#    Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row.
+#    Grid=(M,1,1), Block=(nthreads,1,1) -- adaptive 8 or 16 warps per row.
 # ---------------------------------------------------------------------------
 
 
 def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(128,1,1).
+    """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(nthreads,1,1).
 
-    Uses 2-pass online softmax algorithm with 4-warp (128 thread) parallelism:
+    Uses 2-pass online softmax algorithm with adaptive multi-warp parallelism:
+      nthreads = 512 (16 warps) when N >= 2048, else 256 (8 warps).
       Pass 1: Each thread tracks running_max and running_sum simultaneously
-              over stride-128 elements. Then 2-level reduction:
-              - Intra-warp shfl.sync.down (5 steps) → 4 partial results
-              - Cross-warp via shared memory + barrier
+              over stride-nthreads elements. Then 2-level reduction:
+              - Intra-warp shfl.sync.down (5 steps)
+              - Cross-warp via shared memory + balanced tree reduce
       Pass 2: Read X again, compute exp(x - global_max) * inv_sum, store.
     """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     kernel_name = "arke_softmax"
+    nthreads = _rowwise_nthreads(N)
+    num_warps = nthreads // 32
 
     source = _module_header_warp()
     # Add shared memory for cross-warp reduction
-    source += """\
-@smem_max = internal addrspace(3) global [8 x float] undef
-@smem_sum = internal addrspace(3) global [8 x float] undef
+    source += f"""\
+@smem_max = internal addrspace(3) global [{num_warps} x float] undef
+@smem_sum = internal addrspace(3) global [{num_warps} x float] undef
 
 """
     source += f"""\
@@ -176,7 +229,7 @@ entry:
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
   %warp_id = lshr i32 %tid, 5
-  ; ---- Pass 1: online softmax -- fused running max + running sum (stride 128) ----
+  ; ---- Pass 1: online softmax -- fused running max + running sum (stride {nthreads}) ----
   br label %online_loop
 
 online_loop:
@@ -204,42 +257,15 @@ online_body:
   ; running_sum = running_sum * correction + exp_x
   %corrected_sum = fmul float %run_sum, %correction
   %updated_sum = fadd float %corrected_sum, %exp_x
-  %j1_next = add i32 %j1, 256
+  %j1_next = add i32 %j1, {nthreads}
   br label %online_loop
 
 warp_reduce_max:
   ; Level 1: Intra-warp max reduction (shfl.sync.down, 5 steps)
   ; After this, ALL lanes have warp_max via broadcast (shfl.sync.idx)
 {_warp_reduce_max_ir("run_max", "warp_max", "mx_")}
-  ; Level 2: Cross-warp max via shared memory
-  ; ALL threads in each warp write the same value (broadcast result) - no branch needed
-  %smem_max_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 %warp_id
-  store float %warp_max, float addrspace(3)* %smem_max_ptr
-  call void asm sideeffect "bar.sync 0;", ""()
-  ; All threads read 8 warp-max values and reduce
-  %mx_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 0
-  %mx_v0 = load float, float addrspace(3)* %mx_v0_ptr
-  %mx_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 1
-  %mx_v1 = load float, float addrspace(3)* %mx_v1_ptr
-  %mx_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 2
-  %mx_v2 = load float, float addrspace(3)* %mx_v2_ptr
-  %mx_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 3
-  %mx_v3 = load float, float addrspace(3)* %mx_v3_ptr
-  %mx_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 4
-  %mx_v4 = load float, float addrspace(3)* %mx_v4_ptr
-  %mx_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 5
-  %mx_v5 = load float, float addrspace(3)* %mx_v5_ptr
-  %mx_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 6
-  %mx_v6 = load float, float addrspace(3)* %mx_v6_ptr
-  %mx_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_max, i32 0, i32 7
-  %mx_v7 = load float, float addrspace(3)* %mx_v7_ptr
-  %mx_m01 = call float @llvm.maxnum.f32(float %mx_v0, float %mx_v1)
-  %mx_m23 = call float @llvm.maxnum.f32(float %mx_v2, float %mx_v3)
-  %mx_m45 = call float @llvm.maxnum.f32(float %mx_v4, float %mx_v5)
-  %mx_m67 = call float @llvm.maxnum.f32(float %mx_v6, float %mx_v7)
-  %mx_m0123 = call float @llvm.maxnum.f32(float %mx_m01, float %mx_m23)
-  %mx_m4567 = call float @llvm.maxnum.f32(float %mx_m45, float %mx_m67)
-  %global_max = call float @llvm.maxnum.f32(float %mx_m0123, float %mx_m4567)
+  ; Level 2: Cross-warp max via shared memory ({num_warps} warps)
+{_cross_warp_reduce_ir(num_warps, "smem_max", "warp_max", "global_max", "mx", "max")}
   ; Each thread corrects its local sum to account for global_max
   %lm_diff = fsub float %run_max, %global_max
   %lm_scaled = fmul float %lm_diff, 0x3FF7154760000000
@@ -248,37 +274,11 @@ warp_reduce_max:
   ; Level 1: Intra-warp sum reduction (shfl.sync.down, 5 steps)
   ; After this, ALL lanes have warp_sum via broadcast
 {_warp_reduce_sum_ir("corrected_local_sum", "warp_sum", "sm_")}
-  ; Level 2: Cross-warp sum via shared memory
-  %smem_sum_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 %warp_id
-  store float %warp_sum, float addrspace(3)* %smem_sum_ptr
-  call void asm sideeffect "bar.sync 0;", ""()
-  ; All threads read 8 warp-sum values and reduce
-  %sm_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 0
-  %sm_v0 = load float, float addrspace(3)* %sm_v0_ptr
-  %sm_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 1
-  %sm_v1 = load float, float addrspace(3)* %sm_v1_ptr
-  %sm_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 2
-  %sm_v2 = load float, float addrspace(3)* %sm_v2_ptr
-  %sm_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 3
-  %sm_v3 = load float, float addrspace(3)* %sm_v3_ptr
-  %sm_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 4
-  %sm_v4 = load float, float addrspace(3)* %sm_v4_ptr
-  %sm_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 5
-  %sm_v5 = load float, float addrspace(3)* %sm_v5_ptr
-  %sm_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 6
-  %sm_v6 = load float, float addrspace(3)* %sm_v6_ptr
-  %sm_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_sum, i32 0, i32 7
-  %sm_v7 = load float, float addrspace(3)* %sm_v7_ptr
-  %sm_s01 = fadd float %sm_v0, %sm_v1
-  %sm_s23 = fadd float %sm_v2, %sm_v3
-  %sm_s45 = fadd float %sm_v4, %sm_v5
-  %sm_s67 = fadd float %sm_v6, %sm_v7
-  %sm_s0123 = fadd float %sm_s01, %sm_s23
-  %sm_s4567 = fadd float %sm_s45, %sm_s67
-  %global_sum = fadd float %sm_s0123, %sm_s4567
+  ; Level 2: Cross-warp sum via shared memory ({num_warps} warps)
+{_cross_warp_reduce_ir(num_warps, "smem_sum", "warp_sum", "global_sum", "sm", "add")}
   ; Compute 1/sum via rcp.approx.ftz.f
   %inv_sum = call float @llvm.nvvm.rcp.approx.ftz.f(float %global_sum)
-  ; ---- Pass 2: normalize -- exp(x - global_max) * inv_sum (stride 128) ----
+  ; ---- Pass 2: normalize -- exp(x - global_max) * inv_sum (stride {nthreads}) ----
   br label %norm_loop
 
 norm_loop:
@@ -297,7 +297,7 @@ norm_body:
   %normed = fmul float %exp_val, %inv_sum
   %optr2 = getelementptr float, float addrspace(1)* %Out, i64 %idx2
   store float %normed, float addrspace(1)* %optr2
-  %j2_next = add i32 %j2, 256
+  %j2_next = add i32 %j2, {nthreads}
   br label %norm_loop
 
 done:
@@ -317,7 +317,7 @@ done:
         shapes={x_name: [M, N], out_name: [M, N]},
         dtypes={x_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(256, 1, 1),
+        block=(nthreads, 1, 1),
         shared_mem=0,
         kernel_args=[("ptr", x_name), ("ptr", out_name), ("int", M), ("int", N)],
     )
@@ -325,27 +325,30 @@ done:
 
 # ---------------------------------------------------------------------------
 # 2. layernorm -- 3-pass warp-parallel + affine: mean, variance, normalize.
-#    Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row.
+#    Grid=(M,1,1), Block=(nthreads,1,1) -- adaptive 8 or 16 warps per row.
 # ---------------------------------------------------------------------------
 
 
 def emit_llvm_ir_layernorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row layer normalization. Grid=(M,1,1), Block=(256,1,1).
+    """Emit LLVM IR for per-row layer normalization. Grid=(M,1,1), Block=(nthreads,1,1).
 
-    Uses 8-warp (256 thread) parallelism with 2-level reduction:
+    Uses adaptive multi-warp parallelism with 2-level reduction:
+      nthreads = 512 (16 warps) when N >= 2048, else 256 (8 warps).
       - Intra-warp: shfl.sync.down (5 steps)
-      - Cross-warp: shared memory tree reduction (8 slots)
+      - Cross-warp: shared memory balanced tree reduction
     3-pass: mean, variance, normalize+affine.
     """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     w_name = input_names[1]
     b_name = input_names[2]
     kernel_name = "arke_layernorm"
+    nthreads = _rowwise_nthreads(N)
+    num_warps = nthreads // 32
 
     source = _module_header_warp()
-    source += """\
-@smem_ln_mean = internal addrspace(3) global [8 x float] undef
-@smem_ln_var = internal addrspace(3) global [8 x float] undef
+    source += f"""\
+@smem_ln_mean = internal addrspace(3) global [{num_warps} x float] undef
+@smem_ln_var = internal addrspace(3) global [{num_warps} x float] undef
 
 """
     source += f"""\
@@ -357,7 +360,7 @@ entry:
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
   %warp_id = lshr i32 %tid, 5
-  ; ---- Pass 1: partial sum for mean (stride 256) ----
+  ; ---- Pass 1: partial sum for mean (stride {nthreads}) ----
   br label %mean_loop
 
 mean_loop:
@@ -372,43 +375,18 @@ mean_body:
   %ptr1 = getelementptr float, float addrspace(1)* %X, i64 %idx1
   %val1 = load float, float addrspace(1)* %ptr1
   %new_psum = fadd float %psum, %val1
-  %j1_next = add i32 %j1, 256
+  %j1_next = add i32 %j1, {nthreads}
   br label %mean_loop
 
 mean_warp_reduce:
   ; Level 1: Intra-warp sum reduction
 {_warp_reduce_sum_ir("psum", "warp_mean_sum", "mn_")}
-  ; Level 2: Cross-warp sum via shared memory
-  %mn_smem_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 %warp_id
-  store float %warp_mean_sum, float addrspace(3)* %mn_smem_ptr
-  call void asm sideeffect "bar.sync 0;", ""()
-  %mn_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 0
-  %mn_v0 = load float, float addrspace(3)* %mn_v0_ptr
-  %mn_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 1
-  %mn_v1 = load float, float addrspace(3)* %mn_v1_ptr
-  %mn_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 2
-  %mn_v2 = load float, float addrspace(3)* %mn_v2_ptr
-  %mn_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 3
-  %mn_v3 = load float, float addrspace(3)* %mn_v3_ptr
-  %mn_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 4
-  %mn_v4 = load float, float addrspace(3)* %mn_v4_ptr
-  %mn_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 5
-  %mn_v5 = load float, float addrspace(3)* %mn_v5_ptr
-  %mn_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 6
-  %mn_v6 = load float, float addrspace(3)* %mn_v6_ptr
-  %mn_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_mean, i32 0, i32 7
-  %mn_v7 = load float, float addrspace(3)* %mn_v7_ptr
-  %mn_r1_0 = fadd float %mn_v0, %mn_v1
-  %mn_r1_1 = fadd float %mn_v2, %mn_v3
-  %mn_r1_2 = fadd float %mn_v4, %mn_v5
-  %mn_r1_3 = fadd float %mn_v6, %mn_v7
-  %mn_r2_0 = fadd float %mn_r1_0, %mn_r1_1
-  %mn_r2_1 = fadd float %mn_r1_2, %mn_r1_3
-  %total_sum = fadd float %mn_r2_0, %mn_r2_1
+  ; Level 2: Cross-warp sum via shared memory ({num_warps} warps)
+{_cross_warp_reduce_ir(num_warps, "smem_ln_mean", "warp_mean_sum", "total_sum", "mn", "add")}
   %Nf = sitofp i32 %N to float
   %inv_N = call float @llvm.nvvm.rcp.approx.ftz.f(float %Nf)
   %mean = fmul float %total_sum, %inv_N
-  ; ---- Pass 2: partial variance (stride 256) ----
+  ; ---- Pass 2: partial variance (stride {nthreads}) ----
   br label %var_loop
 
 var_loop:
@@ -425,44 +403,19 @@ var_body:
   %diff = fsub float %val2, %mean
   %sq = fmul float %diff, %diff
   %new_pvar = fadd float %pvar, %sq
-  %j2_next = add i32 %j2, 256
+  %j2_next = add i32 %j2, {nthreads}
   br label %var_loop
 
 var_warp_reduce:
   ; Level 1: Intra-warp sum reduction
 {_warp_reduce_sum_ir("pvar", "warp_var_sum", "vr_")}
-  ; Level 2: Cross-warp sum via shared memory
-  %vr_smem_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 %warp_id
-  store float %warp_var_sum, float addrspace(3)* %vr_smem_ptr
-  call void asm sideeffect "bar.sync 0;", ""()
-  %vr_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 0
-  %vr_v0 = load float, float addrspace(3)* %vr_v0_ptr
-  %vr_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 1
-  %vr_v1 = load float, float addrspace(3)* %vr_v1_ptr
-  %vr_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 2
-  %vr_v2 = load float, float addrspace(3)* %vr_v2_ptr
-  %vr_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 3
-  %vr_v3 = load float, float addrspace(3)* %vr_v3_ptr
-  %vr_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 4
-  %vr_v4 = load float, float addrspace(3)* %vr_v4_ptr
-  %vr_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 5
-  %vr_v5 = load float, float addrspace(3)* %vr_v5_ptr
-  %vr_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 6
-  %vr_v6 = load float, float addrspace(3)* %vr_v6_ptr
-  %vr_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_ln_var, i32 0, i32 7
-  %vr_v7 = load float, float addrspace(3)* %vr_v7_ptr
-  %vr_r1_0 = fadd float %vr_v0, %vr_v1
-  %vr_r1_1 = fadd float %vr_v2, %vr_v3
-  %vr_r1_2 = fadd float %vr_v4, %vr_v5
-  %vr_r1_3 = fadd float %vr_v6, %vr_v7
-  %vr_r2_0 = fadd float %vr_r1_0, %vr_r1_1
-  %vr_r2_1 = fadd float %vr_r1_2, %vr_r1_3
-  %total_var = fadd float %vr_r2_0, %vr_r2_1
+  ; Level 2: Cross-warp sum via shared memory ({num_warps} warps)
+{_cross_warp_reduce_ir(num_warps, "smem_ln_var", "warp_var_sum", "total_var", "vr", "add")}
   %var = fmul float %total_var, %inv_N
   %var_eps = fadd float %var, 0x3EE4F8B580000000
   ; rsqrt(var + eps) for normalization
   %rstd = call float @llvm.nvvm.rsqrt.approx.f(float %var_eps)
-  ; ---- Pass 3: normalize + affine (stride 256) ----
+  ; ---- Pass 3: normalize + affine (stride {nthreads}) ----
   br label %norm_loop
 
 norm_loop:
@@ -487,7 +440,7 @@ norm_body:
   %out_val = fadd float %scaled, %b
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %idx3
   store float %out_val, float addrspace(1)* %optr
-  %j3_next = add i32 %j3, 256
+  %j3_next = add i32 %j3, {nthreads}
   br label %norm_loop
 
 done:
@@ -507,7 +460,7 @@ done:
         shapes={x_name: [M, N], w_name: [N], b_name: [N], out_name: [M, N]},
         dtypes={x_name: dtype, w_name: dtype, b_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(256, 1, 1),
+        block=(nthreads, 1, 1),
         shared_mem=0,
         kernel_args=[
             ("ptr", x_name), ("ptr", w_name), ("ptr", b_name),
@@ -518,25 +471,28 @@ done:
 
 # ---------------------------------------------------------------------------
 # 3. rmsnorm -- 2-pass warp-parallel + affine: sum-of-squares, normalize.
-#    Grid=(M,1,1), Block=(32,1,1) -- 1 warp per row.
+#    Grid=(M,1,1), Block=(nthreads,1,1) -- adaptive 8 or 16 warps per row.
 # ---------------------------------------------------------------------------
 
 
 def emit_llvm_ir_rmsnorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
-    """Emit LLVM IR for per-row RMS normalization. Grid=(M,1,1), Block=(256,1,1).
+    """Emit LLVM IR for per-row RMS normalization. Grid=(M,1,1), Block=(nthreads,1,1).
 
-    Uses 8-warp (256 thread) parallelism with 2-level reduction:
+    Uses adaptive multi-warp parallelism with 2-level reduction:
+      nthreads = 512 (16 warps) when N >= 2048, else 256 (8 warps).
       - Intra-warp: shfl.sync.down (5 steps)
-      - Cross-warp: shared memory tree reduction (8 slots)
+      - Cross-warp: shared memory balanced tree reduction
     2-pass: sum-of-squares, normalize+scale.
     """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     w_name = input_names[1]
     kernel_name = "arke_rmsnorm"
+    nthreads = _rowwise_nthreads(N)
+    num_warps = nthreads // 32
 
     source = _module_header_warp()
-    source += """\
-@smem_rms = internal addrspace(3) global [8 x float] undef
+    source += f"""\
+@smem_rms = internal addrspace(3) global [{num_warps} x float] undef
 
 """
     source += f"""\
@@ -548,7 +504,7 @@ entry:
   %N64 = sext i32 %N to i64
   %base = mul i64 %row64, %N64
   %warp_id = lshr i32 %tid, 5
-  ; ---- Pass 1: partial sum of squares (stride 256) ----
+  ; ---- Pass 1: partial sum of squares (stride {nthreads}) ----
   br label %ss_loop
 
 ss_loop:
@@ -564,46 +520,21 @@ ss_body:
   %val1 = load float, float addrspace(1)* %ptr1
   %sq = fmul float %val1, %val1
   %new_pss = fadd float %pss, %sq
-  %j1_next = add i32 %j1, 256
+  %j1_next = add i32 %j1, {nthreads}
   br label %ss_loop
 
 ss_warp_reduce:
   ; Level 1: Intra-warp sum reduction
 {_warp_reduce_sum_ir("pss", "warp_ss", "ss_")}
-  ; Level 2: Cross-warp sum via shared memory
-  %ss_smem_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 %warp_id
-  store float %warp_ss, float addrspace(3)* %ss_smem_ptr
-  call void asm sideeffect "bar.sync 0;", ""()
-  %ss_v0_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 0
-  %ss_v0 = load float, float addrspace(3)* %ss_v0_ptr
-  %ss_v1_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 1
-  %ss_v1 = load float, float addrspace(3)* %ss_v1_ptr
-  %ss_v2_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 2
-  %ss_v2 = load float, float addrspace(3)* %ss_v2_ptr
-  %ss_v3_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 3
-  %ss_v3 = load float, float addrspace(3)* %ss_v3_ptr
-  %ss_v4_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 4
-  %ss_v4 = load float, float addrspace(3)* %ss_v4_ptr
-  %ss_v5_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 5
-  %ss_v5 = load float, float addrspace(3)* %ss_v5_ptr
-  %ss_v6_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 6
-  %ss_v6 = load float, float addrspace(3)* %ss_v6_ptr
-  %ss_v7_ptr = getelementptr [8 x float], [8 x float] addrspace(3)* @smem_rms, i32 0, i32 7
-  %ss_v7 = load float, float addrspace(3)* %ss_v7_ptr
-  %ss_r1_0 = fadd float %ss_v0, %ss_v1
-  %ss_r1_1 = fadd float %ss_v2, %ss_v3
-  %ss_r1_2 = fadd float %ss_v4, %ss_v5
-  %ss_r1_3 = fadd float %ss_v6, %ss_v7
-  %ss_r2_0 = fadd float %ss_r1_0, %ss_r1_1
-  %ss_r2_1 = fadd float %ss_r1_2, %ss_r1_3
-  %total_ss = fadd float %ss_r2_0, %ss_r2_1
+  ; Level 2: Cross-warp sum via shared memory ({num_warps} warps)
+{_cross_warp_reduce_ir(num_warps, "smem_rms", "warp_ss", "total_ss", "ss", "add")}
   %Nf = sitofp i32 %N to float
   %inv_N = call float @llvm.nvvm.rcp.approx.ftz.f(float %Nf)
   %mean_ss = fmul float %total_ss, %inv_N
   %eps_val = fadd float %mean_ss, 0x3EE4F8B580000000
   ; rsqrt(mean_ss + eps) = 1/rms
   %inv_rms = call float @llvm.nvvm.rsqrt.approx.f(float %eps_val)
-  ; ---- Pass 2: normalize and scale by weight (stride 256) ----
+  ; ---- Pass 2: normalize and scale by weight (stride {nthreads}) ----
   br label %norm_loop
 
 norm_loop:
@@ -622,7 +553,7 @@ norm_body:
   %out_val = fmul float %normed, %w
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %idx2
   store float %out_val, float addrspace(1)* %optr
-  %j2_next = add i32 %j2, 256
+  %j2_next = add i32 %j2, {nthreads}
   br label %norm_loop
 
 done:
@@ -642,7 +573,7 @@ done:
         shapes={x_name: [M, N], w_name: [N], out_name: [M, N]},
         dtypes={x_name: dtype, w_name: dtype, out_name: dtype},
         grid=(M, 1, 1),
-        block=(256, 1, 1),
+        block=(nthreads, 1, 1),
         shared_mem=0,
         kernel_args=[
             ("ptr", x_name), ("ptr", w_name), ("ptr", out_name),
