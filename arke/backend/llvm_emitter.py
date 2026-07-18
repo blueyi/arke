@@ -130,7 +130,13 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     else:
         kernel_name = f"arke_matmul_{M}x{N}x{K}"
         num_tiles = (K + BK - 1) // BK
-        if M % BM == 0 and N % BN == 0 and K % BK == 0:
+        aligned = M % BM == 0 and N % BN == 0 and K % BK == 0
+        # float4-vectorized double-buffer needs 16-byte-aligned 4-runs: K%4==0, N%4==0.
+        f4_eligible = aligned and K % 4 == 0 and N % 4 == 0
+        if f4_eligible:
+            from arke.backend.llvm_matmul_f4 import _gen_tiled_matmul_ir_f4_doublebuf
+            source = _gen_tiled_matmul_ir_f4_doublebuf(kernel_name, M, K, N, BM, BN, BK, num_tiles)
+        elif aligned:
             source = _gen_tiled_matmul_ir_doublebuf(kernel_name, M, K, N, BM, BN, BK, num_tiles)
         else:
             source = _gen_tiled_matmul_ir(kernel_name, M, K, N, BM, BN, BK, num_tiles)
