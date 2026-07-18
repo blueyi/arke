@@ -92,10 +92,8 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
 
     C[M,N] = A[M,K] @ B[K,N]
 
-    Register-blocked tiling: BM=64, BN=64, BK=16, TM=4, TN=4.
-    Each thread computes a 4x4 sub-tile of C (16 accumulators).
-    Block: (16, 16) = 256 threads covers the 64x64 output tile.
-    Grid: (ceil(N/64), ceil(M/64), 1).
+    Routes to tensor-core (wmma) kernel for large shapes (M,N,K >= 1024 and
+    all divisible by 16), otherwise uses register-blocked FP32 tiling.
     """
     node = graph.nodes[0]
     assert node.op == "matmul", f"Expected matmul, got {node.op}"
@@ -114,18 +112,30 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     assert K == K2, f"K mismatch: {K} vs {K2}"
 
     dtype = a_val.dtype or "float32"
+
+    # Route: TC (wmma) for large TC-eligible shapes
     BM, BN, BK = 64, 64, 16
-    num_tiles = (K + BK - 1) // BK
+    tc_eligible = (
+        M % BM == 0 and N % BN == 0 and K % BK == 0
+        and M >= 1024 and N >= 1024 and K >= 64
+        and max(M, N, K) >= 1024
+    )
 
-    kernel_name = f"arke_matmul_{M}x{N}x{K}"
-
-    if M % BM == 0 and N % BN == 0 and K % BK == 0:
-        source = _gen_tiled_matmul_ir_doublebuf(kernel_name, M, K, N, BM, BN, BK, num_tiles)
+    if tc_eligible:
+        from arke.backend.llvm_wmma import _gen_tiled_matmul_ir_wmma
+        kernel_name = f"arke_matmul_tc_{M}x{N}x{K}"
+        source = _gen_tiled_matmul_ir_wmma(kernel_name, M, K, N)
+        grid = ((N + BN - 1) // BN, (M + BM - 1) // BM, 1)
+        block = (128, 1, 1)  # 4 warps
     else:
-        source = _gen_tiled_matmul_ir(kernel_name, M, K, N, BM, BN, BK, num_tiles)
-
-    grid = ((N + BN - 1) // BN, (M + BM - 1) // BM, 1)
-    block = (16, 16, 1)
+        kernel_name = f"arke_matmul_{M}x{N}x{K}"
+        num_tiles = (K + BK - 1) // BK
+        if M % BM == 0 and N % BN == 0 and K % BK == 0:
+            source = _gen_tiled_matmul_ir_doublebuf(kernel_name, M, K, N, BM, BN, BK, num_tiles)
+        else:
+            source = _gen_tiled_matmul_ir(kernel_name, M, K, N, BM, BN, BK, num_tiles)
+        grid = ((N + BN - 1) // BN, (M + BM - 1) // BM, 1)
+        block = (16, 16, 1)
 
     return CudaCKernel(
         kernel_name=kernel_name,
@@ -137,7 +147,7 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
         dtypes={a_name: dtype, b_name: dtype, out_name: dtype},
         grid=grid,
         block=block,
-        shared_mem=0,  # static shared memory via module globals
+        shared_mem=0,
         kernel_args=[
             ("ptr", a_name), ("ptr", b_name), ("ptr", out_name),
             ("int", M), ("int", K), ("int", N),
