@@ -10,13 +10,18 @@ CUDA-C backend's TC path performance.
 Algorithm:
   - m16n16k16 wmma (fp16 inputs, fp32 accumulation)
   - BM=64, BN=64, BK=16
-  - 4 warps (128 threads), each warp handles 16×64 of output
+  - 4 warps (128 threads), each warp handles 16x64 of output
   - Each warp iterates over 4 column-tiles of 16
-  - Single-buffered shared memory (simpler, correctness-first)
-  - f32 global loads → fptrunc to fp16 → store to shared → wmma
+  - Single-buffered shared memory (correctness-verified, perf-optimal for
+    LLVM IR where inline asm sideeffect prevents HW-level reordering)
+  - f32 global loads -> fptrunc to fp16 -> store to shared -> wmma
 
-Verified: inline PTX wmma with .f32.f32 syntax compiles through
-llc (LLVM 20) + ptxas (CUDA 13.2) targeting sm_86.
+Key findings:
+  - PTX wmma.mma syntax: use '.f32.f32' (NOT '.f32.f16.f16.f32')
+  - wmma.load.b.row + wmma.mma.row.row for standard GEMM C=A*B
+  - Constraint 'l' handles addrspace(3) shared mem pointers correctly
+  - Double-buffering in LLVM IR is SLOWER because sideeffect asm prevents
+    the load/compute overlap that makes double-buf beneficial in nvcc.
 """
 
 from __future__ import annotations
@@ -44,8 +49,6 @@ def _gen_tiled_matmul_ir_wmma(
     ln("")
 
     # ── Shared memory: single-buffered ──
-    # shmem_A[BM][BK] = [64][16] as half
-    # shmem_B[BK][BN] = [16][64] as half
     ln(f"@shmem_A = internal addrspace(3) global [{BM} x [{BK} x half]] zeroinitializer")
     ln(f"@shmem_B = internal addrspace(3) global [{BK} x [{BN} x half]] zeroinitializer")
     ln("")
@@ -85,28 +88,23 @@ def _gen_tiled_matmul_ir_wmma(
     ln("tile_loop:")
     ln("  %t = phi i32 [ 0, %entry ], [ %t_next, %tile_loop ]")
 
-    # Phi nodes for 4 col-tiles × 8 accumulator regs = 32 accumulators
+    # Phi nodes for 4 col-tiles x 8 accumulator regs = 32 accumulators
     for ct in range(4):
         for r in range(8):
             ln(f"  %acc_c{ct}_r{r} = phi float [ 0.0, %entry ], [ %acc_c{ct}_r{r}_new, %tile_loop ]")
     ln("")
 
     # ── Load tile into shared memory ──
-    # Total elements: A = BM*BK = 1024, B = BK*BN = 1024
-    # 128 threads → 8 elements each for A, 8 for B
-    # Each thread: for i in 0..7: load A[flat], convert f32→f16, store to shmem
     ln(f"  %tile_k_base = mul i32 %t, {BK}")
     ln("")
 
-    # Load A into shared: shmem_A[row][col] = (half)A[bm+row, tile_k_base+col]
-    # flat_idx_base = tid * 8
+    # Load A: shmem_A[row][col] = (half)A[bm+row, tile_k_base+col]
     ln("  %a_flat_base = mul i32 %tid, 8")
     for i in range(8):
         sfx = f"la{i}"
         ln(f"  %{sfx}_flat = add i32 %a_flat_base, {i}")
-        ln(f"  %{sfx}_row = lshr i32 %{sfx}_flat, 4")  # flat / 16 (BK=16)
-        ln(f"  %{sfx}_col = and i32 %{sfx}_flat, 15")   # flat % 16
-        # Global address: A[(bm + row) * K + (tile_k_base + col)]
+        ln(f"  %{sfx}_row = lshr i32 %{sfx}_flat, 4")  # / BK
+        ln(f"  %{sfx}_col = and i32 %{sfx}_flat, 15")   # % BK
         ln(f"  %{sfx}_grow = add i32 %bm, %{sfx}_row")
         ln(f"  %{sfx}_gcol = add i32 %tile_k_base, %{sfx}_col")
         ln(f"  %{sfx}_gidx = mul i32 %{sfx}_grow, %K")
@@ -114,19 +112,17 @@ def _gen_tiled_matmul_ir_wmma(
         ln(f"  %{sfx}_gep = getelementptr float, float addrspace(1)* %A, i32 %{sfx}_gidx2")
         ln(f"  %{sfx}_f32 = load float, float addrspace(1)* %{sfx}_gep")
         ln(f"  %{sfx}_f16 = fptrunc float %{sfx}_f32 to half")
-        # Store to shmem_A[row][col]
         ln(f"  %{sfx}_sptr = getelementptr [{BM} x [{BK} x half]], [{BM} x [{BK} x half]] addrspace(3)* @shmem_A, i32 0, i32 %{sfx}_row, i32 %{sfx}_col")
         ln(f"  store half %{sfx}_f16, half addrspace(3)* %{sfx}_sptr")
     ln("")
 
-    # Load B into shared: shmem_B[row][col] = (half)B[tile_k_base+row, bn+col]
+    # Load B: shmem_B[row][col] = (half)B[tile_k_base+row, bn+col]
     ln("  %b_flat_base = mul i32 %tid, 8")
     for i in range(8):
         sfx = f"lb{i}"
         ln(f"  %{sfx}_flat = add i32 %b_flat_base, {i}")
-        ln(f"  %{sfx}_row = lshr i32 %{sfx}_flat, 6")  # flat / 64 (BN=64)
-        ln(f"  %{sfx}_col = and i32 %{sfx}_flat, 63")   # flat % 64
-        # Global address: B[(tile_k_base + row) * N + (bn + col)]
+        ln(f"  %{sfx}_row = lshr i32 %{sfx}_flat, 6")  # / BN
+        ln(f"  %{sfx}_col = and i32 %{sfx}_flat, 63")   # % BN
         ln(f"  %{sfx}_grow = add i32 %tile_k_base, %{sfx}_row")
         ln(f"  %{sfx}_gcol = add i32 %bn, %{sfx}_col")
         ln(f"  %{sfx}_gidx = mul i32 %{sfx}_grow, %N")
@@ -134,7 +130,6 @@ def _gen_tiled_matmul_ir_wmma(
         ln(f"  %{sfx}_gep = getelementptr float, float addrspace(1)* %B, i32 %{sfx}_gidx2")
         ln(f"  %{sfx}_f32 = load float, float addrspace(1)* %{sfx}_gep")
         ln(f"  %{sfx}_f16 = fptrunc float %{sfx}_f32 to half")
-        # Store to shmem_B[row][col]
         ln(f"  %{sfx}_sptr = getelementptr [{BK} x [{BN} x half]], [{BK} x [{BN} x half]] addrspace(3)* @shmem_B, i32 0, i32 %{sfx}_row, i32 %{sfx}_col")
         ln(f"  store half %{sfx}_f16, half addrspace(3)* %{sfx}_sptr")
     ln("")
@@ -143,8 +138,8 @@ def _gen_tiled_matmul_ir_wmma(
     ln("  call void @llvm.nvvm.barrier0()")
     ln("")
 
-    # ── Compute: wmma for each of 4 column tiles ──
-    # sA ptr for this warp: &shmem_A[warp_row][0]
+    # ── Compute: wmma ──
+    # sA ptr for this warp
     ln(f"  %sa_warp_ptr = getelementptr [{BM} x [{BK} x half]], [{BM} x [{BK} x half]] addrspace(3)* @shmem_A, i32 0, i32 %warp_row, i32 0")
     ln("")
 
@@ -155,18 +150,17 @@ def _gen_tiled_matmul_ir_wmma(
     ln("")
 
     for ct in range(4):
-        # sB ptr for col_tile ct: &shmem_B[0][ct*16]
         col_offset = ct * 16
         ln(f"  %sb_ct{ct}_ptr = getelementptr [{BK} x [{BN} x half]], [{BK} x [{BN} x half]] addrspace(3)* @shmem_B, i32 0, i32 0, i32 {col_offset}")
         ln("")
 
-        # wmma.load.b (row, stride=BN=64 elements)
+        # wmma.load.b (row, stride=BN)
         ln(f"  %b_frag_ct{ct} = call {{i32, i32, i32, i32, i32, i32, i32, i32}} asm sideeffect \"wmma.load.b.sync.aligned.row.m16n16k16.shared.f16 {{$0,$1,$2,$3,$4,$5,$6,$7}}, [$8], $9;\", \"=r,=r,=r,=r,=r,=r,=r,=r,l,r\"(half addrspace(3)* %sb_ct{ct}_ptr, i32 {BN})")
         for r in range(8):
             ln(f"  %b_ct{ct}_r{r} = extractvalue {{i32, i32, i32, i32, i32, i32, i32, i32}} %b_frag_ct{ct}, {r}")
         ln("")
 
-        # wmma.mma (row.row, f32.f32) — reuse A fragment
+        # wmma.mma (row.row, f32.f32)
         a_args = ", ".join([f"i32 %a_r{r}" for r in range(8)])
         b_args = ", ".join([f"i32 %b_ct{ct}_r{r}" for r in range(8)])
         c_args = ", ".join([f"float %acc_c{ct}_r{r}" for r in range(8)])
@@ -181,7 +175,7 @@ def _gen_tiled_matmul_ir_wmma(
     ln("  call void @llvm.nvvm.barrier0()")
     ln("")
 
-    # ── Tile loop latch (same block, no new label needed) ──
+    # Tile loop latch
     ln("  %t_next = add i32 %t, 1")
     ln(f"  %t_cond = icmp slt i32 %t_next, {num_tiles}")
     ln("  br i1 %t_cond, label %tile_loop, label %store_results")
@@ -189,21 +183,17 @@ def _gen_tiled_matmul_ir_wmma(
 
     # ── Store results ──
     ln("store_results:")
-
-    # Global row for this warp: bm + warp_row
     ln("  %out_row = add i32 %bm, %warp_row")
     ln("")
 
     for ct in range(4):
         col_offset = ct * 16
-        # Global ptr: &C[out_row * N + bn + col_offset]
         ln(f"  %out_col_ct{ct} = add i32 %bn, {col_offset}")
         ln(f"  %out_off_ct{ct} = mul i32 %out_row, %N")
         ln(f"  %out_idx_ct{ct} = add i32 %out_off_ct{ct}, %out_col_ct{ct}")
         ln(f"  %out_ptr_ct{ct} = getelementptr float, float addrspace(1)* %C, i32 %out_idx_ct{ct}")
         ln("")
 
-        # wmma.store.d (row, stride=N)
         d_args = ", ".join([f"float %acc_c{ct}_r{r}_new" for r in range(8)])
         ln(f"  call void asm sideeffect \"wmma.store.d.sync.aligned.row.m16n16k16.global.f32 [$0], {{$1,$2,$3,$4,$5,$6,$7,$8}}, $9;\", \"l,f,f,f,f,f,f,f,f,r\"(float addrspace(1)* %out_ptr_ct{ct}, {d_args}, i32 %N)")
         ln("")
@@ -235,7 +225,6 @@ if __name__ == "__main__":
 
     print(f"Generated {len(ir)} bytes of LLVM IR")
 
-    # Compile: llc
     llc = "/home/blueyi/opt/llvm20-src/usr/lib/llvm-20/bin/llc"
     r = subprocess.run(
         [llc, "-march=nvptx64", "-mcpu=sm_86", "-O2", ll_path, "-o", ptx_path],
@@ -246,7 +235,6 @@ if __name__ == "__main__":
         sys.exit(1)
     print("llc: OK")
 
-    # Compile: ptxas
     ptxas = "/usr/local/cuda-13.2/bin/ptxas"
     r = subprocess.run(
         [ptxas, "--gpu-name", "sm_86", "-O2", ptx_path, "-o", cubin_path],
@@ -259,4 +247,4 @@ if __name__ == "__main__":
 
     import os
     print(f"cubin size: {os.path.getsize(cubin_path)} bytes")
-    print("SUCCESS: LLVM IR → PTX → cubin (wmma TC matmul)")
+    print("SUCCESS: LLVM IR -> PTX -> cubin (wmma TC matmul)")
