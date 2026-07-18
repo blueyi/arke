@@ -188,8 +188,10 @@ def _gen_tiled_matmul_ir_f4_doublebuf(
 
     for r in range(TM):
         for c in range(TN):
-            ln(f"  %prod_r{r}c{c} = fmul float %a_reg{r}, %b_reg{c}")
-            ln(f"  %acc_k_r{r}c{c}_next = fadd float %acc_k_r{r}c{c}, %prod_r{r}c{c}")
+            # contract fast-math flag lets llc fuse fmul+fadd into a single
+            # fma.rn.f32 (2 PTX instrs -> 1), matching nvcc's default FMA codegen.
+            ln(f"  %prod_r{r}c{c} = fmul contract float %a_reg{r}, %b_reg{c}")
+            ln(f"  %acc_k_r{r}c{c}_next = fadd contract float %acc_k_r{r}c{c}, %prod_r{r}c{c}")
 
     ln("  %ki_next = add i32 %ki, 1")
     ln("  br label %k_loop_header")
