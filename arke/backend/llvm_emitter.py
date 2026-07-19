@@ -113,10 +113,14 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
 
     dtype = a_val.dtype or "float32"
 
-    # Route: TC (wmma) for large TC-eligible shapes
+    # Route: TC (wmma) for large TC-eligible shapes.
+    # TC path uses a 64x128 block tile with a 2x2 warp grid (WM=2,WN=2,
+    # WTM=2,WTN=4), matching CUDA-C's MMAConfig. Requires N%128==0; shapes
+    # that are 64- but not 128-aligned fall through to the scalar ladder.
     BM, BN, BK = 64, 64, 16
+    BM_TC, BN_TC = 64, 128
     tc_eligible = (
-        M % BM == 0 and N % BN == 0 and K % BK == 0
+        M % BM_TC == 0 and N % BN_TC == 0 and K % BK == 0
         and M >= 1024 and N >= 1024 and K >= 64
         and max(M, N, K) >= 1024
     )
@@ -125,8 +129,8 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
         from arke.backend.llvm_wmma import _gen_tiled_matmul_ir_wmma
         kernel_name = f"arke_matmul_tc_{M}x{N}x{K}"
         source = _gen_tiled_matmul_ir_wmma(kernel_name, M, K, N)
-        grid = ((N + BN - 1) // BN, (M + BM - 1) // BM, 1)
-        block = (128, 1, 1)  # 4 warps
+        grid = ((N + BN_TC - 1) // BN_TC, (M + BM_TC - 1) // BM_TC, 1)
+        block = (128, 1, 1)  # 4 warps (2x2)
     else:
         kernel_name = f"arke_matmul_{M}x{N}x{K}"
         num_tiles = (K + BK - 1) // BK
