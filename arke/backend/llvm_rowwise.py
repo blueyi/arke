@@ -254,9 +254,9 @@ online_body:
   %x_diff = fsub float %val1, %updated_max
   %x_scaled = fmul float %x_diff, 0x3FF7154760000000
   %exp_x = call float @llvm.nvvm.ex2.approx.f(float %x_scaled)
-  ; running_sum = running_sum * correction + exp_x
-  %corrected_sum = fmul float %run_sum, %correction
-  %updated_sum = fadd float %corrected_sum, %exp_x
+  ; running_sum = running_sum * correction + exp_x (contract -> fma.rn.f32)
+  %corrected_sum = fmul contract float %run_sum, %correction
+  %updated_sum = fadd contract float %corrected_sum, %exp_x
   %j1_next = add i32 %j1, {nthreads}
   br label %online_loop
 
@@ -401,8 +401,8 @@ var_body:
   %ptr2 = getelementptr float, float addrspace(1)* %X, i64 %idx2
   %val2 = load float, float addrspace(1)* %ptr2
   %diff = fsub float %val2, %mean
-  %sq = fmul float %diff, %diff
-  %new_pvar = fadd float %pvar, %sq
+  %sq = fmul contract float %diff, %diff
+  %new_pvar = fadd contract float %pvar, %sq
   %j2_next = add i32 %j2, {nthreads}
   br label %var_loop
 
@@ -435,9 +435,9 @@ norm_body:
   %w = load float, float addrspace(1)* %wptr
   %bptr = getelementptr float, float addrspace(1)* %B, i64 %j3_64
   %b = load float, float addrspace(1)* %bptr
-  ; affine: out = normed * w + b
-  %scaled = fmul float %normed, %w
-  %out_val = fadd float %scaled, %b
+  ; affine: out = normed * w + b (contract -> fma.rn.f32)
+  %scaled = fmul contract float %normed, %w
+  %out_val = fadd contract float %scaled, %b
   %optr = getelementptr float, float addrspace(1)* %Out, i64 %idx3
   store float %out_val, float addrspace(1)* %optr
   %j3_next = add i32 %j3, {nthreads}
@@ -518,8 +518,8 @@ ss_body:
   %idx1 = add i64 %base, %j1_64
   %ptr1 = getelementptr float, float addrspace(1)* %X, i64 %idx1
   %val1 = load float, float addrspace(1)* %ptr1
-  %sq = fmul float %val1, %val1
-  %new_pss = fadd float %pss, %sq
+  %sq = fmul contract float %val1, %val1
+  %new_pss = fadd contract float %pss, %sq
   %j1_next = add i32 %j1, {nthreads}
   br label %ss_loop
 
