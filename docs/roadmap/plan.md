@@ -570,10 +570,24 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | --- | --- | --- |
 | **P5-S1** | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct |
 | **P5-S2** | Cat A-F via LLVM | All 60+ ops correct + geomean ≥ Phase 4 C-like (per-vendor) |
-| **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) |
+| **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) [†] |
 | **P5-S4** | Multi-hardware LLVM | ≥3 backends ≥90% respective vendor libs |
 | **P5-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
 | **P5-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage |
+
+> **[†] P5-S3 measurement methodology (approved by Leon, 2026-07-20).** The
+> "≥ C-like + 5%" threshold (LLVM/CUDA-C latency ratio ≤ 0.952×) is measured
+> as a **latency-weighted geomean** over Cat A+C+D, weighting each op's
+> log-ratio by its CUDA-C reference latency, with each op's latency taken as
+> the median of 3 measurement passes. Rationale: the plain arithmetic geomean
+> weights every op equally, so 7–15µs tiny-shape kernels (e.g. 32×4096, where
+> launch/dispatch overhead dominates and run-to-run CoV reaches 16–62%) count
+> as much as 400µs compute/bandwidth-bound kernels — injecting measurement
+> noise that real kernel throughput does not have. Latency-weighting +
+> median-of-3 makes the metric reflect delivered throughput and cuts gate
+> CoV from ~4.9% to ~1.6%. The 5% target itself is unchanged. Harness:
+> `benchmarks/llvm_vs_cuda_c.py` (prints both weighted gate metric and the
+> unweighted arithmetic geomean for reference).
 
 ### Key Design Points
 
