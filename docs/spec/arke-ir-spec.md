@@ -402,6 +402,29 @@ A Stage 7 L2 surface may be represented as either an explicit multi-node graph o
 
 This keeps audit/coverage checks tied to real strategy evidence without forcing every registered fused operator to expand into multiple SemanticIR nodes.
 
+### 6.3.2 Instruction-Level Decision Kinds (L3, P5-S5)
+
+The v0.1.0 implementation (`arke/ir/strategy.py`) tags each `Decision` with an
+integer `level`: **1** = backend-agnostic (§6.3 universal kinds), **2** =
+resource/backend-bound (`compute`, `cache_config`, `memory_fence`), **3** =
+**instruction-level** (P5-S5). L3 decisions map directly to LLVM IR / PTX
+instruction choices and are only consumed by ISA-level backends (currently
+`LLVMBackend.lower(graph, strategy)`); other backends ignore them.
+
+| Kind | Parameters | Maps to | Validation (safe-fallback) |
+|:---|:---|:---|:---|
+| `wmma_tile` | `WM`, `WN`, `WTM`, `WTN` | Inline-PTX wmma warp grid: block tile = (WM·WTM·16)×(WN·WTN·16), threads = WM·WN·32 | threads ≤ 1024, M/N divisible by tile; else tuned default |
+| `block_threads` | `n` | Rowwise reduction block size (softmax/layernorm/rmsnorm) | 64 ≤ n ≤ 1024, power-of-2 warp count; else shape heuristic |
+| `fma_contract` | `enabled` | LLVM `contract` fast-math flag (`fmul contract`+`fadd contract` → `fma.rn.f32`) | boolean |
+| `pipeline_stages` | `depth` | Global→shared staging software-pipeline depth. **Staging-level only** — fragment-level buffering of `sideeffect` asm is known-harmful (P5-S3) and is not expressible | depth ≥ 1 |
+
+Invalid L3 params never fail compilation — the emitter falls back to its tuned
+default. An L3 decision may change performance, never correctness. Builder
+methods (`StrategyIR.wmma_tile(...)`, `.block_threads(...)`, `.fma_contract(...)`,
+`.pipeline_stages(...)`) carry `@rationale` like every other decision;
+`extract_l3_params(strategy)` is the backend-side collection helper
+(last-decision-wins per kind).
+
 ### 6.4 Example: matmul_relu strategy for Ampere
 
 ```json
