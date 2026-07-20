@@ -213,11 +213,128 @@ def _enum_fuse_candidates(op_name: str) -> list[Decision]:
     return []
 
 
+# ─── L3 instruction-level enumerators (P5-S5) ──────────────────────────────
+#
+# These encode the P5-S3 hand-tuning domain knowledge as *legality filters*
+# so the LLM can only pick configurations that are statically sound on the
+# target hardware. Ranking among the legal set is the LLM's job.
+
+# Ops whose LLVM emitter consumes each L3 kind (mirrors llvm_emitter.L3_AWARE_OPS,
+# split per kind; kept local to avoid an agent->backend import edge).
+_L3_WMMA_OPS = frozenset({"matmul"})
+_L3_BLOCK_THREADS_OPS = frozenset({"softmax", "layernorm", "rmsnorm"})
+
+# Register budget heuristic for wmma candidates: accumulators are
+# WTM*WTN*8 fp32 regs/thread; beyond ~64 acc regs the total per-thread
+# usage (acc + frag + address arithmetic) exceeds ~168 regs and occupancy
+# collapses (P5-S3: the naive 1x4-strip widening failure). Cap acc at 64.
+_WMMA_MAX_ACC_REGS = 64
+
+
+def _enum_wmma_tile_candidates(
+    op_name: str,
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
+    """Enumerate legal L3 `wmma_tile` warp-grid configs for a matmul op.
+
+    Legality (all statically checkable, mirrors the P5-S3 sweep filters):
+      - threads = WM*WN*32 <= hw.max_threads_per_block
+      - accumulator regs/thread = WTM*WTN*8 <= _WMMA_MAX_ACC_REGS
+      - double-buffered fp16 staging smem = 2*(BM*BK + BK*BN)*2B fits budget
+      - M % BM == 0 and N % BN == 0 for the actual input shapes
+      - shape must be TC-eligible at all (M,N >= 1024, K % 16 == 0)
+    """
+    if op_name not in _L3_WMMA_OPS:
+        return []
+    shapes = shapes or {}
+    dims = [s for s in shapes.values() if s and len(s) >= 2]
+    if len(dims) < 2:
+        return []
+    M, K = dims[0][0], dims[0][1]
+    N = dims[1][1]
+    if not (isinstance(M, int) and isinstance(N, int) and isinstance(K, int)):
+        return []
+    if M < 1024 or N < 1024 or K % 16 != 0:
+        return []  # not TC-eligible: no wmma decisions are legal
+
+    hw = hw or HardwareProfile()
+    max_threads = hw.max_threads_per_block
+    smem_cap = hw.shared_memory_bytes
+    BK = 16  # fixed by the m16n16k16 wmma shape
+
+    out: list[Decision] = []
+    for WM in (1, 2, 4):
+        for WN in (1, 2, 4):
+            threads = WM * WN * 32
+            if threads > max_threads or threads < 64:
+                continue
+            for WTM in (1, 2, 4):
+                for WTN in (1, 2, 4):
+                    if WTM * WTN * 8 > _WMMA_MAX_ACC_REGS:
+                        continue
+                    BM, BN = WM * WTM * 16, WN * WTN * 16
+                    if BM < 32 or BN < 32:
+                        continue  # degenerate tile: staging overhead dominates
+                    # double-buffered fp16 A/B staging
+                    smem = 2 * (BM * BK + BK * BN) * 2
+                    if smem > smem_cap:
+                        continue
+                    if M % BM != 0 or N % BN != 0:
+                        continue
+                    out.append(Decision(
+                        kind="wmma_tile",
+                        params={"WM": WM, "WN": WN, "WTM": WTM, "WTN": WTN},
+                        level=3,
+                    ))
+    return out
+
+
+def _enum_block_threads_candidates(
+    op_name: str,
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
+    """Enumerate legal L3 `block_threads` for rowwise reduction ops.
+
+    Legality: power-of-2 warp count (the cross-warp smem tree requires it),
+    within [64, hw.max_threads_per_block], and no more threads than would
+    leave every thread idle (n <= next_pow2(N) is not required — extra
+    threads just stride-skip — but n far above N wastes occupancy, so we
+    cap candidates at 1024 and let the LLM rank).
+    """
+    if op_name not in _L3_BLOCK_THREADS_OPS:
+        return []
+    hw = hw or HardwareProfile()
+    out: list[Decision] = []
+    for n in (128, 256, 512, 1024):
+        if n > hw.max_threads_per_block:
+            continue
+        out.append(Decision(kind="block_threads", params={"n": n}, level=3))
+    return out
+
+
 _LEGAL_KIND_GENERATORS = {
     "tile": _enum_tile_candidates,
     "unroll": _enum_unroll_candidates,
     "vectorize": _enum_vectorize_candidates,
     "parallel": _enum_parallel_candidates,
+}
+
+# L3 generators receive (op_name, shapes, hw) — a different signature from
+# the L1 loop-based generators, so they live in their own registry.
+_L3_KIND_GENERATORS = {
+    "wmma_tile": _enum_wmma_tile_candidates,
+    "block_threads": _enum_block_threads_candidates,
+    # NOTE: `pipeline_stages` is deliberately NOT enumerated yet. The current
+    # wmma kernel is structurally 2-stage (staging-level double-buffer). Depth
+    # as a free choice requires the Step-4b emitter refactor; and fragment-
+    # level buffering must NEVER appear here (P5-S3: sideeffect asm cannot
+    # overlap — known-harmful config).
+    # NOTE: `fma_contract` is not enumerated: it is strictly-better-or-equal
+    # on every op we emit (never a real tradeoff on sm_86), so offering
+    # {on, off} would only waste the agent's decision budget. It remains
+    # expressible via StrategyIR.fma_contract() for explicit experiments.
 }
 
 
@@ -295,10 +412,12 @@ class ArkeEnv:
         Args:
             top_n: max candidates to return (after filter).
             filter_kind: if set, restrict to this Decision.kind
-                         (one of: tile / unroll / vectorize / parallel / place).
+                         (one of: tile / unroll / vectorize / parallel / place
+                          / wmma_tile / block_threads).
 
         Returns:
-            List of Decision (level=1), generated from op index_vars +
+            List of Decision (level=1 for classic kinds, level=3 for
+            instruction-level kinds), generated from op index_vars +
             input tensors. Empty list if no legal candidates exist.
 
         This is the *generator-of-candidates* — not a ranker. Ranking
@@ -306,9 +425,12 @@ class ArkeEnv:
         hardware-aware** (S1, 2026-06-26): tile/unroll/vectorize factors are
         derived from real input dims and filtered against the HardwareProfile
         (threads/block, divisibility); `place(shared)` is filtered against the
-        hardware shared-memory budget. This makes the returned set an honest
-        *legality* surface, not a static menu — the core AI-Native bounded-
-        action-space guarantee.
+        hardware shared-memory budget. P5-S5 adds L3 instruction-level kinds
+        (`wmma_tile`, `block_threads`) filtered by register/smem/divisibility
+        legality — encoding the P5-S3 tuning domain knowledge so known-bad
+        configs (occupancy-collapsing tiles) are not even offered. This makes
+        the returned set an honest *legality* surface, not a static menu — the
+        core AI-Native bounded-action-space guarantee.
         """
         op = REGISTRY.get(self.op_name)
         loops = list(op.index_vars) if op.index_vars else ["i", "j"]
@@ -318,7 +440,8 @@ class ArkeEnv:
         kinds_to_gen = (
             [filter_kind]
             if filter_kind is not None
-            else ["tile", "unroll", "vectorize", "parallel", "place"]
+            else ["tile", "unroll", "vectorize", "parallel", "place",
+                  "wmma_tile", "block_threads"]
         )
 
         for kind in kinds_to_gen:
@@ -327,6 +450,10 @@ class ArkeEnv:
             elif kind in _LEGAL_KIND_GENERATORS:
                 candidates.extend(
                     _LEGAL_KIND_GENERATORS[kind](loops, self.op_inputs, self.hw_profile)
+                )
+            elif kind in _L3_KIND_GENERATORS:
+                candidates.extend(
+                    _L3_KIND_GENERATORS[kind](self.op_name, self.op_inputs, self.hw_profile)
                 )
             elif kind == "fuse":
                 candidates.extend(_enum_fuse_candidates(self.op_name))
