@@ -400,8 +400,9 @@ final:
 # ---------------------------------------------------------------------------
 # 4. gelu_and_mul — A[M,N], B[M,N] -> out = gelu(A) * B. Flat 1D.
 #    gelu(x) = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715*x^3)))
-#    Simplified approx: gelu(x) ≈ x * sigmoid(1.702 * x) for fast version
-#    We use: gelu(x) = 0.5*x*(1 + erf(x/sqrt(2))) ≈ x*sigmoid(1.702*x)
+#    tanh(u) = 2*sigmoid(2u)-1 lets us reuse ex2/rcp: gelu(x) = x*sigmoid(2u).
+#    (tanh approx matches exact erf-gelu to ~1e-3; the older 1.702-sigmoid
+#     approx was too coarse near zero-crossings and failed rtol=1e-2 tests.)
 # ---------------------------------------------------------------------------
 
 
@@ -433,12 +434,17 @@ compute:
   %a = load float, float addrspace(1)* %aptr
   %bptr = getelementptr float, float addrspace(1)* %B, i64 %gid64
   %b = load float, float addrspace(1)* %bptr
-  ; gelu(a) ≈ a * sigmoid(1.702 * a)
-  ; sigmoid(x) = 1 / (1 + exp(-x))
-  %scaled = fmul float %a, 0x3FFB3B6460000000
-  %neg_scaled = fneg float %scaled
-  %neg_scaled_lg2e = fmul float %neg_scaled, 0x3FF7154760000000
-  %exp_neg = call float @llvm.nvvm.ex2.approx.f(float %neg_scaled_lg2e)
+  ; tanh-approx gelu: gelu(a) = 0.5*a*(1+tanh(u)), u = sqrt(2/pi)*(a+0.044715*a^3)
+  ; tanh(u) = 2*sigmoid(2u)-1  =>  gelu(a) = a*sigmoid(2u)
+  ; 2u = 2*sqrt(2/pi)*(a + 0.044715*a^3), sigmoid(x)=1/(1+exp(-x))
+  %a2 = fmul float %a, %a
+  %a3 = fmul float %a2, %a
+  %cube_term = fmul float %a3, 0x3FA6E4E260000000
+  %inner = fadd float %a, %cube_term
+  %two_u = fmul float %inner, 0x3FF9884520000000
+  %neg_two_u = fneg float %two_u
+  %neg_two_u_lg2e = fmul float %neg_two_u, 0x3FF7154760000000
+  %exp_neg = call float @llvm.nvvm.ex2.approx.f(float %neg_two_u_lg2e)
   %denom = fadd float 1.0, %exp_neg
   %sig = call float @llvm.nvvm.rcp.approx.ftz.f(float %denom)
   %gelu = fmul float %a, %sig
