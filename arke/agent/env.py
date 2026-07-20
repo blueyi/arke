@@ -314,6 +314,53 @@ def _enum_block_threads_candidates(
     return out
 
 
+def _enum_pipeline_stages_candidates(
+    op_name: str,
+    shapes: dict[str, list[int]] | None = None,
+    hw: HardwareProfile | None = None,
+) -> list[Decision]:
+    """Enumerate legal L3 `pipeline_stages` (staging ring depth) for matmul.
+
+    STAGING-level pipeline only (global->shared plain load/store overlap).
+    Fragment-level buffering of wmma sideeffect asm is known-harmful
+    (P5-S3: 31% slower) and must NEVER be enumerated — depth here always
+    refers to the shared-memory staging ring, which the emitter guarantees.
+
+    Legality (statically checkable):
+      - op is matmul and the shape is TC-eligible (the scalar path has its
+        own fixed double-buffer; depth is only a knob on the wmma kernel)
+      - depth in {2, 3}; 4 is offered only if the default 128x128 tile's
+        fp16 staging smem depth*(BM*BK + BK*BN)*2B fits the hw budget.
+        (The emitter re-validates against the *actual* tile at consumption
+        and falls back to 2 if a larger wmma_tile pushes smem over budget.)
+    """
+    if op_name not in _L3_WMMA_OPS:
+        return []
+    shapes = shapes or {}
+    dims = [s for s in shapes.values() if s and len(s) >= 2]
+    if len(dims) < 2:
+        return []
+    M, K = dims[0][0], dims[0][1]
+    N = dims[1][1]
+    if not (isinstance(M, int) and isinstance(N, int) and isinstance(K, int)):
+        return []
+    if M < 1024 or N < 1024 or K % 16 != 0:
+        return []  # not TC-eligible: staging-depth knob does not exist
+
+    hw = hw or HardwareProfile()
+    smem_cap = hw.shared_memory_bytes
+    BM, BN, BK = 128, 128, 16   # default wmma tile (2,4,4,2)
+    out: list[Decision] = []
+    for depth in (2, 3, 4):
+        smem = depth * (BM * BK + BK * BN) * 2
+        if smem > smem_cap:
+            continue
+        out.append(Decision(
+            kind="pipeline_stages", params={"depth": depth}, level=3,
+        ))
+    return out
+
+
 _LEGAL_KIND_GENERATORS = {
     "tile": _enum_tile_candidates,
     "unroll": _enum_unroll_candidates,
@@ -326,11 +373,11 @@ _LEGAL_KIND_GENERATORS = {
 _L3_KIND_GENERATORS = {
     "wmma_tile": _enum_wmma_tile_candidates,
     "block_threads": _enum_block_threads_candidates,
-    # NOTE: `pipeline_stages` is deliberately NOT enumerated yet. The current
-    # wmma kernel is structurally 2-stage (staging-level double-buffer). Depth
-    # as a free choice requires the Step-4b emitter refactor; and fragment-
-    # level buffering must NEVER appear here (P5-S3: sideeffect asm cannot
-    # overlap — known-harmful config).
+    # Step 4b: staging-pipeline depth (ring-buffer NSTAGE) on the wmma
+    # matmul kernel. STAGING-level only — fragment-level buffering of
+    # sideeffect asm must NEVER appear here (P5-S3: known-harmful, cannot
+    # overlap). The enumerator + emitter both enforce this by construction.
+    "pipeline_stages": _enum_pipeline_stages_candidates,
     # NOTE: `fma_contract` is not enumerated: it is strictly-better-or-equal
     # on every op we emit (never a real tradeoff on sm_86), so offering
     # {on, off} would only waste the agent's decision budget. It remains
@@ -413,7 +460,7 @@ class ArkeEnv:
             top_n: max candidates to return (after filter).
             filter_kind: if set, restrict to this Decision.kind
                          (one of: tile / unroll / vectorize / parallel / place
-                          / wmma_tile / block_threads).
+                          / wmma_tile / block_threads / pipeline_stages).
 
         Returns:
             List of Decision (level=1 for classic kinds, level=3 for
@@ -441,7 +488,7 @@ class ArkeEnv:
             [filter_kind]
             if filter_kind is not None
             else ["tile", "unroll", "vectorize", "parallel", "place",
-                  "wmma_tile", "block_threads"]
+                  "wmma_tile", "block_threads", "pipeline_stages"]
         )
 
         for kind in kinds_to_gen:

@@ -200,6 +200,82 @@ class TestLowerConsumesL3:
         assert art.op_name == "relu"
 
 
+# ─── pipeline_stages consumption (Step 4b) ─────────────────────────────────
+
+class TestPipelineStagesConsumption:
+    """P5-S5 Step 4b: pipeline_stages{depth} -> wmma staging ring NSTAGE."""
+
+    def test_default_is_two_stage_ring(self, backend):
+        art = backend.lower(_matmul_graph())
+        # default: classic double buffer, [2 x ...] shmem ring
+        assert "[2 x [128 x [16 x half]]]" in art.source_code
+        assert "[3 x [" not in art.source_code
+
+    def test_depth3_emits_three_stage_ring(self, backend):
+        s = StrategyIR()
+        s.pipeline_stages(3, rationale="deeper staging overlap probe")
+        art = backend.lower(_matmul_graph(), strategy=s)
+        # 3-slot ring for both A and B staging buffers
+        assert "[3 x [128 x [16 x half]]]" in art.source_code
+        assert "[3 x [16 x [128 x half]]]" in art.source_code
+        # non-pow2 ring -> urem indexing; prologue stages tiles 0 and 1
+        assert "urem i32 %t, 3" in art.source_code
+        assert art.metadata["l3_params"]["pipeline_stages"]["depth"] == 3
+        # launch config unchanged: depth only affects smem/staging
+        assert art.metadata["emitted"].block == (256, 1, 1)
+        assert art.metadata["emitted"].grid == (8, 8, 1)
+
+    def test_depth4_emits_four_stage_ring(self, backend):
+        s = StrategyIR()
+        s.pipeline_stages(4)
+        art = backend.lower(_matmul_graph(), strategy=s)
+        assert "[4 x [128 x [16 x half]]]" in art.source_code
+        # pow2 ring -> and-mask indexing
+        assert "and i32 %t, 3" in art.source_code
+
+    def test_invalid_depth_falls_back_to_two(self, backend):
+        for bad in (0, 1, 5, -3, "three", None):
+            s = StrategyIR()
+            s.pipeline_stages(bad)  # type: ignore[arg-type]
+            art = backend.lower(_matmul_graph(), strategy=s)
+            assert "[2 x [128 x [16 x half]]]" in art.source_code, bad
+
+    def test_smem_boundary_and_overflow(self, backend):
+        """depth*tile smem <= 48KB is honored; beyond 48KB falls back to 2."""
+        # Boundary-legal: BM=128, BN=256 -> 4*(128*16+16*256)*2 = 48KB exactly.
+        s = StrategyIR()
+        s.wmma_tile(2, 4, 4, 4)          # BM=128, BN=256 (needs N%256==0)
+        s.pipeline_stages(4)
+        art = backend.lower(_matmul_graph(M=1024, N=2048, K=1024), strategy=s)
+        assert "[4 x [128 x [16 x half]]]" in art.source_code
+        # Overflow: BM=128, BN=512 -> 3*(128*16+16*512)*2 = 60KB > 48KB
+        # -> depth falls back to 2 while the wmma_tile override sticks.
+        s = StrategyIR()
+        s.wmma_tile(2, 8, 4, 4)          # BM=128, BN=512 (needs N%512==0)
+        s.pipeline_stages(3)
+        art = backend.lower(_matmul_graph(M=1024, N=2048, K=1024), strategy=s)
+        assert "[2 x [128 x [16 x half]]]" in art.source_code
+        assert "[3 x [" not in art.source_code
+
+    def test_depth3_correct_ring_with_custom_tile(self, backend):
+        """pipeline_stages composes with wmma_tile."""
+        s = StrategyIR()
+        s.wmma_tile(2, 2, 2, 4)          # BM=64, BN=128
+        s.pipeline_stages(3)
+        art = backend.lower(_matmul_graph(), strategy=s)
+        assert "[3 x [64 x [16 x half]]]" in art.source_code
+        assert art.metadata["emitted"].block == (128, 1, 1)
+
+    def test_non_tc_shape_ignores_depth(self, backend):
+        """Scalar-path matmul has a fixed structural double-buffer; the
+        pipeline_stages decision must be silently inert (no wmma ring)."""
+        s = StrategyIR()
+        s.pipeline_stages(3)
+        art = backend.lower(_matmul_graph(512, 512, 512), strategy=s)
+        assert "wmma" not in art.source_code
+        assert "[3 x [" not in art.source_code
+
+
 # ─── L3 bounded action space (Step 4a) ─────────────────────────────────────
 
 class TestL3ActionSpace:
@@ -230,6 +306,36 @@ class TestL3ActionSpace:
     def test_non_tc_shape_offers_no_wmma(self):
         env = self._matmul_env(512, 512, 512)
         assert env.list_legal_actions(top_n=100, filter_kind="wmma_tile") == []
+
+    def test_pipeline_stages_candidates_for_tc_matmul(self):
+        """Step 4b: TC-eligible matmul offers staging depths {2,3,4}
+        (4 allowed on sm_86: 4*(128*16+16*128)*2 = 32KB <= 48KB)."""
+        env = self._matmul_env()
+        acts = env.list_legal_actions(top_n=100, filter_kind="pipeline_stages")
+        depths = sorted(a.params["depth"] for a in acts)
+        assert depths == [2, 3, 4]
+        assert all(a.kind == "pipeline_stages" and a.level == 3 for a in acts)
+
+    def test_pipeline_stages_absent_for_non_tc(self):
+        env = self._matmul_env(512, 512, 512)
+        assert env.list_legal_actions(
+            top_n=100, filter_kind="pipeline_stages") == []
+        from arke.agent.env import ArkeEnv
+        env2 = ArkeEnv.from_op("softmax", {"X": [64, 4096]})
+        assert env2.list_legal_actions(
+            top_n=100, filter_kind="pipeline_stages") == []
+
+    def test_pipeline_stages_to_emitter_roundtrip(self):
+        """An enumerated depth-3 action applied as a decision must produce
+        a 3-slot staging ring in the emitted LLVM IR."""
+        from arke.backend.llvm_backend import LLVMBackend
+        env = self._matmul_env()
+        acts = env.list_legal_actions(top_n=100, filter_kind="pipeline_stages")
+        pick = next(a for a in acts if a.params["depth"] == 3)
+        s = StrategyIR(kernel_id="mm", target_hw="sm_86")
+        s.add_decision(pick)
+        art = LLVMBackend(chip="sm_86").lower(_matmul_graph(), strategy=s)
+        assert "[3 x [128 x [16 x half]]]" in art.source_code
 
     def test_block_threads_for_reduction_ops(self):
         from arke.agent.env import ArkeEnv

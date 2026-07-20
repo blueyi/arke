@@ -57,9 +57,12 @@ class Decision:
                         Maps to the LLVM `contract` fast-math flag
                         (fmul contract + fadd contract -> fma.rn.f32).
         pipeline_stages - Software-pipeline depth for global->shared
-                        staging: {depth}. STAGING-level only — fragment-
-                        level buffering of sideeffect asm is known-harmful
-                        and must not be generated (see P5-S3 findings).
+                        staging: {depth}, an NSTAGE-slot shared-memory
+                        ring buffer (depth in {2,3,4}; 2 = classic
+                        double-buffer default). STAGING-level only —
+                        fragment-level buffering of sideeffect asm is
+                        known-harmful and must not be generated (see
+                        P5-S3 findings).
     """
     kind: str
     params: dict[str, Any]

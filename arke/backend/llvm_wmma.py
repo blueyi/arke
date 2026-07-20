@@ -23,31 +23,41 @@ Algorithm (2x4 warp grid — 128x128 tile, 256 threads / 8 warps):
     (0.33 occupancy vs 0.25) AND amortizes global loads over a 4x-larger
     tile. Measured LLVM/CUDA-C ~0.78x (1024) / ~0.58x (2048), a clear win
     over the 1.01x parity of the old tile. 0 spill.
-  - Software-pipelined DOUBLE-BUFFERED shared memory: the NEXT K-tile is
-    staged (global load -> fptrunc -> shared store) into the alternate
-    buffer WHILE the current tile's wmma fragments are loaded + computed.
-    See the "Double buffering in LLVM IR" note below for why this pays off
+  - Software-pipelined RING-BUFFERED shared memory (NSTAGE, default 2 =
+    classic double-buffer): tile kt+NSTAGE-1 is staged (global load ->
+    fptrunc -> shared store) into ring slot (kt+NSTAGE-1) % NSTAGE WHILE
+    the current tile's wmma fragments are loaded + computed from slot
+    kt % NSTAGE. Prologue pre-stages tiles 0..NSTAGE-2.
+    See the "Staging pipeline in LLVM IR" note below for why this pays off
     here where the earlier fragment-level double-buffer attempt did not.
   - f32 global loads -> fptrunc to fp16 -> store to shared -> wmma
 
-Double buffering in LLVM IR (2026-07-18, replicating CUDA-C strategy):
+Staging pipeline in LLVM IR (2026-07-18 double-buffer; 2026-07-21 NSTAGE):
   An earlier attempt double-buffered the *wmma fragment loads* (inline PTX
   `sideeffect` asm) and was 31% SLOWER — `sideeffect` blocks the compiler
-  from overlapping load and compute. THIS design double-buffers the
+  from overlapping load and compute. THIS design pipelines the
   *global->shared staging* instead. Those staging ops are ordinary LLVM
   `load`/`fptrunc`/`store` instructions (NOT sideeffect asm), and they write
-  to the ALTERNATE shared buffer, so they carry no dependency on the current
-  tile's wmma reads. The instruction scheduler + GPU memory pipeline can
-  therefore issue the next tile's global loads while the tensor cores consume
-  the current buffer — exactly the latency-hiding CUDA-C gets from its
-  LOAD_TILE(nxt) / compute(cur) split. Control flow is block-uniform (the
-  K-tile index is identical across all threads), so the single per-iteration
-  barrier is safe; it is emitted as inline `bar.sync 0` asm to keep the LLVM
-  NVPTX structurizer from folding it into a conditional region.
+  to a ring slot no other in-flight tile is reading, so they carry no
+  dependency on the current tile's wmma reads. The instruction scheduler +
+  GPU memory pipeline can therefore issue future tiles' global loads while
+  the tensor cores consume the current buffer — exactly the latency-hiding
+  CUDA-C gets from its LOAD_TILE(nxt) / compute(cur) split. Control flow is
+  block-uniform (the K-tile index is identical across all threads), so the
+  single per-iteration barrier is safe; it is emitted as inline `bar.sync 0`
+  asm to keep the LLVM NVPTX structurizer from folding it into a conditional
+  region. Barrier correctness for any NSTAGE >= 2: the prefetch at iteration
+  t writes slot (t+NSTAGE-1)%NSTAGE, whose last reader was iteration t-1
+  (>= 1 barrier ago); the compute at iteration t reads slot t%NSTAGE, staged
+  either in the prologue or at iteration t-NSTAGE+1 (>= 1 barrier ago).
+  NOTE: this is a plain-LDG staging pipeline — the LLVM IR path has no
+  cp.async, so depths > 2 mostly add smem footprint rather than new overlap;
+  whether 3-stage wins is an empirical question per shape.
 
 Register note (sm_86: 64K reg/SM, 48KB smem, 1536 threads/SM):
-  WTM*WTN*8 = 64 fp32 accumulators/thread. Double buffering doubles shared
-  memory (12KB for a 64x128 tile) — well under the 48KB budget.
+  WTM*WTN*8 = 64 fp32 accumulators/thread. NSTAGE-buffering multiplies
+  shared memory (NSTAGE*(BM*BK+BK*BN)*2B; 16KB @ NSTAGE=2, 24KB @ NSTAGE=3
+  for the 128x128 tile) — under the 48KB budget for NSTAGE <= 4.
 
 Key findings:
   - PTX wmma.mma syntax: use '.f32.f32' (NOT '.f32.f16.f16.f32')
@@ -66,24 +76,33 @@ _ACC_REGS = 8    # c/d fragments: 8 x f32
 def _gen_tiled_matmul_ir_wmma(
     kernel_name: str, M: int, K: int, N: int,
     *, WM: int = 2, WN: int = 4, WTM: int = 4, WTN: int = 2,
+    NSTAGE: int = 2,
 ) -> str:
-    """Generate LLVM IR for wmma tensor-core matmul (2x2 warp grid).
+    """Generate LLVM IR for wmma tensor-core matmul (parameterized warp grid).
 
     C[M,N] = A[M,K] @ B[K,N], fp16 TC with fp32 accumulation.
 
     Block tile: BM = WM*WTM*16, BN = WN*WTN*16, BK = 16.
     Threads/block = WM*WN*32. Requires M%BM==0, N%BN==0, K%16==0.
-    Defaults (WM=2,WN=2,WTM=2,WTN=4) -> 64x128 tile, 128 threads.
+    Defaults (WM=2,WN=4,WTM=4,WTN=2) -> 128x128 tile, 256 threads.
 
-    Software-pipelined double-buffered shared memory: the next K-tile is
-    staged into the alternate buffer while the current tile is computed.
+    NSTAGE (P5-S5 Step 4b): staging software-pipeline depth — a ring of
+    NSTAGE shared-memory buffers. The prologue stages tiles 0..NSTAGE-2;
+    each loop iteration t prefetches tile t+NSTAGE-1 into
+    buf[(t+NSTAGE-1) % NSTAGE] while computing from buf[t % NSTAGE].
+    NSTAGE=2 is the classic double-buffer (default). This pipelines ONLY
+    the global->shared staging (plain load/fptrunc/store) — wmma fragment
+    loads are sideeffect asm and must never be buffered (P5-S3).
+    Shared memory grows linearly: NSTAGE*(BM*BK + BK*BN)*2 bytes.
     """
+    assert NSTAGE >= 2, "staging pipeline needs at least 2 buffers"
     BK = 16
     WARP = 32
     BM = WM * WTM * 16
     BN = WN * WTN * 16
     THREADS = WM * WN * WARP
     num_tiles = K // BK
+    nstage_pow2 = (NSTAGE & (NSTAGE - 1)) == 0
 
     a_elems = (BM * BK) // THREADS   # A staging elems/thread
     b_elems = (BK * BN) // THREADS   # B staging elems/thread
@@ -102,9 +121,9 @@ def _gen_tiled_matmul_ir_wmma(
     RTY = frag_ty(_FRAG_REGS, "i32")   # {i32 x8}
     FTY = frag_ty(_ACC_REGS, "float")  # {float x8}
 
-    # Shared-memory array types (double-buffered: leading [2 x ...]).
-    ATY = f"[2 x [{BM} x [{BK} x half]]]"
-    BTY = f"[2 x [{BK} x [{BN} x half]]]"
+    # Shared-memory array types (NSTAGE-ring-buffered: leading [NSTAGE x ...]).
+    ATY = f"[{NSTAGE} x [{BM} x [{BK} x half]]]"
+    BTY = f"[{NSTAGE} x [{BK} x [{BN} x half]]]"
 
     def emit_stage(prefix: str, buf: str, kbase: str) -> None:
         """Emit global->shared staging for one K-tile.
@@ -188,9 +207,13 @@ def _gen_tiled_matmul_ir_wmma(
     ln(f"  %bn = mul i32 %bx, {BN}")
     ln("")
 
-    # ── Prologue: stage tile 0 into buffer 0, then barrier ──
-    emit_stage("p", "0", "0")
-    ln("")
+    # ── Prologue: stage tiles 0..NSTAGE-2 into ring buffers 0..NSTAGE-2 ──
+    # (compile-time constants; num_tiles >= NSTAGE-1 is guaranteed by the
+    # TC eligibility check K >= 64 -> num_tiles >= 4 > NSTAGE-1 for NSTAGE<=4,
+    # but guard anyway for robustness.)
+    for s in range(min(NSTAGE - 1, num_tiles)):
+        emit_stage(f"p{s}_", str(s), str(s * BK))
+        ln("")
     ln('  call void asm sideeffect "bar.sync 0;", ""()')
     ln("")
 
@@ -208,17 +231,20 @@ def _gen_tiled_matmul_ir_wmma(
                 ln(f"  %acc_m{tm}_n{tn}_r{r} = phi float [ 0.0, %entry ], [ %acc_m{tm}_n{tn}_r{r}_new, %after_prefetch ]")
     ln("")
 
-    # cur = t & 1, nxt = (t+1) & 1 (block-uniform)
-    ln("  %cur = and i32 %t, 1")
-    ln("  %tp1 = add i32 %t, 1")
-    ln("  %nxt = and i32 %tp1, 1")
-    ln(f"  %need_prefetch = icmp slt i32 %tp1, {num_tiles}")
+    # Ring indices (block-uniform): cur = t % NSTAGE; the prefetch target is
+    # tile t+NSTAGE-1 -> buf (t+NSTAGE-1) % NSTAGE. For power-of-2 NSTAGE the
+    # modulo lowers to `and`; otherwise `urem` (t >= 0 so urem is exact).
+    mod_op = f"and i32 {{v}}, {NSTAGE - 1}" if nstage_pow2 else f"urem i32 {{v}}, {NSTAGE}"
+    ln(f"  %cur = {mod_op.format(v='%t')}")
+    ln(f"  %tpn = add i32 %t, {NSTAGE - 1}")
+    ln(f"  %nxt = {mod_op.format(v='%tpn')}")
+    ln(f"  %need_prefetch = icmp slt i32 %tpn, {num_tiles}")
     ln("  br i1 %need_prefetch, label %prefetch, label %after_prefetch")
     ln("")
 
-    # ── Prefetch next K-tile into the alternate buffer (uniform branch) ──
+    # ── Prefetch K-tile t+NSTAGE-1 into its ring slot (uniform branch) ──
     ln("prefetch:")
-    ln(f"  %next_k_base = mul i32 %tp1, {BK}")
+    ln(f"  %next_k_base = mul i32 %tpn, {BK}")
     emit_stage("l", "%nxt", "%next_k_base")
     ln("  br label %after_prefetch")
     ln("")
@@ -300,7 +326,9 @@ if __name__ == "__main__":
     import subprocess
     import sys
 
-    ir = _gen_tiled_matmul_ir_wmma("arke_matmul_tc_1024x1024x1024", 1024, 1024, 1024)
+    nstage = int(sys.argv[1]) if len(sys.argv) > 1 else 2
+    ir = _gen_tiled_matmul_ir_wmma(
+        "arke_matmul_tc_1024x1024x1024", 1024, 1024, 1024, NSTAGE=nstage)
 
     ll_path = "/tmp/test_wmma_matmul.ll"
     ptx_path = "/tmp/test_wmma_matmul.ptx"

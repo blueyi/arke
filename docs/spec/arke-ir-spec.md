@@ -416,7 +416,7 @@ instruction choices and are only consumed by ISA-level backends (currently
 | `wmma_tile` | `WM`, `WN`, `WTM`, `WTN` | Inline-PTX wmma warp grid: block tile = (WM·WTM·16)×(WN·WTN·16), threads = WM·WN·32 | threads ≤ 1024, M/N divisible by tile; else tuned default |
 | `block_threads` | `n` | Rowwise reduction block size (softmax/layernorm/rmsnorm) | 64 ≤ n ≤ 1024, power-of-2 warp count; else shape heuristic |
 | `fma_contract` | `enabled` | LLVM `contract` fast-math flag (`fmul contract`+`fadd contract` → `fma.rn.f32`) | boolean |
-| `pipeline_stages` | `depth` | Global→shared staging software-pipeline depth. **Staging-level only** — fragment-level buffering of `sideeffect` asm is known-harmful (P5-S3) and is not expressible | depth ≥ 1 |
+| `pipeline_stages` | `depth` | Global→shared staging software-pipeline depth: NSTAGE-slot shared-memory ring buffer on the wmma matmul kernel (prologue pre-stages `depth-1` tiles; iteration *t* prefetches tile *t+depth−1* while computing tile *t*). **Staging-level only** — fragment-level buffering of `sideeffect` asm is known-harmful (P5-S3) and is not expressible | depth ∈ {2, 3, 4} and depth·(BM·BK+BK·BN)·2B ≤ 48KB; else depth = 2 |
 
 Invalid L3 params never fail compilation — the emitter falls back to its tuned
 default. An L3 decision may change performance, never correctness. Builder

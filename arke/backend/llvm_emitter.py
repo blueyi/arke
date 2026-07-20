@@ -97,9 +97,11 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86",
     all divisible by 16), otherwise uses register-blocked FP32 tiling.
 
     P5-S5 L3: ``l3={"wmma_tile": {"WM","WN","WTM","WTN"}}`` overrides the
-    tensor-core warp-grid config. The override is validated (tile alignment,
-    thread cap) and silently falls back to the tuned default when the shape
-    is incompatible — an L3 decision must never produce a wrong kernel.
+    tensor-core warp-grid config, and ``l3={"pipeline_stages": {"depth"}}``
+    sets the TC staging software-pipeline depth (ring-buffer NSTAGE).
+    Overrides are validated (tile alignment, thread cap, depth range, shared
+    memory budget) and silently fall back to the tuned default when
+    incompatible — an L3 decision must never produce a wrong kernel.
     """
     node = graph.nodes[0]
     assert node.op == "matmul", f"Expected matmul, got {node.op}"
@@ -142,6 +144,19 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86",
         except (KeyError, TypeError, ValueError):
             pass  # malformed L3 params -> tuned default
     BM_TC, BN_TC = WM * WTM * 16, WN * WTN * 16
+    # P5-S5 Step 4b L3 override: pipeline_stages sets the staging ring-buffer
+    # depth (NSTAGE). Validated: depth in {2,3,4} AND fp16 A/B staging smem
+    # NSTAGE*(BM*BK + BK*BN)*2B within the 48KB static budget. Invalid ->
+    # fall back to the structural default of 2 (classic double-buffer).
+    NSTAGE = 2
+    if l3 and "pipeline_stages" in l3:
+        try:
+            depth = int(l3["pipeline_stages"]["depth"])
+            smem = depth * (BM_TC * BK + BK * BN_TC) * 2
+            if depth in (2, 3, 4) and smem <= 48 * 1024:
+                NSTAGE = depth
+        except (KeyError, TypeError, ValueError):
+            pass  # malformed L3 params -> structural default
     tc_eligible = (
         M % BM_TC == 0 and N % BN_TC == 0 and K % BK == 0
         and M >= 1024 and N >= 1024 and K >= 64
@@ -152,7 +167,8 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86",
         from arke.backend.llvm_wmma import _gen_tiled_matmul_ir_wmma
         kernel_name = f"arke_matmul_tc_{M}x{N}x{K}"
         source = _gen_tiled_matmul_ir_wmma(kernel_name, M, K, N,
-                                           WM=WM, WN=WN, WTM=WTM, WTN=WTN)
+                                           WM=WM, WN=WN, WTM=WTM, WTN=WTN,
+                                           NSTAGE=NSTAGE)
         grid = ((N + BN_TC - 1) // BN_TC, (M + BM_TC - 1) // BM_TC, 1)
         block = (WM * WN * 32, 1, 1)
     else:
@@ -749,9 +765,9 @@ LLVM_EMITTERS: dict[str, Callable[..., Any]] = {
 }
 
 # ── P5-S5: ops whose emitters accept the `l3=` instruction-level kwarg ──
-# Extend as more emitters gain L3 support (fma_contract, pipeline_stages...).
+# Extend as more emitters gain L3 support (fma_contract...).
 L3_AWARE_OPS: frozenset[str] = frozenset({
-    "matmul",       # wmma_tile (TC warp grid)
+    "matmul",       # wmma_tile (TC warp grid) + pipeline_stages (staging NSTAGE)
     "softmax",      # block_threads
     "layernorm",    # block_threads
     "rmsnorm",      # block_threads
