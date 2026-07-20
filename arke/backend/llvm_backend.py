@@ -24,9 +24,10 @@ from typing import Any
 import numpy as np
 
 from arke.backend.cuda_c_backend import CudaCKernel, _as_tuple, _ir_dtype_to_numpy
-from arke.backend.llvm_emitter import emit_llvm_ir_matmul, LLVM_EMITTERS
+from arke.backend.llvm_emitter import emit_llvm_ir_matmul, LLVM_EMITTERS, L3_AWARE_OPS
 from arke.backend.protocol import BackendArtifact, CompiledKernel
 from arke.ir.graph import IRGraph
+from arke.ir.strategy import extract_l3_params
 
 
 # -- toolchain discovery --
@@ -213,8 +214,14 @@ class LLVMBackend:
         """P5-S2: all 46 ops supported."""
         return op_name in LLVM_EMITTERS
 
-    def lower(self, graph: IRGraph) -> BackendArtifact:
-        """Generate LLVM IR source from IRGraph."""
+    def lower(self, graph: IRGraph, strategy: Any = None) -> BackendArtifact:
+        """Generate LLVM IR source from IRGraph, optionally guided by StrategyIR.
+
+        P5-S5: when `strategy` carries L3 (instruction-level) decisions, they
+        configure the emitter directly (wmma_tile -> WM/WN/WTM/WTN warp grid,
+        block_threads -> reduction block size). strategy=None preserves the
+        exact pre-P5-S5 behavior (emitters use their tuned defaults).
+        """
         node = graph.nodes[0]
         op = node.op
 
@@ -222,12 +229,17 @@ class LLVMBackend:
             raise ValueError(f"LLVM backend does not support op {op!r}")
 
         emitter = LLVM_EMITTERS[op]
-        emitted = emitter(graph, chip=self.chip)
+        l3 = extract_l3_params(strategy)
+        if l3 and op in L3_AWARE_OPS:
+            emitted = emitter(graph, chip=self.chip, l3=l3)
+        else:
+            emitted = emitter(graph, chip=self.chip)
         return BackendArtifact(
             source_code=emitted.source,
             backend_name=self.name,
             op_name=op,
-            metadata={"emitted": emitted, "graph_name": graph.name},
+            metadata={"emitted": emitted, "graph_name": graph.name,
+                      "l3_params": l3},
         )
 
     def compile(self, artifact: BackendArtifact) -> CompiledKernel:

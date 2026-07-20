@@ -85,15 +85,21 @@ from arke.backend.llvm_attention import (
 )
 
 
-# ── Matmul (P5-S2: upgraded 64x64 tiling) ────────────────────────────
+# ── Matmul (P5-S2: upgraded 64x64 tiling; P5-S5: L3 wmma_tile) ───────
 
-def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
+def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86",
+                        l3: dict | None = None) -> CudaCKernel:
     """Emit a tiled shared-memory matmul kernel as LLVM IR text.
 
     C[M,N] = A[M,K] @ B[K,N]
 
     Routes to tensor-core (wmma) kernel for large shapes (M,N,K >= 1024 and
     all divisible by 16), otherwise uses register-blocked FP32 tiling.
+
+    P5-S5 L3: ``l3={"wmma_tile": {"WM","WN","WTM","WTN"}}`` overrides the
+    tensor-core warp-grid config. The override is validated (tile alignment,
+    thread cap) and silently falls back to the tuned default when the shape
+    is incompatible — an L3 decision must never produce a wrong kernel.
     """
     node = graph.nodes[0]
     assert node.op == "matmul", f"Expected matmul, got {node.op}"
@@ -114,14 +120,28 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     dtype = a_val.dtype or "float32"
 
     # Route: TC (wmma) for large TC-eligible shapes.
-    # TC path uses a 128x128 block tile with a 2x4 warp grid (WM=2,WN=4,
-    # WTM=4,WTN=2), 256 threads / 8 warps. This doubles occupancy vs the old
-    # 64x128/128-thread config (0.25->0.33 on sm_86: 128 reg/thread, 16KB
-    # smem -> 2 blocks/SM) and amortizes global loads over a larger tile,
-    # measured ~0.78x (1024) / ~0.58x (2048) vs CUDA-C. Requires M,N%128==0;
-    # shapes that are 64- but not 128-aligned fall through to the scalar ladder.
+    # Default TC config: 128x128 block tile, 2x4 warp grid (WM=2,WN=4,
+    # WTM=4,WTN=2), 256 threads / 8 warps — the P5-S3 sweep winner
+    # (~0.78x @1024 / ~0.58x @2048 vs CUDA-C on sm_86).
     BM, BN, BK = 64, 64, 16
-    BM_TC, BN_TC = 128, 128
+    WM, WN, WTM, WTN = 2, 4, 4, 2
+    # P5-S5 L3 override: wmma_tile decision reconfigures the warp grid.
+    if l3 and "wmma_tile" in l3:
+        cand = l3["wmma_tile"]
+        try:
+            cWM, cWN = int(cand["WM"]), int(cand["WN"])
+            cWTM, cWTN = int(cand["WTM"]), int(cand["WTN"])
+            cBM, cBN = cWM * cWTM * 16, cWN * cWTN * 16
+            threads = cWM * cWN * 32
+            # Validity: positive, thread cap, and shape divisibility for
+            # this M/N (otherwise the grid would compute out-of-bounds).
+            if (cWM > 0 and cWN > 0 and cWTM > 0 and cWTN > 0
+                    and threads <= 1024
+                    and M % cBM == 0 and N % cBN == 0):
+                WM, WN, WTM, WTN = cWM, cWN, cWTM, cWTN
+        except (KeyError, TypeError, ValueError):
+            pass  # malformed L3 params -> tuned default
+    BM_TC, BN_TC = WM * WTM * 16, WN * WTN * 16
     tc_eligible = (
         M % BM_TC == 0 and N % BN_TC == 0 and K % BK == 0
         and M >= 1024 and N >= 1024 and K >= 64
@@ -131,9 +151,10 @@ def emit_llvm_ir_matmul(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     if tc_eligible:
         from arke.backend.llvm_wmma import _gen_tiled_matmul_ir_wmma
         kernel_name = f"arke_matmul_tc_{M}x{N}x{K}"
-        source = _gen_tiled_matmul_ir_wmma(kernel_name, M, K, N)
+        source = _gen_tiled_matmul_ir_wmma(kernel_name, M, K, N,
+                                           WM=WM, WN=WN, WTM=WTM, WTN=WTN)
         grid = ((N + BN_TC - 1) // BN_TC, (M + BM_TC - 1) // BM_TC, 1)
-        block = (256, 1, 1)  # 8 warps (2x4)
+        block = (WM * WN * 32, 1, 1)
     else:
         kernel_name = f"arke_matmul_{M}x{N}x{K}"
         num_tiles = (K + BK - 1) // BK
@@ -726,3 +747,12 @@ LLVM_EMITTERS: dict[str, Callable[..., Any]] = {
     "paged_attention": emit_llvm_ir_paged_attention,
     "multi_latent_attention": emit_llvm_ir_multi_latent_attention,
 }
+
+# ── P5-S5: ops whose emitters accept the `l3=` instruction-level kwarg ──
+# Extend as more emitters gain L3 support (fma_contract, pipeline_stages...).
+L3_AWARE_OPS: frozenset[str] = frozenset({
+    "matmul",       # wmma_tile (TC warp grid)
+    "softmax",      # block_threads
+    "layernorm",    # block_threads
+    "rmsnorm",      # block_threads
+})

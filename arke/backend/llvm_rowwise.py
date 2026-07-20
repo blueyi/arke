@@ -136,7 +136,7 @@ def _warp_reduce_sum_ir(acc_name: str, result_name: str, prefix: str = "") -> st
 # Shape-adaptive block size + cross-warp reduction helper
 # ---------------------------------------------------------------------------
 
-def _rowwise_nthreads(N: int) -> int:
+def _rowwise_nthreads(N: int, l3: dict | None = None) -> int:
     """Shape-adaptive block size for rowwise (1-block-per-row) kernels.
 
     Mirrors CudaCBackend.rowwise_block_for_n so LLVM and CU-C run the SAME
@@ -144,7 +144,20 @@ def _rowwise_nthreads(N: int) -> int:
       N >= 2048 -> 512 threads (16 warps); else 256 threads (8 warps).
     At large N the extra warps hide memory latency; at small N they'd just
     waste threads and drop occupancy, so 256 stays optimal there.
+
+    P5-S5 L3: ``l3={"block_threads": {"n": 128|256|512|1024}}`` overrides the
+    heuristic. Validated (power-of-2 warp multiple in [64, 1024], and the
+    cross-warp smem tree requires power-of-2 warp count); invalid -> heuristic.
     """
+    if l3 and "block_threads" in l3:
+        try:
+            n = int(l3["block_threads"]["n"])
+            num_warps = n // 32
+            if (64 <= n <= 1024 and n % 32 == 0
+                    and num_warps & (num_warps - 1) == 0):
+                return n
+        except (KeyError, TypeError, ValueError):
+            pass
     return 512 if N >= 2048 else 256
 
 
@@ -197,7 +210,8 @@ def _cross_warp_reduce_ir(num_warps, smem_name, in_val, out_name, prefix, op):
 # ---------------------------------------------------------------------------
 
 
-def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
+def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86",
+                         l3: dict | None = None) -> CudaCKernel:
     """Emit LLVM IR for per-row softmax. Grid=(M,1,1), Block=(nthreads,1,1).
 
     Uses 2-pass online softmax algorithm with adaptive multi-warp parallelism:
@@ -210,7 +224,7 @@ def emit_llvm_ir_softmax(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     """
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     kernel_name = "arke_softmax"
-    nthreads = _rowwise_nthreads(N)
+    nthreads = _rowwise_nthreads(N, l3)
     num_warps = nthreads // 32
 
     source = _module_header_warp()
@@ -329,7 +343,8 @@ done:
 # ---------------------------------------------------------------------------
 
 
-def emit_llvm_ir_layernorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
+def emit_llvm_ir_layernorm(graph: IRGraph, chip: str = "sm_86",
+                           l3: dict | None = None) -> CudaCKernel:
     """Emit LLVM IR for per-row layer normalization. Grid=(M,1,1), Block=(nthreads,1,1).
 
     Uses adaptive multi-warp parallelism with 2-level reduction:
@@ -342,7 +357,7 @@ def emit_llvm_ir_layernorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     w_name = input_names[1]
     b_name = input_names[2]
     kernel_name = "arke_layernorm"
-    nthreads = _rowwise_nthreads(N)
+    nthreads = _rowwise_nthreads(N, l3)
     num_warps = nthreads // 32
 
     source = _module_header_warp()
@@ -475,7 +490,8 @@ done:
 # ---------------------------------------------------------------------------
 
 
-def emit_llvm_ir_rmsnorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
+def emit_llvm_ir_rmsnorm(graph: IRGraph, chip: str = "sm_86",
+                         l3: dict | None = None) -> CudaCKernel:
     """Emit LLVM IR for per-row RMS normalization. Grid=(M,1,1), Block=(nthreads,1,1).
 
     Uses adaptive multi-warp parallelism with 2-level reduction:
@@ -487,7 +503,7 @@ def emit_llvm_ir_rmsnorm(graph: IRGraph, chip: str = "sm_86") -> CudaCKernel:
     node, input_names, out_name, x_name, M, N, dtype = _extract_2d(graph)
     w_name = input_names[1]
     kernel_name = "arke_rmsnorm"
-    nthreads = _rowwise_nthreads(N)
+    nthreads = _rowwise_nthreads(N, l3)
     num_warps = nthreads // 32
 
     source = _module_header_warp()

@@ -45,12 +45,27 @@ class Decision:
         compute       - {warps, num_stages, shared_memory, pipeline_depth}
         cache_config  - {l1_size, l2_hint}
         memory_fence  - {scope}
+
+    Kinds (L3 — instruction-level, P5-S5; map directly to LLVM IR / PTX
+    instruction choices; only meaningful for ISA-level backends):
+        wmma_tile     - Tensor-core warp-grid config: {WM, WN, WTM, WTN}
+                        block tile = (WM*WTM*16) x (WN*WTN*16),
+                        threads = WM*WN*32. Maps to inline-PTX wmma emitter.
+        block_threads - Reduction block size: {n} (e.g. 256 / 512).
+                        Overrides the emitter's shape heuristic.
+        fma_contract  - FMA contraction on mul+add chains: {enabled}.
+                        Maps to the LLVM `contract` fast-math flag
+                        (fmul contract + fadd contract -> fma.rn.f32).
+        pipeline_stages - Software-pipeline depth for global->shared
+                        staging: {depth}. STAGING-level only — fragment-
+                        level buffering of sideeffect asm is known-harmful
+                        and must not be generated (see P5-S3 findings).
     """
     kind: str
     params: dict[str, Any]
     rationale: Rationale | None = None
     step: int = 0          # auto-assigned by StrategyIR
-    level: int = 1         # 1 = L1 backend-agnostic, 2 = L2 backend-specific
+    level: int = 1         # 1 = L1 agnostic, 2 = L2 resource, 3 = L3 instruction
 
 
 @dataclass
@@ -211,6 +226,51 @@ class StrategyIR:
             level=2,
         ))
 
+    # ─── L3 builders (instruction-level, P5-S5) ───────────────────────────
+
+    def wmma_tile(self, WM: int, WN: int, WTM: int, WTN: int,
+                  rationale: str | None = None) -> Decision:
+        """L3: tensor-core warp-grid config for the wmma matmul emitter.
+
+        Block tile = (WM*WTM*16) x (WN*WTN*16), threads = WM*WN*32.
+        """
+        return self.add_decision(Decision(
+            kind="wmma_tile",
+            params={"WM": WM, "WN": WN, "WTM": WTM, "WTN": WTN},
+            rationale=Rationale(text=rationale) if rationale else None,
+            level=3,
+        ))
+
+    def block_threads(self, n: int, rationale: str | None = None) -> Decision:
+        """L3: reduction block size (overrides the emitter's N-heuristic)."""
+        return self.add_decision(Decision(
+            kind="block_threads", params={"n": n},
+            rationale=Rationale(text=rationale) if rationale else None,
+            level=3,
+        ))
+
+    def fma_contract(self, enabled: bool = True,
+                     rationale: str | None = None) -> Decision:
+        """L3: toggle the LLVM `contract` fast-math flag on mul+add chains."""
+        return self.add_decision(Decision(
+            kind="fma_contract", params={"enabled": enabled},
+            rationale=Rationale(text=rationale) if rationale else None,
+            level=3,
+        ))
+
+    def pipeline_stages(self, depth: int,
+                        rationale: str | None = None) -> Decision:
+        """L3: global->shared staging software-pipeline depth.
+
+        STAGING-level only. Fragment-level buffering of sideeffect asm is
+        known-harmful (P5-S3) and is not expressible through this decision.
+        """
+        return self.add_decision(Decision(
+            kind="pipeline_stages", params={"depth": depth},
+            rationale=Rationale(text=rationale) if rationale else None,
+            level=3,
+        ))
+
     def when(self, predicate: str, true_decisions: list[Decision],
              false_decisions: list[Decision] | None = None,
              rationale: str | None = None) -> ConditionalDecision:
@@ -297,3 +357,37 @@ class StrategyIR:
     def from_file(cls, path: str) -> StrategyIR:
         with open(path) as f:
             return cls.from_json(f.read())
+
+
+# ─── L3 extraction helper (P5-S5) ──────────────────────────────────────────
+
+#: L3 instruction-level decision kinds and their parameter keys.
+L3_KINDS: dict[str, tuple[str, ...]] = {
+    "wmma_tile": ("WM", "WN", "WTM", "WTN"),
+    "block_threads": ("n",),
+    "fma_contract": ("enabled",),
+    "pipeline_stages": ("depth",),
+}
+
+
+def extract_l3_params(strategy: Any) -> dict[str, dict[str, Any]]:
+    """Collect L3 decisions from a StrategyIR (or a bare decision list).
+
+    Returns ``{kind: params}`` for every L3 decision present; later decisions
+    of the same kind override earlier ones (iterative refinement semantics).
+    Accepts ``None`` (returns ``{}``), a ``StrategyIR``, or a plain list of
+    ``Decision`` — mirroring how ``CudaCBackend.lower`` accepts strategies.
+    ConditionalDecisions are skipped (their branches are resolved upstream by
+    shape dispatch, not here).
+    """
+    if strategy is None:
+        return {}
+    decisions = getattr(strategy, "decisions", strategy)
+    if not isinstance(decisions, (list, tuple)):
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for d in decisions:
+        kind = getattr(d, "kind", None)
+        if kind in L3_KINDS and getattr(d, "level", 1) == 3:
+            out[kind] = dict(getattr(d, "params", {}) or {})
+    return out
