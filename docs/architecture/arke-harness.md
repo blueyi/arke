@@ -271,6 +271,21 @@ cycles with real Triton GPU measurement (`backend=triton`,
 (0.17→1.14→1.16→1.02→0.86), and 2 checkpoint + 2 rollback calls — i.e. the
 model read real numbers and rolled back regressions.
 
+**L3↔backend binding steering (2026-07-21, P5-S5).** L3 instruction-level
+decisions (`wmma_tile` / `block_threads` / `pipeline_stages`) are consumed
+ONLY by the `llvm` (and partially `cuda_c`) backend — the default `triton`
+path ignores them. The first P5-S5 live run exposed a discoverability gap:
+the model correctly picked L3 decisions (wmma_tile as its very first move,
+with sound Ampere-specific rationale) but profiled on the default backend,
+so the measurement never reflected its decisions. Lesson: **a capability
+that exists but whose activation binding is not taught in the prompt is
+invisible to the agent** — tool schemas alone don't convey cross-tool
+coupling. Fixed with an explicit prompt rule: "if your strategy contains
+any L3 decision, every compile_and_profile MUST pass backend='llvm'".
+For an Agent-first toolchain, activation bindings between decisions and
+execution paths are part of the contract surface and must be surfaced
+where the agent can see them (prompt or tool description), not implied.
+
 ---
 
 ## 5. Bounded Action Space — Arke's Permission System

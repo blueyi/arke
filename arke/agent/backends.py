@@ -120,6 +120,19 @@ def _run_builtin(
             max_turns=max_turns, model_spec=model_spec,
             state_out=output_dir,
         )
+    # P5-S5 Step 5b: persist the full turn-by-turn trajectory next to
+    # state.json so live-run behavior is auditable after the fact (CLI
+    # stdout gets truncated; state.json only holds the final state).
+    if output_dir:
+        import json as _json
+        import os as _os
+        _os.makedirs(output_dir, exist_ok=True)
+        traj_path = _os.path.join(output_dir, "trajectory.json")
+        try:
+            with open(traj_path, "w", encoding="utf-8") as fh:
+                _json.dump(result.to_dict(), fh, default=str, indent=2)
+        except Exception:  # trajectory dump must never fail the run
+            pass
     return BackendResult(
         backend="builtin", op_name=op_name,
         success=not result.errors, mode="live",

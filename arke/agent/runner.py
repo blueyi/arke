@@ -145,30 +145,53 @@ Workflow (repeat the compile→profile→adjust cycle):
                            level (wmma_tile/block_threads/pipeline_stages,
                            level=3 — only legal for specific ops, e.g.
                            wmma_tile for Tensor-Core-eligible matmul).
+                           Use filter_kind to inspect one kind (e.g.
+                           filter_kind="wmma_tile").
   4. apply_decision      — apply one move. ALWAYS include a `rationale`
                            explaining WHY (this is a hard contract).
-  5. verify_correctness  — confirm the strategy still matches the reference.
-  6. compile_and_profile — measure real latency on the GPU. Accepts an
+  5. compile_and_profile — measure real latency on the GPU. This is the
+                           ONLY tool that returns latency_ms. Accepts an
                            optional `backend` param: "triton" (default),
                            "cuda_c", or "llvm". The cuda_c and llvm
                            backends consume your applied decisions
                            (including L3 kinds) to configure the kernel —
                            use backend="llvm" to exercise L3 decisions.
+                           ALWAYS pass the exact `shapes` from the task —
+                           omitting shapes profiles a tiny default problem
+                           and the number is meaningless for your task.
+  6. verify_correctness  — optional numeric spot-check. It does NOT
+                           measure performance and does NOT count as a
+                           profile: compile_and_profile already validates
+                           correctness AND measures latency, so prefer it.
   7. checkpoint / rollback — explore safely; roll back regressions.
 
 Rules:
   - Bounded action space: only apply decisions whose `kind`/`params` come
     from list_legal_actions results.
   - @rationale is mandatory on every apply_decision.
+  - L3 decisions (wmma_tile/block_threads/pipeline_stages) ONLY take effect
+    on backend="llvm". If your strategy contains any L3 decision, every
+    compile_and_profile call MUST pass backend="llvm" — measuring L3 on
+    the default triton backend wastes a compile and tells you nothing.
+  - The legal set can be much larger than the default top_n=10 window
+    (e.g. ~50 wmma_tile configs for a TC-eligible matmul). ALWAYS fetch the
+    full set first — list_legal_actions(filter_kind="wmma_tile", top_n=64) —
+    and survey the whole tile-size range before picking; the extremes of the
+    range often behave very differently from the middle.
+  - A cycle is NOT closed until compile_and_profile has returned a real
+    latency_ms number. verify_correctness alone closes nothing — it never
+    produces latency. If you have applied any decision and have not yet
+    seen a latency_ms for it, your next tool call should be
+    compile_and_profile.
   - Budget-aware: compile/profile is expensive, but it is the ONLY way to
     know whether a strategy actually helped. Do NOT stack many
     apply_decision calls before measuring — apply 1–3 related decisions,
-    then immediately verify_correctness + compile_and_profile to close the
-    loop and learn from a real latency/baseline_ratio number.
+    then immediately compile_and_profile to close the loop and learn from
+    a real latency/baseline_ratio number.
   - Iterate: you MUST complete at least 3 full compile→profile→adjust
-    cycles (apply → verify → profile → read the result → adjust). Each
-    cycle ends with a compile_and_profile call; keep the best-performing
-    correct strategy and roll back regressions.
+    cycles (apply → profile → read the result → adjust). Each cycle ends
+    with a compile_and_profile call that returns latency_ms; keep the
+    best-performing correct strategy and roll back regressions.
   - STOP CRITERION (important — do not burn turns): after each
     compile_and_profile, compare the new latency_ms / baseline_ratio against
     your best-so-far. Once you have completed ≥3 profiled cycles AND the last
@@ -181,7 +204,9 @@ Rules:
     calling tools and write a short final summary of the strategy you
     landed on and why.
   - For a Tensor-Core-eligible matmul, `wmma_tile` is the highest-leverage
-    L3 decision — profile it with backend="llvm" (or "cuda_c").
+    L3 decision — profile it with backend="llvm". Different wmma_tile
+    configurations differ by large factors; measure more than one before
+    settling.
 """
 
 
@@ -426,6 +451,27 @@ class LLMRunner:
             f"compile budget: {env.state.budget.compile_max}. "
             "Begin by inspecting the hardware and the op, then iterate."
         )
+        # P5-S5 Step 5b: surface L3 availability in the task intro. The hint
+        # is derived from the env's own legality surface (no hardcoded op
+        # list) and names the exploration protocol, NOT any winning params —
+        # the model must discover the best configuration itself.
+        try:
+            l3_kinds = sorted({
+                d.kind for d in env.list_legal_actions(top_n=50)
+                if getattr(d, "level", 1) == 3
+            })
+        except Exception:
+            l3_kinds = []
+        if l3_kinds:
+            user_intro += (
+                f" NOTE: this op/shape has legal L3 instruction-level actions "
+                f"({', '.join(l3_kinds)}). Recommended protocol: "
+                f"list_legal_actions(filter_kind=\"{l3_kinds[-1]}\"), apply one "
+                f"candidate, then IMMEDIATELY compile_and_profile with "
+                f"backend=\"llvm\" and the task shapes to establish a measured "
+                f"baseline; then iterate over different candidates of the same "
+                f"kind and compare latency_ms to find the best configuration."
+            )
 
         # ``messages`` is kept in the active protocol's native shape.
         if protocol == "anthropic":
@@ -437,6 +483,10 @@ class LLMRunner:
             ]
 
         t0 = time.time()
+        # P5-S5 Step 5b guardrail: if the model has burned half its turns
+        # without a single compile_and_profile, inject ONE reminder message.
+        # Generic (op-agnostic): it only restates the loop-closure contract.
+        profile_nudge_sent = False
         for _turn in range(max_turns):
             try:
                 text, tool_uses, ti, to, raw_stop = self._call_llm_resilient(
@@ -516,6 +566,29 @@ class LLMRunner:
 
             # Append assistant turn + tool results in the protocol's shape.
             self._append_turn(protocol, messages, text, tool_uses, results_for_model)
+
+            # Guardrail (P5-S5 Step 5b): past half the turn budget with zero
+            # real profiles → one-shot reminder that only compile_and_profile
+            # closes a cycle. Delivered as a user message (both protocols
+            # accept it mid-conversation).
+            if (
+                not profile_nudge_sent
+                and _turn + 1 >= max_turns // 2
+                and not any(a["tool"] == "compile_and_profile" for a in trajectory)
+            ):
+                profile_nudge_sent = True
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "[arke-harness reminder] You are past half your turn "
+                        "budget and have not called compile_and_profile once. "
+                        "verify_correctness does NOT return latency — no cycle "
+                        "has been closed yet. Call compile_and_profile NOW "
+                        "(with the task shapes, and backend=\"llvm\" if any of "
+                        "your applied decisions is level=3) to get a real "
+                        "latency_ms before applying anything else."
+                    ),
+                })
 
             # C3: reactive context compaction — if the message log grows past
             # the threshold, fold older turns into a summary, preserving the

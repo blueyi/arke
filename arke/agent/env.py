@@ -287,6 +287,16 @@ def _enum_wmma_tile_candidates(
                         params={"WM": WM, "WN": WN, "WTM": WTM, "WTN": WTN},
                         level=3,
                     ))
+    # Order by descending block-tile area, then thread count: larger tiles
+    # amortize global loads better and are where the strong configs live
+    # (P5-S3). This is a *presentation* order, not a legality claim — but it
+    # matters because callers truncate to top_n, and generation order (nested
+    # WM/WN loops) would otherwise fill the window with tiny WM=1 tiles and
+    # hide the large-tile end of the range entirely.
+    out.sort(key=lambda d: (
+        -(d.params["WM"] * d.params["WTM"] * d.params["WN"] * d.params["WTN"]),
+        -(d.params["WM"] * d.params["WN"]),
+    ))
     return out
 
 

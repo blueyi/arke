@@ -341,6 +341,25 @@ class CompileAndProfileTool(ArkeTool):
         # backend consumption path, including L3 instruction-level decisions).
         use_cuda = torch.cuda.is_available() and params.get("force_mock") is not True
         requested_backend = params.get("backend", "triton")
+        # P5-S5 auto-routing guardrail: L3 instruction-level decisions are
+        # consumed only by the llvm backend. If the bound strategy carries
+        # L3 decisions and the caller did NOT explicitly choose a backend,
+        # route to llvm automatically — the tool owns the decision→backend
+        # activation binding, rather than relying on the agent to remember
+        # it (live runs showed prompt-only binding is unreliable). An
+        # explicit `backend` param always wins.
+        auto_routed = False
+        if "backend" not in params and use_cuda and self._env is not None:
+            try:
+                has_l3 = any(
+                    getattr(d, "level", 1) == 3
+                    for d in self._env.state.decision_log
+                )
+            except Exception:
+                has_l3 = False
+            if has_l3:
+                requested_backend = "llvm"
+                auto_routed = True
         if use_cuda and requested_backend == "cuda_c":
             from arke.backend.cuda_c_backend import CudaCBackend
             backend = CudaCBackend(chip="sm_86")
@@ -558,6 +577,39 @@ class CompileAndProfileTool(ArkeTool):
             "num_real_kernels": artifact.metadata.get("num_real_kernels"),
             "num_fallback": artifact.metadata.get("num_fallback"),
         }
+        # Env-bound accounting (P5-S5 Step 5b): record the profile into
+        # OptimizationState so it (a) spends compile budget honestly,
+        # (b) lands in state.json / trajectory as an auditable V2 record,
+        # (c) can promote best_result with a REAL latency. Without this,
+        # profiles were invisible to the state (compiles_used stayed 0 and
+        # best_result never carried latency — the run2 observability bug).
+        if self._env is not None:
+            from arke.agent.state import CompileResult as _CR
+            profile_record = _CR(
+                success=True, backend=backend_label,
+                correct=correct, max_diff=max_diff,
+                latency_ms=latency_ms, baseline_ratio=baseline_ratio,
+                metadata={
+                    "validation_tier": "V2_profile",
+                    "requested_backend": requested_backend,
+                    "strategy_decisions": data["strategy_decisions"],
+                },
+            )
+            try:
+                self._env.state.record_compile(profile_record)
+            except Exception as e:  # budget exhausted → honest error
+                return ToolResult(
+                    success=False,
+                    error=f"compile budget exhausted: {e}",
+                )
+            budget = self._env.state.budget
+            data["compiles_used"] = budget.compiles_used
+            data["compiles_remaining"] = budget.compiles_remaining
+        if auto_routed:
+            data["backend_auto_routed"] = (
+                "strategy contains L3 decisions -> auto-routed to llvm "
+                "(pass backend explicitly to override)"
+            )
         warnings = [validation_note] if validation_note else []
         return ToolResult(success=True, data=data, warnings=warnings)
 
@@ -702,7 +754,16 @@ class ApplyDecisionTool(_EnvBoundTool):
         # now rejects a non-trivial decision with no WHY. Trivial level-0
         # decisions (if any) are exempt. The locked thesis pillar "@rationale
         # is a contract" is now enforced at the boundary, not just documented.
-        level = int(params.get("level", 1))
+        #
+        # P5-S5: the decision LEVEL is derived from the kind, not trusted
+        # from the caller. Agents never pass `level`; defaulting to 1 caused
+        # L3 kinds (wmma_tile/...) to be stored as level=1, which made
+        # extract_l3_params() silently ignore them — the kernel never saw
+        # the agent's decision. Kind is the semantic identity; level is
+        # bookkeeping the tool owns. An explicit `level` param still wins.
+        from arke.ir.strategy import L3_KINDS
+        default_level = 3 if kind in L3_KINDS else 1
+        level = int(params.get("level", default_level))
         if level >= 1 and (rationale is None or not rationale.text.strip()):
             return ToolResult(
                 success=False,
@@ -1203,6 +1264,11 @@ class ToolRegistry:
         No additional tools are registered — the Façade is exactly 8.
         """
         reg = cls.default()
+        # P5-S5 Step 5b fix: the profile tool must be the env-bound instance,
+        # otherwise the decision_log is never injected as strategy (Step 5a
+        # added the env parameter but with_env kept the stateless instance —
+        # live run3 showed strategy_decisions=0 on every profile).
+        reg.register(CompileAndProfileTool(env))
         reg.register(ListLegalActionsTool(env))
         reg.register(ApplyDecisionTool(env))
         reg.register(VerifyCorrectnessTool(env))

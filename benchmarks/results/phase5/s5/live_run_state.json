@@ -1,0 +1,455 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "matmul",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "wmma_tile",
+        "source_step": 1,
+        "effect": "ignored:wmma_tile",
+        "rationale": {
+          "text": "Minimal thread tile (WTM=1,WTN=1) with maximum warp tile (WM=4,WN=4). Tests if maximum SM occupancy from lowest register pressure outweighs reduced reuse. Completes the WM=4,WN=4 family survey.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "pipeline_stages",
+        "source_step": 2,
+        "effect": "ignored:pipeline_stages",
+        "rationale": {
+          "text": "With the minimal thread tile (lower register pressure per thread), we now have headroom for deeper pipelining. Testing depth=4 to see if the additional prefetch stages hide enough memory latency to further improve on 0.412ms.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "wmma_tile",
+      "params": {
+        "WM": 4,
+        "WN": 4,
+        "WTM": 1,
+        "WTN": 1
+      },
+      "step": 1,
+      "level": 3,
+      "rationale": {
+        "text": "Minimal thread tile (WTM=1,WTN=1) with maximum warp tile (WM=4,WN=4). Tests if maximum SM occupancy from lowest register pressure outweighs reduced reuse. Completes the WM=4,WN=4 family survey.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "pipeline_stages",
+      "params": {
+        "depth": 4
+      },
+      "step": 2,
+      "level": 3,
+      "rationale": {
+        "text": "With the minimal thread tile (lower register pressure per thread), we now have headroom for deeper pipelining. Testing depth=4 to see if the additional prefetch stages hide enough memory latency to further improve on 0.412ms.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.530595,
+      "baseline_ratio": 0.3785,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 2.190653,
+      "baseline_ratio": 0.165,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.440545,
+      "baseline_ratio": 0.4557,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.640727,
+      "baseline_ratio": 0.3134,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 1.321933,
+      "baseline_ratio": 0.2684,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 2.126039,
+      "baseline_ratio": 0.17,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 1.558088,
+      "baseline_ratio": 0.2318,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.429587,
+      "baseline_ratio": 0.4676,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.44799,
+      "baseline_ratio": 0.4479,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.41176,
+      "baseline_ratio": 0.4875,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "llvm",
+    "correct": true,
+    "max_diff": 0.000396728515625,
+    "latency_ms": 0.41176,
+    "baseline_ratio": 0.4875,
+    "metadata": {
+      "validation_tier": "V2_profile",
+      "requested_backend": "llvm",
+      "strategy_decisions": 1
+    }
+  },
+  "checkpoints": {
+    "baseline_clean": {
+      "label": "baseline_clean",
+      "timestamp": 1784655393.2486506,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "wmma_4x4_WTM2_WTN4": {
+      "label": "wmma_4x4_WTM2_WTN4",
+      "timestamp": 1784655408.2137032,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "wmma_tile",
+            "source_step": 1,
+            "effect": "ignored:wmma_tile",
+            "rationale": {
+              "text": "Starting with the largest warp-tile (WM=4\u00d7WN=4) and a wide thread-tile (WTM=2\u00d7WTN=4). On Ampere, bigger tiles maximize register reuse and hide memory latency, increasing arithmetic intensity per warp. WTN=4 elongates along N for good coalescing of B. This is the top-recommended config to establish a strong baseline.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "wmma_tile",
+          "params": {
+            "WM": 4,
+            "WN": 4,
+            "WTM": 2,
+            "WTN": 4
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Starting with the largest warp-tile (WM=4\u00d7WN=4) and a wide thread-tile (WTM=2\u00d7WTN=4). On Ampere, bigger tiles maximize register reuse and hide memory latency, increasing arithmetic intensity per warp. WTN=4 elongates along N for good coalescing of B. This is the top-recommended config to establish a strong baseline.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 0.000396728515625,
+        "latency_ms": 0.530595,
+        "baseline_ratio": 0.3785,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "best_wmma_4x4_WTM2_WTN2": {
+      "label": "best_wmma_4x4_WTM2_WTN2",
+      "timestamp": 1784655440.9599924,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "wmma_tile",
+            "source_step": 1,
+            "effect": "ignored:wmma_tile",
+            "rationale": {
+              "text": "Testing balanced square thread-tile WTM=2,WTN=2 with large warp tile WM=4,WN=4. Balanced tiles distribute register pressure evenly across M and N; may improve occupancy vs. the asymmetric WTN=4 winner so far.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "wmma_tile",
+          "params": {
+            "WN": 4,
+            "WTM": 2,
+            "WTN": 2,
+            "WM": 4
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Testing balanced square thread-tile WTM=2,WTN=2 with large warp tile WM=4,WN=4. Balanced tiles distribute register pressure evenly across M and N; may improve occupancy vs. the asymmetric WTN=4 winner so far.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 0.000396728515625,
+        "latency_ms": 0.440545,
+        "baseline_ratio": 0.4557,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "best_wmma_4x4_WTM1_WTN2": {
+      "label": "best_wmma_4x4_WTM1_WTN2",
+      "timestamp": 1784655520.0175016,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "wmma_tile",
+            "source_step": 1,
+            "effect": "ignored:wmma_tile",
+            "rationale": {
+              "text": "Testing smaller thread tile (WTM=1,WTN=2) with large warp tile. Fewer registers per thread might increase occupancy enough to offset reduced reuse, and the smaller tile might fit better in shared memory on SM count=30.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "wmma_tile",
+          "params": {
+            "WM": 4,
+            "WN": 4,
+            "WTM": 1,
+            "WTN": 2
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Testing smaller thread tile (WTM=1,WTN=2) with large warp tile. Fewer registers per thread might increase occupancy enough to offset reduced reuse, and the smaller tile might fit better in shared memory on SM count=30.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 0.000396728515625,
+        "latency_ms": 0.429587,
+        "baseline_ratio": 0.4676,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "best_wmma_4x4_WTM1_WTN1": {
+      "label": "best_wmma_4x4_WTM1_WTN1",
+      "timestamp": 1784655554.890013,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "wmma_tile",
+            "source_step": 1,
+            "effect": "ignored:wmma_tile",
+            "rationale": {
+              "text": "Minimal thread tile (WTM=1,WTN=1) with maximum warp tile (WM=4,WN=4). Tests if maximum SM occupancy from lowest register pressure outweighs reduced reuse. Completes the WM=4,WN=4 family survey.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "wmma_tile",
+          "params": {
+            "WM": 4,
+            "WN": 4,
+            "WTM": 1,
+            "WTN": 1
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Minimal thread tile (WTM=1,WTN=1) with maximum warp tile (WM=4,WN=4). Tests if maximum SM occupancy from lowest register pressure outweighs reduced reuse. Completes the WM=4,WN=4 family survey.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 0.000396728515625,
+        "latency_ms": 0.41176,
+        "baseline_ratio": 0.4875,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 2,
+    "compiles_used": 1
+  }
+}
