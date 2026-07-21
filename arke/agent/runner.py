@@ -140,10 +140,20 @@ Workflow (repeat the compile→profile→adjust cycle):
   1. get_hw_profile      — learn the hardware constraints.
   2. analyze_compute     — understand the operator (op_name given below).
   3. list_legal_actions  — see what optimization moves are legal NOW.
+                           Kinds include L1 loop-level (tile/unroll/
+                           vectorize/parallel/place) and L3 instruction-
+                           level (wmma_tile/block_threads/pipeline_stages,
+                           level=3 — only legal for specific ops, e.g.
+                           wmma_tile for Tensor-Core-eligible matmul).
   4. apply_decision      — apply one move. ALWAYS include a `rationale`
                            explaining WHY (this is a hard contract).
   5. verify_correctness  — confirm the strategy still matches the reference.
-  6. compile_and_profile — measure real latency on the GPU.
+  6. compile_and_profile — measure real latency on the GPU. Accepts an
+                           optional `backend` param: "triton" (default),
+                           "cuda_c", or "llvm". The cuda_c and llvm
+                           backends consume your applied decisions
+                           (including L3 kinds) to configure the kernel —
+                           use backend="llvm" to exercise L3 decisions.
   7. checkpoint / rollback — explore safely; roll back regressions.
 
 Rules:
@@ -170,6 +180,8 @@ Rules:
   - When you have run ≥3 profiled cycles and further moves don't help, STOP
     calling tools and write a short final summary of the strategy you
     landed on and why.
+  - For a Tensor-Core-eligible matmul, `wmma_tile` is the highest-leverage
+    L3 decision — profile it with backend="llvm" (or "cuda_c").
 """
 
 

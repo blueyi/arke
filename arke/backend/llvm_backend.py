@@ -659,6 +659,23 @@ class LLVMBackend:
         drv.cuEventDestroy(stop)
         return float(elapsed_ms) / iters
 
+    def benchmark(self, kernel: CompiledKernel, inputs: dict[str, Any],
+                  iters: int = 100, warmup: int = 30) -> float:
+        """Mean kernel-only latency (ms) via CUDA events.
+
+        Signature-compatible with CudaCBackend.benchmark so callers (e.g. the
+        Facade compile_and_profile tool) can treat both backends uniformly.
+        One-time setup: prepare() loads the cubin + allocates GPU buffers,
+        run_fast() performs the H2D copy, then benchmark_cached() times
+        back-to-back launches with CUDA events (kernel-only, one sync).
+        """
+        cached = self.prepare(kernel)
+        try:
+            self.run_fast(cached, inputs)  # H2D + one launch (data resident)
+            return self.benchmark_cached(cached, iters=iters, warmup=warmup)
+        finally:
+            self.release(cached)
+
     def release(self, cached: _CachedModule) -> None:
         """Release a cached module's GPU resources."""
         cached.release()

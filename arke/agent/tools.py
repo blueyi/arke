@@ -278,7 +278,21 @@ class BenchmarkAdviceSummaryTool(ArkeTool):
 
 
 class CompileAndProfileTool(ArkeTool):
-    """Compile and profile a kernel — expensive, serial."""
+    """Compile and profile a kernel — expensive, serial.
+
+    Optionally env-aware (P5-S5 Step 5a): when constructed with an ArkeEnv
+    (as done by ``ToolRegistry.with_env``), the accumulated decision_log is
+    passed as the strategy to strategy-aware backends (cuda_c / llvm) so
+    Agent decisions — including L3 instruction-level kinds like wmma_tile /
+    block_threads / pipeline_stages — actually configure the generated
+    kernel. Constructed without an env (``ToolRegistry.default()``),
+    behavior is identical to before: lower with no strategy. The Facade
+    v1.0 schema is unchanged (env binding is a construction detail, not a
+    parameter).
+    """
+
+    def __init__(self, env: Any = None) -> None:
+        self._env = env
 
     @property
     def name(self) -> str:
@@ -321,15 +335,20 @@ class CompileAndProfileTool(ArkeTool):
         # provenance honestly.
         # Optional backend override (non-breaking additive param): the caller
         # may request a specific backend via params["backend"] ∈ {"triton",
-        # "cuda_c"}. Defaults to "triton" on CUDA (unchanged behavior), MockBackend
-        # on CPU. This lets the Agent drive the Phase-4 CUDA-C backend through the
-        # same Façade tool (StrategyIR → CUDA-C consumption path).
+        # "cuda_c", "llvm"}. Defaults to "triton" on CUDA (unchanged behavior),
+        # MockBackend on CPU. This lets the Agent drive the Phase-4 CUDA-C and
+        # Phase-5 LLVM backends through the same Façade tool (StrategyIR →
+        # backend consumption path, including L3 instruction-level decisions).
         use_cuda = torch.cuda.is_available() and params.get("force_mock") is not True
         requested_backend = params.get("backend", "triton")
         if use_cuda and requested_backend == "cuda_c":
             from arke.backend.cuda_c_backend import CudaCBackend
             backend = CudaCBackend(chip="sm_86")
             backend_label = "cuda_c"
+        elif use_cuda and requested_backend == "llvm":
+            from arke.backend.llvm_backend import LLVMBackend
+            backend = LLVMBackend(chip="sm_86")
+            backend_label = "llvm"
         elif use_cuda:
             from arke.backend.triton_backend import TritonBackend
             backend = TritonBackend(device="cuda")
@@ -417,8 +436,27 @@ class CompileAndProfileTool(ArkeTool):
                 inputs[inp_name] = torch.randn(shape, device=dev, dtype=compute_dtype)
 
         # Lower → compile → run through the selected backend.
+        # Strategy injection (P5-S5 Step 5a): strategy-aware backends
+        # (cuda_c / llvm — both accept lower(graph, strategy=...)) receive
+        # the env's accumulated decision_log so applied decisions (L1 tile
+        # … L3 wmma_tile/block_threads/pipeline_stages) configure codegen.
+        # The decision_log is passed (not state.strategy) because ScheduleIR
+        # ignores unknown kinds while extract_l3_params / MatmulConfig read
+        # bare decision lists directly. Triton path unchanged (its lower()
+        # does not take a strategy).
+        strategy_decisions = None
+        if self._env is not None:
+            try:
+                decision_log = self._env.state.decision_log
+                if decision_log:
+                    strategy_decisions = list(decision_log)
+            except Exception:
+                strategy_decisions = None
         try:
-            artifact = backend.lower(result.graph)
+            if backend_label in ("cuda_c", "llvm") and strategy_decisions:
+                artifact = backend.lower(result.graph, strategy=strategy_decisions)
+            else:
+                artifact = backend.lower(result.graph)
             compiled = backend.compile(artifact)
             if not getattr(compiled, "success", True):
                 return ToolResult(success=False, error=f"Compile failed: {getattr(compiled, 'error', '?')}")
@@ -472,10 +510,11 @@ class CompileAndProfileTool(ArkeTool):
             try:
                 from benchmarks.measure import bench_fn
                 # Prefer the backend's own kernel-only benchmark() when it exposes
-                # one (CUDA-C uses CUDA events, pre-allocating buffers once so the
-                # measurement is kernel-only — apples-to-apples with Triton/torch).
+                # one (CUDA-C and LLVM use CUDA events, pre-allocating buffers once
+                # so the measurement is kernel-only — apples-to-apples with
+                # Triton/torch).
                 bench_method = getattr(backend, "benchmark", None)
-                if backend_label == "cuda_c" and callable(bench_method):
+                if backend_label in ("cuda_c", "llvm") and callable(bench_method):
                     latency_ms = round(float(bench_method(compiled, inputs, iters=100, warmup=25)), 6)
                 else:
                     arke_fn = lambda: backend.run(compiled, inputs)  # noqa: E731
@@ -515,6 +554,7 @@ class CompileAndProfileTool(ArkeTool):
             "baseline_ratio": baseline_ratio,
             "robust_reward": reward_tier,
             "backend": backend_label,
+            "strategy_decisions": len(strategy_decisions) if strategy_decisions else 0,
             "num_real_kernels": artifact.metadata.get("num_real_kernels"),
             "num_fallback": artifact.metadata.get("num_fallback"),
         }

@@ -370,3 +370,103 @@ class TestL3ActionSpace:
         art = LLVMBackend(chip="sm_86").lower(_matmul_graph(), strategy=s)
         assert art.metadata["emitted"].block == (128, 1, 1)
         assert art.metadata["emitted"].grid == (8, 16, 1)
+
+
+# ─── Facade compile_and_profile wiring (Step 5a) ───────────────────────────
+
+import torch as _torch  # noqa: E402
+
+
+def _llvm_toolchain_ready() -> bool:
+    if not _torch.cuda.is_available():
+        return False
+    b = LLVMBackend(chip="sm_86")
+    return bool(b.llc and b.ptxas)
+
+
+_GPU_LLVM = pytest.mark.skipif(
+    not _llvm_toolchain_ready(),
+    reason="requires CUDA + llc(LLVM20) + ptxas",
+)
+
+
+class TestFacadeSchemaSurfacesL3:
+    """Runner system prompt (not the frozen Facade schema) is where the LLM
+    learns about L3 kinds + the llvm backend. The Facade v1.0 tool
+    schemas/descriptions are frozen byte-for-byte; we assert the system
+    prompt teaches L3 so the live-LLM loop can reach the new action space.
+    """
+
+    def test_system_prompt_mentions_l3_and_llvm(self):
+        from arke.agent.runner import _SYSTEM_PROMPT
+        assert "wmma_tile" in _SYSTEM_PROMPT
+        assert "block_threads" in _SYSTEM_PROMPT
+        assert "pipeline_stages" in _SYSTEM_PROMPT
+        assert 'backend="llvm"' in _SYSTEM_PROMPT
+
+    def test_env_list_legal_actions_docstring_surfaces_l3(self):
+        # The env-level filter_kind doc lists the L3 kinds (Step 4a); the
+        # tool passthrough exposes them to the agent verbatim.
+        from arke.agent.env import ArkeEnv
+        doc = ArkeEnv.list_legal_actions.__doc__ or ""
+        assert "wmma_tile" in doc
+        assert "block_threads" in doc
+        assert "pipeline_stages" in doc
+
+
+@_GPU_LLVM
+class TestFacadeLLVMStrategyInjection:
+    """compile_and_profile(backend='llvm') consumes the env's decision_log
+    (incl. L3 wmma_tile) to configure the emitted kernel."""
+
+    def _matmul_env(self, M=1024, N=1024, K=1024):
+        from arke.agent.env import ArkeEnv
+        return ArkeEnv.from_op("matmul", {"A": [M, K], "B": [K, N]})
+
+    def test_llvm_backend_runs_and_times(self):
+        from arke.agent.tools import CompileAndProfileTool
+        env = self._matmul_env()
+        tool = CompileAndProfileTool(env=env)
+        res = tool.execute({
+            "op_name": "matmul",
+            "shapes": {"A": [1024, 1024], "B": [1024, 1024]},
+            "backend": "llvm",
+        })
+        assert res.success, res.error
+        assert res.data["backend"] == "llvm"
+        assert res.data["latency_ms"] is not None
+        assert res.data["latency_ms"] > 0
+        # No decisions applied yet -> strategy_decisions == 0
+        assert res.data["strategy_decisions"] == 0
+
+    def test_wmma_tile_decision_configures_kernel(self):
+        """Apply a wmma_tile L3 decision via the env, then profile through
+        the Facade tool. The strategy must reach the emitter (strategy_decisions
+        > 0) and the run must succeed + measure a real latency."""
+        from arke.agent.tools import ApplyDecisionTool, CompileAndProfileTool
+        env = self._matmul_env()
+        # enumerate + apply a wmma_tile decision through the real tool
+        acts = env.list_legal_actions(top_n=100, filter_kind="wmma_tile")
+        pick = next(a for a in acts
+                    if (a.params["WM"], a.params["WN"],
+                        a.params["WTM"], a.params["WTN"]) == (2, 2, 2, 4))
+        ad = ApplyDecisionTool(env)
+        r = ad.execute({
+            "kind": "wmma_tile",
+            "params": dict(pick.params),
+            "level": 3,
+            "rationale": "TC warp-grid (2,2,2,4) baseline config",
+        })
+        assert r.success, r.error
+
+        tool = CompileAndProfileTool(env=env)
+        res = tool.execute({
+            "op_name": "matmul",
+            "shapes": {"A": [1024, 1024], "B": [1024, 1024]},
+            "backend": "llvm",
+        })
+        assert res.success, res.error
+        assert res.data["backend"] == "llvm"
+        assert res.data["strategy_decisions"] >= 1
+        assert res.data["correct"] is True
+        assert res.data["latency_ms"] > 0
