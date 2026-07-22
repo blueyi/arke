@@ -379,14 +379,14 @@ class TestC3:
         nl3 = [{"key": "b", "ratio": gm_target, "weight_us": 100.0}]
         return l3, nl3
 
-    def test_exactly_0940_passes(self):
-        l3, nl3 = self._rows(0.940)
+    def test_exactly_0948_passes(self):
+        l3, nl3 = self._rows(0.948)
         r = eval_c3(l3, nl3)
-        assert r["weighted_geomean"] == pytest.approx(0.940)
+        assert r["weighted_geomean"] == pytest.approx(0.948)
         assert r["pass"] is True
 
-    def test_0941_fails(self):
-        l3, nl3 = self._rows(0.941)
+    def test_0949_fails(self):
+        l3, nl3 = self._rows(0.949)
         assert eval_c3(l3, nl3)["pass"] is False
 
     def test_weighting_matches_l3_sweep(self):
@@ -409,7 +409,16 @@ class TestC3:
         assert eval_c3([], [])["pass"] is False
 
     def test_threshold_constant_locked(self):
-        assert abs(C3_GEOMEAN_MAX - 0.940) < 1e-12
+        # Leon-approved recalibration 2026-07-22 (Discord ack "2"):
+        # 0.940 -> 0.948 after the sweep's rmsnorm@32x4096 headroom was
+        # proven a same-cubin phantom. See gate_p5s5t.py threshold block
+        # + docs/roadmap/plan.md footnote [double-dagger].
+        assert abs(C3_GEOMEAN_MAX - 0.948) < 1e-12
+
+    def test_c2_case_list_locked(self):
+        from benchmarks.gate_p5s5t import C2_CASE_KEYS
+        # rmsnorm@32x4096 removed (phantom); softmax@1024x4096 remains.
+        assert C2_CASE_KEYS == ("softmax@1024x4096",)
 
 
 class TestC4:

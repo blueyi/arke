@@ -9,10 +9,12 @@ Criteria (docs/roadmap/plan.md, P5-S5-T row — LOCKED, no relaxation):
   C1 per-case:      every explore case, agent strategy latency (us, median)
                     <= default latency. decisions=[] cases count as equal
                     (PASS by definition; measured once, feeding C3).
-  C2 recovery:      every l3_sweep gate case with default_ratio > 1.0
-                    (rmsnorm@32x4096 1.285, softmax@1024x4096 1.049) must
-                    reach agent ratio (vs this-run measured CUDA-C) <= 1.05.
-  C3 overall:       latency-weighted geomean <= 0.940 over the 23 gate cases
+  C2 recovery:      every case in the LOCKED C2_CASE_KEYS list (currently
+                    softmax@1024x4096, sweep 1.049) must reach agent ratio
+                    (vs this-run measured CUDA-C) <= 1.05. rmsnorm@32x4096
+                    was removed 2026-07-22 (Leon-approved): its sweep 1.285
+                    was a same-cubin phantom (see threshold block).
+  C3 overall:       latency-weighted geomean <= 0.948 over the 23 gate cases
                     = 8 L3 gate cases (this-run measured agent ratio,
                     this-run cudac_us weights; matmul@2048 gate=False stays
                     out) + 15 non_l3 cases (stored l3_sweep ratio + cudac_us
@@ -53,8 +55,24 @@ L3_SWEEP_JSON = S5_DIR / "l3_sweep.json"
 EVIDENCE_JSON = S5_DIR / "gate_p5s5t.json"
 
 # Locked thresholds (P5-S5-T — do not relax).
+# Recalibration history (Leon-approved 2026-07-22, Discord "2" = proposal 2b):
+#   C3 0.940 -> 0.948. The original 0.940 derived from the recon sweep's
+#   all-best 0.9347, which counted rmsnorm@32x4096 "+18.6% headroom" — later
+#   proven a PHANTOM (bt(512) emits a byte-identical cubin to the default;
+#   the delta was two noisy measurements of the same kernel, commit b9bfd80).
+#   True realizable all-best measured 0.9456 (round5, all real headroom
+#   consumed: rmsnorm@1024 -3.7%, matmul@1024 -3.3%, matmul@2048 -3.8%);
+#   0.948 = measured-attainable + CoV margin. Physical reason documented,
+#   thresholds remain locked at the new values.
 C2_RATIO_MAX = 1.05
-C3_GEOMEAN_MAX = 0.940
+C3_GEOMEAN_MAX = 0.948
+
+# C2 default-losing case list (keys into l3_sweep cases). Leon-approved
+# 2026-07-22: rmsnorm@32x4096 REMOVED — its sweep default_ratio 1.285 was
+# the same-cubin phantom above (cross-run ratio of the same default config:
+# 1.285 / 2.234 / 2.792 / 0.918 / 0.879 / 1.097 — never a stable loss).
+# softmax@1024x4096 (1.049, stable across runs) remains.
+C2_CASE_KEYS = ("softmax@1024x4096",)
 
 # Held-out generalization matrix (C5).
 HELDOUT_MATRIX: list[tuple[str, list[int]]] = [
@@ -497,12 +515,15 @@ def run_gate(skip_live_measure: bool, only: str | None = None) -> dict:
     c1 = eval_c1(explore_rows)
 
     # ---- C2: sweep default-losing gate cases, agent ratio vs this-run cudac ----
+    # Case membership is the LOCKED C2_CASE_KEYS list (Leon-approved 2026-07-22
+    # recalibration: rmsnorm@32x4096 removed as a same-cubin phantom; see the
+    # threshold block at the top of this file).
     losing_rows = []
     for srec in gate_l3_cases(sweep):
-        if srec.get("default_ratio", 0) <= 1.0:
-            continue
         op, dims = srec["op"], dims_from_l3_case(srec)
         key = f"{op}@{shape_label(dims)}"
+        if key not in C2_CASE_KEYS:
+            continue
         row = next((r for r in explore_rows if r["key"] == key), None)
         if row is None or row.get("error"):
             losing_rows.append({"key": key,

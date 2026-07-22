@@ -573,7 +573,7 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) [†] |
 | **P5-S4** | Multi-hardware LLVM | ≥3 backends ≥90% respective vendor libs |
 | **P5-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% — ✅ 2026-07-22 (mechanism 45.7% A/B + live-LLM 22.4% self-discovered, commit 1de3d9c) |
-| **P5-S5-T** | L3 agent peak performance (tightened, Leon-approved 2026-07-22) | Live agent, bounded L3 action space, extended shape matrix (gate shapes + large shapes): (1) per-case agent strategy ≥ default (never worse); (2) every default-losing case (ratio>1.0, e.g. rmsnorm@32×4096 1.285×) recovered to ≤1.05×; (3) overall latency-weighted geomean ≤0.940× (realizes the measured all-best headroom 0.9347×, tolerance for CoV); (4) strategies self-discovered per-shape by live LLM with @rationale (no seeded answers); (5) generalization: on held-out shapes agent strategy still ≥ default |
+| **P5-S5-T** | L3 agent peak performance (tightened, Leon-approved 2026-07-22) | Live agent, bounded L3 action space, extended shape matrix (gate shapes + large shapes): (1) per-case agent strategy ≥ default (never worse); (2) every case in the locked C2 list (softmax@1024×4096 1.049×) recovered to ≤1.05×; (3) overall latency-weighted geomean ≤0.948×; (4) strategies self-discovered per-shape by live LLM with @rationale (no seeded answers); (5) generalization: on held-out shapes agent strategy still ≥ default — ✅ 2026-07-22 (C1 8/8, C2 1/1, C3 0.9456, C4 8/8, C5 7/7; commit 1ff0169 evidence + recalibration commit) [‡] |
 | **P5-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage |
 
 > **[†] P5-S3 measurement methodology (approved by Leon, 2026-07-20).** The
@@ -589,6 +589,23 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 > CoV from ~4.9% to ~1.6%. The 5% target itself is unchanged. Harness:
 > `benchmarks/llvm_vs_cuda_c.py` (prints both weighted gate metric and the
 > unweighted arithmetic geomean for reference).
+
+> **[‡] P5-S5-T recalibration (approved by Leon, 2026-07-22, Discord ack "2").**
+> Two of the original definition's inputs were later proven to be phantom
+> recon data: the LLVM rowwise emitter's default block size is 512, so the
+> sweep's `block_threads(512)` candidate for rmsnorm@32×4096 emitted a
+> **byte-identical cubin** to the default — its "+18.6% headroom" and
+> "default-losing 1.285×" were two noisy measurements of the same physical
+> kernel (WSL scheduling spikes; cross-run default ratio series
+> 1.285/2.234/2.792/0.918/0.879/1.097). Recalibration under the
+> Benchmark-vs-Gate-Threshold-Separation principle (physical reason, not
+> pass-seeking): (a) C2 case list locked to `softmax@1024×4096` only
+> (stable, genuinely losing, agent recovered it to 1.045×); (b) C3
+> threshold 0.940 → 0.948 = measured attainable all-best 0.9456 (round 5,
+> every real headroom consumed and verified per-case) + CoV margin. The
+> per-case ≥ default (C1), no-seeding (C4), and held-out (C5) criteria are
+> unchanged. Evidence: `benchmarks/results/phase5/s5/gate_p5s5t.json`,
+> commits `b9bfd80` (no-op proof) + `1ff0169` (round-5 evidence).
 
 ### Key Design Points
 
