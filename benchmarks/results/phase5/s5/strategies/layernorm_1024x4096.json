@@ -1,0 +1,12 @@
+{
+  "op": "layernorm",
+  "shape": "1024x4096",
+  "role": "explore",
+  "decisions": [],
+  "source": {
+    "state_json": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/layernorm_1024x4096/state.json",
+    "best_latency_ms": 0.05845,
+    "baseline_ratio": 5.2262,
+    "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/layernorm_1024x4096/state.json::top_level"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "op": "rmsnorm",
+  "shape": "1024x4096",
+  "role": "explore",
+  "decisions": [
+    {
+      "kind": "block_threads",
+      "params": {
+        "n": 1024
+      },
+      "level": 3,
+      "rationale": "1024 threads/block: each thread handles 4096/1024=4 elements. Max threads per block on Ampere, giving maximum intra-block parallelism for the two-pass reduction (sum-of-squares then normalize). Fewer blocks (1024 total, ~34/SM) but higher parallelism per block \u2014 worth measuring as the reduction tree is shallower with more warps (32 warps vs 16)."
+    }
+  ],
+  "source": {
+    "state_json": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/rmsnorm_1024x4096/state.json",
+    "best_latency_ms": 0.114268,
+    "baseline_ratio": 4.1907,
+    "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/rmsnorm_1024x4096/state.json::checkpoint:best_1024threads"
+  }
+}

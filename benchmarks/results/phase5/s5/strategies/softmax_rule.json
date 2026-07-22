@@ -1,0 +1,6 @@
+{
+  "op": "softmax",
+  "rules": [],
+  "fallback_decisions": [],
+  "rationale": "Both explored shapes (32x4096 and 1024x4096) produced empty decision lists and null latency measurements, meaning the agent found no improvement over the backend default for either configuration. With no evidence of any winning tuning decision across any explored shape, there is no basis for emitting any non-default rule. The conservative policy requires a decisive, well-understood win before extrapolating a configuration to unseen shapes; since no such win exists in the data, all rules and the fallback are set to empty lists, deferring entirely to the backend default for all shapes of this op."
+}

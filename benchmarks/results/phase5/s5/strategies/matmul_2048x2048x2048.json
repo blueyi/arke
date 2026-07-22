@@ -1,0 +1,32 @@
+{
+  "op": "matmul",
+  "shape": "2048x2048x2048",
+  "role": "explore",
+  "decisions": [
+    {
+      "kind": "wmma_tile",
+      "params": {
+        "WM": 4,
+        "WN": 4,
+        "WTM": 2,
+        "WTN": 4
+      },
+      "level": 3,
+      "rationale": "Re-apply the best wmma_tile configuration (vs_default\u22480.998) and pair it with pipeline_stages=4 to see if a 4-stage pipeline (3 in-flight prefetch stages) yields meaningful latency hiding beyond depth=2."
+    },
+    {
+      "kind": "pipeline_stages",
+      "params": {
+        "depth": 4
+      },
+      "level": 3,
+      "rationale": "Test 4-stage pipeline with the best wmma_tile \u2014 deeper pipelining can overcome the higher GMEM latency when the tile is large enough to justify the additional shared memory buffers."
+    }
+  ],
+  "source": {
+    "state_json": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/matmul_2048x2048x2048/state.json",
+    "best_latency_ms": 2.703893,
+    "baseline_ratio": 0.3229,
+    "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/matmul_2048x2048x2048/state.json::checkpoint:best_candidate_4x4_pipe4"
+  }
+}

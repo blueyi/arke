@@ -1,0 +1,32 @@
+{
+  "op": "matmul",
+  "shape": "1024x1024x1024",
+  "role": "explore",
+  "decisions": [
+    {
+      "kind": "wmma_tile",
+      "params": {
+        "WM": 4,
+        "WN": 4,
+        "WTM": 2,
+        "WTN": 2
+      },
+      "level": 3,
+      "rationale": "Symmetric WM=4,WN=4,WTM=2,WTN=2 \u2014 perfectly balanced block and warp tiles for a square 1024x1024 matmul. Equal M/N tiling avoids asymmetric memory access patterns and may produce the best cache line alignment for both A and B."
+    },
+    {
+      "kind": "pipeline_stages",
+      "params": {
+        "depth": 2
+      },
+      "level": 3,
+      "rationale": "Software pipelining depth=2 enables double-buffering in shared memory: while one tile is being computed by the WMMA units, the next tile is being prefetched. This effectively hides global\u2192shared memory latency, which is critical on Ampere where async copy instructions (cp.async) are available."
+    }
+  ],
+  "source": {
+    "state_json": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/matmul_1024x1024x1024/state.json",
+    "best_latency_ms": 0.722227,
+    "baseline_ratio": 0.4473,
+    "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/matmul_1024x1024x1024/state.json::checkpoint:best_so_far_wm4wn4_wtm2wtn2_pipe2"
+  }
+}

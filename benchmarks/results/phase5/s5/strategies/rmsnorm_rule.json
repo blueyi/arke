@@ -1,0 +1,46 @@
+{
+  "op": "rmsnorm",
+  "rules": [
+    {
+      "when": [
+        {
+          "var": "M",
+          "cmp": ">=",
+          "value": 256
+        },
+        {
+          "var": "N",
+          "cmp": "==",
+          "value": 4096
+        }
+      ],
+      "decisions": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 1024
+          },
+          "level": 3,
+          "rationale": "For N=4096 and M>=256, 1024 threads/block gives each thread 4 elements, maximizing intra-block parallelism for the two-pass reduction (sum-of-squares then normalize) with 32 warps and a shallower reduction tree. The decisive 4.19x win observed at M=1024,N=4096 is driven by this mechanism; it should hold for other large-M values at N=4096 where there are enough rows to keep the GPU busy and the 4-elements-per-thread ratio remains constant."
+        }
+      ]
+    },
+    {
+      "when": [
+        {
+          "var": "M",
+          "cmp": "<=",
+          "value": 64
+        },
+        {
+          "var": "N",
+          "cmp": "==",
+          "value": 4096
+        }
+      ],
+      "decisions": []
+    }
+  ],
+  "fallback_decisions": [],
+  "rationale": "Only one shape (1024x4096) showed a decisive, well-understood win (4.19x) with block_threads=1024, driven by the 4-elements-per-thread ratio and a shallower 32-warp reduction tree at N=4096. Since N=4096 is the only explored width, all rules are pinned to N==4096 to avoid regressing at unseen widths where bytes-per-thread and cache behavior differ. For small M (<=64) at N=4096, the agent returned empty decisions (no improvement found), so the default is kept. For M>=256 at N=4096, the 1024-thread config is applied, as the rationale's mechanism (maximum intra-block parallelism, shallower reduction tree) clearly extends to other large row-count regimes. The mid-range 64<M<256 at N=4096 falls through to the fallback (keep default) since no data was collected there and conservative extrapolation is preferred. All other N values also fall through to the empty fallback."
+}

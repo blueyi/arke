@@ -1,0 +1,454 @@
+{
+  "mode": "measured",
+  "l3_sweep_json": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/l3_sweep.json",
+  "thresholds": {
+    "c2_ratio_max": 1.05,
+    "c3_geomean_max": 0.94
+  },
+  "rule_files": {
+    "rmsnorm": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/strategies/rmsnorm_rule.json",
+    "softmax": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/strategies/softmax_rule.json",
+    "layernorm": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/strategies/layernorm_rule.json",
+    "matmul": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/strategies/matmul_rule.json"
+  },
+  "criteria": {
+    "C1": {
+      "criterion": "C1 per-case agent<=default",
+      "pass": true,
+      "cases": [
+        {
+          "key": "rmsnorm@32x4096",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "default_us": 12.168107032775879,
+          "default_spread": 0.7586,
+          "agent_us": 12.168107032775879,
+          "agent_spread": 0.7586,
+          "cudac_us": 11.096746921539307,
+          "cudac_spread": 0.6641,
+          "pass": true
+        },
+        {
+          "key": "rmsnorm@1024x4096",
+          "decisions_empty": false,
+          "n_decisions": 1,
+          "default_us": 118.98132960001627,
+          "default_spread": 0.0058,
+          "agent_us": 114.54719702402751,
+          "agent_spread": 0.0018,
+          "cudac_us": 124.1365353266398,
+          "cudac_spread": 0.0011,
+          "pass": true
+        },
+        {
+          "key": "softmax@32x4096",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "default_us": 9.34229294459025,
+          "default_spread": 0.8712,
+          "agent_us": 9.34229294459025,
+          "agent_spread": 0.8712,
+          "cudac_us": 9.274026552836101,
+          "cudac_spread": 0.1193,
+          "pass": true
+        },
+        {
+          "key": "softmax@1024x4096",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "default_us": 120.11520067850749,
+          "default_spread": 0.0043,
+          "agent_us": 120.11520067850749,
+          "agent_spread": 0.0043,
+          "cudac_us": 114.92693424224854,
+          "cudac_spread": 0.0024,
+          "pass": true
+        },
+        {
+          "key": "layernorm@32x4096",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "default_us": 13.025173346201578,
+          "default_spread": 1.1006,
+          "agent_us": 13.025173346201578,
+          "agent_spread": 1.1006,
+          "cudac_us": 11.724053223927815,
+          "cudac_spread": 0.4508,
+          "pass": true
+        },
+        {
+          "key": "layernorm@1024x4096",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "default_us": 117.00906753540039,
+          "default_spread": 0.0012,
+          "agent_us": 117.00906753540039,
+          "agent_spread": 0.0012,
+          "cudac_us": 123.90399773915608,
+          "cudac_spread": 0.005,
+          "pass": true
+        },
+        {
+          "key": "matmul@1024x1024x1024",
+          "decisions_empty": false,
+          "n_decisions": 2,
+          "default_us": 350.97312927246094,
+          "default_spread": 0.0873,
+          "agent_us": 339.5481491088867,
+          "agent_spread": 0.1018,
+          "cudac_us": 479.68257904052734,
+          "cudac_spread": 0.0371,
+          "pass": true
+        },
+        {
+          "key": "matmul@2048x2048x2048",
+          "decisions_empty": false,
+          "n_decisions": 2,
+          "default_us": 2110.8394622802734,
+          "default_spread": 0.0181,
+          "agent_us": 2029.8080444335938,
+          "agent_spread": 0.0053,
+          "cudac_us": 3805.9349060058594,
+          "cudac_spread": 0.0026,
+          "pass": true
+        }
+      ]
+    },
+    "C2": {
+      "criterion": "C2 default-losing cases recovered to <=1.05",
+      "pass": false,
+      "cases": [
+        {
+          "key": "softmax@1024x4096",
+          "sweep_default_ratio": 1.0493,
+          "agent_us": 120.11520067850749,
+          "cudac_us": 114.92693424224854,
+          "agent_ratio": 1.0451,
+          "threshold": 1.05,
+          "pass": true
+        },
+        {
+          "key": "rmsnorm@32x4096",
+          "sweep_default_ratio": 1.2852,
+          "agent_us": 12.168107032775879,
+          "cudac_us": 11.096746921539307,
+          "agent_ratio": 1.0965,
+          "threshold": 1.05,
+          "pass": false
+        }
+      ]
+    },
+    "C3": {
+      "criterion": "C3 weighted geomean <= 0.94",
+      "pass": false,
+      "gate_cases": 23,
+      "weighted_geomean": 0.9456,
+      "threshold": 0.94,
+      "l3_rows": [
+        {
+          "key": "softmax@32x4096",
+          "ratio": 1.0074,
+          "weight_us": 9.274026552836101,
+          "source": "measured"
+        },
+        {
+          "key": "softmax@1024x4096",
+          "ratio": 1.0451,
+          "weight_us": 114.92693424224854,
+          "source": "measured"
+        },
+        {
+          "key": "layernorm@1024x4096",
+          "ratio": 0.9444,
+          "weight_us": 123.90399773915608,
+          "source": "measured"
+        },
+        {
+          "key": "rmsnorm@1024x4096",
+          "ratio": 0.9228,
+          "weight_us": 124.1365353266398,
+          "source": "measured"
+        },
+        {
+          "key": "layernorm@32x4096",
+          "ratio": 1.111,
+          "weight_us": 11.724053223927815,
+          "source": "measured"
+        },
+        {
+          "key": "rmsnorm@32x4096",
+          "ratio": 1.0965,
+          "weight_us": 11.096746921539307,
+          "source": "measured"
+        },
+        {
+          "key": "matmul@512x512x512",
+          "ratio": 0.8692,
+          "weight_us": 80.13567924499512,
+          "source": "measured"
+        },
+        {
+          "key": "matmul@1024x1024x1024",
+          "ratio": 0.7079,
+          "weight_us": 479.68257904052734,
+          "source": "measured"
+        }
+      ],
+      "non_l3_rows": [
+        {
+          "key": "relu@4096x4096",
+          "ratio": 1.0092,
+          "weight_us": 422.76,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "silu@4096x4096",
+          "ratio": 0.9849,
+          "weight_us": 434.13,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "gelu@4096x4096",
+          "ratio": 0.9843,
+          "weight_us": 506.09,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "silu_and_mul@4096x4096",
+          "ratio": 0.9722,
+          "weight_us": 756.47,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "gelu_and_mul@4096x4096",
+          "ratio": 1.0048,
+          "weight_us": 731.87,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "relu@128x4096",
+          "ratio": 1.0423,
+          "weight_us": 16.72,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "silu@128x4096",
+          "ratio": 0.9233,
+          "weight_us": 16.39,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "gelu@128x4096",
+          "ratio": 0.8894,
+          "weight_us": 16.29,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "silu_and_mul@128x4096",
+          "ratio": 0.9357,
+          "weight_us": 23.58,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "gelu_and_mul@128x4096",
+          "ratio": 0.9147,
+          "weight_us": 24.27,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "relu@32x4096",
+          "ratio": 1.1531,
+          "weight_us": 6.85,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "silu@32x4096",
+          "ratio": 1.3472,
+          "weight_us": 6.95,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "gelu@32x4096",
+          "ratio": 1.0761,
+          "weight_us": 6.87,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "silu_and_mul@32x4096",
+          "ratio": 1.0467,
+          "weight_us": 10.31,
+          "source": "l3_sweep.json"
+        },
+        {
+          "key": "gelu_and_mul@32x4096",
+          "ratio": 0.7715,
+          "weight_us": 13.13,
+          "source": "l3_sweep.json"
+        }
+      ]
+    },
+    "C4": {
+      "criterion": "C4 self-discovered strategies with @rationale",
+      "pass": true,
+      "audit": [
+        {
+          "key": "rmsnorm@32x4096",
+          "n_decisions": 0,
+          "decisions_missing_rationale": [],
+          "extracted_from": "benchmarks/results/phase5/s5/t/rmsnorm_32x4096/state.json::final_empty_decision_log",
+          "state_json_exists": true,
+          "pass": true
+        },
+        {
+          "key": "rmsnorm@1024x4096",
+          "n_decisions": 1,
+          "decisions_missing_rationale": [],
+          "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/rmsnorm_1024x4096/state.json::checkpoint:best_1024threads",
+          "state_json_exists": true,
+          "pass": true
+        },
+        {
+          "key": "softmax@32x4096",
+          "n_decisions": 0,
+          "decisions_missing_rationale": [],
+          "extracted_from": "benchmarks/results/phase5/s5/t/softmax_32x4096/state.json::final_empty_decision_log",
+          "state_json_exists": true,
+          "pass": true
+        },
+        {
+          "key": "softmax@1024x4096",
+          "n_decisions": 0,
+          "decisions_missing_rationale": [],
+          "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/softmax_1024x4096/state.json::final_empty_decision_log",
+          "state_json_exists": true,
+          "pass": true
+        },
+        {
+          "key": "layernorm@32x4096",
+          "n_decisions": 0,
+          "decisions_missing_rationale": [],
+          "extracted_from": "benchmarks/results/phase5/s5/t/layernorm_32x4096/state.json::final_empty_decision_log",
+          "state_json_exists": true,
+          "pass": true
+        },
+        {
+          "key": "layernorm@1024x4096",
+          "n_decisions": 0,
+          "decisions_missing_rationale": [],
+          "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/layernorm_1024x4096/state.json::top_level",
+          "state_json_exists": true,
+          "pass": true
+        },
+        {
+          "key": "matmul@1024x1024x1024",
+          "n_decisions": 2,
+          "decisions_missing_rationale": [],
+          "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/matmul_1024x1024x1024/state.json::checkpoint:best_so_far_wm4wn4_wtm2wtn2_pipe2",
+          "state_json_exists": true,
+          "pass": true
+        },
+        {
+          "key": "matmul@2048x2048x2048",
+          "n_decisions": 2,
+          "decisions_missing_rationale": [],
+          "extracted_from": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/matmul_2048x2048x2048/state.json::checkpoint:best_candidate_4x4_pipe4",
+          "state_json_exists": true,
+          "pass": true
+        }
+      ]
+    },
+    "C5": {
+      "criterion": "C5 held-out generalization agent<=default",
+      "pass": true,
+      "cases": [
+        {
+          "key": "rmsnorm@256x4096",
+          "decisions_empty": false,
+          "n_decisions": 1,
+          "decisions": [
+            {
+              "kind": "block_threads",
+              "params": {
+                "n": 1024
+              },
+              "level": 3,
+              "rationale": "For N=4096 and M>=256, 1024 threads/block gives each thread 4 elements, maximizing intra-block parallelism for the two-pass reduction (sum-of-squares then normalize) with 32 warps and a shallower reduction tree. The decisive 4.19x win observed at M=1024,N=4096 is driven by this mechanism; it should hold for other large-M values at N=4096 where there are enough rows to keep the GPU busy and the 4-elements-per-thread ratio remains constant."
+            }
+          ],
+          "default_us": 32.59392102559407,
+          "default_spread": 0.0228,
+          "agent_us": 32.143360773722335,
+          "agent_spread": 0.1121,
+          "pass": true
+        },
+        {
+          "key": "rmsnorm@64x8192",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "decisions": [],
+          "default_us": 20.38442611694336,
+          "default_spread": 0.3551,
+          "agent_us": 20.38442611694336,
+          "agent_spread": 0.3551,
+          "pass": true
+        },
+        {
+          "key": "softmax@256x4096",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "decisions": [],
+          "default_us": 32.61098543802897,
+          "default_spread": 0.046,
+          "agent_us": 32.61098543802897,
+          "agent_spread": 0.046,
+          "pass": true
+        },
+        {
+          "key": "softmax@64x8192",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "decisions": [],
+          "default_us": 19.462827046712242,
+          "default_spread": 0.1201,
+          "agent_us": 19.462827046712242,
+          "agent_spread": 0.1201,
+          "pass": true
+        },
+        {
+          "key": "layernorm@256x4096",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "decisions": [],
+          "default_us": 33.77493222554525,
+          "default_spread": 0.0642,
+          "agent_us": 33.77493222554525,
+          "agent_spread": 0.0642,
+          "pass": true
+        },
+        {
+          "key": "layernorm@64x8192",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "decisions": [],
+          "default_us": 20.111360549926758,
+          "default_spread": 0.1042,
+          "agent_us": 20.111360549926758,
+          "agent_spread": 0.1042,
+          "pass": true
+        },
+        {
+          "key": "matmul@1536x1536x1536",
+          "decisions_empty": true,
+          "n_decisions": 0,
+          "decisions": [],
+          "default_us": 947.5583648681641,
+          "default_spread": 0.0121,
+          "agent_us": 947.5583648681641,
+          "agent_spread": 0.0121,
+          "pass": true
+        }
+      ]
+    }
+  },
+  "overall": false
+}

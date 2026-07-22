@@ -1,0 +1,12 @@
+{
+  "op": "rmsnorm",
+  "shape": "32x4096",
+  "role": "explore",
+  "decisions": [],
+  "source": {
+    "state_json": "benchmarks/results/phase5/s5/t/rmsnorm_32x4096/state.json",
+    "best_latency_ms": null,
+    "baseline_ratio": null,
+    "extracted_from": "benchmarks/results/phase5/s5/t/rmsnorm_32x4096/state.json::final_empty_decision_log"
+  }
+}

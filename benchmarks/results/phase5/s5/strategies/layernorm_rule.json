@@ -1,0 +1,6 @@
+{
+  "op": "layernorm",
+  "rules": [],
+  "fallback_decisions": [],
+  "rationale": "Both explored shapes (1024x4096 and 32x4096) resulted in empty decision lists, meaning the agent determined that the backend default was already optimal for layernorm across both a large-M and small-M case at N=4096. Since no non-empty decision set was ever validated as superior, there is no evidence base from which to generalize any tuning rule. Furthermore, the only explored column width is N=4096, so per the conservatism constraint we cannot safely extend any hypothetical config to unseen N values. With no winning decisions to generalize and no mechanistic rationale tied to a specific config, the safest and correct policy is to keep backend defaults for all shapes, represented here as empty rules and an empty fallback."
+}
