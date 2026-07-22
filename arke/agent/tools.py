@@ -576,21 +576,36 @@ class CompileAndProfileTool(ArkeTool):
                         t0 = _time.perf_counter()
                         while (_time.perf_counter() - t0) < 0.15:
                             backend.benchmark_cached(agent_cached, iters=200, warmup=0)
+                        # Resolution probe: small kernels (<50us) are dominated
+                        # by launch jitter — use more iters and passes so a
+                        # 10-15% config difference is resolvable.
+                        probe = backend.benchmark_cached(agent_cached, iters=50, warmup=10)
+                        small = probe < 0.05  # ms
+                        n_iters = 300 if small else 100
+                        n_passes = 5 if small else 3
                         agent_passes, default_passes = [], []
-                        for _ in range(3):
+                        for _ in range(n_passes):
                             if default_cached is not None:
                                 default_passes.append(
-                                    backend.benchmark_cached(default_cached, iters=100, warmup=10))
+                                    backend.benchmark_cached(default_cached, iters=n_iters, warmup=10))
                             agent_passes.append(
-                                backend.benchmark_cached(agent_cached, iters=100, warmup=10))
+                                backend.benchmark_cached(agent_cached, iters=n_iters, warmup=10))
                         latency_ms = round(float(_stats.median(agent_passes)), 6)
                         if min(agent_passes) > 0:
                             meas_spread = round(max(agent_passes) / min(agent_passes) - 1.0, 4)
                         if default_passes:
                             default_latency_ms = round(float(_stats.median(default_passes)), 6)
+                            # Pairwise per-pass ratio median: each pass measures
+                            # default and agent back-to-back, so their ratio
+                            # cancels slow clock/thermal drift much better than
+                            # the ratio of two medians taken across the window.
+                            pair_ratios = [a / d for a, d in zip(agent_passes, default_passes) if d > 0]
+                            if pair_ratios:
+                                vs_default = round(float(_stats.median(pair_ratios)), 4)
                         else:
                             # Agent kernel IS the default (no decisions applied).
                             default_latency_ms = latency_ms
+                            vs_default = 1.0
                     finally:
                         backend.release(agent_cached)
                         if default_cached is not None:
@@ -598,7 +613,7 @@ class CompileAndProfileTool(ArkeTool):
                     cache_key = (op_name, json.dumps(merged_shapes, sort_keys=True), backend_label)
                     if default_latency_ms is not None:
                         self._default_cache[cache_key] = default_latency_ms
-                    if default_latency_ms and latency_ms:
+                    if vs_default is None and default_latency_ms and latency_ms:
                         vs_default = round(latency_ms / default_latency_ms, 4)
                 else:
                     bench_method = getattr(backend, "benchmark", None)

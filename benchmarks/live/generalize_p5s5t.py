@@ -175,6 +175,17 @@ Constraints:
 - Decision kinds/params must come from the exploration data above (do not
   invent new kinds).
 - An empty decisions list ("keep default") is a valid and often correct rule.
+- BE CONSERVATIVE — the rule table is scored on UNSEEN shapes where every
+  case must be at least as fast as the backend default; a rule that fires a
+  wrong config on an unseen shape is a scored regression, while "keep
+  default" is always safe. Therefore: only emit a non-empty rule for a
+  shape region where the exploration shows a DECISIVE, well-understood win
+  (e.g. clearly better latency with a rationale that names the mechanism).
+  If the win is small, shape-specific, or the mechanism doesn't obviously
+  extend beyond the explored point, the rule for that region — and the
+  fallback — should be [] (keep default). Extrapolate a config to a shape
+  region ONLY when the rationale's mechanism (occupancy, reuse, register
+  pressure) clearly applies there too.
 """
 
 

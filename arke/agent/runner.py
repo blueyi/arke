@@ -202,6 +202,13 @@ Rules:
     checkpoint and finish with an EMPTY strategy (keep default). This is a
     rewarded outcome; shipping a strategy with vs_default > 1.0 is a
     failure. Do not force a decision just to have "done something".
+  - DECISIVE MARGIN RULE: only ship a non-empty final strategy if its
+    advantage is DECISIVE — vs_default <= 0.97 reproduced on at least TWO
+    separate compile_and_profile calls. A one-off vs_default of 0.98-0.99
+    is within measurement noise and will NOT survive independent
+    re-measurement; treat it as a tie and prefer the default (empty
+    strategy). When in doubt between a marginal win and the default,
+    choose the default — a false "win" is scored as a regression.
   - MEASUREMENT QUALITY: latency_ms is a median-of-3 kernel-only CUDA-event
     measurement taken after a clock ramp; `meas_spread` reports the pass
     spread (max/min - 1). If meas_spread > 0.10 the number is noisy —
