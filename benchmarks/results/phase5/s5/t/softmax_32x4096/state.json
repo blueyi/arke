@@ -1,0 +1,194 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "softmax",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": []
+  },
+  "decision_log": [],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 1.862645149230957e-09,
+      "latency_ms": 0.009513,
+      "baseline_ratio": 1.3348,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.009472,
+        "vs_default": 1.0043,
+        "meas_spread": 0.3804
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 1.862645149230957e-09,
+      "latency_ms": 0.013004,
+      "baseline_ratio": 0.8189,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.013838,
+        "vs_default": 0.9389,
+        "meas_spread": 0.7423
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 1.862645149230957e-09,
+      "latency_ms": 0.016681,
+      "baseline_ratio": 0.6998,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.010117,
+        "vs_default": 1.0672,
+        "meas_spread": 13.9897
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 1.862645149230957e-09,
+      "latency_ms": 0.024098,
+      "baseline_ratio": 0.4534,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.020391,
+        "vs_default": 1.1768,
+        "meas_spread": 1.7557
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 1.862645149230957e-09,
+      "latency_ms": 0.010649,
+      "baseline_ratio": 1.0289,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.009779,
+        "vs_default": 0.9878,
+        "meas_spread": 0.798
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 1.862645149230957e-09,
+      "latency_ms": 0.166472,
+      "baseline_ratio": 0.0689,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.029972,
+        "vs_default": 1.0465,
+        "meas_spread": 19.2417
+      }
+    }
+  ],
+  "best_result": null,
+  "checkpoints": {
+    "baseline_empty": {
+      "label": "baseline_empty",
+      "timestamp": 1784742414.0425255,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "softmax",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "bt1024_v1": {
+      "label": "bt1024_v1",
+      "timestamp": 1784742443.1438837,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "softmax",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "With N=4096 and 1024 threads per block, each thread handles exactly 4 elements. 1024 threads = 32 warps fills a block completely and maximises warp-level reduction efficiency (warp shuffles cover all 32 warps). Given only 32 rows, having maximum intra-block parallelism is critical to saturate the SM. This is the maximum legal block size on this hardware.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 1024
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "With N=4096 and 1024 threads per block, each thread handles exactly 4 elements. 1024 threads = 32 warps fills a block completely and maximises warp-level reduction efficiency (warp shuffles cover all 32 warps). Given only 32 rows, having maximum intra-block parallelism is critical to saturate the SM. This is the maximum legal block size on this hardware.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 1.862645149230957e-09,
+        "latency_ms": 0.013004,
+        "baseline_ratio": 0.8189,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.013838,
+          "vs_default": 0.9389,
+          "meas_spread": 0.7423
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 0,
+    "compiles_used": 0
+  }
+}

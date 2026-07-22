@@ -1,0 +1,344 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "matmul",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "wmma_tile",
+        "source_step": 1,
+        "effect": "ignored:wmma_tile",
+        "rationale": {
+          "text": "Extreme M-heavy tile: WM=4,WN=1 with WTM=4,WTN=2. Very tall block tiles favour reuse of A rows. May expose a regime not yet explored.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "pipeline_stages",
+        "source_step": 2,
+        "effect": "ignored:pipeline_stages",
+        "rationale": {
+          "text": "Using depth=4 with the extreme tile shape to see if deep pipelining can compensate for narrow N tiles by fully overlapping memory and compute.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "wmma_tile",
+      "params": {
+        "WM": 4,
+        "WN": 1,
+        "WTM": 4,
+        "WTN": 2
+      },
+      "step": 1,
+      "level": 3,
+      "rationale": {
+        "text": "Extreme M-heavy tile: WM=4,WN=1 with WTM=4,WTN=2. Very tall block tiles favour reuse of A rows. May expose a regime not yet explored.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "pipeline_stages",
+      "params": {
+        "depth": 4
+      },
+      "step": 2,
+      "level": 3,
+      "rationale": {
+        "text": "Using depth=4 with the extreme tile shape to see if deep pipelining can compensate for narrow N tiles by fully overlapping memory and compute.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.402186,
+      "baseline_ratio": 0.3654,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.338348,
+        "vs_default": 1.1872,
+        "meas_spread": 0.2688
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.42025,
+      "baseline_ratio": 0.3585,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.34397,
+        "vs_default": 1.2218,
+        "meas_spread": 0.1689
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.47533,
+      "baseline_ratio": 0.3132,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.338534,
+        "vs_default": 1.4019,
+        "meas_spread": 0.1833
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 1.028352,
+      "baseline_ratio": 0.2887,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.685189,
+        "vs_default": 1.4047,
+        "meas_spread": 0.0882
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.722227,
+      "baseline_ratio": 0.4473,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.755773,
+        "vs_default": 0.9487,
+        "meas_spread": 0.0865
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.334828,
+      "baseline_ratio": 0.4463,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.336896,
+        "vs_default": 0.9919,
+        "meas_spread": 0.0133
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.334203,
+      "baseline_ratio": 0.4473,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.337664,
+        "vs_default": 0.9875,
+        "meas_spread": 0.0124
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.561551,
+      "baseline_ratio": 0.2631,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.327619,
+        "vs_default": 1.6895,
+        "meas_spread": 0.0153
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.338719,
+      "baseline_ratio": 0.4403,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.33833,
+        "vs_default": 0.9924,
+        "meas_spread": 0.2912
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.926577,
+      "baseline_ratio": 0.1637,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.340275,
+        "vs_default": 2.7222,
+        "meas_spread": 0.0013
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "llvm",
+    "correct": true,
+    "max_diff": 0.000396728515625,
+    "latency_ms": 0.926577,
+    "baseline_ratio": 0.1637,
+    "metadata": {
+      "validation_tier": "V2_profile",
+      "requested_backend": "llvm",
+      "strategy_decisions": 2,
+      "default_latency_ms": 0.340275,
+      "vs_default": 2.7222,
+      "meas_spread": 0.0013
+    }
+  },
+  "checkpoints": {
+    "initial_baseline": {
+      "label": "initial_baseline",
+      "timestamp": 1784746003.6800718,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "best_so_far_wm4wn4_wtm2wtn2_pipe2": {
+      "label": "best_so_far_wm4wn4_wtm2wtn2_pipe2",
+      "timestamp": 1784746117.3900974,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "wmma_tile",
+            "source_step": 1,
+            "effect": "ignored:wmma_tile",
+            "rationale": {
+              "text": "Symmetric WM=4,WN=4,WTM=2,WTN=2 \u2014 perfectly balanced block and warp tiles for a square 1024x1024 matmul. Equal M/N tiling avoids asymmetric memory access patterns and may produce the best cache line alignment for both A and B.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "pipeline_stages",
+            "source_step": 2,
+            "effect": "ignored:pipeline_stages",
+            "rationale": {
+              "text": "Software pipelining depth=2 enables double-buffering in shared memory: while one tile is being computed by the WMMA units, the next tile is being prefetched. This effectively hides global\u2192shared memory latency, which is critical on Ampere where async copy instructions (cp.async) are available.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "wmma_tile",
+          "params": {
+            "WM": 4,
+            "WN": 4,
+            "WTM": 2,
+            "WTN": 2
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Symmetric WM=4,WN=4,WTM=2,WTN=2 \u2014 perfectly balanced block and warp tiles for a square 1024x1024 matmul. Equal M/N tiling avoids asymmetric memory access patterns and may produce the best cache line alignment for both A and B.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "pipeline_stages",
+          "params": {
+            "depth": 2
+          },
+          "step": 2,
+          "level": 3,
+          "rationale": {
+            "text": "Software pipelining depth=2 enables double-buffering in shared memory: while one tile is being computed by the WMMA units, the next tile is being prefetched. This effectively hides global\u2192shared memory latency, which is critical on Ampere where async copy instructions (cp.async) are available.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 0.000396728515625,
+        "latency_ms": 0.722227,
+        "baseline_ratio": 0.4473,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 2,
+          "default_latency_ms": 0.755773,
+          "vs_default": 0.9487,
+          "meas_spread": 0.0865
+        }
+      },
+      "decision_count_at": 2,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 2,
+    "compiles_used": 1
+  }
+}

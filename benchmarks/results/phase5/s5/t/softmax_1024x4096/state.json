@@ -1,0 +1,275 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "softmax",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": []
+  },
+  "decision_log": [],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 5.587935447692871e-09,
+      "latency_ms": 0.15109,
+      "baseline_ratio": 0.6717,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.121201,
+        "vs_default": 1.2467,
+        "meas_spread": 0.0023
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 5.587935447692871e-09,
+      "latency_ms": 0.122296,
+      "baseline_ratio": 0.9521,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.122296,
+        "vs_default": 1.0,
+        "meas_spread": 0.0008
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 4.6566128730773926e-09,
+      "latency_ms": 0.13822,
+      "baseline_ratio": 0.8016,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.121907,
+        "vs_default": 1.1338,
+        "meas_spread": 0.0069
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 4.6566128730773926e-09,
+      "latency_ms": 0.16343,
+      "baseline_ratio": 0.667,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.121416,
+        "vs_default": 1.3465,
+        "meas_spread": 0.0023
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 5.669891834259033e-06,
+      "latency_ms": 1.26039,
+      "baseline_ratio": 0.0925,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 1,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 5.669891834259033e-06,
+      "latency_ms": 0.540221,
+      "baseline_ratio": 0.2159,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 1,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 5.587935447692871e-09,
+      "latency_ms": 0.125061,
+      "baseline_ratio": 1.6362,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.125061,
+        "vs_default": 1.0,
+        "meas_spread": 0.0002
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 5.587935447692871e-09,
+      "latency_ms": 0.124989,
+      "baseline_ratio": 1.6013,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.124989,
+        "vs_default": 1.0,
+        "meas_spread": 0.0006
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 5.587935447692871e-09,
+      "latency_ms": 0.117391,
+      "baseline_ratio": 0.9388,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.117391,
+        "vs_default": 1.0,
+        "meas_spread": 0.0055
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 5.587935447692871e-09,
+      "latency_ms": 0.116908,
+      "baseline_ratio": 0.9973,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.116908,
+        "vs_default": 1.0,
+        "meas_spread": 0.0023
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 5.669891834259033e-06,
+      "latency_ms": 1.217618,
+      "baseline_ratio": 0.0959,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 0,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 5.587935447692871e-09,
+      "latency_ms": 0.125102,
+      "baseline_ratio": 1.6352,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.125102,
+        "vs_default": 1.0,
+        "meas_spread": 0.001
+      }
+    }
+  ],
+  "best_result": null,
+  "checkpoints": {
+    "initial_baseline": {
+      "label": "initial_baseline",
+      "timestamp": 1784745827.5891073,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "softmax",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "with_512_threads": {
+      "label": "with_512_threads",
+      "timestamp": 1784745904.45634,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "softmax",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "Using 512 threads (the default) as the L3 anchor to force llvm backend routing, so we can measure the effect of L1 decisions in isolation on the llvm backend.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 512
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Using 512 threads (the default) as the L3 anchor to force llvm backend routing, so we can measure the effect of L1 decisions in isolation on the llvm backend.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": null,
+      "decision_count_at": 1,
+      "compile_count_at": 0
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 0,
+    "compiles_used": 0
+  }
+}

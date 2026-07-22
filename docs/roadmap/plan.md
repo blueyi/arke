@@ -568,13 +568,13 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 | Stage | Milestone | Exit Criteria |
 | --- | --- | --- |
-| **P5-S1** | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct |
-| **P5-S2** | Cat A-F via LLVM | All 60+ ops correct + geomean ≥ Phase 4 C-like (per-vendor) |
-| **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) [†] |
-| **P5-S4** | Multi-hardware LLVM | ≥3 backends ≥90% respective vendor libs |
+| **P5-S1** | LLVM lowering framework | SemanticIR → LLVM IR, matmul correct — ✅ 2026-07-16 (commit ffe928f; re-verified live max_err 5.1e-5) |
+| **P5-S2** | Cat A-F via LLVM | All 60+ ops correct + geomean ≥ Phase 4 C-like (per-vendor) — ✅ 2026-07-17 (46/46 ops compile + GPU exec, commits 00a0302/f64694b/64cee71) |
+| **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) [†] — ✅ GATE PASS 2026-07-20 (weighted geomean median 0.923 ≤ 0.952, 6/6 runs, commit 6d5f251) |
+| **P5-S4** | ~~Multi-hardware LLVM~~ ⏭️ SKIPPED | ~~≥3 backends ≥90% respective vendor libs~~ — skipped per the locked NVIDIA-focus strategy (Phase-2 Ascend pause + P3-S4 skip precedent, 2026-07-22); extension seam preserved via `ArkeBackend`/`BackendRegistry` (asserted by gate_p5_final E) |
 | **P5-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% — ✅ 2026-07-22 (mechanism 45.7% A/B + live-LLM 22.4% self-discovered, commit 1de3d9c) |
 | **P5-S5-T** | L3 agent peak performance (tightened, Leon-approved 2026-07-22) | Live agent, bounded L3 action space, extended shape matrix (gate shapes + large shapes): (1) per-case agent strategy ≥ default (never worse); (2) every case in the locked C2 list (softmax@1024×4096 1.049×) recovered to ≤1.05×; (3) overall latency-weighted geomean ≤0.948×; (4) strategies self-discovered per-shape by live LLM with @rationale (no seeded answers); (5) generalization: on held-out shapes agent strategy still ≥ default — ✅ CLOSED 2026-07-22, 5/5 PASS (C1 8/8, C2 1.0491, C3 0.947, C4 8/8, C5 7/7; evidence commit f6808da) [‡] |
-| **P5-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage |
+| **P5-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage — ✅ PASS 2026-07-22 (KB 390 entries incl. 72 live-LLM LLVM-backend P5 rationales; cross-hardware = extension-seam-preserved per P5-S4 skip口径; gate_p5_final 5/5: KB ✓ LLVM-correctness ✓ S3-perf ✓ S5-T-gate ✓ backend-seam ✓) |
 
 > **[†] P5-S3 measurement methodology (approved by Leon, 2026-07-20).** The
 > "≥ C-like + 5%" threshold (LLVM/CUDA-C latency ratio ≤ 0.952×) is measured

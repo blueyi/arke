@@ -1,0 +1,392 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "matmul",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "wmma_tile",
+        "source_step": 1,
+        "effect": "ignored:wmma_tile",
+        "rationale": {
+          "text": "Re-apply best wmma_tile and test pipeline_stages=3 to identify whether there's a sweet spot between depth=2 and depth=4 for this tile.",
+          "lang": "en"
+        }
+      },
+      {
+        "source_kind": "pipeline_stages",
+        "source_step": 2,
+        "effect": "ignored:pipeline_stages",
+        "rationale": {
+          "text": "Test depth=3 pipeline (between the noisy 2 and the promising 4) to find if there is a better pipeline depth for this large tile on 30 SMs.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "wmma_tile",
+      "params": {
+        "WM": 4,
+        "WN": 4,
+        "WTM": 2,
+        "WTN": 4
+      },
+      "step": 1,
+      "level": 3,
+      "rationale": {
+        "text": "Re-apply best wmma_tile and test pipeline_stages=3 to identify whether there's a sweet spot between depth=2 and depth=4 for this tile.",
+        "lang": "en"
+      }
+    },
+    {
+      "kind": "pipeline_stages",
+      "params": {
+        "depth": 3
+      },
+      "step": 2,
+      "level": 3,
+      "rationale": {
+        "text": "Test depth=3 pipeline (between the noisy 2 and the promising 4) to find if there is a better pipeline depth for this large tile on 30 SMs.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.012467,
+      "baseline_ratio": 0.4402,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 2.013735,
+        "vs_default": 0.9978,
+        "meas_spread": 0.0292
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.111526,
+      "baseline_ratio": 0.4211,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 2.009201,
+        "vs_default": 1.0509,
+        "meas_spread": 0.0035
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.100367,
+      "baseline_ratio": 0.4188,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 2.01561,
+        "vs_default": 1.0421,
+        "meas_spread": 0.0073
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 3.93728,
+      "baseline_ratio": 0.2533,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 2.365635,
+        "vs_default": 1.6593,
+        "meas_spread": 0.2226
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.733599,
+      "baseline_ratio": 0.3085,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 2.786447,
+        "vs_default": 0.981,
+        "meas_spread": 0.3423
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.70892,
+      "baseline_ratio": 0.3107,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 2.758871,
+        "vs_default": 0.9819,
+        "meas_spread": 0.3307
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 4.300954,
+      "baseline_ratio": 0.2299,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 2.21866,
+        "vs_default": 1.9192,
+        "meas_spread": 0.201
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 4.636608,
+      "baseline_ratio": 0.225,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 2.436987,
+        "vs_default": 1.8436,
+        "meas_spread": 0.0364
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 3.529841,
+      "baseline_ratio": 0.3309,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 2.484275,
+        "vs_default": 1.4209,
+        "meas_spread": 0.2635
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.703893,
+      "baseline_ratio": 0.3229,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 2.891766,
+        "vs_default": 0.935,
+        "meas_spread": 0.3367
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.829198,
+      "baseline_ratio": 0.3045,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 2.80666,
+        "vs_default": 0.9586,
+        "meas_spread": 0.3338
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.646518,
+      "baseline_ratio": 0.3208,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 2.803599,
+        "vs_default": 0.944,
+        "meas_spread": 0.3144
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.0010986328125,
+      "latency_ms": 2.744893,
+      "baseline_ratio": 0.3141,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 2.845419,
+        "vs_default": 0.9647,
+        "meas_spread": 0.326
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "llvm",
+    "correct": true,
+    "max_diff": 0.0010986328125,
+    "latency_ms": 2.744893,
+    "baseline_ratio": 0.3141,
+    "metadata": {
+      "validation_tier": "V2_profile",
+      "requested_backend": "llvm",
+      "strategy_decisions": 2,
+      "default_latency_ms": 2.845419,
+      "vs_default": 0.9647,
+      "meas_spread": 0.326
+    }
+  },
+  "checkpoints": {
+    "initial_baseline": {
+      "label": "initial_baseline",
+      "timestamp": 1784740098.4831097,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "best_candidate_4x4_pipe4": {
+      "label": "best_candidate_4x4_pipe4",
+      "timestamp": 1784740267.3892262,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "matmul",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "wmma_tile",
+            "source_step": 1,
+            "effect": "ignored:wmma_tile",
+            "rationale": {
+              "text": "Re-apply the best wmma_tile configuration (vs_default\u22480.998) and pair it with pipeline_stages=4 to see if a 4-stage pipeline (3 in-flight prefetch stages) yields meaningful latency hiding beyond depth=2.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "pipeline_stages",
+            "source_step": 2,
+            "effect": "ignored:pipeline_stages",
+            "rationale": {
+              "text": "Test 4-stage pipeline with the best wmma_tile \u2014 deeper pipelining can overcome the higher GMEM latency when the tile is large enough to justify the additional shared memory buffers.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "wmma_tile",
+          "params": {
+            "WM": 4,
+            "WN": 4,
+            "WTM": 2,
+            "WTN": 4
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Re-apply the best wmma_tile configuration (vs_default\u22480.998) and pair it with pipeline_stages=4 to see if a 4-stage pipeline (3 in-flight prefetch stages) yields meaningful latency hiding beyond depth=2.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "pipeline_stages",
+          "params": {
+            "depth": 4
+          },
+          "step": 2,
+          "level": 3,
+          "rationale": {
+            "text": "Test 4-stage pipeline with the best wmma_tile \u2014 deeper pipelining can overcome the higher GMEM latency when the tile is large enough to justify the additional shared memory buffers.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 0.0010986328125,
+        "latency_ms": 2.703893,
+        "baseline_ratio": 0.3229,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 2,
+          "default_latency_ms": 2.891766,
+          "vs_default": 0.935,
+          "meas_spread": 0.3367
+        }
+      },
+      "decision_count_at": 2,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 2,
+    "compiles_used": 1
+  }
+}

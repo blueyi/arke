@@ -1,0 +1,296 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "rmsnorm",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "block_threads",
+        "source_step": 1,
+        "effect": "ignored:block_threads",
+        "rationale": {
+          "text": "1024 threads/block: each thread handles 4096/1024=4 elements. Max threads per block on Ampere, giving maximum intra-block parallelism for the two-pass reduction (sum-of-squares then normalize). Fewer blocks (1024 total, ~34/SM) but higher parallelism per block \u2014 worth measuring as the reduction tree is shallower with more warps (32 warps vs 16).",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "block_threads",
+      "params": {
+        "n": 1024
+      },
+      "step": 1,
+      "level": 3,
+      "rationale": {
+        "text": "1024 threads/block: each thread handles 4096/1024=4 elements. Max threads per block on Ampere, giving maximum intra-block parallelism for the two-pass reduction (sum-of-squares then normalize). Fewer blocks (1024 total, ~34/SM) but higher parallelism per block \u2014 worth measuring as the reduction tree is shallower with more warps (32 warps vs 16).",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.574920654296875e-05,
+      "latency_ms": 0.149565,
+      "baseline_ratio": 3.2018,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.118209,
+        "vs_default": 1.2658,
+        "meas_spread": 0.0018
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.574920654296875e-05,
+      "latency_ms": 0.118149,
+      "baseline_ratio": 4.0656,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.118149,
+        "vs_default": 1.0,
+        "meas_spread": 0.0016
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.6226043701171875e-05,
+      "latency_ms": 0.114268,
+      "baseline_ratio": 4.1907,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.11817,
+        "vs_default": 0.9667,
+        "meas_spread": 0.0004
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.6226043701171875e-05,
+      "latency_ms": 0.114258,
+      "baseline_ratio": 4.1953,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.118189,
+        "vs_default": 0.9667,
+        "meas_spread": 0.001
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.574920654296875e-05,
+      "latency_ms": 0.162785,
+      "baseline_ratio": 2.9467,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.118743,
+        "vs_default": 1.3712,
+        "meas_spread": 0.0003
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.6226043701171875e-05,
+      "latency_ms": 0.114053,
+      "baseline_ratio": 4.2003,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.118538,
+        "vs_default": 0.9629,
+        "meas_spread": 0.0109
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.6226043701171875e-05,
+      "latency_ms": 0.154552,
+      "baseline_ratio": 3.3781,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.121928,
+        "vs_default": 1.2676,
+        "meas_spread": 0.0993
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.6226043701171875e-05,
+      "latency_ms": 0.11606,
+      "baseline_ratio": 4.1636,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.118569,
+        "vs_default": 0.9781,
+        "meas_spread": 0.0079
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.6226043701171875e-05,
+      "latency_ms": 0.114647,
+      "baseline_ratio": 4.205,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.118508,
+        "vs_default": 0.9678,
+        "meas_spread": 0.0011
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.6226043701171875e-05,
+      "latency_ms": 0.114624,
+      "baseline_ratio": 4.1872,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.118484,
+        "vs_default": 0.9675,
+        "meas_spread": 0.0004
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "llvm",
+    "correct": true,
+    "max_diff": 2.6226043701171875e-05,
+    "latency_ms": 0.114268,
+    "baseline_ratio": 4.1907,
+    "metadata": {
+      "validation_tier": "V2_profile",
+      "requested_backend": "llvm",
+      "strategy_decisions": 1,
+      "default_latency_ms": 0.11817,
+      "vs_default": 0.9667,
+      "meas_spread": 0.0004
+    }
+  },
+  "checkpoints": {
+    "initial_baseline": {
+      "label": "initial_baseline",
+      "timestamp": 1784745627.1599145,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "best_1024threads": {
+      "label": "best_1024threads",
+      "timestamp": 1784745671.2871902,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "1024 threads/block: each thread handles 4096/1024=4 elements. Max threads per block on Ampere, giving maximum intra-block parallelism for the two-pass reduction (sum-of-squares then normalize). Fewer blocks (1024 total, ~34/SM) but higher parallelism per block \u2014 worth measuring as the reduction tree is shallower with more warps (32 warps vs 16).",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 1024
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "1024 threads/block: each thread handles 4096/1024=4 elements. Max threads per block on Ampere, giving maximum intra-block parallelism for the two-pass reduction (sum-of-squares then normalize). Fewer blocks (1024 total, ~34/SM) but higher parallelism per block \u2014 worth measuring as the reduction tree is shallower with more warps (32 warps vs 16).",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 2.6226043701171875e-05,
+        "latency_ms": 0.114268,
+        "baseline_ratio": 4.1907,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.11817,
+          "vs_default": 0.9667,
+          "meas_spread": 0.0004
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 1,
+    "compiles_used": 2
+  }
+}

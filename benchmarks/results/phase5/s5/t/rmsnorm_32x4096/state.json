@@ -1,0 +1,234 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "rmsnorm",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": []
+  },
+  "decision_log": [],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.002716064453125e-05,
+      "latency_ms": 0.009329,
+      "baseline_ratio": 10.4639,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.009411,
+        "vs_default": 0.9956,
+        "meas_spread": 0.4112
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.002716064453125e-05,
+      "latency_ms": 0.007745,
+      "baseline_ratio": 12.4189,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.00784,
+        "vs_default": 1.0027,
+        "meas_spread": 0.47
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.002716064453125e-05,
+      "latency_ms": 0.161167,
+      "baseline_ratio": 0.881,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.143043,
+        "vs_default": 1.0917,
+        "meas_spread": 0.2569
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.002716064453125e-05,
+      "latency_ms": 0.013728,
+      "baseline_ratio": 7.4741,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.009267,
+        "vs_default": 1.4825,
+        "meas_spread": 0.0469
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 2.002716064453125e-05,
+      "latency_ms": 0.014118,
+      "baseline_ratio": 6.7643,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.013117,
+        "vs_default": 1.0898,
+        "meas_spread": 0.0478
+      }
+    }
+  ],
+  "best_result": null,
+  "checkpoints": {
+    "baseline_empty": {
+      "label": "baseline_empty",
+      "timestamp": 1784738771.8674486,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "block256": {
+      "label": "block256",
+      "timestamp": 1784738783.1573431,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "RMSNorm is a row-wise reduction over N=4096 elements. With 256 threads per block, each thread handles 4096/256=16 elements per row, providing good arithmetic intensity and sufficient warps (8) to hide memory latency. 256 is a classic sweet-spot for reductions on Ampere \u2014 enough parallelism without register pressure or occupancy issues.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 256
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "RMSNorm is a row-wise reduction over N=4096 elements. With 256 threads per block, each thread handles 4096/256=16 elements per row, providing good arithmetic intensity and sufficient warps (8) to hide memory latency. 256 is a classic sweet-spot for reductions on Ampere \u2014 enough parallelism without register pressure or occupancy issues.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 2.002716064453125e-05,
+        "latency_ms": 0.009329,
+        "baseline_ratio": 10.4639,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.009411,
+          "vs_default": 0.9956,
+          "meas_spread": 0.4112
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "block512": {
+      "label": "block512",
+      "timestamp": 1784738801.7868016,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "rmsnorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "Try 512 threads: each thread handles 4096/512=8 elements, giving 16 warps per block. Higher thread count may better saturate Ampere's warp scheduler and reduce per-thread register pressure for this memory-bound reduction. Also reduces reduction tree depth, which can lower synchronization overhead.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 512
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Try 512 threads: each thread handles 4096/512=8 elements, giving 16 warps per block. Higher thread count may better saturate Ampere's warp scheduler and reduce per-thread register pressure for this memory-bound reduction. Also reduces reduction tree depth, which can lower synchronization overhead.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 2.002716064453125e-05,
+        "latency_ms": 0.007745,
+        "baseline_ratio": 12.4189,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.00784,
+          "vs_default": 1.0027,
+          "meas_spread": 0.47
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 0,
+    "compiles_used": 0
+  }
+}

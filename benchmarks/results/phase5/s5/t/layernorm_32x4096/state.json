@@ -1,0 +1,297 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "layernorm",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": []
+  },
+  "decision_log": [],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.009175,
+      "baseline_ratio": 5.9398,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.009018,
+        "vs_default": 1.0111,
+        "meas_spread": 0.0432
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.138353,
+      "baseline_ratio": 0.3971,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.111739,
+        "vs_default": 1.2382,
+        "meas_spread": 0.2805
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.009458,
+      "baseline_ratio": 5.5574,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.010568,
+        "vs_default": 0.8705,
+        "meas_spread": 0.0378
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.01393,
+      "baseline_ratio": 3.8351,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.010506,
+        "vs_default": 1.1907,
+        "meas_spread": 0.3349
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.0138,
+      "baseline_ratio": 3.8467,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.008854,
+        "vs_default": 1.4984,
+        "meas_spread": 0.1296
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.151337,
+      "baseline_ratio": 0.3639,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.109302,
+        "vs_default": 1.5067,
+        "meas_spread": 9.699
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0019388198852539062,
+      "latency_ms": 0.144558,
+      "baseline_ratio": 3.5891,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 0,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0019388198852539062,
+      "latency_ms": 0.130724,
+      "baseline_ratio": 3.9539,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 0,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 0.0019388198852539062,
+    "latency_ms": 0.130724,
+    "baseline_ratio": 3.9539,
+    "metadata": {
+      "validation_tier": "V2_profile",
+      "requested_backend": "triton",
+      "strategy_decisions": 0,
+      "default_latency_ms": null,
+      "vs_default": null,
+      "meas_spread": null
+    }
+  },
+  "checkpoints": {
+    "initial_empty": {
+      "label": "initial_empty",
+      "timestamp": 1784742508.039353,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "bt_512": {
+      "label": "bt_512",
+      "timestamp": 1784742523.5285707,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "LayerNorm is row-wise over N=4096. With 512 threads/block, each thread handles 4096/512=8 elements \u2014 enough arithmetic intensity to hide memory latency while keeping 2 blocks/SM (512*2=1024 \u2264 max_threads_per_block=1024). This is the canonical sweet-spot for a reduce of this width on Ampere.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 512
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "LayerNorm is row-wise over N=4096. With 512 threads/block, each thread handles 4096/512=8 elements \u2014 enough arithmetic intensity to hide memory latency while keeping 2 blocks/SM (512*2=1024 \u2264 max_threads_per_block=1024). This is the canonical sweet-spot for a reduce of this width on Ampere.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 9.5367431640625e-07,
+        "latency_ms": 0.009175,
+        "baseline_ratio": 5.9398,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.009018,
+          "vs_default": 1.0111,
+          "meas_spread": 0.0432
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "bt_1024_v1": {
+      "label": "bt_1024_v1",
+      "timestamp": 1784742550.6693583,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "Try 1024 threads/block: maximum occupancy per block, each thread covers 4096/1024=4 elements. With M=32 rows and 30 SMs, we get ~1 block/SM; the full warp-parallel reduction over 32 warps can exploit all Ampere warp-shuffle hardware efficiently and maximise memory bandwidth utilisation across the wide N=4096 row.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 1024
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Try 1024 threads/block: maximum occupancy per block, each thread covers 4096/1024=4 elements. With M=32 rows and 30 SMs, we get ~1 block/SM; the full warp-parallel reduction over 32 warps can exploit all Ampere warp-shuffle hardware efficiently and maximise memory bandwidth utilisation across the wide N=4096 row.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 9.5367431640625e-07,
+        "latency_ms": 0.009458,
+        "baseline_ratio": 5.5574,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.010568,
+          "vs_default": 0.8705,
+          "meas_spread": 0.0378
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 0,
+    "compiles_used": 2
+  }
+}

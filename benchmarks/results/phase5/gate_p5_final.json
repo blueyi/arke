@@ -1,0 +1,66 @@
+{
+  "results": {
+    "A_rationale_kb": {
+      "pass": true,
+      "count": 390,
+      "min": 200,
+      "phases": [
+        "1",
+        "5"
+      ],
+      "backends": [
+        "llvm",
+        "triton"
+      ],
+      "live_llvm_p5_entries": 72
+    },
+    "B_llvm_correctness": {
+      "pass": true,
+      "checks": [
+        {
+          "op": "matmul",
+          "correct": true,
+          "max_err": 5.14984130859375e-05
+        },
+        {
+          "op": "rmsnorm",
+          "correct": true,
+          "max_err": 4.482269287109375e-05
+        },
+        {
+          "op": "softmax",
+          "correct": true,
+          "max_err": 1.3969838619232178e-09
+        }
+      ]
+    },
+    "C_s3_performance": {
+      "pass": true,
+      "source": "commit 6d5f251 (P5-S3 GATE PASS)",
+      "recorded_geomean_median": 0.923,
+      "threshold": 0.952
+    },
+    "D_s5t_live_gate": {
+      "pass": true,
+      "criteria": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true
+      },
+      "overall": true
+    },
+    "E_backend_seam": {
+      "pass": true,
+      "registry_methods": [
+        "get",
+        "list_backends",
+        "list_targets",
+        "register"
+      ],
+      "note": "extension seam preserved (Ascend/AMD deferred, not removed)"
+    }
+  },
+  "overall": true
+}

@@ -1,0 +1,1868 @@
+{
+  "model_used": "arke-llm/claude-sonnet-4-6",
+  "decisions": 2,
+  "tool_calls": 41,
+  "tokens": {
+    "in": 440847,
+    "out": 5565
+  },
+  "duration_seconds": 218.8,
+  "errors": [],
+  "trajectory": [
+    {
+      "type": "action",
+      "step": 1,
+      "tool": "get_hw_profile",
+      "params": {},
+      "result": {
+        "success": true,
+        "data": {
+          "name": "nvidia_ampere",
+          "compute_capability": [
+            8,
+            6
+          ],
+          "shared_memory_bytes": 49152,
+          "max_threads_per_block": 1024,
+          "warp_size": 32,
+          "num_sms": 30,
+          "peak_tflops_f16": 12.74
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 2,
+      "tool": "analyze_compute",
+      "params": {
+        "op_name": "matmul"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "name": "matmul",
+          "category": "compute",
+          "inputs": {
+            "A": "Tensor[M,K]",
+            "B": "Tensor[K,N]"
+          },
+          "output": "Tensor[M,N]",
+          "computation": "C[i,j] = sum(A[i,k] * B[k,j], axis=k)",
+          "properties": [
+            "associative",
+            "distributive"
+          ],
+          "index_vars": [
+            "i",
+            "j",
+            "k"
+          ],
+          "reduction_axes": [
+            "k"
+          ],
+          "shape_rule": {
+            "kind": "matmul_rule"
+          },
+          "template_hint": {
+            "template_name": "matmul"
+          }
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 3,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "wmma_tile",
+        "top_n": 64
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 52,
+          "candidates": [
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 1,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 4,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 1,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 1,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 4,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 1,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 4,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 4,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 1,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 1,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 4,
+                "WTM": 1,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 1,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 1,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 4,
+                "WTM": 4,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 1,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 4,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 1,
+                "WTM": 1,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 1,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 2,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 1,
+                "WTM": 2,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 1,
+                "WTM": 4,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 4,
+                "WTM": 1,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 2,
+                "WTM": 1,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 4,
+                "WTM": 2,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 1,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 4,
+                "WN": 1,
+                "WTM": 1,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 2,
+                "WTM": 4,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 1,
+                "WTM": 1,
+                "WTN": 4
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 1,
+                "WTM": 2,
+                "WTN": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 2,
+                "WTM": 1,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 1,
+                "WN": 2,
+                "WTM": 2,
+                "WTN": 1
+              },
+              "level": 3
+            },
+            {
+              "kind": "wmma_tile",
+              "params": {
+                "WM": 2,
+                "WN": 1,
+                "WTM": 1,
+                "WTN": 2
+              },
+              "level": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 4,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "pipeline_stages",
+        "top_n": 16
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 3,
+          "candidates": [
+            {
+              "kind": "pipeline_stages",
+              "params": {
+                "depth": 2
+              },
+              "level": 3
+            },
+            {
+              "kind": "pipeline_stages",
+              "params": {
+                "depth": 3
+              },
+              "level": 3
+            },
+            {
+              "kind": "pipeline_stages",
+              "params": {
+                "depth": 4
+              },
+              "level": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 5,
+      "tool": "checkpoint",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "label": "initial_baseline",
+          "decision_count_at": 0,
+          "compile_count_at": 0,
+          "total_checkpoints": 1
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 6,
+      "tool": "apply_decision",
+      "params": {
+        "params": {
+          "WTM": 2,
+          "WTN": 4,
+          "WM": 4,
+          "WN": 4
+        },
+        "rationale": "Start with the largest balanced tile (WM=4, WN=4) with asymmetric warp tiles (WTM=2, WTN=4). This maximizes the output tile area per warp (4x4 WMMA fragments \u00d7 2\u00d74 warp tiles = large data reuse), which is critical for hiding memory latency on a 1024\u00d71024 square matmul. The top candidate in the list suggests the compiler ranks this highly.",
+        "kind": "wmma_tile",
+        "level": 3
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WTM": 2,
+              "WTN": 4,
+              "WM": 4,
+              "WN": 4
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 7,
+      "tool": "compile_and_profile",
+      "params": {
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        },
+        "op_name": "matmul"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.402186,
+          "baseline_ratio": 0.3654,
+          "default_latency_ms": 0.338348,
+          "vs_default": 1.1872,
+          "meas_spread": 0.2688,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 1,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 8,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 9,
+      "tool": "apply_decision",
+      "params": {
+        "level": 3,
+        "params": {
+          "WM": 4,
+          "WN": 4,
+          "WTM": 4,
+          "WTN": 2
+        },
+        "rationale": "Try WTM=4, WTN=2 variant (transposed warp tile ratio vs previous). For a square matmul, column-major warp tiling can change how shared memory is accessed; may reduce bank conflicts on the M-dimension by using wider warp tiles along M.",
+        "kind": "wmma_tile"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WM": 4,
+              "WN": 4,
+              "WTM": 4,
+              "WTN": 2
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 10,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.42025,
+          "baseline_ratio": 0.3585,
+          "default_latency_ms": 0.34397,
+          "vs_default": 1.2218,
+          "meas_spread": 0.1689,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 1,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 11,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 12,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "wmma_tile",
+        "level": 3,
+        "params": {
+          "WM": 2,
+          "WN": 2,
+          "WTM": 2,
+          "WTN": 4
+        },
+        "rationale": "Try mid-range block tiles WM=2,WN=2 with WTM=2,WTN=4. Smaller block tiles reduce shared memory pressure and allow more blocks in flight on 30 SMs, potentially improving occupancy for a 1024x1024 matmul. This is in the middle of the size range and worth probing."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WM": 2,
+              "WN": 2,
+              "WTM": 2,
+              "WTN": 4
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 13,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "B": [
+            1024,
+            1024
+          ],
+          "A": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.47533,
+          "baseline_ratio": 0.3132,
+          "default_latency_ms": 0.338534,
+          "vs_default": 1.4019,
+          "meas_spread": 0.1833,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 1,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 14,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 15,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "wmma_tile",
+        "level": 3,
+        "params": {
+          "WM": 4,
+          "WN": 4,
+          "WTM": 1,
+          "WTN": 4
+        },
+        "rationale": "WM=4,WN=4 maximum block tiles with WTM=1,WTN=4 \u2014 skinny warp tiles. This configuration keeps the large block-level tile (best for data reuse across the K dimension) but uses narrow per-warp tiles. May reduce register pressure vs WTM=2/4 variants while preserving L1/shared memory utilization."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WM": 4,
+              "WN": 4,
+              "WTM": 1,
+              "WTN": 4
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 16,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 1.028352,
+          "baseline_ratio": 0.2887,
+          "default_latency_ms": 0.685189,
+          "vs_default": 1.4047,
+          "meas_spread": 0.0882,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 1,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 17,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 18,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "wmma_tile",
+        "level": 3,
+        "params": {
+          "WM": 4,
+          "WN": 4,
+          "WTM": 2,
+          "WTN": 2
+        },
+        "rationale": "Symmetric WM=4,WN=4,WTM=2,WTN=2 \u2014 perfectly balanced block and warp tiles for a square 1024x1024 matmul. Equal M/N tiling avoids asymmetric memory access patterns and may produce the best cache line alignment for both A and B."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WM": 4,
+              "WN": 4,
+              "WTM": 2,
+              "WTN": 2
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 19,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "pipeline_stages",
+        "level": 3,
+        "params": {
+          "depth": 2
+        },
+        "rationale": "Software pipelining depth=2 enables double-buffering in shared memory: while one tile is being computed by the WMMA units, the next tile is being prefetched. This effectively hides global\u2192shared memory latency, which is critical on Ampere where async copy instructions (cp.async) are available."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "pipeline_stages",
+            "params": {
+              "depth": 2
+            },
+            "step": 2,
+            "level": 3
+          },
+          "decisions_used": 2,
+          "decisions_remaining": 48
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 20,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.722227,
+          "baseline_ratio": 0.4473,
+          "default_latency_ms": 0.755773,
+          "vs_default": 0.9487,
+          "meas_spread": 0.0865,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 2,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 21,
+      "tool": "checkpoint",
+      "params": {
+        "label": "best_so_far_wm4wn4_wtm2wtn2_pipe2"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "label": "best_so_far_wm4wn4_wtm2wtn2_pipe2",
+          "decision_count_at": 2,
+          "compile_count_at": 1,
+          "total_checkpoints": 2
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 22,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 23,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "wmma_tile",
+        "level": 3,
+        "params": {
+          "WM": 4,
+          "WN": 4,
+          "WTM": 2,
+          "WTN": 2
+        },
+        "rationale": "Same symmetric large tile as best config; now testing pipeline depth=3 to see if triple-buffering outperforms double-buffering on Ampere."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WM": 4,
+              "WN": 4,
+              "WTM": 2,
+              "WTN": 2
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 24,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "pipeline_stages",
+        "level": 3,
+        "params": {
+          "depth": 3
+        },
+        "rationale": "Triple-buffering (depth=3): allows even more overlap between compute and memory fetches. On Ampere, if register file is large enough, deeper pipelining can further reduce stall cycles. Testing against depth=2 baseline."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "pipeline_stages",
+            "params": {
+              "depth": 3
+            },
+            "step": 2,
+            "level": 3
+          },
+          "decisions_used": 2,
+          "decisions_remaining": 48
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 25,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.334828,
+          "baseline_ratio": 0.4463,
+          "default_latency_ms": 0.336896,
+          "vs_default": 0.9919,
+          "meas_spread": 0.0133,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 2,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 26,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 27,
+      "tool": "apply_decision",
+      "params": {
+        "level": 3,
+        "params": {
+          "WTN": 2,
+          "WM": 4,
+          "WN": 4,
+          "WTM": 2
+        },
+        "rationale": "Same symmetric large tile, now testing pipeline depth=4 (quad-buffering) to explore the full pipeline range.",
+        "kind": "wmma_tile"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WTN": 2,
+              "WM": 4,
+              "WN": 4,
+              "WTM": 2
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 28,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "pipeline_stages",
+        "level": 3,
+        "params": {
+          "depth": 4
+        },
+        "rationale": "Test quad-buffering (depth=4): deeper pipeline may help on Ampere with async memory copy instructions, but also uses more shared memory \u2014 checking if diminishing returns set in beyond depth=3."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "pipeline_stages",
+            "params": {
+              "depth": 4
+            },
+            "step": 2,
+            "level": 3
+          },
+          "decisions_used": 2,
+          "decisions_remaining": 48
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 29,
+      "tool": "compile_and_profile",
+      "params": {
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        },
+        "op_name": "matmul"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.334203,
+          "baseline_ratio": 0.4473,
+          "default_latency_ms": 0.337664,
+          "vs_default": 0.9875,
+          "meas_spread": 0.0124,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 2,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 30,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 31,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "wmma_tile",
+        "level": 3,
+        "params": {
+          "WM": 2,
+          "WN": 4,
+          "WTM": 2,
+          "WTN": 4
+        },
+        "rationale": "Try WM=2,WN=4 with WTM=2,WTN=4 \u2014 asymmetric block tiles favoring the N dimension. For a row-major C output, wider N tiles may enable better vectorized stores. Combined with pipeline depth=2 to isolate the tile shape effect."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WM": 2,
+              "WN": 4,
+              "WTM": 2,
+              "WTN": 4
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 32,
+      "tool": "apply_decision",
+      "params": {
+        "level": 3,
+        "params": {
+          "depth": 2
+        },
+        "rationale": "Double-buffering with the asymmetric WM=2,WN=4 tile to test N-wide vs M-wide tile preference.",
+        "kind": "pipeline_stages"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "pipeline_stages",
+            "params": {
+              "depth": 2
+            },
+            "step": 2,
+            "level": 3
+          },
+          "decisions_used": 2,
+          "decisions_remaining": 48
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 33,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.561551,
+          "baseline_ratio": 0.2631,
+          "default_latency_ms": 0.327619,
+          "vs_default": 1.6895,
+          "meas_spread": 0.0153,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 2,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 34,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 35,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "wmma_tile",
+        "level": 3,
+        "params": {
+          "WN": 4,
+          "WTM": 2,
+          "WTN": 2,
+          "WM": 4
+        },
+        "rationale": "Re-testing the best configuration (WM=4,WN=4,WTM=2,WTN=2 + pipeline=2) for a second measurement to verify the vs_default=0.9487 win is reproducible."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WN": 4,
+              "WTM": 2,
+              "WTN": 2,
+              "WM": 4
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 36,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "pipeline_stages",
+        "level": 3,
+        "params": {
+          "depth": 2
+        },
+        "rationale": "Double-buffering: re-running for second measurement confirmation of the best config."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "pipeline_stages",
+            "params": {
+              "depth": 2
+            },
+            "step": 2,
+            "level": 3
+          },
+          "decisions_used": 2,
+          "decisions_remaining": 48
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 37,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "B": [
+            1024,
+            1024
+          ],
+          "A": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.338719,
+          "baseline_ratio": 0.4403,
+          "default_latency_ms": 0.33833,
+          "vs_default": 0.9924,
+          "meas_spread": 0.2912,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 2,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 38,
+      "tool": "rollback",
+      "params": {
+        "label": "initial_baseline"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "initial_baseline",
+          "decisions_used": 0,
+          "compiles_used": 0
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 39,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "wmma_tile",
+        "level": 3,
+        "params": {
+          "WM": 4,
+          "WN": 1,
+          "WTM": 4,
+          "WTN": 2
+        },
+        "rationale": "Extreme M-heavy tile: WM=4,WN=1 with WTM=4,WTN=2. Very tall block tiles favour reuse of A rows. May expose a regime not yet explored."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "wmma_tile",
+            "params": {
+              "WM": 4,
+              "WN": 1,
+              "WTM": 4,
+              "WTN": 2
+            },
+            "step": 1,
+            "level": 3
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 40,
+      "tool": "apply_decision",
+      "params": {
+        "params": {
+          "depth": 4
+        },
+        "rationale": "Using depth=4 with the extreme tile shape to see if deep pipelining can compensate for narrow N tiles by fully overlapping memory and compute.",
+        "kind": "pipeline_stages",
+        "level": 3
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "pipeline_stages",
+            "params": {
+              "depth": 4
+            },
+            "step": 2,
+            "level": 3
+          },
+          "decisions_used": 2,
+          "decisions_remaining": 48
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 41,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "A": [
+            1024,
+            1024
+          ],
+          "B": [
+            1024,
+            1024
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            1024,
+            1024
+          ],
+          "correct": true,
+          "max_diff": 0.000396728515625,
+          "latency_ms": 0.926577,
+          "baseline_ratio": 0.1637,
+          "default_latency_ms": 0.340275,
+          "vs_default": 2.7222,
+          "meas_spread": 0.0013,
+          "strategy_noop": false,
+          "robust_reward": 1,
+          "backend": "llvm",
+          "strategy_decisions": 2,
+          "num_real_kernels": null,
+          "num_fallback": null,
+          "compiles_used": 1,
+          "compiles_remaining": 29,
+          "backend_auto_routed": "strategy contains L3 decisions -> auto-routed to llvm (pass backend explicitly to override)"
+        }
+      }
+    }
+  ],
+  "session_summary": {
+    "state": "OptimizationState(decisions=2/50, compiles=10/30, checkpoints=2, best_lat=0.926577)",
+    "budget": {
+      "decision_max": 50,
+      "compile_max": 30,
+      "decisions_used": 2,
+      "compiles_used": 1
+    },
+    "best_performance": {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 0.000396728515625,
+      "latency_ms": 0.926577,
+      "baseline_ratio": 0.1637,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.340275,
+        "vs_default": 2.7222,
+        "meas_spread": 0.0013
+      }
+    },
+    "decision_log": [
+      {
+        "kind": "wmma_tile",
+        "params": {
+          "WM": 4,
+          "WN": 1,
+          "WTM": 4,
+          "WTN": 2
+        },
+        "rationale": "Extreme M-heavy tile: WM=4,WN=1 with WTM=4,WTN=2. Very tall block tiles favour reuse of A rows. May expose a regime not yet explored."
+      },
+      {
+        "kind": "pipeline_stages",
+        "params": {
+          "depth": 4
+        },
+        "rationale": "Using depth=4 with the extreme tile shape to see if deep pipelining can compensate for narrow N tiles by fully overlapping memory and compute."
+      }
+    ],
+    "fallback_events": [],
+    "compact_events": [],
+    "resume": {
+      "resumed_from": null,
+      "replayed_decisions": 0,
+      "replayed_compiles": 0,
+      "state_out": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/t/matmul_1024x1024x1024/state.json"
+    }
+  },
+  "final_message": "...",
+  "stop_reason": "max_turns"
+}

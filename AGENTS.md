@@ -70,7 +70,7 @@ checkpoint() / rollback() → Explore and backtrack safely
 - Phase 3 (MLIR backend): ✅ COMPLETE (46/46 ops GPU, 1.05× cuBLAS)
 - Phase 4 (CUDA-C backend): ✅ COMPLETE (46/46 ops, BYOK, MCP, Harness upgrades)
 - Phase 2 (Ascend): ⏸️ PAUSED
-- Phase 5 (LLVM IR): Future
+- Phase 5 (LLVM IR): ✅ COMPLETE (2026-07-22 — S1-S3 ✅, S4 skipped per NVIDIA-focus, S5+S5-T live-agent gates 5/5, S_FINAL KB 390 entries)
 
 ## Architecture
 

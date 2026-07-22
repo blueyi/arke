@@ -1,0 +1,539 @@
+{
+  "strategy": {
+    "version": "0.1.0",
+    "kernel_id": "layernorm",
+    "target_hw": "nvidia_ampere",
+    "loop_nests": [],
+    "placements": [],
+    "fusion_groups": [],
+    "resources": {},
+    "provenance": [
+      {
+        "source_kind": "block_threads",
+        "source_step": 1,
+        "effect": "ignored:block_threads",
+        "rationale": {
+          "text": "Re-apply 512 threads as the closest-to-default performer (vs_default ~1.002), as the base for further combinator search.",
+          "lang": "en"
+        }
+      }
+    ]
+  },
+  "decision_log": [
+    {
+      "kind": "block_threads",
+      "params": {
+        "n": 512
+      },
+      "step": 1,
+      "level": 3,
+      "rationale": {
+        "text": "Re-apply 512 threads as the closest-to-default performer (vs_default ~1.002), as the base for further combinator search.",
+        "lang": "en"
+      }
+    }
+  ],
+  "compile_results": [
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.149535,
+      "baseline_ratio": 1.7283,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.112712,
+        "vs_default": 1.3263,
+        "meas_spread": 0.0023
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.113019,
+      "baseline_ratio": 2.2756,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.112753,
+        "vs_default": 1.0024,
+        "meas_spread": 0.0016
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.149298,
+      "baseline_ratio": 1.7231,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.112579,
+        "vs_default": 1.327,
+        "meas_spread": 0.0179
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.213709,
+      "baseline_ratio": 1.2011,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 1,
+        "default_latency_ms": 0.112598,
+        "vs_default": 1.8986,
+        "meas_spread": 0.0011
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.136735,
+      "baseline_ratio": 2.1866,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.136428,
+        "vs_default": 1.0029,
+        "meas_spread": 0.0022
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.13698,
+      "baseline_ratio": 2.1487,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.136571,
+        "vs_default": 1.0028,
+        "meas_spread": 0.0025
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.136714,
+      "baseline_ratio": 2.188,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.136448,
+        "vs_default": 1.002,
+        "meas_spread": 0.0007
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.112937,
+      "baseline_ratio": 2.2821,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.11309,
+        "vs_default": 0.9992,
+        "meas_spread": 0.0006
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.135649,
+      "baseline_ratio": 2.2056,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 3,
+        "default_latency_ms": 0.135875,
+        "vs_default": 0.9981,
+        "meas_spread": 0.0008
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.135629,
+      "baseline_ratio": 2.2048,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.135578,
+        "vs_default": 1.0007,
+        "meas_spread": 0.0007
+      }
+    },
+    {
+      "success": true,
+      "backend": "llvm",
+      "correct": true,
+      "max_diff": 9.5367431640625e-07,
+      "latency_ms": 0.112845,
+      "baseline_ratio": 2.2809,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "llvm",
+        "strategy_decisions": 2,
+        "default_latency_ms": 0.11305,
+        "vs_default": 0.9991,
+        "meas_spread": 0.0016
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.001953601837158203,
+      "latency_ms": 0.05845,
+      "baseline_ratio": 5.2262,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 0,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    },
+    {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.001953601837158203,
+      "latency_ms": 0.572201,
+      "baseline_ratio": 0.5226,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 0,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    }
+  ],
+  "best_result": {
+    "success": true,
+    "backend": "triton",
+    "correct": true,
+    "max_diff": 0.001953601837158203,
+    "latency_ms": 0.05845,
+    "baseline_ratio": 5.2262,
+    "metadata": {
+      "validation_tier": "V2_profile",
+      "requested_backend": "triton",
+      "strategy_decisions": 0,
+      "default_latency_ms": null,
+      "vs_default": null,
+      "meas_spread": null
+    }
+  },
+  "checkpoints": {
+    "initial_empty": {
+      "label": "initial_empty",
+      "timestamp": 1784739664.3276143,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": []
+      },
+      "decision_log": [],
+      "best_result": null,
+      "decision_count_at": 0,
+      "compile_count_at": 0
+    },
+    "bt_256": {
+      "label": "bt_256",
+      "timestamp": 1784739678.5891063,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "Start with 256 threads/block. For N=4096, this means 16 elements per thread, giving good arithmetic intensity per thread while keeping occupancy high (multiple blocks can co-reside on each SM). This is a balanced starting point between the extremes.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 256
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Start with 256 threads/block. For N=4096, this means 16 elements per thread, giving good arithmetic intensity per thread while keeping occupancy high (multiple blocks can co-reside on each SM). This is a balanced starting point between the extremes.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 9.5367431640625e-07,
+        "latency_ms": 0.149535,
+        "baseline_ratio": 1.7283,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.112712,
+          "vs_default": 1.3263,
+          "meas_spread": 0.0023
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "bt_512": {
+      "label": "bt_512",
+      "timestamp": 1784739689.3910408,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "Try 512 threads/block. For N=4096, this means 8 elements per thread with a single warp reduction step less. 512 threads fills half the max block capacity \u2014 may hit better occupancy/register-pressure tradeoff than 256, especially on a 30-SM Ampere with 49 KB shared memory.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 512
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Try 512 threads/block. For N=4096, this means 8 elements per thread with a single warp reduction step less. 512 threads fills half the max block capacity \u2014 may hit better occupancy/register-pressure tradeoff than 256, especially on a 30-SM Ampere with 49 KB shared memory.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 9.5367431640625e-07,
+        "latency_ms": 0.113019,
+        "baseline_ratio": 2.2756,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.112753,
+          "vs_default": 1.0024,
+          "meas_spread": 0.0016
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "bt_1024": {
+      "label": "bt_1024",
+      "timestamp": 1784739702.1566856,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "Try the maximum 1024 threads/block. For N=4096, each thread handles exactly 4 elements. 1024 threads = 32 warps per block saturates the SM's warp scheduler; the per-row reduction is fully contained within one block, minimizing inter-block sync and maximizing L1/shared-memory reuse of W and B. This is the classic high-throughput layernorm configuration.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 1024
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Try the maximum 1024 threads/block. For N=4096, each thread handles exactly 4 elements. 1024 threads = 32 warps per block saturates the SM's warp scheduler; the per-row reduction is fully contained within one block, minimizing inter-block sync and maximizing L1/shared-memory reuse of W and B. This is the classic high-throughput layernorm configuration.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 9.5367431640625e-07,
+        "latency_ms": 0.149298,
+        "baseline_ratio": 1.7231,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 1,
+          "default_latency_ms": 0.112579,
+          "vs_default": 1.327,
+          "meas_spread": 0.0179
+        }
+      },
+      "decision_count_at": 1,
+      "compile_count_at": 1
+    },
+    "bt512_unroll8j": {
+      "label": "bt512_unroll8j",
+      "timestamp": 1784739782.4473283,
+      "strategy": {
+        "version": "0.1.0",
+        "kernel_id": "layernorm",
+        "target_hw": "nvidia_ampere",
+        "loop_nests": [
+          {
+            "loop": "j",
+            "unroll_factor": 8
+          }
+        ],
+        "placements": [],
+        "fusion_groups": [],
+        "resources": {},
+        "provenance": [
+          {
+            "source_kind": "block_threads",
+            "source_step": 1,
+            "effect": "ignored:block_threads",
+            "rationale": {
+              "text": "Try 512 threads/block. For N=4096, this means 8 elements per thread with a single warp reduction step less. 512 threads fills half the max block capacity \u2014 may hit better occupancy/register-pressure tradeoff than 256, especially on a 30-SM Ampere with 49 KB shared memory.",
+              "lang": "en"
+            }
+          },
+          {
+            "source_kind": "unroll",
+            "source_step": 2,
+            "effect": "unroll:j",
+            "rationale": {
+              "text": "Unroll the inner j loop by factor 8 to expose more ILP to the scheduler. With 512 threads and N=4096, each thread handles 8 elements; fully unrolling this means 8 independent FMA chains, hiding memory latency and improving instruction-level parallelism across the reduction pass.",
+              "lang": "en"
+            }
+          }
+        ]
+      },
+      "decision_log": [
+        {
+          "kind": "block_threads",
+          "params": {
+            "n": 512
+          },
+          "step": 1,
+          "level": 3,
+          "rationale": {
+            "text": "Try 512 threads/block. For N=4096, this means 8 elements per thread with a single warp reduction step less. 512 threads fills half the max block capacity \u2014 may hit better occupancy/register-pressure tradeoff than 256, especially on a 30-SM Ampere with 49 KB shared memory.",
+            "lang": "en"
+          }
+        },
+        {
+          "kind": "unroll",
+          "params": {
+            "loop": "j",
+            "factor": 8
+          },
+          "step": 2,
+          "level": 1,
+          "rationale": {
+            "text": "Unroll the inner j loop by factor 8 to expose more ILP to the scheduler. With 512 threads and N=4096, each thread handles 8 elements; fully unrolling this means 8 independent FMA chains, hiding memory latency and improving instruction-level parallelism across the reduction pass.",
+            "lang": "en"
+          }
+        }
+      ],
+      "best_result": {
+        "success": true,
+        "backend": "llvm",
+        "correct": true,
+        "max_diff": 9.5367431640625e-07,
+        "latency_ms": 0.112937,
+        "baseline_ratio": 2.2821,
+        "metadata": {
+          "validation_tier": "V2_profile",
+          "requested_backend": "llvm",
+          "strategy_decisions": 2,
+          "default_latency_ms": 0.11309,
+          "vs_default": 0.9992,
+          "meas_spread": 0.0006
+        }
+      },
+      "decision_count_at": 2,
+      "compile_count_at": 2
+    }
+  },
+  "budget": {
+    "decision_max": 50,
+    "compile_max": 30,
+    "decisions_used": 1,
+    "compiles_used": 2
+  }
+}
