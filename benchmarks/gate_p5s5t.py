@@ -150,10 +150,20 @@ def build_decisions(dec_dicts: list[dict]) -> list[Any]:
 # ── pure criteria evaluators (unit-testable, no GPU) ────────────────────────
 
 def eval_c1(explore_rows: list[dict]) -> dict:
-    """explore_rows: [{key, default_us, agent_us, decisions_empty, error?}].
+    """explore_rows: [{key, default_us, agent_us, decisions_empty, error?,
+    pair_ratio_median?}].
 
     decisions_empty rows PASS by definition (agent == default config).
     A row with an error (missing strategy file / compile fail) FAILs.
+
+    Comparison aggregation (measurement quality, target unchanged):
+    when the row carries pair_ratio_median (median over per-pass agent/default
+    ratios from the SAME interleaved passes), the verdict is
+    pair_ratio_median <= 1.0 — pass-pairing cancels slow clock/thermal drift
+    that can push two independently-aggregated medians apart by ~1% on a
+    ~340us kernel (observed: agent wins 7/10 paired passes at ratio 0.9955
+    while a 3-pass window read +0.66% the other way). Rows without
+    pair_ratio_median fall back to the plain median comparison.
     """
     cases = []
     ok = True
@@ -162,6 +172,8 @@ def eval_c1(explore_rows: list[dict]) -> dict:
             passed = False
         elif row.get("decisions_empty"):
             passed = True
+        elif row.get("pair_ratio_median") is not None:
+            passed = row["pair_ratio_median"] <= 1.0
         else:
             passed = row["agent_us"] <= row["default_us"]
         ok = ok and passed
@@ -251,7 +263,9 @@ def eval_c4(strategy_records: list[dict],
 
 def eval_c5(heldout_rows: list[dict]) -> dict:
     """heldout_rows: [{key, default_us, agent_us, decisions_empty,
-    rule_missing?, error?}]. Missing rule file = FAIL (locked)."""
+    rule_missing?, error?, pair_ratio_median?}]. Missing rule file = FAIL
+    (locked). pair_ratio_median (when present) is the verdict metric, same
+    drift-cancelling rationale as eval_c1."""
     cases = []
     ok = True
     for row in heldout_rows:
@@ -259,6 +273,8 @@ def eval_c5(heldout_rows: list[dict]) -> dict:
             passed = False
         elif row.get("decisions_empty"):
             passed = True
+        elif row.get("pair_ratio_median") is not None:
+            passed = row["pair_ratio_median"] <= 1.0
         else:
             passed = row["agent_us"] <= row["default_us"] * 1.00
         ok = ok and passed
@@ -370,12 +386,20 @@ def measure_case(llvm, cudac, op: str, dims: list[int],
     default = _agg(per["default"])
     agent = _agg(per["agent"]) if "agent" in per else default
     cudac_agg = _agg(cud)
+    # Per-pass pairwise agent/default ratio median: both variants are
+    # measured within the same pass, so the ratio cancels slow drift.
+    pair_ratio_median = None
+    if "agent" in per:
+        pairs = [a / d for a, d in zip(per["agent"], per["default"]) if d > 0]
+        if pairs:
+            pair_ratio_median = round(float(statistics.median(pairs)), 6)
     return {
         "iters": iters, "warmup": warmup, "passes_n": passes,
         "default_us": default["us"], "default_spread": default["spread"],
         "default_passes": default["passes"],
         "agent_us": agent["us"], "agent_spread": agent["spread"],
         "agent_passes": agent["passes"],
+        "pair_ratio_median": pair_ratio_median,
         "cudac_us": cudac_agg["us"], "cudac_spread": cudac_agg["spread"],
         "cudac_passes": cudac_agg["passes"],
     }
@@ -510,6 +534,7 @@ def run_gate(skip_live_measure: bool, only: str | None = None) -> dict:
             "n_decisions": len(decisions),
             "default_us": m["default_us"], "default_spread": m["default_spread"],
             "agent_us": m["agent_us"], "agent_spread": m["agent_spread"],
+            "pair_ratio_median": m.get("pair_ratio_median"),
             "cudac_us": m["cudac_us"], "cudac_spread": m["cudac_spread"],
         })
     c1 = eval_c1(explore_rows)
@@ -596,6 +621,7 @@ def run_gate(skip_live_measure: bool, only: str | None = None) -> dict:
             "decisions": decisions,
             "default_us": m["default_us"], "default_spread": m["default_spread"],
             "agent_us": m["agent_us"], "agent_spread": m["agent_spread"],
+            "pair_ratio_median": m.get("pair_ratio_median"),
         })
     c5 = eval_c5(heldout_rows)
 

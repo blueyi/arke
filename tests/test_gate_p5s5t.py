@@ -355,6 +355,22 @@ class TestC1:
         r = eval_c1([{"key": "a", "error": "strategies file missing"}])
         assert r["pass"] is False
 
+    def test_pair_ratio_median_takes_precedence(self):
+        # Drift pushed the window medians apart (+0.7%), but the per-pass
+        # paired ratio median says the agent wins -> PASS.
+        r = eval_c1([{"key": "a", "default_us": 344.1, "agent_us": 346.4,
+                      "pair_ratio_median": 0.9955, "decisions_empty": False}])
+        assert r["pass"] is True
+        # And the converse: medians look fine but paired ratio says loss.
+        r = eval_c1([{"key": "a", "default_us": 346.4, "agent_us": 344.1,
+                      "pair_ratio_median": 1.003, "decisions_empty": False}])
+        assert r["pass"] is False
+
+    def test_pair_ratio_boundary(self):
+        r = eval_c1([{"key": "a", "default_us": 10.0, "agent_us": 10.0,
+                      "pair_ratio_median": 1.0, "decisions_empty": False}])
+        assert r["pass"] is True  # exactly 1.0 = tie = PASS
+
 
 class TestC2:
     def test_boundary_1p05(self):
