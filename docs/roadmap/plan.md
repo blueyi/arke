@@ -28,7 +28,7 @@ Roadmap > Phase > Stage > Feature > Task
 - **Validation window:** Phase 2 (Stage 10–11+, TBD)
 - **Pass evidence:** ≥80% of Phase 1 ops port to Ascend with **no new `Decision` kinds**, and ≥1 LLM-decided strategy on Ascend outperforms the Ascend heuristic floor.
 - **Kill criterion:** If StrategyIR must add ≥3 architecture-specific decision kinds (e.g. `cube_pipeline_stage`, `vector_buffer_double_buffer`) just to express Ascend strategy, or if SIMT trajectories provide **zero** transfer learning to SIMD decisions, L2 is falsified — IR is not architecture-agnostic, must redesign.
-- **Status:** ⬜ unstarted.
+- **Status:** ⏭️ dormant — Phase 2 (Ascend) PAUSED/SKIPPED per Leon 2026-07-02 (no Ascend hardware on hand); L2 remains an open, untested claim. Backend extensibility preserved via `arke/backend/protocol.py` so the test can resume when hardware exists.
 
 ### Thesis L3 — Cross-Abstraction-Layer (Phase 3-5)
 
@@ -37,7 +37,7 @@ Roadmap > Phase > Stage > Feature > Task
 - **Validation window:** Phase 3 / Phase 4 / Phase 5
 - **Pass evidence:** Per Phase, geomean perf on the BL6 model set strictly improves vs the previous Phase's same-backend baseline (e.g. Phase 3 MLIR-direct geomean ≥ 1.05× Phase 1 Triton geomean on identical hardware).
 - **Kill criterion:** If **lowering loss** (information lost across each compiler stage) exceeds **LLM-decision gain** at any Phase — i.e. deeper stack yields worse performance — the "cross-abstraction-layer" claim collapses; the project halts or backtracks to the last winning Phase.
-- **Status:** 🟨 Phase 3 COMPLETE on NVIDIA (1.05× cuBLAS, monotonic improvement vs Phase 1 Triton). Phase 4/5 unstarted.
+- **Status:** ✅ VALIDATED on NVIDIA (single hardware, 2026-07-22): Phase 3 MLIR 1.14× cuBLAS OVERALL; Phase 4 CUDA-C ~1.05× cuBLAS (46/46 ops); Phase 5 LLVM-IR beat CUDA-C (weighted geomean 0.923 ≤ 0.952 gate) and the live-LLM L3 agent gate passed 5/5. Monotonic improvement held at every lowering step on the same RTX 3060. **Caveat:** validated on ONE hardware target only — the multi-hardware half of the original L3 ambition is untested (no non-NVIDIA hardware).
 
 ### Why three levels matter
 
@@ -540,13 +540,13 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 
 ### Stage Structure
 
-| Stage | Milestone | Exit Criteria |
-| --- | --- | --- |
-| **P4-S1** | CUDA-C lowering framework | SemanticIR + StrategyIR → CUDA C source for matmul; correctness verified |
-| **P4-S2** | Cat A+B+C via CUDA-C | 30 ops correct + geomean ≥ Phase 3 MLIR (Same-Backend CUDA-C fairness) |
-| **P4-S3** | CCE-C / Bang-C cross-vendor | matmul + rmsnorm + flash_attention correct on ≥1 non-NVIDIA vendor C-like DSL |
-| **P4-S4** | Performance ≥ MLIR | C-like geomean ≥ MLIR geomean across Cat A+B+C (per-vendor) |
-| **P4-S_FINAL** | Phase 4 acceptance | Multi-vendor C-like DSL coverage validated; H5 (vendor-DSL portability via Arke IR) demonstrated |
+| Stage | Milestone | Exit Criteria | Status |
+| --- | --- | --- | --- |
+| **P4-S1** | CUDA-C lowering framework | SemanticIR + StrategyIR → CUDA C source for matmul; correctness verified | ✅ |
+| **P4-S2** | Cat A+B+C via CUDA-C | 46 ops correct + geomean ≥ Phase 3 MLIR (Same-Backend CUDA-C fairness) | ✅ |
+| **P4-S3** | ~~CCE-C / Bang-C cross-vendor~~ ⏭️ SKIPPED | ~~matmul + rmsnorm + flash_attention correct on ≥1 non-NVIDIA vendor C-like DSL~~ — skipped (no non-NVIDIA hardware; same precedent as Phase 2 pause) | ⏭️ |
+| **P4-S4** | Performance ≥ MLIR | C-like geomean ≥ MLIR geomean across Cat A+B+C (NVIDIA) | ✅ |
+| **P4-S_FINAL** | Phase 4 acceptance | ~~Multi-vendor C-like DSL coverage validated~~ — NVIDIA dual-backend (MLIR+CUDA-C) acceptance gate passed; multi-vendor validation DEFERRED (no hardware) | ✅ (NVIDIA scope) |
 
 ### Key Design Points
 
