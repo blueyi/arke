@@ -87,14 +87,14 @@ At a high level: `Semantic IR` defines **what** to compute, `Strategy IR` define
   ┌────────────────────────────▼───────────────────────────────┐
   │  Codegen Backends (progressive depth into hardware)        │
   │                                                            │
-  │   Triton   │  MLIR Dialect  │   LLVM IR   │   HW ISA       │
-  │  (Phase 1) │   (Phase 3)   │  (Phase 4)  │  (Future)       │
+  │  Triton │ MLIR Dialect │ CUDA-C │ LLVM IR │ HW ISA         │
+  │  (Ph 1) │   (Ph 3)     │ (Ph 4) │ (Ph 5)  │ (Future)       │
   │                                                            │
   │  ◄── deeper hardware control ── extreme performance ──►    │
   └────────────────────────────┬───────────────────────────────┘
                                │
   ┌────────────────────────────▼───────────────────────────────┐
-  │      GPU / NPU Execution: NVIDIA │ Ascend │ AMD │ ...      │
+  │   GPU Execution: NVIDIA (validated) │ Ascend/AMD (future)  │
   └────────────────────────────────────────────────────────────┘
 ```
 
@@ -213,25 +213,28 @@ For environment details and custom venv paths, see [docs/architecture/python-env
 
 ## Current CLI
 
-Today, the documented package entry points in the current prerelease distribution are:
+The package entry points in the current prerelease distribution are:
 
 - `arke compile <file.ak>` — compile `.ak` source into Arke IR / `.akir` JSON
-- `arke optimize <file.ak>` — Stage 8 MVP flow: generate bounded StrategyIR, validate/lower, and emit machine-readable optimization artifacts
+- `arke optimize <input>` — generate bounded StrategyIR + trajectory artifacts for `.ak`, natural-language, code, or structured input (heuristic strategy generator by default; emits `strategy.json`, `result.akir`, `trajectory.jsonl`, `summary.json`)
+- `arke run` — run the Arke Harness on an op with a chosen agent backend: builtin **live-LLM** (BYOK), **heuristic**, or external harnesses (`hermes` / `openclaw` / `mcp`)
+- `arke mcp` — run Arke as an MCP server (Mode C): exposes the 8 Façade tools over JSON-RPC/stdio so any MCP-capable agent can drive the optimization loop
 
-`arke optimize` currently accepts `.ak` file input and uses a deterministic heuristic strategy generator by default. It emits `strategy.json`, `result.akir`, `trajectory.jsonl`, and `summary.json` so agent workflows can validate the compile→profile→adjust contract before the live LLM provider path is enabled.
-
-Design documents describe richer optimization flows and agent-driven workflows; read those as architecture and roadmap material unless a specific interface is documented here and implemented in the package entry points.
+The live-LLM path is operational and gate-verified on NVIDIA GPUs (Phase 4/5 live-autotuning and the P5-S5-T live-agent gate). Design documents describe richer flows; read those as architecture material unless the interface is documented here and implemented in the package entry points.
 
 If you are checking versions: the project, package, language schema, and IR schema are aligned on the `v0.1.0` / `0.1.0` starting line. See [docs/spec/arke-lang-spec.md#11-versioning](docs/spec/arke-lang-spec.md#11-versioning) and [docs/spec/arke-ir-spec.md#15-versioning](docs/spec/arke-ir-spec.md#15-versioning).
 
 ## Roadmap Snapshot
 
-Arke is developed in four phases:
+Arke is developed in five phases (current hardware scope: **NVIDIA GPU only** — the machine on hand; other targets stay paused/deferred until hardware is available):
 
-- **Phase 1** — Arke -> Triton -> NVIDIA GPU: validate the SIMT path, language/IR, compiler infrastructure, and benchmark system
-- **Phase 2** — Arke -> Triton -> Ascend NPU: validate cross-architecture generalization on SIMD hardware
-- **Phase 3** — Arke -> MLIR Dialect: gain deeper compiler control beyond Triton's abstraction boundary
-- **Phase 4** — Arke -> LLVM IR: pursue lower-level backend completeness and broader hardware coverage
+- **Phase 1** — Arke -> Triton -> NVIDIA GPU: validate the SIMT path, language/IR, compiler infrastructure, and benchmark system — ✅ closed
+- **Phase 2** — Arke -> Triton -> Ascend NPU: cross-architecture generalization on SIMD hardware — ⏸️ paused (no Ascend hardware)
+- **Phase 3** — Arke -> MLIR Dialect: deeper compiler control beyond Triton's abstraction boundary — ✅ closed (NVIDIA)
+- **Phase 4** — Arke -> CUDA-C: vendor-DSL portability path — ✅ closed (NVIDIA)
+- **Phase 5** — Arke -> LLVM IR: lower-level backend completeness — ✅ closed (NVIDIA; multi-hardware stage skipped)
+
+Phase closure means the stage gates passed on NVIDIA hardware; it does **not** mean the project is release-ready. No release tag has been cut — cross-hardware validation remains open.
 
 The active roadmap, Gate criteria, and stage details live in [docs/roadmap/plan.md](docs/roadmap/plan.md).
 

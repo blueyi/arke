@@ -71,6 +71,7 @@ checkpoint() / rollback() → Explore and backtrack safely
 - Phase 4 (CUDA-C backend): ✅ COMPLETE (46/46 ops, BYOK, MCP, Harness upgrades)
 - Phase 2 (Ascend): ⏸️ PAUSED
 - Phase 5 (LLVM IR): ✅ COMPLETE (2026-07-22 — S1-S3 ✅, S4 skipped per NVIDIA-focus, S5+S5-T live-agent gates 5/5, S_FINAL KB 390 entries)
+- **v1.0.0 tag: NOT cut — DEFERRED** (Leon, 2026-07-23): NVIDIA-only coverage is far from release level. All phase closures are NVIDIA-scoped gate passes, not release readiness.
 
 ## Architecture
 

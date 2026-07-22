@@ -2,10 +2,13 @@
 # Copyright 2026 Arke Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""P5-S_FINAL acceptance gate — Phase 5 v1.0.0 release readiness.
+"""P5-S_FINAL acceptance gate — Phase 5 closure check (NVIDIA scope).
 
 Phase 5 (Arke → LLVM IR) closure check. Aggregates the evidence produced by
-the P5 stages into a single PASS/FAIL:
+the P5 stages into a single PASS/FAIL. NOTE: passing this gate closes
+Phase 5's stage plan on NVIDIA hardware; it does NOT imply release
+readiness — the v1.0.0 tag is deferred (Leon, 2026-07-23) because
+NVIDIA-only hardware coverage is far from release level.
 
   A. @rationale KB >= 200 entries (release exit criterion), AND the KB is
      multi-source (not a single-phase heuristic dump) — carries live-LLM
@@ -157,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     overall = all(r.get("pass") in (True, None) for r in results.values())
 
     print("\n" + "=" * 70)
-    print("P5-S_FINAL ACCEPTANCE GATE — Phase 5 v1.0.0 readiness")
+    print("P5-S_FINAL ACCEPTANCE GATE — Phase 5 closure (NVIDIA scope)")
     print("=" * 70)
     for name, r in results.items():
         p = r.get("pass")
