@@ -188,6 +188,24 @@ Rules:
     apply_decision calls before measuring — apply 1–3 related decisions,
     then immediately compile_and_profile to close the loop and learn from
     a real latency/baseline_ratio number.
+  - ACCEPTANCE METRIC (critical): your success criterion is `vs_default`
+    from compile_and_profile — the ratio of your kernel's latency to the
+    same backend's DEFAULT (no-decisions) kernel on the same shapes.
+    vs_default < 1.0 means your strategy beats the default; > 1.0 means it
+    made things WORSE than doing nothing. `baseline_ratio` (vs PyTorch
+    eager) is context only — a high baseline_ratio does NOT mean your
+    decisions helped, because the default kernel usually beats eager too.
+  - KEEPING THE DEFAULT IS A VALID RESULT: some (op, shape) cases have no
+    L3 headroom — the default configuration is already optimal. If after
+    several measured attempts no configuration achieves vs_default < 1.0,
+    the CORRECT final action is to roll back to your initial baseline
+    checkpoint and finish with an EMPTY strategy (keep default). This is a
+    rewarded outcome; shipping a strategy with vs_default > 1.0 is a
+    failure. Do not force a decision just to have "done something".
+  - MEASUREMENT QUALITY: latency_ms is a median-of-3 kernel-only CUDA-event
+    measurement taken after a clock ramp; `meas_spread` reports the pass
+    spread (max/min - 1). If meas_spread > 0.10 the number is noisy —
+    re-profile once before drawing a conclusion from a small difference.
   - Iterate: you MUST complete at least 3 full compile→profile→adjust
     cycles (apply → profile → read the result → adjust). Each cycle ends
     with a compile_and_profile call that returns latency_ms; keep the

@@ -293,6 +293,10 @@ class CompileAndProfileTool(ArkeTool):
 
     def __init__(self, env: Any = None) -> None:
         self._env = env
+        # Default-baseline latency cache: (op_name, shapes_key, backend_label)
+        # -> median default (strategy=None) latency in ms, measured with the
+        # same strict discipline as the agent kernel (P5-S5-T fidelity fix).
+        self._default_cache: dict[tuple, float] = {}
 
     @property
     def name(self) -> str:
@@ -523,22 +527,114 @@ class CompileAndProfileTool(ArkeTool):
             validation_note = None
 
         # V2: real GPU profiling (only meaningful on CUDA with a real kernel).
+        #
+        # P5-S5-T measurement-fidelity fix: on WSL the GPU downclocks after a
+        # few seconds idle (LLM thinking pauses), and a single benchmark()
+        # call with warmup=25 finishes before the clocks ramp back up —
+        # measured 165-195us for a 9us rmsnorm kernel after 10-30s idle.
+        # Discipline (mirrors benchmarks/l3_sweep.py): (1) ~150ms busy-loop
+        # clock ramp, (2) median-of-3 interleaved passes, (3) kernel-only
+        # CUDA events via prepare/run_fast/benchmark_cached (llvm/cuda_c),
+        # (4) spread recorded so the agent can judge measurement quality.
+        # Also measures the strategy=None DEFAULT kernel interleaved in the
+        # same passes and reports vs_default — the gate's actual criterion.
         latency_ms = None
         baseline_ratio = None
+        default_latency_ms = None
+        vs_default = None
+        meas_spread = None
         if use_cuda and output_tensor is not None:
             try:
                 from benchmarks.measure import bench_fn
-                # Prefer the backend's own kernel-only benchmark() when it exposes
-                # one (CUDA-C and LLVM use CUDA events, pre-allocating buffers once
-                # so the measurement is kernel-only — apples-to-apples with
-                # Triton/torch).
-                bench_method = getattr(backend, "benchmark", None)
-                if backend_label in ("cuda_c", "llvm") and callable(bench_method):
-                    latency_ms = round(float(bench_method(compiled, inputs, iters=100, warmup=25)), 6)
+                fine_grained = (
+                    backend_label in ("cuda_c", "llvm")
+                    and callable(getattr(backend, "prepare", None))
+                    and callable(getattr(backend, "benchmark_cached", None))
+                )
+                if fine_grained:
+                    import statistics as _stats
+                    import time as _time
+                    agent_cached = backend.prepare(compiled)
+                    default_cached = None
+                    try:
+                        backend.run_fast(agent_cached, inputs)
+                        # Default (strategy=None) kernel for the SAME graph,
+                        # interleaved in the same thermal window. Only compile
+                        # it when the agent kernel differs from default.
+                        if strategy_decisions:
+                            try:
+                                default_artifact = backend.lower(result.graph)
+                                default_compiled = backend.compile(default_artifact)
+                                if getattr(default_compiled, "success", True):
+                                    default_cached = backend.prepare(default_compiled)
+                                    backend.run_fast(default_cached, inputs)
+                            except Exception:
+                                default_cached = None
+                        # Clock ramp: ~150ms of back-to-back launches so the
+                        # idle-downclocked GPU returns to a high-clock state
+                        # before any recorded measurement.
+                        t0 = _time.perf_counter()
+                        while (_time.perf_counter() - t0) < 0.15:
+                            backend.benchmark_cached(agent_cached, iters=200, warmup=0)
+                        agent_passes, default_passes = [], []
+                        for _ in range(3):
+                            if default_cached is not None:
+                                default_passes.append(
+                                    backend.benchmark_cached(default_cached, iters=100, warmup=10))
+                            agent_passes.append(
+                                backend.benchmark_cached(agent_cached, iters=100, warmup=10))
+                        latency_ms = round(float(_stats.median(agent_passes)), 6)
+                        if min(agent_passes) > 0:
+                            meas_spread = round(max(agent_passes) / min(agent_passes) - 1.0, 4)
+                        if default_passes:
+                            default_latency_ms = round(float(_stats.median(default_passes)), 6)
+                        else:
+                            # Agent kernel IS the default (no decisions applied).
+                            default_latency_ms = latency_ms
+                    finally:
+                        backend.release(agent_cached)
+                        if default_cached is not None:
+                            backend.release(default_cached)
+                    cache_key = (op_name, json.dumps(merged_shapes, sort_keys=True), backend_label)
+                    if default_latency_ms is not None:
+                        self._default_cache[cache_key] = default_latency_ms
+                    if default_latency_ms and latency_ms:
+                        vs_default = round(latency_ms / default_latency_ms, 4)
                 else:
-                    arke_fn = lambda: backend.run(compiled, inputs)  # noqa: E731
-                    arke_bench = bench_fn(arke_fn, warmup=25, reps=100, trials=3)
-                    latency_ms = round(arke_bench.latency_us / 1000.0, 6)
+                    bench_method = getattr(backend, "benchmark", None)
+                    if backend_label == "cuda_c" and callable(bench_method):
+                        # CudaCBackend has no fine-grained prepare/benchmark_cached
+                        # API; its benchmark() is still kernel-only CUDA events.
+                        # Apply the same discipline coarsely: one throwaway ramp
+                        # call, then median-of-3, default interleaved.
+                        import statistics as _stats
+                        bench_method(compiled, inputs, iters=100, warmup=30)  # ramp
+                        default_compiled = None
+                        if strategy_decisions:
+                            try:
+                                _dc = backend.compile(backend.lower(result.graph))
+                                if getattr(_dc, "success", True):
+                                    default_compiled = _dc
+                            except Exception:
+                                default_compiled = None
+                        agent_passes, default_passes = [], []
+                        for _ in range(3):
+                            if default_compiled is not None:
+                                default_passes.append(float(bench_method(
+                                    default_compiled, inputs, iters=100, warmup=10)))
+                            agent_passes.append(float(bench_method(
+                                compiled, inputs, iters=100, warmup=10)))
+                        latency_ms = round(_stats.median(agent_passes), 6)
+                        if min(agent_passes) > 0:
+                            meas_spread = round(max(agent_passes) / min(agent_passes) - 1.0, 4)
+                        default_latency_ms = (round(_stats.median(default_passes), 6)
+                                              if default_passes else latency_ms)
+                        if default_latency_ms and latency_ms:
+                            vs_default = round(latency_ms / default_latency_ms, 4)
+                    else:
+                        arke_fn = lambda: backend.run(compiled, inputs)  # noqa: E731
+                        arke_bench = bench_fn(arke_fn, warmup=25, reps=100, trials=3)
+                        latency_ms = round(arke_bench.latency_us / 1000.0, 6)
                 # PyTorch-eager baseline via the interpreter on-device.
                 try:
                     base_fn = lambda: INTERPRETER.execute(op_name, inputs)  # noqa: E731
@@ -571,6 +667,12 @@ class CompileAndProfileTool(ArkeTool):
             "max_diff": max_diff,
             "latency_ms": latency_ms,
             "baseline_ratio": baseline_ratio,
+            # P5-S5-T fidelity fields: vs_default is the gate criterion
+            # (<1.0 = beats the strategy=None default kernel); meas_spread
+            # is measurement quality (max/min - 1 over the 3 passes).
+            "default_latency_ms": default_latency_ms,
+            "vs_default": vs_default,
+            "meas_spread": meas_spread,
             "robust_reward": reward_tier,
             "backend": backend_label,
             "strategy_decisions": len(strategy_decisions) if strategy_decisions else 0,
@@ -593,6 +695,9 @@ class CompileAndProfileTool(ArkeTool):
                     "validation_tier": "V2_profile",
                     "requested_backend": requested_backend,
                     "strategy_decisions": data["strategy_decisions"],
+                    "default_latency_ms": default_latency_ms,
+                    "vs_default": vs_default,
+                    "meas_spread": meas_spread,
                 },
             )
             try:
