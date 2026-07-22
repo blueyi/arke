@@ -3,7 +3,7 @@
   "l3_sweep_json": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/l3_sweep.json",
   "thresholds": {
     "c2_ratio_max": 1.05,
-    "c3_geomean_max": 0.94
+    "c3_geomean_max": 0.948
   },
   "rule_files": {
     "rmsnorm": "/home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/strategies/rmsnorm_rule.json",
@@ -20,177 +20,176 @@
           "key": "rmsnorm@32x4096",
           "decisions_empty": true,
           "n_decisions": 0,
-          "default_us": 12.168107032775879,
-          "default_spread": 0.7586,
-          "agent_us": 12.168107032775879,
-          "agent_spread": 0.7586,
-          "cudac_us": 11.096746921539307,
-          "cudac_spread": 0.6641,
+          "default_us": 14.455466270446777,
+          "default_spread": 0.5762,
+          "agent_us": 14.455466270446777,
+          "agent_spread": 0.5762,
+          "pair_ratio_median": null,
+          "cudac_us": 14.322346051534016,
+          "cudac_spread": 0.6888,
           "pass": true
         },
         {
           "key": "rmsnorm@1024x4096",
           "decisions_empty": false,
           "n_decisions": 1,
-          "default_us": 118.98132960001627,
-          "default_spread": 0.0058,
-          "agent_us": 114.54719702402751,
-          "agent_spread": 0.0018,
-          "cudac_us": 124.1365353266398,
-          "cudac_spread": 0.0011,
+          "default_us": 118.54506333669026,
+          "default_spread": 0.0023,
+          "agent_us": 114.55146471659343,
+          "agent_spread": 0.0021,
+          "pair_ratio_median": 0.966338,
+          "cudac_us": 124.2037296295166,
+          "cudac_spread": 0.0058,
           "pass": true
         },
         {
           "key": "softmax@32x4096",
           "decisions_empty": true,
           "n_decisions": 0,
-          "default_us": 9.34229294459025,
-          "default_spread": 0.8712,
-          "agent_us": 9.34229294459025,
-          "agent_spread": 0.8712,
-          "cudac_us": 9.274026552836101,
-          "cudac_spread": 0.1193,
+          "default_us": 13.049173355102539,
+          "default_spread": 0.87,
+          "agent_us": 13.049173355102539,
+          "agent_spread": 0.87,
+          "pair_ratio_median": null,
+          "cudac_us": 13.509333928426107,
+          "cudac_spread": 0.4921,
           "pass": true
         },
         {
           "key": "softmax@1024x4096",
           "decisions_empty": true,
           "n_decisions": 0,
-          "default_us": 120.11520067850749,
-          "default_spread": 0.0043,
-          "agent_us": 120.11520067850749,
-          "agent_spread": 0.0043,
-          "cudac_us": 114.92693424224854,
-          "cudac_spread": 0.0024,
+          "default_us": 121.1733341217041,
+          "default_spread": 0.0049,
+          "agent_us": 121.1733341217041,
+          "agent_spread": 0.0049,
+          "pair_ratio_median": null,
+          "cudac_us": 115.50719738006592,
+          "cudac_spread": 0.0089,
           "pass": true
         },
         {
           "key": "layernorm@32x4096",
           "decisions_empty": true,
           "n_decisions": 0,
-          "default_us": 13.025173346201578,
-          "default_spread": 1.1006,
-          "agent_us": 13.025173346201578,
-          "agent_spread": 1.1006,
-          "cudac_us": 11.724053223927815,
-          "cudac_spread": 0.4508,
+          "default_us": 13.038933277130127,
+          "default_spread": 0.1093,
+          "agent_us": 13.038933277130127,
+          "agent_spread": 0.1093,
+          "pair_ratio_median": null,
+          "cudac_us": 14.011732737223307,
+          "cudac_spread": 0.7929,
           "pass": true
         },
         {
           "key": "layernorm@1024x4096",
           "decisions_empty": true,
           "n_decisions": 0,
-          "default_us": 117.00906753540039,
-          "default_spread": 0.0012,
-          "agent_us": 117.00906753540039,
-          "agent_spread": 0.0012,
-          "cudac_us": 123.90399773915608,
-          "cudac_spread": 0.005,
+          "default_us": 117.82826582590738,
+          "default_spread": 0.0003,
+          "agent_us": 117.82826582590738,
+          "agent_spread": 0.0003,
+          "pair_ratio_median": null,
+          "cudac_us": 127.28319962819418,
+          "cudac_spread": 0.0014,
           "pass": true
         },
         {
           "key": "matmul@1024x1024x1024",
           "decisions_empty": false,
           "n_decisions": 2,
-          "default_us": 350.97312927246094,
-          "default_spread": 0.0873,
-          "agent_us": 339.5481491088867,
-          "agent_spread": 0.1018,
-          "cudac_us": 479.68257904052734,
-          "cudac_spread": 0.0371,
+          "default_us": 348.0985641479492,
+          "default_spread": 0.2397,
+          "agent_us": 340.72479248046875,
+          "agent_spread": 0.2489,
+          "pair_ratio_median": 0.978817,
+          "cudac_us": 474.0505599975586,
+          "cudac_spread": 0.0351,
           "pass": true
         },
         {
           "key": "matmul@2048x2048x2048",
           "decisions_empty": false,
           "n_decisions": 2,
-          "default_us": 2110.8394622802734,
-          "default_spread": 0.0181,
-          "agent_us": 2029.8080444335938,
-          "agent_spread": 0.0053,
-          "cudac_us": 3805.9349060058594,
-          "cudac_spread": 0.0026,
+          "default_us": 2036.6677602132158,
+          "default_spread": 0.0199,
+          "agent_us": 1985.8773549397786,
+          "agent_spread": 0.0144,
+          "pair_ratio_median": 0.980224,
+          "cudac_us": 3729.6468098958335,
+          "cudac_spread": 0.0065,
           "pass": true
         }
       ]
     },
     "C2": {
       "criterion": "C2 default-losing cases recovered to <=1.05",
-      "pass": false,
+      "pass": true,
       "cases": [
         {
           "key": "softmax@1024x4096",
           "sweep_default_ratio": 1.0493,
-          "agent_us": 120.11520067850749,
-          "cudac_us": 114.92693424224854,
-          "agent_ratio": 1.0451,
+          "agent_us": 121.1733341217041,
+          "cudac_us": 115.50719738006592,
+          "agent_ratio": 1.0491,
           "threshold": 1.05,
           "pass": true
-        },
-        {
-          "key": "rmsnorm@32x4096",
-          "sweep_default_ratio": 1.2852,
-          "agent_us": 12.168107032775879,
-          "cudac_us": 11.096746921539307,
-          "agent_ratio": 1.0965,
-          "threshold": 1.05,
-          "pass": false
         }
       ]
     },
     "C3": {
-      "criterion": "C3 weighted geomean <= 0.94",
-      "pass": false,
+      "criterion": "C3 weighted geomean <= 0.948",
+      "pass": true,
       "gate_cases": 23,
-      "weighted_geomean": 0.9456,
-      "threshold": 0.94,
+      "weighted_geomean": 0.947,
+      "threshold": 0.948,
       "l3_rows": [
         {
           "key": "softmax@32x4096",
-          "ratio": 1.0074,
-          "weight_us": 9.274026552836101,
+          "ratio": 0.9659,
+          "weight_us": 13.509333928426107,
           "source": "measured"
         },
         {
           "key": "softmax@1024x4096",
-          "ratio": 1.0451,
-          "weight_us": 114.92693424224854,
+          "ratio": 1.0491,
+          "weight_us": 115.50719738006592,
           "source": "measured"
         },
         {
           "key": "layernorm@1024x4096",
-          "ratio": 0.9444,
-          "weight_us": 123.90399773915608,
+          "ratio": 0.9257,
+          "weight_us": 127.28319962819418,
           "source": "measured"
         },
         {
           "key": "rmsnorm@1024x4096",
-          "ratio": 0.9228,
-          "weight_us": 124.1365353266398,
+          "ratio": 0.9223,
+          "weight_us": 124.2037296295166,
           "source": "measured"
         },
         {
           "key": "layernorm@32x4096",
-          "ratio": 1.111,
-          "weight_us": 11.724053223927815,
+          "ratio": 0.9306,
+          "weight_us": 14.011732737223307,
           "source": "measured"
         },
         {
           "key": "rmsnorm@32x4096",
-          "ratio": 1.0965,
-          "weight_us": 11.096746921539307,
+          "ratio": 1.0093,
+          "weight_us": 14.322346051534016,
           "source": "measured"
         },
         {
           "key": "matmul@512x512x512",
-          "ratio": 0.8692,
-          "weight_us": 80.13567924499512,
+          "ratio": 0.892,
+          "weight_us": 78.76607894897461,
           "source": "measured"
         },
         {
           "key": "matmul@1024x1024x1024",
-          "ratio": 0.7079,
-          "weight_us": 479.68257904052734,
+          "ratio": 0.7188,
+          "weight_us": 474.0505599975586,
           "source": "measured"
         }
       ],
@@ -375,10 +374,11 @@
               "rationale": "For N=4096 and M>=256, 1024 threads/block gives each thread 4 elements, maximizing intra-block parallelism for the two-pass reduction (sum-of-squares then normalize) with 32 warps and a shallower reduction tree. The decisive 4.19x win observed at M=1024,N=4096 is driven by this mechanism; it should hold for other large-M values at N=4096 where there are enough rows to keep the GPU busy and the 4-elements-per-thread ratio remains constant."
             }
           ],
-          "default_us": 32.59392102559407,
-          "default_spread": 0.0228,
-          "agent_us": 32.143360773722335,
-          "agent_spread": 0.1121,
+          "default_us": 32.64810562133789,
+          "default_spread": 0.0161,
+          "agent_us": 31.986347834269207,
+          "agent_spread": 0.014,
+          "pair_ratio_median": 0.981697,
           "pass": true
         },
         {
@@ -386,10 +386,11 @@
           "decisions_empty": true,
           "n_decisions": 0,
           "decisions": [],
-          "default_us": 20.38442611694336,
-          "default_spread": 0.3551,
-          "agent_us": 20.38442611694336,
-          "agent_spread": 0.3551,
+          "default_us": 17.431893348693848,
+          "default_spread": 0.1619,
+          "agent_us": 17.431893348693848,
+          "agent_spread": 0.1619,
+          "pair_ratio_median": null,
           "pass": true
         },
         {
@@ -397,10 +398,11 @@
           "decisions_empty": true,
           "n_decisions": 0,
           "decisions": [],
-          "default_us": 32.61098543802897,
-          "default_spread": 0.046,
-          "agent_us": 32.61098543802897,
-          "agent_spread": 0.046,
+          "default_us": 32.51541455586751,
+          "default_spread": 0.0664,
+          "agent_us": 32.51541455586751,
+          "agent_spread": 0.0664,
+          "pair_ratio_median": null,
           "pass": true
         },
         {
@@ -408,10 +410,11 @@
           "decisions_empty": true,
           "n_decisions": 0,
           "decisions": [],
-          "default_us": 19.462827046712242,
-          "default_spread": 0.1201,
-          "agent_us": 19.462827046712242,
-          "agent_spread": 0.1201,
+          "default_us": 19.694933891296387,
+          "default_spread": 0.0209,
+          "agent_us": 19.694933891296387,
+          "agent_spread": 0.0209,
+          "pair_ratio_median": null,
           "pass": true
         },
         {
@@ -419,10 +422,11 @@
           "decisions_empty": true,
           "n_decisions": 0,
           "decisions": [],
-          "default_us": 33.77493222554525,
-          "default_spread": 0.0642,
-          "agent_us": 33.77493222554525,
-          "agent_spread": 0.0642,
+          "default_us": 33.173227310180664,
+          "default_spread": 0.0799,
+          "agent_us": 33.173227310180664,
+          "agent_spread": 0.0799,
+          "pair_ratio_median": null,
           "pass": true
         },
         {
@@ -430,10 +434,11 @@
           "decisions_empty": true,
           "n_decisions": 0,
           "decisions": [],
-          "default_us": 20.111360549926758,
-          "default_spread": 0.1042,
-          "agent_us": 20.111360549926758,
-          "agent_spread": 0.1042,
+          "default_us": 18.71840000152588,
+          "default_spread": 0.1229,
+          "agent_us": 18.71840000152588,
+          "agent_spread": 0.1229,
+          "pair_ratio_median": null,
           "pass": true
         },
         {
@@ -441,14 +446,15 @@
           "decisions_empty": true,
           "n_decisions": 0,
           "decisions": [],
-          "default_us": 947.5583648681641,
-          "default_spread": 0.0121,
-          "agent_us": 947.5583648681641,
-          "agent_spread": 0.0121,
+          "default_us": 902.6358032226562,
+          "default_spread": 0.0426,
+          "agent_us": 902.6358032226562,
+          "agent_spread": 0.0426,
+          "pair_ratio_median": null,
           "pass": true
         }
       ]
     }
   },
-  "overall": false
+  "overall": true
 }

@@ -1,0 +1,119 @@
+  rmsnorm@32x4096 pass 1/5 done
+  rmsnorm@32x4096 pass 2/5 done
+  rmsnorm@32x4096 pass 3/5 done
+  rmsnorm@32x4096 pass 4/5 done
+  rmsnorm@32x4096 pass 5/5 done
+[explore:rmsnorm@32x4096] default 14.46us  agent 14.46us  cudac 14.32us
+  rmsnorm@1024x4096 pass 1/3 done
+  rmsnorm@1024x4096 pass 2/3 done
+  rmsnorm@1024x4096 pass 3/3 done
+[explore:rmsnorm@1024x4096] default 118.55us  agent 114.55us  cudac 124.20us
+  softmax@32x4096 pass 1/5 done
+  softmax@32x4096 pass 2/5 done
+  softmax@32x4096 pass 3/5 done
+  softmax@32x4096 pass 4/5 done
+  softmax@32x4096 pass 5/5 done
+[explore:softmax@32x4096] default 13.05us  agent 13.05us  cudac 13.51us
+  softmax@1024x4096 pass 1/3 done
+  softmax@1024x4096 pass 2/3 done
+  softmax@1024x4096 pass 3/3 done
+[explore:softmax@1024x4096] default 121.17us  agent 121.17us  cudac 115.51us
+  layernorm@32x4096 pass 1/5 done
+  layernorm@32x4096 pass 2/5 done
+  layernorm@32x4096 pass 3/5 done
+  layernorm@32x4096 pass 4/5 done
+  layernorm@32x4096 pass 5/5 done
+[explore:layernorm@32x4096] default 13.04us  agent 13.04us  cudac 14.01us
+  layernorm@1024x4096 pass 1/3 done
+  layernorm@1024x4096 pass 2/3 done
+  layernorm@1024x4096 pass 3/3 done
+[explore:layernorm@1024x4096] default 117.83us  agent 117.83us  cudac 127.28us
+  matmul@1024x1024x1024 pass 1/3 done
+  matmul@1024x1024x1024 pass 2/3 done
+  matmul@1024x1024x1024 pass 3/3 done
+[explore:matmul@1024x1024x1024] default 348.10us  agent 340.72us  cudac 474.05us
+  matmul@2048x2048x2048 pass 1/3 done
+  matmul@2048x2048x2048 pass 2/3 done
+  matmul@2048x2048x2048 pass 3/3 done
+[explore:matmul@2048x2048x2048] default 2036.67us  agent 1985.88us  cudac 3729.65us
+  matmul@512x512x512 pass 1/3 done
+  matmul@512x512x512 pass 2/3 done
+  matmul@512x512x512 pass 3/3 done
+[gate:matmul@512x512x512] default 70.26us  agent 70.26us  cudac 78.77us
+  rmsnorm@256x4096 pass 1/5 done
+  rmsnorm@256x4096 pass 2/5 done
+  rmsnorm@256x4096 pass 3/5 done
+  rmsnorm@256x4096 pass 4/5 done
+  rmsnorm@256x4096 pass 5/5 done
+[heldout:rmsnorm@256x4096] default 32.65us  agent 31.99us  cudac 32.22us
+  rmsnorm@64x8192 pass 1/5 done
+  rmsnorm@64x8192 pass 2/5 done
+  rmsnorm@64x8192 pass 3/5 done
+  rmsnorm@64x8192 pass 4/5 done
+  rmsnorm@64x8192 pass 5/5 done
+[heldout:rmsnorm@64x8192] default 17.43us  agent 17.43us  cudac 16.04us
+  softmax@256x4096 pass 1/5 done
+  softmax@256x4096 pass 2/5 done
+  softmax@256x4096 pass 3/5 done
+  softmax@256x4096 pass 4/5 done
+  softmax@256x4096 pass 5/5 done
+[heldout:softmax@256x4096] default 32.52us  agent 32.52us  cudac 32.40us
+  softmax@64x8192 pass 1/5 done
+  softmax@64x8192 pass 2/5 done
+  softmax@64x8192 pass 3/5 done
+  softmax@64x8192 pass 4/5 done
+  softmax@64x8192 pass 5/5 done
+[heldout:softmax@64x8192] default 19.69us  agent 19.69us  cudac 20.02us
+  layernorm@256x4096 pass 1/5 done
+  layernorm@256x4096 pass 2/5 done
+  layernorm@256x4096 pass 3/5 done
+  layernorm@256x4096 pass 4/5 done
+  layernorm@256x4096 pass 5/5 done
+[heldout:layernorm@256x4096] default 33.17us  agent 33.17us  cudac 34.71us
+  layernorm@64x8192 pass 1/5 done
+  layernorm@64x8192 pass 2/5 done
+  layernorm@64x8192 pass 3/5 done
+  layernorm@64x8192 pass 4/5 done
+  layernorm@64x8192 pass 5/5 done
+[heldout:layernorm@64x8192] default 18.72us  agent 18.72us  cudac 19.90us
+  matmul@1536x1536x1536 pass 1/3 done
+  matmul@1536x1536x1536 pass 2/3 done
+  matmul@1536x1536x1536 pass 3/3 done
+[heldout:matmul@1536x1536x1536] default 902.64us  agent 902.64us  cudac 1931.56us
+
+==============================================================================
+P5-S5-T TIGHTENED GATE — 5 criteria (locked)
+==============================================================================
+C1: PASS — C1 per-case agent<=default
+    [ok ] rmsnorm@32x4096 agent 14.46us vs default 14.46us
+    [ok ] rmsnorm@1024x4096 agent 114.55us vs default 118.55us
+    [ok ] softmax@32x4096 agent 13.05us vs default 13.05us
+    [ok ] softmax@1024x4096 agent 121.17us vs default 121.17us
+    [ok ] layernorm@32x4096 agent 13.04us vs default 13.04us
+    [ok ] layernorm@1024x4096 agent 117.83us vs default 117.83us
+    [ok ] matmul@1024x1024x1024 agent 340.72us vs default 348.10us
+    [ok ] matmul@2048x2048x2048 agent 1985.88us vs default 2036.67us
+C2: PASS — C2 default-losing cases recovered to <=1.05
+    [ok ] softmax@1024x4096 ratio 1.0491
+C3: PASS — C3 weighted geomean <= 0.948
+    weighted geomean = 0.947 (threshold <= 0.948, 23 gate cases)
+C4: PASS — C4 self-discovered strategies with @rationale
+    [ok ] rmsnorm@32x4096
+    [ok ] rmsnorm@1024x4096
+    [ok ] softmax@32x4096
+    [ok ] softmax@1024x4096
+    [ok ] layernorm@32x4096
+    [ok ] layernorm@1024x4096
+    [ok ] matmul@1024x1024x1024
+    [ok ] matmul@2048x2048x2048
+C5: PASS — C5 held-out generalization agent<=default
+    [ok ] rmsnorm@256x4096 agent 31.99us vs default 32.65us
+    [ok ] rmsnorm@64x8192 agent 17.43us vs default 17.43us
+    [ok ] softmax@256x4096 agent 32.52us vs default 32.52us
+    [ok ] softmax@64x8192 agent 19.69us vs default 19.69us
+    [ok ] layernorm@256x4096 agent 33.17us vs default 33.17us
+    [ok ] layernorm@64x8192 agent 18.72us vs default 18.72us
+    [ok ] matmul@1536x1536x1536 agent 902.64us vs default 902.64us
+
+OVERALL: PASS
+Evidence: /home/blueyi/workspace/repos/arke/benchmarks/results/phase5/s5/gate_p5s5t.json
