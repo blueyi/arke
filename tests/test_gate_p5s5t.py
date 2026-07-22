@@ -154,7 +154,30 @@ class TestExtractStrategy:
             "s.json")
         assert decisions == []
         assert source["best_latency_ms"] is None
-        assert source["extracted_from"].endswith("::none")
+        # Empty top-level decision_log short-circuits to "keep default"
+        # (the agent's final verdict; rollbacks prune the log).
+        assert source["extracted_from"].endswith("::final_empty_decision_log")
+
+    def test_rolled_back_checkpoint_not_resurrected(self):
+        # Agent explored bt(1024) (checkpointed with a latency) but rolled
+        # back and finished with an empty decision_log -> keep default,
+        # even though the checkpoint has the only latency_ms.
+        state = {
+            "decision_log": [],
+            "best_result": {"correct": True, "latency_ms": 0.013,
+                            "baseline_ratio": 1.1},
+            "checkpoints": {
+                "bt1024_v1": {
+                    "decision_log": [{"kind": "block_threads",
+                                      "params": {"n": 1024}, "level": 3,
+                                      "rationale": "r"}],
+                    "best_result": {"correct": True, "latency_ms": 0.013},
+                },
+            },
+        }
+        decisions, source = extract_strategy(state, "s.json")
+        assert decisions == []
+        assert source["extracted_from"].endswith("::final_empty_decision_log")
 
     def test_write_strategy_file_schema(self, tmp_path):
         path = write_strategy_file(

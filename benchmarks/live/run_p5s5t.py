@@ -115,6 +115,21 @@ def extract_strategy(state: dict, state_json_path: str) -> tuple[list[dict], dic
     # (latency_ms, decision_log, provenance_label, best_result)
     candidates: list[tuple[float, list[dict], str, dict]] = []
 
+    # The agent's FINAL verdict is the top-level decision_log: rollbacks
+    # prune it, so an empty log after a completed run means the agent
+    # deliberately chose "keep default" (its checkpoints still carry the
+    # explored variants' numbers). Respect that decision — do NOT resurrect
+    # a checkpointed experiment just because it has the only latency_ms.
+    # In-run latencies are single-window measurements; the gate re-measures
+    # strictly, so a checkpoint "win" the agent itself rolled back is noise.
+    if not state.get("decision_log"):
+        return [], {
+            "state_json": state_json_path,
+            "best_latency_ms": ((state.get("best_result") or {}).get("latency_ms")),
+            "baseline_ratio": ((state.get("best_result") or {}).get("baseline_ratio")),
+            "extracted_from": state_json_path + "::final_empty_decision_log",
+        }
+
     for label, ck in (state.get("checkpoints") or {}).items():
         br = ck.get("best_result")
         if br and br.get("correct") and br.get("latency_ms") is not None:
