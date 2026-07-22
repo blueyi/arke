@@ -572,7 +572,8 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | **P5-S2** | Cat A-F via LLVM | All 60+ ops correct + geomean ≥ Phase 4 C-like (per-vendor) |
 | **P5-S3** | LLVM performance ≥ C-like | LLVM geomean ≥ C-like + 5% (Cat A+C+D) [†] |
 | **P5-S4** | Multi-hardware LLVM | ≥3 backends ≥90% respective vendor libs |
-| **P5-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% |
+| **P5-S5** | LLM Level 3 decisions | StrategyIR L3 (instruction-level) → LLVM IR, verified benefit ≥5% — ✅ 2026-07-22 (mechanism 45.7% A/B + live-LLM 22.4% self-discovered, commit 1de3d9c) |
+| **P5-S5-T** | L3 agent peak performance (tightened, Leon-approved 2026-07-22) | Live agent, bounded L3 action space, extended shape matrix (gate shapes + large shapes): (1) per-case agent strategy ≥ default (never worse); (2) every default-losing case (ratio>1.0, e.g. rmsnorm@32×4096 1.285×) recovered to ≤1.05×; (3) overall latency-weighted geomean ≤0.940× (realizes the measured all-best headroom 0.9347×, tolerance for CoV); (4) strategies self-discovered per-shape by live LLM with @rationale (no seeded answers); (5) generalization: on held-out shapes agent strategy still ≥ default |
 | **P5-S_FINAL** | v1.0.0 release | @rationale KB ≥200 entries, cross-hardware coverage |
 
 > **[†] P5-S3 measurement methodology (approved by Leon, 2026-07-20).** The
