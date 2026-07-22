@@ -543,6 +543,7 @@ class CompileAndProfileTool(ArkeTool):
         default_latency_ms = None
         vs_default = None
         meas_spread = None
+        strategy_noop = None
         if use_cuda and output_tensor is not None:
             try:
                 from benchmarks.measure import bench_fn
@@ -566,8 +567,24 @@ class CompileAndProfileTool(ArkeTool):
                                 default_artifact = backend.lower(result.graph)
                                 default_compiled = backend.compile(default_artifact)
                                 if getattr(default_compiled, "success", True):
-                                    default_cached = backend.prepare(default_compiled)
-                                    backend.run_fast(default_cached, inputs)
+                                    # No-op detection: if the agent's decisions
+                                    # produced a byte-identical cubin (e.g.
+                                    # block_threads(512) when 512 IS the
+                                    # default, or L1 kinds the rowwise emitter
+                                    # doesn't consume), the strategy changed
+                                    # nothing — tell the agent instead of
+                                    # letting it chase noise between two
+                                    # measurements of the same kernel.
+                                    try:
+                                        agent_cubin = compiled.metadata.get("cubin")
+                                        default_cubin = default_compiled.metadata.get("cubin")
+                                        if agent_cubin and default_cubin:
+                                            strategy_noop = bool(agent_cubin == default_cubin)
+                                    except Exception:
+                                        strategy_noop = None
+                                    if not strategy_noop:
+                                        default_cached = backend.prepare(default_compiled)
+                                        backend.run_fast(default_cached, inputs)
                             except Exception:
                                 default_cached = None
                         # Clock ramp: ~150ms of back-to-back launches so the
@@ -699,6 +716,10 @@ class CompileAndProfileTool(ArkeTool):
             "default_latency_ms": default_latency_ms,
             "vs_default": vs_default,
             "meas_spread": meas_spread,
+            # True when the applied decisions produced a byte-identical cubin
+            # to the default — the strategy is a NO-OP for this op/backend
+            # (any vs_default delta you think you saw was pure noise).
+            "strategy_noop": strategy_noop,
             "robust_reward": reward_tier,
             "backend": backend_label,
             "strategy_decisions": len(strategy_decisions) if strategy_decisions else 0,

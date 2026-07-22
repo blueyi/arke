@@ -209,6 +209,15 @@ Rules:
     re-measurement; treat it as a tie and prefer the default (empty
     strategy). When in doubt between a marginal win and the default,
     choose the default — a false "win" is scored as a regression.
+  - NO-OP STRATEGIES: compile_and_profile returns `strategy_noop: true`
+    when your applied decisions produced a byte-identical kernel binary to
+    the default (the decision kind isn't consumed by this op's emitter, or
+    you picked the value that IS the default — e.g. block_threads(512) on
+    a rowwise op whose default block is already 512). A no-op can never
+    win: vs_default is reported as exactly 1.0 and any earlier delta you
+    saw was noise. On strategy_noop, immediately roll back and either try
+    a config that actually changes the kernel (a DIFFERENT block_threads
+    value, a level-3 kind the op supports) or conclude "keep default".
   - MEASUREMENT QUALITY: latency_ms is a median-of-3 kernel-only CUDA-event
     measurement taken after a clock ramp; `meas_spread` reports the pass
     spread (max/min - 1). If meas_spread > 0.10 the number is noisy —
