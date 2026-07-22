@@ -257,6 +257,24 @@ def _iters_for_dims(dims: list[int]) -> tuple[int, int]:
     return 100, 30
 
 
+def _passes_iters_boost(op: str, dims: list[int],
+                        iters: int, warmup: int) -> tuple[int, int, int]:
+    """(passes, iters, warmup) — small-kernel anti-spike boost.
+
+    Sub-50us rowwise kernels on WSL show intermittent multi-ms scheduling
+    spikes (a 10us kernel intermittently reads 15-30us for a whole pass);
+    with only 3 passes x 100 iters a single bad window flips a verdict.
+    Boost to 5 passes x 300 iters so one spiked pass cannot own the median
+    and each pass integrates over ~3ms. Applied SYMMETRICALLY to default,
+    agent, and CUDA-C measurements — this is measurement quality, not a
+    standard change (thresholds untouched).
+    """
+    from benchmarks.l3_sweep import MEAS_PASSES
+    if op != "matmul" and len(dims) == 2 and (dims[0] * dims[1]) <= 2_000_000:
+        return 5, 300, warmup
+    return MEAS_PASSES, iters, warmup
+
+
 def graph_fn_for(op: str, dims: list[int]):
     from benchmarks.llvm_vs_cuda_c import (
         _g_layernorm, _g_matmul, _g_rmsnorm, _g_softmax,
@@ -274,17 +292,24 @@ def measure_case(llvm, cudac, op: str, dims: list[int],
                  decisions: list[Any]) -> dict:
     """Interleaved default/agent/CUDA-C measurement for one case.
 
-    Reuses l3_sweep.measure_batch (throwaway ramp, MEAS_PASSES interleaved,
-    median + spread, kernel-only CUDA events). Empty decisions -> the default
-    kernel is measured once and doubles as the agent config.
+    Mirrors l3_sweep.measure_batch discipline (throwaway ramp, interleaved
+    passes, median + spread, kernel-only CUDA events) with a small-kernel
+    anti-spike boost (see _passes_iters_boost): more passes/iters applied
+    symmetrically to all variants. Empty decisions -> the default kernel is
+    measured once and doubles as the agent config.
     """
+    import statistics
+
     import numpy as np
 
-    from benchmarks.l3_sweep import SEED, compile_llvm, measure_batch
+    from benchmarks.l3_sweep import (
+        SEED, bench_llvm_compiled, compile_llvm,
+    )
     from benchmarks.llvm_vs_cuda_c import _make_inputs
 
     gf = graph_fn_for(op, dims)
     iters, warmup = _iters_for_dims(dims)
+    passes, iters, warmup = _passes_iters_boost(op, dims, iters, warmup)
 
     g = gf()
     kern_c = cudac.compile(cudac.lower(g))
@@ -297,20 +322,44 @@ def measure_case(llvm, cudac, op: str, dims: list[int],
     if decisions:
         variants.append(("agent", compile_llvm(llvm, gf, decisions)))
 
-    per, cud = measure_batch(llvm, cudac, gf, variants, iters, warmup,
-                             kern_c, cudac_inputs,
-                             log_prefix=f"{op}@{shape_label(dims)} ")
+    emitted0 = variants[0][1].metadata["emitted"]
+    np.random.seed(SEED)
+    inputs = _make_inputs(emitted0)
 
-    default = per["default"]
-    agent = per.get("agent", default)  # decisions=[] -> same config
+    # Throwaway ramp pass (unrecorded) — clocks up before recording.
+    for _label, kern in variants:
+        bench_llvm_compiled(llvm, kern, inputs, iters=max(10, iters // 3),
+                            warmup=max(5, warmup // 3))
+    cudac.benchmark(kern_c, cudac_inputs,
+                    iters=max(10, iters // 3), warmup=max(5, warmup // 3))
+
+    per: dict[str, list[float]] = {label: [] for label, _ in variants}
+    cud: list[float] = []
+    for p in range(passes):
+        for label, kern in variants:
+            per[label].append(
+                bench_llvm_compiled(llvm, kern, inputs, iters, warmup))
+        cud.append(cudac.benchmark(kern_c, cudac_inputs,
+                                   iters=iters, warmup=warmup) * 1e3)
+        print(f"  {op}@{shape_label(dims)} pass {p + 1}/{passes} done",
+              flush=True)
+
+    def _agg(vals: list[float]) -> dict:
+        med = statistics.median(vals)
+        spread = round(max(vals) / min(vals) - 1.0, 4) if min(vals) > 0 else None
+        return {"us": med, "spread": spread, "passes": vals}
+
+    default = _agg(per["default"])
+    agent = _agg(per["agent"]) if "agent" in per else default
+    cudac_agg = _agg(cud)
     return {
-        "iters": iters, "warmup": warmup,
+        "iters": iters, "warmup": warmup, "passes_n": passes,
         "default_us": default["us"], "default_spread": default["spread"],
         "default_passes": default["passes"],
         "agent_us": agent["us"], "agent_spread": agent["spread"],
         "agent_passes": agent["passes"],
-        "cudac_us": cud["us"], "cudac_spread": cud["spread"],
-        "cudac_passes": cud["passes"],
+        "cudac_us": cudac_agg["us"], "cudac_spread": cudac_agg["spread"],
+        "cudac_passes": cudac_agg["passes"],
     }
 
 

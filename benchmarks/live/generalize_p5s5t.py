@@ -186,6 +186,12 @@ Constraints:
   fallback — should be [] (keep default). Extrapolate a config to a shape
   region ONLY when the rationale's mechanism (occupancy, reuse, register
   pressure) clearly applies there too.
+- UNSEEN VARIABLE VALUES: for any shape variable whose explored values are
+  all identical (e.g. every exploration had N=4096), do NOT extend a
+  non-empty rule to other values of that variable — configs tuned at one
+  row width often regress at 2x the width (different bytes-per-thread and
+  cache behavior). Pin that variable with == to its explored value in the
+  `when`, so unseen values fall through to "keep default".
 """
 
 

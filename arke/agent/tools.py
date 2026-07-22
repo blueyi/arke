@@ -584,12 +584,23 @@ class CompileAndProfileTool(ArkeTool):
                         n_iters = 300 if small else 100
                         n_passes = 5 if small else 3
                         agent_passes, default_passes = [], []
-                        for _ in range(n_passes):
-                            if default_cached is not None:
+                        for p in range(n_passes):
+                            # Alternate measurement order (D,A / A,D / ...) so
+                            # monotone clock ramp-up within the window doesn't
+                            # systematically favor whichever runs second.
+                            if default_cached is None:
+                                agent_passes.append(
+                                    backend.benchmark_cached(agent_cached, iters=n_iters, warmup=10))
+                            elif p % 2 == 0:
                                 default_passes.append(
                                     backend.benchmark_cached(default_cached, iters=n_iters, warmup=10))
-                            agent_passes.append(
-                                backend.benchmark_cached(agent_cached, iters=n_iters, warmup=10))
+                                agent_passes.append(
+                                    backend.benchmark_cached(agent_cached, iters=n_iters, warmup=10))
+                            else:
+                                agent_passes.append(
+                                    backend.benchmark_cached(agent_cached, iters=n_iters, warmup=10))
+                                default_passes.append(
+                                    backend.benchmark_cached(default_cached, iters=n_iters, warmup=10))
                         latency_ms = round(float(_stats.median(agent_passes)), 6)
                         if min(agent_passes) > 0:
                             meas_spread = round(max(agent_passes) / min(agent_passes) - 1.0, 4)
