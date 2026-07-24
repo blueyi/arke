@@ -40,8 +40,10 @@ checkpoint() / rollback() → Explore and backtrack safely
 - `docs/architecture/e2e-flow.md` — Full optimization flow (Phase 1→4)
 - `docs/benchmark/benchmark-design.md` — BL/OT/ST/L benchmark framework
 - `docs/roadmap/plan.md` — Development plan (phases, stages, tasks)
-- `docs/spec/arke-lang-spec-design.md` — Arke language spec (v0.1.0 design)
-- `docs/spec/arke-ir-spec-design.md` — Arke IR spec (multi-layer architecture design)
+- `docs/spec/arke-lang-spec.md` — Arke language spec (canonical `.ak` surface)
+- `docs/spec/arke-ir-spec.md` — Arke IR spec (canonical multi-layer IR contract)
+- `docs/architecture/arke-lang-spec-design.md` — language design rationale
+- `docs/architecture/arke-ir-spec-design.md` — IR design rationale
 
 ## Gate Governance
 
