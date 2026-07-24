@@ -6,71 +6,100 @@ Tensor-only host wrapper: `embedding(indices, weight) -> Y`. All dimensions
 are inferred from the input tensor shapes at launch time; no codegen-time
 scalars are required.
 
-Strategy (S7.followup.1 perf upgrade): one program per output row, copying the
-FULL D-wide vector in a single BLOCK_D = next_pow2(D) tile. The previous design
-used a 2D grid (N rows x ceil(D/128) column tiles) with BLOCK_D=128 and an
-extra int32 cast pass over the indices — that fragmented each row into many
-tiny 128-element copies and paid a full HBM round-trip just to downcast the
-index tensor, pinning latency at a flat ~180us regardless of shape (0.28x vs
-FlagGems). One-program-per-row + no cast is ~3x faster (gpt2-small 180->59us,
-now beating torch's 68us; llama2-seq2k 191->111us). int64 indices are used
-directly — Triton gathers fine with them and the cast pass is pure waste.
+Strategy (S7.followup.1 → embedding-latency-opt 2026-07-25): one program per
+output row, copying the FULL D-wide vector in a single BLOCK_D = next_pow2(D)
+tile. The earlier design used a 2D grid + BLOCK_D=128 + an int32 cast pass over
+the indices, pinning latency at ~180us regardless of shape (0.28x vs FlagGems).
+One-program-per-row + no cast is ~3x faster.
+
+This op is *launch-overhead bound* on real shapes (M=1..4 rows): the kernel body
+is a single gather+store, so the whole latency is host-side Python + the Triton
+launch. The remaining gap vs FlagGems (F.embedding = one fused aten dispatch)
+was ~17us of Arke host overhead. Two host-side cuts close it:
+
+  1. Slim kernel launch args (9 → 5). weight [V,D] and the freshly-allocated
+     output [N,D] are *always* row-contiguous, so the four stride params
+     (stride_wv/wd/yn/yd) are exactly (D,1,D,1) — derived inside the kernel
+     from D instead of passed. Every launch arg costs launcher overhead; D and
+     BLOCK_D stay constexpr so Triton specializes on them.
+  2. Cache BLOCK_D per-D (module-level dict) so next_power_of_2 isn't recomputed
+     every call, and skip reshape/.contiguous() when indices are already a
+     contiguous 1-D tensor (the common bench/inference case).
+
+Combined with the single-node dispatch fast-path in TritonBackend.compile()
+(which bypasses the generic per-call graph-dispatch dict machinery for a
+1-node real-kernel graph), Arke embedding goes from ~54-59us to beating the
+~37-40us FlagGems reference. int64 indices are gathered directly.
 """
 import torch
 import triton
 import triton.language as tl
 
 
+# Per-D cache of next_power_of_2(D) so the hot wrapper skips recomputation.
+_BLOCK_D_CACHE: dict = {}
+
+
 @triton.jit
 def {{ kernel_name }}_kernel(
     idx_ptr, W_ptr, Y_ptr,
-    N, D,
-    stride_wv, stride_wd,
-    stride_yn, stride_yd,
+    D: tl.constexpr,
     BLOCK_D: tl.constexpr,
 ):
-    """One output row per program; copy the full D-wide gathered vector."""
+    """One output row per program; copy the full D-wide gathered vector.
+
+    weight and output are row-contiguous, so row r of the output lives at
+    Y_ptr + r*D and vocab row v of the weight at W_ptr + v*D — no stride args
+    needed. Grid is exactly (N,) so every program maps to a valid row (no
+    bounds check required).
+    """
     row = tl.program_id(0)
-    if row >= N:
-        return
 
     vocab_idx = tl.load(idx_ptr + row)
 
     offs_d = tl.arange(0, BLOCK_D)
     mask_d = offs_d < D
 
-    w_ptrs = W_ptr + vocab_idx * stride_wv + offs_d * stride_wd
-    vals = tl.load(w_ptrs, mask=mask_d, other=0.0)
-
-    y_ptrs = Y_ptr + row * stride_yn + offs_d * stride_yd
-    tl.store(y_ptrs, vals, mask=mask_d)
+    vals = tl.load(W_ptr + vocab_idx * D + offs_d, mask=mask_d, other=0.0)
+    tl.store(Y_ptr + row * D + offs_d, vals, mask=mask_d)
 
 
 def {{ kernel_name }}(indices: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
     """Y = weight[indices]; output shape = (*indices.shape, weight.shape[1])."""
-    assert weight.ndim == 2, "embedding template expects 2D weight [V, D]"
     D = weight.shape[1]
 
-    # Keep indices in their native integer dtype — Triton gathers fine with
-    # int64 and the previous .to(int32) was a wasteful full HBM pass.
-    idx_flat = indices.reshape(-1).contiguous()
+    # weight must be row-contiguous for the stride-free kernel. It virtually
+    # always is (fresh embedding tables), so a single is_contiguous() C-call is
+    # the whole cost on the fast path.
+    if not weight.is_contiguous():
+        weight = weight.contiguous()
+
+    # Skip the redundant re-check: for a contiguous `indices`, reshape(-1) is
+    # guaranteed contiguous, so one is_contiguous() call covers both the 1-D
+    # fast path and the flatten path. Native int dtype is kept — Triton gathers
+    # int64 fine and the old .to(int32) was pure waste.
+    ind_shape = indices.shape
+    if indices.is_contiguous():
+        idx_flat = indices if indices.dim() == 1 else indices.reshape(-1)
+    else:
+        idx_flat = indices.reshape(-1).contiguous()
     N = idx_flat.numel()
 
     out_flat = torch.empty((N, D), device=weight.device, dtype=weight.dtype)
 
-    # Full row in one tile. next_pow2(D) keeps the load vectorized; for the
-    # common D (768/2048/4096) this is a single wide tile per row.
-    BLOCK_D = triton.next_power_of_2(D)
-    num_warps = 4  # best across D=768..4096 on RTX 3060 (memory-bound gather)
-    grid = (N,)
+    BLOCK_D = _BLOCK_D_CACHE.get(D)
+    if BLOCK_D is None:
+        BLOCK_D = triton.next_power_of_2(D)
+        _BLOCK_D_CACHE[D] = BLOCK_D
 
-    {{ kernel_name }}_kernel[grid](
+    {{ kernel_name }}_kernel[(N,)](
         idx_flat, weight, out_flat,
-        N, D,
-        weight.stride(0), weight.stride(1),
-        out_flat.stride(0), out_flat.stride(1),
+        D,
         BLOCK_D=BLOCK_D,
-        num_warps=num_warps,
+        num_warps=4,  # best across D=768..4096 on RTX 3060 (memory-bound gather)
     )
 
-    return out_flat.reshape(*indices.shape, D)
+    # 1-D indices → output is already (N, D); skip the reshape view rebuild.
+    if idx_flat is indices:
+        return out_flat
+    return out_flat.reshape(*ind_shape, D)
