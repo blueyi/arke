@@ -8,13 +8,18 @@
 
 | # | op | geomean | worst | #shapes | OT |
 |---|---|---|---|---|---|
-| 1 | embedding | 0.678 | 0.661 | 9 | OT2 |
+| 1 | ~~embedding~~ ✅ | ~~0.678~~ → parity (d35bb62) | — | 9 | OT2 |
 | 2 | batch_matmul | 0.835 | 0.708 | 6 | OT2 |
 | 3 | softmax | 0.852 | 0.754 | 10 | OT1 |
 | 4 | reduce_sum | 0.877 | 0.784 | 6 | OT1 |
 | 5 | reduce_mean | 0.897 | 0.830 | 6 | OT1 |
 | 6 | layernorm | 0.956 | 0.804 | 9 | OT1 |
 | 7 | matmul | 0.974 | 0.755 | 9 | OT2（ε=0.03 内） |
+
+> **embedding CLOSED** (2026-07-25, d35bb62): launch-overhead bound (~55µs fixed
+> vs FG ~38µs, shape-independent). Fixed host-side: slim launch args 9→5,
+> cache BLOCK_D, runner single-node fast-path. 0.678 → parity. See skill
+> `arke-benchmark-harness/references/launch-overhead-op-optimization.md`.
 
 ## ≥1.0 的 op（18 个，健康）
 
