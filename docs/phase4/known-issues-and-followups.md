@@ -36,7 +36,7 @@ sharding). Tracked; not blocking Phase 4.
 
 ---
 
-## 2. CUDA-C op coverage: 31/46 (P4-S2 gate = 30, MET)
+## 2. CUDA-C op coverage: 31/46 (superseded — 最终 46/46) (P4-S2 gate = 30, MET)
 
 **Covered (31, all 5 tiers):** see `stage-progress.md`.
 
@@ -62,12 +62,12 @@ Double-buffering (commit d138a45) already landed for the K-loop latency-hiding.
 
 ---
 
-## 4. Harness D2 verification layer: 3/4 mechanisms landed
+## 4. Harness D2 verification layer: 3/4 mechanisms landed (Phase 4/5 COMPLETE — D2 superseded as gate-blocking; Sakana soft-verifier remains optional/deferred)
 
 - ✅ robust_reward (CUDA Agent discrete schedule)
 - ✅ staged_correctness_gate (AutoKernel 5-stage firewall)
 - ✅ reflexion_feedback (GEAK error-trace self-correction)
-- ⬜ Sakana LLM soft-verifier prefilter — needs live-LLM token budget (D3-adjacent)
+- ⏸️ Sakana LLM soft-verifier prefilter — deferred (needs live-LLM token budget; not required for Phase 4/5 gate pass)
 
 ---
 

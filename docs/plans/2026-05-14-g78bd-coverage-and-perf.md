@@ -1,3 +1,5 @@
+> ⚠️ **HISTORICAL** — this plan is a point-in-time working document; status and numbers may be superseded. See docs/roadmap/plan.md for current SSOT.
+
 # G7.8b + G7.8d Closure Plan
 
 > **For Hermes / Kitty:** Use `subagent-driven-development` only for the

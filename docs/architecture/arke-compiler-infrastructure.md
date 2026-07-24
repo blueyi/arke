@@ -11,13 +11,13 @@
 
 This document specifies the compiler infrastructure that serves Arke IR's **LLM-Native multi-layer architecture** (see `arke-ir-spec-design.md` (in `docs/spec/`)). The compiler pipeline transforms `.ak` source through SemanticIR and StrategyIR, lowering to multiple backends (Triton, MLIR, LLVM IR) via a composable pass system.
 
-Arke's compiler has a structural problem: the knowledge about each of its 45 ops is scattered across **6 separate files** (~3000 lines of redundant code total). Adding one new op requires touching 6 files and writing ~100 lines. The fix is a single architectural change — a unified **OpRegistry as the Single Source of Truth** — combined with a **Pass Infrastructure** that organizes compilation into composable, testable stages.
+Arke's compiler has a structural problem: the knowledge about each of its 46 ops is scattered across **6 separate files** (~3000 lines of redundant code total). Adding one new op requires touching 6 files and writing ~100 lines. The fix is a single architectural change — a unified **OpRegistry as the Single Source of Truth** — combined with a **Pass Infrastructure** that organizes compilation into composable, testable stages.
 
 This document specifies:
 
 1. **OpRegistry** — Extended `OpDef` with `shape_rule`, `template_hint`, `reference_impl`, `input_gen`, and `attrs`. All per-op dispatch tables become derived from this single registry.
 2. **Pass Infrastructure** — `Pass` protocol + `Pipeline` + `PassContext`, replacing the current single-step lowering with a composable pipeline.
-3. **SemanticInterpreter** — PyTorch-eager IR graph executor replacing 45 hand-written NumPy functions.
+3. **SemanticInterpreter** — PyTorch-eager IR graph executor replacing 46 hand-written NumPy functions.
 4. **ShapeInferenceEngine** — Declarative rule-based shape inference replacing the 401-line if/elif chain.
 5. **Backend Abstraction** — `ArkeBackend` protocol formalizing the existing ABC, plus `BackendRegistry` for target routing.
 6. **SSA Validator** — IR integrity checker for reference validity, type consistency, DAG structure, and symbolic dim consistency.
@@ -40,7 +40,7 @@ parse_file() ──→ Program (AST)
             ast_to_ir()
                      │
                      ▼
-                SemanticIR ──→ shape_inference.py  (if/elif × 45 ops)
+                SemanticIR ──→ shape_inference.py  (if/elif × 46 ops)
                      │
             strategy (default / LLM)
                      │
@@ -49,13 +49,13 @@ parse_file() ──→ Program (AST)
                      │
             TritonBackend.translate()
                      │
-            template_engine.py  (if/elif × 45 ops)
+            template_engine.py  (if/elif × 46 ops)
                      │
                      ▼
                 Triton source → TritonCompiler.compile() → GPU result
 
 Parallel paths (all with per-op if/elif):
-  numerical_check.py  — 45 NumPy functions
+  numerical_check.py  — 46 NumPy functions
   kernel_cache.py     — _build_ir() if/elif
   arke_runner.py      — benchmark if/elif
 ```
@@ -64,10 +64,10 @@ Parallel paths (all with per-op if/elif):
 
 | File | Lines | Role | Problem |
 |------|-------|------|---------|
-| `arke/ir/ops/catalog.py` | 650 | OpDef definitions (45 ops) | Single source ✓ |
+| `arke/ir/ops/catalog.py` | 650 | OpDef definitions (46 ops) | Single source ✓ |
 | `arke/ir/shape_inference.py` | 401 | Shape inference | if/elif × every op |
 | `arke/integration/kernel_cache.py` | 553 | IR build + GPU exec | `_build_ir()` if/elif |
-| `arke/engine/numerical_check.py` | 667 | NumPy reference | 45 hand-written fns |
+| `arke/engine/numerical_check.py` | 667 | NumPy reference | 46 hand-written fns |
 | `benchmarks/baselines/arke_runner.py` | 323 | Benchmark runner | if/elif dispatch |
 | `arke/backend/triton_template_engine.py` | 375 | Template routing | if/elif selection |
 
@@ -117,7 +117,7 @@ Validation path (replaces numerical_check.py):
 | Files to edit for new op | 6 | 1–2 | −67% |
 | Lines for new op | ~100 | ~10 | −90% |
 | if/elif dispatch tables | 5 | 0 | −100% |
-| Hand-written NumPy fns | 45 | 0 | −100% |
+| Hand-written NumPy fns | 46 | 0 | −100% |
 | Test regression risk | High | Low (incremental) | ↓ |
 
 ---
@@ -386,7 +386,7 @@ REGISTRY = OpRegistry()  # module-level singleton
 |---|---|---|---|
 | `shape_inference.py` | if/elif chain | `ShapeInferenceEngine` | `op_def.shape_rule` |
 | `triton_template_engine.py` | if/elif + template map | `TemplateRouter` | `op_def.template_hint` |
-| `numerical_check.py` | 45 NumPy functions | `SemanticInterpreter` | `op_def.reference_impl.fn` |
+| `numerical_check.py` | 46 NumPy functions | `SemanticInterpreter` | `op_def.reference_impl.fn` |
 | `kernel_cache._build_ir()` | manual IR assembly | Removed; use parser pipeline | — |
 | `arke_runner.py` | if/elif dispatch | `KernelCache.run_op()` | generic |
 
@@ -764,7 +764,7 @@ class LLVMCodegenPass:
 
 ### 5.1 Purpose
 
-The `SemanticInterpreter` is a PyTorch-eager executor for `SemanticIR` graphs. It replaces the 667-line `numerical_check.py` (45 hand-written NumPy functions) with a single generic dispatcher. Because it calls `OpDef.reference_impl.fn`, it **automatically supports new ops** without any code changes beyond the OpDef registration.
+The `SemanticInterpreter` is a PyTorch-eager executor for `SemanticIR` graphs. It replaces the 667-line `numerical_check.py` (46 hand-written NumPy functions) with a single generic dispatcher. Because it calls `OpDef.reference_impl.fn`, it **automatically supports new ops** without any code changes beyond the OpDef registration.
 
 ### 5.2 Implementation
 
@@ -951,7 +951,7 @@ def check_numerical(
 - `execute_reference(op_name, inputs)` → `np.ndarray`
 
 Migration steps:
-1. Add `reference_impl` to all 45 `OpDef` entries in `catalog.py`.
+1. Add `reference_impl` to all 46 `OpDef` entries in `catalog.py`.
 2. Replace `NumericalChecker.check` calls with `check_numerical` from `semantic_interpreter.py`.
 3. Keep `numerical_check.py` as a thin re-export shim until all call sites are migrated.
 4. Delete shim after all tests pass.
@@ -1184,7 +1184,7 @@ class ArkeBackend(Protocol):
 
     Phase 1:   TritonBackend  (GPU via Triton)
     Phase 1:   MLIRBackend   (framework + BL1 verify)
-    Phase 2:   TritonBackend  (Ascend via Triton) + MLIRBackend (full integration)
+    Phase 2:   TritonBackend  (Ascend via Triton) + MLIRBackend (full integration)  # （设计目标，未实现 / design target, not implemented — Phase 2 ⏸️ PAUSED）
     Phase 3:   MLIRBackend    (primary codegen, deeper hardware control)
     Phase 4:   LLVMBackend    (direct LLVM IR emission)
     """
@@ -1513,10 +1513,10 @@ Implementation should remain incremental, but active docs should describe the ta
 
 | Step | Action | Files | Tests |
 |------|--------|-------|-------|
-| 1.1 | Add `shape_rule` to all 45 OpDefs | `catalog.py` | No change |
-| 1.2 | Add `template_hint` to all 45 OpDefs | `catalog.py` | No change |
-| 1.3 | Add `reference_impl` functions (PyTorch) to all 45 OpDefs | `catalog.py` | No change |
-| 1.4 | Add `input_gen` to all 45 OpDefs | `catalog.py` | No change |
+| 1.1 | Add `shape_rule` to all 46 OpDefs | `catalog.py` | No change |
+| 1.2 | Add `template_hint` to all 46 OpDefs | `catalog.py` | No change |
+| 1.3 | Add `reference_impl` functions (PyTorch) to all 46 OpDefs | `catalog.py` | No change |
+| 1.4 | Add `input_gen` to all 46 OpDefs | `catalog.py` | No change |
 
 ### Phase 2 — New Engines (dual-path, old path still active)
 
@@ -1564,10 +1564,10 @@ Time unit: hours of agent wall-clock execution.
 | T02 | Create `OpRegistry` class + `REGISTRY` singleton | `registry.py` | 0.5h | T01 |
 | T03 | Write `Pass`, `PassContext`, `PassResult` protocol + dataclasses | `passes/base.py` | 1h | — |
 | T04 | Write `Pipeline` + `CompilationResult` | `pipeline.py` | 1h | T03 |
-| T05 | Annotate `shape_rule` for all 45 ops | `catalog.py` | 2h | T01 |
-| T06 | Annotate `template_hint` for all 45 ops | `catalog.py` | 1h | T01 |
-| T07 | Write 45 PyTorch `reference_impl` functions; annotate OpDefs | `catalog.py` | 3h | T01 |
-| T08 | Annotate `input_gen` for all 45 ops | `catalog.py` | 1.5h | T01 |
+| T05 | Annotate `shape_rule` for all 46 ops | `catalog.py` | 2h | T01 |
+| T06 | Annotate `template_hint` for all 46 ops | `catalog.py` | 1h | T01 |
+| T07 | Write 46 PyTorch `reference_impl` functions; annotate OpDefs | `catalog.py` | 3h | T01 |
+| T08 | Annotate `input_gen` for all 46 ops | `catalog.py` | 1.5h | T01 |
 | T09 | Implement `ShapeInferenceEngine` with fallback | `shape_engine.py` | 2h | T02, T05 |
 | T10 | Implement `SemanticInterpreter` + `check_numerical` shim | `semantic_interpreter.py` | 2h | T02, T07 |
 | T11 | Implement `SSAValidator` | `ssa_validator.py` | 1.5h | T02 |
@@ -1624,7 +1624,7 @@ Critical path: **T01 → T05 → T09 → T17 → T22 → T24** ≈ 11h sequentia
 | `KernelCache` refactor breaks fast-path dispatch latency | Medium | High | Keep `_generic_cache` dict; benchmark before/after T20 |
 | `SSAValidator` too strict — rejects valid IRs | Low | Medium | Start with `_check_op_names` only; add checks incrementally |
 | Circular import between `catalog.py` and `registry.py` | Low | Low | `registry.py` imports `catalog.py` only; never the reverse |
-| Phase B annotation (45 ops × 4 fields) introduces regressions | Low | Medium | All new fields are additive (`None` default); no existing field changes |
+| Phase B annotation (46 ops × 4 fields) introduces regressions | Low | Medium | All new fields are additive (`None` default); no existing field changes |
 
 ---
 
@@ -1682,7 +1682,7 @@ arke/
 ### Modified Files
 
 ```
-arke/ir/ops/catalog.py              — extend OpDefinition; add 4 new classes; annotate 45 ops
+arke/ir/ops/catalog.py              — extend OpDefinition; add 4 new classes; annotate 46 ops
 arke/ir/builder.py                  — use ShapeInferenceEngine (Phase E)
 arke/backend/triton_backend.py      — add lower()/compile() adapters; swap template engine
 arke/engine/accuracy.py             — use SemanticInterpreter shim

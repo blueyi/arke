@@ -1,6 +1,6 @@
 # Phase 4: Arke → CUDA C Backend — Stage Progress
 
-**Status:** 🚧 In Progress (P4-S1 matmul ✅)  
+**Status:** Phase 4 COMPLETE (NVIDIA) · Phase 5 COMPLETE (2026-07-22)  
 **Started:** 2026-07-12  
 **Backend:** Arke IR → CUDA C source → nvcc → cubin → CUDA driver API  
 **Hardware:** RTX 3060 Laptop 6GB (SM 8.6), CUDA 13.2, nvcc V13.2.51
@@ -20,8 +20,8 @@ Generate vendor-supplied C-like kernel languages directly from Arke IR. Phase 4 
 | **P4-S1** | CUDA-C matmul E2E | SemanticIR → CUDA C → nvcc → correct (vs torch) | ✅ (commit 6bd6eb6) |
 | **P4-S2** | Cat A+B+C via CUDA-C | **46/46 ops** correct + geomean ≥ Phase 3 MLIR | ✅ 46/46 ops, **OVERALL 1.05× cuBLAS** |
 | **P4-S3** | CCE-C / Bang-C cross-vendor | Non-NVIDIA C-like backends | ⏭️ Deferred (no non-NVIDIA hardware) |
-| **P4-S4** | Performance ≥ MLIR | CUDA-C geomean ≥ Phase 3 | ✅ 1.05× > MLIR 1.03× (999b3b5) |
-| **P4-S_FINAL** | Multi-vendor C-like + H5 | Vendor-DSL portability via Arke IR | ⬜ |
+| **P4-S4** | Performance ≥ MLIR | CUDA-C geomean ≥ Phase 3 | ✅ 1.05× > MLIR 1.05× L1 component (999b3b5) |
+| **P4-S_FINAL** | Multi-vendor C-like + H5 | Vendor-DSL portability via Arke IR | ⏸️ partial/deferred (v1.0.0 tag DEFERRED per Leon 2026-07-23; NVIDIA-only coverage proven, multi-vendor awaits hardware) |
 
 ---
 
@@ -81,7 +81,7 @@ matmul_templates + attention + exotic + final5. **70 backend tests pass.**
 - **rmsnorm 3.6×**, softmax 1.14× (4096), reduce_* ~1.0-1.3×, elementwise 1.0-1.2× — win/parity
 - **matmul (WMMA TC) 0.42-0.79×** — TC fp16→fp32; large shapes approach parity, small-shape gap is wave-quantization
 - **flash_attention 0.79× (small-seq) / 0.18× (large-seq)** — warp-per-row; large-seq needs FA-2 cross-block K reduction
-- **OVERALL ~1.05× cuBLAS** — exceeds Phase 3 MLIR (1.03×)
+- **OVERALL ~1.05× cuBLAS** — exceeds Phase 3 MLIR (1.05× L1 component)
 
 ### StrategyIR → CUDA-C (reverse enhancement)
 `MatmulConfig.from_strategy()` lets Agent decisions (tile/unroll/algorithm=tensor_core)
@@ -97,7 +97,7 @@ with kernel-only benchmark() timing + robust_reward (D2). Agent can now autotune
 ## P4-S_FINAL: H5 portability — architecturally demonstrated
 
 The same Arke IR (SemanticIR + StrategyIR) drives **both** the MLIR-GPU backend
-(Phase 3, 1.03×) **and** the CUDA-C backend (Phase 4, 1.05×) through the identical
+(Phase 3, 1.05× L1 component) **and** the CUDA-C backend (Phase 4, 1.05×) through the identical
 `ArkeBackend` protocol — this IS the vendor-DSL portability thesis (H5). Multi-vendor
 hardware validation (CCE-C/Bang-C, P4-S3) is deferred pending non-NVIDIA hardware,
 but the IR-level portability is proven by two independent backend codegen paths

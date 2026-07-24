@@ -85,7 +85,7 @@ S7+ — out of scope for G6.
 The following were completed under the **old architecture** before the Lang/IR/Compiler redesign. They serve as reference, but all features and tests need re-implementation and re-validation under the new architecture:
 
 - 46 `.ak` example files, grammar fixes, 4D tensor support
-- SemanticIR op catalog 45 ops, Attention/Rope/Quantize/MLA fields
+- SemanticIR op catalog 46 ops, Attention/Rope/Quantize/MLA fields
 - `ast_to_strategy()` converter, StrategyIR JSON round-trip
 - 10 Triton template classes, V1 validator extensions
 - 422 tests, BL5×L1+L2: 9/9 criteria, 46/46 E2E correct
@@ -101,7 +101,7 @@ The following were completed under the **old architecture** before the Lang/IR/C
 | ID | Task | Priority | Estimate | Operator Validation | Status |
 |:---|:-----|:--------:|:--------:|:-------------------|:------:|
 | C1.1 | Design `OpSchema` dataclass + `OpRegistry` class | P0 | 0.5d | Validate with `relu` (OT0) + `matmul` (OT2) — simplest ops | ✅ |
-| C1.2 | Migrate all 45 ops from `catalog.py` to `OpRegistry` | P0 | 1d | All 45 ops registered; spot-check OT0-OT4 one each | ✅ |
+| C1.2 | Migrate all 46 ops from `catalog.py` to `OpRegistry` | P0 | 1d | All 46 ops registered; spot-check OT0-OT4 one each | ✅ |
 | C1.3 | Remove op-specific if/elif from `shape_inference.py` | P0 | 0.5d | Shape inference correct for `matmul` (2D→2D), `softmax` (reduce), `flash_attention` (4D) | ✅ |
 | C1.4 | Implement `SemanticInterpreter` (PyTorch eager executor) | P0 | 1d | Start with OT0 (12 elem ops), then OT1-OT4; correctness 100% | ✅ |
 | C1.5 | Migrate `numerical_check.py` to use `SemanticInterpreter` | P0 | 0.5d | `matmul` + `softmax` + `layernorm` numerical check unchanged | ✅ |
@@ -116,7 +116,7 @@ The following were completed under the **old architecture** before the Lang/IR/C
 |:---|:-----|:--------:|:--------:|:-------------------|:------:|
 | C2.1 | Define `ArkePass` protocol + `PassContext` + `PassPipeline` | P1 | 0.5d | Pipeline runs on `matmul` IR (smoke test) | ✅ |
 | C2.2 | Implement `ShapeInferencePass` (wraps `shape_inference.py`) | P1 | 0.5d | `matmul` (2D), `batch_matmul` (3D), `flash_attention` (4D) shape correct | ✅ |
-| C2.3 | Implement `SSAValidator` + `SSAValidationPass` | P1 | 1d | All 45 ops pass; 5+ crafted invalid IR rejected (dup def, undefined use, shape mismatch, type mismatch, cycle) | ✅ |
+| C2.3 | Implement `SSAValidator` + `SSAValidationPass` | P1 | 1d | All 46 ops pass; 5+ crafted invalid IR rejected (dup def, undefined use, shape mismatch, type mismatch, cycle) | ✅ |
 | C2.4 | Implement `RationalePreservationPass` | P1 | 0.5d | `matmul.ak` with @rationale → IR → codegen comments preserved | ✅ |
 | C2.5 | Integrate `PassPipeline` into `ArkePipeline.run()` | P1 | 0.5d | Full pipeline: `softmax.ak` → parse → passes → codegen → GPU correct | ✅ |
 
@@ -156,7 +156,7 @@ The following were completed under the **old architecture** before the Lang/IR/C
 | Milestone | Tracks | Day Estimate | Gate Criteria |
 |:----------|:------:|:------------:|:-------------|
 | M1: OpRegistry live | Track 1 (C1.1-C1.3, C1.7) | Day 2 | G6[1] partial |
-| M2: SemanticInterpreter 45 ops correct | Track 1 (C1.4-C1.6) | Day 4 | G6[2] |
+| M2: SemanticInterpreter 46 ops correct | Track 1 (C1.4-C1.6) | Day 4 | G6[2] |
 | M3: Pass pipeline + SSA | Track 2 (C2.1-C2.5) | Day 7 | G6[3], G6[4] |
 | M4: Backend abstraction | Track 3 (C3.1-C3.4) | Day 5 | G6[5] |
 | M5: Agent tools | Track 4 | Day 6 | — |

@@ -16,7 +16,7 @@ Symbolic dimensions and dynamic shapes are **fully feasible** in Arke across all
 - ✅ StrategyIR decisions can be shape-conditional
 - ✅ Triton backend supports dynamic shapes via `tl.constexpr` and runtime bounds
 - ✅ MLIR backend supports dynamic shapes via `?` in memref types
-- ✅ All 45 operators are compatible with symbolic shapes
+- ✅ All 46 operators are compatible with symbolic shapes
 - ⚠️ Minor risk: 6GB VRAM may OOM on large shapes (mitigated by shape-aware scheduling)
 
 ---
@@ -336,7 +336,7 @@ Arke can attach symbolic dimension metadata to MLIR operations:
 
 ---
 
-## 7. All 45 Operators — Compatibility
+## 7. All 46 Operators — Compatibility
 
 ### 7.1 Compatibility Matrix
 
@@ -364,7 +364,7 @@ Arke can attach symbolic dimension metadata to MLIR operations:
 
 ✅ **Syntax and parsing** — `where` clause is simple and unambiguous  
 ✅ **SemanticIR representation** — Straightforward extension with `symbolic_dims` field  
-✅ **Shape inference** — Well-defined rules for all 45 operators  
+✅ **Shape inference** — Well-defined rules for all 46 operators  
 ✅ **Backend support** — Both Triton and MLIR support dynamic shapes natively  
 
 ### 8.2 Medium Risk
@@ -390,7 +390,7 @@ Arke can attach symbolic dimension metadata to MLIR operations:
 
 - ✅ `where` clause parsing in Lark grammar
 - ✅ SemanticIR `symbolic_dims` field
-- ✅ Shape inference pass for all 45 operators
+- ✅ Shape inference pass for all 46 operators
 - ✅ Tests: `tests/test_symbolic_shape.py` (≥5 ops with `where` clause)
 
 ### Phase 2: Strategy Integration (S7 Track 3)

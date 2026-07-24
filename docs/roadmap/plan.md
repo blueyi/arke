@@ -586,7 +586,7 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 > as much as 400µs compute/bandwidth-bound kernels — injecting measurement
 > noise that real kernel throughput does not have. Latency-weighting +
 > median-of-3 makes the metric reflect delivered throughput and cuts gate
-> CoV from ~4.9% to ~1.6%. The 5% target itself is unchanged. Harness:
+> CoV from ~4.9% to ~3.2%. The 5% target itself is unchanged. Harness:
 > `benchmarks/llvm_vs_cuda_c.py` (prints both weighted gate metric and the
 > unweighted arithmetic geomean for reference).
 

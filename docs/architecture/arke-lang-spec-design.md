@@ -249,6 +249,8 @@ Defined target strings (case-insensitive):
 | `"amd_cdna2"` | AMD CDNA2 (MI200 series) |
 | `"cpu_generic"` | Generic CPU (AVX2 fallback) |
 
+> **注：** Ascend 目标为设计预留（未经硬件验证 / not hardware-validated — Phase 2 ⏸️ PAUSED）。
+
 ### 4.3 Strategy Directives
 
 Active strategy directives in the Stage 7 mainline:
@@ -464,7 +466,7 @@ fuse(ops=["matmul", "gelu"], fusion_type="epilogue")
 |:----------|:-----|:------------|
 | `dtypes` | STRING | Pipe-separated dtype names the kernel supports |
 | `min_sm` | INT | Minimum CUDA Streaming Multiprocessor version required |
-| `min_ascend` | STRING | Minimum Ascend version required |
+| `min_ascend` | STRING | Minimum Ascend version required （未经硬件验证 / not hardware-validated — Phase 2 ⏸️ PAUSED） |
 
 The compiler emits an error if a constraint is violated by the build target.
 

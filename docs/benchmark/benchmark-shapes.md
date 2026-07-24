@@ -2,7 +2,7 @@
 
 Full shape definitions for all operator tiers, organized by Shape Tier (ST1–ST4).
 
-**Total: ~350 benchmark shapes across 45 operators** (OT0×12 + OT1×10 + OT2×11 + OT3×7 + OT4×5); BL6 covers 5 reference models
+**Total: ~350 benchmark shapes across 46 operators** (OT0×12 + OT1×10 + OT2×11 + OT3×7 + OT4×5); BL6 covers 5 reference models
 
 → Parent: [`benchmark-design.md`](./benchmark-design.md)
 

@@ -316,7 +316,7 @@ tests/conftest.py              ← pytest hook, runs on every test session
 | `docs/benchmark/benchmark-ops.md` | **Edit this** — OT Summary table is the catalog |
 | `benchmarks/op_registry.py` | Parser + module-level singletons (`OT_OPS`, `OP_TIER`, `ALL_OPS`) |
 | `benchmarks/cli.py` | Imports `OT_OPS` from `op_registry` |
-| `benchmarks/shapes.py` | Imports `OP_TIER` from `op_registry`; routes all 45 ops to shape sets |
+| `benchmarks/shapes.py` | Imports `OP_TIER` from `op_registry`; routes all 46 ops to shape sets |
 | `tests/conftest.py` | `pytest_configure` hook — detects catalog changes before any test runs |
 | `scripts/sync_ops.py` | Validates registry + shape coverage; called by conftest |
 | `.benchmark_ops_snapshot.json` | Persisted OT catalog hash — change detection baseline |
@@ -401,7 +401,7 @@ tests/conftest.py               ← pytest hook (after op catalog check)
 ```
                  ┌─────────────────┐     ┌──────────────────────┐
                  │ benchmark-ops.md│     │ benchmark-shapes.md  │
-                 │   (45 operators)│     │ (30 tables, 358 shapes)│
+                 │   (46 operators)│     │ (30 tables, 358 shapes)│
                  └────────┬────────┘     └──────────┬───────────┘
                           │                         │
                           ▼                         ▼

@@ -1,3 +1,5 @@
+> ⚠️ **HISTORICAL** — this plan is a point-in-time working document; status and numbers may be superseded. See docs/roadmap/plan.md for current SSOT.
+
 # S7 Codegen 接入 — 实施 plan
 
 **起点 HEAD**: `13d42e6`  

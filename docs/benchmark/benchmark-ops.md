@@ -714,7 +714,7 @@ Most complex operator tier.
 
 ## Appendix: OT/Operator Cross-Reference
 
-### Full Operator Index (45 ops)
+### Full Operator Index (46 ops)
 
 
 | OT  | Operator                     | Category          | Status        |
@@ -782,4 +782,4 @@ Most complex operator tier.
 
 ---
 
-*Last updated: 2026-04-05 (expanded 20→45 operators)*
+*Last updated: 2026-04-05 (expanded 20→46 operators)*

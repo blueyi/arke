@@ -25,7 +25,7 @@
 | Backend-agnostic StrategyIR core | ✅ | `tests/test_backend_agnostic.py`, `tests/test_backend_agnostic_script.py` |
 | ScheduleIR / InstructionIR bridge | ✅ | `arke/ir/schedule.py`, `arke/ir/instruction.py`, `tests/test_stage7_lowering.py` |
 | MLIR skeleton emission | ✅ | `arke/backends/mlir/emitter.py`, `tests/test_stage7_lowering.py` |
-| BL5 examples for all 45 L1 ops | ✅ | `examples/operators/`, `benchmarks/stage7_coverage_ledger.py` |
+| BL5 examples for all 46 L1 ops | ✅ | `examples/operators/`, `benchmarks/stage7_coverage_ledger.py` |
 | BL5 L2 fusion surface examples | ✅ | `examples/operators/l2/`, `tests/test_stage7_l2_fusion_surface.py` |
 | Coverage ledger / audit / dashboard artifacts | ✅ | `benchmarks/results/phase1/stage7/track6/{coverage_ledger.json,audit_report.json,coverage_gap.json,dashboard.json,stage7_operator_shape_stats.json}` |
 | Stable perf artifacts with correctness + perf fields | ✅ | `benchmarks/results/phase1/stage7/track6/{l1,l2}/PERF_ALL.csv`, `summary.json` |

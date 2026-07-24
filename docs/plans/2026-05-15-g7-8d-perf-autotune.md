@@ -1,3 +1,5 @@
+> ⚠️ **HISTORICAL** — this plan is a point-in-time working document; status and numbers may be superseded. See docs/roadmap/plan.md for current SSOT.
+
 # G7.8d — 误诊纠偏 + 三选项决策文档
 
 **HEAD**: `13d42e6` · **Gate G7**: 13/14 (92.9%) · **唯一 fail**: G7.8d weighted=0.513 / target=0.95

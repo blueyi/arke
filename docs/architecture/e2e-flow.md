@@ -1,7 +1,7 @@
 # Arke — LLM 端到端算子生成与优化流程
 
 > 完整描述 Arke 系统如何通过 LLM 生成并优化 GPU kernel 的全过程
-> Date: 2026-03-31
+> Date: 2026-07-24
 
 ---
 
@@ -28,7 +28,7 @@
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    Phase 1: 构建 Semantic IR                         │
+│                    Step 1: 构建 Semantic IR                          │
 │                                                                      │
 │  输入 → Parser / Builder → Semantic IR (JSON)                        │
 │  "算什么" — 纯计算语义，不含任何优化决策                                │
@@ -37,7 +37,7 @@
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    Phase 2: LLM 优化循环（核心）                      │
+│                    Step 2: LLM 优化循环（核心）                       │
 │                                                                      │
 │  ┌─────────────────┐         tool-use         ┌──────────────────┐  │
 │  │   LLM Agent     │ ◄────────────────────► │   ArkeEnv        │  │
@@ -53,7 +53,7 @@
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    Phase 3: Codegen + 编译执行                       │
+│                    Step 3: Codegen + 编译执行                        │
 │                                                                      │
 │  Strategy IR → Codegen（模板/LLM生成）→ Triton 代码 → GPU Binary     │
 │  验证：V0 静态 → V1 数值 → V2 性能                                   │
@@ -61,7 +61,7 @@
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    Phase 4: 输出与集成                                │
+│                    Step 4: 输出与集成                                 │
 │                                                                      │
 │  优化后的 Triton kernel + 性能报告 + 优化轨迹（含 @rationale）        │
 │  → KernelCache → PyTorch custom op → torch.compile backend (未来)    │
@@ -78,7 +78,7 @@
 
 ---
 
-## 二、Phase 1 — 构建 Semantic IR
+## 二、Step 1 — 构建 Semantic IR
 
 ### 2.1 四种输入路径
 
@@ -204,7 +204,7 @@ Semantic IR 构建完成后，系统自动计算特征，作为 LLM 做决策的
 
 ## 二点五、算子覆盖（Operator Tier）
 
-当前 Arke 覆盖 **45 个算子**，按复杂度分为 5 层（OT0-OT4）：
+当前 Arke 覆盖 **46 个算子**，按复杂度分为 5 层（OT0-OT4）：
 
 | Tier | 名称 | 算子数 | 代表算子 |
 |:----:|:-----|:------:|:---------|
@@ -223,7 +223,7 @@ Semantic IR 构建完成后，系统自动计算特征，作为 LLM 做决策的
 → 完整算子列表见 [benchmark-ops.md](../benchmark/benchmark-ops.md)
 
 
-## 三、Phase 2 — LLM 优化循环（核心）
+## 三、Step 2 — LLM 优化循环（核心）
 
 ### 3.1 架构角色
 
@@ -521,7 +521,7 @@ class OptimizationBudget:
 
 ---
 
-## 四、Phase 3 — Codegen + 编译执行
+## 四、Step 3 — Codegen + 编译执行
 
 ### 4.1 双路径 Codegen
 
@@ -638,7 +638,7 @@ class ArkeCompiler:
         )
 ```
 
-### 4.3 多硬件 Codegen（Phase 2）
+### 4.3 多硬件 Codegen（Phase 2 ⏸️ PAUSED）
 
 ```
 同一份 Strategy IR → 同一份 Triton 代码
@@ -655,11 +655,11 @@ class ArkeCompiler:
               GPU Binary      NPU Binary
 ```
 
-triton-ascend 让 Triton 代码直接跑在 Ascend 上，Arke 的 Triton codegen 是双硬件通用的。差异仅在编译路径和 profiling 接口。
+triton-ascend 让 Triton 代码直接跑在 Ascend 上，Arke 的 Triton codegen 是双硬件通用的。差异仅在编译路径和 profiling 接口。（⏸️ Ascend 路径 PAUSED — 无硬件）
 
 ---
 
-## 五、Phase 4 — 输出与集成
+## 五、Step 4 — 输出与集成
 
 ### 5.1 输出物
 
@@ -1003,10 +1003,10 @@ Phase 1 共 **10 个 Gate（G0-G9）**，每个 Gate 的出口条件由 **BL×L 
 | G3 | BL1×L1 | LLM Agent 闭环优化 | ✅ |
 | G4 | BL2×L1 | Arke vs LLM-direct 对比 | ✅ |
 | G5 | BL3×L1 + BL6/GPT-2×L3 | 全基础算子 + E2E 正确性 | ✅ |
-| G6 | BL5×L1+L2 | **Compiler Infrastructure**（编译器基础设施） | ⬜ |
-| G7 | BL5×L1+L2 | **Lang & IR v0.1.0**（当前语言与 IR） | ⬜ |
-| G8 | BL5×L1+L2 + BL6×L3 | **Agent Autonomy**（自主工程能力） | ⬜ |
-| G9 | BL6×L3 (4模型) | **Phase 1 最终验收** | ⬜ |
+| G6 | BL5×L1+L2 | **Compiler Infrastructure**（编译器基础设施） | ✅ |
+| G7 | BL5×L1+L2 | **Lang & IR v0.1.0**（当前语言与 IR） | ✅ |
+| G8 | BL5×L1+L2 + BL6×L3 | **Agent Autonomy**（自主工程能力） | ✅ |
+| G9 | BL6×L3 (4模型) | **Phase 1 最终验收** | ✅ |
 
 → 详见 [benchmark-design.md](../benchmark/benchmark-design.md) | [plan.md](../roadmap/plan.md)
 
@@ -1047,7 +1047,7 @@ Strategy IR (JSON)                      ← "怎么优化"（LLM 构建，含 @r
 Triton 代码
   │
   ├── NVIDIA: triton.compile() → GPU Binary
-  └── Ascend:  triton-ascend → NPU Binary (Phase 2)
+  └── Ascend:  triton-ascend → NPU Binary (Phase 2 ⏸️ PAUSED)
   │
   ▼
 输出与集成
@@ -1063,15 +1063,15 @@ Triton 代码
   ▼
 Benchmark 验证（BL×L 体系）
   │
-  ├── L1: 单算子 benchmark              ← 45 ops × ST1-4
+  ├── L1: 单算子 benchmark              ← 46 ops × ST1-4
   ├── L2: 融合算子 benchmark            ← matmul+gelu, rmsnorm+residual...
   └── L3: 模型端到端 benchmark          ← GPT-2, LLaMA-2/3, Qwen2.5, DS-V2
   │
   ▼
 Gate 出口判定（G0-G9）
-  └── Phase 1 完成 → Phase 2（MLIR Dialect + Ascend 后端）
+  └── Phase 1 完成 → Phase 2（MLIR Dialect + Ascend 后端 ⏸️ PAUSED）
 ```
 
 ---
 
-*文档版本：v0.1.0 | 创建日期：2026-03-31 | 更新：2026-04-05（对齐 45 ops + BL/OT/ST/L 体系 + Gate 系统）*
+*文档版本：v0.1.0 | 创建日期：2026-03-31 | 更新：2026-07-24（对齐 46 ops + Gate G0-G9 ✅ + Ascend PAUSED + Step 消歧）*

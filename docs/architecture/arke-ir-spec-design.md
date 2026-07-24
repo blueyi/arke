@@ -97,7 +97,7 @@ Arke IR grows incrementally, with progressively deeper MLIR integration:
 | Stage | Arke IR Scope | MLIR Integration | Codegen Path |
 |-------|-------------|------------------|--------------|
 | **Phase 1** | Layer 4 + 3 (L1) | Framework + BL1 basic pathway | Via Triton |
-| **Phase 2** | + L2 | Full capability (NVIDIA + Ascend) | Via Triton + MLIR |
+| **Phase 2** | + L2 | Full capability (NVIDIA + Ascend) ⏸️ PAUSED | Via Triton + MLIR |
 | **Phase 3** | + L3 | Complete integration, deeper HW control | MLIR primary |
 | **Phase 4** | Full stack | Available as optional target | Direct LLVM IR |
 

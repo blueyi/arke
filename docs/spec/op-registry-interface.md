@@ -30,7 +30,7 @@
 
 The Op Registry Interface defines how operators are registered, discovered, and extended in the Arke system. It provides a **universal, algorithm-agnostic specification** that supports:
 
-- **Unlimited operator registration** — not limited to 45 ops, supports any operator
+- **Unlimited operator registration** — not limited to 46 ops, supports any operator
 - **Multi-hardware variants** — same operator, different strategies per hardware
 - **Dynamic discovery** — LLM can query legal actions at runtime
 - **Automatic verification** — shape inference, constraint checking, correctness validation
