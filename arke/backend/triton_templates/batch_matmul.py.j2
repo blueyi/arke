@@ -141,17 +141,26 @@ def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
 
     # Shape heuristic. Small M/N -> one large tile per batch elem (GROUP_M=1,
     # whole M*N covered by a single CTA, single K-iter when K<=TILE_K). Large
-    # square -> medium tiles + GROUP_M reorder for L2 locality.
+    # shapes use FlagGems-style medium tiles with w4/s2 — an RTX 3060 (sm_86)
+    # sweep (2026-07-26) showed w8/s3 + GROUP_M=8 loses 15-24% vs w4/s2 on
+    # llama-attn-512/2k, while (64,64,G2,w4,s2) and (128,128,G2,w4,s2) beat
+    # the FlagGems autotuned pick on 512-class and 2k-class shapes resp.
     big = max(M, N)
     if big <= 128:
         TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 1, 4, 2
+        TILE_K = 64 if K <= 64 else 32
     elif big <= 256:
         TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 1, 8, 2
+        TILE_K = 64 if K <= 64 else 32
+    elif big <= 512:
+        # 512-class attention bmm (gpt2-attn-512, llama-attn-512): small
+        # tiles keep more CTAs in flight across the batch*grid.
+        TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 64, 64, 2, 4, 2
+        TILE_K = 32
     else:
-        TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 8, 8, 3
-    # K tile: cover K in one pass when it's small (the attention K=64 case),
-    # else step in 32-wide tiles to keep registers bounded.
-    TILE_K = 64 if K <= 64 else 32
+        # Large square GEMM (llama-attn-2k+): big tiles, shallow pipeline.
+        TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 2, 4, 2
+        TILE_K = 32
 
     grid = (triton.cdiv(M, TILE_M), triton.cdiv(N, TILE_N), batch)
 
