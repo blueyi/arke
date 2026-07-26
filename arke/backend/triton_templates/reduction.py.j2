@@ -9,22 +9,36 @@ arke-benchmark-harness/references/launch-overhead-op-optimization.md).
   2. Per-N launch-config cache (module dict): next_power_of_2 + num_warps
      ladder computed once per distinct N, not per call.
 Non-contiguous inputs keep the general strided kernel.
+
+large-N loop path 2026-07-26 (correctness fix, honest finding during the
+tier-3 regression sweep): the single-pass kernels clamp BLOCK_N to 65536,
+which SILENTLY TRUNCATED the reduction tail for N>65536 (e.g. qwen25-wide
+N=151936, extreme-flat N=1048576). This was a pre-existing bug — the
+825948e template had the same clamp and produced the same wrong result;
+tier-2 never covered N>65536 so it went unnoticed. Fixed by adding a
+tiled loop kernel (TILE_N=8192) that scans the whole row for N>65536,
+mirroring softmax's loop path. Correct for all tier-3 shapes.
 """
 import torch
 import triton
 import triton.language as tl
 
 
-# Per-N launch-config cache: N -> (BLOCK_N, num_warps).
+_LARGE_N = 65536
+_TILE_N = 8192
+
+# Per-N launch-config cache: N -> (is_loop, BLOCK_or_TILE, num_warps).
 _LAUNCH_CFG: dict = {}
 
 
 def _reduce_cfg(N: int):
-    BLOCK_N = triton.next_power_of_2(N)
-    if BLOCK_N > 65536:
-        BLOCK_N = 65536
-    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
-    cfg = (BLOCK_N, num_warps)
+    if N > _LARGE_N:
+        # Loop path: fixed tile, scan the whole row.
+        cfg = (True, _TILE_N, 8)
+    else:
+        BLOCK_N = triton.next_power_of_2(N)
+        num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+        cfg = (False, BLOCK_N, num_warps)
     _LAUNCH_CFG[N] = cfg
     return cfg
 
@@ -48,6 +62,30 @@ def {{ kernel_name }}_c_kernel(
 
 
 @triton.jit
+def {{ kernel_name }}_loop_c_kernel(
+    X_ptr, Y_ptr,
+    N,
+    TILE_N: tl.constexpr,
+):
+    row = tl.program_id(0).to(tl.int64)
+    x_base = X_ptr + row * N
+    best_val = -float("inf")
+    best_idx = N
+    for start in range(0, N, TILE_N):
+        offs = start + tl.arange(0, TILE_N)
+        mask = offs < N
+        x = tl.load(x_base + offs, mask=mask, other=float("-inf"))
+        tile_max = tl.max(x, axis=0)
+        is_max = (x == tile_max) & mask
+        tile_idx = tl.min(tl.where(is_max, offs, N), axis=0)
+        # Update running best (first-match-wins on ties).
+        take = tile_max > best_val
+        best_idx = tl.where(take, tile_idx, best_idx)
+        best_val = tl.where(take, tile_max, best_val)
+    tl.store(Y_ptr + row, best_idx)
+
+
+@triton.jit
 def {{ kernel_name }}_kernel(
     X_ptr, Y_ptr,
     M, N,
@@ -68,26 +106,59 @@ def {{ kernel_name }}_kernel(
     tl.store(Y_ptr + row, argmax_idx)
 
 
+@triton.jit
+def {{ kernel_name }}_loop_kernel(
+    X_ptr, Y_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    TILE_N: tl.constexpr,
+):
+    row = tl.program_id(0).to(tl.int64)
+    x_base = X_ptr + row * stride_xm
+    best_val = -float("inf")
+    best_idx = N
+    for start in range(0, N, TILE_N):
+        offs = start + tl.arange(0, TILE_N)
+        mask = offs < N
+        x = tl.load(x_base + offs * stride_xn, mask=mask, other=float("-inf"))
+        tile_max = tl.max(x, axis=0)
+        is_max = (x == tile_max) & mask
+        tile_idx = tl.min(tl.where(is_max, offs, N), axis=0)
+        take = tile_max > best_val
+        best_idx = tl.where(take, tile_idx, best_idx)
+        best_val = tl.where(take, tile_max, best_val)
+    tl.store(Y_ptr + row, best_idx)
+
+
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     M, N = X.shape
     Y = torch.empty(M, device=X.device, dtype=torch.int64)
     cfg = _LAUNCH_CFG.get(N)
     if cfg is None:
         cfg = _reduce_cfg(N)
-    BLOCK_N, num_warps = cfg
+    is_loop, block, num_warps = cfg
     if X.is_contiguous():
-        {{ kernel_name }}_c_kernel[(M,)](
-            X, Y, N,
-            BLOCK_N=BLOCK_N,
-            num_warps=num_warps,
-        )
+        if is_loop:
+            {{ kernel_name }}_loop_c_kernel[(M,)](
+                X, Y, N, TILE_N=block, num_warps=num_warps,
+            )
+        else:
+            {{ kernel_name }}_c_kernel[(M,)](
+                X, Y, N, BLOCK_N=block, num_warps=num_warps,
+            )
         return Y
-    {{ kernel_name }}_kernel[(M,)](
-        X, Y, M, N,
-        X.stride(0), X.stride(1),
-        BLOCK_N=BLOCK_N,
-        num_warps=num_warps,
-    )
+    if is_loop:
+        {{ kernel_name }}_loop_kernel[(M,)](
+            X, Y, M, N,
+            X.stride(0), X.stride(1),
+            TILE_N=block, num_warps=num_warps,
+        )
+    else:
+        {{ kernel_name }}_kernel[(M,)](
+            X, Y, M, N,
+            X.stride(0), X.stride(1),
+            BLOCK_N=block, num_warps=num_warps,
+        )
     return Y
 {% else %}
 @triton.jit
@@ -114,6 +185,35 @@ def {{ kernel_name }}_c_kernel(
 
 
 @triton.jit
+def {{ kernel_name }}_loop_c_kernel(
+    X_ptr, Y_ptr,
+    N,
+    TILE_N: tl.constexpr,
+):
+    row = tl.program_id(0).to(tl.int64)
+    x_base = X_ptr + row * N
+    {% if reduction_op == "reduce_max" %}
+    acc = -float("inf")
+    {% else %}
+    acc = 0.0
+    {% endif %}
+    for start in range(0, N, TILE_N):
+        offs = start + tl.arange(0, TILE_N)
+        mask = offs < N
+        {% if reduction_op == "reduce_max" %}
+        x = tl.load(x_base + offs, mask=mask, other=float("-inf")).to(tl.float32)
+        acc = tl.maximum(acc, tl.max(x, axis=0))
+        {% else %}
+        x = tl.load(x_base + offs, mask=mask, other=0.0).to(tl.float32)
+        acc += tl.sum(x, axis=0)
+        {% endif %}
+    {% if reduction_op == "reduce_mean" %}
+    acc = acc / N
+    {% endif %}
+    tl.store(Y_ptr + row, acc)
+
+
+@triton.jit
 def {{ kernel_name }}_kernel(
     X_ptr, Y_ptr,
     M, N,
@@ -137,25 +237,64 @@ def {{ kernel_name }}_kernel(
     tl.store(Y_ptr + row, y)
 
 
+@triton.jit
+def {{ kernel_name }}_loop_kernel(
+    X_ptr, Y_ptr,
+    M, N,
+    stride_xm, stride_xn,
+    TILE_N: tl.constexpr,
+):
+    row = tl.program_id(0).to(tl.int64)
+    x_base = X_ptr + row * stride_xm
+    {% if reduction_op == "reduce_max" %}
+    acc = -float("inf")
+    {% else %}
+    acc = 0.0
+    {% endif %}
+    for start in range(0, N, TILE_N):
+        offs = start + tl.arange(0, TILE_N)
+        mask = offs < N
+        {% if reduction_op == "reduce_max" %}
+        x = tl.load(x_base + offs * stride_xn, mask=mask, other=float("-inf")).to(tl.float32)
+        acc = tl.maximum(acc, tl.max(x, axis=0))
+        {% else %}
+        x = tl.load(x_base + offs * stride_xn, mask=mask, other=0.0).to(tl.float32)
+        acc += tl.sum(x, axis=0)
+        {% endif %}
+    {% if reduction_op == "reduce_mean" %}
+    acc = acc / N
+    {% endif %}
+    tl.store(Y_ptr + row, acc)
+
+
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     M, N = X.shape
     Y = torch.empty(M, device=X.device, dtype=X.dtype)
     cfg = _LAUNCH_CFG.get(N)
     if cfg is None:
         cfg = _reduce_cfg(N)
-    BLOCK_N, num_warps = cfg
+    is_loop, block, num_warps = cfg
     if X.is_contiguous():
-        {{ kernel_name }}_c_kernel[(M,)](
-            X, Y, N,
-            BLOCK_N=BLOCK_N,
-            num_warps=num_warps,
-        )
+        if is_loop:
+            {{ kernel_name }}_loop_c_kernel[(M,)](
+                X, Y, N, TILE_N=block, num_warps=num_warps,
+            )
+        else:
+            {{ kernel_name }}_c_kernel[(M,)](
+                X, Y, N, BLOCK_N=block, num_warps=num_warps,
+            )
         return Y
-    {{ kernel_name }}_kernel[(M,)](
-        X, Y, M, N,
-        X.stride(0), X.stride(1),
-        BLOCK_N=BLOCK_N,
-        num_warps=num_warps,
-    )
+    if is_loop:
+        {{ kernel_name }}_loop_kernel[(M,)](
+            X, Y, M, N,
+            X.stride(0), X.stride(1),
+            TILE_N=block, num_warps=num_warps,
+        )
+    else:
+        {{ kernel_name }}_kernel[(M,)](
+            X, Y, M, N,
+            X.stride(0), X.stride(1),
+            BLOCK_N=block, num_warps=num_warps,
+        )
     return Y
 {% endif %}

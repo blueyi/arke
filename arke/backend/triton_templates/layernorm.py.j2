@@ -97,7 +97,14 @@ _LAUNCH_CFG: dict = {}
 def _norm_cfg(N: int):
     BLOCK_N = triton.next_power_of_2(N)
     if BLOCK_N > 65536:
-        BLOCK_N = 65536
+        # Single-pass kernel cannot cover the row: fail loudly instead of
+        # silently truncating the reduction (found 2026-07-26 in the
+        # reduce-family tier-3 sweep; norm shapes cap at N=14336 so no
+        # benchmark path hits this — guard is for correctness safety).
+        raise ValueError(
+            f"{{ kernel_name }}: N={N} exceeds single-pass BLOCK_N limit 65536; "
+            "a tiled loop variant is required for this row width"
+        )
     num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
     cfg = (BLOCK_N, num_warps)
     _LAUNCH_CFG[N] = cfg

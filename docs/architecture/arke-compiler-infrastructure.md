@@ -1317,6 +1317,40 @@ class TritonBackend(ArkeBackend):  # keep existing ABC inheritance too
         )
 ```
 
+### 7.3.1 Triton Template slim-launch Convention (2026-07-26)
+
+Launch-overhead-bound ops (embedding, softmax, reduce_*, argmax, layernorm,
+batch_matmul, matmul — the small-shape band where kernel body ≪ host dispatch)
+follow a **template-layer slim-launch convention**. The optimization lives
+entirely inside the Jinja2 templates (`arke/backend/triton_templates/*.py.j2`);
+`triton_backend.py` dispatch is deliberately untouched (a dispatch fast-path
+was tried once and broke 65 tests).
+
+Each affected template provides:
+
+1. **A contiguous fast-path kernel variant** (`*_c_kernel`). When inputs are
+   row-contiguous, all strides are pure functions of the shape and are derived
+   in-kernel (`row * N`; for bmm `pid_b * M * K` etc.), dropping every stride
+   launch arg: softmax 8→3 args, reduction 6→3, layernorm 11→7,
+   batch_matmul 15→6, matmul 12→6. The wrapper gates on `X.is_contiguous()`;
+   non-contiguous inputs keep the general strided kernel (both paths
+   correctness-verified).
+2. **A per-shape launch-config module cache** (`_LAUNCH_CFG` dict):
+   `next_power_of_2`, num_warps ladder, and grid cdiv are computed once per
+   distinct shape; the hot wrapper is dict-lookup + launch.
+3. **A large-N loop path where single-pass tiles clamp.** Reduction-family
+   single-pass kernels clamp BLOCK_N at 65536; for N > 65536 a tiled loop
+   kernel (TILE_N=8192) scans the full row. (The pre-slim-launch template
+   silently truncated the tail for such N — a latent correctness bug found
+   during the tier-3 regression sweep, fixed 2026-07-26.)
+
+Measured effect (RTX 3060, WSL2): Arke CPU dispatch floor ~37-42µs → ~32-39µs,
+which flipped the whole small-shape band from 0.85–0.96 to >1.0× vs FlagGems
+(whose `@libentry` per-call cache lookup costs ~42-58µs host-side).
+Diagnostic probe: `python -m benchmarks.probes.launch_floor --op <op> --tier 2`
+(flat AK-cpu across a wide FLOP range ⇒ launch-bound). Method reference:
+skill `arke-benchmark-harness/references/launch-overhead-op-optimization.md`.
+
 ### 7.4 MLIRBackend (Phase 3 — ✅ COMPLETE)
 
 The MLIR backend (`arke/backend/mlir_backend.py`) is the Phase 3 primary codegen path, fully implemented and verified (2026-07-12). It registers via `BackendRegistry` with targets `["mlir", "mlir_gpu", "mlir_cpu"]`.
