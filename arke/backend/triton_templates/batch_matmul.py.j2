@@ -12,10 +12,125 @@ standalone Jinja codegen (no flag_gems.runtime / libtuner dependency):
   - dtype-aware accumulate (fp32 acc for fp16/bf16, fp64 for fp64) + native
     output dtype (no fp16 hard-cast — was a correctness bug for fp32/bf16).
   - allow_tf32=False for fp16 numerical parity with torch.bmm.
+
+slim-launch 2026-07-26 — launch-overhead pass (embedding d35bb62 pattern):
+small-batched shapes are launch-overhead bound (AK CPU dispatch flat
+~48-55µs across an 8000× FLOP range, see skill
+arke-benchmark-harness/references/launch-overhead-op-optimization.md).
+  1. Contiguous fast-path kernel derives all 9 batch/row strides from
+     (M, N, K) inside the kernel — 15 launch args → 6.
+  2. Per-(M,N,K) tile-heuristic cache (module dict).
+Non-contiguous inputs keep the general strided kernel.
 """
 import torch
 import triton
 import triton.language as tl
+
+
+@triton.heuristics(
+    {
+        "DIVISIBLE_M": lambda args: args["M"] % args["TILE_M"] == 0,
+        "DIVISIBLE_N": lambda args: args["N"] % args["TILE_N"] == 0,
+        "DIVISIBLE_K": lambda args: args["K"] % args["TILE_K"] == 0,
+    }
+)
+@triton.jit
+def {{ kernel_name }}_c_kernel(
+    A_ptr, B_ptr, C_ptr,
+    M, N, K,
+    TILE_M: tl.constexpr,
+    TILE_N: tl.constexpr,
+    TILE_K: tl.constexpr,
+    GROUP_M: tl.constexpr,
+    DIVISIBLE_M: tl.constexpr,
+    DIVISIBLE_N: tl.constexpr,
+    DIVISIBLE_K: tl.constexpr,
+):
+    """Contiguous batched matmul: strides derived from (M, N, K).
+
+    A/B/C are row-major contiguous 3-D tensors, so
+    A strides = (M*K, K, 1), B strides = (K*N, N, 1), C strides = (M*N, N, 1).
+    Deriving them in-kernel drops 9 launch args vs the general kernel.
+    """
+    pid_b = tl.program_id(2).to(tl.int64)
+    A_batch = A_ptr + pid_b * M * K
+    B_batch = B_ptr + pid_b * K * N
+    C_batch = C_ptr + pid_b * M * N
+
+    pidx = tl.program_id(0)
+    pidy = tl.program_id(1)
+
+    if GROUP_M == 1:
+        pid_m, pid_n = pidx, pidy
+    else:
+        # CTA reorder for L2 locality on large GEMM.
+        gridx = tl.num_programs(0)
+        gridy = tl.num_programs(1)
+        pid = pidx + pidy * gridx
+        num_cta_per_group = gridy * GROUP_M
+        group_id = pid // num_cta_per_group
+        inner = pid % num_cta_per_group
+        group_size = tl.where(
+            (group_id * GROUP_M + GROUP_M) > gridx, gridx % GROUP_M, GROUP_M
+        )
+        pid_m = group_id * GROUP_M + inner % group_size
+        pid_n = inner // group_size
+
+    offs_m = pid_m * TILE_M + tl.arange(0, TILE_M)
+    offs_n = pid_n * TILE_N + tl.arange(0, TILE_N)
+    offs_k = tl.arange(0, TILE_K)
+
+    if not DIVISIBLE_M:
+        mask_m = offs_m < M
+    if not DIVISIBLE_N:
+        mask_n = offs_n < N
+
+    a_ptrs = A_batch + offs_m[:, None] * K + offs_k[None, :]
+    b_ptrs = B_batch + offs_k[:, None] * N + offs_n[None, :]
+
+    # dtype-aware accumulator
+    if tl.constexpr(A_ptr.dtype.element_ty == tl.float64):
+        acc = tl.zeros((TILE_M, TILE_N), dtype=tl.float64)
+    else:
+        acc = tl.zeros((TILE_M, TILE_N), dtype=tl.float32)
+
+    num_iters = tl.cdiv(K, TILE_K)
+    for _ in range(num_iters):
+        if DIVISIBLE_K:
+            mask_a = None if DIVISIBLE_M else mask_m[:, None]
+            mask_b = None if DIVISIBLE_N else mask_n[None, :]
+        else:
+            mask_k = offs_k < K
+            if DIVISIBLE_M:
+                mask_a = mask_k[None, :]
+            else:
+                mask_a = mask_m[:, None] & mask_k[None, :]
+            if DIVISIBLE_N:
+                mask_b = mask_k[:, None]
+            else:
+                mask_b = mask_k[:, None] & mask_n[None, :]
+
+        a = tl.load(a_ptrs, mask_a)
+        b = tl.load(b_ptrs, mask_b)
+
+        offs_k += TILE_K
+        a_ptrs += TILE_K
+        b_ptrs += TILE_K * N
+
+        acc += tl.dot(a, b, allow_tf32=False)
+
+    c = acc.to(C_ptr.dtype.element_ty)
+
+    c_ptrs = C_batch + offs_m[:, None] * N + offs_n[None, :]
+    if DIVISIBLE_M and DIVISIBLE_N:
+        mask_c = None
+    elif DIVISIBLE_M:
+        mask_c = mask_n[None, :]
+    elif DIVISIBLE_N:
+        mask_c = mask_m[:, None]
+    else:
+        mask_c = mask_m[:, None] & mask_n[None, :]
+    tl.store(c_ptrs, c, mask=mask_c)
 
 
 @triton.heuristics(
@@ -122,23 +237,13 @@ def {{ kernel_name }}_kernel(
     tl.store(c_ptrs, c, mask=mask_c)
 
 
-def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
-    """Batched matrix multiply: A[B, M, K] @ B_mat[B, K, N] -> C[B, M, N].
+# Per-(M, N, K) tile-heuristic cache: the heuristic is a pure function of the
+# shape; computing it once per distinct shape keeps the hot wrapper to
+# dict-lookup + launch.
+_TILE_CFG: dict = {}
 
-    Tile selection is a launcher-side shape heuristic (FlagGems/Liger
-    `calculate_settings` style), NOT @triton.autotune. At the small-batched
-    shapes that dominate attention bmm (B large, M/N<=512, K=64) the per-config
-    timing differences are below Triton's autotune benchmark noise floor, so
-    autotune mis-selects AND adds per-call dispatch overhead. A deterministic
-    heuristic is both faster and reproducible here.
-    """
-    assert A.ndim == 3 and B.ndim == 3
-    batch, M, K = A.shape
-    batch2, K2, N = B.shape
-    assert batch == batch2 and K == K2
 
-    C = torch.empty((batch, M, N), device=A.device, dtype=A.dtype)
-
+def _bmm_cfg(M: int, N: int, K: int):
     # Shape heuristic. Small M/N -> one large tile per batch elem (GROUP_M=1,
     # whole M*N covered by a single CTA, single K-iter when K<=TILE_K). Large
     # shapes use FlagGems-style medium tiles with w4/s2 — an RTX 3060 (sm_86)
@@ -161,8 +266,44 @@ def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
         # Large square GEMM (llama-attn-2k+): big tiles, shallow pipeline.
         TILE_M, TILE_N, GROUP_M, num_warps, num_stages = 128, 128, 2, 4, 2
         TILE_K = 32
+    grid = (triton.cdiv(M, TILE_M), triton.cdiv(N, TILE_N))
+    cfg = (TILE_M, TILE_N, TILE_K, GROUP_M, num_warps, num_stages, grid)
+    _TILE_CFG[(M, N, K)] = cfg
+    return cfg
 
-    grid = (triton.cdiv(M, TILE_M), triton.cdiv(N, TILE_N), batch)
+
+def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
+    """Batched matrix multiply: A[B, M, K] @ B_mat[B, K, N] -> C[B, M, N].
+
+    Tile selection is a launcher-side shape heuristic (FlagGems/Liger
+    `calculate_settings` style), NOT @triton.autotune. At the small-batched
+    shapes that dominate attention bmm (B large, M/N<=512, K=64) the per-config
+    timing differences are below Triton's autotune benchmark noise floor, so
+    autotune mis-selects AND adds per-call dispatch overhead. A deterministic
+    heuristic is both faster and reproducible here.
+    """
+    assert A.ndim == 3 and B.ndim == 3
+    batch, M, K = A.shape
+    batch2, K2, N = B.shape
+    assert batch == batch2 and K == K2
+
+    C = torch.empty((batch, M, N), device=A.device, dtype=A.dtype)
+
+    cfg = _TILE_CFG.get((M, N, K))
+    if cfg is None:
+        cfg = _bmm_cfg(M, N, K)
+    TILE_M, TILE_N, TILE_K, GROUP_M, num_warps, num_stages, grid2 = cfg
+    grid = (grid2[0], grid2[1], batch)
+
+    # Contiguous fast path: all strides derivable from (M, N, K) in-kernel.
+    if A.is_contiguous() and B.is_contiguous():
+        {{ kernel_name }}_c_kernel[grid](
+            A, B, C,
+            M, N, K,
+            TILE_M=TILE_M, TILE_N=TILE_N, TILE_K=TILE_K, GROUP_M=GROUP_M,
+            num_warps=num_warps, num_stages=num_stages,
+        )
+        return C
 
     {{ kernel_name }}_kernel[grid](
         A, B, C,
