@@ -1,10 +1,52 @@
-"""Auto-generated Triton reduction kernel by Arke."""
+"""Auto-generated Triton reduction kernel by Arke.
+
+slim-launch 2026-07-26 — launch-overhead pass (embedding d35bb62 pattern):
+these ops are launch-overhead bound on benchmark shapes (AK CPU dispatch
+measured flat ~34-38µs across the full REDUCE_SHAPES FLOP range, see skill
+arke-benchmark-harness/references/launch-overhead-op-optimization.md).
+  1. Contiguous fast-path kernel takes (X, Y, N) — row stride derived as
+     row*N inside the kernel; 6 launch args → 3.
+  2. Per-N launch-config cache (module dict): next_power_of_2 + num_warps
+     ladder computed once per distinct N, not per call.
+Non-contiguous inputs keep the general strided kernel.
+"""
 import torch
 import triton
 import triton.language as tl
 
 
+# Per-N launch-config cache: N -> (BLOCK_N, num_warps).
+_LAUNCH_CFG: dict = {}
+
+
+def _reduce_cfg(N: int):
+    BLOCK_N = triton.next_power_of_2(N)
+    if BLOCK_N > 65536:
+        BLOCK_N = 65536
+    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    cfg = (BLOCK_N, num_warps)
+    _LAUNCH_CFG[N] = cfg
+    return cfg
+
+
 {% if reduction_op == "argmax" %}
+@triton.jit
+def {{ kernel_name }}_c_kernel(
+    X_ptr, Y_ptr,
+    N,
+    BLOCK_N: tl.constexpr,
+):
+    row = tl.program_id(0)
+    offs_n = tl.arange(0, BLOCK_N)
+    mask = offs_n < N
+    x = tl.load(X_ptr + row * N + offs_n, mask=mask, other=float("-inf"))
+    max_val = tl.max(x, axis=0)
+    is_max = (x == max_val) & mask
+    idx = tl.where(is_max, offs_n, N)
+    argmax_idx = tl.min(idx, axis=0)
+    tl.store(Y_ptr + row, argmax_idx)
+
+
 @triton.jit
 def {{ kernel_name }}_kernel(
     X_ptr, Y_ptr,
@@ -19,11 +61,8 @@ def {{ kernel_name }}_kernel(
     x = tl.load(x_ptrs, mask=mask, other=float("-inf"))
     # Manual argmax: find the max value then compare
     max_val = tl.max(x, axis=0)
-    # Create index tensor and find first match
-    is_max = (x == max_val) & mask
-    # Use tl.argmax if available, otherwise pick first index with max value
     # Weight indices so that first match (smallest index) wins
-    # Set non-max positions to N (large), max positions to their index
+    is_max = (x == max_val) & mask
     idx = tl.where(is_max, offs_n, N)
     argmax_idx = tl.min(idx, axis=0)
     tl.store(Y_ptr + row, argmax_idx)
@@ -32,10 +71,17 @@ def {{ kernel_name }}_kernel(
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     M, N = X.shape
     Y = torch.empty(M, device=X.device, dtype=torch.int64)
-    BLOCK_N = triton.next_power_of_2(N)
-    if BLOCK_N > 65536:
-        BLOCK_N = 65536
-    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    cfg = _LAUNCH_CFG.get(N)
+    if cfg is None:
+        cfg = _reduce_cfg(N)
+    BLOCK_N, num_warps = cfg
+    if X.is_contiguous():
+        {{ kernel_name }}_c_kernel[(M,)](
+            X, Y, N,
+            BLOCK_N=BLOCK_N,
+            num_warps=num_warps,
+        )
+        return Y
     {{ kernel_name }}_kernel[(M,)](
         X, Y, M, N,
         X.stride(0), X.stride(1),
@@ -44,6 +90,29 @@ def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     )
     return Y
 {% else %}
+@triton.jit
+def {{ kernel_name }}_c_kernel(
+    X_ptr, Y_ptr,
+    N,
+    BLOCK_N: tl.constexpr,
+):
+    row = tl.program_id(0)
+    offs_n = tl.arange(0, BLOCK_N)
+    mask = offs_n < N
+    x_ptrs = X_ptr + row * N + offs_n
+    {% if reduction_op == "reduce_sum" %}
+    x = tl.load(x_ptrs, mask=mask, other=0.0).to(tl.float32)
+    y = tl.sum(x, axis=0)
+    {% elif reduction_op == "reduce_max" %}
+    x_max = tl.load(x_ptrs, mask=mask, other=float("-inf")).to(tl.float32)
+    y = tl.max(x_max, axis=0)
+    {% elif reduction_op == "reduce_mean" %}
+    x = tl.load(x_ptrs, mask=mask, other=0.0).to(tl.float32)
+    y = tl.sum(x, axis=0) / N
+    {% endif %}
+    tl.store(Y_ptr + row, y)
+
+
 @triton.jit
 def {{ kernel_name }}_kernel(
     X_ptr, Y_ptr,
@@ -71,10 +140,17 @@ def {{ kernel_name }}_kernel(
 def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
     M, N = X.shape
     Y = torch.empty(M, device=X.device, dtype=X.dtype)
-    BLOCK_N = triton.next_power_of_2(N)
-    if BLOCK_N > 65536:
-        BLOCK_N = 65536
-    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    cfg = _LAUNCH_CFG.get(N)
+    if cfg is None:
+        cfg = _reduce_cfg(N)
+    BLOCK_N, num_warps = cfg
+    if X.is_contiguous():
+        {{ kernel_name }}_c_kernel[(M,)](
+            X, Y, N,
+            BLOCK_N=BLOCK_N,
+            num_warps=num_warps,
+        )
+        return Y
     {{ kernel_name }}_kernel[(M,)](
         X, Y, M, N,
         X.stride(0), X.stride(1),

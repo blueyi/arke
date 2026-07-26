@@ -1,7 +1,51 @@
-"""Auto-generated Triton {{ norm_type }} kernel by Arke."""
+"""Auto-generated Triton {{ norm_type }} kernel by Arke.
+
+slim-launch 2026-07-26 — launch-overhead pass (embedding d35bb62 pattern):
+layernorm is launch-overhead bound on benchmark shapes (AK CPU dispatch
+measured flat ~38-42µs across NORM_SHAPES, see skill
+arke-benchmark-harness/references/launch-overhead-op-optimization.md).
+  1. Contiguous fast-path kernel derives row stride as row*N — drops M and
+     all 4 stride args (11 launch args → 7).
+  2. Per-N launch-config cache (module dict): next_power_of_2 + num_warps
+     ladder computed once per distinct N, not per call.
+Non-contiguous inputs keep the general strided kernel.
+"""
 import torch
 import triton
 import triton.language as tl
+
+
+@triton.jit
+def {{ kernel_name }}_c_kernel(
+    X_ptr, Y_ptr, W_ptr, B_ptr,
+    N,
+    eps: tl.constexpr,
+    BLOCK_N: tl.constexpr,
+    HAS_BIAS: tl.constexpr,
+):
+    row = tl.program_id(0)
+    offs_n = tl.arange(0, BLOCK_N)
+    mask = offs_n < N
+
+    x = tl.load(X_ptr + row * N + offs_n, mask=mask, other=0.0).to(tl.float32)
+    w = tl.load(W_ptr + offs_n, mask=mask, other=1.0).to(tl.float32)
+
+    {% if norm_type == "layernorm" %}
+    mean = tl.sum(x, axis=0) / N
+    x_centered = x - mean
+    var = tl.sum(x_centered * x_centered, axis=0) / N
+    x_norm = x_centered / tl.sqrt(var + eps)
+    {% else %}
+    rms = tl.sum(x * x, axis=0) / N
+    x_norm = x / tl.sqrt(rms + eps)
+    {% endif %}
+
+    y = x_norm * w
+    if HAS_BIAS:
+        b = tl.load(B_ptr + offs_n, mask=mask, other=0.0).to(tl.float32)
+        y = y + b
+
+    tl.store(Y_ptr + row * N + offs_n, y.to(tl.float16), mask=mask)
 
 
 @triton.jit
@@ -46,6 +90,19 @@ def {{ kernel_name }}_kernel(
 # Cached dummy bias (avoids allocation per call)
 _dummy_bias: torch.Tensor | None = None
 
+# Per-N launch-config cache: N -> (BLOCK_N, num_warps).
+_LAUNCH_CFG: dict = {}
+
+
+def _norm_cfg(N: int):
+    BLOCK_N = triton.next_power_of_2(N)
+    if BLOCK_N > 65536:
+        BLOCK_N = 65536
+    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    cfg = (BLOCK_N, num_warps)
+    _LAUNCH_CFG[N] = cfg
+    return cfg
+
 
 def {{ kernel_name }}(
     X: torch.Tensor,
@@ -56,16 +113,27 @@ def {{ kernel_name }}(
     global _dummy_bias
     M, N = X.shape
     Y = torch.empty_like(X)
-    BLOCK_N = triton.next_power_of_2(N)
-    if BLOCK_N > 65536:
-        BLOCK_N = 65536
+    cfg = _LAUNCH_CFG.get(N)
+    if cfg is None:
+        cfg = _norm_cfg(N)
+    BLOCK_N, num_warps = cfg
     has_bias = bias is not None
     if not has_bias:
         if _dummy_bias is None or _dummy_bias.device != X.device:
             _dummy_bias = torch.zeros(1, device=X.device, dtype=X.dtype)
         bias = _dummy_bias
-    # Heuristic num_warps
-    num_warps = 2 if BLOCK_N <= 256 else (4 if BLOCK_N <= 2048 else (8 if BLOCK_N <= 8192 else 16))
+    # Contiguous fast path: X and Y (empty_like of contiguous X) have strides
+    # exactly (N, 1) — derive offsets inside the kernel; weight/bias are 1-D.
+    if X.is_contiguous():
+        {{ kernel_name }}_c_kernel[(M,)](
+            X, Y, weight, bias,
+            N,
+            eps=eps,
+            BLOCK_N=BLOCK_N,
+            HAS_BIAS=has_bias,
+            num_warps=num_warps,
+        )
+        return Y
     {{ kernel_name }}_kernel[(M,)](
         X, Y, weight, bias,
         M, N,
