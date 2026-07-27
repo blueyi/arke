@@ -36,6 +36,13 @@ permanent SSOT decisions documented in the protocol:
     Liger and other runners are still benchmarked against it as
     candidates. See ``docs/benchmark/benchmark-protocol.md`` § rope.
 
+- ``flash_attention`` / ``grouped_query_attention`` → ``flash-attn`` (OT4
+    re-review, 2026-07-27)
+    FlagGems 5.0.0 SDPA turned out to be bmm-decomposed (score matrix
+    materialized, OOM on tier-2 shapes), not fused Triton; flash-attn P2
+    is the only genuinely fused attention baseline on sm 8.6. See
+    ``docs/benchmark/ot4-golden-review-rfc.md``.
+
 Overrides
 ---------
 Callers (e.g. ``bench_l1 --golden op=name``) can pass a mapping
@@ -72,6 +79,20 @@ class GoldenUnavailable(Exception):
 # Treated as defaults when the caller does not supply an explicit override.
 LADDER_PREFERENCES: dict[str, str] = {
     "rope": "PyTorch-eager",  # G7.8c — Liger rope odd-D unstable; eager is the numerical reference
+    # OT4 re-review (2026-07-27, Leon-approved, docs/benchmark/ot4-golden-review-rfc.md):
+    # FlagGems 5.0.0 SDPA is bmm-decomposed (profiler: bmm=True, flash=False),
+    # NOT the fused Triton kernel S7.followup.3 assumed — it materializes the
+    # [B*H,S,S] score buffer and OOMs at 32..112 GiB on tier-2 shapes (6 GiB
+    # card). flash-attn 2.7.4.post1 (P2) is the only genuinely fused attention
+    # on this hardware: single _flash_attn_forward kernel, O(S) memory (16k seq
+    # peak 0.16 GB), native GQA (Hkv != Hq without K/V expansion), max_abs_diff
+    # 9.7e-4 vs CPU-fp64 reference. If flash-attn is unavailable in an env,
+    # GoldenUnavailable fires -> golden_unavailable_pending_baseline audit row
+    # (fail-loud beats silently regressing to a non-fused denominator).
+    # cross_attention stays FlagGems: flash_attn_func requires equal Q/KV seq
+    # lens; varlen API evaluation is a separate follow-up.
+    "flash_attention": "flash-attn",
+    "grouped_query_attention": "flash-attn",
 }
 
 

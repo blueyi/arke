@@ -115,8 +115,15 @@ class FlashAttnRunner(BaselineRunner):
         else:
             B, H, S, D, Hkv = 1, 12, M, N, 12
 
-        # flash_attn_func uses (B, S, H, D)
+        # flash_attn_func uses (B, S, H, D). causal=True matches the benchmark
+        # semantics used by every other attention baseline (pytorch_eager /
+        # flaggems both call SDPA with is_causal=True) — was causal=False,
+        # which measured a different computation and could never pass a
+        # correctness probe against the causal golden (fixed 2026-07-27).
         q = torch.randn(B, S, H, D, device="cuda", dtype=dtype)
         k = torch.randn(B, S, Hkv, D, device="cuda", dtype=dtype)
         v = torch.randn(B, S, Hkv, D, device="cuda", dtype=dtype)
-        return lambda: flash_attn_func(q, k, v, causal=False)
+        # Pre-warm once so first-call overhead doesn't pollute measurement.
+        flash_attn_func(q, k, v, causal=True)
+        torch.cuda.synchronize()
+        return lambda: flash_attn_func(q, k, v, causal=True)

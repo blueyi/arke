@@ -107,25 +107,40 @@ where `runner.supports(op) and runner.available`.
 
 | Op                       | Golden                    | Fallback                | NOTE |
 |:-------------------------|:--------------------------|:------------------------|:-----|
-| flash_attention          | **FlagGems (P1)** ‡       | PyTorch-eager (hijacked)| same-backend Triton SDPA (S7.followup.3) |
-| grouped_query_attention  | **FlagGems (P1)** ‡       | PyTorch-eager (hijacked)| same-backend Triton SDPA (S7.followup.3) |
-| cross_attention          | **FlagGems (P1)** ‡       | PyTorch-eager (hijacked)| same-backend Triton SDPA (S7.followup.3) |
+| flash_attention          | **flash-attn (P2)** §     | FlagGems (bmm-decomposed)| fused FlashAttention2 (OT4 re-review 2026-07-27) |
+| grouped_query_attention  | **flash-attn (P2)** §     | FlagGems (bmm-decomposed)| native GQA, no K/V expansion (OT4 re-review 2026-07-27) |
+| cross_attention          | **FlagGems (P1)** ‡       | PyTorch-eager (hijacked)| flash_attn_func needs equal Q/KV seq; varlen API eval = follow-up |
 | multi_latent_attention   | PyTorch-eager (P3)        | —                       | no production kernel; audit-degraded (FlashMLA Hopper-only, 9 audited libs lack sm 8.6 Triton MLA) |
 | paged_attention          | PyTorch-eager (P3)        | —                       | no production kernel; audit-degraded (vLLM triton_attn is prefill-only; KV-cache layout mismatch) |
 
-> ‡ **S7.followup.3 locked preference (2026-06-06).** FlagGems is the
-> only audited library that ships a Triton-only `scaled_dot_product_attention`
-> implementation on sm 8.6 (RTX 3060). Prior ladder named flash-attn /
-> FlashMLA / vLLM / cuDNN-SDPA as P2/P0 goldens, but those packages are
-> unavailable in the 6 GB 3060 venv (build failures), and the cuDNN P0
-> entry was a same-backend-fairness lie — its `get_fn` called
-> `F.scaled_dot_product_attention`, which dispatches via ATen and gets
-> globally hijacked into FlagGems Triton the moment `flag_gems.enable()`
-> runs. Promoting FlagGems to the OT4 Triton golden makes the runner
-> name match the actual backend. MLA + paged_attention stay
-> `audit-degraded` because no production Triton kernel exists for them
-> in the 9 audited community libraries; PyTorch-eager P3 catches them
-> via the audit-degraded path (same precedent as `swiglu_packed`).
+> ‡ **S7.followup.3 locked preference (2026-06-06) — superseded for
+> FA/GQA on 2026-07-27, still governs cross_attention.** FlagGems was
+> promoted as the OT4 golden on the premise it was the only audited
+> library shipping a Triton-only fused SDPA on sm 8.6 (RTX 3060), and
+> because the prior cuDNN P0 entry was a same-backend-fairness lie
+> (its `get_fn` called `F.scaled_dot_product_attention`, which gets
+> hijacked into FlagGems the moment `flag_gems.enable()` runs). MLA +
+> paged_attention stay `audit-degraded` (no production kernel in the 9
+> audited libraries; PyTorch-eager P3 catches them, same precedent as
+> `swiglu_packed`).
+>
+> § **OT4 re-review locked preference (2026-07-27, Leon sign-off).**
+> The S7.followup.3 premise no longer holds: flag_gems **5.0.0**'s SDPA
+> is **bmm-decomposed**, not fused — profiler shows `bmm=True,
+> flash-kernel=False, softmax=True`, and `flag_gems/ops/bmm.py`
+> materializes the full `[B*H, S, S]` score buffer (observed 32 GiB /
+> 112 GiB allocation attempts → OOM on tier-2 shapes, 6 GiB card).
+> flash-attn **2.7.4.post1** (prebuilt wheel
+> `cu12torch2.6cxx11abiFALSE`, no source build needed) is the only
+> genuinely fused attention on this hardware: single
+> `_flash_attn_forward` kernel, O(S) memory (16k-seq peak 0.16 GB),
+> native GQA (`Hkv != Hq` without K/V `repeat_interleave`), fp16
+> max_abs_diff 9.7e-4 vs CPU-fp64 reference, and immune to the
+> flag_gems ATen hijack (direct extension call, no ATen dispatch).
+> Pinned via `LADDER_PREFERENCES` (same mechanism as rope). Full
+> evidence: `docs/benchmark/ot4-golden-review-rfc.md`. cross_attention
+> keeps FlagGems because `flash_attn_func` requires equal Q/KV seq
+> lens — evaluating the varlen API for it is a follow-up.
 
 ## Locking & change control
 
@@ -149,6 +164,8 @@ Current entries:
 | Op   | Pinned Golden     | Why                                                |
 |:-----|:------------------|:---------------------------------------------------|
 | rope | PyTorch-eager (P3) | Liger rope odd-D & non-aligned shapes raise; eager covers full grid (G7.8c, 2026-05-12) |
+| flash_attention | flash-attn (P2) | FlagGems 5.0.0 SDPA is bmm-decomposed (non-fused, OOMs on tier-2); flash-attn is the only true fused kernel on sm 8.6 (OT4 re-review, 2026-07-27) |
+| grouped_query_attention | flash-attn (P2) | same as flash_attention + native GQA without K/V expansion (OT4 re-review, 2026-07-27) |
 
 Caller-supplied `--golden` / `--golden-file` overrides take precedence
 over `LADDER_PREFERENCES` so ad-hoc experiments aren't blocked.

@@ -1,9 +1,7 @@
 {
-  "timestamp": "2026-07-27_090621",
+  "timestamp": "2026-07-28_002415",
   "ops": [
-    "grouped_query_attention",
-    "multi_latent_attention",
-    "flash_attention"
+    "grouped_query_attention"
   ],
   "warmup": 200,
   "reps": 500,
