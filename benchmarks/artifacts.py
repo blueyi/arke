@@ -364,7 +364,7 @@ def write_summary(run_dir: Path) -> Path | None:
         if ratio is not None and ratio > 0:
             ratios_by_operator.setdefault(operator, []).append(ratio)
 
-    # H4 honesty guard (audit 2026-07-27, KESTREL): an op whose Arke rows are
+    # Honesty guard (2026-07-27, see docs/audit/): an op whose Arke rows are
     # all declined/unsupported still accumulates ratio rows from the baseline
     # runners' self-ratios (e.g. PyTorch-eager vs itself = 1.0), which used to
     # yield a phantom op_score of 1.0 with zero Arke evidence. Score such ops
