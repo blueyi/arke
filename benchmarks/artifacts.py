@@ -364,6 +364,28 @@ def write_summary(run_dir: Path) -> Path | None:
         if ratio is not None and ratio > 0:
             ratios_by_operator.setdefault(operator, []).append(ratio)
 
+    # H4 honesty guard (audit 2026-07-27, KESTREL): an op whose Arke rows are
+    # all declined/unsupported still accumulates ratio rows from the baseline
+    # runners' self-ratios (e.g. PyTorch-eager vs itself = 1.0), which used to
+    # yield a phantom op_score of 1.0 with zero Arke evidence. Score such ops
+    # as None and surface them in `no_data_ops` so coverage narratives can't
+    # silently count them as measured passes.
+    # Evidence definition covers both artifact shapes:
+    #   * L1 rows: baseline == 'Arke' with status ok
+    #   * L2 rows: no baseline column populated (approach-keyed fusion rows
+    #     are Arke's own measurements by construction)
+    ops_with_arke_evidence: set[str] = set()
+    for row in perf_rows:
+        if (row.get("status", "") or "").strip() != "ok":
+            continue
+        baseline = (row.get("baseline", "") or "").strip()
+        approach = (row.get("approach", "") or "").strip()
+        if baseline == "Arke" or (not baseline and approach):
+            ops_with_arke_evidence.add(row.get("operator", "unknown"))
+    no_data_ops = sorted(
+        op for op in ratios_by_operator if op not in ops_with_arke_evidence
+    )
+
     def geomean(vals: list[float]) -> float:
         return math.exp(sum(math.log(v) for v in vals) / len(vals)) if vals else 0.0
 
@@ -407,7 +429,11 @@ def write_summary(run_dir: Path) -> Path | None:
     summary = {
         "overall_geomean": round(geomean([v for vals in ratios_by_operator.values() for v in vals]), 4)
         if ratios_by_operator else 0.0,
-        "op_scores": {op: round(geomean(vals), 4) for op, vals in ratios_by_operator.items()},
+        "op_scores": {
+            op: (round(geomean(vals), 4) if op in ops_with_arke_evidence else None)
+            for op, vals in ratios_by_operator.items()
+        },
+        "no_data_ops": no_data_ops,
         "total_shapes": sum(len(vals) for vals in ratios_by_operator.values()),
         "operators": sorted(ratios_by_operator.keys()),
         "status_counts": status_counts,
