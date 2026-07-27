@@ -1,8 +1,11 @@
 # KESTREL 审计待办 — 任务卡索引（新 session 开发入口）
 
-**代号**: KESTREL（2026-07-27 综合审计）
+**代号**: KESTREL（2026-07-27 综合审计）— 仅用于 Leon↔Kitty 交互跟踪与文档，
+**不进入真实代码**（代码注释/commit message 只引用 docs/audit/ 路径，不写代号）。
+**生命周期**: 全部任务卡完成后，本文件与所有 KESTREL 描述信息一并删除
+（审计报告的技术内容归档保留，代号字样清除）。
 **审议材料**: `docs/audit/2026-07-27-comprehensive-audit.md`（总报告）+ 同目录 3 份子审计（含文件:行号证据）
-**审计 commit**: `f0d7755`；H4 修复 commit: 见 git log `fix(bench): KESTREL-H4`
+**审计 commit**: `f0d7755`；H4 修复 commit: `0bdf918`
 
 ## 任务卡状态总览
 
