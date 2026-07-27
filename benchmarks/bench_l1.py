@@ -922,7 +922,41 @@ def run_op(
                     ))
                     continue
 
-                fn = runner.get_fn(op, M, N, K)
+                # get_fn allocates inputs and may pre-warm the kernel; a
+                # baseline whose implementation over-allocates (e.g. the
+                # FlagGems aten hijack materializing [B*H,S,S] scores via
+                # bmm — 32..112 GiB attempts on a 6 GiB card, 2026-07-27)
+                # must not be able to kill the whole bench run. Record a
+                # typed 'error' row and keep the loop alive. OOM state is
+                # cleaned up so subsequent runners start from a fresh pool.
+                try:
+                    fn = runner.get_fn(op, M, N, K)
+                except torch.OutOfMemoryError as oom_exc:
+                    torch.cuda.empty_cache()
+                    logger.error(
+                        f"  {tag} {runner.name}: get_fn OOM — {oom_exc}"
+                    )
+                    _record(OpResult(
+                        op=op,
+                        shape_tag=tag,
+                        M=M, N=N, K=K,
+                        baseline=runner.name,
+                        priority=runner.priority,
+                        source=runner.source,
+                        latency_us=float("inf"),
+                        latency_min_us=float("inf"),
+                        tflops=None,
+                        status="oom",
+                        reason=f"get_fn OOM: {str(oom_exc).splitlines()[0][:200]}",
+                        retryable=False,
+                        correctness_status="oom",
+                        correctness_reason="input construction / pre-warm OOM",
+                        memory_bytes_required=(preflight.estimate.bytes_required if preflight else None),
+                        memory_bytes_budget=(preflight.estimate.bytes_budget if preflight else None),
+                        memory_ratio=(preflight.estimate.ratio if preflight else None),
+                        memory_policy=(preflight.estimate.category if preflight else ""),
+                    ))
+                    continue
                 if fn is None:
                     # Runner declined this (op, shape) — almost always a
                     # shape-specific opt-out (e.g. RoPE odd-D guard);

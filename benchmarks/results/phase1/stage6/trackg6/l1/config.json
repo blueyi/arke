@@ -1,11 +1,13 @@
 {
-  "timestamp": "2026-06-07_134233",
+  "timestamp": "2026-07-27_090621",
   "ops": [
-    "silu_and_mul"
+    "grouped_query_attention",
+    "multi_latent_attention",
+    "flash_attention"
   ],
-  "warmup": 3,
-  "reps": 5,
-  "tier": 1,
+  "warmup": 200,
+  "reps": 500,
+  "tier": 2,
   "shape_tags": null,
   "phase": 1,
   "stage": 6,

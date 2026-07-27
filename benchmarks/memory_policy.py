@@ -43,18 +43,28 @@ ATTENTION_FAMILY_OPS = {
 # Current Arke baseline roster (P0..P5):
 #   P0 cuBLAS/cuDNN          — vendor; for attention uses cuDNN fused SDPA -> NOT materialized
 #   P1 Liger-Kernel          — fused triton kernels                       -> NOT materialized
-#   P1 FlagGems              — fused triton kernels                       -> NOT materialized
+#   P1 FlagGems              — SDPA hijack decomposes into bmm chain      -> MATERIALIZED
 #   P2 Triton-Tutorial       — tutorial fused softmax+matmul              -> NOT materialized
 #   P3 PyTorch-eager         — naive eager [B,H,S,S] scores               -> MATERIALIZED
 #   P4 torch.compile         — Inductor fuses → flash-style               -> NOT materialized
 #   P5 (flash_attn, FlashMLA, vLLM) — always fused                         -> NOT materialized
 #   _torch_reference         — bench_l1 fallback reference                -> MATERIALIZED
+#
+# FlagGems reclassified 2026-07-27 (was: NOT materialized). Evidence: with
+# flag_gems.enable() active, F.scaled_dot_product_attention dispatches into
+# flag_gems' aten override which decomposes attention into torch.bmm calls
+# (flag_gems/ops/bmm.py) and allocates the full [B*H, S, S] score buffer —
+# observed 32 GiB (flash_attention ds-v2) and 112 GiB (GQA llama3-8b, K/V
+# expanded to all query heads) allocation attempts on the 6 GiB RTX 3060,
+# crashing the whole bench run. There is no fused SDPA Triton kernel on this
+# flag_gems version/arch; the "fused" assumption was wrong.
 SCORE_MATERIALIZING_BASELINES = {
     "pytorch-eager",
     "_torch_reference",
     "torch_reference",
     "torch_eager",
     "pt-eager",
+    "flaggems",
 }
 
 DENSE_FAMILY_OPS = {

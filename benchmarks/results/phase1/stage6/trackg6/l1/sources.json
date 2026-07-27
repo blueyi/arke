@@ -23,6 +23,10 @@
     "priority": "P4",
     "source": "torch.compile (Inductor) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause"
   },
+  "torch.compile-max-autotune": {
+    "priority": "P4",
+    "source": "torch.compile (Inductor, mode=max-autotune) via PyTorch 2.6.0+cu124 | https://pytorch.org | License: BSD-3-Clause"
+  },
   "Arke": {
     "priority": "P5",
     "source": "Arke 0.1.0 (SemanticInterpreter; Triton codegen is S7 scope) | https://github.com/arke-ai/arke | License: Apache-2.0"
