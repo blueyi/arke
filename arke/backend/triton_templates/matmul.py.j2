@@ -178,59 +178,93 @@ def {{ kernel_name }}_kernel(
     tl.store(c_ptrs, c, mask=mask)
 
 
-# ── K-H3.1 launcher-side bucketed config cache ────────────────────────────
+# ── K-H3.1 R3: deterministic shape heuristic + bucketed memo ──────────────
 #
-# Key: (next_pow2(M), next_pow2(N), next_pow2(K)) so neighbouring shapes
-# (e.g. M=513 and M=1024) share the same picked config. Cold miss triggers
-# a per-config bench sweep once per bucket; subsequent shapes in that
-# bucket are pure dict lookup + kernel launch. Kernel launch-arg count is
-# unchanged from slim-launch (6 args on the contiguous fast-path).
+# The R2 runtime sweep (do_bench warmup=5 rep=15 over 20 configs) proved
+# both EXPENSIVE (10-19s cold per bucket) and NOISY (<100us kernels have
+# per-config deltas below the bench noise floor → mis-picks; tier2
+# gpt2-c_proj regressed to 0.30-0.42 vs eager across 3 runs). R3 replaces
+# it with a deterministic heuristic distilled from an offline
+# high-precision sweep (clock-ramped, 300-iter × 3-pass medians, RTX 3060
+# sm_86, 2026-07-28 — data: benchmarks/probes/results/, kestrel-backlog
+# K-H3.1 note). Same pattern as batch_matmul.py.j2::_bmm_cfg.
+#
+# Cold cost is now ONE Triton compile (no config scan at all); the memo
+# dict keyed by (next_pow2(M), next_pow2(N), next_pow2(K)) keeps repeat
+# lookups at dict-hit speed and gives all shapes in a bucket the same
+# config (generalization contract preserved).
 _TILE_CFG_CACHE: dict = {}
 
 
-def _sweep_and_pick_config(matmul_fn, A: torch.Tensor, B: torch.Tensor) -> dict:
-    """Bench every config on (A, B) and return the fastest one.
+def _mm_cfg(Mb: int, Nb: int, Kb: int) -> dict:
+    """Pick a tile config from bucketed dims (powers of two).
 
-    Called at most once per (M_bucket, N_bucket, K_bucket) triple. Uses
-    ``triton.testing.do_bench`` (median of a few warm calls) to pick a
-    winning tile, matching the FlagGems / Liger sweep pattern.
+    Distilled from the 2026-07-28 offline **fp16** sweep over the tier2
+    shape set (300-iter x 3-pass medians, RTX 3060 sm_86). CRITICAL: the
+    bench harness (ArkeRunner.get_fn) runs matmul in fp16, NOT fp32 — the
+    fp16 tensor-core tile optima differ sharply from fp32 (fp16 favours
+    smaller BLOCK_M and fewer warps on latency-bound shapes). Measured
+    winners (raw-kernel us / eager-fp16 us):
+      tiny         (128,128,64)      → (128,256,32) s2 w8   26.0 / 32.3
+      gpt2-c_proj  (128,768,768)     → ( 64, 32,32) s4 w4   25.6 / 32.9  (0.78x eager)
+      gpt2-c_attn  (128,2304,768)    → ( 64, 32,32) s4 w4   27.1 / 34.3
+      lm-head-gpt2 (128,50257,768)   → (128,256,32) s2 w8  683.2  (big-N compute)
+      square-1k    (1024^3)          → ( 64, 64,64) s3 w4  108.0
+      square-2k    (2048^3)          → (128,128,32) s3 w8  796.6
+      square-4k    (4096^3)          → (128,256,32) s2 w8 5949.8
+      rect-wide    (512,4096,1024)   → ( 64,128,64) s3 w8  206.1
+      rect-tall    (4096,512,1024)   → ( 64,128,64) s3 w8  208.2
+      llama-q/ffn  (2048,>=4096,4096)→ (128,256,32) s2 w8
+      seq512       (512,2048,768)    → ( 64,128,64) s3 w8   87.1
+    Same launcher-heuristic pattern as batch_matmul.py.j2::_bmm_cfg.
     """
-    import triton.testing as tt
-
-    best_cfg = None
-    best_ms = float("inf")
-    for cfg in _MM_CONFIGS:
-        try:
-            fn = lambda cfg=cfg: matmul_fn(A, B, _cfg_override=cfg)  # noqa: E731
-            ms = tt.do_bench(fn, warmup=5, rep=15)
-        except Exception:
-            # Skip configs that fail to compile / OOM on this shape.
-            continue
-        if ms < best_ms:
-            best_ms = ms
-            best_cfg = cfg
-    if best_cfg is None:
-        # Ultra-conservative fallback (should never happen — configs cover
-        # every shape reachable through the benchmark harness).
-        best_cfg = _MM_CONFIGS[0]
-    return best_cfg
+    # Latency-bound small-M shapes: few output rows, favour small BLOCK_M.
+    if Mb <= 128:
+        if Nb <= 4096:
+            # tiny / gpt2-c_proj / gpt2-c_attn — fp16 wants a tiny tile.
+            return {"BLOCK_M": 64, "BLOCK_N": 32, "BLOCK_K": 32,
+                    "GROUP_SIZE_M": 8, "num_stages": 4, "num_warps": 4}
+        # lm-head-gpt2 — huge N is compute-heavy, wants the big tile.
+        return {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 32,
+                "GROUP_SIZE_M": 8, "num_stages": 2, "num_warps": 8}
+    # Mid-M shapes (rect-wide, seq512): wide-N tile with deep K.
+    if Mb <= 512:
+        return {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64,
+                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8}
+    # Large-M but narrow-N (rect-tall 4096x512): still the mid tile.
+    if Nb <= 512:
+        return {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64,
+                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8}
+    # square-1k: balanced medium tile, fewer warps.
+    if Mb <= 1024 and Nb <= 1024:
+        return {"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 64,
+                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 4}
+    # square-2k: 128x128 balanced.
+    if Mb <= 2048 and Nb <= 2048:
+        return {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 32,
+                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8}
+    # Big compute (square-4k, llama-q, llama-ffn): max tile.
+    return {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 32,
+            "GROUP_SIZE_M": 8, "num_stages": 2, "num_warps": 8}
 
 
 def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor,
                      _cfg_override: dict | None = None) -> torch.Tensor:
-    """Matmul: A @ B with launcher-side bucketed config cache (K-H3.1)."""
+    """Matmul: A @ B with deterministic bucketed tile heuristic (K-H3.1 R3)."""
     M, K = A.shape
     K2, N = B.shape
     assert K == K2
 
-    # Bucketed cache lookup — collapse neighbouring shapes into one entry.
+    # Bucketed memo — collapse neighbouring shapes into one entry. The
+    # heuristic consumes the BUCKET dims (not raw M/N/K) so every shape in
+    # a bucket deterministically gets the identical config.
     if _cfg_override is not None:
         cfg = _cfg_override
     else:
         bucket_key = (_next_pow2(M), _next_pow2(N), _next_pow2(K))
         cfg = _TILE_CFG_CACHE.get(bucket_key)
         if cfg is None:
-            cfg = _sweep_and_pick_config({{ kernel_name }}, A, B)
+            cfg = _mm_cfg(*bucket_key)
             _TILE_CFG_CACHE[bucket_key] = cfg
 
     C = torch.empty((M, N), device=A.device, dtype=A.dtype)

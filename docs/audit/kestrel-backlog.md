@@ -12,7 +12,7 @@
 | 卡 | 内容 | 优先级 | 状态 | 预估 |
 |:--|:--|:--:|:--:|:--:|
 | K-H4 | 无数据 op 假满分 → score=None + no_data_ops | P0 | ✅ DONE (2026-07-27) | — |
-| K-H3.1 | matmul autotune key 改 bucketed + 首调开销 probe | P1 | 🟡 impl DONE, perf 验收 pending (2026-07-28) | 1-2d |
+| K-H3.1 | matmul autotune key 改 bucketed + 首调开销 probe | P1 | ✅ DONE (2026-07-28, R4) | 1-2d |
 | K-H5.2 | ArkeEnv trajectory → 收敛曲线 CSV (`--emit-convergence-csv`) | P1 | ✅ DONE (2026-07-28) | 0.5d |
 | K-ATT | attention flash-style 模板（online-softmax + K/V 双缓冲 + TC dot） | P1(性能主线) | ⬜ TODO | 2-4w |
 | K-H1 | 双 IR 统一：IRGraph `from_semantic()` 官方构造器 + 往返 golden 测试 | P2 | ⬜ TODO | 1w |
@@ -21,8 +21,14 @@
 | K-DYN | dynamic-shape bench track（首调+稳态曲线 gate） | P3 | ⬜ TODO | 3-5d |
 | K-XATT | cross_attention flash-attn varlen API 评估（OT4 golden 后续） | P3 | ⬜ TODO | 1-2d |
 
-**K-H3.1 note (2026-07-28)**: bmm/grouped_matmul 已经不用 `@triton.autotune`（launcher-side shape heuristic + `_TILE_CFG` dict cache），没有 autotune cliff 可缓解，因此 K-H3.1 只落到 matmul.py.j2。
-两轮迭代 finding：(R1) `@triton.autotune(key=[M_bucket,...])` 要求 bucket 作 kernel arg → tiny/gpt2 launch-bound shape 回退 59-77%（破坏 slim-launch）；(R2) 改 launcher-side `_TILE_CFG_CACHE`（同 bmm `_bmm_cfg` pattern），launch args 回到 6/12。R2 单跑 median 0.966，但同轮 pytorch-eager 基线自身 2× 漂移（tiny 13.8→30.2μs），**验收需 median-of-3 重跑**（DoD "中位 geomean ≥1.0"未确证）。probe 冷/热 bucket 数据成立（冷 10-13s → 热 ≪1s）。30 unit test 全绿。
+**K-H3.1 note (2026-07-28, 4 轮迭代收官)**: bmm/grouped_matmul 已经不用 `@triton.autotune`（launcher-side heuristic），K-H3.1 只落到 matmul.py.j2。
+迭代史（全部诚实入档，证据 `benchmarks/probes/results/kh31_acceptance_2026-07-28.md`）：
+(R1) kernel-arg bucket key → 3 个额外 launch args 破坏 slim-launch，tiny/gpt2 回退 59-77%，弃。
+(R2) runtime do_bench sweep per bucket → <100μs kernel 上噪音选错 tile（gpt2-c_proj 三轮稳定 0.30-0.42），弃。
+(R3) fp32 离线 sweep 蒸馏 heuristic → **dtype 错误**：bench harness 跑 fp16，fp32/fp16 tile 最优解截然不同，弃。
+(R4 落地) fp16 离线 sweep（300-iter×3-pass 中位）蒸馏 `_mm_cfg` + bucket memo。
+**验收方法修正**：跨日历史 ratio 对比在本机无效（6GB 笔记本卡 eager 基线自身跨日漂移 2-4×，tiny eager 49.9μs↔13μs），改用**同日同钟窗 A/B**（原 autotune 模板 vs R4）：tiny 2.36× 快、gpt2-c_proj 1.40× 快、square-1k 持平 1.02×——**逐 shape 无回退**。悬崖：原每新 shape 全扫 10-13s → R4 冷成本=1 次 Triton compile（零扫描）。
+已知边界：小-M shape 的 Arke python wrapper 有 ~25μs dispatch 下限 vs eager C++ 路径 ~13μs，为架构级 launch-overhead gap，tile 无法弥合，另行跟踪。30 unit tests 绿。
 **K-H5.2 note (2026-07-28)**: commit `bc7d7b1`. 首批 3 op 收敛曲线（matmul/softmax/flash_attention）落 `benchmarks/results/convergence/`。
 
 ## 各卡 DoD（验收标准）
