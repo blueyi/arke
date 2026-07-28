@@ -1,0 +1,4 @@
+iteration,step,tool,backend,success,correct,max_diff,latency_ms,baseline_ratio,vs_default,meas_spread,current_ratio,best_so_far_ratio
+1,4,compile_and_profile,triton,True,False,2.9728424549102783,0.109568,0.5308,,,0.5308,
+2,14,compile_and_profile,triton,True,False,2.9728424549102783,0.08238,0.7053,,,0.7053,
+3,16,compile_and_profile,llvm,True,True,4.023313522338867e-07,2.132765,0.0196,1.0,0.0047,1.0,1.0

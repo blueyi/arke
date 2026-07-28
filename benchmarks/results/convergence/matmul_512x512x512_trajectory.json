@@ -1,0 +1,1070 @@
+{
+  "model_used": "yunwu/claude-sonnet-4-6",
+  "decisions": 0,
+  "tool_calls": 20,
+  "tokens": {
+    "in": 97189,
+    "out": 2327
+  },
+  "duration_seconds": 66.54,
+  "errors": [],
+  "trajectory": [
+    {
+      "type": "action",
+      "step": 1,
+      "tool": "get_hw_profile",
+      "params": {},
+      "result": {
+        "success": true,
+        "data": {
+          "name": "nvidia_ampere",
+          "compute_capability": [
+            8,
+            6
+          ],
+          "shared_memory_bytes": 49152,
+          "max_threads_per_block": 1024,
+          "warp_size": 32,
+          "num_sms": 30,
+          "peak_tflops_f16": 12.74
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 2,
+      "tool": "analyze_compute",
+      "params": {
+        "op_name": "matmul"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "name": "matmul",
+          "category": "compute",
+          "inputs": {
+            "A": "Tensor[M,K]",
+            "B": "Tensor[K,N]"
+          },
+          "output": "Tensor[M,N]",
+          "computation": "C[i,j] = sum(A[i,k] * B[k,j], axis=k)",
+          "properties": [
+            "associative",
+            "distributive"
+          ],
+          "index_vars": [
+            "i",
+            "j",
+            "k"
+          ],
+          "reduction_axes": [
+            "k"
+          ],
+          "shape_rule": {
+            "kind": "matmul_rule"
+          },
+          "template_hint": {
+            "template_name": "matmul"
+          }
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 3,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "wmma_tile",
+        "top_n": 64
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 0,
+          "candidates": []
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 4,
+      "tool": "list_legal_actions",
+      "params": {
+        "top_n": 20
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 20,
+          "candidates": [
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  16
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "unroll",
+              "params": {
+                "loop": "i",
+                "factor": 2
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "i",
+                "width": 2
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "i": "threadblock.x"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "place",
+              "params": {
+                "tensor": "A",
+                "memory": "register"
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  32
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "unroll",
+              "params": {
+                "loop": "i",
+                "factor": 4
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "i",
+                "width": 4
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "i": "threadblock.y"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "place",
+              "params": {
+                "tensor": "B",
+                "memory": "register"
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  64
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "unroll",
+              "params": {
+                "loop": "i",
+                "factor": 8
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "i",
+                "width": 8
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "i": "warp"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  128
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "unroll",
+              "params": {
+                "loop": "j",
+                "factor": 2
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "j",
+                "width": 2
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "j": "threadblock.x"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  256
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "unroll",
+              "params": {
+                "loop": "j",
+                "factor": 4
+              },
+              "level": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 5,
+      "tool": "compile_and_profile",
+      "params": {
+        "op_name": "matmul",
+        "shapes": {
+          "A": [
+            512,
+            512
+          ],
+          "B": [
+            512,
+            512
+          ]
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            512,
+            512
+          ],
+          "correct": true,
+          "max_diff": 0.0311737060546875,
+          "latency_ms": 0.061709,
+          "baseline_ratio": 0.3805,
+          "default_latency_ms": null,
+          "vs_default": null,
+          "meas_spread": null,
+          "strategy_noop": null,
+          "robust_reward": 1,
+          "backend": "triton",
+          "strategy_decisions": 0,
+          "num_real_kernels": 1,
+          "num_fallback": 0,
+          "compiles_used": 1,
+          "compiles_remaining": 29
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 6,
+      "tool": "checkpoint",
+      "params": {
+        "label": "baseline_empty"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "label": "baseline_empty",
+          "decision_count_at": 0,
+          "compile_count_at": 1,
+          "total_checkpoints": 1
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 7,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "block_threads",
+        "top_n": 20
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 0,
+          "candidates": []
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 8,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "tile",
+        "top_n": 30
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 18,
+          "candidates": [
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  16
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  32
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  64
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  128
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  256
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "i",
+                "factors": [
+                  512
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "j",
+                "factors": [
+                  16
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "j",
+                "factors": [
+                  32
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "j",
+                "factors": [
+                  64
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "j",
+                "factors": [
+                  128
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "j",
+                "factors": [
+                  256
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "j",
+                "factors": [
+                  512
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "k",
+                "factors": [
+                  16
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "k",
+                "factors": [
+                  32
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "k",
+                "factors": [
+                  64
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "k",
+                "factors": [
+                  128
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "k",
+                "factors": [
+                  256
+                ]
+              },
+              "level": 1
+            },
+            {
+              "kind": "tile",
+              "params": {
+                "loop": "k",
+                "factors": [
+                  512
+                ]
+              },
+              "level": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 9,
+      "tool": "apply_decision",
+      "params": {
+        "rationale": "Tile outer M-dimension by 128 \u2014 the canonical Ampere threadblock row-tile for 512\u00d7512 matmul. 512/128=4 tiles along M gives good SM occupancy (4\u00d74=16 tiles for 30 SMs is reasonable). Larger tiles reuse A rows in shared memory more efficiently.",
+        "kind": "tile",
+        "level": 1,
+        "params": {
+          "factors": [
+            128
+          ],
+          "loop": "i"
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "tile",
+            "params": {
+              "factors": [
+                128
+              ],
+              "loop": "i"
+            },
+            "step": 1,
+            "level": 1
+          },
+          "decisions_used": 1,
+          "decisions_remaining": 49
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 10,
+      "tool": "apply_decision",
+      "params": {
+        "params": {
+          "factors": [
+            128
+          ],
+          "loop": "j"
+        },
+        "rationale": "Tile outer N-dimension by 128 \u2014 symmetric with the M-tile. 128\u00d7128 output tile per block is the standard Ampere GEMM blocking that fits shared memory (128*32*2 bytes + 32*128*2 bytes = 16KB for FP16, well within 48KB L1).",
+        "kind": "tile",
+        "level": 1
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "tile",
+            "params": {
+              "factors": [
+                128
+              ],
+              "loop": "j"
+            },
+            "step": 2,
+            "level": 1
+          },
+          "decisions_used": 2,
+          "decisions_remaining": 48
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 11,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "tile",
+        "level": 1,
+        "params": {
+          "factors": [
+            32
+          ],
+          "loop": "k"
+        },
+        "rationale": "Tile K-reduction by 32 \u2014 the pipeline depth / K-tile. A 32-step K-tile keeps shared memory pressure manageable while giving enough work per tile iteration for memory-level parallelism. 512/32=16 iterations of the K loop."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "tile",
+            "params": {
+              "factors": [
+                32
+              ],
+              "loop": "k"
+            },
+            "step": 3,
+            "level": 1
+          },
+          "decisions_used": 3,
+          "decisions_remaining": 47
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 12,
+      "tool": "list_legal_actions",
+      "params": {
+        "top_n": 64,
+        "filter_kind": "wmma_tile"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 0,
+          "candidates": []
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 13,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "pipeline_stages",
+        "top_n": 20
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 0,
+          "candidates": []
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 14,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "parallel",
+        "top_n": 20
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 9,
+          "candidates": [
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "i": "threadblock.x"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "i": "threadblock.y"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "i": "warp"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "j": "threadblock.x"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "j": "threadblock.y"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "j": "warp"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "k": "threadblock.x"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "k": "threadblock.y"
+                }
+              },
+              "level": 1
+            },
+            {
+              "kind": "parallel",
+              "params": {
+                "mapping": {
+                  "k": "warp"
+                }
+              },
+              "level": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 15,
+      "tool": "list_legal_actions",
+      "params": {
+        "filter_kind": "vectorize",
+        "top_n": 20
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "count": 9,
+          "candidates": [
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "i",
+                "width": 2
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "i",
+                "width": 4
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "i",
+                "width": 8
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "j",
+                "width": 2
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "j",
+                "width": 4
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "j",
+                "width": 8
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "k",
+                "width": 2
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "k",
+                "width": 4
+              },
+              "level": 1
+            },
+            {
+              "kind": "vectorize",
+              "params": {
+                "loop": "k",
+                "width": 8
+              },
+              "level": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 16,
+      "tool": "apply_decision",
+      "params": {
+        "rationale": "Map the tiled M-dimension to threadblock.x \u2014 each 128-row output block maps to one CUDA threadblock along x. This gives 512/128=4 blocks along x, parallelizing M computation across SMs.",
+        "kind": "parallel",
+        "level": 1,
+        "params": {
+          "mapping": {
+            "i": "threadblock.x"
+          }
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "parallel",
+            "params": {
+              "mapping": {
+                "i": "threadblock.x"
+              }
+            },
+            "step": 4,
+            "level": 1
+          },
+          "decisions_used": 4,
+          "decisions_remaining": 46
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 17,
+      "tool": "apply_decision",
+      "params": {
+        "rationale": "Map the tiled N-dimension to threadblock.y \u2014 each 128-col output block maps to one CUDA threadblock along y. Combined with threadblock.x \u2192 4\u00d74=16 blocks total, all 30 SMs will be busy (each SM gets ~0.5 blocks, and with double-buffering waves overlap well).",
+        "kind": "parallel",
+        "level": 1,
+        "params": {
+          "mapping": {
+            "j": "threadblock.y"
+          }
+        }
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "parallel",
+            "params": {
+              "mapping": {
+                "j": "threadblock.y"
+              }
+            },
+            "step": 5,
+            "level": 1
+          },
+          "decisions_used": 5,
+          "decisions_remaining": 45
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 18,
+      "tool": "apply_decision",
+      "params": {
+        "kind": "vectorize",
+        "level": 1,
+        "params": {
+          "loop": "j",
+          "width": 8
+        },
+        "rationale": "Vectorize the inner N loop by width=8 \u2014 enables 128-bit (8\u00d7FP16) loads/stores on the output row, maximizing memory bandwidth utilization and reducing instruction count for the store phase."
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "applied": {
+            "kind": "vectorize",
+            "params": {
+              "loop": "j",
+              "width": 8
+            },
+            "step": 6,
+            "level": 1
+          },
+          "decisions_used": 6,
+          "decisions_remaining": 44
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 19,
+      "tool": "compile_and_profile",
+      "params": {
+        "shapes": {
+          "A": [
+            512,
+            512
+          ],
+          "B": [
+            512,
+            512
+          ]
+        },
+        "op_name": "matmul"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "op_name": "matmul",
+          "pipeline_passes": [
+            "SSAValidation",
+            "ShapeInference"
+          ],
+          "output_shape": [
+            512,
+            512
+          ],
+          "correct": true,
+          "max_diff": 0.0311737060546875,
+          "latency_ms": 0.146196,
+          "baseline_ratio": 1.2786,
+          "default_latency_ms": null,
+          "vs_default": null,
+          "meas_spread": null,
+          "strategy_noop": null,
+          "robust_reward": 3,
+          "backend": "triton",
+          "strategy_decisions": 6,
+          "num_real_kernels": 1,
+          "num_fallback": 0,
+          "compiles_used": 2,
+          "compiles_remaining": 28
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step": 20,
+      "tool": "rollback",
+      "params": {
+        "label": "baseline_empty"
+      },
+      "result": {
+        "success": true,
+        "data": {
+          "restored_to": "baseline_empty",
+          "decisions_used": 0,
+          "compiles_used": 1
+        }
+      }
+    }
+  ],
+  "session_summary": {
+    "state": "OptimizationState(decisions=0/50, compiles=2/30, checkpoints=1, best_lat=0.061709)",
+    "budget": {
+      "decision_max": 50,
+      "compile_max": 30,
+      "decisions_used": 0,
+      "compiles_used": 1
+    },
+    "best_performance": {
+      "success": true,
+      "backend": "triton",
+      "correct": true,
+      "max_diff": 0.0311737060546875,
+      "latency_ms": 0.061709,
+      "baseline_ratio": 0.3805,
+      "metadata": {
+        "validation_tier": "V2_profile",
+        "requested_backend": "triton",
+        "strategy_decisions": 0,
+        "default_latency_ms": null,
+        "vs_default": null,
+        "meas_spread": null
+      }
+    },
+    "decision_log": [],
+    "fallback_events": [],
+    "compact_events": [],
+    "resume": {
+      "resumed_from": null,
+      "replayed_decisions": 0,
+      "replayed_compiles": 0,
+      "state_out": "/tmp/arke_conv_matmul/state.json"
+    }
+  },
+  "final_message": "That's slower than baseline. The Triton backend isn't consuming these decisions the way I expected. Let me roll back to baseline, try the `llvm` backend with block_threads + unroll decisions, and also explore a different tile configuration:",
+  "stop_reason": "max_turns"
+}

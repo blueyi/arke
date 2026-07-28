@@ -64,12 +64,20 @@ def run_backend(
     model_spec: str | None = None,
     output_dir: str | None = None,
     timeout: float = 180.0,
+    convergence_csv: str | None = None,
 ) -> BackendResult:
     """Dispatch an optimization run to the selected agent backend.
 
     Returns a :class:`BackendResult`. For external MCP backends, this does not
     block on the external agent — it returns the launch contract (the server
     command + tool list) the external runtime should connect to.
+
+    Args:
+        convergence_csv: optional path for the K-H5.2 convergence-curve CSV
+            (compile_and_profile iterations × best-so-far ratio). Only the
+            ``builtin`` backend emits this; other backends silently ignore it.
+            When None and ``output_dir`` is set, defaults to
+            ``<output_dir>/convergence.csv`` for the builtin backend.
     """
     backend = (backend or "builtin").lower()
 
@@ -78,6 +86,7 @@ def run_backend(
             op_name=op_name, shapes=shapes, target_hw=target_hw,
             max_turns=max_turns, model_spec=model_spec,
             output_dir=output_dir, timeout=timeout,
+            convergence_csv=convergence_csv,
         )
     if backend == "heuristic":
         return _run_heuristic(
@@ -101,6 +110,7 @@ def run_backend(
 
 def _run_builtin(
     *, op_name, shapes, target_hw, max_turns, model_spec, output_dir, timeout,
+    convergence_csv=None,
 ) -> BackendResult:
     """Drive the Façade with the in-tree live-LLM runner (BYOK)."""
     from arke.agent.llm_config import LLMConfigError, load_config
@@ -132,6 +142,20 @@ def _run_builtin(
             with open(traj_path, "w", encoding="utf-8") as fh:
                 _json.dump(result.to_dict(), fh, default=str, indent=2)
         except Exception:  # trajectory dump must never fail the run
+            pass
+    # K-H5.2 (2026-07-28): emit convergence curve CSV — a compact projection
+    # of the compile_and_profile events (iteration × best-so-far ratio) so
+    # convergence efficiency has a measurable artifact per run. Default lands
+    # inside output_dir; --emit-convergence-csv overrides the path.
+    conv_path = convergence_csv
+    if conv_path is None and output_dir:
+        import os as _os
+        conv_path = _os.path.join(output_dir, "convergence.csv")
+    if conv_path:
+        try:
+            from arke.agent.convergence import emit_convergence_csv
+            emit_convergence_csv(result.trajectory, conv_path)
+        except Exception:  # convergence dump must never fail the run
             pass
     return BackendResult(
         backend="builtin", op_name=op_name,

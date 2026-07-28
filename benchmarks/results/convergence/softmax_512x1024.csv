@@ -1,0 +1,5 @@
+iteration,step,tool,backend,success,correct,max_diff,latency_ms,baseline_ratio,vs_default,meas_spread,current_ratio,best_so_far_ratio
+1,7,compile_and_profile,llvm,True,True,7.450580596923828e-09,0.014616,0.7509,1.0,0.0271,1.0,1.0
+2,10,compile_and_profile,llvm,True,True,7.450580596923828e-09,0.019466,0.6669,1.2982,0.0011,0.7702973347712216,1.0
+3,13,compile_and_profile,llvm,True,True,7.450580596923828e-09,0.051487,0.2142,3.4918,0.0006,0.2863852454321553,1.0
+4,16,compile_and_profile,llvm,True,True,7.450580596923828e-09,0.016896,0.6974,1.0334,0.2409,0.9676795045480936,1.0

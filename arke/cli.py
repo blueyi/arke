@@ -162,6 +162,11 @@ def _build_parser() -> argparse.ArgumentParser:
                             help="Target hardware label")
     run_parser.add_argument("-o", "--output", default=None,
                             help="Output dir for state/trajectory artifacts")
+    run_parser.add_argument("--emit-convergence-csv", default=None, metavar="PATH",
+                            help="Path for the convergence-curve CSV "
+                                 "(iteration × best-so-far ratio); defaults to "
+                                 "<output_dir>/convergence.csv when --output is set. "
+                                 "Requires --backend builtin (live-LLM run)")
     run_parser.add_argument("--json", action="store_true",
                             help="Print machine-readable result JSON")
 
@@ -221,6 +226,7 @@ def _cmd_run(args) -> int:
         op_name=args.kernel, shapes=shapes, target_hw=args.target,
         max_turns=args.max_turns, model_spec=args.model,
         output_dir=args.output, timeout=args.timeout,
+        convergence_csv=getattr(args, "emit_convergence_csv", None),
     )
     if args.json:
         print(json.dumps(result.to_dict(), indent=2, default=str))
