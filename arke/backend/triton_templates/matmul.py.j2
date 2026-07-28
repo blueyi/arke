@@ -7,42 +7,77 @@ the Triton autotuner key-lookup + 6 stride args are pure host overhead).
      12 launch args → 6. Non-contiguous inputs keep the general kernel.
   2. Both kernels share the same autotune config ladder (perf-critical tile
      choices unchanged).
+
+K-H3.1 bucketed launcher-side cache (2026-07-28) — mitigate the "autotune
+cliff": Triton's ``@triton.autotune(key=[M, N, K])`` treats every new
+(M, N, K) triple as a cache miss and re-scans the full config ladder on
+first call (measured 10-13 s cold cost on RTX 3060, see
+``benchmarks/probes/autotune_first_call.py``). FlagGems, Liger, and the
+Triton tutorial all sidestep this by keying on ``(next_pow2(M),
+next_pow2(N), next_pow2(K))`` so neighbouring shapes share tuned configs.
+
+We take the **launcher-side cache** route (identical pattern to
+``batch_matmul.py.j2::_bmm_cfg`` and ``grouped_matmul.py.j2``):
+  - Drop ``@triton.autotune`` entirely (which forces the tuning key to be
+    a *kernel* runtime arg — extra launch args = launch-overhead
+    regression on tiny shapes).
+  - Compute the bucket triple in the python launcher, look up a small
+    module-level dict of picked configs, cold-scan the ladder only on
+    bucket miss.
+  - Kernel launch args stay at 6 (contiguous) / 12 (strided) — slim-launch
+    preserved. First-call cost for a new bucket is one bench sweep;
+    subsequent shapes in the same bucket are pure launcher lookup + launch.
 """
 import torch
 import triton
 import triton.language as tl
 
+
+def _next_pow2(x: int) -> int:
+    """Ceil to the next power of two (autotune-key bucketing, K-H3.1).
+
+    Values ≤ 1 collapse to 1. Small dims (≤16) collapse to their exact value
+    so pathological small tests keep a stable, non-explosive key domain.
+    """
+    if x <= 1:
+        return 1
+    if x <= 16:
+        # Preserve exact key for tiny dims (correctness tests, unit shapes).
+        return x
+    # Standard next-power-of-two via bit trick, safe for 32-bit int.
+    return 1 << (x - 1).bit_length()
+
+
 _MM_CONFIGS = [
     # Small shapes (M≤256): low tile, high occupancy
-    triton.Config({"BLOCK_M": 16, "BLOCK_N": 16, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=5, num_warps=2),
-    triton.Config({"BLOCK_M": 16, "BLOCK_N": 32, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=5, num_warps=2),
-    triton.Config({"BLOCK_M": 32, "BLOCK_N": 16, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=5, num_warps=2),
-    triton.Config({"BLOCK_M": 16, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=4, num_warps=4),
-    triton.Config({"BLOCK_M": 64, "BLOCK_N": 16, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=4, num_warps=4),
+    {"BLOCK_M": 16, "BLOCK_N": 16, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 5, "num_warps": 2},
+    {"BLOCK_M": 16, "BLOCK_N": 32, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 5, "num_warps": 2},
+    {"BLOCK_M": 32, "BLOCK_N": 16, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 5, "num_warps": 2},
+    {"BLOCK_M": 16, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 4, "num_warps": 4},
+    {"BLOCK_M": 64, "BLOCK_N": 16, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 4, "num_warps": 4},
     # Medium shapes
-    triton.Config({"BLOCK_M": 32, "BLOCK_N": 32, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=4, num_warps=4),
-    triton.Config({"BLOCK_M": 64, "BLOCK_N": 32, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=4, num_warps=4),
-    triton.Config({"BLOCK_M": 32, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=4, num_warps=4),
-    triton.Config({"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
+    {"BLOCK_M": 32, "BLOCK_N": 32, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 4, "num_warps": 4},
+    {"BLOCK_M": 64, "BLOCK_N": 32, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 4, "num_warps": 4},
+    {"BLOCK_M": 32, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 4, "num_warps": 4},
+    {"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8},
     # Large shapes
-    triton.Config({"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
-    triton.Config({"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
-    triton.Config({"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
+    {"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8},
+    {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8},
+    {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8},
     # BLOCK_K=64 ladder (2026-07-26): FlagGems' autotune space includes
     # deep-K tiles that win on K-heavy LLM shapes (gpt2 c_proj/c_attn K=768,
     # llama-q/ffn K=4096) where our K=32 ladder under-utilizes the K loop.
-    triton.Config({"BLOCK_M": 32, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=4, num_warps=4),
-    triton.Config({"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=4),
-    triton.Config({"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
-    triton.Config({"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
-    triton.Config({"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 64, "GROUP_SIZE_M": 8}, num_stages=3, num_warps=8),
+    {"BLOCK_M": 32, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 4, "num_warps": 4},
+    {"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 4},
+    {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8},
+    {"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8},
+    {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 64, "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8},
     # Big-tile shallow-pipeline (Ampere sweet spot for square-2k/4k class).
-    triton.Config({"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=2, num_warps=8),
-    triton.Config({"BLOCK_M": 256, "BLOCK_N": 128, "BLOCK_K": 32, "GROUP_SIZE_M": 8}, num_stages=2, num_warps=8),
+    {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 2, "num_warps": 8},
+    {"BLOCK_M": 256, "BLOCK_N": 128, "BLOCK_K": 32, "GROUP_SIZE_M": 8, "num_stages": 2, "num_warps": 8},
 ]
 
 
-@triton.autotune(configs=_MM_CONFIGS, key=["M", "N", "K"])
 @triton.jit
 def {{ kernel_name }}_c_kernel(
     A_ptr, B_ptr, C_ptr,
@@ -92,7 +127,6 @@ def {{ kernel_name }}_c_kernel(
     tl.store(c_ptrs, c, mask=mask)
 
 
-@triton.autotune(configs=_MM_CONFIGS, key=["M", "N", "K"])
 @triton.jit
 def {{ kernel_name }}_kernel(
     A_ptr, B_ptr, C_ptr,
@@ -144,17 +178,72 @@ def {{ kernel_name }}_kernel(
     tl.store(c_ptrs, c, mask=mask)
 
 
-def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
+# ── K-H3.1 launcher-side bucketed config cache ────────────────────────────
+#
+# Key: (next_pow2(M), next_pow2(N), next_pow2(K)) so neighbouring shapes
+# (e.g. M=513 and M=1024) share the same picked config. Cold miss triggers
+# a per-config bench sweep once per bucket; subsequent shapes in that
+# bucket are pure dict lookup + kernel launch. Kernel launch-arg count is
+# unchanged from slim-launch (6 args on the contiguous fast-path).
+_TILE_CFG_CACHE: dict = {}
+
+
+def _sweep_and_pick_config(matmul_fn, A: torch.Tensor, B: torch.Tensor) -> dict:
+    """Bench every config on (A, B) and return the fastest one.
+
+    Called at most once per (M_bucket, N_bucket, K_bucket) triple. Uses
+    ``triton.testing.do_bench`` (median of a few warm calls) to pick a
+    winning tile, matching the FlagGems / Liger sweep pattern.
+    """
+    import triton.testing as tt
+
+    best_cfg = None
+    best_ms = float("inf")
+    for cfg in _MM_CONFIGS:
+        try:
+            fn = lambda cfg=cfg: matmul_fn(A, B, _cfg_override=cfg)  # noqa: E731
+            ms = tt.do_bench(fn, warmup=5, rep=15)
+        except Exception:
+            # Skip configs that fail to compile / OOM on this shape.
+            continue
+        if ms < best_ms:
+            best_ms = ms
+            best_cfg = cfg
+    if best_cfg is None:
+        # Ultra-conservative fallback (should never happen — configs cover
+        # every shape reachable through the benchmark harness).
+        best_cfg = _MM_CONFIGS[0]
+    return best_cfg
+
+
+def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor,
+                     _cfg_override: dict | None = None) -> torch.Tensor:
+    """Matmul: A @ B with launcher-side bucketed config cache (K-H3.1)."""
     M, K = A.shape
     K2, N = B.shape
     assert K == K2
+
+    # Bucketed cache lookup — collapse neighbouring shapes into one entry.
+    if _cfg_override is not None:
+        cfg = _cfg_override
+    else:
+        bucket_key = (_next_pow2(M), _next_pow2(N), _next_pow2(K))
+        cfg = _TILE_CFG_CACHE.get(bucket_key)
+        if cfg is None:
+            cfg = _sweep_and_pick_config({{ kernel_name }}, A, B)
+            _TILE_CFG_CACHE[bucket_key] = cfg
+
     C = torch.empty((M, N), device=A.device, dtype=A.dtype)
-    grid = lambda META: (triton.cdiv(M, META["BLOCK_M"]) * triton.cdiv(N, META["BLOCK_N"]),)
+    grid = (triton.cdiv(M, cfg["BLOCK_M"]) * triton.cdiv(N, cfg["BLOCK_N"]),)
+
     # Contiguous fast path: strides derivable from (M, N, K) in-kernel.
     if A.is_contiguous() and B.is_contiguous():
         {{ kernel_name }}_c_kernel[grid](
             A, B, C,
             M, N, K,
+            BLOCK_M=cfg["BLOCK_M"], BLOCK_N=cfg["BLOCK_N"],
+            BLOCK_K=cfg["BLOCK_K"], GROUP_SIZE_M=cfg["GROUP_SIZE_M"],
+            num_stages=cfg["num_stages"], num_warps=cfg["num_warps"],
         )
         return C
     {{ kernel_name }}_kernel[grid](
@@ -163,5 +252,8 @@ def {{ kernel_name }}(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
         A.stride(0), A.stride(1),
         B.stride(0), B.stride(1),
         C.stride(0), C.stride(1),
+        BLOCK_M=cfg["BLOCK_M"], BLOCK_N=cfg["BLOCK_N"],
+        BLOCK_K=cfg["BLOCK_K"], GROUP_SIZE_M=cfg["GROUP_SIZE_M"],
+        num_stages=cfg["num_stages"], num_warps=cfg["num_warps"],
     )
     return C

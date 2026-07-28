@@ -12,14 +12,18 @@
 | 卡 | 内容 | 优先级 | 状态 | 预估 |
 |:--|:--|:--:|:--:|:--:|
 | K-H4 | 无数据 op 假满分 → score=None + no_data_ops | P0 | ✅ DONE (2026-07-27) | — |
-| K-H3.1 | matmul autotune key 改 bucketed + 首调开销 probe | P1 | ⬜ TODO | 1-2d |
-| K-H5.2 | ArkeEnv trajectory → 收敛曲线 CSV (`--emit-convergence-csv`) | P1 | ⬜ TODO | 0.5d |
+| K-H3.1 | matmul autotune key 改 bucketed + 首调开销 probe | P1 | 🟡 impl DONE, perf 验收 pending (2026-07-28) | 1-2d |
+| K-H5.2 | ArkeEnv trajectory → 收敛曲线 CSV (`--emit-convergence-csv`) | P1 | ✅ DONE (2026-07-28) | 0.5d |
 | K-ATT | attention flash-style 模板（online-softmax + K/V 双缓冲 + TC dot） | P1(性能主线) | ⬜ TODO | 2-4w |
 | K-H1 | 双 IR 统一：IRGraph `from_semantic()` 官方构造器 + 往返 golden 测试 | P2 | ⬜ TODO | 1w |
 | K-H2 | 显式 HardwareModel 抽象 + `lower()` 签名统一 + capabilities() | P2(Ascend 恢复前必做) | ⬜ TODO | 1-2w |
 | K-H5.1 | Schedule/Instruction IR 诚实降格（spec 标注 Phase-future）或真接降级 | P3 | ⬜ TODO | 需 Leon 定方向 |
 | K-DYN | dynamic-shape bench track（首调+稳态曲线 gate） | P3 | ⬜ TODO | 3-5d |
 | K-XATT | cross_attention flash-attn varlen API 评估（OT4 golden 后续） | P3 | ⬜ TODO | 1-2d |
+
+**K-H3.1 note (2026-07-28)**: bmm/grouped_matmul 已经不用 `@triton.autotune`（launcher-side shape heuristic + `_TILE_CFG` dict cache），没有 autotune cliff 可缓解，因此 K-H3.1 只落到 matmul.py.j2。
+两轮迭代 finding：(R1) `@triton.autotune(key=[M_bucket,...])` 要求 bucket 作 kernel arg → tiny/gpt2 launch-bound shape 回退 59-77%（破坏 slim-launch）；(R2) 改 launcher-side `_TILE_CFG_CACHE`（同 bmm `_bmm_cfg` pattern），launch args 回到 6/12。R2 单跑 median 0.966，但同轮 pytorch-eager 基线自身 2× 漂移（tiny 13.8→30.2μs），**验收需 median-of-3 重跑**（DoD "中位 geomean ≥1.0"未确证）。probe 冷/热 bucket 数据成立（冷 10-13s → 热 ≪1s）。30 unit test 全绿。
+**K-H5.2 note (2026-07-28)**: commit `bc7d7b1`. 首批 3 op 收敛曲线（matmul/softmax/flash_attention）落 `benchmarks/results/convergence/`。
 
 ## 各卡 DoD（验收标准）
 
