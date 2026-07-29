@@ -1,0 +1,118 @@
+# Dynamic-Shape Benchmark Track — the "Performance Cliff", measured
+
+**Status:** measurement infrastructure ✅ LANDED · gate threshold ⏳ frozen-layer, awaiting decision
+**Tool:** `python -m benchmarks.dynamic_shape --all`
+**Tests:** `tests/benchmark/test_dynamic_shape.py` (25)
+**First dataset:** `benchmarks/results/dynamic_shape/2026-07-29_191225/` (RTX 3060 Laptop 6GB, sm_86, fp16)
+
+---
+
+## 1. Why this track exists
+
+The static benchmark grid (`bench_l1`) measures *steady-state* latency on a fixed
+set of shapes. Production LLM inference is not steady-state: variable-length
+decoding sweeps sequence length token-by-token, so kernels constantly meet
+shapes they have never compiled for. Every genuinely-new shape pays a
+**first-call cost** the static grid never sees:
+
+1. launcher-side config selection (tile heuristic / launch-config cache), and
+2. Triton's per-shape `@triton.jit` specialization compile.
+
+The KESTREL audit flagged this cliff as *speculative* — asserted, never
+measured. This track turns it into a measured curve.
+
+## 2. What is measured
+
+For each op, a **single production wrapper** (`KERNEL_CACHE.get_or_build_by_op`,
+the exact object `TritonBackend` serves) is driven through a sweep of shapes
+that mimics a dynamic workload (non-pow2 sizes included). Per shape:
+
+| column | meaning |
+|:--|:--|
+| `first_call_ms` | wall-clock of the very first call for that shape (CUDA-synced `perf_counter` — the cost is host-side, CUDA events would miss it) |
+| `steady_ms` | median of 50 warm calls |
+| `cliff_ratio` | `first_call / steady` — the cliff magnitude |
+| `spec_key` | *predicted* kernel-specialization class (op-aware, see below) |
+| `new_spec` | prediction: "this shape should trigger a compile" |
+
+`spec_key` models what actually drives a recompile: the launcher-selected
+constexpr config **plus** Triton's per-int-arg specialization classes
+(`==1` / `%16==0` / other). It is op-aware because each template caches
+differently — matmul buckets tile configs by `next_pow2` (K-H3.1), softmax
+derives BLOCK from `next_pow2(N)`, rmsnorm keys on exact N. The measured
+ratio is the ground truth the prediction is checked against.
+
+**Deliberate design choice:** we do *not* render a fresh module per shape
+(as `benchmarks/probes/autotune_first_call.py` does for its narrower
+question). A fresh render defeats Triton's JIT cache and over-reports the
+cliff; the production wrapper reproduces deployment reality.
+
+## 3. First results (2026-07-29, RTX 3060 Laptop, fp16)
+
+| op | shapes | cliff geomean | median | max | new-spec geomean | same-spec geomean |
+|:--|--:|--:|--:|--:|--:|--:|
+| matmul | 15 | **3.31×** | 2.33× | 27.9× | 3.66× (13) | 1.71× (2) |
+| softmax | 12 | **40.99×** | 68.7× | 130.7× | 51.5× (11) | 3.34× (1) |
+| rmsnorm | 11 | **7.22×** | 6.39× | 86.4× | 77.2× (2) | 4.27× (9) |
+
+Sweeps: matmul M=1…512 @ N=K=4096 (LLaMA token-batch); softmax M=32 heads,
+N=128…8192 (attention logits); rmsnorm N=4096 fixed, M=128…4096.
+
+### Honest findings
+
+1. **The cliff is real and op-dependent.** softmax pays ~3.5–6 ms compile for
+   nearly *every* new sequence length (geomean 41×) because its BLOCK
+   constexpr tracks `next_pow2(N)` — 8 distinct N-classes in one sweep = 8
+   compiles. In a token-by-token decode loop this is the dominant dynamic-
+   shape cost.
+2. **K-H3.1 bucketing demonstrably helps matmul.** matmul's geomean is 3.31×
+   vs softmax's 40.99×. The tile-config bucket cache plus the fact that the
+   tile constexprs (not raw M) feed the JIT key means many new shapes reuse
+   compiled kernels (e.g. m48→m64 shared, cliff 2.4×/2.6× ≈ launch noise).
+3. **rmsnorm's cliff is confined to the first shapes** (86×/69× for the first
+   M-div-class pair), then flat ~2–6× — its kernel does not specialize on M
+   beyond divisibility, exactly as `spec_key` predicts.
+4. **Prediction vs measurement mostly agree** — new-spec rows carry the big
+   ratios, same-spec rows sit near launch noise. Two caveats worth keeping:
+   (a) same-spec baseline ratios are 1.7–4.3×, not 1.0× — first-call-for-a-
+   *tensor-size* also pays allocator/caching-allocator work; (b) occasional
+   outliers (driver/clock jitter on a laptop GPU) inflate single cells; the
+   geomean split is the robust signal.
+5. **Residual measurement noise:** the very first sweep entry after process
+   start can absorb residual one-time costs despite the out-of-sweep warmup
+   (observed m1 24× vs 688× across runs). Per-cell numbers are indicative;
+   distribution stats are the contract.
+
+## 4. Interpretation for the AI-Native thesis
+
+An Agent-facing toolchain must expose this cost model to its Agent consumer:
+"new shape ⇒ possible multi-ms compile" is exactly the kind of legality/cost
+information StrategyIR feedback should carry. The `spec_key` predictor is a
+first concrete step: it is cheap to compute, op-aware, and empirically aligned
+with the measured cliff — a candidate for surfacing in compiler V2 feedback.
+
+## 5. Gate threshold — deliberately NOT set here
+
+Pass/fail semantics on this track (e.g. "new-spec geomean ≤ X×" or
+"steady-state within Y% of static-grid latency") are **frozen-layer** gate
+decisions. The module hard-guards against baking one in
+(`test_no_gate_threshold_in_module`). Proposal for the decision holder:
+
+- **D1 (measure-only, recommended for now):** keep the track as a tracked
+  curve in CI artifacts; no pass/fail. Revisit after K-ATT lands (attention
+  is the op where dynamic shapes matter most).
+- **D2 (soft gate):** `same_spec_geomean ≤ 5×` AND per-op `n_new_spec` must
+  match the `spec_key` prediction (catches accidental despecialization).
+- **D3 (hard gate):** additionally cap `new_spec_geomean` per op class
+  (matmul ≤ 5×, elementwise/norm ≤ 10×, row-scan ≤ 60×) — numbers above are
+  descriptive of today's 3060 data, NOT a proposal to lock; a locked value
+  needs cross-run variance data first.
+
+## 6. Files
+
+| path | role |
+|:--|:--|
+| `benchmarks/dynamic_shape.py` | track implementation (sweeps, spec_key, CSV) |
+| `tests/benchmark/test_dynamic_shape.py` | 25 tests incl. GPU smoke + frozen-layer guard |
+| `benchmarks/results/dynamic_shape/<ts>/` | per-op `*_cliff.csv` + `summary.json` |
+| `benchmarks/probes/autotune_first_call.py` | narrower K-H3.1 probe (fresh-module render) — complementary, not superseded |

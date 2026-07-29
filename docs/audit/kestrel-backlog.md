@@ -18,7 +18,7 @@
 | K-H1 | 双 IR 统一：IRGraph `from_semantic()` 官方构造器 + 往返 golden 测试 | P2 | ✅ DONE (2026-07-29) | 1w |
 | K-H2 | 显式 HardwareModel 抽象 + `lower()` 签名统一 + capabilities() | P2(Ascend 恢复前必做) | ✅ DONE (2026-07-29) | 1-2w |
 | K-H5.1 | Schedule/Instruction IR 诚实降格（spec 标注 Phase-future）或真接降级 | P3 | ⬜ TODO | 需 Leon 定方向 |
-| K-DYN | dynamic-shape bench track（首调+稳态曲线 gate） | P3 | ⬜ TODO | 3-5d |
+| K-DYN | dynamic-shape bench track（首调+稳态曲线 gate） | P3 | 🟡 测量层 DONE (2026-07-29)，gate 阈值待 Leon 定 D1/D2/D3 | 3-5d |
 | K-XATT | cross_attention flash-attn varlen API 评估（OT4 golden 后续） | P3 | 🟡 评估 DONE (2026-07-29)，golden 换血待 Leon 批 X1/X2 | 1-2d |
 
 **K-H3.1 note (2026-07-28, 4 轮迭代收官)**: bmm/grouped_matmul 已经不用 `@triton.autotune`（launcher-side heuristic），K-H3.1 只落到 matmul.py.j2。
@@ -79,6 +79,12 @@
 - K-H5.1: spec 把 Schedule/Instruction IR 标注 Phase-future（诚实降格），或让 LLVM
   后端软流水决策显式过 ScheduleIR（真接降级）——方向需 Leon 拍板后执行。
 - K-DYN: 新 bench track，同 op 连续变 shape 测首调+稳态，产出 Performance Cliff gate。
+  **测量层已落地 (2026-07-29)**：`benchmarks/dynamic_shape.py`（生产 wrapper 直测 +
+  op-aware `spec_key` 预测列），25 tests，首批 3060 数据
+  `benchmarks/results/dynamic_shape/2026-07-29_191225/`。核心发现：softmax 每个新
+  seq-len 付 3.5-6ms 编译（cliff geomean 41×），matmul 因 K-H3.1 bucket 仅 3.3×，
+  rmsnorm 7.2×。报告 `docs/benchmark/dynamic-shape-cliff.md`。
+  **gate 阈值（D1 measure-only / D2 soft / D3 hard）= frozen 层，待 Leon 拍板。**
 - K-XATT: flash_attn varlen API 支持非等长 Q/KV 后，cross_attention golden 从
   FlagGems 迁移（见 docs/benchmark/ot4-golden-review-rfc.md 尾注）。
 
