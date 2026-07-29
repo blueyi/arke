@@ -14,7 +14,7 @@
 | K-H4 | 无数据 op 假满分 → score=None + no_data_ops | P0 | ✅ DONE (2026-07-27) | — |
 | K-H3.1 | matmul autotune key 改 bucketed + 首调开销 probe | P1 | ✅ DONE (2026-07-28, R4) | 1-2d |
 | K-H5.2 | ArkeEnv trajectory → 收敛曲线 CSV (`--emit-convergence-csv`) | P1 | ✅ DONE (2026-07-28) | 0.5d |
-| K-ATT | attention flash-style 模板（online-softmax + K/V 双缓冲 + TC dot） | P1(性能主线) | ⬜ TODO | 2-4w |
+| K-ATT | attention flash-style 模板（online-softmax + K/V 双缓冲 + TC dot） | P1(性能主线) | 🟢 PLAN LOCKED (2026-07-29, A1 B1 C2)，kernel 迭代待独立 session | 2-4w |
 | K-H1 | 双 IR 统一：IRGraph `from_semantic()` 官方构造器 + 往返 golden 测试 | P2 | ✅ DONE (2026-07-29) | 1w |
 | K-H2 | 显式 HardwareModel 抽象 + `lower()` 签名统一 + capabilities() | P2(Ascend 恢复前必做) | ✅ DONE (2026-07-29) | 1-2w |
 | K-H5.1 | Schedule/Instruction IR 诚实降格（spec 标注 Phase-future） | P3 | ✅ DONE (2026-07-29)，H5a 已批：spec 标注实现状态，不真接降级 | 需 Leon 定方向 |
