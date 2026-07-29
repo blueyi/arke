@@ -1,6 +1,6 @@
 # K-XATT — cross_attention flash-attn golden 评估报告
 
-**状态**: ✅ 评估收官（2026-07-29）— 实现（golden 换血）需 Leon 批（触及 benchmark 分母，硬停点）
+**状态**: ✅ DONE — X1 换血已批并落地（Leon 2026-07-29）。评估 + 实现 + 实测差距全部收官。
 **卡**: `docs/audit/kestrel-backlog.md` K-XATT（P3, 1-2d）
 **关联**: `docs/benchmark/ot4-golden-review-rfc.md`（FA/GQA 换血历史）、`benchmarks/golden_ladder.py` LADDER_PREFERENCES
 
@@ -48,6 +48,39 @@ K-XATT 就是这个 follow-up：评估 flash-attn 能否覆盖 cross_attention �
 - 修正了 `golden_ladder.py` 中的过时错误假设（"requires equal Q/KV seq lens"）—— 见 §6 建议的注释更新
 - spike 脚本逻辑存档（`flash_attn_func` Sq≠Skv 验证）
 
-## 6. 建议的注释订正（无论 X1/X2，先纠正 golden_ladder.py 的错误陈述）
+## 7. X1 换血落地 + 实测差距（2026-07-29, Leon 批 X1）
+
+换血三处改动已落地：
+- `benchmarks/baselines/flash_attn_runner.py`: `_SUPPORTED_OPS` 加 `cross_attention`；
+  `_NONCAUSAL_OPS` 标 cross_attention 非 causal；`run_for_output` 逐张量 transpose
+  保 Sq≠Skv；`get_fn` 从 shape.Skv 造非等长 K/V + causal=False。
+- `benchmarks/golden_ladder.py`: `LADDER_PREFERENCES["cross_attention"] = "flash-attn"`，
+  订正过时错误注释。
+
+**correctness 验证**（RTX 3060, fp16, B=2 Hq=8 Sq=128 Skv=256 D=64）：
+cross_attention（非 causal）vs SDPA max_abs_diff = **2.4e-4** ✅；自注意力 causal
+语义未破坏（flash_attention max_abs_diff 1.9e-3）。golden 相关 72 tests 全绿。
+
+**换血后真实分母**（bench_l1 cross_attention tier1, Arke vs flash-attn golden）：
+
+| shape | Arke μs | flash-attn μs | Arke/flash |
+|:--|--:|--:|--:|
+| t5-base-dec512 | 95.6 | 72.9 | 0.76× |
+| sdxl-unet-64 | 210.6 | 118.0 | 0.56× |
+| sdxl-unet-128 | 827.8 | 484.4 | 0.59× |
+| batch4-cross | 205.4 | 116.1 | 0.56× |
+| llava-vision | 1194 | 283.9 | 0.24× |
+| non-align-1 | 92.1 | 179.0 | 1.94× (Arke 反超小 shape) |
+| non-align-2 | 394.5 | 235.8 | 0.60× |
+
+**诚实结论**：换血前对 FlagGems 弱分母（bmm 分解，800-2800μs）看似很快；换到真
+fused flash-attn 后暴露真实差距 geomean ~0.5-0.6×，与 FA/GQA 换血性质一致。这正是
+K-ATT 主线（纯 Triton flash-style）要攻的差距，作为 K-ATT 的额外输入。非回退。
+
+---
+
+## （原评估内容保留于下）
+
+
 
 `benchmarks/golden_ladder.py` L92-93 的注释应从"`flash_attn_func` requires equal Q/KV seq lens"更正为事实："`flash_attn_func` handles Sq≠Skv natively (verified K-XATT 2026-07-29); cross_attention golden swap pending Leon decision (X1/X2)"。

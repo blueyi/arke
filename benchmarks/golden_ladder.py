@@ -89,14 +89,17 @@ LADDER_PREFERENCES: dict[str, str] = {
     # 9.7e-4 vs CPU-fp64 reference. If flash-attn is unavailable in an env,
     # GoldenUnavailable fires -> golden_unavailable_pending_baseline audit row
     # (fail-loud beats silently regressing to a non-fused denominator).
-    # cross_attention stays FlagGems for now. NOTE: the earlier rationale
-    # ("flash_attn_func requires equal Q/KV seq lens") is FALSE — flash_attn_func
-    # handles Sq != Skv natively (verified K-XATT 2026-07-29, max_abs_diff 1.2e-4
-    # vs SDPA). The golden swap to flash-attn is pending a Leon decision because
-    # it changes the cross_attention performance denominator (benchmark frozen
-    # layer). See docs/kestrel/k-xatt-evaluation.md (X1 swap / X2 defer).
+    # cross_attention: golden SWAPPED to flash-attn (X1 approved, Leon
+    # 2026-07-29). flash_attn_func handles Sq != Skv natively (verified
+    # K-XATT, max_abs_diff 1.2e-4 vs SDPA); cross_attention is non-causal
+    # (encoder-decoder). The earlier "requires equal Q/KV seq lens" rationale
+    # was FALSE. This changes the cross_attention performance denominator from
+    # FlagGems bmm-decomposed SDPA to the fused flash kernel — Arke's real gap
+    # is now honestly exposed (expected ~0.3x order, same as FA/GQA). Frozen-
+    # layer change, Leon-approved. See docs/kestrel/k-xatt-evaluation.md.
     "flash_attention": "flash-attn",
     "grouped_query_attention": "flash-attn",
+    "cross_attention": "flash-attn",
 }
 
 

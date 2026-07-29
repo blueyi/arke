@@ -31,7 +31,14 @@ except Exception:
     pass
 
 
-_SUPPORTED_OPS = frozenset({"flash_attention", "grouped_query_attention"})
+_SUPPORTED_OPS = frozenset(
+    {"flash_attention", "grouped_query_attention", "cross_attention"}
+)
+
+# cross_attention is encoder-decoder attention: every query position may attend
+# to every key position, so it is NON-causal (unlike self-attention flash /
+# GQA benchmarks which run causal). It also has Sq != Skv.
+_NONCAUSAL_OPS = frozenset({"cross_attention"})
 
 
 @register_baseline
@@ -77,21 +84,28 @@ class FlashAttnRunner(BaselineRunner):
 
         from flash_attn import flash_attn_func  # type: ignore[import-not-found]
 
-        # flash_attn_func expects (B, S, H, D) layout with q, k, v same shape
-        # (or different num heads for GQA — flash_attn_func handles GQA when
-        # num_heads_q != num_heads_kv as long as both share head_dim).
-        if op in ("flash_attention", "grouped_query_attention"):
+        # flash_attn_func expects (B, S, H, D) layout. For self-attention
+        # (flash/GQA) q, k, v share seq length; for cross_attention q has
+        # Sq while k/v have Skv — flash_attn_func handles Sq != Skv natively
+        # (verified K-XATT 2026-07-29, max_abs_diff 1.2e-4 vs SDPA).
+        if op in _SUPPORTED_OPS:
             if len(inputs) < 3:
                 return None
             q, k, v = inputs[0], inputs[1], inputs[2]
             # Common Arke shape is (B, H, S, D); flash_attn wants (B, S, H, D).
             # Heuristic: if dim 1 looks like heads (small) and dim 2 looks like
-            # seq (larger), transpose. Otherwise pass through.
+            # seq (larger), transpose. Otherwise pass through. Applied per
+            # tensor so cross_attention's Sq != Skv is preserved.
             if q.dim() == 4 and q.shape[1] < q.shape[2]:
                 q = q.transpose(1, 2).contiguous()
+            if k.dim() == 4 and k.shape[1] < k.shape[2]:
                 k = k.transpose(1, 2).contiguous()
+            if v.dim() == 4 and v.shape[1] < v.shape[2]:
                 v = v.transpose(1, 2).contiguous()
-            out = flash_attn_func(q, k, v, causal=bool(kwargs.get("causal", False)))
+            causal = bool(kwargs.get("causal", op not in _NONCAUSAL_OPS))
+            if op in _NONCAUSAL_OPS:
+                causal = False
+            out = flash_attn_func(q, k, v, causal=causal)
             return out
         return None
 
@@ -112,18 +126,26 @@ class FlashAttnRunner(BaselineRunner):
         if shape is not None and hasattr(shape, "B"):
             B, H, S, D = shape.B, shape.H, shape.S, shape.D
             Hkv = getattr(shape, "Hkv", None) or H
+            Skv = getattr(shape, "Skv", None) or S
         else:
             B, H, S, D, Hkv = 1, 12, M, N, 12
+            Skv = S
 
-        # flash_attn_func uses (B, S, H, D). causal=True matches the benchmark
-        # semantics used by every other attention baseline (pytorch_eager /
-        # flaggems both call SDPA with is_causal=True) — was causal=False,
-        # which measured a different computation and could never pass a
-        # correctness probe against the causal golden (fixed 2026-07-27).
-        q = torch.randn(B, S, H, D, device="cuda", dtype=dtype)
-        k = torch.randn(B, S, Hkv, D, device="cuda", dtype=dtype)
-        v = torch.randn(B, S, Hkv, D, device="cuda", dtype=dtype)
+        # cross_attention: encoder-decoder, non-causal, Sq (=S) != Skv.
+        # Self-attention (flash/GQA): causal, Sq == Skv.
+        is_cross = op in _NONCAUSAL_OPS
+        causal = not is_cross
+        Sq = S
+        Skv_eff = Skv if is_cross else S
+
+        # flash_attn_func uses (B, S, H, D). causal matches the benchmark
+        # semantics of the matching golden: self-attention baselines call SDPA
+        # is_causal=True; cross_attention is non-causal (fixed 2026-07-27 for
+        # self-attn; cross_attention added K-XATT 2026-07-29).
+        q = torch.randn(B, Sq, H, D, device="cuda", dtype=dtype)
+        k = torch.randn(B, Skv_eff, Hkv, D, device="cuda", dtype=dtype)
+        v = torch.randn(B, Skv_eff, Hkv, D, device="cuda", dtype=dtype)
         # Pre-warm once so first-call overhead doesn't pollute measurement.
-        flash_attn_func(q, k, v, causal=True)
+        flash_attn_func(q, k, v, causal=causal)
         torch.cuda.synchronize()
-        return lambda: flash_attn_func(q, k, v, causal=True)
+        return lambda: flash_attn_func(q, k, v, causal=causal)
