@@ -46,21 +46,22 @@ def {{ kernel_name }}_decompress_kernel(
         offs_dc = dc_start + tl.arange(0, BLOCK_DC)
         mask_dc = offs_dc < Dc
 
-        # Load KVC[s, dc]: [BLOCK_S, BLOCK_DC]
+        # Load KVC[s, dc]: [BLOCK_S, BLOCK_DC] — keep fp16: tl.dot(fp16, fp16,
+        # out fp32 acc) maps to Tensor Core HMMA on sm_86 (fp32 loads force FFMA).
         kvc = tl.load(
             KVC_ptr + offs_s[:, None] * stride_kvc_s + offs_dc[None, :] * stride_kvc_dc,
             mask=mask_s[:, None] & mask_dc[None, :],
             other=0.0,
-        ).to(tl.float32)
+        )
 
         # Load W[dc, h, d]: [BLOCK_DC, BLOCK_D]
         w = tl.load(
             W_ptr + offs_dc[:, None] * stride_w_dc + pid_h * stride_w_h + offs_d[None, :] * stride_w_d,
             mask=mask_dc[:, None] & mask_d[None, :],
             other=0.0,
-        ).to(tl.float32)
+        )
 
-        acc += tl.dot(kvc, w)
+        acc += tl.dot(kvc, w, out_dtype=tl.float32)
 
     # Store Out[h, s, d]
     out_ptrs = Out_ptr + pid_h * stride_o_h + offs_s[:, None] * stride_o_s + offs_d[None, :] * stride_o_d
@@ -90,7 +91,8 @@ def {{ kernel_name }}_attn_kernel(
 
     q_ptrs = Q_ptr + pid_h * stride_qh + offs_n[:, None] * stride_qn + offs_d[None, :] * stride_qd
     q_mask = (offs_n[:, None] < N) & (offs_d[None, :] < D)
-    q = tl.load(q_ptrs, mask=q_mask, other=0.0).to(tl.float32)
+    # TC dtype discipline: keep Q fp16 (fp32 load would force FFMA, TC idle).
+    q = tl.load(q_ptrs, mask=q_mask, other=0.0)
 
     m_i = tl.full((BLOCK_N,), float("-inf"), dtype=tl.float32)
     l_i = tl.zeros((BLOCK_N,), dtype=tl.float32)
@@ -101,9 +103,9 @@ def {{ kernel_name }}_attn_kernel(
         s_mask = offs_s < S
 
         k_ptrs = K_ptr + pid_h * stride_kh + offs_s[:, None] * stride_ks + offs_d[None, :] * stride_kd
-        k = tl.load(k_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
+        k = tl.load(k_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0)
 
-        attn = tl.dot(q, tl.trans(k)) * sm_scale
+        attn = tl.dot(q, tl.trans(k), out_dtype=tl.float32) * sm_scale
         attn = tl.where(s_mask[None, :], attn, float("-inf"))
 
         m_new = tl.maximum(m_i, tl.max(attn, axis=1))
@@ -113,8 +115,9 @@ def {{ kernel_name }}_attn_kernel(
         o_acc = o_acc * alpha[:, None]
 
         v_ptrs = V_ptr + pid_h * stride_vh + offs_s[:, None] * stride_vs + offs_d[None, :] * stride_vd
-        v = tl.load(v_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
-        o_acc += tl.dot(p.to(v.dtype), v)
+        v = tl.load(v_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0)
+        # P cast to fp16 for the TC dot; o_acc stays fp32 (accuracy preserved).
+        o_acc += tl.dot(p.to(tl.float16), v, out_dtype=tl.float32)
         m_i = m_new
 
     o_acc = o_acc / l_i[:, None]
