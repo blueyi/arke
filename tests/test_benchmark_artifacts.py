@@ -68,6 +68,46 @@ class TestBenchmarkArtifacts:
         assert data["perf_actuals"]["relu"] > 1.0
         assert data["perf_gaps"]["relu"] == 0.125
 
+    def test_ratio_denominator_names_the_baseline_used(self, tmp_path: Path):
+        """Audit 2026-07-29 分母陷阱: the ratio column must be accompanied by an
+        explicit ``ratio_denominator`` naming the runner used as denominator, so
+        an eager-denominated ratio can never be misread as a vs-golden ratio.
+        """
+        raw = tmp_path / "flash_attention_results.csv"
+        with raw.open("w", newline="") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "op", "shape_tag", "baseline", "latency_us", "latency_min_us",
+                    "status", "correctness_status",
+                    "perf_target", "perf_actual", "perf_pass", "perf_gap",
+                ],
+            )
+            writer.writeheader()
+            # eager denominator present; Arke row is the measured system.
+            writer.writerow({
+                "op": "flash_attention", "shape_tag": "gpt2-sm-512",
+                "baseline": "PyTorch-eager", "latency_us": "300",
+                "latency_min_us": "290", "status": "ok",
+                "correctness_status": "pass", "perf_target": "1.0",
+                "perf_actual": "", "perf_pass": "", "perf_gap": "",
+            })
+            writer.writerow({
+                "op": "flash_attention", "shape_tag": "gpt2-sm-512",
+                "baseline": "Arke", "latency_us": "100",
+                "latency_min_us": "95", "status": "ok",
+                "correctness_status": "pass", "perf_target": "1.0",
+                "perf_actual": "", "perf_pass": "", "perf_gap": "",
+            })
+        perf = write_perf_csv_from_l1(raw, tmp_path / "perf_flash_attention.csv")
+        rows = {r["baseline"]: r for r in csv.DictReader(perf.open())}
+        # Both rows share the same denominator = the eager row's runner name;
+        # the label makes the (weak) denominator explicit rather than ambiguous.
+        assert rows["Arke"]["ratio_denominator"] == "PyTorch-eager"
+        assert rows["PyTorch-eager"]["ratio_denominator"] == "PyTorch-eager"
+        # Arke row: 300/100 = 3.0 vs eager — clearly labeled as vs-eager, not golden.
+        assert abs(float(rows["Arke"]["ratio_vs_baseline"]) - 3.0) < 1e-6
+
     def test_write_perf_csv_from_l1_infers_operator_from_raw_filename(self, tmp_path: Path):
         raw = tmp_path / "relu_results.csv"
         with raw.open("w", newline="") as f:

@@ -280,3 +280,22 @@ Leon 批「按识别的方案执行」→ 五项建议当日全部实现 + 测�
 - R3 的运行时「JIT 过贵→eager 顶住+异步编译」降级策略属 serving 集成层，未做（当前只提供 warmup API）。
 - layernorm 等其余 row-scan 未套 warmup（同模式可跟进）。
 - dynamic-shape D1→D2 gate 升级是 frozen 层，需跨-run 方差数据齐后报批。
+
+---
+
+## 附三：后续决策与推进记录（2026-07-30，Kitty 自主）
+
+Leon 令「按 Arke 能达到的最佳效果决策并推进」→ 就附二「未做」的 7 项开放问题
+自主拍板（决策矩阵见 `docs/audit/2026-07-29-followup-decisions.md`），实现层直接落地，
+frozen 层备料等 Leon。
+
+| # | 决策 | commit | 结果 |
+|:--|:--|:--|:--|
+| **C** | layernorm row-scan warmup（补齐第三个 row-scan norm） | `46f08c7` | cold first-touch 169.8ms→warmed 0.084ms（**2011×**）；`test_rowscan_warmup.py` 7 passed（+2 layernorm） |
+| **分母陷阱 fail-loud** | perf CSV 加 `ratio_denominator` 列，显式标注 ratio 分母是哪个 runner | (本次) | 消除「eager 分母比值被误读为 vs-golden」歧义（审计 §1.2 教训）；`test_benchmark_artifacts.py` 5 passed（+1） |
+| **A（L2 最小真实化）** | 设计先行 + 一条窄真实链，不做全量重构 | 待续 | 见决策文档 §A 理由 |
+| **B（运行时降级）** | 延后到 serving 集成 Phase，先落 API 契约 | 决策 | 见决策文档 §B |
+| **D（dynamic-shape gate）** | **frozen 硬停点** — 推荐维持 D1，待方差数据后评估 D2；不擅改 | 备料 Leon | 见决策文档 §D |
+| **E（GQA 定阈）** | **frozen 硬停点** — 实测 0.802，推荐锁 stage≥0.30/final≥0.45；不擅改 | 备料 Leon | 见决策文档 §E |
+| **F（PERF_ALL 刷新）** | 全量重跑刷新过时快照 | 进行中 | attention 涨后旧快照过时 |
+| **G（FA-v4 micro-opt）** | 尝试 D=64 short-S gap，helps 则留否则诚实放弃 | 待续 | Gate 已过（0.846），锦上添花 |

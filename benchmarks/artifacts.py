@@ -212,7 +212,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "operator", "shape_tag", "baseline", "latency_us",
-        "latency_min_us", "tflops", "ratio_vs_baseline", "status", "reason", "retryable",
+        "latency_min_us", "tflops", "ratio_vs_baseline", "ratio_denominator", "status", "reason", "retryable",
         "allclose", "max_abs_diff", "mean_abs_diff", "rtol", "atol",
         "correctness_status", "correctness_reason",
         *MEMORY_FIELDS,
@@ -233,6 +233,13 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
             if baseline_row is None and shape_rows:
                 baseline_row = shape_rows[0]
             baseline_lat = _safe_float(baseline_row.get("latency_us") if baseline_row else None)
+            # Denominator honesty (audit 2026-07-29 分母陷阱): record WHICH runner
+            # supplied the ratio denominator so a reader can never mistake a
+            # vs-eager ratio for a vs-golden one. The attention "3.06x/2.31x"
+            # incident was exactly this — an eager-denominated ratio read as if
+            # it were vs flash-attn. The ratio column alone is ambiguous; the
+            # denominator name makes the strength of the comparison explicit.
+            denom_name = (baseline_row.get("baseline", "") if baseline_row else "") or "unknown"
             for row in shape_rows:
                 lat = _safe_float(row.get("latency_us"))
                 ratio = baseline_lat / lat if baseline_lat and lat else None
@@ -245,6 +252,7 @@ def write_perf_csv_from_l1(raw_csv: Path, out_csv: Path) -> Path:
                     "latency_min_us": row.get("latency_min_us", ""),
                     "tflops": row.get("tflops", ""),
                     "ratio_vs_baseline": f"{ratio:.4f}" if ratio is not None else "",
+                    "ratio_denominator": denom_name if ratio is not None else "",
                     "status": row.get("status", "ok"),
                     "reason": row.get("reason", ""),
                     "retryable": row.get("retryable", "false"),
