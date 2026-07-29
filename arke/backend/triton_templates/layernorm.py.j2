@@ -152,3 +152,35 @@ def {{ kernel_name }}(
         num_warps=num_warps,
     )
     return Y
+
+
+def {{ kernel_name }}_warmup_buckets(hidden_dims, device="cuda", dtype=torch.float16):
+    """Pre-compile the {{ norm_type }} kernel for each feature-dim (N) bucket.
+
+    R3 follow-up (audit 2026-07-30): row-scan norms share the dynamic-shape
+    cliff (first-touch JIT compile per specialization). Unlike rmsnorm, the
+    layernorm contiguous fast-path (`_c_kernel`) derives the row stride as
+    ``row*N`` and therefore does NOT take M as a runtime specialization arg —
+    the only Triton specialization keys are the ``BLOCK_N`` constexpr
+    (=next_pow2(N)) and ``HAS_BIAS``. So warming each model N once for both
+    bias variants removes the cliff entirely (no residual M-class recompile,
+    which is why this is simpler than the rmsnorm warmup). Pass the model's
+    hidden dim(s). Returns the set of warmed N.
+    """
+    warmed = set()
+    for N in hidden_dims:
+        Ni = int(N)
+        if Ni <= 0 or Ni in warmed:
+            continue
+        warmed.add(Ni)
+        wgt = torch.ones((Ni,), device=device, dtype=dtype)
+        X = torch.empty((16, Ni), device=device, dtype=dtype)
+        # Warm both HAS_BIAS branches (each is a distinct specialization).
+        {{ kernel_name }}(X, wgt)
+        {% if norm_type == "layernorm" %}
+        bias = torch.zeros((Ni,), device=device, dtype=dtype)
+        {{ kernel_name }}(X, wgt, bias)
+        {% endif %}
+    if device == "cuda" and torch.cuda.is_available():
+        torch.cuda.synchronize()
+    return warmed

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for R3 dynamic-shape cliff mitigation: bucket-aware warmup for the
-row-scan ops (softmax, rmsnorm).
+row-scan ops (softmax, rmsnorm, layernorm).
 
 The dynamic-shape audit (docs/benchmark/dynamic-shape-cliff.md) measured a
 40.99x softmax / 7.22x rmsnorm first-call cliff. The cliff is the first-touch
@@ -38,7 +38,7 @@ def _build(op: str):
 # ── template surface (CPU-safe: render + parse only) ────────────────────────
 
 
-@pytest.mark.parametrize("op", ["softmax", "rmsnorm"])
+@pytest.mark.parametrize("op", ["softmax", "rmsnorm", "layernorm"])
 def test_warmup_fn_rendered(op: str) -> None:
     from pathlib import Path
     from jinja2 import Template
@@ -47,7 +47,11 @@ def test_warmup_fn_rendered(op: str) -> None:
         Path(__file__).resolve().parents[2]
         / "arke" / "backend" / "triton_templates" / f"{op}.py.j2"
     )
-    src = Template(tpl.read_text(encoding="utf-8")).render(kernel_name=f"arke_{op}")
+    # layernorm.py.j2 is shared by layernorm/rmsnorm and needs norm_type.
+    render_kw = {"kernel_name": f"arke_{op}"}
+    if op == "layernorm":
+        render_kw["norm_type"] = "layernorm"
+    src = Template(tpl.read_text(encoding="utf-8")).render(**render_kw)
     assert f"arke_{op}_warmup_buckets" in src, f"{op}: no warmup_buckets fn"
     import ast
     ast.parse(src)  # must be valid Python
@@ -145,4 +149,41 @@ def test_rmsnorm_warmup_collapses_cliff() -> None:
     assert worst < 3.0, (
         f"rmsnorm warmup ineffective: worst post-warmup first-call {worst:.2f}ms "
         f">= 3ms cold-compile wall (cold baseline first-calls were ~5ms)"
+    )
+
+
+@pytest.mark.skipif(not _cuda_triton(), reason="requires CUDA + Triton")
+def test_layernorm_warmup_collapses_cliff() -> None:
+    """Warmup must collapse the layernorm dynamic-shape cliff.
+
+    layernorm's contiguous fast-path derives the row stride as ``row*N`` and
+    does NOT take M as a specialization arg, so the only Triton specialization
+    key is BLOCK_N (=next_pow2(N)) + HAS_BIAS. Warming N therefore removes the
+    cliff with NO residual M recompile (unlike rmsnorm). Measured cold vs warm
+    first-touch on N=4096: ~170ms cold-compile -> <0.1ms warmed (in-process,
+    contention-robust; bar is the 3ms cold-compile wall).
+    """
+    import time
+    import torch
+
+    w = _build("layernorm")
+    warmup = w.__globals__["arke_layernorm_warmup_buckets"]
+    warmup([4096], device="cuda")
+
+    def t1(fn):
+        torch.cuda.synchronize(); t0 = time.perf_counter()
+        fn(); torch.cuda.synchronize()
+        return (time.perf_counter() - t0) * 1e3
+
+    wgt = torch.ones(4096, device="cuda", dtype=torch.float16)
+    # One warm-up call to pass the GPU clock spin-up (not a compile), then the
+    # bar is that no fresh M pays a cold-scale compile (~170ms) on the warmed N.
+    w(torch.randn(16, 4096, device="cuda", dtype=torch.float16), wgt)
+    worst = 0.0
+    for M in (384, 700, 1500, 3000, 250, 900, 128, 512):
+        X = torch.randn(M, 4096, device="cuda", dtype=torch.float16)
+        worst = max(worst, t1(lambda: w(X, wgt)))
+    assert worst < 3.0, (
+        f"layernorm warmup ineffective: worst post-warmup first-call {worst:.2f}ms "
+        f">= 3ms cold-compile wall (cold baseline first-call was ~170ms)"
     )
