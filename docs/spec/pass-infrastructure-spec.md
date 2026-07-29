@@ -510,6 +510,12 @@ class PassPipeline:
 
 ### 7.2 Transform Passes
 
+> **Note (K-H5.1, 2026-07-29):** `schedule_lowering` / `instruction_lowering`
+> below are structurally implemented but produce **skeleton** ScheduleIR /
+> InstructionIR — see the honest-downgrade status note in
+> `arke-ir-spec.md §3.4`. Backends currently do their own scheduling; these
+> passes do not yet drive codegen. The rows describe the target pass contract.
+
 | Pass | Input | Output | Purpose |
 |:-----|:------|:-------|:--------|
 | `fusion` | StrategyIR | StrategyIR | Fuse adjacent operations |

@@ -191,6 +191,31 @@ Not all layers need LLM involvement:
 | Layer 2 (ScheduleIR) | Observer (optional) | Read-only, review generated schedule |
 | Layer 1 (InstructionIR) | None | Fully automated |
 
+> **⚠️ Implementation status (2026-07-29, K-H5.1 honest downgrade).**
+> Layers 4 and 3 are fully realized: SemanticIR and StrategyIR drive the
+> production compiler and are what the agent authors/decides over. Layers 2
+> and 1 (`ScheduleIR` / `InstructionIR`) **exist as populated structural
+> skeletons but are not yet the load-bearing scheduling substrate this spec
+> describes.** `arke/compiler/lowering.py` materializes them
+> (`strategy_to_schedule` → `schedule_to_instruction`) and the MLIR emitter
+> consumes an `InstructionIR` skeleton, but the *scheduling decisions* the
+> §7/§8 data structures model — thread/warp mapping that actually sizes
+> launches, `bank_conflicts` estimation, `register_allocation`, per-
+> instruction `latency`-driven software-pipelining — are **declared, not
+> decision-driving.** Today the Triton/CUDA-C/MLIR backends make those
+> choices inside their own codegen (e.g. matmul tile heuristic in
+> `matmul.py.j2`), not by consuming ScheduleIR fields.
+>
+> Sections §7 and §8 therefore document the **target contract** (Phase-future),
+> with per-field realization status called out inline (`[realized]` /
+> `[skeleton]` / `[Phase-future]`). This is a deliberate honest downgrade:
+> the spec states the intended design while flagging exactly which parts the
+> current compiler actually acts on, so an agent reading the IR is not misled
+> into believing ScheduleIR mutations change generated code today. Wiring the
+> LLVM/MLIR software-pipeline + register-allocation decisions to route
+> *through* ScheduleIR (the "true lowering" alternative) is tracked as a
+> future work item, not a current guarantee.
+
 This graduated participation means the LLM focuses on high-value decisions (Layer 3) while the compiler handles mechanical lowering (Layers 2→1).
 
 ---
@@ -494,6 +519,14 @@ methods (`StrategyIR.wmma_tile(...)`, `.block_threads(...)`, `.fma_contract(...)
 
 ## 7. Layer 2 — ScheduleIR
 
+> **Status: Phase-future target contract.** The struct is populated by
+> `strategy_to_schedule` today, but the fields below are largely *declared*,
+> not *decision-driving* (see the K-H5.1 note in §3.4). Realization tags:
+> `loop_nests`/`placements`/`fusion_groups` are `[skeleton]` (materialized and
+> forwarded to InstructionIR, but backends do not yet consume them for
+> codegen); `ThreadMapping` grid/block sizing and `MemoryPlacement.bank_conflicts`
+> are `[Phase-future]` (declared, no backend acts on them).
+
 ### 7.1 Purpose
 
 **Where to execute** — Thread/block/warp mapping and memory hierarchy placement.
@@ -557,6 +590,15 @@ class ScheduleIR:
 ---
 
 ## 8. Layer 1 — InstructionIR
+
+> **Status: Phase-future target contract.** `schedule_to_instruction`
+> materializes an instruction block (`loop.configure` / `memory.place` /
+> `resource.bind` / `fusion.group`) and the MLIR emitter consumes this
+> skeleton, so the *block/instruction container* is `[skeleton]` (real,
+> traversed). But `register_allocation`, per-`Instruction.latency`, and
+> `memory_footprint` are `[Phase-future]`: they are not computed from a real
+> allocator/scheduler and no backend emits code off them — production backends
+> (Triton, CUDA-C, MLIR) run their own instruction selection.
 
 ### 8.1 Purpose
 

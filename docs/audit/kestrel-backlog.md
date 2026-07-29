@@ -17,8 +17,8 @@
 | K-ATT | attention flash-style 模板（online-softmax + K/V 双缓冲 + TC dot） | P1(性能主线) | ⬜ TODO | 2-4w |
 | K-H1 | 双 IR 统一：IRGraph `from_semantic()` 官方构造器 + 往返 golden 测试 | P2 | ✅ DONE (2026-07-29) | 1w |
 | K-H2 | 显式 HardwareModel 抽象 + `lower()` 签名统一 + capabilities() | P2(Ascend 恢复前必做) | ✅ DONE (2026-07-29) | 1-2w |
-| K-H5.1 | Schedule/Instruction IR 诚实降格（spec 标注 Phase-future）或真接降级 | P3 | ⬜ TODO | 需 Leon 定方向 |
-| K-DYN | dynamic-shape bench track（首调+稳态曲线 gate） | P3 | 🟡 测量层 DONE (2026-07-29)，gate 阈值待 Leon 定 D1/D2/D3 | 3-5d |
+| K-H5.1 | Schedule/Instruction IR 诚实降格（spec 标注 Phase-future） | P3 | ✅ DONE (2026-07-29)，H5a 已批：spec 标注实现状态，不真接降级 | 需 Leon 定方向 |
+| K-DYN | dynamic-shape bench track（首调+稳态曲线） | P3 | ✅ DONE (2026-07-29)，D1 measure-only 已批：只跟踪曲线不设 gate | 3-5d |
 | K-XATT | cross_attention flash-attn varlen API 评估（OT4 golden 后续） | P3 | 🟡 评估 DONE (2026-07-29)，golden 换血待 Leon 批 X1/X2 | 1-2d |
 
 **K-H3.1 note (2026-07-28, 4 轮迭代收官)**: bmm/grouped_matmul 已经不用 `@triton.autotune`（launcher-side heuristic），K-H3.1 只落到 matmul.py.j2。
@@ -78,13 +78,20 @@
 ### K-H5.1 / K-DYN / K-XATT [P3，简述]
 - K-H5.1: spec 把 Schedule/Instruction IR 标注 Phase-future（诚实降格），或让 LLVM
   后端软流水决策显式过 ScheduleIR（真接降级）——方向需 Leon 拍板后执行。
+  **已批 H5a (honest downgrade, Leon 2026-07-29)**：不真接降级；在
+  `docs/spec/arke-ir-spec.md §3.4` 加实现状态 note，§7/§8 头加 `[skeleton]`/
+  `[Phase-future]` 逐字段标注，`pass-infrastructure-spec.md §7.2` 加交叉引用。
+  结论：Layer 4/3（Semantic/Strategy）已实现驱动编译；Layer 2/1（Schedule/
+  Instruction）为已填充的结构骨架，backends 各自做真实调度，ScheduleIR 字段
+  当前不驱动 codegen。真接降级（LLVM 软流水/寄存器分配走 ScheduleIR）列为 future。
 - K-DYN: 新 bench track，同 op 连续变 shape 测首调+稳态，产出 Performance Cliff gate。
   **测量层已落地 (2026-07-29)**：`benchmarks/dynamic_shape.py`（生产 wrapper 直测 +
   op-aware `spec_key` 预测列），25 tests，首批 3060 数据
   `benchmarks/results/dynamic_shape/2026-07-29_191225/`。核心发现：softmax 每个新
   seq-len 付 3.5-6ms 编译（cliff geomean 41×），matmul 因 K-H3.1 bucket 仅 3.3×，
   rmsnorm 7.2×。报告 `docs/benchmark/dynamic-shape-cliff.md`。
-  **gate 阈值（D1 measure-only / D2 soft / D3 hard）= frozen 层，待 Leon 拍板。**
+  **已批 D1 (measure-only, Leon 2026-07-29)**：本 track 只跟踪曲线、不设 pass/fail
+  gate；等 K-ATT 落地 + 跨 run 方差数据后再议是否升级 D2/D3。
 - K-XATT: flash_attn varlen API 支持非等长 Q/KV 后，cross_attention golden 从
   FlagGems 迁移（见 docs/benchmark/ot4-golden-review-rfc.md 尾注）。
 

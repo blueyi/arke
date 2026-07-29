@@ -1,6 +1,6 @@
 # Dynamic-Shape Benchmark Track — the "Performance Cliff", measured
 
-**Status:** measurement infrastructure ✅ LANDED · gate threshold ⏳ frozen-layer, awaiting decision
+**Status:** measurement infrastructure ✅ LANDED · gate mode: **D1 measure-only APPROVED (2026-07-29)** — tracked curve, no pass/fail; revisit D2/D3 after K-ATT lands + cross-run variance data
 **Tool:** `python -m benchmarks.dynamic_shape --all`
 **Tests:** `tests/benchmark/test_dynamic_shape.py` (25)
 **First dataset:** `benchmarks/results/dynamic_shape/2026-07-29_191225/` (RTX 3060 Laptop 6GB, sm_86, fp16)
@@ -96,9 +96,13 @@ with the measured cliff — a candidate for surfacing in compiler V2 feedback.
 Pass/fail semantics on this track (e.g. "new-spec geomean ≤ X×" or
 "steady-state within Y% of static-grid latency") are **frozen-layer** gate
 decisions. The module hard-guards against baking one in
-(`test_no_gate_threshold_in_module`). Proposal for the decision holder:
+(`test_no_gate_threshold_in_module`).
 
-- **D1 (measure-only, recommended for now):** keep the track as a tracked
+**Decision (2026-07-29): D1 approved** — measure-only, no pass/fail gate.
+Revisit D2/D3 after K-ATT lands and cross-run variance data exists.
+Options as proposed:
+
+- **D1 (measure-only, APPROVED):** keep the track as a tracked
   curve in CI artifacts; no pass/fail. Revisit after K-ATT lands (attention
   is the op where dynamic shapes matter most).
 - **D2 (soft gate):** `same_spec_geomean ≤ 5×` AND per-op `n_new_spec` must
