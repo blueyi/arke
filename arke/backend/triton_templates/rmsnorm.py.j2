@@ -190,3 +190,27 @@ def {{ kernel_name }}(
             num_stages=num_stages,
         )
     return Y
+
+
+def {{ kernel_name }}_warmup_buckets(hidden_dims, device="cuda", dtype=torch.float16):
+    """Pre-compile the rmsnorm kernel for each feature-dim (N) bucket.
+
+    R3 (audit 2026-07-29): rmsnorm's dynamic-shape cliff (geomean 7.22x, up to
+    86x on the first shape) is the first-touch JIT compile per BLOCK_N
+    (=next_pow2(N)) specialization. In practice N is the model hidden_size
+    (fixed per model, e.g. 4096) while M=batch*seq varies — so warming the one
+    or few hidden dims a workload uses removes the cliff entirely on the
+    variable-M decode path. Pass the model's hidden dim(s). Returns warmed N.
+    """
+    warmed = set()
+    for N in hidden_dims:
+        Ni = int(N)
+        if Ni <= 0 or Ni in warmed:
+            continue
+        warmed.add(Ni)
+        X = torch.empty((2, Ni), device=device, dtype=dtype)
+        wgt = torch.ones((Ni,), device=device, dtype=dtype)
+        {{ kernel_name }}(X, wgt)
+    if device == "cuda" and torch.cuda.is_available():
+        torch.cuda.synchronize()
+    return warmed

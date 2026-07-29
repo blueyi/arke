@@ -112,7 +112,42 @@ Options as proposed:
   descriptive of today's 3060 data, NOT a proposal to lock; a locked value
   needs cross-run variance data first.
 
-## 6. Files
+## 6. Mitigation — bucket-aware warmup (R3, audit 2026-07-29)
+
+The audit confirmed the cliff mechanism empirically: it is **not** per-exact-N
+recompilation. Triton specializes on `(BLOCK_N constexpr, N % 16)`, so two
+different shapes in the same `(next_pow2(N), %16)` bucket **share** the
+compiled kernel. Measured on RTX 3060: softmax N=512 first-call 253 ms, but
+N=480 / N=496 (same bucket) first-call **0.16 ms** — full reuse. The cliff is
+purely the **first-touch compile of each bucket**.
+
+Fix: row-scan templates now expose `<kernel>_warmup_buckets(...)`, which
+pre-compiles every distinct bucket a workload will hit, covering **both**
+divisibility classes per pow2 bucket (aligned + ragged, so unaligned decode
+lengths are also warm). Call once at serving startup with the model's
+sequence-length / hidden-dim range; the variable-length decode path then never
+hits a compile wall.
+
+Measured cliff reduction (RTX 3060, fp16, fresh exact-N inside warmed buckets):
+
+| op | cold cliff geomean | post-warmup geomean | how warmed |
+|:--|--:|--:|:--|
+| softmax | 40.99× | **1.33×** | `arke_softmax_warmup_buckets([128,256,512,1024,2048,4096,8192])` |
+| rmsnorm | 7.22× | **2.61×** | `arke_rmsnorm_warmup_buckets([hidden_dim])` (N=hidden fixed, M varies) |
+
+Regression test: `tests/backend/test_rowscan_warmup.py` (bucket-key semantics
+CPU-side + GPU smoke asserting cliff collapse). matmul was already mitigated by
+its `_TILE_CFG_CACHE` pow2 bucket (cliff 3.31×); flash_attention by
+`_FA_CFG_CACHE` (K-ATT). Remaining honest residual: the *very first* real
+workload after warmup can still show a single-shape spike (clock/launch
+warmup, not compile) — geomeans above already include those.
+
+Not yet warmed: layernorm and other row-scan variants (same pattern applies,
+follow-up). No **runtime** "JIT-too-expensive → fall back to eager/interpreter
++ async compile" policy yet — that is the D2/D3 + serving-integration
+follow-up, not this measure-only track.
+
+## 7. Files
 
 | path | role |
 |:--|:--|

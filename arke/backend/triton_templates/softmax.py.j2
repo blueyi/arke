@@ -251,7 +251,23 @@ def {{ kernel_name }}_loop_kernel(
 # Per-N launch-config cache: N -> (is_simple, BLOCK_or_TILE, num_warps).
 # next_power_of_2 + the warp ladder are pure functions of N; computing them
 # once per distinct N keeps the hot wrapper to dict-lookup + launch.
+#
+# R3 (audit 2026-07-29): the dynamic-shape cliff for softmax is NOT per-exact-N
+# recompilation — Triton specializes on (BLOCK_N constexpr, N divisibility),
+# so two different N in the SAME (next_pow2, %16) class SHARE the compiled
+# kernel (measured: N=512 first-call 253ms, N=480/496 same bucket 0.16ms).
+# The cliff is the first-touch compile of each bucket. `warmup_buckets()`
+# below moves that compile from the inference hot path to an explicit warmup
+# (call once at serving startup) so variable-length decode never hits the wall.
 _LAUNCH_CFG: dict = {}
+
+
+def _bucket_key(N: int) -> tuple:
+    """Compilation-equivalence bucket: (next_pow2(N), N % 16 == 0).
+
+    Two shapes with the same key hit the same compiled Triton kernel.
+    """
+    return (triton.next_power_of_2(N), (N % 16 == 0))
 
 
 def _softmax_cfg(N: int):
@@ -336,3 +352,40 @@ def {{ kernel_name }}(X: torch.Tensor) -> torch.Tensor:
             num_stages=2,
         )
     return Y
+
+
+def {{ kernel_name }}_warmup_buckets(seq_lens, device="cuda", dtype=torch.float16):
+    """Pre-compile the softmax kernel for each distinct compilation bucket
+    covering ``seq_lens`` (a list of N values a serving workload will hit).
+
+    Moves the per-bucket first-touch JIT compile (the dynamic-shape cliff,
+    measured up to 131x on RTX 3060) OFF the inference hot path. Call once at
+    startup with the model's expected sequence-length range; variable-length
+    decode then reuses the compiled kernels with no compile wall.
+
+    Both %16-divisible and non-divisible representatives are compiled per
+    next_pow2 bucket so ragged/unaligned lengths are also covered. Returns the
+    set of bucket keys that were warmed.
+    """
+    warmed = set()
+    for N in seq_lens:
+        if N <= 0:
+            continue
+        Ni = int(N)
+        pow2 = triton.next_power_of_2(Ni)
+        # Cover BOTH divisibility classes for this pow2 bucket: an aligned
+        # (%16==0) and a ragged (%16!=0) representative. Triton specializes on
+        # N%16, so a workload that later hits an unaligned length in a bucket
+        # warmed only with an aligned length would still pay a compile.
+        aligned = pow2                 # divisible by 16 for pow2 >= 16
+        ragged = max(1, pow2 - 1)      # pow2-1 is odd -> not %16 for pow2 >= 32
+        for rep in (aligned, ragged):
+            key = _bucket_key(rep)
+            if key in warmed:
+                continue
+            warmed.add(key)
+            X = torch.empty((2, rep), device=device, dtype=dtype)
+            {{ kernel_name }}(X)
+    if device == "cuda" and torch.cuda.is_available():
+        torch.cuda.synchronize()
+    return warmed
