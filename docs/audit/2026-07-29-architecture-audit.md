@@ -258,3 +258,25 @@ HardwareModel 纸面实例化**：按 Ascend 910B 公开规格填一份
 承重不符"；两者分别对应 R4 与 R1，均有明确解法。
 
 *审计人：Kitty（主审）+ 3 取证 subagent；全部结论可溯源至文件/命令/当日实测。*
+
+---
+
+## 附二：整改执行记录（R1-R5 全部落地，2026-07-29 同日）
+
+Leon 批「按识别的方案执行」→ 五项建议当日全部实现 + 测试 + commit + push。
+
+| 建议 | 内容 | commit | 量化结果 |
+|:--|:--|:--|:--|
+| **R2** | 修 mla.py.j2 的 5 处 TC 反模式 + 建模板 TC-纪律 lint 闸 | `d73bfb7` | mla 启用 TC 路径（A/B 确认 err 0.122→0.141 同量级，非回归）；lint 闸 11 tests 扫全模板，防回归制度化 |
+| **R3** | softmax/rmsnorm bucket-aware warmup 消动态-shape cliff | `97ddbdb` | **softmax cliff 40.99×→1.33×，rmsnorm 7.22×→2.61×**；6 tests；查明 cliff=每 bucket 首编译（非每 N），同 bucket 复用实证 |
+| **R5** | 断 agent↔learn 循环依赖 + MLIR 双目录消歧 + 修架构图幽灵目录 + CONTRIBUTING.md | `d6fefd1` | AST 确认包级环消除；补开源贡献入口 |
+| **R1** | README 措辞对齐：删「MLIR Dialect」→「emits upstream linalg/memref/gpu/nvgpu，非自定义 dialect」 | `d6fefd1` | 叙事与代码一致（IR spec 早有 K-H5.1 降格标注） |
+| **R4** | 纸面 `ascend_910b()` HardwareModel + dry-run 暴露 4 个 schema 缺口 | `676fe11` | 3 tests 把「抽象能否泛化」变成可追踪契约；缺口清单入 §7.7.1，Ascend 重构成本从实现期挪到设计期 |
+
+**整改后测试基线**：make test（全量）— 见 daily memo 最终数字。TC 纪律闸 + row-scan warmup 闸 + Ascend dry-run 闸共新增 20 个回归测试，把本次审计的三条关键知识（TC dtype 纪律 / bucket 首编译机制 / 硬件抽象缺口）从「人肉记忆」固化为「回归闸」。
+
+**未做（诚实边界）**：
+- 隐患1 的「L2 最小真实化」（让 ScheduleIR 字段真正驱动 codegen）是中期重构，需 Leon 批方向，未动。
+- R3 的运行时「JIT 过贵→eager 顶住+异步编译」降级策略属 serving 集成层，未做（当前只提供 warmup API）。
+- layernorm 等其余 row-scan 未套 warmup（同模式可跟进）。
+- dynamic-shape D1→D2 gate 升级是 frozen 层，需跨-run 方差数据齐后报批。

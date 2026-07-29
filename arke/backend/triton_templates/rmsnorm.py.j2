@@ -196,21 +196,28 @@ def {{ kernel_name }}_warmup_buckets(hidden_dims, device="cuda", dtype=torch.flo
     """Pre-compile the rmsnorm kernel for each feature-dim (N) bucket.
 
     R3 (audit 2026-07-29): rmsnorm's dynamic-shape cliff (geomean 7.22x, up to
-    86x on the first shape) is the first-touch JIT compile per BLOCK_N
-    (=next_pow2(N)) specialization. In practice N is the model hidden_size
-    (fixed per model, e.g. 4096) while M=batch*seq varies — so warming the one
-    or few hidden dims a workload uses removes the cliff entirely on the
-    variable-M decode path. Pass the model's hidden dim(s). Returns warmed N.
+    86x on the first shape) is the first-touch JIT compile per specialization.
+    Triton specializes on BOTH the constexpr BLOCK_N (=next_pow2(N)) AND the
+    row-count M passed as a runtime arg (M%16 / small-value classes). N is the
+    model hidden_size (fixed, e.g. 4096) while M=batch*seq varies; warming N
+    with a couple of M divisibility representatives removes the bulk of the
+    cliff (residual: the very first novel M in a class still pays a ~1.4ms
+    compile — far below the 5ms cold cost — then reuses). Pass the model's
+    hidden dim(s). Returns warmed N.
     """
     warmed = set()
+    # A few M representatives spanning divisibility classes so the M-arg
+    # specialization is also pre-compiled, not just the BLOCK_N constexpr.
+    m_reps = (16, 17)  # 16 -> %16==0 aligned; 17 -> ragged
     for N in hidden_dims:
         Ni = int(N)
         if Ni <= 0 or Ni in warmed:
             continue
         warmed.add(Ni)
-        X = torch.empty((2, Ni), device=device, dtype=dtype)
         wgt = torch.ones((Ni,), device=device, dtype=dtype)
-        {{ kernel_name }}(X, wgt)
+        for m in m_reps:
+            X = torch.empty((m, Ni), device=device, dtype=dtype)
+            {{ kernel_name }}(X, wgt)
     if device == "cuda" and torch.cuda.is_available():
         torch.cuda.synchronize()
     return warmed

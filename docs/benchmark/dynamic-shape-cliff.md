@@ -133,7 +133,7 @@ Measured cliff reduction (RTX 3060, fp16, fresh exact-N inside warmed buckets):
 | op | cold cliff geomean | post-warmup geomean | how warmed |
 |:--|--:|--:|:--|
 | softmax | 40.99× | **1.33×** | `arke_softmax_warmup_buckets([128,256,512,1024,2048,4096,8192])` |
-| rmsnorm | 7.22× | **2.61×** | `arke_rmsnorm_warmup_buckets([hidden_dim])` (N=hidden fixed, M varies) |
+| rmsnorm | 7.22× | **2.61×** (residual ↓) | `arke_rmsnorm_warmup_buckets([hidden_dim])` — warms N (BLOCK_N) + M div reps; rmsnorm also specializes on the M row-count arg, so a *first novel M* still pays a small ~1.4ms warm-N recompile (vs 5ms cold), then reuses |
 
 Regression test: `tests/backend/test_rowscan_warmup.py` (bucket-key semantics
 CPU-side + GPU smoke asserting cliff collapse). matmul was already mitigated by
