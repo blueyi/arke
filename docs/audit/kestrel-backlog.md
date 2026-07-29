@@ -19,7 +19,7 @@
 | K-H2 | 显式 HardwareModel 抽象 + `lower()` 签名统一 + capabilities() | P2(Ascend 恢复前必做) | ✅ DONE (2026-07-29) | 1-2w |
 | K-H5.1 | Schedule/Instruction IR 诚实降格（spec 标注 Phase-future）或真接降级 | P3 | ⬜ TODO | 需 Leon 定方向 |
 | K-DYN | dynamic-shape bench track（首调+稳态曲线 gate） | P3 | ⬜ TODO | 3-5d |
-| K-XATT | cross_attention flash-attn varlen API 评估（OT4 golden 后续） | P3 | ⬜ TODO | 1-2d |
+| K-XATT | cross_attention flash-attn varlen API 评估（OT4 golden 后续） | P3 | 🟡 评估 DONE (2026-07-29)，golden 换血待 Leon 批 X1/X2 | 1-2d |
 
 **K-H3.1 note (2026-07-28, 4 轮迭代收官)**: bmm/grouped_matmul 已经不用 `@triton.autotune`（launcher-side heuristic），K-H3.1 只落到 matmul.py.j2。
 迭代史（全部诚实入档，证据 `benchmarks/probes/results/kh31_acceptance_2026-07-28.md`）：
