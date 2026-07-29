@@ -118,8 +118,52 @@ def {{ kernel_name }}_kernel(
     tl.store(o_ptrs, o_acc.to(tl.float16), mask=o_mask)
 
 
+def _next_pow2(x: int) -> int:
+    """Smallest power of two >= x (linear below 17, matches matmul.py.j2)."""
+    if x <= 1:
+        return 1
+    if x <= 16:
+        return x
+    return 1 << (x - 1).bit_length()
+
+
+# Launcher-side bucketed config memo (K-H3.1 pattern, K-ATT FA-v1).
+# Key: (next_pow2(N), D_pow2, causal). Values chosen from the fp16 offline
+# sweep on RTX 3060 sm_86 (docs/kestrel/k-att-plan.md FA-v1); heuristic
+# consumes BUCKET dims so every shape in a bucket gets an identical config
+# and Triton's JIT cache is maximally reused.
+_FA_CFG_CACHE: dict = {}
+
+
+def _fa_cfg(Nb: int, Db: int, causal: bool) -> dict:
+    """Deterministic tile/pipeline heuristic for flash-attention.
+
+    Distilled from the FA-v1 offline sweep (2026-07-29, RTX 3060 sm_86,
+    fp16, 8 shapes x 42 configs, all correctness-checked <=5e-3, 0 incorrect;
+    benchmarks/probes/results/fa_v1_sweep_2026-07-29.csv):
+
+    * D=64 (gpt2-class): the historical default 64x64/4w/2s is already
+      Pareto-best across S=512..2048 (top-3 within noise) — keep it.
+    * D=128 (llama/ds-class): BLOCK_S=32 is the decisive lever (2.0-2.7x
+      over the old 64x64 default). The 64-wide K/V tile at D=128 blows up
+      register/smem pressure and collapses occupancy — same lesson as the
+      CUDA-C v8 BC 64->32 step. Short S wants the small 32x32/4w launch;
+      S>=2048 wants wide-Q 128x32/8w.
+    * num_stages: 2 wins everywhere on sm_86; 3/4 never helped (Triton's
+      pipeliner gains nothing past double-buffering here).
+
+    Nb is the next_pow2 bucket of query length N; Db = BLOCK_D.
+    """
+    if Db >= 128:
+        if Nb >= 2048:
+            return {"BLOCK_N": 128, "BLOCK_S": 32, "num_warps": 8, "num_stages": 2}
+        return {"BLOCK_N": 32, "BLOCK_S": 32, "num_warps": 4, "num_stages": 2}
+    return {"BLOCK_N": 64, "BLOCK_S": 64, "num_warps": 4, "num_stages": 2}
+
+
 def {{ kernel_name }}(
-    Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor
+    Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor,
+    _cfg_override: dict | None = None,
 ) -> torch.Tensor:
     """FlashAttention-2 forward.
 
@@ -139,11 +183,17 @@ def {{ kernel_name }}(
 
     sm_scale = 1.0 / (D ** 0.5)
 
-    BLOCK_N = 64
-    BLOCK_S = 64
     BLOCK_D = triton.next_power_of_2(D)
+    if _cfg_override is not None:
+        cfg = _cfg_override
+    else:
+        bucket_key = (_next_pow2(N), BLOCK_D, {{ "True" if causal else "False" }})
+        cfg = _FA_CFG_CACHE.get(bucket_key)
+        if cfg is None:
+            cfg = _fa_cfg(bucket_key[0], BLOCK_D, bucket_key[2])
+            _FA_CFG_CACHE[bucket_key] = cfg
 
-    grid = (triton.cdiv(N, BLOCK_N), B * H)
+    grid = (triton.cdiv(N, cfg["BLOCK_N"]), B * H)
 
     {{ kernel_name }}_kernel[grid](
         Q, K, V, O,
@@ -155,7 +205,7 @@ def {{ kernel_name }}(
         O.stride(0), O.stride(1), O.stride(2), O.stride(3),
         GQA_GROUPS={{ GQA_GROUPS }},
         CAUSAL={{ "True" if causal else "False" }},
-        BLOCK_N=BLOCK_N, BLOCK_S=BLOCK_S, BLOCK_D=BLOCK_D,
-        num_warps=4, num_stages=2,
+        BLOCK_N=cfg["BLOCK_N"], BLOCK_S=cfg["BLOCK_S"], BLOCK_D=BLOCK_D,
+        num_warps=cfg["num_warps"], num_stages=cfg["num_stages"],
     )
     return O
