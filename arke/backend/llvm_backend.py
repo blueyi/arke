@@ -203,6 +203,8 @@ class LLVMBackend:
     def __init__(self, chip: str = "sm_86") -> None:
         self.chip = chip
         self.llc = _find_llc()
+        from arke.backend.hardware import DEFAULT_HARDWARE
+        self.hardware = DEFAULT_HARDWARE
         self.ptxas = _find_ptxas()
         self._cache_dir = os.path.join(
             tempfile.gettempdir(), "arke_llvm_cache"
@@ -214,7 +216,26 @@ class LLVMBackend:
         """P5-S2: all 46 ops supported."""
         return op_name in LLVM_EMITTERS
 
-    def lower(self, graph: IRGraph, strategy: Any = None) -> BackendArtifact:
+    def capabilities(self, hw=None):
+        """Report LLVM backend capabilities on ``hw`` (K-H2).
+
+        The LLVM path emits scalar/vector PTX via llc+ptxas; it does NOT
+        currently emit tensor-core MMA (no wmma intrinsics in the emitters)
+        and runs single-stage (no software pipelining).
+        """
+        from arke.backend.protocol import BackendCapabilities
+        model = hw or self.hardware
+        return BackendCapabilities(
+            backend_name=self.name,
+            hardware=model,
+            supported_ops=frozenset(LLVM_EMITTERS.keys()),
+            tensor_core=False,
+            async_copy=False,
+            max_pipeline_stages=1,
+            supported_dtypes=("f16", "f32"),
+        )
+
+    def lower(self, graph: IRGraph, strategy: Any = None, hw=None) -> BackendArtifact:
         """Generate LLVM IR source from IRGraph, optionally guided by StrategyIR.
 
         P5-S5: when `strategy` carries L3 (instruction-level) decisions, they

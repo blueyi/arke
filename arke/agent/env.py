@@ -19,13 +19,16 @@ Stage tracker: docs/phase1/stage8-plan.md D8-F1.1
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from arke.agent.state import OptimizationBudget, OptimizationState
 from arke.compiler.passes.base import HardwareProfile
 from arke.ir.ops.registry import REGISTRY
 from arke.ir.schedule import ScheduleIR
 from arke.ir.strategy import Decision, Rationale
+
+if TYPE_CHECKING:
+    from arke.backend.hardware import HardwareModel
 
 
 # ─── Legal-action candidate generator ─────────────────────────────────────
@@ -409,6 +412,9 @@ class ArkeEnv:
     op_name: str
     op_inputs: dict[str, list[int]] = field(default_factory=dict)
     seed: int = 42
+    # K-H2: structured hardware model consumed by the action-space generator
+    # to gate tensor-core / pipeline moves. Defaults to the NVIDIA SM 8.6 model.
+    hw_model: "HardwareModel | None" = None
 
     @classmethod
     def from_op(
@@ -448,12 +454,18 @@ class ArkeEnv:
         strategy = ScheduleIR(kernel_id=op_name, target_hw=hw.name)
         state = OptimizationState(strategy=strategy, budget=budget)
 
+        # K-H2: derive the structured HardwareModel for the action-space
+        # generator (TC / pipeline gating). Defaults to the NVIDIA SM 8.6 model.
+        from arke.backend.hardware import nvidia_sm86
+        hw_model = nvidia_sm86(name=hw.name)
+
         return cls(
             state=state,
             hw_profile=hw,
             op_name=op_name,
             op_inputs=merged_shapes,
             seed=seed,
+            hw_model=hw_model,
         )
 
     # ── Façade tool 3: list_legal_actions ────────────────────────────────
@@ -509,6 +521,13 @@ class ArkeEnv:
                     _LEGAL_KIND_GENERATORS[kind](loops, self.op_inputs, self.hw_profile)
                 )
             elif kind in _L3_KIND_GENERATORS:
+                # K-H2: gate tensor-core-only actions on hardware capability.
+                # wmma_tile is only legal when the target HardwareModel has a
+                # tensor-core compute unit; skip it entirely on non-TC hardware
+                # instead of relying solely on the shape heuristic downstream.
+                if kind == "wmma_tile" and self.hw_model is not None \
+                        and not self.hw_model.has_tensor_core():
+                    continue
                 candidates.extend(
                     _L3_KIND_GENERATORS[kind](self.op_name, self.op_inputs, self.hw_profile)
                 )

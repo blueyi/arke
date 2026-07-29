@@ -82,10 +82,12 @@ class TritonBackend:
     def __init__(self, device: str = "cuda", dtype_hint: str = "float16") -> None:
         self.device = device
         self.dtype_hint = dtype_hint
+        from arke.backend.hardware import DEFAULT_HARDWARE
+        self.hardware = DEFAULT_HARDWARE
 
     # ── lower ─────────────────────────────────────────────────────
 
-    def lower(self, graph: IRGraph) -> BackendArtifact:
+    def lower(self, graph: IRGraph, hw=None) -> BackendArtifact:
         """Generate Triton source code + precompiled wrappers for the graph.
 
         For each node:
@@ -241,6 +243,29 @@ class TritonBackend:
 
     def supports_op(self, op_name: str) -> bool:
         return op_name in REGISTRY
+
+    def capabilities(self, hw=None):
+        """Report Triton backend capabilities on ``hw`` (K-H2).
+
+        Triton on SM 8.6 emits tensor-core MMA (``tl.dot``), cp.async
+        double-buffering, and multi-stage software pipelines.
+        """
+        from arke.backend.protocol import BackendCapabilities
+        model = hw or self.hardware
+        try:
+            from benchmarks.op_registry import ALL_OPS
+            ops = frozenset(o for o in ALL_OPS if self.supports_op(o))
+        except Exception:
+            ops = frozenset()
+        return BackendCapabilities(
+            backend_name=self.name,
+            hardware=model,
+            supported_ops=ops,
+            tensor_core=model.has_tensor_core(),
+            async_copy=True,
+            max_pipeline_stages=4,
+            supported_dtypes=("f16", "bf16", "f32"),
+        )
 
     # ── helpers ───────────────────────────────────────────────────
 

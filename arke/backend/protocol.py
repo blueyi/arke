@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from arke.ir.graph import IRGraph
+from arke.backend.hardware import DEFAULT_HARDWARE, HardwareModel
 
 
 @dataclass
@@ -68,19 +69,50 @@ class CompiledKernel:
         return cls(success=False, error=error)
 
 
+@dataclass
+class BackendCapabilities:
+    """What a backend can do — consumed by the engine to prune the legal
+    action space at generation time (K-H2).
+
+    A backend reports this so the StrategyIR action generator never offers
+    a move the backend can't honor (e.g. a tensor-core tiling decision on a
+    backend/hardware combo without tensor cores, or a pipeline depth beyond
+    what the backend emits).
+    """
+    backend_name: str
+    hardware: HardwareModel
+    supported_ops: frozenset[str] = frozenset()
+    tensor_core: bool = False          # backend can emit tensor-core MMA
+    async_copy: bool = False           # backend can emit cp.async / double-buffer
+    max_pipeline_stages: int = 1       # deepest software-pipeline the backend emits
+    supported_dtypes: tuple[str, ...] = ("f16", "f32")
+
+    def supports_op(self, op_name: str) -> bool:
+        return op_name in self.supported_ops
+
+
 @runtime_checkable
 class ArkeBackend(Protocol):
     """Protocol for Arke compilation backends.
 
     Backends implement a three-phase pipeline:
-    1. lower(graph) → BackendArtifact (source code generation)
+    1. lower(graph, hw=...) → BackendArtifact (source code generation)
     2. compile(artifact) → CompiledKernel (JIT / AOT compilation)
     3. run(kernel, inputs) → outputs (execution)
+
+    K-H2 unifies the ``lower`` signature: every backend accepts an optional
+    ``hw: HardwareModel`` keyword (defaulting to the backend's own target)
+    so per-backend private parameters (``tile_sizes``, ``chip`` drift) stop
+    leaking into the call site. Backends that don't need it ignore it.
     """
     name: str
 
-    def lower(self, graph: IRGraph) -> BackendArtifact:
-        """Generate target-specific source code from IR graph."""
+    def lower(self, graph: IRGraph, hw: HardwareModel | None = None) -> BackendArtifact:
+        """Generate target-specific source code from IR graph.
+
+        ``hw`` is the target hardware model; when None the backend uses its
+        own configured target (e.g. the ``chip`` it was constructed with).
+        """
         ...
 
     def compile(self, artifact: BackendArtifact) -> CompiledKernel:
@@ -94,6 +126,48 @@ class ArkeBackend(Protocol):
     def supports_op(self, op_name: str) -> bool:
         """Check if this backend can handle a given operator."""
         ...
+
+    def capabilities(self, hw: HardwareModel | None = None) -> BackendCapabilities:
+        """Report what this backend can do on ``hw`` (K-H2).
+
+        Used by the engine to prune the legal action space. Backends that
+        don't override this get a conservative default via
+        :func:`default_capabilities`.
+        """
+        ...
+
+
+def default_capabilities(
+    backend: Any,
+    hw: HardwareModel | None = None,
+    *,
+    supported_ops: frozenset[str] | None = None,
+) -> BackendCapabilities:
+    """Build a conservative BackendCapabilities for a backend lacking an
+    explicit ``capabilities()`` override.
+
+    Tensor-core / async-copy default to what the hardware model advertises,
+    intersected with False (the safe assumption is the backend does NOT emit
+    them unless it says so). ``supported_ops`` falls back to probing
+    ``backend.supports_op`` against the SSOT catalog when available.
+    """
+    model = hw or getattr(backend, "hardware", None) or DEFAULT_HARDWARE
+    ops = supported_ops
+    if ops is None:
+        try:
+            from benchmarks.op_registry import ALL_OPS
+            ops = frozenset(o for o in ALL_OPS if backend.supports_op(o))
+        except Exception:
+            ops = frozenset()
+    return BackendCapabilities(
+        backend_name=getattr(backend, "name", "unknown"),
+        hardware=model,
+        supported_ops=ops,
+        tensor_core=False,
+        async_copy=False,
+        max_pipeline_stages=1,
+        supported_dtypes=("f16", "f32"),
+    )
 
 
 # ── Backend Registry ──────────────────────────────────────────

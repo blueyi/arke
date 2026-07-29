@@ -109,7 +109,15 @@ class MLIRBackend:
         from arke.backend.mlir_emitter import SUPPORTED_OPS
         return op_name in SUPPORTED_OPS
 
-    def lower(self, graph: IRGraph, tile_sizes: dict[str, list[int]] | None = None) -> BackendArtifact:
+    def capabilities(self, hw=None):
+        """Report MLIR backend capabilities (K-H2)."""
+        from arke.backend.mlir_emitter import SUPPORTED_OPS
+        from arke.backend.protocol import default_capabilities
+        return default_capabilities(
+            self, hw, supported_ops=frozenset(SUPPORTED_OPS)
+        )
+
+    def lower(self, graph: IRGraph, tile_sizes: dict[str, list[int]] | None = None, hw=None) -> BackendArtifact:
         """Generate executable MLIR text from the IR graph.
 
         If ``tile_sizes`` is provided (or present in ``graph.metadata['tile_sizes']``),

@@ -1454,6 +1454,53 @@ tests).
 attention preprocessing in `mlir_gpu.py` is a genuine op-semantic rewrite (not a
 generic SemanticIR→IRGraph conversion) and is intentionally left as-is.
 
+### 7.7 Explicit HardwareModel + unified `lower()` + `capabilities()` (K-H2)
+
+Before K-H2 "target hardware" was three partial descriptors, each serving one
+consumer: `compiler/passes/base.py::HardwareProfile` (pass pipeline),
+`backend/gpu_tuning.py::GPUProfile` (launch tuning), and per-backend `chip`
+strings ("sm_86") (codegen). None described the *structure* an optimizing
+agent must reason over to bound legal moves.
+
+**`arke/backend/hardware.py::HardwareModel`** is the structured,
+backend-agnostic target description:
+
+- **Memory hierarchy** — `MemoryLevel(name, scope, size_bytes, bandwidth, latency)`
+  for register → shared → L2 → global, each tagged with its sharing `scope`
+  (thread / block / device).
+- **Synchronization domains** — `SyncDomain(name, width, barrier_free)`
+  (warp lockstep / block barrier / device grid).
+- **Compute units** — `ComputeUnit(kind, count, supported_dtypes, peak_tflops)`
+  for SIMT lanes and tensor cores.
+- **Alignment constraints** — `AlignmentConstraints(warp_size, mma_tile,
+  vector_width, shared_bank_bytes)` — the granularity a tiling strategy must
+  respect.
+
+`nvidia_sm86()` is the concrete RTX 3060 (SM 8.6) instance; `DEFAULT_HARDWARE`
+is the current dev target. A future Ascend / AMD backend supplies its own
+`HardwareModel` (different memory tree, sync domains, compute units) with no
+schema change — the pluggability seam mirrors `ArkeBackend` + `BackendRegistry`.
+
+**Unified `lower()` signature.** Every backend's `lower` now accepts an
+optional `hw: HardwareModel` keyword (`lower(graph, hw=None)`), defaulting to
+the backend's own configured target. This ends the per-backend private-param
+drift (`tile_sizes=`, `strategy=`, `chip` construction) leaking into the call
+site; a backend that doesn't need `hw` ignores it.
+
+**`capabilities()`.** Each backend reports a `BackendCapabilities`
+(`backend_name`, `hardware`, `supported_ops`, `tensor_core`, `async_copy`,
+`max_pipeline_stages`, `supported_dtypes`) so the engine can prune the legal
+action space at generation time. Backends without an explicit override get a
+conservative `default_capabilities(...)`. Reported truthfully per backend
+today: triton (TC ✓, async ✓, 4 stages), cuda-c (TC ✓, async ✓, 3 stages),
+mlir-gpu (TC opt-in, async ✓, 3 stages), llvm (TC ✗, async ✗, 1 stage).
+
+**Engine consumes the model.** `ArkeEnv` carries an `hw_model` and
+`list_legal_actions` gates tensor-core-only moves (`wmma_tile`) on
+`HardwareModel.has_tensor_core()` — on non-TC hardware those actions are not
+offered at all, instead of relying only on the shape heuristic downstream.
+Covered by `tests/test_hardware_model.py` (12 tests).
+
 ---
 
 ## 8. SSA Validator Design

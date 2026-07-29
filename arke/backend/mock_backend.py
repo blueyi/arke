@@ -26,7 +26,7 @@ class MockBackend:
 
     name = "mock"
 
-    def lower(self, graph: IRGraph) -> BackendArtifact:
+    def lower(self, graph: IRGraph, hw=None) -> BackendArtifact:
         """Generate a readable pseudo-code representation."""
         lines = ["# MockBackend pseudo-code"]
         for node in graph.nodes:
@@ -111,3 +111,8 @@ class MockBackend:
     def supports_op(self, op_name: str) -> bool:
         from arke.ir.ops.registry import REGISTRY
         return op_name in REGISTRY
+
+    def capabilities(self, hw=None):
+        """Conservative capabilities for the mock backend (K-H2)."""
+        from arke.backend.protocol import default_capabilities
+        return default_capabilities(self, hw)

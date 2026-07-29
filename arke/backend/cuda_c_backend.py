@@ -433,6 +433,8 @@ class CudaCBackend:
     def __init__(self, chip: str = "sm_86") -> None:
         self.chip = chip
         self.nvcc = _find_nvcc()
+        from arke.backend.hardware import DEFAULT_HARDWARE
+        self.hardware = DEFAULT_HARDWARE
         self._cache_dir = os.path.join(tempfile.gettempdir(), "arke_cuda_c_cache")
         os.makedirs(self._cache_dir, exist_ok=True)
 
@@ -440,7 +442,31 @@ class CudaCBackend:
         self._init_emitters()
         return op_name in self._EMITTERS
 
-    def lower(self, graph: IRGraph, strategy: Any = None) -> BackendArtifact:
+    def capabilities(self, hw=None):
+        """Report CUDA-C backend capabilities on ``hw`` (K-H2).
+
+        The v8 attention path uses cp.async 3-stage pipelines and WMMA
+        tensor cores (D∈{64,128}); matmul/dense ops emit tensor-core MMA.
+        """
+        self._init_emitters()
+        from arke.backend.protocol import BackendCapabilities
+        model = hw or self.hardware
+        try:
+            from benchmarks.op_registry import ALL_OPS
+            ops = frozenset(o for o in ALL_OPS if self.supports_op(o))
+        except Exception:
+            ops = frozenset()
+        return BackendCapabilities(
+            backend_name=self.name,
+            hardware=model,
+            supported_ops=ops,
+            tensor_core=model.has_tensor_core(),
+            async_copy=True,
+            max_pipeline_stages=3,
+            supported_dtypes=("f16", "f32"),
+        )
+
+    def lower(self, graph: IRGraph, strategy: Any = None, hw=None) -> BackendArtifact:
         """Generate CUDA C source from IRGraph, optionally guided by StrategyIR.
 
         When strategy is provided, its decisions configure the kernel template

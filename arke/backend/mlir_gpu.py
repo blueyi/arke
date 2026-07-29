@@ -471,6 +471,32 @@ class MLIRGPUBackend:
         # stays the default precision class (the tensor-core precision tradeoff
         # is a benchmark-semantics decision, not silently changed here).
         self.use_tensor_core = use_tensor_core
+        from arke.backend.hardware import DEFAULT_HARDWARE
+        self.hardware = DEFAULT_HARDWARE
+
+    def capabilities(self, hw=None):
+        """Report MLIR-GPU backend capabilities on ``hw`` (K-H2).
+
+        The nvgpu.mma.sync tensor-core matmul path is opt-in
+        (``use_tensor_core``); async cp.async staging is used in the
+        3-stage attention/matmul emitters.
+        """
+        from arke.backend.protocol import BackendCapabilities
+        model = hw or self.hardware
+        try:
+            from benchmarks.op_registry import ALL_OPS
+            ops = frozenset(o for o in ALL_OPS if self.supports_op(o))
+        except Exception:
+            ops = frozenset()
+        return BackendCapabilities(
+            backend_name=self.name,
+            hardware=model,
+            supported_ops=ops,
+            tensor_core=self.use_tensor_core and model.has_tensor_core(),
+            async_copy=True,
+            max_pipeline_stages=3,
+            supported_dtypes=("f16", "f32"),
+        )
 
     def supports_op(self, op_name: str) -> bool:
         from arke.backend.mlir_emitter import (
@@ -492,7 +518,7 @@ class MLIRGPUBackend:
                 or op_name in GPU_GATED_OPS or op_name in GPU_ROWWISE2_OPS
                 or op_name in GPU_INDEX_OPS)
 
-    def lower(self, graph: Any) -> Any:
+    def lower(self, graph: Any, hw=None) -> Any:
         from arke.backend.mlir_emitter import (
             emit_gpu_matmul, emit_gpu_matmul_tiled, emit_gpu_matmul_regblock,
             emit_gpu_elementwise, emit_gpu_rowwise, emit_gpu_movement, emit_gpu_gated,
