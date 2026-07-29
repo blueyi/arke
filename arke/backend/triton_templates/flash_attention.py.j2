@@ -183,6 +183,12 @@ def {{ kernel_name }}(
     _, Hkv, S, _ = K.shape
 
     assert D <= 128, "head_dim > 128 not supported"
+    # GQA-v1: derive groups from the actual tensor shapes at runtime instead
+    # of trusting the render-time default. The render-time gqa_groups=4 was
+    # silently WRONG for any model with Hq/Hkv != 4 (e.g. qwen2.5: 28/4 = 7
+    # groups -> garbage output, err ~5.0). H % Hkv must divide cleanly.
+    assert H % Hkv == 0, f"Hq={H} not divisible by Hkv={Hkv}"
+    gqa_groups = H // Hkv
     O = torch.empty_like(Q)
 
     sm_scale = 1.0 / (D ** 0.5)
@@ -207,7 +213,7 @@ def {{ kernel_name }}(
         K.stride(0), K.stride(1), K.stride(2), K.stride(3),
         V.stride(0), V.stride(1), V.stride(2), V.stride(3),
         O.stride(0), O.stride(1), O.stride(2), O.stride(3),
-        GQA_GROUPS={{ GQA_GROUPS }},
+        GQA_GROUPS=gqa_groups,
         CAUSAL={{ "True" if causal else "False" }},
         BLOCK_N=cfg["BLOCK_N"], BLOCK_S=cfg["BLOCK_S"], BLOCK_D=BLOCK_D,
         num_warps=cfg["num_warps"], num_stages=cfg["num_stages"],
