@@ -49,7 +49,9 @@ def {{ kernel_name }}_kernel(
               + offs_n[:, None] * stride_qn
               + offs_d[None, :] * stride_qd)
     q_mask = (offs_n[:, None] < N) & (offs_d[None, :] < D)
-    q = tl.load(q_ptrs, mask=q_mask, other=0.0).to(tl.float32)
+    # FA-v2: keep Q in fp16 — tl.dot(fp16, fp16, out fp32) maps to Tensor
+    # Core HMMA on sm_86; loading fp32 forced the dot onto FFMA (no TC).
+    q = tl.load(q_ptrs, mask=q_mask, other=0.0)
 
     # Accumulators
     m_i = tl.full((BLOCK_N,), float("-inf"), dtype=tl.float32)  # row max
@@ -73,10 +75,11 @@ def {{ kernel_name }}_kernel(
                   + kv_head_id * stride_kh
                   + offs_s[:, None] * stride_ks
                   + offs_d[None, :] * stride_kd)
-        k = tl.load(k_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
+        k = tl.load(k_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0)
 
         # S = Q @ K^T * sm_scale: [BLOCK_N, BLOCK_S]
-        attn = tl.dot(q, tl.trans(k)) * sm_scale
+        # fp16 x fp16 -> fp32 accumulate (Tensor Core path on sm_86).
+        attn = tl.dot(q, tl.trans(k), out_dtype=tl.float32) * sm_scale
 
         # Causal mask
         if CAUSAL:
@@ -99,10 +102,11 @@ def {{ kernel_name }}_kernel(
                   + kv_head_id * stride_vh
                   + offs_s[:, None] * stride_vs
                   + offs_d[None, :] * stride_vd)
-        v = tl.load(v_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0).to(tl.float32)
+        v = tl.load(v_ptrs, mask=s_mask[:, None] & (offs_d[None, :] < D), other=0.0)
 
-        # Accumulate: O += P @ V
-        o_acc += tl.dot(p.to(v.dtype), v)
+        # Accumulate: O += P @ V — cast P to fp16 for the TC dot; the running
+        # o_acc stays fp32 (accuracy preserved by fp32 accumulation).
+        o_acc += tl.dot(p.to(tl.float16), v, out_dtype=tl.float32)
         m_i = m_new
 
     # Normalize
