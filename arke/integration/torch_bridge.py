@@ -77,7 +77,7 @@ def _compile_arke_kernel(op: str, named: dict[str, torch.Tensor]):
     back to the eager reference, so correctness is never compromised).
     """
     from arke.backend.triton_backend import TritonBackend  # noqa: F401  (type)
-    from arke.ir.graph import IRGraph, IRNode
+    from arke.ir.graph import IRGraph
 
     backend = _get_backend()
     if backend is None:
@@ -90,15 +90,12 @@ def _compile_arke_kernel(op: str, named: dict[str, torch.Tensor]):
     if cache_key in _KERNEL_CACHE:
         return _KERNEL_CACHE[cache_key]
 
-    graph = IRGraph(name=f"bridge_{op}")
-    for input_name, tensor in named.items():
-        graph.add_input(input_name, dtype=dtype_str, shape=list(tensor.shape))
-    graph.add_node(IRNode(
-        id="n0", op=op,
-        inputs={k: k for k in named.keys()}, outputs=["out"],
-        attrs={},
-    ))
-    graph.set_outputs(["out"])
+    # Official single-node construction (K-H1): IRGraph.single_node routes
+    # through SemanticIR → from_semantic (one canonical SemanticIR→IRGraph
+    # path). ``named`` keys already match the op's schema input names.
+    node_shapes = {k: list(v.shape) for k, v in named.items()}
+    graph = IRGraph.single_node(op, node_shapes, dtype=dtype_str,
+                                output_name="out", name=f"bridge_{op}")
 
     try:
         artifact = backend.lower(graph)

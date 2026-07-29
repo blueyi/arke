@@ -15,7 +15,7 @@
 | K-H3.1 | matmul autotune key 改 bucketed + 首调开销 probe | P1 | ✅ DONE (2026-07-28, R4) | 1-2d |
 | K-H5.2 | ArkeEnv trajectory → 收敛曲线 CSV (`--emit-convergence-csv`) | P1 | ✅ DONE (2026-07-28) | 0.5d |
 | K-ATT | attention flash-style 模板（online-softmax + K/V 双缓冲 + TC dot） | P1(性能主线) | ⬜ TODO | 2-4w |
-| K-H1 | 双 IR 统一：IRGraph `from_semantic()` 官方构造器 + 往返 golden 测试 | P2 | ⬜ TODO | 1w |
+| K-H1 | 双 IR 统一：IRGraph `from_semantic()` 官方构造器 + 往返 golden 测试 | P2 | ✅ DONE (2026-07-29) | 1w |
 | K-H2 | 显式 HardwareModel 抽象 + `lower()` 签名统一 + capabilities() | P2(Ascend 恢复前必做) | ⬜ TODO | 1-2w |
 | K-H5.1 | Schedule/Instruction IR 诚实降格（spec 标注 Phase-future）或真接降级 | P3 | ⬜ TODO | 需 Leon 定方向 |
 | K-DYN | dynamic-shape bench track（首调+稳态曲线 gate） | P3 | ⬜ TODO | 3-5d |
@@ -30,6 +30,8 @@
 **验收方法修正**：跨日历史 ratio 对比在本机无效（6GB 笔记本卡 eager 基线自身跨日漂移 2-4×，tiny eager 49.9μs↔13μs），改用**同日同钟窗 A/B**（原 autotune 模板 vs R4）：tiny 2.36× 快、gpt2-c_proj 1.40× 快、square-1k 持平 1.02×——**逐 shape 无回退**。悬崖：原每新 shape 全扫 10-13s → R4 冷成本=1 次 Triton compile（零扫描）。
 已知边界：小-M shape 的 Arke python wrapper 有 ~25μs dispatch 下限 vs eager C++ 路径 ~13μs，为架构级 launch-overhead gap，tile 无法弥合，另行跟踪。30 unit tests 绿。
 **K-H5.2 note (2026-07-28)**: commit `bc7d7b1`. 首批 3 op 收敛曲线（matmul/softmax/flash_attention）落 `benchmarks/results/convergence/`。
+
+**K-H1 note (2026-07-29)**: `IRGraph.from_semantic(sem, strategy=None, *, dim_bindings)` 官方构造器落 `arke/ir/graph.py`（唯一 SemanticIR→IRGraph 路径）+ dtype 词表桥 `semantic_dtype_to_graph`/`graph_dtype_to_semantic` + 便捷工厂 `IRGraph.single_node(op, shapes)` + 反向 `to_semantic()`。往返 golden `tests/test_from_semantic_roundtrip.py`（60 tests，含全 45 SSOT catalog op + 结构 + 符号维 resolve + 多输出）。散落 ad-hoc 单节点构造点收编：`agent/backends.py`、`agent/tools.py`（profile+verify）、`integration/torch_bridge.py`——各自私有 input-mapping/dtype 逻辑消除。mlir_gpu MLA/paged preprocess 是 op 语义变换（非通用转换）故保留。doc 同步 `arke-compiler-infrastructure.md §7.6`。make test 2824 pass（唯一 fail=test_benchmark_stable_across_iters perf flaky，单跑绿，与本卡无关）。
 
 ## 各卡 DoD（验收标准）
 

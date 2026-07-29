@@ -1407,6 +1407,53 @@ The CUDA-C backend (`arke/backend/cuda_c_backend.py`) generates vendor-native CU
 
 **Status (P4-S1):** matmul verified correct across 8 shapes (16×16 to 1024×1024, including non-power-of-2). 16 tests pass.
 
+### 7.6 Official SemanticIR → IRGraph construction (`from_semantic`)
+
+Every backend (`TritonBackend`, `MLIRBackend`, `CudaCBackend`) consumes the
+lightweight `IRGraph` (`arke/ir/graph.py`) — an SSA graph of `IRNode`s over
+`IRValue`s. Historically each backend/benchmark/verify entry point hand-built
+that graph from an `op` name plus a `shapes` dict, each with its own
+input-mapping convention (identity vs. positional pairing) and dtype naming.
+That drift is the ad-hoc conversion K-H1 removes.
+
+**`IRGraph.from_semantic(semantic_ir, strategy_ir=None, *, dim_bindings=None)`**
+is now the single canonical SemanticIR → IRGraph path:
+
+- **Params → graph inputs** (`is_input=True`), with compact SemanticIR dtypes
+  (`f16`/`bf16`/`f32`/…) translated to the verbose graph vocabulary
+  (`float16`/`bfloat16`/`float32`/…) via `semantic_dtype_to_graph`.
+- **Nodes → IRNodes**: `Node` → single output value named after the node id;
+  `MultiOutputNode` → one value per port named `{node_id}:{port}`.
+  `InputRef`s (`ParamRef`/`NodeRef`) resolve to the producing value's SSA name.
+- **Symbolic dims** resolve to concrete ints via `dim_bindings` (else the
+  `SymbolicDim.default`, else `-1` for downstream shape inference).
+- **Side info** (fusion groups, target hardware, per-node `@rationale` pulled
+  from `strategy_ir`) is carried into `graph.metadata` / `IRNode.rationale`.
+- **`ConditionalNode`** is rejected — shape-regime branches must be specialized
+  before lowering.
+
+**`IRGraph.single_node(op, shapes, *, dtype, output_name, name)`** is the
+convenience factory for the common single-op case (benchmark/verify/bridge
+paths). It builds a one-node SemanticIR from the op's registry schema and
+routes it through `from_semantic`, so there is exactly one SemanticIR→IRGraph
+construction path in the tree. Input mapping pairs the op's schema input names
+with the provided `shapes` keys positionally when counts match, else by
+identity — preserving the behavior the scattered call sites relied on.
+
+**`IRGraph.to_semantic()`** is the round-trip inverse (used by the golden
+test): it reconstructs a SemanticIR (params, nodes, edges, return node/ports,
+per-node output `TensorDesc`s) from the graph, recovering op semantics from the
+OpRegistry. `SemanticIR → IRGraph → SemanticIR` is operator-DAG equivalent for
+every op in the SSOT catalog (`tests/test_from_semantic_roundtrip.py`, 60
+tests).
+
+**Migrated entry points** (now route through `single_node`/`from_semantic`):
+`arke/agent/backends.py` (backend probe), `arke/agent/tools.py`
+(`compile_and_profile` + real-correctness verify), and
+`arke/integration/torch_bridge.py` (torch custom-op bridge). The MLA/paged
+attention preprocessing in `mlir_gpu.py` is a genuine op-semantic rewrite (not a
+generic SemanticIR→IRGraph conversion) and is intentionally left as-is.
+
 ---
 
 ## 8. SSA Validator Design

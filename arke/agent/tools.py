@@ -322,7 +322,7 @@ class CompileAndProfileTool(ArkeTool):
         from arke.compiler.passes import (
             PassPipeline, SSAValidationPass, ShapeInferencePass,
         )
-        from arke.ir.graph import IRGraph, IRNode
+        from arke.ir.graph import IRGraph
         from arke.ir.ops.interpreter import INTERPRETER
         from arke.ir.ops.registry import REGISTRY
 
@@ -381,8 +381,8 @@ class CompileAndProfileTool(ArkeTool):
             backend = MockBackend()
             backend_label = "mock"
 
-        # Build a single-node graph
-        graph = IRGraph(name=f"profile_{op_name}")
+        # Build a single-node graph (constructed below via
+        # IRGraph.single_node once shapes are resolved).
         shapes = params.get("shapes", {})
 
         # Default shapes
@@ -410,16 +410,15 @@ class CompileAndProfileTool(ArkeTool):
 
         merged_shapes = {**default_shapes, **shapes}
 
-        for inp_name in op.inputs:
-            shape = merged_shapes.get(inp_name, [4, 8])
-            graph.add_input(inp_name, shape=shape)
-
-        graph.add_node(IRNode(
-            id="n0", op=op_name,
-            inputs={k: k for k in op.inputs},
-            outputs=["output"],
-        ))
-        graph.set_outputs(["output"])
+        # Official single-node construction (K-H1): route through
+        # IRGraph.single_node → SemanticIR → from_semantic. Keyed by the op's
+        # schema input names so from_semantic maps them by identity.
+        node_shapes = {
+            inp_name: merged_shapes.get(inp_name, [4, 8])
+            for inp_name in op.inputs
+        }
+        graph = IRGraph.single_node(op_name, node_shapes, output_name="output",
+                                    name=f"profile_{op_name}")
 
         # Run pipeline
         pipeline = PassPipeline("compile_and_profile")
@@ -1018,7 +1017,7 @@ class VerifyCorrectnessTool(_EnvBoundTool):
         from arke.compiler.passes import (
             PassPipeline, SSAValidationPass, ShapeInferencePass,
         )
-        from arke.ir.graph import IRGraph, IRNode
+        from arke.ir.graph import IRGraph
         from arke.ir.ops.interpreter import INTERPRETER
         from arke.ir.ops.registry import REGISTRY
 
@@ -1026,12 +1025,13 @@ class VerifyCorrectnessTool(_EnvBoundTool):
         op = REGISTRY.get(op_name)
         shapes = self._env.op_inputs
 
-        graph = IRGraph(name=f"verify_{op_name}")
-        for inp_name in op.inputs:
-            graph.add_input(inp_name, shape=shapes.get(inp_name, [4, 8]))
-        graph.add_node(IRNode(id="n0", op=op_name,
-                              inputs={k: k for k in op.inputs}, outputs=["output"]))
-        graph.set_outputs(["output"])
+        # Official single-node construction (K-H1): IRGraph.single_node routes
+        # through SemanticIR → from_semantic, so the input-mapping/dtype logic
+        # is not re-derived here. Fill any missing input shapes with the env
+        # default, keyed by the op's schema input names.
+        merged = {name: shapes.get(name, [4, 8]) for name in op.inputs}
+        graph = IRGraph.single_node(op_name, merged, output_name="output",
+                                    name=f"verify_{op_name}")
 
         pipeline = PassPipeline("verify_real")
         pipeline.add_pass(SSAValidationPass())
