@@ -1481,6 +1481,29 @@ is the current dev target. A future Ascend / AMD backend supplies its own
 `HardwareModel` (different memory tree, sync domains, compute units) with no
 schema change — the pluggability seam mirrors `ArkeBackend` + `BackendRegistry`.
 
+#### 7.7.1 Schema generalization gaps — Ascend dry-run (audit R4, 2026-07-29)
+
+⚠️ **Honest caveat:** until 2026-07-29 the `HardwareModel` schema had been
+instantiated for exactly **one** target (`nvidia_sm86`), so the "no schema
+change for a new accelerator" claim above was **untested**. Audit R4 added a
+*paper* `ascend_910b()` instance (public specs, nothing runs on it) and a
+design-time dry-run (`tests/backend/test_hardware_model_ascend_dryrun.py`) that
+feeds it through the same query API the agent/tuning consume. Filling it in
+surfaced four concrete schema misfits for a SIMD/Cube accelerator — the refactor
+list to resolve *before* Ascend un-pauses, not after:
+
+| # | Gap | Why the NVIDIA-shaped schema can't express it |
+|:-:|:--|:--|
+| 1 | **No SIMT/warp model** | DaVinci is SIMD (fixed 16×16×16 Cube MMA + wide Vector). No 32-lane warp, no lockstep. `warp_size`, `SyncDomain("warp", barrier_free=…)`, `max_threads_per_block` are NVIDIA-isms with no analog (forced to 1/None/absent). The schema conflates "SIMT lane group" with "sync scope". |
+| 2 | **Operand-specific on-chip memory** | Ascend L0A/L0B/L0C feed the Cube (lhs/rhs/accumulator); L1/UB is unified scratch. `MemoryLevel.scope ∈ {thread,block,device}` can list them but can't mark L0A/L0B as *Cube-operand feeders* rather than general scratch. `shared_memory_bytes()` returns 0 on Ascend because it hardcodes the name `"shared"`. |
+| 3 | **Software-managed DMA vs HW cache** | NVIDIA L2 is a transparent cache; Ascend GM↔L1↔L0 is explicit engine-scheduled DMA. No schema field says "software-managed", so a legal-action generator can't tell it must *emit copies* instead of relying on a cache. |
+| 4 | **Operand memory layout** | Ascend Cube requires a fractal (nZ/zN) operand layout. `AlignmentConstraints.mma_tile` is a bare `(m,n,k)` with no operand-layout field. |
+
+The dry-run test asserts these gaps as a **living record**: if a future schema
+change fixes one, the test breaks on purpose and forces this table to be updated
+in lockstep. This turns "will the abstraction generalize?" from a hope into a
+tracked, testable design contract.
+
 **Unified `lower()` signature.** Every backend's `lower` now accepts an
 optional `hw: HardwareModel` keyword (`lower(graph, hw=None)`), defaulting to
 the backend's own configured target. This ends the per-backend private-param

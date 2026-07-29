@@ -201,3 +201,78 @@ def nvidia_sm86(name: str = "nvidia_ampere") -> HardwareModel:
 
 # Default model for the current dev target.
 DEFAULT_HARDWARE = nvidia_sm86()
+
+
+def ascend_910b(name: str = "ascend_910b") -> HardwareModel:
+    """⚠️ PAPER EXERCISE — Huawei Ascend 910B (DaVinci arch), NOT validated.
+
+    Audit R4 (docs/audit/2026-07-29-architecture-audit.md): the HardwareModel
+    schema has only ever been instantiated for one target (nvidia_sm86), so its
+    "泛化力" was never stress-tested. This instance fills the schema from public
+    Ascend 910B specs to surface — *at design time* — which fields the current
+    NVIDIA-shaped schema cannot express for a SIMD/Cube accelerator. Nothing in
+    the codebase runs on it; it exists to drive the dry-run gap analysis in
+    ``tests/backend/test_hardware_model_ascend_dryrun.py`` and the gap list in
+    docs/architecture/arke-compiler-infrastructure.md §7.7.
+
+    KNOWN SCHEMA MISFITS discovered by filling this in (the point of R4):
+
+    1. **No SIMT/warp concept.** DaVinci is SIMD: a Cube unit does a fixed
+       16x16x16 MMA and Vector units do wide SIMD. There is no 32-lane warp and
+       no implicit lockstep. We model the Cube as a ``tensor_core`` ComputeUnit
+       and Vector as ``simt`` (a lie of convenience) and set warp_size=1, but
+       ``SyncDomain("warp", barrier_free=True)`` has no Ascend analog — the
+       schema conflates "SIMT lane group" with "sync scope".
+    2. **Richer on-chip memory tree.** Ascend exposes L1 (unified buffer /
+       "UB"), plus L0A / L0B / L0C feeding the Cube (input/input/accum). The
+       flat ``memory_levels`` list with scope ∈ {thread,block,device} can list
+       them but cannot express that L0A/L0B are *operand-specific* Cube feeders
+       (not general scratch) nor the GM→L1→L0 staging DMA the compiler must
+       schedule explicitly. ``scope`` has no value for "cube-operand".
+    3. **Explicit DMA / no cache coherence.** NVIDIA L2 is a transparent cache;
+       Ascend movement between GM/L1/L0 is explicit engine-scheduled DMA. The
+       schema has no field for "software-managed vs hardware-cached", so a
+       StrategyIR legal-action generator reading this model can't tell it must
+       *emit copies* rather than rely on a cache.
+    4. **mma_tile is a single (m,n,k).** Ascend Cube is fixed 16x16x16 for fp16
+       but the fractal/zZ data layout it requires (nZ/zN) is unrepresentable —
+       ``AlignmentConstraints`` has no "operand memory layout" field.
+
+    These four are the concrete refactor list for when Ascend is un-paused;
+    R4's value is having them *before* writing a line of Ascend codegen.
+    """
+    return HardwareModel(
+        name=name,
+        compute_capability=(0, 0),   # SCHEMA MISFIT #1: CUDA-ism, no Ascend analog
+        num_sms=32,                  # ~32 AI Cores (DaVinci cores), approx public spec
+        max_threads_per_block=0,     # SCHEMA MISFIT #1: no thread-block model on SIMD
+        max_threads_per_sm=0,        # SCHEMA MISFIT #1: same
+        memory_levels=(
+            # SCHEMA MISFIT #2/#3: L0A/L0B/L0C are Cube-operand feeders, not
+            # general "thread"/"block" scratch; GM<->L1<->L0 is explicit DMA.
+            MemoryLevel("l0c", "block", size_bytes=256 * 1024, latency_cycles=1),   # accumulator
+            MemoryLevel("l0a", "block", size_bytes=64 * 1024, latency_cycles=1),    # Cube lhs feeder
+            MemoryLevel("l0b", "block", size_bytes=64 * 1024, latency_cycles=1),    # Cube rhs feeder
+            MemoryLevel("l1", "block", size_bytes=1024 * 1024, latency_cycles=30),  # unified buffer (UB)
+            MemoryLevel("global", "device", size_bytes=64 * 1024 * 1024 * 1024,
+                        bandwidth_gbps=400.0, latency_cycles=400),                  # HBM
+        ),
+        sync_domains=(
+            # SCHEMA MISFIT #1: "aicore" is a compute-engine group, not a
+            # warp/block sync scope; barrier_free is meaningless here.
+            SyncDomain("aicore", width=1, barrier_free=False),
+            SyncDomain("device", width=0, barrier_free=False),
+        ),
+        compute_units=(
+            # SCHEMA MISFIT #1: Vector unit modeled as "simt" is a convenience lie.
+            ComputeUnit("simt", count=1, supported_dtypes=("f16", "f32"), peak_tflops=0.0),
+            # Cube MMA unit, fixed 16x16x16 fp16.
+            ComputeUnit("tensor_core", count=1, supported_dtypes=("f16",), peak_tflops=376.0),
+        ),
+        alignment=AlignmentConstraints(
+            warp_size=1,             # SCHEMA MISFIT #1: no warp
+            mma_tile=(16, 16, 16),   # SCHEMA MISFIT #4: fractal layout unexpressed
+            vector_width=16,
+            shared_bank_bytes=32,
+        ),
+    )
