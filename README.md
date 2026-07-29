@@ -87,8 +87,8 @@ At a high level: `Semantic IR` defines **what** to compute, `Strategy IR` define
   ┌────────────────────────────▼───────────────────────────────┐
   │  Codegen Backends (progressive depth into hardware)        │
   │                                                            │
-  │  Triton │ MLIR Dialect │ CUDA-C │ LLVM IR │ HW ISA         │
-  │  (Ph 1) │   (Ph 3)     │ (Ph 4) │ (Ph 5)  │ (Future)       │
+  │  Triton │ MLIR (linalg) │ CUDA-C │ LLVM IR │ HW ISA        │
+  │  (Ph 1) │    (Ph 3)     │ (Ph 4) │ (Ph 5)  │ (Future)      │
   │                                                            │
   │  ◄── deeper hardware control ── extreme performance ──►    │
   └────────────────────────────┬───────────────────────────────┘
@@ -230,7 +230,7 @@ Arke is developed in five phases (current hardware scope: **NVIDIA GPU only** �
 
 - **Phase 1** — Arke -> Triton -> NVIDIA GPU: validate the SIMT path, language/IR, compiler infrastructure, and benchmark system — ✅ closed
 - **Phase 2** — Arke -> Triton -> Ascend NPU: cross-architecture generalization on SIMD hardware — ⏸️ paused (no Ascend hardware)
-- **Phase 3** — Arke -> MLIR Dialect: deeper compiler control beyond Triton's abstraction boundary — ✅ closed (NVIDIA)
+- **Phase 3** — Arke -> MLIR (emits upstream `linalg`/`memref`/`gpu`/`nvgpu` dialects, lowered by `mlir-opt`/`llc`; not a custom Arke dialect): deeper compiler control beyond Triton's abstraction boundary — ✅ closed (NVIDIA)
 - **Phase 4** — Arke -> CUDA-C: vendor-DSL portability path — ✅ closed (NVIDIA)
 - **Phase 5** — Arke -> LLVM IR: lower-level backend completeness — ✅ closed (NVIDIA; multi-hardware stage skipped)
 

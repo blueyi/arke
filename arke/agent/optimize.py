@@ -28,7 +28,15 @@ from arke.compiler.pipeline import ArkePipeline, CompilationResult
 from arke.ir.akir import akir_to_dict
 from arke.ir.semantic import SemanticIR, SymbolicDim
 from arke.ir.strategy import StrategyIR
-from arke.learn.trajectory import TrajectoryWriter
+
+# NOTE: `arke.learn.trajectory.TrajectoryWriter` is imported lazily inside
+# `optimize()` (see below), not at module top-level. arke.learn depends on
+# arke.agent's telemetry contracts (events, robust_reward), so a top-level
+# agent->learn import here creates an import-time package cycle
+# (agent <-> learn). learn->agent is the correct direction (downstream RL
+# reads the contracts agent defines); this one producer-side writer is the
+# only reverse edge, so we defer it to call time to keep the package DAG acyclic
+# (audit R5, 2026-07-29).
 
 
 @dataclass(frozen=True)
@@ -486,6 +494,9 @@ def _optimize_routed(
 
     best_score: float | None = None
     cycles_completed = 0
+
+    # Lazy import to keep the agent<->learn package DAG acyclic (audit R5).
+    from arke.learn.trajectory import TrajectoryWriter
 
     with TrajectoryWriter(trajectory_path) as writer:
         # Trajectory v1.0 (D8-F3): header → stream events → adjust marker.

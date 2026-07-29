@@ -80,10 +80,10 @@ checkpoint() / rollback() → Explore and backtrack safely
 ```
 arke/lang/        — .ak language parser (Arke-Lang)
 arke/ir/          — SemanticIR + StrategyIR (Arke-IR)
-arke/backend/     — Triton codegen (Arke-Compiler)
-arke/compiler/    — Compiler pipeline
-arke/agent/       — Agent session, tools, prompts (Arke-Agent)
-arke/engine/      — ArkeEnv optimization engine
+arke/backend/     — production codegen: Triton / MLIR-GPU / CUDA-C / LLVM (Arke-Compiler)
+arke/compiler/    — Compiler pipeline (validation passes + lowering)
+arke/agent/       — Agent session, tools, prompts, ArkeEnv optimization loop (Arke-Agent)
+arke/learn/       — Trajectory recording + RL dataset (reads agent telemetry contracts)
 arke/integration/ — torch_bridge (G8 PyTorch 桥接, 197 LOC)
 benchmarks/       — Gate system, baselines
 ```
