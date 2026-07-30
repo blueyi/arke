@@ -118,7 +118,8 @@ def {{ kernel_name }}_kernel(
     tl.store(c_ptrs, c, mask=mask_c)
 
 
-def {{ kernel_name }}(X: torch.Tensor, W: torch.Tensor, indices: torch.Tensor = None) -> torch.Tensor:
+def {{ kernel_name }}(X: torch.Tensor, W: torch.Tensor, indices: torch.Tensor = None,
+                      _cfg_override: dict = None) -> torch.Tensor:
     """Grouped matmul: X[B, M, K] @ W[indices[b], K, N] -> C[B, M, N].
 
     Args:
@@ -153,8 +154,21 @@ def {{ kernel_name }}(X: torch.Tensor, W: torch.Tensor, indices: torch.Tensor = 
     elif big <= 256:
         TILE_M, TILE_N, num_warps, num_stages = 128, 128, 8, 2
     else:
-        TILE_M, TILE_N, num_warps, num_stages = 128, 128, 8, 3
+        # GM-v2 (median-of-7 A/B 2026-07-30): the old 128/128/**w8** was an
+        # untuned placeholder (M/N pinned 128, only warps/stages varied). The
+        # FA-v5 / MM-v2 occupancy lesson applies hardest here — dropping to a
+        # narrow 64/64 tile with **w4** wins big across the whole big>256
+        # branch: moe-medium(N=3072) +22.4%, moe-mid(256,2048) +9.2%,
+        # moe-mid(512,4096) +6.7%. 8 warps on a 128x128 tile blows the sm_86
+        # register file and collapses grouped-launch occupancy.
+        TILE_M, TILE_N, num_warps, num_stages = 64, 64, 4, 3
     TILE_K = 64 if K <= 64 else 32
+    if _cfg_override is not None:
+        TILE_M = _cfg_override.get("TILE_M", TILE_M)
+        TILE_N = _cfg_override.get("TILE_N", TILE_N)
+        TILE_K = _cfg_override.get("TILE_K", TILE_K)
+        num_warps = _cfg_override.get("num_warps", num_warps)
+        num_stages = _cfg_override.get("num_stages", num_stages)
 
     grid = (triton.cdiv(M, TILE_M), triton.cdiv(N, TILE_N), num_groups)
 
