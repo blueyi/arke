@@ -127,7 +127,11 @@ NVIDIA GPU target 的双 target** 就能做（同一 IR 两条 lowering 腿）�
 
 ---
 
-## 6. 增量路线（若 5.1 方向获批）
+## 6. 增量路线（仅为分析完整性，**非开发计划**）
+
+> **本节是"如果要做，会怎么拆"的分析，不是待批的开工项。** Leon 已明确
+> （2026-07-30）：**只做多后端方案分析，不进入开发**。以下路线仅用于说明各挑战
+> 的可解性与依赖顺序，供未来真正决定投入时参考，当前不执行任何一步。
 
 1. **P-M1**：`mlir_gpu.py` pass list → HardwareModel.target_dialect 驱动（NVVM 仍是
    唯一实例，纯重构，行为不变，回归测试守住）。
@@ -138,6 +142,4 @@ NVIDIA GPU target 的双 target** 就能做（同一 IR 两条 lowering 腿）�
 4. **P-M4（未来，真硬件）**：AMD ROCDL 或华为 CCE 接入 = 填 capability + 注册
    target dialect，无核心重构。
 
-每步独立 commit + 回归全绿，与项目一贯 Gate 驱动 / 增量落地纪律一致。
-
-*Analysis by Kitty, 2026-07-30. 待 Leon 就 §5.1/5.2 方向拍板后再推进实现。*
+*Analysis by Kitty, 2026-07-30. 本文档为方案分析交付物；Leon 已定"只分析不开发"，故不推进任何实现。*
