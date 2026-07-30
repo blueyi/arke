@@ -178,6 +178,34 @@ def _fa_cfg(Nb: int, Db: int, causal: bool, is_mha: bool = True) -> dict:
     return {"BLOCK_N": 64, "BLOCK_S": 64, "num_warps": 4, "num_stages": 2}
 
 
+def _cfg_from_schedule_tile(tile_factors, resources: dict | None = None) -> dict | None:
+    """Narrow L2 real-driver seam (audit 2026-07-30 §A).
+
+    Translate a ScheduleIR ``LoopNest.tile_factors`` (a positional ``[q_block,
+    kv_block]`` list, the real IR shape) plus an optional ``ResourceBinding``
+    dict (``{"warps":.., "num_stages":..}``) into this launcher's config dict,
+    so an Agent/StrategyIR tile decision that flows through
+    ``arke/compiler/lowering.py`` (which already emits ``loop.configure`` from
+    ``tile_factors`` and ``resource.bind`` from resources) can drive REAL
+    codegen instead of being re-derived by the ``_fa_cfg`` heuristic. This is
+    the minimal proof that an L2 field reaches a production backend — the
+    bounded StrategyIR "tile" action the AI-Native thesis says an Agent owns.
+
+    tile_factors must supply at least [q_block, kv_block]; returns None when
+    absent/under-specified (caller then falls back to ``_fa_cfg`` — fully
+    backward compatible).
+    """
+    if not tile_factors or len(tile_factors) < 2:
+        return None
+    res = resources or {}
+    return {
+        "BLOCK_N": int(tile_factors[0]),
+        "BLOCK_S": int(tile_factors[1]),
+        "num_warps": int(res.get("warps") or 4),
+        "num_stages": int(res.get("num_stages") or 2),
+    }
+
+
 def {{ kernel_name }}(
     Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor,
     _cfg_override: dict | None = None,
