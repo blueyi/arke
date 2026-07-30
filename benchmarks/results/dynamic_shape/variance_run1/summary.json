@@ -1,0 +1,39 @@
+{
+  "dtype": "float16",
+  "warm_reps": 50,
+  "ops": {
+    "matmul": {
+      "n_shapes": 15,
+      "n_ok": 15,
+      "cliff_ratio_geomean": 3.0066117330140116,
+      "cliff_ratio_max": 27.773634889875503,
+      "cliff_ratio_median": 2.2147105040474098,
+      "new_spec_geomean": 3.294022545327244,
+      "same_spec_geomean": 1.6609533007030057,
+      "n_new_spec": 13,
+      "n_same_spec": 2
+    },
+    "softmax": {
+      "n_shapes": 12,
+      "n_ok": 12,
+      "cliff_ratio_geomean": 44.03077670157421,
+      "cliff_ratio_max": 84.62468953599112,
+      "cliff_ratio_median": 69.54592185560011,
+      "new_spec_geomean": 54.428414283422214,
+      "same_spec_geomean": 4.275566426212462,
+      "n_new_spec": 11,
+      "n_same_spec": 1
+    },
+    "rmsnorm": {
+      "n_shapes": 11,
+      "n_ok": 11,
+      "cliff_ratio_geomean": 7.049706851083376,
+      "cliff_ratio_max": 65.68133378146676,
+      "cliff_ratio_median": 7.104470588653697,
+      "new_spec_geomean": 62.62829503597824,
+      "same_spec_geomean": 4.3388152936684685,
+      "n_new_spec": 2,
+      "n_same_spec": 9
+    }
+  }
+}

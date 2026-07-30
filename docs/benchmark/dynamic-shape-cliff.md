@@ -1,6 +1,6 @@
 # Dynamic-Shape Benchmark Track — the "Performance Cliff", measured
 
-**Status:** measurement infrastructure ✅ LANDED · gate mode: **D1 measure-only APPROVED (2026-07-29)** — tracked curve, no pass/fail; revisit D2/D3 after K-ATT lands + cross-run variance data
+**Status:** measurement infrastructure ✅ LANDED · gate mode: **D2 soft gate ACTIVE (Leon 2026-07-30)** — `same_spec_geomean ≤ 5×` + spec_key-prediction consistency via `benchmarks/gate_dynamic_shape.py`; track itself stays threshold-free; D3 revisit needs more cross-run data
 **Tool:** `python -m benchmarks.dynamic_shape --all`
 **Tests:** `tests/benchmark/test_dynamic_shape.py` (25)
 **First dataset:** `benchmarks/results/dynamic_shape/2026-07-29_191225/` (RTX 3060 Laptop 6GB, sm_86, fp16)
@@ -98,19 +98,52 @@ Pass/fail semantics on this track (e.g. "new-spec geomean ≤ X×" or
 decisions. The module hard-guards against baking one in
 (`test_no_gate_threshold_in_module`).
 
-**Decision (2026-07-29): D1 approved** — measure-only, no pass/fail gate.
-Revisit D2/D3 after K-ATT lands and cross-run variance data exists.
-Options as proposed:
+**Decision history:**
+- 2026-07-29: **D1 approved** — measure-only, no pass/fail gate.
+- 2026-07-30: **D2 approved** (Leon: "D推进D2并完成依赖") — soft gate live,
+  threshold `same_spec_geomean ≤ 5×` is now a Leon-approved frozen parameter.
 
-- **D1 (measure-only, APPROVED):** keep the track as a tracked
-  curve in CI artifacts; no pass/fail. Revisit after K-ATT lands (attention
-  is the op where dynamic shapes matter most).
-- **D2 (soft gate):** `same_spec_geomean ≤ 5×` AND per-op `n_new_spec` must
-  match the `spec_key` prediction (catches accidental despecialization).
-- **D3 (hard gate):** additionally cap `new_spec_geomean` per op class
-  (matmul ≤ 5×, elementwise/norm ≤ 10×, row-scan ≤ 60×) — numbers above are
-  descriptive of today's 3060 data, NOT a proposal to lock; a locked value
-  needs cross-run variance data first.
+- **D1 (measure-only):** the track itself stays threshold-free
+  (`test_no_gate_threshold_in_module` still guards this).
+- **D2 (soft gate, ACTIVE):** `same_spec_geomean ≤ 5×` AND per-op `n_new_spec`
+  must match the `spec_key` prediction (catches accidental despecialization).
+  Implemented as a **consumer** of the track: `benchmarks/gate_dynamic_shape.py`
+  (`python -m benchmarks.gate_dynamic_shape <run_dir>...`), threshold lives in
+  the gate module, never in the track. Tests:
+  `tests/benchmark/test_gate_dynamic_shape.py` (10 tests incl. frozen-param
+  guard + separation guard).
+- **D3 (hard gate, future):** additionally cap `new_spec_geomean` per op class —
+  needs more cross-run data; `new_spec_geomean` CV measured at 53-59% (see
+  variance table below), far too noisy to lock a per-class cap today.
+
+### D2 dependency: cross-run variance data (2026-07-30, RTX 3060 fp16, 3 runs)
+
+`benchmarks/results/dynamic_shape/variance_run{1,2,3}/` — same sweep, fresh
+process each run, ~10s apart:
+
+| op | metric | run1 | run2 | run3 | CV |
+|:--|:--|--:|--:|--:|--:|
+| matmul | same_spec_geomean | 1.66 | 1.36 | 1.65 | 11.1% |
+| rmsnorm | same_spec_geomean | 4.34 | 4.28 | 4.35 | 0.9% |
+| softmax | same_spec_geomean | 4.28 | 4.79 | 4.15 | 7.8% |
+| matmul | new_spec_geomean | 3.29 | 2.61 | 2.49 | 15.5% |
+| rmsnorm | new_spec_geomean | 62.6 | 33.4 | 22.2 | 53.0% |
+| softmax | new_spec_geomean | 54.4 | 27.7 | 16.8 | 58.7% |
+
+`n_new_spec`/`n_same_spec` identical across all runs (matmul 13/2, rmsnorm 2/9,
+softmax 11/1) — the `spec_key` prediction is deterministic, which is what the
+D2 consistency check leans on.
+
+**D2 verdict at activation: PASS on all 3 runs × 3 ops** (worst
+same_spec_geomean 4.79, limit 5.0).
+
+**Honest margins:** (1) softmax has only n_same=1 in the sweep, so its
+same-spec "geomean" is a single shape whose 4-5× is host-launch/clock jitter
+on a ~0.1ms kernel — near the limit but stable (CV 7.8%); a richer sweep would
+dilute this. (2) rmsnorm's 4.3× same-spec is the documented M-arg residual
+(~1.4ms warm-N recompile on first novel M). Both are real, reproducible
+behavior — the 5× limit accommodates them without masking a true
+despecialization (which lands at compile scale, 20-100×+).
 
 ## 6. Mitigation — bucket-aware warmup (R3, audit 2026-07-29)
 
