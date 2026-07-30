@@ -14,6 +14,8 @@
 |:--|:--|:--|
 | **A1 — Stage Gate** | Triton FA vs flash-attn golden **geomean ≥ 0.35** | = same-hardware CUDA-C v8 lower bound (0.35–0.42×); "Triton is no longer the short pole" |
 | **A1 — Final Gate** | Triton FA vs flash-attn golden **geomean ≥ 0.50** | 1.4× of CUDA-C v8; Triton becomes an independently strong backend |
+| **GQA — Stage Gate** | Triton GQA vs flash-attn golden **geomean ≥ 0.30** | **LOCKED (Leon 2026-07-30, "E OK")**; measured 0.863 at lock time (attention_refresh_2026-07-30) |
+| **GQA — Final Gate** | Triton GQA vs flash-attn golden **geomean ≥ 0.45** | **LOCKED (Leon 2026-07-30)**; conservative sustainable bar — GQA's K/V-reuse structure has a different ceiling than FA; large cross-run drift margin over 0.863 actual |
 | **B1 — Path** | **Pure Triton flash-style** (online softmax + K/V double-buffer + `tl.dot` TC) | No CUDA-C bridge; Triton backend must stand alone for the AI-Native thesis |
 | **C2 — Order** | **FA first, then GQA**; thresholds set **separately** per op | FA online-softmax is GQA's prerequisite skill |
 
@@ -88,9 +90,9 @@ insight into Triton (`num_stages` + K/V double-buffer), not the CUDA code.
 - **GQA-v2 — inherit FA's pipeline + TC + bucket config.**
   Fold FA-v1..v3 wins (num_stages, TC dtype, bucketed config) into the GQA kernel.
 
-- **GQA thresholds (set separately per C2, proposed — needs Leon confirm at GQA start):**
-  stage ≥0.30 / final ≥0.45. GQA's memory-reuse structure has a different ceiling than FA;
-  I'll bring same-day baseline data to Leon before locking GQA numbers (frozen layer).
+- **GQA thresholds — LOCKED (Leon 2026-07-30 "E OK"):**
+  stage ≥0.30 / final ≥0.45 (see §0 locked table). Measured 0.863 at lock time —
+  both gates PASS. GQA's memory-reuse structure has a different ceiling than FA.
 
 ---
 

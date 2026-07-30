@@ -25,23 +25,18 @@ Kitty 自主决策记录 —— 承接 `2026-07-29-architecture-audit.md` 的 R1
 
 ---
 
-## §D — dynamic-shape gate 推荐（备 Leon 批，frozen）
+## §D — dynamic-shape gate（✅ Leon 2026-07-30 批「D推进D2并完成依赖」）
 
-**推荐：暂维持 D1 measure-only，K-ATT 稳定后一个完整 PERF_ALL 周期再评估 D2。**
+原推荐「维持 D1 等方差数据」被 Leon 升级为：**直接推进 D2 并完成其依赖**。
+即：(1) 跑出跨-run 方差数据（多轮 dynamic_shape track）；(2) 落地 D2 soft gate —
+`same_spec_geomean ≤ 5×` AND per-op `n_new_spec` 匹配 `spec_key` 预测
+（抓意外去特化）。D2 阈值 5× 至此为 Leon 批准的 frozen 参数。
+执行记录见 `docs/benchmark/dynamic-shape-cliff.md` §5（gate 状态）与 D2 实现 commit。
 
-理由：D2 soft-gate（`same_spec_geomean ≤ 5×` + `n_new_spec` 上限）需要跨-run
-方差基线才能设合理阈值，否则阈值是拍脑袋。当前 row-scan warmup 刚补齐
-（C 项），cliff 数字还在变。等 F 项全量刷新 + 2-3 个 run 的方差数据到手，再把
-D2 阈值锚在实测方差上。**这是「测量方法」层建议，target 不变——仍需 Leon 批。**
+## §E — GQA 正式定阈（✅ LOCKED，Leon 2026-07-30「E OK」）
 
-## §E — GQA 正式定阈推荐（备 Leon 批，frozen）
-
-**实测：GQA geomean 0.802（commit 336d29b，correctness 8/8 ≤9.8e-4）。**
-proposed 阈值 stage ≥0.30 / final ≥0.45 已被实测大幅超过（0.802 > 0.45）。
-
-**推荐锁定：stage ≥0.30 / final ≥0.45（与 proposed 一致）。** 理由：GQA 的
-K/V 复用结构天花板与 FA 不同，0.45 是保守但真实可持续的线（0.802 是当前实测，
-留足跨-run 漂移余量）。**锁阈值 = frozen 层操作 → Leon 一句「E ok」即锁。**
+**锁定：stage ≥0.30 / final ≥0.45**（已写入 `docs/kestrel/k-att-plan.md` §0 locked 表）。
+锁定时实测 0.863（attention_refresh_2026-07-30），双 gate PASS。
 
 ---
 
