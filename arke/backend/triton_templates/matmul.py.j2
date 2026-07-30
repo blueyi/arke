@@ -212,10 +212,10 @@ def _mm_cfg(Mb: int, Nb: int, Kb: int) -> dict:
       square-1k    (1024^3)          → ( 64, 64,64) s3 w4  108.0
       square-2k    (2048^3)          → (128,128,32) s3 w8  796.6
       square-4k    (4096^3)          → (128,256,32) s2 w8 5949.8
-      rect-wide    (512,4096,1024)   → ( 64,128,64) s3 w8  206.1
-      rect-tall    (4096,512,1024)   → ( 64,128,64) s3 w8  208.2
+      rect-wide    (512,4096,1024)   → ( 64, 64,32) s3 w4  (MM-v2, +3.4%)
+      rect-tall    (4096,512,1024)   → ( 64, 64,32) s3 w4  (MM-v2, +1.2%)
       llama-q/ffn  (2048,>=4096,4096)→ (128,256,32) s2 w8
-      seq512       (512,2048,768)    → ( 64,128,64) s3 w8   87.1
+      seq512       (512,2048,768)    → ( 64, 64,32) s3 w4  (MM-v2, +7.2%)
     Same launcher-heuristic pattern as batch_matmul.py.j2::_bmm_cfg.
     """
     # Latency-bound small-M shapes: few output rows, favour small BLOCK_M.
@@ -227,14 +227,19 @@ def _mm_cfg(Mb: int, Nb: int, Kb: int) -> dict:
         # lm-head-gpt2 — huge N is compute-heavy, wants the big tile.
         return {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 32,
                 "GROUP_SIZE_M": 8, "num_stages": 2, "num_warps": 8}
-    # Mid-M shapes (rect-wide, seq512): wide-N tile with deep K.
+    # Mid-M shapes (rect-wide, seq512): MM-v2 (median-of-5 A/B 2026-07-30)
+    # found the FA-v5 lesson applies to matmul too — the old 64/128/64 s3 **w8**
+    # over-pressures registers at sm_86 and loses occupancy. Narrowing to
+    # 64/64/32 s3 **w4** is the single winner across the whole Mb<=512 branch,
+    # no regression: seq512(Nb2048) +7.2%, rect-wide(Nb4096) +3.4%,
+    # rect-tall(Nb512) +1.2%.
     if Mb <= 512:
-        return {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64,
-                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8}
-    # Large-M but narrow-N (rect-tall 4096x512): still the mid tile.
+        return {"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 32,
+                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 4}
+    # Large-M but narrow-N (rect-tall 4096x512): same narrow tile wins.
     if Nb <= 512:
-        return {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64,
-                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 8}
+        return {"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 32,
+                "GROUP_SIZE_M": 8, "num_stages": 3, "num_warps": 4}
     # square-1k: balanced medium tile, fewer warps.
     if Mb <= 1024 and Nb <= 1024:
         return {"BLOCK_M": 64, "BLOCK_N": 64, "BLOCK_K": 64,
