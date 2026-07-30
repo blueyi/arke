@@ -297,5 +297,5 @@ frozen 层备料等 Leon。
 | **B（运行时降级）** | 延后到 serving 集成 Phase，先落 API 契约 | 决策 | 见决策文档 §B |
 | **D（dynamic-shape gate）** | **frozen 硬停点** — 推荐维持 D1，待方差数据后评估 D2；不擅改 | 备料 Leon | 见决策文档 §D |
 | **E（GQA 定阈）** | **frozen 硬停点** — 实测 0.802，推荐锁 stage≥0.30/final≥0.45；不擅改 | 备料 Leon | 见决策文档 §E |
-| **F（PERF_ALL 刷新）** | 全量重跑刷新过时快照 | 进行中 | attention 涨后旧快照过时 |
+| **F（attention 快照刷新）** | harness 官方口径重跑 attention 族（旧快照 attention 数字过时/曾有 eager 分母陷阱） | (本次) | **flash_attention geomean 0.950**（11 shapes，harness bench_l1，`attention_refresh_2026-07-30/`）；**GQA 0.863**、**cross_attention 1.090**（同日 ad-hoc 对照口径）。全部 vs flash-attn 真分母，K-ATT gate（≥0.50）大幅通过；FA-v4 后 D=128 short-S 修复可见（llama2-7b-512 0.778） |
 | **G（FA-v4 micro-opt）** | 尝试 D=64 short-S gap，helps 则留否则诚实放弃 | 待续 | Gate 已过（0.846），锦上添花 |
