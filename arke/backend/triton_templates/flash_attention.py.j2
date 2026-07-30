@@ -158,8 +158,10 @@ def _fa_cfg(Nb: int, Db: int, causal: bool, is_mha: bool = True) -> dict:
         here.
       - GQA short-S (gqa_groups>1, S<2048): the SAME 128/16 config REGRESSES
         (llama3-8b-512 0.795 -> 0.721) because shared K/V heads flip the
-        wide-Q/thin-K/V tradeoff — A/B verified 2026-07-30. GQA keeps the
-        32/32/4w FA-v1 winner. This is why the heuristic is MHA/GQA-aware.
+        wide-Q/thin-K/V tradeoff — A/B verified 2026-07-30. GQA short-S is
+        further bucket-split (FA-v6): Nb<=512 keeps FA-v1's 32/32, but Nb==1024
+        wants 128/16 (enough Q rows to fill the wide tile). This is why the
+        heuristic is MHA/GQA-aware AND Nb-bucketed.
       - S>=2048 (BOTH MHA and GQA): FA-v5 (2026-07-30 median-of-3 interleaved
         A/B) found FA-v1's 128x32/**8w** is markedly SUB-optimal — 8 warps at
         D=128 long-S over-pressure registers and collapse occupancy. Dropping
@@ -181,7 +183,13 @@ def _fa_cfg(Nb: int, Db: int, causal: bool, is_mha: bool = True) -> dict:
         if is_mha:
             # FA-v4: MHA short-S D=128 wants wide-Q 128 + thin K/V 16.
             return {"BLOCK_N": 128, "BLOCK_S": 16, "num_warps": 4, "num_stages": 2}
-        # GQA short-S D=128: FA-v1's 32/32 beats 128/16 (verified A/B 2026-07-30).
+        # GQA short-S D=128 is bucket-split (FA-v6, median-of-3 A/B 2026-07-30):
+        #   Nb==1024: wide-Q 128/16 wins (llama3-8b-1k 0.697->0.835,
+        #             qwen25-7b-1k 0.810->0.848) — enough Q rows to fill 128.
+        #   Nb<=512:  32/32 still wins (llama3-8b-512 0.842 vs 128/16 0.754) —
+        #             too few Q rows to amortize the wide tile.
+        if Nb >= 1024:
+            return {"BLOCK_N": 128, "BLOCK_S": 16, "num_warps": 4, "num_stages": 2}
         return {"BLOCK_N": 32, "BLOCK_S": 32, "num_warps": 4, "num_stages": 2}
     return {"BLOCK_N": 64, "BLOCK_S": 64, "num_warps": 4, "num_stages": 2}
 
