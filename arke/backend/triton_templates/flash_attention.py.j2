@@ -160,7 +160,13 @@ def _fa_cfg(Nb: int, Db: int, causal: bool, is_mha: bool = True) -> dict:
         (llama3-8b-512 0.795 -> 0.721) because shared K/V heads flip the
         wide-Q/thin-K/V tradeoff — A/B verified 2026-07-30. GQA keeps the
         32/32/4w FA-v1 winner. This is why the heuristic is MHA/GQA-aware.
-      - S>=2048 (both): the wide-Q 128x32/8w FA-v1 winner holds.
+      - S>=2048 (BOTH MHA and GQA): FA-v5 (2026-07-30 median-of-3 interleaved
+        A/B) found FA-v1's 128x32/**8w** is markedly SUB-optimal — 8 warps at
+        D=128 long-S over-pressure registers and collapse occupancy. Dropping
+        to **4 warps** (128/16/4w) lifts both: MHA llama2-7b-2k 0.784->0.934,
+        llama2-7b-4k 0.812->0.977, ds-v2-2k 0.801->0.962; GQA llama3-8b-2k
+        0.734->0.879, qwen25-7b-2k 0.736->0.885. Same config wins MHA and GQA,
+        so no is_mha split needed here (unlike short-S).
     * num_stages: 2 wins everywhere on sm_86; 3/4 never helped (Triton's
       pipeliner gains nothing past double-buffering here).
 
@@ -169,7 +175,9 @@ def _fa_cfg(Nb: int, Db: int, causal: bool, is_mha: bool = True) -> dict:
     """
     if Db >= 128:
         if Nb >= 2048:
-            return {"BLOCK_N": 128, "BLOCK_S": 32, "num_warps": 8, "num_stages": 2}
+            # FA-v5: long-S D=128 wants 4 warps, not FA-v1's 8 (occupancy);
+            # single winner across MHA + GQA (median-of-3 A/B 2026-07-30).
+            return {"BLOCK_N": 128, "BLOCK_S": 16, "num_warps": 4, "num_stages": 2}
         if is_mha:
             # FA-v4: MHA short-S D=128 wants wide-Q 128 + thin K/V 16.
             return {"BLOCK_N": 128, "BLOCK_S": 16, "num_warps": 4, "num_stages": 2}
