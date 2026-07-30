@@ -139,28 +139,41 @@ def _next_pow2(x: int) -> int:
 _FA_CFG_CACHE: dict = {}
 
 
-def _fa_cfg(Nb: int, Db: int, causal: bool) -> dict:
+def _fa_cfg(Nb: int, Db: int, causal: bool, is_mha: bool = True) -> dict:
     """Deterministic tile/pipeline heuristic for flash-attention.
 
     Distilled from the FA-v1 offline sweep (2026-07-29, RTX 3060 sm_86,
     fp16, 8 shapes x 42 configs, all correctness-checked <=5e-3, 0 incorrect;
-    benchmarks/probes/results/fa_v1_sweep_2026-07-29.csv):
+    benchmarks/probes/results/fa_v1_sweep_2026-07-29.csv) + FA-v4 micro-sweep
+    (2026-07-30, benchmarks/probes/results/fa_v4_micro_2026-07-30.log):
 
     * D=64 (gpt2-class): the historical default 64x64/4w/2s is already
       Pareto-best across S=512..2048 (top-3 within noise) — keep it.
-    * D=128 (llama/ds-class): BLOCK_S=32 is the decisive lever (2.0-2.7x
-      over the old 64x64 default). The 64-wide K/V tile at D=128 blows up
-      register/smem pressure and collapses occupancy — same lesson as the
-      CUDA-C v8 BC 64->32 step. Short S wants the small 32x32/4w launch;
-      S>=2048 wants wide-Q 128x32/8w.
+    * D=128 (llama/ds-class): BLOCK_S is the decisive tile lever (the 64-wide
+      K/V tile blows up register/smem pressure and collapses occupancy — same
+      lesson as the CUDA-C v8 BC 64->32 step).
+      - MHA short-S (gqa_groups==1, S<2048): FA-v4 found the wide-Q/thin-K/V
+        128/16/4w config lifts the bucket geomean 0.743 -> 0.854 (+15%;
+        llama2-7b-512 0.645 -> 0.788). The FA-v1 grid under-explored BLOCK_N
+        here.
+      - GQA short-S (gqa_groups>1, S<2048): the SAME 128/16 config REGRESSES
+        (llama3-8b-512 0.795 -> 0.721) because shared K/V heads flip the
+        wide-Q/thin-K/V tradeoff — A/B verified 2026-07-30. GQA keeps the
+        32/32/4w FA-v1 winner. This is why the heuristic is MHA/GQA-aware.
+      - S>=2048 (both): the wide-Q 128x32/8w FA-v1 winner holds.
     * num_stages: 2 wins everywhere on sm_86; 3/4 never helped (Triton's
       pipeliner gains nothing past double-buffering here).
 
-    Nb is the next_pow2 bucket of query length N; Db = BLOCK_D.
+    Nb is the next_pow2 bucket of query length N; Db = BLOCK_D; is_mha is
+    True when gqa_groups==1 (multi-head attention), False for GQA.
     """
     if Db >= 128:
         if Nb >= 2048:
             return {"BLOCK_N": 128, "BLOCK_S": 32, "num_warps": 8, "num_stages": 2}
+        if is_mha:
+            # FA-v4: MHA short-S D=128 wants wide-Q 128 + thin K/V 16.
+            return {"BLOCK_N": 128, "BLOCK_S": 16, "num_warps": 4, "num_stages": 2}
+        # GQA short-S D=128: FA-v1's 32/32 beats 128/16 (verified A/B 2026-07-30).
         return {"BLOCK_N": 32, "BLOCK_S": 32, "num_warps": 4, "num_stages": 2}
     return {"BLOCK_N": 64, "BLOCK_S": 64, "num_warps": 4, "num_stages": 2}
 
@@ -197,10 +210,14 @@ def {{ kernel_name }}(
     if _cfg_override is not None:
         cfg = _cfg_override
     else:
-        bucket_key = (_next_pow2(N), BLOCK_D, {{ "True" if causal else "False" }})
+        # FA-v4: the tile winner differs between MHA (gqa_groups==1) and GQA
+        # (shared K/V heads change the wide-Q/thin-K/V tradeoff), so groups is
+        # part of the bucket key and drives the heuristic.
+        is_mha = gqa_groups == 1
+        bucket_key = (_next_pow2(N), BLOCK_D, {{ "True" if causal else "False" }}, is_mha)
         cfg = _FA_CFG_CACHE.get(bucket_key)
         if cfg is None:
-            cfg = _fa_cfg(bucket_key[0], BLOCK_D, bucket_key[2])
+            cfg = _fa_cfg(bucket_key[0], BLOCK_D, bucket_key[2], is_mha)
             _FA_CFG_CACHE[bucket_key] = cfg
 
     grid = (triton.cdiv(N, cfg["BLOCK_N"]), B * H)

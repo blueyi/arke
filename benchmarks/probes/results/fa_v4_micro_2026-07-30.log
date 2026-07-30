@@ -1,0 +1,27 @@
+
+=== llama2-7b-512 D=128 S=512 B=1 H=32 ===
+  flash=215.1us  default=333.5us (r=0.645)
+  BEST=273.0us (r=0.788) cfg={'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 4, 'num_stages': 2} err=9.8e-04
+  speedup vs default: 1.22x
+       273.0us r=0.788 {'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 4, 'num_stages': 2}
+       285.8us r=0.753 {'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 4, 'num_stages': 3}
+       297.4us r=0.723 {'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 8, 'num_stages': 2}
+       307.0us r=0.701 {'BLOCK_N': 16, 'BLOCK_S': 32, 'num_warps': 4, 'num_stages': 2}
+
+=== ds-v2-512 D=128 S=512 B=1 H=128 ===
+  flash=637.0us  default=803.8us (r=0.793)
+  BEST=651.9us (r=0.977) cfg={'BLOCK_N': 128, 'BLOCK_S': 32, 'num_warps': 4, 'num_stages': 2} err=9.8e-04
+  speedup vs default: 1.23x
+       651.9us r=0.977 {'BLOCK_N': 128, 'BLOCK_S': 32, 'num_warps': 4, 'num_stages': 2}
+       703.7us r=0.905 {'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 4, 'num_stages': 2}
+       705.3us r=0.903 {'BLOCK_N': 32, 'BLOCK_S': 32, 'num_warps': 4, 'num_stages': 2}
+       709.9us r=0.897 {'BLOCK_N': 64, 'BLOCK_S': 32, 'num_warps': 4, 'num_stages': 2}
+
+=== llama2-7b-batch D=128 S=512 B=4 H=32 ===
+  flash=583.1us  default=726.0us (r=0.803)
+  BEST=668.9us (r=0.872) cfg={'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 4, 'num_stages': 2} err=9.8e-04
+  speedup vs default: 1.09x
+       668.9us r=0.872 {'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 4, 'num_stages': 2}
+       705.2us r=0.827 {'BLOCK_N': 128, 'BLOCK_S': 16, 'num_warps': 4, 'num_stages': 3}
+       720.4us r=0.809 {'BLOCK_N': 128, 'BLOCK_S': 32, 'num_warps': 4, 'num_stages': 2}
+       723.8us r=0.806 {'BLOCK_N': 64, 'BLOCK_S': 32, 'num_warps': 4, 'num_stages': 2}
