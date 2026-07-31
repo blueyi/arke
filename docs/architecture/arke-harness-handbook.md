@@ -366,6 +366,34 @@ Design invariants:
 - **Best-effort.** A missing / corrupt KB leaves `list_legal_actions` fully
   functional — recall failures are swallowed and the field is simply absent.
 
+### Curated write channel — the human-experience half (LT-7)
+
+The auto-miners (`build_rationale_kb`, `mine_p5s5t_rationale`) only distill
+what an agent/heuristic already tried *inside a single trajectory*. They
+structurally cannot state a **cross-op generalization** a developer found by
+hand across several independent tuning efforts. `curated_pattern(...)` +
+`mine_curated([...])` are that missing write half: a lead engineer authors a
+`RationaleEntry` in the same shape the miners produce, so `recall` surfaces it
+to the Agent identically. Seeds live in `benchmarks/curated_patterns.py`.
+
+Design invariants:
+- **Honest provenance.** `source` is stamped `curated/<slug>`, so a
+  hand-authored prior is auditably distinct from a measured trajectory and
+  never disguised as one.
+- **No fabricated outcomes.** A supplied `baseline_ratio` MUST be a real
+  measured number (the author's own median-of-N interleaved A/B). Qualitative
+  rules leave it `None` and let the rationale text carry the value.
+- **Same idempotent dedupe + read path.** `mine_curated` reuses `add_entries`
+  (dedupe on entry `key()`); curated entries with a measured ratio rank in
+  `recall` exactly like mined ones — no read-side change needed.
+
+First seed: the **sm_86 `8w→4w` occupancy rule** (FA-v5 / MM-v2 / GM-v2,
+2026-07-30) — "for compute-bound ops, `num_warps=8` + wide tile
+over-subscribes registers and drops occupancy; `num_warps=4` + a narrower tile
+wins." Verified across `flash_attention` (0.977), `matmul` (1.072), and
+`grouped_matmul` (1.224). It now ranks top for all three ops' `resource`
+decisions.
+
 ---
 
 ## 9. Triton Kernel Cookbook

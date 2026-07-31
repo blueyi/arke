@@ -13,6 +13,11 @@ human-experience → LLM-optimization feedback loop the project thesis calls for
 Sources:
   - live + heuristic optimization trajectories (``*.jsonl`` with ``decision``
     + ``profile`` records, written by ``arke.learn.trajectory.TrajectoryWriter``)
+  - **curated** lead-engineer patterns (``curated/<slug>`` provenance): the
+    *human-experience* write half of the loop. Cross-op generalizations a dev
+    discovered by hand (e.g. an occupancy rule holding across several ops) that
+    no per-trajectory miner can synthesize — see ``curated_pattern`` /
+    ``mine_curated`` below and ``benchmarks/curated_patterns.py``.
 
 The KB is an append-only JSONL at ``data/rationale_kb.jsonl``. Each line is one
 ``RationaleEntry``. The miner is idempotent on (op, kind, params_hash,
@@ -371,6 +376,66 @@ def mine_directory(root: str | Path, kb_path: str | Path = DEFAULT_KB_PATH) -> d
     return {
         "trajectories": len(files),
         "entries_found": len(found),
+        "entries_written": written,
+        "kb_total": kb.count(),
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Curated write channel — the human-experience half of the @rationale loop.    #
+# --------------------------------------------------------------------------- #
+
+def curated_pattern(
+    op: str,
+    decision_kind: str,
+    params: dict[str, Any],
+    rationale: str,
+    *,
+    baseline_ratio: float | None = None,
+    correct: bool | None = None,
+    backend: str | None = None,
+    slug: str = "pattern",
+    phase: int = 4,
+) -> RationaleEntry:
+    """Author one lead-engineer-discovered prior as a ``RationaleEntry``.
+
+    This is the write side the auto-miners cannot cover: a cross-op
+    generalization a human found by hand (e.g. a hardware occupancy rule that
+    holds across several ops), distilled into the SAME entry shape the miners
+    produce so ``recall`` surfaces it to the Agent identically.
+
+    Provenance is honest and auditable: ``source`` is stamped
+    ``curated/<slug>`` so a hand-authored prior is never mistaken for a
+    measured trajectory. When a ``baseline_ratio`` is supplied it MUST be a
+    real measured number (the dev's own median-of-N A/B result) — the KB does
+    not fabricate outcomes.
+    """
+    return RationaleEntry(
+        op=op,
+        decision_kind=decision_kind,
+        params=dict(params),
+        rationale=rationale,
+        correct=correct,
+        baseline_ratio=baseline_ratio,
+        backend=backend,
+        source=f"curated/{slug}",
+        phase=phase,
+    )
+
+
+def mine_curated(
+    patterns: list[RationaleEntry],
+    kb_path: str | Path = DEFAULT_KB_PATH,
+) -> dict[str, int]:
+    """Append curated patterns into the KB (idempotent, deduped).
+
+    Returns {"entries_found": M, "entries_written": W, "kb_total": T}. Re-
+    seeding the same patterns writes nothing new (dedupe on entry ``key()``).
+    """
+    kb = RationaleKB(Path(kb_path))
+    written = kb.add_entries(patterns)
+    return {
+        "entries_found": len(patterns),
         "entries_written": written,
         "kb_total": kb.count(),
     }

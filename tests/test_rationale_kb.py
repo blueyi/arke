@@ -13,6 +13,8 @@ from arke.learn.rationale_kb import (
     RationaleKB,
     RationalePrior,
     _normalize_op,
+    curated_pattern,
+    mine_curated,
     mine_trajectory,
 )
 
@@ -225,3 +227,69 @@ def test_list_legal_actions_surfaces_priors_and_never_raises():
         assert "rationale_priors" not in r2.data  # gracefully absent
     finally:
         kbmod.RationaleKB = orig  # type: ignore[assignment]
+
+
+# --------------------------------------------------------------------------- #
+# Curated write channel — the human-experience half of the loop.               #
+# --------------------------------------------------------------------------- #
+
+def test_curated_pattern_stamps_honest_provenance():
+    """A hand-authored prior is tagged curated/<slug>, never disguised as mined."""
+    e = curated_pattern(
+        op="matmul", decision_kind="resource",
+        params={"num_warps": 4}, rationale="sm_86 4w wins",
+        baseline_ratio=1.072, correct=True, backend="triton",
+        slug="sm86-occupancy-8w-to-4w",
+    )
+    assert e.source == "curated/sm86-occupancy-8w-to-4w"
+    assert e.baseline_ratio == 1.072
+    assert e.backend == "triton"
+    # distinguishable from an auto-mined entry by source prefix
+    assert e.source.startswith("curated/")
+
+
+def test_mine_curated_appends_and_is_idempotent(tmp_path):
+    kb_path = tmp_path / "kb.jsonl"
+    pats = [
+        curated_pattern(op="matmul", decision_kind="resource",
+                        params={"num_warps": 4}, rationale="4w wins",
+                        baseline_ratio=1.072, slug="sm86"),
+        curated_pattern(op="grouped_matmul", decision_kind="resource",
+                        params={"num_warps": 4}, rationale="4w wins big",
+                        baseline_ratio=1.224, slug="sm86"),
+    ]
+    r1 = mine_curated(pats, kb_path=kb_path)
+    assert r1["entries_written"] == 2 and r1["kb_total"] == 2
+    # re-seed writes nothing (dedupe on entry key)
+    r2 = mine_curated(pats, kb_path=kb_path)
+    assert r2["entries_written"] == 0 and r2["kb_total"] == 2
+
+
+def test_curated_prior_recalled_and_outranks_unmeasured(tmp_path):
+    """Read side surfaces a curated prior and ranks it above unmeasured mined ones."""
+    kb_path = tmp_path / "kb.jsonl"
+    kb = RationaleKB(kb_path)
+    # an auto-mined resource entry with no measured ratio
+    kb.add_entries([RationaleEntry(op="matmul", decision_kind="resource",
+                                   params={"num_warps": 8}, rationale="seed 8w",
+                                   source="01_matmul")])
+    # a curated, measured prior for the same op/kind
+    mine_curated([curated_pattern(
+        op="matmul", decision_kind="resource", params={"num_warps": 4},
+        rationale="sm_86: 4w beats 8w (measured +7.2%)",
+        baseline_ratio=1.072, correct=True, slug="sm86",
+    )], kb_path=kb_path)
+
+    priors = kb.recall("matmul", decision_kind="resource", top_k=3)
+    assert priors, "curated prior must be recalled"
+    # measured curated prior ranks first; unmeasured mined entry sinks below
+    assert priors[0].baseline_ratio == 1.072
+    assert priors[0].params.get("num_warps") == 4
+
+
+def test_curated_pattern_default_no_fabricated_outcome():
+    """A qualitative curated pattern leaves baseline_ratio None — no fabrication."""
+    e = curated_pattern(op="softmax", decision_kind="tile",
+                        params={"BLOCK_N": 256}, rationale="row-scan wide tile")
+    assert e.baseline_ratio is None
+    assert e.source == "curated/pattern"
