@@ -147,6 +147,13 @@ Workflow (repeat the compile→profile→adjust cycle):
                            wmma_tile for Tensor-Core-eligible matmul).
                            Use filter_kind to inspect one kind (e.g.
                            filter_kind="wmma_tile").
+                           The result may also carry `rationale_priors`:
+                           prior decisions on THIS op with their MEASURED
+                           baseline_ratio (@rationale KB). Treat them as
+                           advisory hints — favor candidates resembling
+                           high-ratio priors, be wary of ones that matched
+                           losing priors — but you still must apply only
+                           moves from `candidates` (the legality surface).
   4. apply_decision      — apply one move. ALWAYS include a `rationale`
                            explaining WHY (this is a hard contract).
   5. compile_and_profile — measure real latency on the GPU. This is the

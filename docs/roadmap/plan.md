@@ -628,7 +628,7 @@ S0-S5 ✅ → S6 (Compiler Infra) → S7 (Lang & IR v0.1.0) → S8 (Agent Autono
 | LT-4 | Toolchain | Profiling integration — automated bottleneck identification with roofline analysis | P2 |
 | LT-5 | Toolchain | CI/CD performance regression — automated nightly BL5 benchmark with alerting | P1-S9 |
 | LT-6 | Architecture | Multi-GPU support — tensor/pipeline parallelism for models > 6GB VRAM | P3+ |
-| LT-7 | Agent | @rationale knowledge base distillation — cross-hardware pattern extraction | P2+ |
+| LT-7 | Agent | @rationale knowledge base distillation — cross-hardware pattern extraction. **Read side landed 2026-07-31**: `RationaleKB.recall()` + `list_legal_actions` `rationale_priors` closes the write-only loop (KB now load-bearing). Cross-hardware pattern extraction still P2+. | P2+ (partial ✅) |
 
 ---
 

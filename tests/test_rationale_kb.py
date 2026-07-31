@@ -11,6 +11,8 @@ from pathlib import Path
 from arke.learn.rationale_kb import (
     RationaleEntry,
     RationaleKB,
+    RationalePrior,
+    _normalize_op,
     mine_trajectory,
 )
 
@@ -94,3 +96,132 @@ def test_mine_strategy_json_normalizes_rationale_dict(tmp_path):
     assert entries[1].rationale == "plain string rationale"
     # best (max) ratio paired
     assert entries[0].baseline_ratio == 1.04
+
+
+# ── Read side of the @rationale loop (LT-7): recall ──────────────────────────
+
+
+def test_normalize_op_strips_kernel_suffix():
+    # KB↔registry op-name drift: KB stores relu_kernel, registry uses relu.
+    assert _normalize_op("relu_kernel") == "relu"
+    assert _normalize_op("grouped_matmul_kernel") == "grouped_matmul"
+    assert _normalize_op("matmul") == "matmul"  # no suffix → unchanged
+    assert _normalize_op("  add_kernel ") == "add"  # whitespace tolerant
+
+
+def _seed_kb(tmp_path):
+    kb = RationaleKB(tmp_path / "kb.jsonl")
+    kb.add_entries([
+        RationaleEntry(op="matmul", decision_kind="tile",
+                       params={"loop": "M", "factors": [128]},
+                       rationale="tile M for L2 reuse", baseline_ratio=1.30, correct=True),
+        RationaleEntry(op="matmul", decision_kind="tile",
+                       params={"loop": "N", "factors": [64]},
+                       rationale="tile N", baseline_ratio=0.90, correct=True),
+        RationaleEntry(op="matmul", decision_kind="vectorize",
+                       params={"width": 4}, rationale="vec lanes", baseline_ratio=1.10),
+        # unmeasured — should sink below measured ones
+        RationaleEntry(op="matmul", decision_kind="unroll",
+                       params={"loop": "K"}, rationale="unroll K", baseline_ratio=None),
+        # different op, stored with _kernel suffix
+        RationaleEntry(op="grouped_matmul_kernel", decision_kind="tile",
+                       params={"loop": "B", "factors": [128]},
+                       rationale="grouped tile", baseline_ratio=1.04),
+    ])
+    return kb
+
+
+def test_recall_ranks_by_measured_outcome(tmp_path):
+    kb = _seed_kb(tmp_path)
+    priors = kb.recall("matmul", top_k=10)
+    # highest baseline_ratio first; unmeasured (unroll) last.
+    assert priors[0].decision_kind == "tile" and priors[0].baseline_ratio == 1.30
+    assert priors[-1].decision_kind == "unroll" and priors[-1].baseline_ratio is None
+    assert all(isinstance(p, RationalePrior) for p in priors)
+
+
+def test_recall_filters_by_decision_kind(tmp_path):
+    kb = _seed_kb(tmp_path)
+    tiles = kb.recall("matmul", decision_kind="tile", top_k=10)
+    assert {p.decision_kind for p in tiles} == {"tile"}
+    assert len(tiles) == 2
+
+
+def test_recall_normalizes_op_name_drift(tmp_path):
+    kb = _seed_kb(tmp_path)
+    # registry name 'grouped_matmul' must match KB's 'grouped_matmul_kernel'
+    priors = kb.recall("grouped_matmul", top_k=5)
+    assert len(priors) == 1
+    assert priors[0].rationale == "grouped tile"
+
+
+def test_recall_min_ratio_filters_losers(tmp_path):
+    kb = _seed_kb(tmp_path)
+    winners = kb.recall("matmul", top_k=10, min_ratio=1.0)
+    assert all(p.baseline_ratio is not None and p.baseline_ratio >= 1.0 for p in winners)
+    # 0.90 tile-N and unmeasured unroll excluded.
+    assert len(winners) == 2
+
+
+def test_recall_respects_top_k(tmp_path):
+    kb = _seed_kb(tmp_path)
+    assert len(kb.recall("matmul", top_k=1)) == 1
+    assert len(kb.recall("matmul", top_k=2)) == 2
+
+
+def test_recall_empty_on_missing_op_or_kb(tmp_path):
+    kb = _seed_kb(tmp_path)
+    assert kb.recall("nonexistent_op") == []
+    empty = RationaleKB(tmp_path / "does_not_exist.jsonl")
+    assert empty.recall("matmul") == []
+
+
+def test_recall_dedupes_across_op_name_drift(tmp_path):
+    kb = RationaleKB(tmp_path / "kb.jsonl")
+    # 'silu' and 'silu_kernel' normalize to the same op but have DISTINCT
+    # write-keys (op differs), so both are stored. They share the recall
+    # signature (kind, params, rationale) → recall must show them once,
+    # keeping the best-ranked copy (write-level dedup can't catch this).
+    kb.add_entries([
+        RationaleEntry(op="silu", decision_kind="vectorize", params={"width": 4},
+                       rationale="lanes", baseline_ratio=1.2),
+        RationaleEntry(op="silu_kernel", decision_kind="vectorize", params={"width": 4},
+                       rationale="lanes", baseline_ratio=1.5),
+    ])
+    assert kb.count() == 2  # both written (distinct keys)
+    priors = kb.recall("silu", top_k=10)
+    assert len(priors) == 1  # collapsed by recall dedupe
+    assert priors[0].baseline_ratio == 1.5  # keeps best-ranked copy
+
+
+def test_list_legal_actions_surfaces_priors_and_never_raises():
+    """Tool wiring: priors appear in data; a broken KB never breaks the tool."""
+    from arke.agent.env import ArkeEnv
+    from arke.agent.tools import ToolRegistry
+
+    reg = ToolRegistry.with_env(ArkeEnv.from_op("matmul"))
+    tool = reg.get("list_legal_actions")
+    result = tool.execute({"top_n": 5, "filter_kind": "tile"})
+    assert result.success
+    # candidate generator (legality surface) is always present
+    assert "candidates" in result.data
+    # priors are advisory: present when the shipped KB has matmul entries
+    if "rationale_priors" in result.data:
+        for p in result.data["rationale_priors"]:
+            assert "decision_kind" in p and "rationale" in p
+
+    # never-raise guarantee: _recall_priors swallows any KB failure
+    import arke.learn.rationale_kb as kbmod
+
+    class _Boom:
+        def __init__(self, *a, **k):
+            raise RuntimeError("kb exploded")
+
+    orig = kbmod.RationaleKB
+    try:
+        kbmod.RationaleKB = _Boom  # type: ignore[assignment]
+        r2 = tool.execute({"top_n": 5})
+        assert r2.success  # tool still works
+        assert "rationale_priors" not in r2.data  # gracefully absent
+    finally:
+        kbmod.RationaleKB = orig  # type: ignore[assignment]

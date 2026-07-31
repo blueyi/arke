@@ -339,6 +339,33 @@ Mines `strategy.json` decisions, pairs each with the run's best
 dedup key = sha1(op, kind, params, rationale). Output:
 `data/rationale_kb.jsonl`.
 
+### Recall — the read side of the loop (LT-7)
+
+Building the KB is only half the `@rationale` feedback loop. The other half
+is **recall**: `RationaleKB.recall(op, decision_kind=None, top_k=3,
+min_ratio=None)` returns the highest-outcome prior decisions for an op
+(measured `baseline_ratio` first, unmeasured last), normalizing the
+KB↔registry op-name drift (`relu_kernel`→`relu`, `grouped_matmul_kernel`→
+`grouped_matmul`).
+
+`list_legal_actions` calls it automatically and attaches the result to its
+returned data as an advisory `rationale_priors` field — so the Agent ranks
+the bounded candidate set using accumulated experience (what actually won on
+this op before), not from scratch. This makes the KB **load-bearing** instead
+of write-only, closing the human/heuristic-experience → LLM-optimization loop
+the `@rationale` system exists for.
+
+Design invariants:
+- **Advisory, not gating.** `rationale_priors` never changes the *legality*
+  surface (`candidates`). The Agent must still apply only moves from
+  `candidates`; priors only inform *which* to prefer.
+- **Façade v1.0 preserved.** Priors ride on the returned `data` payload, not
+  on `list_legal_actions`'s frozen description / meta / `parameters_schema`
+  (`tests/test_facade_contract_v1.py` stays green). Additive = minor, no MAJOR
+  bump.
+- **Best-effort.** A missing / corrupt KB leaves `list_legal_actions` fully
+  functional — recall failures are swallowed and the field is simply absent.
+
 ---
 
 ## 9. Triton Kernel Cookbook

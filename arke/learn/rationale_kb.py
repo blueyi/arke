@@ -102,6 +102,119 @@ class RationaleKB:
                 written += 1
         return written
 
+    def _load_entries(self) -> list[dict[str, Any]]:
+        if not self.path.exists():
+            return []
+        out: list[dict[str, Any]] = []
+        for line in self.path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+        return out
+
+    def recall(
+        self,
+        op: str,
+        *,
+        decision_kind: str | None = None,
+        top_k: int = 3,
+        min_ratio: float | None = None,
+    ) -> list[RationalePrior]:
+        """Read side of the @rationale loop: recall priors for an op.
+
+        Returns up to ``top_k`` distilled priors matching ``op`` (op-name
+        drift normalized), optionally filtered to one ``decision_kind`` and to
+        entries whose measured ``baseline_ratio >= min_ratio``. Priors are
+        ranked best-outcome-first: entries with a measured ``baseline_ratio``
+        outrank unmeasured ones (ratio treated as -inf when absent), so the
+        Agent sees the decisions that actually *worked* on this op first.
+
+        This is what makes the 390-entry KB load-bearing instead of
+        write-only — it feeds accumulated optimization experience back into
+        the Agent's next decision, closing the human/heuristic-experience →
+        LLM-optimization feedback loop the @rationale system exists for
+        (LT-7 / SOUL.md "@rationale").
+        """
+        want_op = _normalize_op(op)
+        want_kind = decision_kind
+        matched: list[RationalePrior] = []
+        for e in self._load_entries():
+            if _normalize_op(str(e.get("op", ""))) != want_op:
+                continue
+            if want_kind is not None and e.get("decision_kind") != want_kind:
+                continue
+            ratio = e.get("baseline_ratio")
+            if min_ratio is not None and (ratio is None or float(ratio) < min_ratio):
+                continue
+            matched.append(RationalePrior(
+                op=str(e.get("op", want_op)),
+                decision_kind=str(e.get("decision_kind", "")),
+                params=dict(e.get("params", {}) or {}),
+                rationale=str(e.get("rationale", "")),
+                baseline_ratio=(float(ratio) if ratio is not None else None),
+                correct=e.get("correct"),
+                backend=e.get("backend"),
+            ))
+        # Rank best-measured-outcome first; unmeasured sink to the bottom.
+        matched.sort(
+            key=lambda p: (p.baseline_ratio is not None, p.baseline_ratio or 0.0),
+            reverse=True,
+        )
+        # Dedupe identical (kind, params, rationale) priors, keep best-ranked.
+        seen: set[str] = set()
+        out: list[RationalePrior] = []
+        for p in matched:
+            sig = json.dumps(
+                {"k": p.decision_kind, "p": p.params, "r": p.rationale},
+                sort_keys=True, default=str,
+            )
+            if sig in seen:
+                continue
+            seen.add(sig)
+            out.append(p)
+            if len(out) >= top_k:
+                break
+        return out
+
+
+def _normalize_op(op: str) -> str:
+    """Bridge KB↔registry op-name drift.
+
+    The KB stores some ops with a ``_kernel`` suffix (``relu_kernel``,
+    ``grouped_matmul_kernel``, ``add_kernel``) while the runtime registry
+    (``benchmarks.op_registry`` / ``arke.ir.ops.registry``) uses the bare
+    name (``relu`` / ``grouped_matmul`` / ``add``). Recall must match across
+    that gap or ~half the corpus is invisible to the Agent.
+    """
+    op = (op or "").strip()
+    if op.endswith("_kernel"):
+        op = op[: -len("_kernel")]
+    return op
+
+
+@dataclass
+class RationalePrior:
+    """A compact recalled prior surfaced to the Agent at decision time.
+
+    Distilled from a ``RationaleEntry`` for the read side of the @rationale
+    loop: what a prior decision of this (op, kind) did and what it measured.
+    """
+
+    op: str
+    decision_kind: str
+    params: dict[str, Any]
+    rationale: str
+    baseline_ratio: float | None = None
+    correct: bool | None = None
+    backend: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
 
 def mine_trajectory(path: str | Path) -> list[RationaleEntry]:
     """Extract RationaleEntry rows from one trajectory JSONL file.

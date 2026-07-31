@@ -837,13 +837,51 @@ class ListLegalActionsTool(_EnvBoundTool):
             candidates = self._env.list_legal_actions(top_n=top_n, filter_kind=filter_kind)
         except Exception as e:
             return ToolResult(success=False, error=f"list_legal_actions failed: {e}")
-        return ToolResult(success=True, data={
+        data: dict[str, Any] = {
             "count": len(candidates),
             "candidates": [
                 {"kind": d.kind, "params": d.params, "level": d.level}
                 for d in candidates
             ],
-        })
+        }
+        # Read side of the @rationale loop (LT-7): surface prior decisions +
+        # their MEASURED outcomes for this op so the Agent ranks candidates
+        # with accumulated experience, not from scratch. This closes the
+        # feedback loop the 390-entry KB was previously write-only for. The
+        # candidate generator (legality surface) is untouched; priors are an
+        # additive, advisory field on the returned data (NOT the frozen Façade
+        # schema/description/meta — contract v1 is preserved). Best-effort:
+        # any KB failure leaves list_legal_actions fully functional.
+        priors = self._recall_priors(filter_kind=filter_kind)
+        if priors:
+            data["rationale_priors"] = priors
+        return ToolResult(success=True, data=data)
+
+    def _recall_priors(
+        self, *, filter_kind: str | None, top_k: int = 3
+    ) -> list[dict[str, Any]]:
+        """Best-effort @rationale KB recall for the current op (never raises)."""
+        try:
+            from arke.learn.rationale_kb import RationaleKB
+            op = getattr(self._env, "op_name", None)
+            if not op:
+                return []
+            kb = RationaleKB()
+            if kb.count() == 0:
+                return []
+            recalled = kb.recall(op, decision_kind=filter_kind, top_k=top_k)
+            return [
+                {
+                    "decision_kind": p.decision_kind,
+                    "params": p.params,
+                    "rationale": p.rationale,
+                    "baseline_ratio": p.baseline_ratio,
+                    "correct": p.correct,
+                }
+                for p in recalled
+            ]
+        except Exception:
+            return []
 
     def parameters_schema(self) -> dict[str, Any]:
         return {
